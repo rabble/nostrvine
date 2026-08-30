@@ -3223,9 +3223,16 @@ class DmRepository {
       // it advances both boundaries. The live subscription's `since:` covers
       // kinds [1059, 4, 5] with one filter, so the wire boundary has to track
       // whichever kind carried the newest wire stamp. See #8209.
-      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
+      // Scoped to the delivering account, not whichever is current after the
+      // decrypt and transaction return: this handler has no generation guard
+      // to abandon on, and a switch inside that window would import this
+      // stamp into the next account's maximum, narrowing its `since:`.
+      await _syncState?.recordSeen(
+        ownerPubkey,
+        createdAt: persistedCreatedAt,
+      );
       await _syncState?.recordWireSeen(
-        _userPubkey,
+        ownerPubkey,
         createdAt: nip04Event.createdAt,
       );
 

@@ -11124,6 +11124,63 @@ void main() {
         },
       );
 
+      test(
+        'persisted NIP-04 boundaries stay scoped to the event owner during '
+        'an account switch',
+        () async {
+          final nip04Event = createNip04Event();
+          final decryptStarted = Completer<void>();
+          final decryptResult = Completer<String?>();
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) {
+              decryptStarted.complete();
+              return decryptResult.future;
+            },
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          controller.add(nip04Event);
+          await decryptStarted.future;
+
+          // The decrypt is a remote-signer round trip on the real path, so
+          // this is the widest window a switch can land in — wider than the
+          // dedup read the sibling test above covers. Unlike the NIP-17
+          // handler, this one has no generation guard to abandon on.
+          repository.setCredentials(
+            userPubkey: _validPubkeyC,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          decryptResult.complete('Hello over NIP-04');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+          expect(syncState.recorded, hasLength(1));
+          expect(syncState.recorded.single.pubkey, _validPubkeyA);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       test('skips NIP-04 events with no p tag', () async {
         final nip04Event = createNip04Event(tags: []);
 
