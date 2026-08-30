@@ -14,7 +14,10 @@ void main() {
           body: IdentitySkeletonizer(
             isLoading: isLoading,
             fallthroughTimeout: fallthroughTimeout,
-            child: const SizedBox.square(dimension: 64, key: Key('child')),
+            child: Semantics(
+              label: 'Identity',
+              child: const SizedBox.square(dimension: 64, key: Key('child')),
+            ),
           ),
         ),
       );
@@ -42,6 +45,26 @@ void main() {
       await tester.pumpWidget(buildSubject(isLoading: true));
 
       expect(findSkeletonizer(tester).enabled, isTrue);
+    });
+
+    testWidgets('hides placeholder semantics only while shimmering', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        buildSubject(
+          isLoading: true,
+          fallthroughTimeout: const Duration(seconds: 3),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Identity'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(find.bySemanticsLabel('Identity'), findsOneWidget);
+      await tester.pumpAndSettle();
+      semantics.dispose();
     });
 
     testWidgets(

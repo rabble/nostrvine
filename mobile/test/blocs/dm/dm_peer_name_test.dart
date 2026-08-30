@@ -72,6 +72,23 @@ void main() {
         );
       });
 
+      test(
+        'a resolved profile name remains visible while other reads load',
+        () {
+          expect(
+            dmPeerName(
+              pubkeyHex: _ordinaryPubkey,
+              isVanished: false,
+              isModeration: false,
+              labels: _labels,
+              profileName: 'Kind Zero Name',
+              isResolving: true,
+            ),
+            equals('Kind Zero Name'),
+          );
+        },
+      );
+
       test('the generated fallback answers when nothing else does', () {
         expect(
           dmPeerName(

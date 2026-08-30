@@ -86,11 +86,15 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
 
   @override
   Widget build(BuildContext context) {
-    return Skeletonizer(
-      enabled: widget.isLoading && !_timeoutExpired,
-      enableSwitchAnimation: true,
-      effect: vineSkeletonEffectOf(context),
-      child: widget.child,
+    final isSkeletonized = widget.isLoading && !_timeoutExpired;
+    return ExcludeSemantics(
+      excluding: isSkeletonized,
+      child: Skeletonizer(
+        enabled: isSkeletonized,
+        enableSwitchAnimation: true,
+        effect: vineSkeletonEffectOf(context),
+        child: widget.child,
+      ),
     );
   }
 }

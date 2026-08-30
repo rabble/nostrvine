@@ -268,7 +268,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
                                 )
                               : null,
-                          onOptions: () => _onOptions(otherPubkey, displayName),
+                          onOptions: isIdentityResolving
+                              ? null
+                              : () => _onOptions(otherPubkey, displayName),
                         ),
                         Expanded(
                           // Force the messages card to fill the available width

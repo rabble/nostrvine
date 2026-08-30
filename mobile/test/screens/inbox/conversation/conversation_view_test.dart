@@ -186,6 +186,7 @@ void main() {
       DmRestoreStatusState? restoreStatus,
       String counterparty = otherPubkey,
       ConversationState? previousState,
+      bool isIdentityResolving = false,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -221,6 +222,9 @@ void main() {
           profileVanishedProvider(
             counterparty,
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
+          profileIdentityResolvingProvider(
+            counterparty,
+          ).overrideWithValue(isIdentityResolving),
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
           contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
@@ -668,6 +672,20 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ConversationAppBar), findsOneWidget);
+      });
+
+      testWidgets('disables profile options while the peer name resolves', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(isIdentityResolving: true));
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<ConversationAppBar>(find.byType(ConversationAppBar))
+              .onOptions,
+          isNull,
+        );
       });
 
       testWidgets('renders $MessageInputBar', (tester) async {

@@ -88,6 +88,7 @@ String dmPeerName({
     displayNameOverride: displayNameOverride,
   );
   if (substitute != null) return substitute;
+  if (profileName != null) return profileName;
   if (isResolving) return '';
-  return profileName ?? UserProfile.defaultDisplayNameFor(pubkeyHex);
+  return UserProfile.defaultDisplayNameFor(pubkeyHex);
 }

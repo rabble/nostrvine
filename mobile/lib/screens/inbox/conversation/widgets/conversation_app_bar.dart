@@ -25,7 +25,7 @@ class ConversationAppBar extends StatelessWidget
   final String displayName;
   final String handle;
   final VoidCallback onBack;
-  final VoidCallback onOptions;
+  final VoidCallback? onOptions;
   final bool isResolving;
   final String? loadingDisplayName;
 
