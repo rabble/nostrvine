@@ -698,12 +698,6 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
       when(
-        () => mockConversationsDao.lastSentTimestampsByConversation(
-          any(),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => <String, int>{});
-      when(
         () => mockMessageService.publishSelfApplicationMarker(
           content: any(named: 'content'),
           tags: any(named: 'tags'),
