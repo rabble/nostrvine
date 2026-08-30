@@ -99,6 +99,14 @@ void main() {
           widget.title == l10n.contentPreferencesMusicMode,
     );
 
+    test('an iOS override cannot determine the process-cached app theme', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final cachedPlatform = VineTheme.theme.platform;
+      debugDefaultTargetPlatformOverride = null;
+
+      expect(cachedPlatform, TargetPlatform.android);
+    });
+
     testWidgets('shows the toggle on iOS with its trade-off subtitle', (
       tester,
     ) async {
