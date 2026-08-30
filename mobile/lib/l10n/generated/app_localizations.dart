@@ -16924,6 +16924,60 @@ abstract class AppLocalizations {
   /// **'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.'**
   String get minorAccountReviewContentBody;
 
+  /// No description provided for @minorAccountReviewResponseClockRunningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to respond'**
+  String get minorAccountReviewResponseClockRunningTitle;
+
+  /// No description provided for @minorAccountReviewResponseClockRunningDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1 {1 day} other {{days} days}} left to respond. Deadline: {date}.'**
+  String minorAccountReviewResponseClockRunningDays(int days, String date);
+
+  /// No description provided for @minorAccountReviewResponseClockRunningHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1 {1 hour} other {{hours} hours}} left to respond. Deadline: {date}.'**
+  String minorAccountReviewResponseClockRunningHours(int hours, String date);
+
+  /// No description provided for @minorAccountReviewResponseClockPausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response clock paused'**
+  String get minorAccountReviewResponseClockPausedTitle;
+
+  /// No description provided for @minorAccountReviewResponseClockPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The response clock is paused. About {days, plural, =1 {1 day} other {{days} days}} will remain when it restarts.'**
+  String minorAccountReviewResponseClockPausedBody(int days);
+
+  /// No description provided for @minorAccountReviewResponseClockExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response deadline passed'**
+  String get minorAccountReviewResponseClockExpiredTitle;
+
+  /// No description provided for @minorAccountReviewResponseClockExpiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The response deadline has passed. Contact Support Center if you need help.'**
+  String get minorAccountReviewResponseClockExpiredBody;
+
+  /// No description provided for @minorAccountReviewResponseClockUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline unavailable'**
+  String get minorAccountReviewResponseClockUnavailableTitle;
+
+  /// No description provided for @minorAccountReviewResponseClockUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t show your response deadline right now. Contact Support Center if you need help.'**
+  String get minorAccountReviewResponseClockUnavailableBody;
+
   /// Heading above the support action that introduces the restricted-minor reconsideration policy. Approved wording from #8239 — do not reword without a product decision.
   ///
   /// In en, this message translates to:
@@ -17439,6 +17493,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Simulated under-13 support case enabled'**
   String get devOptionsMinorReviewUnder13EnabledToast;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Response clock'**
+  String get devOptionsMinorReviewResponseClockTitle;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get devOptionsMinorReviewResponseClockRunning;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get devOptionsMinorReviewResponseClockPaused;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get devOptionsMinorReviewResponseClockExpired;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applicable'**
+  String get devOptionsMinorReviewResponseClockNotApplicable;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockMalformed.
+  ///
+  /// In en, this message translates to:
+  /// **'Malformed payload'**
+  String get devOptionsMinorReviewResponseClockMalformed;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockRunningToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated running response clock'**
+  String get devOptionsMinorReviewResponseClockRunningToast;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockPausedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated paused response clock'**
+  String get devOptionsMinorReviewResponseClockPausedToast;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockExpiredToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated expired response clock'**
+  String get devOptionsMinorReviewResponseClockExpiredToast;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockNotApplicableToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated not-applicable response clock'**
+  String get devOptionsMinorReviewResponseClockNotApplicableToast;
+
+  /// No description provided for @devOptionsMinorReviewResponseClockMalformedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated malformed response clock'**
+  String get devOptionsMinorReviewResponseClockMalformedToast;
 
   /// No description provided for @devOptionsProtectedMinorSimulationTitle.
   ///

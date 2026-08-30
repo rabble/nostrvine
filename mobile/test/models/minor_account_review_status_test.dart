@@ -50,4 +50,101 @@ void main() {
       expect(status.currentCase!.isUnder13Path, isTrue);
     });
   });
+
+  group('responseDeadline', () {
+    const serverNow = '2026-08-26T14:30:00.000Z';
+    const deadlineAt = '2026-09-10T14:30:00.000Z';
+
+    Map<String, dynamic> caseWith(Map<String, dynamic> deadline) => {
+      'id': 'case-1',
+      'state': 'restricted_pending_user_response',
+      'suspectedAgeBand': 'age_13_15',
+      'allowedResolution': 'parent_video_or_email',
+      'instructions': <String, dynamic>{},
+      'responseDeadline': deadline,
+    };
+
+    test('parses running and computes from serverNow', () {
+      final reviewCase = MinorReviewCase.fromJson(
+        caseWith({
+          'clock': 'running',
+          'serverNow': serverNow,
+          'deadlineAt': deadlineAt,
+        }),
+      );
+
+      expect(
+        reviewCase.responseDeadline.clock,
+        MinorReviewResponseClock.running,
+      );
+      expect(reviewCase.responseDeadline.remaining, const Duration(days: 15));
+    });
+
+    test('parses paused, expired, and not applicable states', () {
+      final paused = MinorReviewResponseDeadline.fromJson({
+        'clock': 'paused',
+        'pausedAt': serverNow,
+        'remainingDaysWhenPaused': 7.5,
+      });
+      final expired = MinorReviewResponseDeadline.fromJson({
+        'clock': 'expired',
+        'serverNow': serverNow,
+        'deadlineAt': deadlineAt,
+      });
+      final notApplicable = MinorReviewResponseDeadline.fromJson({
+        'clock': 'not_applicable',
+      });
+
+      expect(paused.clock, MinorReviewResponseClock.paused);
+      expect(paused.remainingDaysWhenPaused, 7.5);
+      expect(expired.clock, MinorReviewResponseClock.expired);
+      expect(notApplicable.clock, MinorReviewResponseClock.notApplicable);
+    });
+
+    test(
+      'downgrades missing, malformed, and negative values to unavailable',
+      () {
+        final invalid = [
+          null,
+          {'clock': 'running', 'serverNow': serverNow},
+          {
+            'clock': 'running',
+            'serverNow': 'not-a-date',
+            'deadlineAt': deadlineAt,
+          },
+          {'clock': 'paused', 'remainingDaysWhenPaused': 7.5},
+          {
+            'clock': 'paused',
+            'pausedAt': serverNow,
+            'remainingDaysWhenPaused': -1,
+          },
+          {'clock': 'unknown'},
+        ];
+
+        for (final json in invalid) {
+          expect(
+            MinorReviewResponseDeadline.fromJson(json),
+            isA<MinorReviewResponseDeadline>().having(
+              (value) => value.clock,
+              'clock',
+              MinorReviewResponseClock.unavailable,
+            ),
+          );
+        }
+      },
+    );
+
+    test(
+      'clamps a running deadline that has passed without using device time',
+      () {
+        final deadline = MinorReviewResponseDeadline.fromJson({
+          'clock': 'running',
+          'serverNow': deadlineAt,
+          'deadlineAt': serverNow,
+        });
+
+        expect(deadline.remaining, Duration.zero);
+      },
+    );
+  });
 }

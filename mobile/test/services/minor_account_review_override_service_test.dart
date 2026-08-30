@@ -69,5 +69,51 @@ void main() {
 
       expect(service.getOverride(), isNull);
     });
+
+    test('round-trips each response clock state', () async {
+      final deadlines = [
+        MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.running,
+          serverNow: DateTime.utc(2026, 8, 26),
+          deadlineAt: DateTime.utc(2026, 9, 10),
+        ),
+        MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.paused,
+          pausedAt: DateTime.utc(2026, 8, 26),
+          remainingDaysWhenPaused: 7.5,
+        ),
+        MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.expired,
+          serverNow: DateTime.utc(2026, 9, 11),
+          deadlineAt: DateTime.utc(2026, 9, 10),
+        ),
+        const MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.notApplicable,
+        ),
+        const MinorReviewResponseDeadline.unavailable(),
+      ];
+
+      for (final deadline in deadlines) {
+        await service.setOverride(
+          MinorAccountReviewStatus(
+            restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+            currentCase: MinorReviewCase(
+              id: 'clock-case',
+              state: MinorReviewCaseState.restrictedPendingUserResponse,
+              suspectedAgeBand: SuspectedAgeBand.age13To15,
+              allowedResolution: MinorReviewResolutionType.parentVideoOrEmail,
+              instructions: const MinorReviewInstructions(title: '', body: ''),
+              supportEmail: 'support@divine.video',
+              responseDeadline: deadline,
+            ),
+          ),
+        );
+
+        expect(
+          service.getOverride()!.currentCase!.responseDeadline.clock,
+          deadline.clock,
+        );
+      }
+    });
   });
 }

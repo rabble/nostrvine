@@ -244,6 +244,9 @@ class _LoadedView extends ConsumerWidget {
     final caseId = reviewCase?.id;
     final primaryAction = _primaryAction(reviewCase, l10n);
     final infoCard = _infoCardForCase(reviewCase, supportEmail, l10n);
+    final responseClockCard = reviewCase == null
+        ? null
+        : _ResponseClockCard(deadline: reviewCase.responseDeadline);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -300,6 +303,10 @@ class _LoadedView extends ConsumerWidget {
           l10n.minorAccountReviewRestrictionSupport,
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
+        if (responseClockCard != null) ...[
+          responseClockCard,
+          const SizedBox(height: 24),
+        ],
         _InfoCard(
           title: l10n.minorAccountReviewContentTitle,
           body: l10n.minorAccountReviewContentBody,
@@ -579,6 +586,65 @@ class _RestrictionLine extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ResponseClockCard extends StatelessWidget {
+  const _ResponseClockCard({required this.deadline});
+
+  final MinorReviewResponseDeadline deadline;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final copy = switch (deadline.clock) {
+      MinorReviewResponseClock.running => _runningCopy(context, l10n),
+      MinorReviewResponseClock.paused => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockPausedTitle,
+        body: l10n.minorAccountReviewResponseClockPausedBody(
+          deadline.remainingDaysWhenPaused!.floor(),
+        ),
+      ),
+      MinorReviewResponseClock.expired => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockExpiredTitle,
+        body: l10n.minorAccountReviewResponseClockExpiredBody,
+      ),
+      MinorReviewResponseClock.notApplicable => null,
+      MinorReviewResponseClock.unavailable => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockUnavailableTitle,
+        body: l10n.minorAccountReviewResponseClockUnavailableBody,
+      ),
+    };
+
+    if (copy == null) return const SizedBox.shrink();
+    return _InfoCard(title: copy.title, body: copy.body);
+  }
+
+  _ClockCopy _runningCopy(BuildContext context, AppLocalizations l10n) {
+    final remaining = deadline.remaining!;
+    final date = MaterialLocalizations.of(
+      context,
+    ).formatMediumDate(deadline.deadlineAt!.toLocal());
+    final body = remaining < const Duration(hours: 48)
+        ? l10n.minorAccountReviewResponseClockRunningHours(
+            remaining.inHours,
+            date,
+          )
+        : l10n.minorAccountReviewResponseClockRunningDays(
+            remaining.inDays,
+            date,
+          );
+    return _ClockCopy(
+      title: l10n.minorAccountReviewResponseClockRunningTitle,
+      body: body,
+    );
+  }
+}
+
+class _ClockCopy {
+  const _ClockCopy({required this.title, required this.body});
+
+  final String title;
+  final String body;
 }
 
 class _InfoCard extends StatelessWidget {

@@ -271,6 +271,59 @@ void main() {
       expect(find.text('Continue', skipOffstage: false), findsOneWidget);
     });
 
+    testWidgets('renders the server-provided response clock states', (
+      tester,
+    ) async {
+      final cases = <MinorReviewResponseClock, MinorReviewResponseDeadline>{
+        MinorReviewResponseClock.running: MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.running,
+          serverNow: DateTime.utc(2026, 8, 26, 14, 30),
+          deadlineAt: DateTime.utc(2026, 9, 10, 14, 30),
+        ),
+        MinorReviewResponseClock.paused: MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.paused,
+          pausedAt: DateTime.utc(2026, 8, 26, 14, 30),
+          remainingDaysWhenPaused: 7.5,
+        ),
+        MinorReviewResponseClock.expired: MinorReviewResponseDeadline(
+          clock: MinorReviewResponseClock.expired,
+          serverNow: DateTime.utc(2026, 9, 11, 14, 30),
+          deadlineAt: DateTime.utc(2026, 9, 10, 14, 30),
+        ),
+        MinorReviewResponseClock.notApplicable:
+            const MinorReviewResponseDeadline(
+              clock: MinorReviewResponseClock.notApplicable,
+            ),
+        MinorReviewResponseClock.unavailable:
+            const MinorReviewResponseDeadline.unavailable(),
+      };
+
+      for (final entry in cases.entries) {
+        await _pumpRestrictedReview(tester, entry.value);
+
+        switch (entry.key) {
+          case MinorReviewResponseClock.running:
+            expect(find.text('Time to respond'), findsOneWidget);
+            expect(
+              find.textContaining('15 days left to respond'),
+              findsOneWidget,
+            );
+          case MinorReviewResponseClock.paused:
+            expect(find.text('Response clock paused'), findsOneWidget);
+            expect(find.textContaining('About 7 days'), findsOneWidget);
+          case MinorReviewResponseClock.expired:
+            expect(find.text('Response deadline passed'), findsOneWidget);
+            expect(find.textContaining('left to respond'), findsNothing);
+          case MinorReviewResponseClock.notApplicable:
+            expect(find.textContaining('left to respond'), findsNothing);
+            expect(find.textContaining('Response clock'), findsNothing);
+          case MinorReviewResponseClock.unavailable:
+            expect(find.text('Deadline unavailable'), findsOneWidget);
+            expect(find.textContaining('left to respond'), findsNothing);
+        }
+      }
+    });
+
     testWidgets(
       'shows review in progress without primary CTA after submission',
       (tester) async {
@@ -306,6 +359,12 @@ void main() {
 
         await tester.pumpAndSettle();
 
+        await tester.scrollUntilVisible(
+          find.text('Review in progress'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
         expect(find.text('Review in progress'), findsOneWidget);
         expect(find.text('Continue', skipOffstage: false), findsNothing);
         expect(
@@ -635,4 +694,40 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _pumpRestrictedReview(
+  WidgetTester tester,
+  MinorReviewResponseDeadline deadline,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      key: UniqueKey(),
+      overrides: [
+        currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+          return MinorAccountReviewStatus(
+            restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+            currentCase: MinorReviewCase(
+              id: 'clock-case',
+              state: MinorReviewCaseState.restrictedPendingUserResponse,
+              suspectedAgeBand: SuspectedAgeBand.age13To15,
+              allowedResolution: MinorReviewResolutionType.parentVideoOrEmail,
+              instructions: const MinorReviewInstructions(
+                title: 'Account review required',
+                body: 'We need parental consent information.',
+              ),
+              supportEmail: 'support@divine.video',
+              responseDeadline: deadline,
+            ),
+          );
+        }),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MinorAccountReviewScreen(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
