@@ -138,7 +138,7 @@ void main() {
           ),
         ).called(1);
 
-        service.dispose();
+        await service.dispose();
       },
     );
 
@@ -162,7 +162,7 @@ void main() {
         ),
       ).called(1);
 
-      service.dispose();
+      await service.dispose();
     });
 
     test(
