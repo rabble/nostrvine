@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Simuler un dossier support moins de 13 ans",
     "devOptionsMinorReviewUnder13Subtitle": "Compte restreint avec instructions uniquement par e-mail du parent",
     "devOptionsMinorReviewClearedToast": "Simulation d'examen de compte de mineur effacée",
-    "devOptionsMinorReviewTeenEnabledToast": "Dossier d'examen simulé 13-15 activé",
     "devOptionsMinorReviewUnder13EnabledToast": "Dossier support simulé moins de 13 ans activé",
     "devOptionsProtectedMinorSimulationTitle": "Simulation de mineur protégé",
     "devOptionsProtectedMinorCurrentStateLabel": "État actuel",

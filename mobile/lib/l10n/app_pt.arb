@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Simular caso de suporte de menor de 13",
     "devOptionsMinorReviewUnder13Subtitle": "Conta restrita com instruções só por e-mail do responsável",
     "devOptionsMinorReviewClearedToast": "Simulação de análise de conta de menor limpa",
-    "devOptionsMinorReviewTeenEnabledToast": "Caso simulado de análise 13-15 ativado",
     "devOptionsMinorReviewUnder13EnabledToast": "Caso simulado de suporte de menor de 13 ativado",
     "devOptionsProtectedMinorSimulationTitle": "Simulação de menor protegido",
     "devOptionsProtectedMinorCurrentStateLabel": "Estado atual",

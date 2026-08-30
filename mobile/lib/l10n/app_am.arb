@@ -4013,7 +4013,6 @@
     "devOptionsMinorReviewUnder13Title": "ከ13 በታች የድጋፍ ጉዳይ አስመስል",
     "devOptionsMinorReviewUnder13Subtitle": "የተገደበ መለያ በወላጅ ኢሜይል ብቻ መመሪያዎች",
     "devOptionsMinorReviewClearedToast": "የአካለ መጠን ያልደረሰ መለያ ግምገማ ማስመሰያ ጸድቷል",
-    "devOptionsMinorReviewTeenEnabledToast": "የተመሰለው የ13–15 ግምገማ ጉዳይ በርቷል",
     "devOptionsMinorReviewUnder13EnabledToast": "የተመሰለው ከ13 በታች የድጋፍ ጉዳይ በርቷል",
     "devOptionsProtectedMinorSimulationTitle": "የተጠበቀ ታዳጊ ማስመሰያ",
     "devOptionsProtectedMinorCurrentStateLabel": "የአሁኑ ሁኔታ",

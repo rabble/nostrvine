@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Simulează cazul de asistență sub 13 ani",
     "devOptionsMinorReviewUnder13Subtitle": "Cont restricționat cu instrucțiuni doar prin e-mailul părintelui",
     "devOptionsMinorReviewClearedToast": "Simularea verificării contului de minor a fost ștearsă",
-    "devOptionsMinorReviewTeenEnabledToast": "Cazul simulat de verificare 13-15 a fost activat",
     "devOptionsMinorReviewUnder13EnabledToast": "Cazul simulat de asistență sub 13 ani a fost activat",
     "devOptionsProtectedMinorSimulationTitle": "Simulare minor protejat",
     "devOptionsProtectedMinorCurrentStateLabel": "Starea curentă",

@@ -43,6 +43,110 @@ enum MinorReviewCaseState {
   }
 }
 
+enum MinorReviewResponseClock {
+  running,
+  paused,
+  expired,
+  notApplicable,
+  unavailable;
+
+  static MinorReviewResponseClock fromJsonValue(String? value) {
+    return switch (value) {
+      'running' => running,
+      'paused' => paused,
+      'expired' => expired,
+      'not_applicable' => notApplicable,
+      _ => unavailable,
+    };
+  }
+
+  String get jsonValue => switch (this) {
+    running => 'running',
+    paused => 'paused',
+    expired => 'expired',
+    notApplicable => 'not_applicable',
+    unavailable => 'unknown',
+  };
+}
+
+class MinorReviewResponseDeadline {
+  const MinorReviewResponseDeadline({
+    required this.clock,
+    this.serverNow,
+    this.deadlineAt,
+    this.pausedAt,
+    this.remainingDaysWhenPaused,
+  });
+
+  const MinorReviewResponseDeadline.unavailable()
+    : clock = MinorReviewResponseClock.unavailable,
+      serverNow = null,
+      deadlineAt = null,
+      pausedAt = null,
+      remainingDaysWhenPaused = null;
+
+  factory MinorReviewResponseDeadline.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const MinorReviewResponseDeadline.unavailable();
+
+    final clock = MinorReviewResponseClock.fromJsonValue(
+      json['clock'] is String ? json['clock'] as String : null,
+    );
+    final serverNow = _parseDateTime(json['serverNow']);
+    final deadlineAt = _parseDateTime(json['deadlineAt']);
+    final pausedAt = _parseDateTime(json['pausedAt']);
+    final remainingDays = json['remainingDaysWhenPaused'] is num
+        ? (json['remainingDaysWhenPaused'] as num).toDouble()
+        : null;
+
+    final valid = switch (clock) {
+      MinorReviewResponseClock.running || MinorReviewResponseClock.expired =>
+        serverNow != null && deadlineAt != null,
+      MinorReviewResponseClock.paused =>
+        pausedAt != null && remainingDays != null && remainingDays >= 0,
+      MinorReviewResponseClock.notApplicable => true,
+      MinorReviewResponseClock.unavailable => false,
+    };
+
+    return valid
+        ? MinorReviewResponseDeadline(
+            clock: clock,
+            serverNow: serverNow,
+            deadlineAt: deadlineAt,
+            pausedAt: pausedAt,
+            remainingDaysWhenPaused: remainingDays,
+          )
+        : const MinorReviewResponseDeadline.unavailable();
+  }
+
+  final MinorReviewResponseClock clock;
+  final DateTime? serverNow;
+  final DateTime? deadlineAt;
+  final DateTime? pausedAt;
+  final double? remainingDaysWhenPaused;
+
+  Duration? get remaining {
+    if (clock != MinorReviewResponseClock.running ||
+        serverNow == null ||
+        deadlineAt == null) {
+      return null;
+    }
+    final duration = deadlineAt!.difference(serverNow!);
+    return duration.isNegative ? Duration.zero : duration;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'clock': clock.jsonValue,
+    'serverNow': serverNow?.toUtc().toIso8601String(),
+    'deadlineAt': deadlineAt?.toUtc().toIso8601String(),
+    'pausedAt': pausedAt?.toUtc().toIso8601String(),
+    'remainingDaysWhenPaused': remainingDaysWhenPaused,
+  };
+
+  static DateTime? _parseDateTime(Object? value) {
+    return value is String ? DateTime.tryParse(value)?.toUtc() : null;
+  }
+}
+
 enum SuspectedAgeBand {
   under13,
   age13To15,
@@ -88,6 +192,8 @@ class MinorReviewInstructions {
   final String title;
   final String body;
 
+  Map<String, dynamic> toJson() => {'title': title, 'body': body};
+
   MinorReviewInstructions copyWith({String? title, String? body}) {
     return MinorReviewInstructions(
       title: title ?? this.title,
@@ -95,6 +201,37 @@ class MinorReviewInstructions {
     );
   }
 }
+
+String _caseStateToJson(MinorReviewCaseState state) => switch (state) {
+  MinorReviewCaseState.openReported => 'open_reported',
+  MinorReviewCaseState.underModeratorReview => 'under_moderator_review',
+  MinorReviewCaseState.restrictedPendingUserResponse =>
+    'restricted_pending_user_response',
+  MinorReviewCaseState.restrictedPendingParentalConsent =>
+    'restricted_pending_parental_consent',
+  MinorReviewCaseState.restrictedPendingSupportEmail =>
+    'restricted_pending_support_email',
+  MinorReviewCaseState.submittedForReview => 'submitted_for_review',
+  MinorReviewCaseState.needsFollowUp => 'needs_follow_up',
+  MinorReviewCaseState.cleared => 'cleared',
+  MinorReviewCaseState.deniedClosed => 'denied_closed',
+  MinorReviewCaseState.unknown => 'unknown',
+};
+
+String _ageBandToJson(SuspectedAgeBand ageBand) => switch (ageBand) {
+  SuspectedAgeBand.under13 => 'under_13',
+  SuspectedAgeBand.age13To15 => 'age_13_15',
+  SuspectedAgeBand.age16PlusClaimed => 'age_16_plus_claimed',
+  SuspectedAgeBand.unknown => 'unknown',
+};
+
+String _resolutionToJson(MinorReviewResolutionType resolution) =>
+    switch (resolution) {
+      MinorReviewResolutionType.supportEmailOnly => 'support_email_only',
+      MinorReviewResolutionType.parentVideoOrEmail => 'parent_video_or_email',
+      MinorReviewResolutionType.supportReviewOnly => 'support_review_only',
+      MinorReviewResolutionType.unknown => 'unknown',
+    };
 
 class MinorReviewCase {
   const MinorReviewCase({
@@ -104,6 +241,7 @@ class MinorReviewCase {
     required this.allowedResolution,
     required this.instructions,
     required this.supportEmail,
+    this.responseDeadline = const MinorReviewResponseDeadline.unavailable(),
     this.moderationConversationPubkey,
     this.moderationConversationId,
   });
@@ -123,6 +261,9 @@ class MinorReviewCase {
       ),
       supportEmail:
           json['supportEmail'] as String? ?? AppConstants.supportEmail,
+      responseDeadline: MinorReviewResponseDeadline.fromJson(
+        _asJsonMap(json['responseDeadline']),
+      ),
       moderationConversationPubkey:
           json['moderationConversationPubkey'] as String?,
       moderationConversationId: json['moderationConversationId'] as String?,
@@ -135,6 +276,7 @@ class MinorReviewCase {
   final MinorReviewResolutionType allowedResolution;
   final MinorReviewInstructions instructions;
   final String supportEmail;
+  final MinorReviewResponseDeadline responseDeadline;
   final String? moderationConversationPubkey;
   final String? moderationConversationId;
 
@@ -163,6 +305,7 @@ class MinorReviewCase {
     MinorReviewResolutionType? allowedResolution,
     MinorReviewInstructions? instructions,
     String? supportEmail,
+    MinorReviewResponseDeadline? responseDeadline,
     String? moderationConversationPubkey,
     String? moderationConversationId,
   }) {
@@ -173,12 +316,33 @@ class MinorReviewCase {
       allowedResolution: allowedResolution ?? this.allowedResolution,
       instructions: instructions ?? this.instructions,
       supportEmail: supportEmail ?? this.supportEmail,
+      responseDeadline: responseDeadline ?? this.responseDeadline,
       moderationConversationPubkey:
           moderationConversationPubkey ?? this.moderationConversationPubkey,
       moderationConversationId:
           moderationConversationId ?? this.moderationConversationId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'state': _caseStateToJson(state),
+    'suspectedAgeBand': _ageBandToJson(suspectedAgeBand),
+    'allowedResolution': _resolutionToJson(allowedResolution),
+    'instructions': instructions.toJson(),
+    'supportEmail': supportEmail,
+    'responseDeadline': responseDeadline.toJson(),
+    'moderationConversationPubkey': moderationConversationPubkey,
+    'moderationConversationId': moderationConversationId,
+  };
+}
+
+Map<String, dynamic>? _asJsonMap(Object? value) {
+  if (value is! Map) return null;
+  if (value.keys.any((key) => key is! String)) return null;
+  return value.map<String, dynamic>(
+    (key, value) => MapEntry(key as String, value),
+  );
 }
 
 class MinorAccountReviewStatus {
@@ -210,6 +374,15 @@ class MinorAccountReviewStatus {
 
   final AccountRestrictionStatus restrictionStatus;
   final MinorReviewCase? currentCase;
+
+  Map<String, dynamic> toJson() => {
+    'restriction': {
+      'status': restrictionStatus == AccountRestrictionStatus.active
+          ? 'active'
+          : 'restricted_minor_review',
+    },
+    'minorReviewCase': currentCase?.toJson(),
+  };
 
   bool get isRestricted =>
       restrictionStatus == AccountRestrictionStatus.restrictedMinorReview;

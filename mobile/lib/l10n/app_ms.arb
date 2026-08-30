@@ -5619,7 +5619,6 @@
   "devOptionsMinorReviewUnder13Title": "Simulasikan kes sokongan bawah 13",
   "devOptionsMinorReviewUnder13Subtitle": "Akaun terhad dengan arahan e-mel ibu bapa sahaja",
   "devOptionsMinorReviewClearedToast": "Simulasi semakan akaun bawah umur dikosongkan",
-  "devOptionsMinorReviewTeenEnabledToast": "Kes semakan 13-15 simulasi didayakan",
   "devOptionsMinorReviewUnder13EnabledToast": "Kes sokongan bawah 13 simulasi didayakan",
   "devOptionsProtectedMinorSimulationTitle": "Simulasi Bawah Umur Dilindungi",
   "devOptionsProtectedMinorCurrentStateLabel": "Keadaan semasa",

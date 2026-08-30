@@ -5619,7 +5619,6 @@
   "devOptionsMinorReviewUnder13Title": "模拟 13 岁以下协助案件",
   "devOptionsMinorReviewUnder13Subtitle": "受限账号，仅有家长邮件指引",
   "devOptionsMinorReviewClearedToast": "未成年账号审核模拟已清除",
-  "devOptionsMinorReviewTeenEnabledToast": "已启用 13-15 岁审核案件模拟",
   "devOptionsMinorReviewUnder13EnabledToast": "已启用 13 岁以下协助案件模拟",
   "devOptionsProtectedMinorSimulationTitle": "未成年保护模拟",
   "devOptionsProtectedMinorCurrentStateLabel": "当前状态",

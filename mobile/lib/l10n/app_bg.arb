@@ -4019,7 +4019,6 @@
     "devOptionsMinorReviewUnder13Title": "Симулирай случай за поддръжка под 13",
     "devOptionsMinorReviewUnder13Subtitle": "Ограничен профил с указания само за имейл до родител",
     "devOptionsMinorReviewClearedToast": "Симулацията на преглед на профил на непълнолетен е изчистена",
-    "devOptionsMinorReviewTeenEnabledToast": "Симулираният случай за преглед 13–15 е включен",
     "devOptionsMinorReviewUnder13EnabledToast": "Симулираният случай за поддръжка под 13 е включен",
     "devOptionsProtectedMinorSimulationTitle": "Симулация на защитен непълнолетен",
     "devOptionsProtectedMinorCurrentStateLabel": "Текущо състояние",

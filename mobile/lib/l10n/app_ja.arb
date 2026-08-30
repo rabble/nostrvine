@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "13歳未満のサポートケースをシミュレート",
     "devOptionsMinorReviewUnder13Subtitle": "保護者メールのみの案内が付く制限アカウント",
     "devOptionsMinorReviewClearedToast": "未成年アカウント審査のシミュレーションを解除しました",
-    "devOptionsMinorReviewTeenEnabledToast": "13〜15歳の審査ケースのシミュレーションを有効にしました",
     "devOptionsMinorReviewUnder13EnabledToast": "13歳未満のサポートケースのシミュレーションを有効にしました",
     "devOptionsProtectedMinorSimulationTitle": "保護対象の未成年シミュレーション",
     "devOptionsProtectedMinorCurrentStateLabel": "現在の状態",

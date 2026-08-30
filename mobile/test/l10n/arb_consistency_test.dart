@@ -468,6 +468,28 @@ const _knownUntranslatedDebt = <String>{
   // so non-English locales fall back to English until speaker review.
   'minorAccountReviewContentTitle',
   'minorAccountReviewContentBody',
+  // Response clock copy (#8156). Load-bearing deadline guidance remains in
+  // English until human translation review.
+  'minorAccountReviewResponseClockRunningTitle',
+  'minorAccountReviewResponseClockRunningDays',
+  'minorAccountReviewResponseClockRunningHours',
+  'minorAccountReviewResponseClockPausedTitle',
+  'minorAccountReviewResponseClockPausedBody',
+  'minorAccountReviewResponseClockExpiredTitle',
+  'minorAccountReviewResponseClockExpiredBody',
+  'minorAccountReviewResponseClockUnavailableTitle',
+  'minorAccountReviewResponseClockUnavailableBody',
+  'devOptionsMinorReviewResponseClockTitle',
+  'devOptionsMinorReviewResponseClockRunning',
+  'devOptionsMinorReviewResponseClockPaused',
+  'devOptionsMinorReviewResponseClockExpired',
+  'devOptionsMinorReviewResponseClockNotApplicable',
+  'devOptionsMinorReviewResponseClockMalformed',
+  'devOptionsMinorReviewResponseClockRunningToast',
+  'devOptionsMinorReviewResponseClockPausedToast',
+  'devOptionsMinorReviewResponseClockExpiredToast',
+  'devOptionsMinorReviewResponseClockNotApplicableToast',
+  'devOptionsMinorReviewResponseClockMalformedToast',
   // Restricted-minor appeal policy (#8239). This is load-bearing age and
   // moderation copy, so non-English locales fall back to English until
   // speaker review.
