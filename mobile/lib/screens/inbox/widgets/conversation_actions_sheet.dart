@@ -50,7 +50,10 @@ class ConversationActionsSheet {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _MuteActionTile(isMuted: isMuted),
+            _MuteActionTile(
+              isMuted: isMuted,
+              showDivider: !isGroup || canRemove,
+            ),
             // Report and Block act on ONE account, and a group sheet has no
             // way to say which — it would act on the arbitrary peer the row
             // names while reading as though it dealt with the thread. Mute and
@@ -100,9 +103,14 @@ class ConversationActionsSheet {
 }
 
 class _MuteActionTile extends StatelessWidget {
-  const _MuteActionTile({required this.isMuted});
+  const _MuteActionTile({required this.isMuted, this.showDivider = true});
 
   final bool isMuted;
+
+  /// False when Mute is the only row left — a group thread that also carries a
+  /// removal-protected member withdraws Report, Block AND Remove, and a rule
+  /// under the last row reads as a missing action rather than a separator.
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +119,11 @@ class _MuteActionTile extends StatelessWidget {
       label: context.l10n.inboxActionMute,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: context.vineColors.outlineDisabled),
-          ),
+          border: showDivider
+              ? Border(
+                  bottom: BorderSide(color: context.vineColors.outlineDisabled),
+                )
+              : null,
         ),
         child: Material(
           type: MaterialType.transparency,

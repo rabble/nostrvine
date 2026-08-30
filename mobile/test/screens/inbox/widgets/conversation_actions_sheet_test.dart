@@ -18,6 +18,7 @@ void main() {
       String displayName = 'Alice',
       bool isVanished = false,
       bool isGroup = false,
+      bool canRemove = true,
       Locale? locale,
     }) {
       return testMaterialApp(
@@ -34,6 +35,7 @@ void main() {
                     isMuted: isMuted,
                     isBlocked: isBlocked,
                     isGroup: isGroup,
+                    canRemove: canRemove,
                   );
                   onResult(result);
                 },
@@ -228,6 +230,26 @@ void main() {
 
     // A group sheet has no way to say WHICH account Report and Block would
     // act on, so it offers neither. Conversation-scoped actions stay.
+    // Only reachable once BOTH withdrawals apply: a group thread whose
+    // members include a removal-protected account (#8391) loses Report,
+    // Block and Remove, leaving Mute alone. Neither change creates this on
+    // its own.
+    testWidgets('a group with nothing removable keeps only Mute', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        buildSubject(onResult: (_) {}, isGroup: true, canRemove: false),
+      );
+      await tester.tap(find.text('Show sheet'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.inboxActionMute), findsOneWidget);
+      expect(find.text(l10n.inboxActionRemove), findsNothing);
+      expect(find.text(l10n.inboxActionReport('Alice')), findsNothing);
+      expect(find.text(l10n.inboxActionBlock('Alice')), findsNothing);
+    });
+
     group('a group conversation', () {
       testWidgets('offers only the conversation-scoped actions', (
         tester,
