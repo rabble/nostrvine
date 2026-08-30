@@ -1,11 +1,6 @@
 // ABOUTME: Pins Hive's home path to one directory regardless of open order
 // ABOUTME: Covers migration of boxes stranded in the legacy documents directory
 
-// Permanent: mutates PathProviderPlatform.instance and Hive's process-global
-// home path while validating where box files land.
-@Tags(['skip_very_good_optimization'])
-library;
-
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +40,15 @@ void main() {
     late PathProviderPlatform originalPathProvider;
 
     setUp(() async {
+      // A box another suite left open short-circuits `Hive.openBox`, which
+      // returns the registered box without consulting the home path — these
+      // assertions would then read a stale location. Closing one flushes it,
+      // which throws when that suite already deleted the directory under it;
+      // the registry is what matters here, not the flush.
+      try {
+        await Hive.close();
+      } catch (_) {}
+
       root = await Directory.systemTemp.createTemp('hive_storage_service_');
       documentsDir = await Directory(
         p.join(root.path, 'Documents'),
@@ -68,6 +72,9 @@ void main() {
 
     tearDown(() async {
       await Hive.close();
+      // close() leaves the home path pointing at the directory deleted below,
+      // and resetForTesting() only clears this service's own latch.
+      Hive.init(null);
       PathProviderPlatform.instance = originalPathProvider;
       HiveStorageService.resetForTesting();
       if (root.existsSync()) root.deleteSync(recursive: true);
