@@ -19,13 +19,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// the feed paused.
 ///
 /// AppShell also reconciles `overlayVisibilityProvider` when this flag becomes
-/// `false`. A fresh shell mount clears overlay owners only when the shell is
-/// the current route because it can still sit below a live page owner.
-/// `didPopNext` clears every page and bottom-sheet owner because popping the
-/// route directly above the shell proves no overlay should continue blocking
-/// autoplay, even if go_router removed the route with `go()` and never
-/// completed the original `pushWithVideoPause` future or the sheet's own
-/// dismiss callback.
+/// `false`. A fresh shell mount clears every stale overlay owner only when the
+/// shell is the current route. No branch-navigator sheet can predate that new
+/// shell, while a non-current shell may still sit below a live page owner.
+/// `didPopNext` is narrower: it clears only page owners because go_router can
+/// remove a pushed route with `go()` without completing the original
+/// `pushWithVideoPause` future. It preserves bottom-sheet owners because a
+/// branch-navigator sheet can remain visible while an unrelated root route is
+/// pushed and popped above the shell; that sheet releases its own owner when
+/// its route is dismissed.
 ///
 /// The home feed reads this to know it is offstage behind a pushed screen.
 /// GoRouter's `routeInformationProvider` collapses to the shell location

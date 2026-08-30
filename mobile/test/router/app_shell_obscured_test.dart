@@ -249,6 +249,71 @@ void main() {
     });
   });
 
+  group('didPopNext recovery is page-scoped', () {
+    testWidgets('a live bottom-sheet owner survives an unrelated root pop', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: _overrides(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _wrapWithBlocs(
+          UncontrolledProviderScope(
+            container: container,
+            child: _appShellMaterialApp(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A pause-aware sheet opened with `useRootNavigator: false` lives on a
+      // branch navigator, so the shell stays the top *root* route while that
+      // sheet is on screen — community_suggest_sheet.dart is the shipped
+      // example. Model that still-visible hold.
+      final sheetOwner = Object();
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpenForOwner(sheetOwner, isOpen: true);
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+
+      // An unrelated root route opens over the shell and closes again — e.g.
+      // the background upload-failure sheet, which needs no user tap. It takes
+      // no overlay token of its own, so it must not disturb the sheet's.
+      final shellContext = tester.element(find.byType(AppShell));
+      unawaited(
+        Navigator.of(shellContext, rootNavigator: true).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('Unrelated modal')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Unrelated modal'), findsOneWidget);
+      expect(container.read(shellObscuredProvider), isTrue);
+
+      Navigator.of(shellContext, rootNavigator: true).pop();
+      await tester.pumpAndSettle();
+
+      expect(container.read(shellObscuredProvider), isFalse);
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+        reason:
+            'didPopNext force-clears page owners for #6239; clearing sheet '
+            'owners too destroyed this live hold and resumed playback behind '
+            'the still-visible sheet',
+      );
+    });
+  });
+
   testWidgets(
     'router.go() uncovering the shell clears a page overlay stranded by '
     'pushWithVideoPause (#6239)',
@@ -335,10 +400,11 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
 
       // Model a recorder hold whose ordinary release was skipped. Uncovering
-      // the shell is the final recovery path and must clear every owner.
+      // the shell is the final recovery path and must clear every page owner.
       container
           .read(overlayVisibilityProvider.notifier)
           .setPageOpenForOwner(Object(), isOpen: true);
+      // A sheet owner alongside it, to prove the recovery is scoped to pages.
       container
           .read(overlayVisibilityProvider.notifier)
           .setBottomSheetOpenForOwner(Object(), isOpen: true);
@@ -358,8 +424,12 @@ void main() {
       );
       expect(
         container.read(overlayVisibilityProvider).isBottomSheetOpen,
-        isFalse,
-        reason: 'a stranded bottom-sheet flag keeps the home feed paused',
+        isTrue,
+        reason:
+            'the shell recovery is page-scoped: a sheet token is released by '
+            'its own route dismiss callback and cannot strand the way a '
+            'go()-removed page token does, so clearing it here would only ever '
+            'destroy a live hold',
       );
     },
   );

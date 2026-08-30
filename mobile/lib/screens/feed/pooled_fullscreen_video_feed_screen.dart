@@ -27,7 +27,6 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
@@ -432,7 +431,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 }
 
 class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
-    with RouteAware, WidgetsBindingObserver {
+    with WidgetsBindingObserver {
   late final ValueNotifier<double> _pagePosition;
   final _feedVideosKey = GlobalKey<FeedVideosState>();
 
@@ -468,16 +467,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   final FeedImmersiveCubit _immersiveCubit = FeedImmersiveCubit();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to route changes to pause/resume when navigating away
-    final route = ModalRoute.of(context);
-    if (route is PageRoute) {
-      routeObserver.subscribe(this, route);
-    }
-  }
-
-  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
@@ -488,7 +477,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    routeObserver.unsubscribe(this);
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     unawaited(_immersiveCubit.close());
