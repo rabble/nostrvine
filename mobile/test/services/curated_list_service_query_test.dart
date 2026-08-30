@@ -523,10 +523,10 @@ void main() {
         final results = service.searchLists('even');
 
         // Exactly the 25 even-numbered lists, and none of the odd ones.
-        expect(
-          results.map((list) => list.name).toSet(),
-          {for (var i = 0; i < 50; i += 2) 'List $i'},
-        );
+        expect(results, hasLength(25));
+        expect(results.map((list) => list.name).toSet(), {
+          for (var i = 0; i < 50; i += 2) 'List $i',
+        });
       });
     });
 
@@ -534,9 +534,7 @@ void main() {
       test('finishes and releases the source subscription on EOSE', () async {
         void Function()? onEose;
         var canceled = false;
-        final source = StreamController<Event>(
-          onCancel: () => canceled = true,
-        );
+        final source = StreamController<Event>(onCancel: () => canceled = true);
         addTearDown(source.close);
         when(
           () => mockNostr.subscribe(
