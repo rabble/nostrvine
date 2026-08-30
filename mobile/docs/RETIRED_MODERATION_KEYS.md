@@ -26,15 +26,23 @@ moderation key is not one revocation:
 | Role | Revoked |
 |---|---|
 | Moderation DM + label signing identity | 2026-03-15, `divinevideo/divine-moderation-service#31` |
-| Relay admin pubkey | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production Funnelcake API and relay overlays |
+| Funnelcake `ADMIN_PUBKEYS`, in the relay and API overlays | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production overlays |
 | NIP-32 labeler this app subscribed to | 2026-03-20, `divinevideo/divine-mobile#2321` — plus `ModerationLabelService._migrateLegacyPubkey`, which unsubscribes it on every init |
 
 `divinevideo/divine-mobile#2321` is frequently cited as the retirement. It is
 not — it is the client catching up five days later. The key stopped being the
 moderation account on 2026-03-15.
 
+Do not read that middle row as the relay admin key. `divine-iac-coreconfig#280`
+uses "relay admin pubkey" for a *different* identity —
+`81549bc0b5153b4b970fe4a3892ad185698b8b8b26ec69321a527d0644cd2898` — and says
+in the same breath that it is **unchanged** by the rotation. What `121b915b…`
+held was Funnelcake's `ADMIN_PUBKEYS` allowlist, which happens to be applied to
+the relay and API overlays. A rotation that goes looking for "the relay admin
+key" will find `81549bc0…` and rotate the wrong thing.
+
 Funnelcake's `nostr.trusted_labelers` and `nostr.moderation_sources` tables are
-a separate trust surface from the relay-admin list. Their configured identity
+a separate trust surface again, from both of those. Their configured identity
 currently differs from the user-facing moderation account; whether that is an
 intentional automated role or drift is tracked in
 `divinevideo/divine-mobile#8253`. A rotation must audit and reconcile those
@@ -77,7 +85,8 @@ The client half is small and belongs in one PR:
 1. Add the outgoing pubkey to `kLegacyModerationPubkeys`, with a comment
    naming the rotation commit and date.
 2. Add a row to [the register](#the-register) above, including every role the
-   key held — check for relay admin and labeler roles, not just DM signing.
+   key held — check Funnelcake's `ADMIN_PUBKEYS` and the labeler roles, not
+   just DM signing.
 3. Update `kModerationPubkeyHex` to the incoming shared support key. This is a
    mandatory routing change: the constant is the report target, pinned support
    row destination, protected-minor gate anchor, unread partition, retired
@@ -87,9 +96,9 @@ The client half is small and belongs in one PR:
 4. Confirm `ModerationLabelService._migrateLegacyPubkey` covers the new entry
    — it reads the list, so it does, but the test should say so.
 
-The service and infrastructure half — rotating the signing key, updating the
-relay admin list, republishing kind-0 and kind-10050, repointing NIP-05, and
-auditing Funnelcake's `nostr.trusted_labelers` and
+The service and infrastructure half — rotating the signing key, updating
+Funnelcake's `ADMIN_PUBKEYS` allowlist, republishing kind-0 and kind-10050,
+repointing NIP-05, and auditing Funnelcake's `nostr.trusted_labelers` and
 `nostr.moderation_sources` — lives outside this repo. Do not assume those trust
 tables must use the user-facing support key: reconcile them with the approved
 human-support and automated-labeler roles in `divinevideo/divine-mobile#8253`.
