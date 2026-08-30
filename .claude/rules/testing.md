@@ -652,6 +652,9 @@ test, verifies each shared channel still carries its canonical handler
 going through `overrideSharedChannel`, the harness **heals** it (reinstalls
 canonical so the next suite is safe) and, under the `DIVINE_STRICT_CHANNELS`
 build flag (`--dart-define=DIVINE_STRICT_CHANNELS=true`), **fails** the
-perpetrating test with a fix recipe. Compliant tests never trip it. A static
+perpetrating test with a fix recipe. Compliant tests never trip it.
+**Mobile CI and `mise run test` both set that flag**, so a leak fails your PR
+rather than being healed into someone else's suite; a bare
+`flutter test <file>` leaves it off and heals silently. A static
 `check_shared_channel_overrides.sh` ratchet additionally freezes the set of
 files that raw-install a shared channel, so new ones must use the helper.

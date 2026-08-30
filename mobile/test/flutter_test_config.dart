@@ -16,8 +16,9 @@ const _runGoldenSetup = bool.fromEnvironment('DIVINE_GOLDEN_TESTS');
 
 /// When set (via `--dart-define=DIVINE_STRICT_CHANNELS=true`), the
 /// heal-and-blame tearDown also `fail()`s the test that leaked a shared
-/// channel. Off by default so the harness heals silently locally; CI can flip
-/// it on once the full suite is proven clean under it (#5738).
+/// channel. Mobile CI and `mise run test` both set it — the suite was proven
+/// clean under it, which was the condition for turning it on (#5738). It stays
+/// off for a bare `flutter test` so a single-file run still heals silently.
 const _strictChannels = bool.fromEnvironment('DIVINE_STRICT_CHANNELS');
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
