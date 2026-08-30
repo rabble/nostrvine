@@ -15,7 +15,7 @@ Read this before adding an entry.
 
 | Pubkey | Retired | Rotated by |
 |---|---|---|
-| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-15 | An operational secret change, carrying no PR of its own — see below |
+| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-12 | An operational secret change, carrying no PR of its own — see below |
 
 ### `121b915b…`
 
@@ -25,30 +25,53 @@ moderation key is not one revocation:
 
 | Role | Revoked |
 |---|---|
-| Moderation DM + label signing identity | 2026-03-15, the secret rotation itself |
-| Funnelcake `ADMIN_PUBKEYS`, in the relay and API overlays | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production overlays |
+| Moderation DM, label, and report signing identity | 2026-03-12 by the secret rotation itself — though only for labels and reports; the DM half is unverifiable, see below |
+| Funnelcake `RELAY_PUBKEY`, plus one of the two `ADMIN_PUBKEYS` entries | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production overlays |
 | NIP-32 labeler this app subscribed to | 2026-03-20, `divinevideo/divine-mobile#2321` — plus `ModerationLabelService._migrateLegacyPubkey`, which unsubscribes it on every init |
 
-`divinevideo/divine-mobile#2321` is frequently cited as the retirement. It is
-not — it is the client catching up five days later. The key stopped being the
-moderation account on 2026-03-15.
+#### Dating the rotation
 
-Neither is `divinevideo/divine-moderation-service#31` the retirement, and it is
-the easier mistake to make because it lands on the right date. The rotation was
-an operational secret change with no PR of its own. #31 (`8dd56cbc9`, merged
-the same day) is the cleanup *after* it: it removed the superseded
-`MODERATOR_NSEC` path and fixed the label publishing that the rotation had just
-broken. Its own summary dates the rotation to "today" and describes the
-breakage as running "since the key rotation". Cite #31 to date the rotation,
-never as the act that performed it.
+No PR performed it, so every PR this gets credited to is the wrong answer. The
+rotation was a secret change, and neither key appears anywhere in
+`divine-moderation-service`'s history — `git log --all -S<hex>` returns nothing
+for either. What *can* be dated, in UTC:
 
-Do not read that middle row as the relay admin key. `divine-iac-coreconfig#280`
-uses "relay admin pubkey" for a *different* identity —
-`81549bc0b5153b4b970fe4a3892ad185698b8b8b26ec69321a527d0644cd2898` — and says
-in the same breath that it is **unchanged** by the rotation. What `121b915b…`
-held was Funnelcake's `ADMIN_PUBKEYS` allowlist, which happens to be applied to
-the relay and API overlays. A rotation that goes looking for "the relay admin
-key" will find `81549bc0…` and rotate the wrong thing.
+| When | What |
+|---|---|
+| 2026-03-12 22:50:41 | The incoming key's kind-0 is signed and published to `relay.divine.video` (`17e11af3…`) |
+| 2026-03-12 22:54:42 | `divine-iac-coreconfig#280` is opened, recording NIP-05 as already repointed, kind-0 as published, and the incoming key as verified through moderation-service's debug endpoint — which derived its answer from `NOSTR_PRIVATE_KEY` alone |
+| 2026-03-13 01:57:35 | `divine-moderation-service#31` is authored, describing label publishing as broken "since the key rotation" |
+| 2026-03-15 15:39:37 | #31 merges |
+| 2026-03-17 15:32:10 | #280 merges |
+| 2026-03-20 14:54:11 | `divine-mobile#2321` merges |
+
+The signing secret therefore already resolved to the incoming key on
+**2026-03-12** — three days before the earliest PR this is usually credited to,
+and eight before the latest.
+
+Both of the usual citations name a merge date rather than the act:
+
+- `divine-mobile#2321` (2026-03-20) is the client catching up, eight days late.
+- `divine-moderation-service#31` (2026-03-15) is the cleanup. It removed the
+  superseded `MODERATOR_NSEC` path and fixed the label publishing the rotation
+  had just broken. Its own text dates the rotation to "today" — and it was
+  written on the 13th, not the 15th it merged on.
+
+One part is genuinely unrecoverable. DM signing read `MODERATOR_NSEC`, a secret
+with no git trace, so whether the DM role moved on the 12th with everything
+else or lingered until #31 removed that path on the 15th cannot be established
+from any repo. Labels and reports are pinned to the 12th; treat the DM half as
+"on or before 2026-03-15".
+
+Do not read that middle row as "the relay admin key", despite `RELAY_PUBKEY`.
+`divine-iac-coreconfig#280` uses the phrase *relay admin pubkey* for a
+different identity —
+`81549bc0b5153b4b970fe4a3892ad185698b8b8b26ec69321a527d0644cd2898` — and states
+in the same PR that it is **unchanged** by the rotation. `ADMIN_PUBKEYS` was a
+two-entry list holding both keys, and only the `121b915b…` entry was replaced;
+`81549bc0…` sits untouched on both sides of every edit. So a rotation that goes
+looking for "the relay admin key" finds `81549bc0…` and changes the wrong
+thing. Match on the variable name, not the prose.
 
 Funnelcake's `nostr.trusted_labelers` and `nostr.moderation_sources` tables are
 a third trust surface, distinct from both of the above. Their configured
