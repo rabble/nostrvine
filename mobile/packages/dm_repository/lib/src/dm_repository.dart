@@ -327,8 +327,8 @@ class DmRepository {
     DmRepositoryErrorReporter? errorReporter,
     DmReactionsRepository? reactionsRepository,
     DmConversationRemovalPolicy? removalPolicy,
-    bool publishDmRelayListEnabled = false,
     String? dmInboxRelayUrl,
+    List<String> dmInboxDiscoveryRelays = const <String>[],
     Duration readMarkerDebounceDelay = _defaultReadMarkerDebounceDelay,
     String Function()? sendBatchIdGenerator,
   }) : _nostrClient = nostrClient,
@@ -350,8 +350,8 @@ class DmRepository {
        _errorReporter = errorReporter,
        _reactionsRepository = reactionsRepository,
        _removalPolicy = removalPolicy ?? allowAllConversationRemoval,
-       _publishDmRelayListEnabled = publishDmRelayListEnabled,
        _dmInboxRelayUrl = dmInboxRelayUrl,
+       _dmInboxDiscoveryRelays = dmInboxDiscoveryRelays,
        _newSendBatchId = sendBatchIdGenerator ?? _defaultSendBatchId;
 
   final NostrClient _nostrClient;
@@ -420,18 +420,25 @@ class DmRepository {
   /// identities via `dmRepositoryProvider`.
   final DmConversationRemovalPolicy _removalPolicy;
 
-  /// Feature gate for #4974 RC3 (self-publishing the user's own kind-10050 DM
-  /// inbox relay list on login). Defaults to `false` so the publish stays
-  /// inert until the backend relay accepts the kind; the app flips it on via
-  /// `FeatureFlag.publishDmRelayList`. While `false`,
-  /// [ensureDmRelayListPublished] is a no-op — no signer round-trip fires.
-  final bool _publishDmRelayListEnabled;
-
-  /// The stable relay URL advertised by the RC3 kind-10050 publish (the
+  /// The stable relay URL advertised by the kind-10050 publish (the
   /// environment's canonical DM relay, mirroring the kind-10002 bootstrap).
-  /// `null` in fixtures that don't exercise RC3; when `null`,
+  /// `null` in fixtures that don't exercise the publish; when `null`,
   /// [ensureDmRelayListPublished] is a no-op (nothing to advertise).
+  ///
+  /// This is both the sole `relay` tag in the published list and the relay
+  /// whose `OK` decides success — it is where divine actually reads.
   final String? _dmInboxRelayUrl;
+
+  /// Extra relays the kind-10050 EVENT is published to so third-party senders
+  /// can discover it. They are publish targets only and never appear as
+  /// `relay` tags: the list's contents stay at one relay, per NIP-17's
+  /// "keep kind:10050 lists small (1-3 relays)", while NIP-17's "SHOULD spread
+  /// them to as many relays as viable" is satisfied by where the event lands.
+  ///
+  /// Best-effort by construction. A relay here that refuses kind 10050 is
+  /// logged once and otherwise ignored: it neither fails the publish nor
+  /// blocks the idempotence flag, so it can never cause a republish loop.
+  final List<String> _dmInboxDiscoveryRelays;
 
   /// Mints the durable, collision-proof identity for one send invocation.
   /// Group sends share it across the fan-out. Injected so tests can pin a
@@ -3492,11 +3499,17 @@ class DmRepository {
   /// Publishes a minimal NIP-17 kind-10050 DM inbox relay list for the
   /// current user when they don't already advertise one, so compliant
   /// senders deliver gift-wrapped DMs to the relay where divine receives
-  /// them (#4974 RC3).
+  /// them (#4974, #7336).
   ///
-  /// Gated behind the injected `publishDmRelayListEnabled` flag: while it is
-  /// off (the default, until the backend relay accepts kind-10050) this is a
-  /// no-op — no signer round-trip fires on login.
+  /// Without this, NIP-17 §Publishing makes a divine account undeliverable to
+  /// any spec-following sender: "If such a list is not found that indicates
+  /// the user is not ready to receive messages and clients shouldn't try."
+  /// Absence is a positive signal of unreadiness, not "unknown, try the
+  /// defaults" — and the sender sees nothing worth surfacing, so the divine
+  /// user never learns a message was withheld.
+  ///
+  /// Published to [_dmInboxRelayUrl] plus [_dmInboxDiscoveryRelays]; only the
+  /// first is tagged, and only its `OK` counts as success.
   ///
   /// Publish-when-absent: a kind-10050 the user advertised from any client is
   /// left untouched. The own-inbox lookup distinguishes `found` / `absent` /
@@ -3512,15 +3525,15 @@ class DmRepository {
   /// bounded: this method returns early once `dmRelayListPublished` is set, so
   /// it runs at most once per (device, pubkey), and it is never awaited by
   /// login. Idempotent per (device, pubkey) via
-  /// `DmSyncState.dmRelayListPublished`, with the flag set ONLY on a confirmed
-  /// relay `OK`. A relay that rejects kind-10050 or a slow/failed signer
-  /// leaves the flag unset and the next login retries — the publish never
-  /// blocks login and self-heals once the backend accepts the kind.
+  /// `DmSyncState.dmRelayListPublished`, with the flag set ONLY once
+  /// [_dmInboxRelayUrl] itself confirms `OK`. A rejection there, or a
+  /// slow/failed signer, leaves the flag unset and the next login retries —
+  /// the publish never blocks login and self-heals.
   ///
-  /// No-op when the feature is off, when uninitialized, when no signer / sync
-  /// state is wired, or when no valid advertised relay URL is configured.
+  /// No-op when uninitialized, when no signer / sync state is wired, or when
+  /// no valid advertised relay URL is configured.
   Future<void> ensureDmRelayListPublished() async {
-    if (!_publishDmRelayListEnabled || !isInitialized) return;
+    if (!isInitialized) return;
     final syncState = _syncState;
     final signer = _signer;
     final relayUrl = _dmInboxRelayUrl;
@@ -3574,17 +3587,39 @@ class DmRepository {
       if (signed == null || signed.sig.isEmpty) return;
       if (_disposed || _resetGeneration != gen) return;
 
+      // Publish to the advertised relay AND the discovery relays. An
+      // env-locked build drops the latter in `NostrClient._allowedRelays`, so
+      // a LOCAL run still targets only its own relay.
+      final discoveryTargets = _dmInboxDiscoveryRelays
+          .where(isRelayUrlAllowed)
+          .toList();
       final outcome = await _nostrClient.publishEventAwaitOk(
         signed,
-        targetRelays: <String>[relayUrl],
+        targetRelays: <String>[relayUrl, ...discoveryTargets],
       );
       if (_disposed || _resetGeneration != gen) return;
-      if (outcome.acceptedBy.isEmpty) {
+      // Success is the advertised relay's own `OK`, not "something accepted".
+      // A discovery relay accepting while divine's relay refused would mark
+      // the list published and stop retrying, leaving the one relay divine
+      // reads from without it.
+      if (!outcome.acceptedBy.contains(relayUrl)) {
         Log.warning(
-          'kind-10050 publish: no relay accepted — will retry next login',
+          'kind-10050 publish: $relayUrl did not accept '
+          '(${outcome.rejectedBy[relayUrl] ?? 'no response'}) — will retry '
+          'next login',
           category: LogCategory.system,
         );
         return;
+      }
+      for (final url in discoveryTargets) {
+        if (outcome.acceptedBy.contains(url)) continue;
+        // Best-effort by design: discoverability only. Logged so a relay
+        // changing its kind policy is visible in a bug report, never retried.
+        Log.warning(
+          'kind-10050 discovery publish to $url did not land '
+          '(${outcome.rejectedBy[url] ?? 'no response'}) — not retried',
+          category: LogCategory.system,
+        );
       }
 
       await syncState.markDmRelayListPublished(pubkey);

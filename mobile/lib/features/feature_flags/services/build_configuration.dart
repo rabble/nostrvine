@@ -34,9 +34,6 @@ class BuildConfiguration {
         );
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
-      case FeatureFlag.publishDmRelayList:
-        // Default OFF until the backend relay accepts kind-10050 (#4974 RC3).
-        return const bool.fromEnvironment('FF_PUBLISH_DM_RELAY_LIST');
       case FeatureFlag.feedTuning:
         // TODO(#6649): Re-promote after divine-funnelcake#691 ships.
         return const bool.fromEnvironment('FF_FEED_TUNING');
@@ -100,8 +97,6 @@ class BuildConfiguration {
         return 'FF_VIDEO_REPLIES';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
-      case FeatureFlag.publishDmRelayList:
-        return 'FF_PUBLISH_DM_RELAY_LIST';
       case FeatureFlag.feedTuning:
         return 'FF_FEED_TUNING';
       case FeatureFlag.profileMonetizationLinks:

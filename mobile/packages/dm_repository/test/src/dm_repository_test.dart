@@ -819,10 +819,10 @@ void main() {
       NostrSigner? signer,
       DmDecryptIsolateSpawner? decryptIsolateSpawner,
       DmVerifyIsolateSpawner? verifyIsolateSpawner,
-      // #4974 RC3: default the feature on + inject a stable relay so the
-      // existing RC3 tests exercise the publish path; gating tests override.
-      bool publishDmRelayListEnabled = true,
+      // #4974: inject a stable advertised relay so the publish tests exercise
+      // the real path; tests that assert the unconfigured no-op pass null.
       String? dmInboxRelayUrl = 'wss://relay.divine.video',
+      List<String> dmInboxDiscoveryRelays = const <String>[],
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
       String Function()? sendBatchIdGenerator,
     }) {
@@ -848,8 +848,8 @@ void main() {
             verifyIsolateSpawner ?? () async => _RecordingVerifyWorker(),
         syncState: syncState,
         reactionsRepository: reactionsRepository,
-        publishDmRelayListEnabled: publishDmRelayListEnabled,
         dmInboxRelayUrl: dmInboxRelayUrl,
+        dmInboxDiscoveryRelays: dmInboxDiscoveryRelays,
         readMarkerDebounceDelay: readMarkerDebounceDelay,
         sendBatchIdGenerator: sendBatchIdGenerator,
         errorReporter: (error, stackTrace, {required site}) {
@@ -4745,6 +4745,22 @@ void main() {
         noResponseFrom: const [],
       );
 
+      /// An outcome where each of [acceptedBy] said `OK true` and every other
+      /// target rejected with a kind-policy message, the way `relay.nos.social`
+      /// and `user.kindpag.es` answer a kind-10050 today.
+      PublishOutcome partialOutcome({
+        required List<String> targets,
+        required List<String> acceptedBy,
+      }) => PublishOutcome(
+        eventId: 'eid',
+        acceptedBy: acceptedBy,
+        rejectedBy: {
+          for (final url in targets)
+            if (!acceptedBy.contains(url)) url: 'blocked: kind not allowed',
+        },
+        noResponseFrom: const [],
+      );
+
       test(
         'publishes a kind-10050 advertising the injected stable relay when '
         'absent and records the flag on a confirmed OK',
@@ -4779,6 +4795,148 @@ void main() {
           );
         },
       );
+
+      group('discovery relays (#7336)', () {
+        const divine = 'wss://relay.divine.video';
+        const discovery = 'wss://purplepag.es';
+
+        test(
+          'publishes to the advertised relay AND the discovery relays, but '
+          'tags only the advertised one',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [divine, discovery],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            final captured = verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                captureAny(),
+                targetRelays: captureAny(named: 'targetRelays'),
+              ),
+            ).captured;
+            // Where the EVENT lands is wide (NIP-17: "SHOULD spread them to as
+            // many relays as viable"); what the LIST names stays at one
+            // ("keep kind:10050 lists small (1-3 relays)"). A discovery relay
+            // is not somewhere divine reads, so tagging it would send senders
+            // to a relay nothing drains.
+            expect((captured[0] as Event).tags, [
+              ['relay', divine],
+            ]);
+            expect(captured[1], [divine, discovery]);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a discovery relay refusing the kind is best-effort — the list is '
+          'still published',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [divine],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // Discovery is a bonus, not a precondition: a third-party relay
+            // changing its kind policy must never put every account into a
+            // republish loop on each login.
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a discovery relay accepting does NOT stand in for the advertised '
+          'relay refusing — retries next login',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [discovery],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // "Something accepted" is the wrong bar. The advertised relay is
+            // the one divine drains, so a list that never reached it leaves
+            // the account undeliverable while the flag says it is done.
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
+
+        test(
+          'drops a discovery relay whose URL is not a usable relay',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer((_) async => outcome(accepted: true));
+
+            final repository = createRepository(
+              syncState: _FakeDmSyncState(),
+              dmInboxDiscoveryRelays: const [
+                'http://not-a-relay.example',
+                discovery,
+              ],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            final captured = verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: captureAny(named: 'targetRelays'),
+              ),
+            ).captured;
+            expect(captured.single, [divine, discovery]);
+          },
+        );
+      });
 
       test(
         'does NOT record the flag when no relay accepts — retries next login',
@@ -4889,11 +5047,11 @@ void main() {
         );
       });
 
-      test('is a no-op when the feature flag is off', () async {
+      test('is a no-op when no advertised relay is configured', () async {
         final syncState = _FakeDmSyncState();
         final repository = createRepository(
           syncState: syncState,
-          publishDmRelayListEnabled: false,
+          dmInboxRelayUrl: null,
         );
         await repository.ensureDmRelayListPublished();
 
