@@ -309,7 +309,7 @@ class _ProfileContent extends StatelessWidget {
     // table is down" are indistinguishable. The repository already withholds
     // a zero follower/following count for that reason; videos get the same
     // treatment here (#7486).
-    final followerCount = stats?.followers;
+    final followerCount = (stats?.followers ?? 0) > 0 ? stats!.followers : null;
     final videoCount = (stats?.videoCount ?? 0) > 0 ? stats!.videoCount : null;
 
     // The sender of a message request is never the viewer, so the owner

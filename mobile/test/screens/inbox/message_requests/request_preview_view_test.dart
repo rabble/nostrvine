@@ -284,6 +284,15 @@ void main() {
         expect(find.textContaining('Follower'), findsNothing);
       });
 
+      testWidgets('omits the follower count when it is zero', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(statsWith(followers: 0, videoCount: 3)),
+        );
+
+        expect(find.textContaining('Follower'), findsNothing);
+      });
+
       testWidgets('omits loops below the visibility floor', (tester) async {
         await pumpStats(
           tester,
