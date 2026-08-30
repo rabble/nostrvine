@@ -510,8 +510,8 @@ void main() {
         expect(tags.contains(''), isTrue); // Service doesn't filter empty tags
       });
 
-      test('search performance with many lists', () async {
-        // Create 50 lists
+      test('matches on description across a large list set', () async {
+        // Create 50 lists; only the even-numbered ones are described 'even'.
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
@@ -520,15 +520,13 @@ void main() {
           );
         }
 
-        final stopwatch = Stopwatch()..start();
         final results = service.searchLists('even');
-        stopwatch.stop();
 
-        expect(
-          results.length,
-          greaterThanOrEqualTo(25),
-        ); // Should find at least 25
-        expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
+        // Exactly the 25 even-numbered lists, and none of the odd ones.
+        expect(results, hasLength(25));
+        expect(results.map((list) => list.name).toSet(), {
+          for (var i = 0; i < 50; i += 2) 'List $i',
+        });
       });
     });
 
@@ -536,9 +534,7 @@ void main() {
       test('finishes and releases the source subscription on EOSE', () async {
         void Function()? onEose;
         var canceled = false;
-        final source = StreamController<Event>(
-          onCancel: () => canceled = true,
-        );
+        final source = StreamController<Event>(onCancel: () => canceled = true);
         addTearDown(source.close);
         when(
           () => mockNostr.subscribe(

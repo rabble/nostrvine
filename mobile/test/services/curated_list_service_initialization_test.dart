@@ -284,13 +284,28 @@ void main() {
           prefs: prefs,
         );
 
-        // Initialize should complete quickly
-        final stopwatch = Stopwatch()..start();
-        await service.initialize();
-        stopwatch.stop();
+        // The property under test is that initialize() does not wait on the
+        // relay. Nothing completes relayResponseCompleter until further down,
+        // so a version that waited would hang here; the timeout turns that
+        // into a fast, attributable failure rather than a stalled suite. It
+        // is a liveness bound, not a performance budget — do not tighten it
+        // toward the observed runtime.
+        await service.initialize().timeout(const Duration(seconds: 5));
 
-        expect(stopwatch.elapsedMilliseconds, lessThan(100));
         expect(service.isInitialized, isTrue);
+
+        final relayListMerged = Completer<void>();
+        void completeWhenRelayListIsMerged() {
+          if (!relayListMerged.isCompleted &&
+              service.lists.any((list) => list.id == 'relay_list_id')) {
+            relayListMerged.complete();
+          }
+        }
+
+        service.addListener(completeWhenRelayListIsMerged);
+        addTearDown(
+          () => service.removeListener(completeWhenRelayListIsMerged),
+        );
 
         // Now simulate relay returning a new list
         final relayEvent = Event.fromJson({
@@ -308,11 +323,11 @@ void main() {
 
         relayResponseCompleter.complete(relayEvent);
 
-        // Give time for background sync to process
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // The relay list should now be merged into local lists
-        // (This tests that background sync is working)
+        await relayListMerged.future.timeout(const Duration(seconds: 5));
+        expect(
+          service.lists.singleWhere((list) => list.id == 'relay_list_id').name,
+          'List From Relay',
+        );
       },
     );
   });
