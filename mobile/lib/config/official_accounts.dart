@@ -139,8 +139,9 @@ const Set<String> kDivineTeamPubkeys = {
 /// ([isRetiredModerationAccount]), and for the `ModerationLabelService`
 /// subscription migration.
 ///
-/// Every entry carries its rotation commit and date below. The register of
-/// what each key was, the roles it held, and what a rotation has to do is
+/// Every entry carries its rotation date and what performed it below — which
+/// may be no commit at all. The register of what each key was, the roles it
+/// held, and what a rotation has to do is
 /// `mobile/docs/RETIRED_MODERATION_KEYS.md` — read it before adding one.
 const List<String> kLegacyModerationPubkeys = [
   // Retired 2026-03-12 by an operational secret rotation, after the service

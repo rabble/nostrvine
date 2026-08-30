@@ -116,7 +116,9 @@ is tracked in `divinevideo/divine-mobile#8355`.
 The client half is small and belongs in one PR:
 
 1. Add the outgoing pubkey to `kLegacyModerationPubkeys`, with a comment
-   naming the rotation commit and date.
+   naming the date and what performed the rotation — date it from the act,
+   not from the merge of whatever PR cleaned up after it, and expect that
+   there may be no commit to name at all.
 2. Add a row to [the register](#the-register) above, including every role the
    key held — check Funnelcake's `ADMIN_PUBKEYS` and the labeler roles, not
    just DM signing.
