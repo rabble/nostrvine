@@ -141,6 +141,9 @@ void main() {
     group('auth guard', () {
       test('returns VideoUpdateFailure when not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockAuthService.authState,
+        ).thenReturn(AuthState.unauthenticated);
 
         final result = await service.updateVideo(
           originalVideo: _testVideo(),
