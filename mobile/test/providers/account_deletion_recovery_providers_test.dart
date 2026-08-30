@@ -68,7 +68,7 @@ void main() {
       },
     );
 
-    test('lookup stays fail-closed while signing is unavailable', () async {
+    test('lookup stays fail-closed while signing warms up', () async {
       final repository = _MockDeletionRepository();
       final authService = _MockAuthService();
       when(
