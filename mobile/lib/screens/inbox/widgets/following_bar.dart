@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -84,6 +85,7 @@ class _FollowingUserButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
+    final isResolving = ref.watch(profileIdentityResolvingProvider(pubkey));
 
     // A vanish cannot rewrite the viewer's own contact list, so the account
     // stays in this bar. Show it as deleted rather than under a stale name.
@@ -96,7 +98,11 @@ class _FollowingUserButton extends ConsumerWidget {
       pubkeyHex: pubkey,
       isVanished: isDeleted,
       profile: profileAsync.asData?.value,
+      isResolving: isResolving,
     );
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(pubkey)
+        : displayName;
 
     final imageUrl = isDeleted
         ? null
@@ -113,33 +119,36 @@ class _FollowingUserButton extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 8,
           children: [
-            UserAvatar(
-              imageUrl: imageUrl,
-              name: displayName,
-              placeholderSeed: pubkey,
-              size: 48,
+            IdentitySkeletonizer(
+              isLoading: isResolving,
+              child: UserAvatar(
+                imageUrl: imageUrl,
+                name: visualDisplayName,
+                placeholderSeed: pubkey,
+                size: 48,
+              ),
             ),
-            Text(
-              displayName,
-              textScaler: TextScaler.noScaling,
-              style:
-                  VineTheme.bodySmallFont(
-                    color: context.vineColors.onSurfaceVariant,
-                  ).copyWith(
-                    fontSize:
-                        MediaQuery.textScalerOf(
-                              context,
-                            )
-                            .scale(
-                              VineTheme.bodySmallFont(
-                                color: context.vineColors.primaryText,
-                              ).fontSize!,
-                            )
-                            .clamp(0, 18),
-                  ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            IdentitySkeletonizer(
+              isLoading: isResolving,
+              child: Text(
+                visualDisplayName,
+                textScaler: TextScaler.noScaling,
+                style:
+                    VineTheme.bodySmallFont(
+                      color: context.vineColors.onSurfaceVariant,
+                    ).copyWith(
+                      fontSize: MediaQuery.textScalerOf(context)
+                          .scale(
+                            VineTheme.bodySmallFont(
+                              color: context.vineColors.primaryText,
+                            ).fontSize!,
+                          )
+                          .clamp(0, 18),
+                    ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

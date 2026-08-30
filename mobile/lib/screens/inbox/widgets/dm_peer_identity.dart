@@ -57,6 +57,7 @@ String dmPeerDisplayName(
   required bool isVanished,
   UserProfile? profile,
   String? displayNameOverride,
+  bool isResolving = false,
 }) => dmPeerName(
   pubkeyHex: pubkeyHex,
   isVanished: isVanished,
@@ -64,4 +65,5 @@ String dmPeerDisplayName(
   labels: dmPeerLabels(context),
   profileName: profile?.bestDisplayName,
   displayNameOverride: displayNameOverride,
+  isResolving: isResolving,
 );

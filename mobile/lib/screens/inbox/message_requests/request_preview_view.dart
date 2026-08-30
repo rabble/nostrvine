@@ -100,6 +100,9 @@ class RequestPreviewView extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
     final profile = profileAsync.asData?.value;
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
 
     // Same treatment as [ConversationTile]. This screen also links straight
     // through to [OtherProfileScreen], which already names a vanished account
@@ -120,12 +123,29 @@ class RequestPreviewView extends ConsumerWidget {
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       profile: visibleProfile,
+      isResolving: isResolving,
     );
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     return Scaffold(
       backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
-        title: displayName,
+        title: isResolving ? null : displayName,
+        titleWidget: isResolving
+            ? IdentitySkeletonizer(
+                isLoading: true,
+                child: Text(
+                  visualDisplayName,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            : null,
         showBackButton: true,
         // Same one-entry-stack exposure as the unresolved states below:
         // `loading` is only the first frame of a cold deep-link entry, and
@@ -143,6 +163,7 @@ class RequestPreviewView extends ConsumerWidget {
                 currentPubkey: currentPubkey,
                 messageCount: messageCount,
                 messages: messages,
+                isResolving: isResolving,
               ),
             ),
             _ActionButtons(
@@ -256,6 +277,7 @@ class _ProfileContent extends StatelessWidget {
     required this.currentPubkey,
     required this.messageCount,
     required this.messages,
+    required this.isResolving,
   });
 
   final String displayName;
@@ -264,9 +286,13 @@ class _ProfileContent extends StatelessWidget {
   final String currentPubkey;
   final int messageCount;
   final List<DmMessage> messages;
+  final bool isResolving;
 
   @override
   Widget build(BuildContext context) {
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
     final imageUrl = profile?.picture;
     final nip05 = profile?.shortDisplayNip05;
     final followerCount = profile?.followerCount;
@@ -280,24 +306,30 @@ class _ProfileContent extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              UserAvatar(
-                imageUrl: imageUrl,
-                name: displayName,
-                placeholderSeed: otherPubkey,
-                size: 96,
-                contentOverride: isModerationAccount(otherPubkey)
-                    ? const ModerationAvatar()
-                    : null,
+              IdentitySkeletonizer(
+                isLoading: isResolving,
+                child: UserAvatar(
+                  imageUrl: imageUrl,
+                  name: visualDisplayName,
+                  placeholderSeed: otherPubkey,
+                  size: 96,
+                  contentOverride: isModerationAccount(otherPubkey)
+                      ? const ModerationAvatar()
+                      : null,
+                ),
               ),
               const SizedBox(height: 32),
-              Text(
-                displayName,
-                style: VineTheme.titleLargeFont(
-                  color: context.vineColors.primaryText,
+              IdentitySkeletonizer(
+                isLoading: isResolving,
+                child: Text(
+                  visualDisplayName,
+                  style: VineTheme.titleLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               if (nip05 != null && nip05.isNotEmpty) ...[
                 const SizedBox(height: 4),

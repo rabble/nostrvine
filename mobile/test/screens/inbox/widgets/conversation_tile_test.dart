@@ -12,6 +12,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -121,6 +122,54 @@ void main() {
 
         expect(find.text('Alice'), findsOneWidget);
       });
+
+      testWidgets(
+        'uses a loading identity before revealing the generated fallback',
+        (tester) async {
+          final testConversation = createTestConversation();
+          final generatedName = UserProfile.defaultDisplayNameFor(otherPubkey);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                profileIdentityResolvingProvider(
+                  otherPubkey,
+                ).overrideWithValue(true),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(tileSemantics(tester).label, contains('Loading'));
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => skeletonizer.enabled),
+            isTrue,
+          );
+
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+
+          expect(find.text(generatedName), findsOneWidget);
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => !skeletonizer.enabled),
+            isTrue,
+          );
+        },
+      );
 
       testWidgets('paints a brand-green heart in a display name', (
         tester,

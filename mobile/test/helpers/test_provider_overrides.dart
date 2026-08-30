@@ -433,6 +433,10 @@ List<dynamic> getStandardTestOverrides({
     // again with `additionalOverrides`.
     profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
     profileVanishedSnapshotProvider.overrideWith((ref, pubkey) async => false),
+    // Existing widget fixtures provide profiles through their original
+    // reactive/one-shot provider. Keep the new derived loading signal settled
+    // by default; loading-specific tests override this provider explicitly.
+    profileIdentityResolvingProvider.overrideWith((ref, pubkey) => false),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)

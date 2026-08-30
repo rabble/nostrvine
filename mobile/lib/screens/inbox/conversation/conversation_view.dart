@@ -160,6 +160,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
     // The conversation and its history remain readable — they are the viewer's
     // own copy of messages a NIP-62 vanish cannot retract. Only the header
     // identity changes.
@@ -171,7 +174,11 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       profile: profile,
+      isResolving: isResolving,
     );
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
     final claimedNip05 = profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
@@ -251,6 +258,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                       children: [
                         ConversationAppBar(
                           displayName: displayName,
+                          isResolving: isResolving,
+                          loadingDisplayName: visualDisplayName,
                           handle: handle,
                           onBack: () => context.pop(),
                           onTitleTap: otherPubkey.isNotEmpty
@@ -280,6 +289,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
+                                  isResolving: isResolving,
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,
@@ -613,6 +623,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.isResolving,
     required this.reactionsEnabled,
     required this.sendRecoveryEnabled,
     this.imageUrl,
@@ -627,6 +638,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final bool isResolving;
   final bool reactionsEnabled;
 
   /// Whether tapping a failed own bubble may offer to resend it.
@@ -662,11 +674,14 @@ class _ConversationContent extends StatelessWidget {
           ConversationStatus.loaded =>
             selected.messages.isEmpty
                 ? EmptyConversation(
-                    displayName: displayName,
+                    displayName: isResolving
+                        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+                        : displayName,
                     pubkey: otherPubkey,
                     imageUrl: imageUrl,
                     nip05: nip05,
                     onViewProfile: onViewProfile,
+                    isIdentityResolving: isResolving,
                     mayBeIncomplete: context.select<DmRestoreStatusCubit, bool>(
                       (cubit) => cubit.state.mayBeIncomplete,
                     ),

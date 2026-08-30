@@ -77,6 +77,51 @@ void main() {
     });
   });
 
+  group('profileIdentityResolvingProvider', () {
+    test('stays resolving while the read repository is unavailable', () {
+      final container = ProviderContainer(
+        overrides: [profileReadRepositoryProvider.overrideWithValue(null)],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(profileIdentityResolvingProvider(pubkey)),
+        isTrue,
+      );
+    });
+
+    test('stops resolving after a fresh profile fetch settles', () async {
+      final profileRepository = _MockProfileRepository();
+      final fetch = Completer<UserProfile?>();
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).thenAnswer((_) => fetch.future);
+
+      final container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(profileIdentityResolvingProvider(pubkey)),
+        isTrue,
+      );
+
+      fetch.complete(null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(profileIdentityResolvingProvider(pubkey)),
+        isFalse,
+      );
+    });
+  });
+
   group('userProfileReactiveProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;
