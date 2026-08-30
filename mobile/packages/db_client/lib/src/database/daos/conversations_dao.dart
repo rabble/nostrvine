@@ -555,15 +555,4 @@ LIMIT 1
       updateKind: UpdateKind.update,
     );
   }
-
-  /// Returns the newest `last_message_timestamp` across all conversations
-  /// for the given owner, or `null` if no conversations exist.
-  Future<int?> getNewestMessageTimestamp({String? ownerPubkey}) async {
-    final maxCol = conversations.lastMessageTimestamp.max();
-    final query = selectOnly(conversations)
-      ..where(_ownedOrLegacy(conversations.ownerPubkey, ownerPubkey))
-      ..addColumns([maxCol]);
-    final result = await query.getSingleOrNull();
-    return result?.read(maxCol);
-  }
 }

@@ -574,13 +574,6 @@ void main() {
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
 
-      // Stub getNewestMessageTimestamp for startListening() windowing.
-      when(
-        () => mockConversationsDao.getNewestMessageTimestamp(
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => null);
-
       // Stub getAllConversations for _mergeDuplicateConversations().
       when(
         () => mockConversationsDao.getAllConversations(
