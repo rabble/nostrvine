@@ -2107,6 +2107,17 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
+        // Still advance the wire boundary. A duplicate is by definition a
+        // wrap we have processed, so its outer stamp belongs in the maximum
+        // this boundary tracks, and without this an install that upgraded
+        // into the #8209 fix keeps the old eroded window until its next
+        // genuinely new message — every wrap already in the window returns
+        // here first. Monotonic, so the drain replaying old pages cannot
+        // drag it backwards.
+        await _syncState?.recordWireSeen(
+          ownerPubkey,
+          createdAt: giftWrapEvent.createdAt,
+        );
         // History drain pass 2 re-routes already-persisted wraps through this
         // handler (preDecrypted miss). Per-wrap debug would fill the 50k
         // capture ring and evict the persist lines that diagnose #7631.
@@ -2973,6 +2984,13 @@ class DmRepository {
       // suppressed by a removed-conversation tombstone, so replays skip
       // decryption entirely — matching the terminal NIP-17 behavior. #7804.
       if (await _alreadyProcessed(nip04Event.id)) {
+        // Advance the wire boundary for the same reason the gift-wrap dedup
+        // path does. A kind 4 is its own envelope, so the stamp the relay
+        // filtered to deliver this replay is the event's own `created_at`.
+        await _syncState?.recordWireSeen(
+          _userPubkey,
+          createdAt: nip04Event.createdAt,
+        );
         if (_historyDrain == null) {
           Log.debug(
             'Skipping already-processed NIP-04 event ${nip04Event.id}',

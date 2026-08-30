@@ -2531,6 +2531,48 @@ void main() {
         },
       );
 
+      test(
+        'an already-processed gift wrap still advances the wire boundary so '
+        'an upgraded install does not keep the eroded window (#8209)',
+        () async {
+          // Every wrap already inside the window returns at the dedup guard,
+          // so if that path recorded nothing the wire boundary would stay
+          // null — and `since:` would keep falling back to the rumor clock —
+          // until the account received a genuinely new message. Confirmed on
+          // an iOS simulator before this branch existed.
+          const outerCreatedAt = 1700000000;
+          final giftWrap = createGiftWrapEvent();
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => true);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.createdAt, outerCreatedAt);
+          // A duplicate persisted no message, so the rumor boundary — which
+          // tracks send times for ordering — must not move.
+          expect(syncState.recorded, isEmpty);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       test('successful NIP-04 persist advances sync boundaries', () async {
         const nip04CreatedAt = 1700000600;
         final nip04Event = Event.fromJson({
