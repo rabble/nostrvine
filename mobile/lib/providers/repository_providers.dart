@@ -713,6 +713,7 @@ DmRepository dmRepository(Ref ref) {
     // inheriting nothing (#8391). Current AND retired keys, matching #8302.
     removalPolicy: isModerationAccount,
     dmInboxRelayUrl: dmInboxRelayUrl,
+    dmInboxTaggedRelays: IndexerRelayConfig.dmInboxTaggedRelays,
     dmInboxDiscoveryRelays: IndexerRelayConfig.dmInboxDiscoveryRelays,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(

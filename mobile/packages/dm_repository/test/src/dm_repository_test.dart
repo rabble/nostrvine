@@ -823,6 +823,7 @@ void main() {
       // the real path; tests that assert the unconfigured no-op pass null.
       String? dmInboxRelayUrl = 'wss://relay.divine.video',
       List<String> dmInboxDiscoveryRelays = const <String>[],
+      List<String> dmInboxTaggedRelays = const <String>[],
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
       String Function()? sendBatchIdGenerator,
     }) {
@@ -849,6 +850,7 @@ void main() {
         syncState: syncState,
         reactionsRepository: reactionsRepository,
         dmInboxRelayUrl: dmInboxRelayUrl,
+        dmInboxTaggedRelays: dmInboxTaggedRelays,
         dmInboxDiscoveryRelays: dmInboxDiscoveryRelays,
         readMarkerDebounceDelay: readMarkerDebounceDelay,
         sendBatchIdGenerator: sendBatchIdGenerator,
@@ -4798,11 +4800,13 @@ void main() {
 
       group('discovery relays (#7336)', () {
         const divine = 'wss://relay.divine.video';
+        const dmFallback1 = 'wss://nos.lol';
+        const dmFallback2 = 'wss://relay.primal.net';
         const discovery = 'wss://purplepag.es';
 
         test(
-          'publishes to the advertised relay AND the discovery relays, but '
-          'tags only the advertised one',
+          'publishes to the advertised and discovery relays, while tagging '
+          'the three DM relays only',
           () async {
             when(
               () => mockNostrClient.publishEventAwaitOk(
@@ -4811,15 +4815,30 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => partialOutcome(
-                targets: const [divine, discovery],
-                acceptedBy: const [divine, discovery],
+                targets: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
+                acceptedBy: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
               ),
             );
 
             final syncState = _FakeDmSyncState();
             final repository = createRepository(
               syncState: syncState,
-              dmInboxDiscoveryRelays: const [discovery],
+              dmInboxDiscoveryRelays: const [
+                dmFallback1,
+                dmFallback2,
+                discovery,
+              ],
+              dmInboxTaggedRelays: const [dmFallback1, dmFallback2],
             );
             await repository.ensureDmRelayListPublished();
 
@@ -4829,15 +4848,19 @@ void main() {
                 targetRelays: captureAny(named: 'targetRelays'),
               ),
             ).captured;
-            // Where the EVENT lands is wide (NIP-17: "SHOULD spread them to as
-            // many relays as viable"); what the LIST names stays at one
-            // ("keep kind:10050 lists small (1-3 relays)"). A discovery relay
-            // is not somewhere divine reads, so tagging it would send senders
-            // to a relay nothing drains.
+            // The EVENT is copied to the discovery indexer, but the list names
+            // only relays Divine actually drains for incoming DMs.
             expect((captured[0] as Event).tags, [
               ['relay', divine],
+              ['relay', dmFallback1],
+              ['relay', dmFallback2],
             ]);
-            expect(captured[1], [divine, discovery]);
+            expect(captured[1], [
+              divine,
+              dmFallback1,
+              dmFallback2,
+              discovery,
+            ]);
             expect(
               syncState.dmRelayListPublishedPubkeys,
               contains(_validPubkeyA),
@@ -8594,7 +8617,7 @@ void main() {
               content: captureAny(named: 'content'),
               tags: captureAny(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
+              targetRelays: captureAny(named: 'targetRelays'),
             ),
           ).captured;
           expect(captured, isNotEmpty);
@@ -8603,6 +8626,7 @@ void main() {
           expect(payload['v'], 1);
           expect((payload['read'] as Map)[tupleKey], 1700000200);
           expect(tags, contains(equals(['d', 'divine/dm-read/v1'])));
+          expect(captured[2], isNull);
 
           // Self-only: a read marker never goes out as a counterparty message.
           verifyNever(

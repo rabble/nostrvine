@@ -24,21 +24,30 @@ class IndexerRelayConfig {
     'wss://relay.nos.social',
   ];
 
+  /// Additional relays named in the user's NIP-17 kind-10050 DM inbox list,
+  /// on top of divine's own relay, so DM writes retain redundancy.
+  static const List<String> dmInboxTaggedRelays = [
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+  ];
+
   /// Relays the user's NIP-17 kind-10050 DM inbox list is published to, on
   /// top of divine's own relay, so a third-party sender can find it.
   ///
   /// NIP-17 §Relays: clients "SHOULD spread them to as many relays as
-  /// viable". Viable is measured, not assumed — of [defaultIndexers], only
-  /// purplepag.es accepts the kind today; `user.kindpag.es` answers `blocked:
-  /// the event doesn't match the allowed filters` and `relay.nos.social`
-  /// answers `blocked: kind not allowed`. purplepag.es is also the indexer
-  /// outbox-model clients query for a user's lists, so it is the entry that
-  /// buys the discoverability.
+  /// viable". Viable is measured, not assumed — [dmInboxDiscoveryRelays]
+  /// includes the two DM-capable fallback relays plus purplepag.es, the indexer
+  /// outbox-model clients query for a user's lists. `user.kindpag.es` and
+  /// `relay.nos.social` are intentionally not used as discovery-only targets
+  /// because they reject kind 10050 in the current relay measurements.
   ///
   /// Publishing here is best-effort and never gates the publish; see
   /// `DmRepository.ensureDmRelayListPublished`. Adding an entry means having
   /// checked it accepts kind 10050.
-  static const List<String> dmInboxDiscoveryRelays = ['wss://purplepag.es'];
+  static const List<String> dmInboxDiscoveryRelays = [
+    ...dmInboxTaggedRelays,
+    'wss://purplepag.es',
+  ];
 
   /// Safe fallback relay set for users without a discoverable NIP-65 relay
   /// list (kind 10002).

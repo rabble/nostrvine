@@ -8,12 +8,14 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 
 import '../support/fake_web_socket.dart';
 
-/// Lets every pending microtask and short timer drain so the pool has finished
-/// connecting and fanning the REQ out.
-Future<void> _settle() async {
-  for (var i = 0; i < 60; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 2));
+/// Waits for the fake socket to observe a specific REQ without relying on
+/// wall-clock settling.
+Future<void> _waitForReq(FakeWebSocketChannelFactory factory, String id) async {
+  for (var i = 0; i < 100; i++) {
+    if (_reqIds(factory).contains(id)) return;
+    await Future<void>.delayed(Duration.zero);
   }
+  fail('REQ $id was not written');
 }
 
 /// Subscription ids of every `REQ` frame [factory]'s sockets were asked to send.
@@ -78,12 +80,12 @@ void main() {
           channelFactory: fallbackFactory,
         ),
       );
-      await _settle();
     });
 
     test('untargeted subscribe reaches every pooled relay', () async {
       nostr.relayPool.subscribe(filters, (_) {}, id: 'untargeted');
-      await _settle();
+      await _waitForReq(primaryFactory, 'untargeted');
+      await _waitForReq(fallbackFactory, 'untargeted');
 
       expect(_reqIds(primaryFactory), contains('untargeted'));
       expect(_reqIds(fallbackFactory), contains('untargeted'));
@@ -100,7 +102,9 @@ void main() {
           id: 'temp-only',
           tempRelays: const ['wss://inbox.example'],
         );
-        await _settle();
+        await _waitForReq(primaryFactory, 'temp-only');
+        await _waitForReq(fallbackFactory, 'temp-only');
+        await _waitForReq(tempFactory, 'temp-only');
 
         expect(_reqIds(primaryFactory), contains('temp-only'));
         expect(_reqIds(fallbackFactory), contains('temp-only'));
@@ -111,21 +115,10 @@ void main() {
 
     test('targetRelays narrows the pool away, even when it names a pooled '
         'relay verbatim', () async {
-      // Two separate reasons the pooled relays drop out, and the test asserts
-      // the outcome rather than either mechanism:
-      //
-      //   1. `targetRelays` is a filter over the pool, not an addition —
-      //      subscribe() skips every pooled relay the list does not name.
-      //   2. The two sides are not even comparable. Pool keys come from
-      //      `normalizeRelayUrl` (nostr_client), which STRIPS a trailing
-      //      slash; `targetRelays` is run through `RelayAddrUtil.handle`,
-      //      which ADDS one. So `targetRelays.contains(relayAddr)` is false
-      //      for every pooled relay, and naming one verbatim does not help.
-      //
-      // Reason 2 is why the named relay below is re-dialed as a *temp* relay
-      // instead of reusing the pooled socket. It is tracked separately; this
-      // test exists so the DM live subscription can never quietly regress to
-      // passing `targetRelays` again.
+      // `targetRelays` is a filter over the pool, not an addition — the
+      // fallback pooled relay is skipped. The named pooled relay is supplied
+      // through tempRelays too, but must reuse the existing pooled socket
+      // rather than opening a duplicate connection.
       nostr.relayPool.subscribe(
         filters,
         (_) {},
@@ -133,11 +126,11 @@ void main() {
         tempRelays: const [pooledPrimary],
         targetRelays: const [pooledPrimary],
       );
-      await _settle();
+      await _waitForReq(primaryFactory, 'targeted');
 
-      expect(_reqIds(primaryFactory), isNot(contains('targeted')));
+      expect(_reqIds(primaryFactory), contains('targeted'));
       expect(_reqIds(fallbackFactory), isNot(contains('targeted')));
-      expect(tempRelaysGenerated, contains('$pooledPrimary/'));
+      expect(tempRelaysGenerated, isEmpty);
     });
   });
 }
