@@ -283,6 +283,12 @@ MockProfileRepository createMockProfileRepository() {
   when(
     () => mockRepo.watchProfile(pubkey: any(named: 'pubkey')),
   ).thenAnswer((_) => Stream.value(null));
+  // Surfaces that show counts read `profile_statistics` rather than the
+  // profile, so anything pumping them needs this stubbed or the provider
+  // throws `MissingStubError` before the widget builds.
+  when(
+    () => mockRepo.watchProfileStats(pubkey: any(named: 'pubkey')),
+  ).thenAnswer((_) => Stream.value(null));
 
   return mockRepo;
 }
