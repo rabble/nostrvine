@@ -318,6 +318,49 @@ void main() {
           findsOneWidget,
         );
       });
+
+      // #6971. The row that opens this preview already reads "This
+      // conversation is closed"; the preview dropped every closed signal and
+      // replaced it with an overture. "Wants to message you" is false twice
+      // over on a retired key: nobody is behind it, and an enforcement notice
+      // is not a social approach.
+      testWidgets('a retired moderation notice reads as closed, not as an '
+          'overture', (tester) async {
+        await tester.pumpWidget(
+          buildModerationSubject(kLegacyModerationPubkeys.first),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedBody), findsOneWidget);
+        expect(
+          find.text(
+            l10n.messageRequestWantsToMessageYou(
+              l10n.inboxSupportRowTitle,
+              l10n.messageRequestMessageCount(1),
+            ),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('an ordinary request keeps the overture framing', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildModerationSubject(otherPubkey));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            l10n.messageRequestWantsToMessageYou(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+              l10n.messageRequestMessageCount(1),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsNothing);
+      });
     });
 
     // #8185. The same screen links straight through to the profile, which
