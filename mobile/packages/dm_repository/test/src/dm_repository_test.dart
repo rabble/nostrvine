@@ -581,7 +581,7 @@ void main() {
         ),
       ).thenAnswer((_) async => null);
 
-      // Stub getAllConversations for _mergeDuplicateConversations().
+      // Default conversation-list read for tests that trigger maintenance.
       when(
         () => mockConversationsDao.getAllConversations(
           ownerPubkey: any(named: 'ownerPubkey'),
@@ -16255,17 +16255,18 @@ void main() {
         ).thenAnswer((_) async => null);
         when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
-        DmRepository(
-          nostrClient: mockNostrClient,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-        ).setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+        final repository =
+            DmRepository(
+              nostrClient: mockNostrClient,
+              directMessagesDao: mockDirectMessagesDao,
+              conversationsDao: mockConversationsDao,
+            )..setCredentials(
+              userPubkey: _validPubkeyA,
+              signer: LocalNostrSigner(_validPrivateKey),
+              messageService: mockMessageService,
+            );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await repository.getConversations();
 
         verifyNever(
           () => mockConversationsDao.deleteConversation(
@@ -16496,7 +16497,7 @@ void main() {
     });
 
     // -----------------------------------------------------------------
-    // Phase 3: sendGroupMessage success, _mergeDuplicateConversations
+    // Phase 3: sendGroupMessage success
     // -----------------------------------------------------------------
 
     group('sendGroupMessage - success', () {
@@ -23127,6 +23128,47 @@ void main() {
           () => repository.cancelOutgoingBatch(rumorId: winnerRumorId),
           throwsStateError,
         );
+      });
+    });
+
+    group('_backfillCurrentUserHasSent', () {
+      test('logs when conversations are updated', () async {
+        when(
+          () => mockConversationsDao.backfillCurrentUserHasSent(any()),
+        ).thenAnswer((_) async => 3);
+
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        ).setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        await untilCalled(
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
+        );
+
+        verify(
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
+        ).called(1);
       });
     });
 

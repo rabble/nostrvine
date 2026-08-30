@@ -763,7 +763,7 @@ class DmRepository {
     }
 
     // Run post-auth maintenance sequentially so each step operates on the
-    // final state of the previous one (e.g. backfill runs after merge).
+    // final state of the previous one.
     _postAuthMaintenance = _runPostAuthMaintenance();
     unawaited(_postAuthMaintenance);
   }
@@ -6897,8 +6897,7 @@ class DmRepository {
   }
 
   /// Runs post-auth cleanup and migration tasks sequentially so each step
-  /// operates on the final state of the previous one (e.g. backfill runs
-  /// after merge creates canonical conversation rows).
+  /// operates on the final state of the previous one.
   Future<void> _runPostAuthMaintenance() async {
     await _cleanupSelfConversations();
     await _backfillCurrentUserHasSent();
