@@ -120,8 +120,8 @@ The client half is small and belongs in one PR:
    not from the merge of whatever PR cleaned up after it, and expect that
    there may be no commit to name at all.
 2. Add a row to [the register](#the-register) above, including every role the
-   key held — check Funnelcake's `ADMIN_PUBKEYS` and the labeler roles, not
-   just DM signing.
+   key held — check Funnelcake's `RELAY_PUBKEY` and `ADMIN_PUBKEYS` and the
+   labeler roles, not just DM signing.
 3. Update `kModerationPubkeyHex` to the incoming shared support key. This is a
    mandatory routing change: the constant is the report target, pinned support
    row destination, protected-minor gate anchor, unread partition, retired
@@ -132,7 +132,8 @@ The client half is small and belongs in one PR:
    — it reads the list, so it does, but the test should say so.
 
 The service and infrastructure half — rotating the signing key, updating
-Funnelcake's `ADMIN_PUBKEYS` allowlist, republishing kind-0 and kind-10050,
+Funnelcake's `RELAY_PUBKEY` and its `ADMIN_PUBKEYS` allowlist (replacing only
+the outgoing entry), republishing kind-0 and kind-10050,
 repointing NIP-05, and auditing Funnelcake's `nostr.trusted_labelers` and
 `nostr.moderation_sources` — lives outside this repo. Do not assume those trust
 tables must use the user-facing support key: reconcile them with the approved
