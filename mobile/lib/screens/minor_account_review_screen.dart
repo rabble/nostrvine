@@ -303,10 +303,7 @@ class _LoadedView extends ConsumerWidget {
           l10n.minorAccountReviewRestrictionSupport,
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
-        if (responseClockCard != null) ...[
-          responseClockCard,
-          const SizedBox(height: 24),
-        ],
+        ?responseClockCard,
         _InfoCard(
           title: l10n.minorAccountReviewContentTitle,
           body: l10n.minorAccountReviewContentBody,
@@ -615,8 +612,14 @@ class _ResponseClockCard extends StatelessWidget {
       ),
     };
 
+    // A not-applicable clock has no copy, so the card contributes no height
+    // at all — including the gap that would otherwise separate it from the
+    // content card below.
     if (copy == null) return const SizedBox.shrink();
-    return _InfoCard(title: copy.title, body: copy.body);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: _InfoCard(title: copy.title, body: copy.body),
+    );
   }
 
   _ClockCopy _runningCopy(BuildContext context, AppLocalizations l10n) {
