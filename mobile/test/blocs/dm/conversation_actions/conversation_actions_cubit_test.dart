@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/content_moderation_types.dart';
@@ -306,16 +307,16 @@ void main() {
 
     group('removeConversation', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'returns true on success',
+        'reports removed on success',
         setUp: () {
           when(
             () => mockDmRepo.removeConversation(any()),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => ConversationRemovalOutcome.removed);
         },
         build: createCubit,
         act: (cubit) async {
           final result = await cubit.removeConversation(conversationId);
-          expect(result, isTrue);
+          expect(result, equals(RemoveConversationOutcome.removed));
         },
         expect: () => [
           const ConversationActionsState(
@@ -331,7 +332,7 @@ void main() {
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'returns false and calls addError on failure',
+        'reports failed and calls addError on failure',
         setUp: () {
           when(
             () => mockDmRepo.removeConversation(any()),
@@ -340,7 +341,7 @@ void main() {
         build: createCubit,
         act: (cubit) async {
           final result = await cubit.removeConversation(conversationId);
-          expect(result, isFalse);
+          expect(result, equals(RemoveConversationOutcome.failed));
         },
         expect: () => [
           const ConversationActionsState(
@@ -352,6 +353,51 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
       );
+
+      // #8391: the inbox long-press could destroy a Divine Moderation
+      // enforcement notice — the user's only copy of why they were actioned —
+      // because the guard #8302 added lived in MessageRequestActionsCubit
+      // only. A refusal is not a failure, so it must not emit `failure` and
+      // must not reach addError.
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'reports refused without erroring when the repository protects it',
+        setUp: () {
+          when(
+            () => mockDmRepo.removeConversation(any()),
+          ).thenAnswer((_) async => ConversationRemovalOutcome.refused);
+        },
+        build: createCubit,
+        act: (cubit) async {
+          final result = await cubit.removeConversation(conversationId);
+          expect(result, equals(RemoveConversationOutcome.refused));
+        },
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          // Back to idle: a refusal is not a failure.
+          const ConversationActionsState(),
+        ],
+        errors: () => <Object>[],
+      );
+    });
+
+    group('isRemovalProtected', () {
+      test('delegates to the repository rather than re-deciding', () {
+        final conversation = DmConversation(
+          id: conversationId,
+          participantPubkeys: const [currentUserPubkey, pubkey],
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000000,
+        );
+        when(
+          () => mockDmRepo.isRemovalProtected(conversation),
+        ).thenReturn(true);
+
+        expect(createCubit().isRemovalProtected(conversation), isTrue);
+        verify(() => mockDmRepo.isRemovalProtected(conversation)).called(1);
+      });
     });
   });
 }

@@ -21,6 +21,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -714,6 +715,11 @@ DmRepository dmRepository(Ref ref) {
     removedConversationsDao: db.removedConversationsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
+    // The single chokepoint for "this thread may not be deleted". Both the
+    // message-request cubit and the inbox long-press reach removal through
+    // this repository, so putting the policy here is what stops a caller
+    // inheriting nothing (#8391). Current AND retired keys, matching #8302.
+    removalPolicy: isModerationAccount,
     publishDmRelayListEnabled: publishDmRelayListEnabled,
     dmInboxRelayUrl: dmInboxRelayUrl,
     errorReporter: (error, stackTrace, {required site}) {

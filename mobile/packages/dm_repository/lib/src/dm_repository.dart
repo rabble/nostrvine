@@ -19,6 +19,7 @@ import 'package:dm_repository/src/dm_clock.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
+import 'package:dm_repository/src/dm_removal_policy.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
@@ -325,6 +326,7 @@ class DmRepository {
     DmVerifyIsolateSpawner? verifyIsolateSpawner,
     DmRepositoryErrorReporter? errorReporter,
     DmReactionsRepository? reactionsRepository,
+    DmConversationRemovalPolicy? removalPolicy,
     bool publishDmRelayListEnabled = false,
     String? dmInboxRelayUrl,
     Duration readMarkerDebounceDelay = _defaultReadMarkerDebounceDelay,
@@ -347,6 +349,7 @@ class DmRepository {
        _verifyIsolateSpawner = verifyIsolateSpawner ?? DmVerifyIsolate.spawn,
        _errorReporter = errorReporter,
        _reactionsRepository = reactionsRepository,
+       _removalPolicy = removalPolicy ?? allowAllConversationRemoval,
        _publishDmRelayListEnabled = publishDmRelayListEnabled,
        _dmInboxRelayUrl = dmInboxRelayUrl,
        _newSendBatchId = sendBatchIdGenerator ?? _defaultSendBatchId;
@@ -408,6 +411,14 @@ class DmRepository {
   /// persisting them as DMs. Nullable to keep existing tests working
   /// without rewiring; production injects it via `dmRepositoryProvider`.
   final DmReactionsRepository? _reactionsRepository;
+
+  /// Which peers hold a conversation this repository refuses to remove.
+  ///
+  /// Injected so the package never learns Divine's own pubkeys. Defaults to
+  /// [allowAllConversationRemoval], so a fixture that wires nothing behaves as
+  /// it did before the policy existed; production injects the moderation
+  /// identities via `dmRepositoryProvider`.
+  final DmConversationRemovalPolicy _removalPolicy;
 
   /// Feature gate for #4974 RC3 (self-publishing the user's own kind-10050 DM
   /// inbox relay list on login). Defaults to `false` so the publish stays
@@ -6672,6 +6683,31 @@ class DmRepository {
     }
   }
 
+  /// Whether [conversation] is one the injected policy refuses to remove.
+  ///
+  /// Exposed so a caller can withdraw a destructive affordance before offering
+  /// it, rather than letting the user meet a refusal. The enforcement itself is
+  /// in [removeConversation] / [removeConversations]; this is the cheap,
+  /// synchronous question the UI asks.
+  ///
+  /// Self is excluded, so a signed-in moderation account can still clear its
+  /// own threads. **Any** other participant is enough, which covers a group
+  /// that happens to include one — `.any`, never `.first`.
+  bool isRemovalProtected(DmConversation conversation) {
+    final me = _userPubkey;
+    return conversation.participantPubkeys.any(
+      (pubkey) => pubkey != me && _removalPolicy(pubkey),
+    );
+  }
+
+  /// [isRemovalProtected] for an id the caller has not already resolved.
+  ///
+  /// A missing row is NOT protected: removal of a stale id must fail open.
+  Future<bool> _isRemovalProtectedById(String conversationId) async {
+    final conversation = await getConversation(conversationId);
+    return conversation != null && isRemovalProtected(conversation);
+  }
+
   /// Remove a conversation, its messages, its queued sends, and its queued
   /// reactions atomically.
   ///
@@ -6686,11 +6722,25 @@ class DmRepository {
   /// the sweep publishes a gift wrap into a conversation the user removed
   /// (#7857) — the reaction counterpart of the `outgoing_dms` delete above.
   ///
+  /// Returns [ConversationRemovalOutcome.refused] without deleting anything
+  /// when the injected [DmConversationRemovalPolicy] protects the peer — the
+  /// single chokepoint every removal path inherits, so a new caller cannot
+  /// forget it (#8391).
+  ///
+  /// A conversation that is **absent** fails OPEN and reports
+  /// [ConversationRemovalOutcome.removed]: a stale id must never become an
+  /// undeletable row.
+  ///
   /// Throws:
   ///
   /// * `InvalidDataException` if a database constraint is violated.
-  Future<void> removeConversation(String conversationId) {
-    return _conversationsDao.runInTransaction(() async {
+  Future<ConversationRemovalOutcome> removeConversation(
+    String conversationId,
+  ) async {
+    if (await _isRemovalProtectedById(conversationId)) {
+      return ConversationRemovalOutcome.refused;
+    }
+    await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
       // mid-flight must not mix one account's reads with another's writes.
       final owner = _userPubkey;
@@ -6717,6 +6767,7 @@ class DmRepository {
         conversationId,
       ], ownerPubkey: owner);
     });
+    return ConversationRemovalOutcome.removed;
   }
 
   /// Remove multiple conversations, their messages, their queued sends, and
@@ -6725,40 +6776,59 @@ class DmRepository {
   ///
   /// No-op when [conversationIds] is empty.
   ///
+  /// **Filters rather than refusing the batch.** Protected conversations are
+  /// skipped and counted in `refused`; the rest are removed. Refusing the whole
+  /// batch would break the shipped "sweep the spam, keep the notice" behaviour
+  /// (#6971), so the caller gets counts and decides what to say (#8391). The
+  /// transaction still covers every row it does remove.
+  ///
   /// Throws:
   ///
   /// * `InvalidDataException` if a database constraint is violated.
-  Future<void> removeConversations(List<String> conversationIds) {
-    if (conversationIds.isEmpty) return Future.value();
+  Future<({int removed, int refused})> removeConversations(
+    List<String> conversationIds,
+  ) async {
+    if (conversationIds.isEmpty) return (removed: 0, refused: 0);
 
-    return _conversationsDao.runInTransaction(() async {
+    final removable = <String>[];
+    var refused = 0;
+    for (final conversationId in conversationIds) {
+      if (await _isRemovalProtectedById(conversationId)) {
+        refused++;
+      } else {
+        removable.add(conversationId);
+      }
+    }
+    if (removable.isEmpty) return (removed: 0, refused: refused);
+    await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
       // mid-flight must not mix one account's reads with another's writes.
       final owner = _userPubkey;
       final ownerOrNull = owner.isEmpty ? null : owner;
       final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await _removedConversationsDao?.recordAll(
-        conversationIds: conversationIds,
+        conversationIds: removable,
         ownerPubkey: owner,
         removedAt: removedAt,
       );
       await _directMessagesDao.deleteMultipleConversationMessages(
-        conversationIds,
+        removable,
         ownerPubkey: ownerOrNull,
       );
       await _conversationsDao.deleteMultiple(
-        conversationIds,
+        removable,
         ownerPubkey: ownerOrNull,
       );
       await _outgoingDmsDao?.deleteForConversations(
-        conversationIds: conversationIds,
+        conversationIds: removable,
         ownerPubkey: owner,
       );
       await _reactionsRepository?.deleteForConversations(
-        conversationIds,
+        removable,
         ownerPubkey: owner,
       );
     });
+    return (removed: removable.length, refused: refused);
   }
 
   /// Count the total number of messages in a conversation.

@@ -31,6 +31,7 @@ class ConversationActionsSheet {
     required bool isVanished,
     required bool isMuted,
     required bool isBlocked,
+    bool canRemove = true,
   }) {
     // A vanished peer can publish again under the same key, and their DMs
     // remain in the recipient's history. Keep Report and Block available for
@@ -67,15 +68,23 @@ class ConversationActionsSheet {
               icon: DivineIconName.eyeSlash,
               label: blockLabel,
               isDestructive: !isBlocked,
+              // Block becomes the last row when Remove is withdrawn, so it
+              // owns the missing divider rather than leaving a trailing rule.
+              showDivider: canRemove,
               result: ConversationAction.block,
             ),
-            _ActionTile(
-              icon: DivineIconName.trash,
-              label: context.l10n.inboxActionRemove,
-              isDestructive: true,
-              showDivider: false,
-              result: ConversationAction.remove,
-            ),
+            // Withdrawn for a Divine Moderation thread: removal is permanent
+            // and the notice is the user's only copy of why they were actioned
+            // (#8391). The repository refuses it either way; not offering it
+            // beats a dead-end refusal.
+            if (canRemove)
+              _ActionTile(
+                icon: DivineIconName.trash,
+                label: context.l10n.inboxActionRemove,
+                isDestructive: true,
+                showDivider: false,
+                result: ConversationAction.remove,
+              ),
           ],
         ),
       ),

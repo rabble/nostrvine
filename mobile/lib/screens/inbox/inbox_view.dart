@@ -1095,6 +1095,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         isVanished: isVanished,
         isMuted: isMuted,
         isBlocked: isBlocked,
+        // Covers the pinned support row AND an ordinary row, which is the
+        // same moderation thread whenever a filter or search drops the pin.
+        canRemove: !actionsCubit.isRemovalProtected(conversation),
       );
 
       if (action == null || !context.mounted) return;
@@ -1154,13 +1157,27 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             isVanished: isVanished,
           );
           if (confirmed && context.mounted) {
-            final removed = await actionsCubit.removeConversation(
+            final messenger = ScaffoldMessenger.of(context);
+            final removedText = context.l10n.inboxRemovedConversation;
+            // Not an error: the repository protects a Divine Moderation
+            // thread. Only reachable if the action was offered anyway, since
+            // the sheet drops it for a protected peer (#8391).
+            final refusedText =
+                context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+            final outcome = await actionsCubit.removeConversation(
               conversation.id,
             );
-            if (context.mounted && removed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.l10n.inboxRemovedConversation)),
-              );
+            switch (outcome) {
+              case RemoveConversationOutcome.removed:
+                messenger.showSnackBar(
+                  SnackBar(content: Text(removedText)),
+                );
+              case RemoveConversationOutcome.refused:
+                messenger.showSnackBar(
+                  SnackBar(content: Text(refusedText)),
+                );
+              case RemoveConversationOutcome.failed:
+                break;
             }
           }
       }
