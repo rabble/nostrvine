@@ -415,8 +415,11 @@ void main() {
             _conversation(_testConversationId1, peer: _stranger),
             _conversation(_testConversationId2, peer: _moderation),
           ]),
-          isTrue,
+          (withheld: true, failed: false),
         );
+        verify(
+          () => mockDmRepository.removeConversations([_testConversationId1]),
+        ).called(1);
 
         await cubit.close();
       });
@@ -429,7 +432,7 @@ void main() {
           await cubit.removeAllRequests([
             _conversation(_testConversationId1, peer: _moderation),
           ]),
-          isTrue,
+          (withheld: true, failed: false),
         );
         verifyNever(() => mockDmRepository.removeConversations(any()));
 
@@ -449,7 +452,51 @@ void main() {
             await cubit.removeAllRequests([
               _conversation(_testConversationId1, peer: _stranger),
             ]),
-            isFalse,
+            (withheld: false, failed: false),
+          );
+
+          await cubit.close();
+        },
+      );
+
+      // `removeConversations` is transactional, so a throw leaves every row in
+      // place. Folding that into the withheld flag would tell the user the
+      // notice was the reason a sweep that removed nothing removed nothing.
+      test(
+        'removeAllRequests separates a failed sweep from the row it withheld',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenThrow(Exception('drift is down'));
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+              _conversation(_testConversationId2, peer: _moderation),
+            ]),
+            (withheld: true, failed: true),
+          );
+
+          await cubit.close();
+        },
+      );
+
+      test(
+        'removeAllRequests reports a failure with nothing withheld',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenThrow(Exception('drift is down'));
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+            ]),
+            (withheld: false, failed: true),
           );
 
           await cubit.close();

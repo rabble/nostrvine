@@ -340,7 +340,7 @@ void main() {
       testWidgets('explains the notice the sweep kept', (tester) async {
         when(
           () => mockActionsCubit.removeAllRequests(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => (withheld: true, failed: false));
 
         await sweep(tester);
 
@@ -353,7 +353,7 @@ void main() {
       testWidgets('stays quiet when the sweep kept nothing', (tester) async {
         when(
           () => mockActionsCubit.removeAllRequests(any()),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer((_) async => (withheld: false, failed: false));
 
         await sweep(tester);
 
@@ -361,6 +361,25 @@ void main() {
         // never reached at all — which is exactly how this test behaves under
         // a MockGoRouter, whose no-op pop leaves the sheet future hanging.
         verify(() => mockActionsCubit.removeAllRequests(any())).called(1);
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsNothing,
+        );
+      });
+
+      // The removal is transactional, so a failed sweep left the spam in place
+      // too. Naming the notice there would blame the guard for the whole
+      // no-op, which is why the cubit reports the two separately.
+      testWidgets('reports a failed sweep instead of blaming the notice', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.removeAllRequests(any()),
+        ).thenAnswer((_) async => (withheld: true, failed: true));
+
+        await sweep(tester);
+
+        expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
         expect(
           find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
           findsNothing,
