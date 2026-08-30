@@ -398,6 +398,63 @@ void main() {
           verifyNever(() => mockDmRepository.removeConversations(any()));
         },
       );
+
+      // The sweep is silent about what it kept, so the guard is invisible in
+      // the bulk path: with only a notice in the list it removes nothing,
+      // emits nothing, and the button looks broken. The caller needs to know a
+      // row was withheld so it can say so (#8347).
+      test('removeAllRequests reports the notice it withheld', () async {
+        when(
+          () => mockDmRepository.removeConversations(any()),
+        ).thenAnswer((_) async {});
+
+        final cubit = createCubit();
+
+        expect(
+          await cubit.removeAllRequests([
+            _conversation(_testConversationId1, peer: _stranger),
+            _conversation(_testConversationId2, peer: _moderation),
+          ]),
+          isTrue,
+        );
+
+        await cubit.close();
+      });
+
+      test('removeAllRequests reports a withheld row it could not sweep at '
+          'all', () async {
+        final cubit = createCubit();
+
+        expect(
+          await cubit.removeAllRequests([
+            _conversation(_testConversationId1, peer: _moderation),
+          ]),
+          isTrue,
+        );
+        verifyNever(() => mockDmRepository.removeConversations(any()));
+
+        await cubit.close();
+      });
+
+      test(
+        'removeAllRequests reports nothing withheld from a clean sweep',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenAnswer((_) async {});
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+            ]),
+            isFalse,
+          );
+
+          await cubit.close();
+        },
+      );
     });
 
     group('$MessageRequestActionsState', () {

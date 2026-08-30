@@ -71,12 +71,24 @@ class MessageRequestsView extends ConsumerWidget {
       case RequestBulkAction.markAllRead:
         await actionsCubit.markAllRequestsAsRead(ids);
       case RequestBulkAction.removeAll:
+        final messenger = ScaffoldMessenger.of(context);
+        final withheldText =
+            context.l10n.messageRequestModerationNoticeCannotBeRemoved;
         // Whole list, not ids: the cubit decides what "all requests" excludes,
         // so a Divine moderation notice cannot be swept away by a gesture
         // aimed at spam (#6971). Keeping the filter there rather than here
         // means a future caller inherits it.
-        await actionsCubit.removeAllRequests(requests);
+        final withheld = await actionsCubit.removeAllRequests(requests);
         if (context.mounted) context.pop();
+        // Silence reads as a broken button: a list holding nothing but a
+        // notice removes nothing and emits nothing, so without this the tap
+        // looks like it missed (#8347). The messenger is captured before the
+        // await because the pop can retire this context.
+        if (withheld) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(withheldText),
+          );
+        }
     }
   }
 }

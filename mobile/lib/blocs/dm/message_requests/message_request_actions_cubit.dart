@@ -146,12 +146,18 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
   /// the view, and a new caller cannot forget it.
   ///
   /// Protected conversations are skipped and remain in the request list.
-  Future<void> removeAllRequests(List<DmConversation> conversations) async {
+  ///
+  /// Returns true when at least one row was withheld, so the caller can say
+  /// why one stayed behind. Without that the guard is invisible in the bulk
+  /// path: a list holding nothing but a notice removes nothing, emits nothing,
+  /// and reads as a broken button (#8347).
+  Future<bool> removeAllRequests(List<DmConversation> conversations) async {
     final removable = [
       for (final conversation in conversations)
         if (!_isProtected(conversation)) conversation.id,
     ];
-    if (removable.isEmpty) return;
+    final withheld = removable.length != conversations.length;
+    if (removable.isEmpty) return withheld;
     emit(state.copyWith(status: MessageRequestActionsStatus.processing));
     try {
       await _dmRepository.removeConversations(removable);
@@ -166,5 +172,6 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
         emit(state.copyWith(status: MessageRequestActionsStatus.error));
       }
     }
+    return withheld;
   }
 }

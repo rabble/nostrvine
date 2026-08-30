@@ -6,10 +6,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -57,6 +59,10 @@ void main() {
     late _MockMessageRequestActionsCubit mockActionsCubit;
     late _MockAuthService mockAuthService;
     late MockGoRouter mockGoRouter;
+
+    setUpAll(() {
+      registerFallbackValue(<DmConversation>[]);
+    });
 
     setUp(() {
       mockBloc = _MockConversationListBloc();
@@ -246,6 +252,119 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(RequestTile), findsOneWidget);
+      });
+    });
+
+    // #8347. "Remove all requests" is the routine spam-clearing gesture, and
+    // since #8302 the cubit withholds a Divine moderation notice from it.
+    // Saying nothing makes that guard read as a broken button: with only a
+    // notice in the list the sweep removes nothing and reports nothing.
+    group('bulk removal', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      final moderationRequest = DmConversation(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        participantPubkeys: [currentPubkey, kLegacyModerationPubkeys.first],
+        isGroup: false,
+        createdAt: nowUnix,
+        lastMessageTimestamp: nowUnix,
+      );
+
+      // A real GoRouter, not the MockGoRouter the rest of this file uses. The
+      // bulk sheet dismisses through go_router's `context.pop(result)`, and a
+      // mock no-ops it — so `VineBottomSheet.show` never completes its future
+      // and the sweep below is simply unreachable, with no error and no missed
+      // tap to explain why. A real router pops the modal route with its result,
+      // which is what the app does. `/requests` is nested under `/` so the pop
+      // after the sweep has somewhere to land.
+      Widget buildRoutedSubject() {
+        final loaded = ConversationListState(
+          status: ConversationListStatus.loaded,
+          requestConversations: [moderationRequest],
+        );
+        whenListen(
+          mockBloc,
+          Stream<ConversationListState>.value(loaded),
+          initialState: loaded,
+        );
+
+        final router = GoRouter(
+          initialLocation: '/requests',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => const Scaffold(),
+              routes: [
+                GoRoute(
+                  path: 'requests',
+                  builder: (_, _) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider<ConversationListBloc>.value(value: mockBloc),
+                      BlocProvider<MessageRequestActionsCubit>.value(
+                        value: mockActionsCubit,
+                      ),
+                    ],
+                    child: const MessageRequestsView(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        return testProviderScope(
+          mockAuthService: mockAuthService,
+          additionalOverrides: [goRouterProvider.overrideWithValue(router)],
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: ThemeData.dark(),
+          ),
+        );
+      }
+
+      Future<void> sweep(WidgetTester tester) async {
+        await tester.pumpWidget(buildRoutedSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.profileMoreSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxRequestsRemoveAll));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('explains the notice the sweep kept', (tester) async {
+        when(
+          () => mockActionsCubit.removeAllRequests(any()),
+        ).thenAnswer((_) async => true);
+
+        await sweep(tester);
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('stays quiet when the sweep kept nothing', (tester) async {
+        when(
+          () => mockActionsCubit.removeAllRequests(any()),
+        ).thenAnswer((_) async => false);
+
+        await sweep(tester);
+
+        // Without this the assertion above would also pass if the sweep were
+        // never reached at all — which is exactly how this test behaves under
+        // a MockGoRouter, whose no-op pop leaves the sheet future hanging.
+        verify(() => mockActionsCubit.removeAllRequests(any())).called(1);
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsNothing,
+        );
       });
     });
 
