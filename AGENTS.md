@@ -61,7 +61,8 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 An issue authored by `divine-zendesk-github-integration[bot]` is a **rendering** of a support ticket's first message. Routing tags, the submission channel, later replies from the requester, and attachments stay behind on the ticket. Pull it before triaging:
 
 ```bash
-bash ~/code/divine-zendesk-tooling/scripts/zendesk-inspect-ticket.sh <ticket_id>
+ZENDESK_TOOLING_DIR="${DIVINE_ZENDESK_TOOLING_ROOT:-$HOME/divine-zendesk-tooling}"
+bash "$ZENDESK_TOOLING_DIR/scripts/zendesk-inspect-ticket.sh" <ticket_id>
 ```
 
 The id is in the issue body (`Generated from Zendesk Ticket: rabblelabs.zendesk.com/agent/tickets/<id>`).
