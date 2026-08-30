@@ -284,12 +284,14 @@ void main() {
           prefs: prefs,
         );
 
-        // Initialize should complete quickly
-        final stopwatch = Stopwatch()..start();
-        await service.initialize();
-        stopwatch.stop();
+        // The property under test is that initialize() does not wait on the
+        // relay. Nothing completes relayResponseCompleter until further down,
+        // so a version that waited would hang here; the timeout turns that
+        // into a fast, attributable failure rather than a stalled suite. It
+        // is a liveness bound, not a performance budget — do not tighten it
+        // toward the observed runtime.
+        await service.initialize().timeout(const Duration(seconds: 5));
 
-        expect(stopwatch.elapsedMilliseconds, lessThan(100));
         expect(service.isInitialized, isTrue);
 
         // Now simulate relay returning a new list
