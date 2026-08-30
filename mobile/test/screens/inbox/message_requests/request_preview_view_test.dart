@@ -23,6 +23,7 @@ import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -244,15 +245,22 @@ void main() {
       testWidgets('renders the follower count from ProfileStats', (
         tester,
       ) async {
-        await pumpStats(tester, buildStatsSubject(statsWith(followers: 2100)));
+        final semantics = tester.ensureSemantics();
+        try {
+          await pumpStats(
+            tester,
+            buildStatsSubject(statsWith(followers: 2100)),
+          );
 
-        expect(
-          find.textContaining(
-            l10n.messageRequestFollowersCount(2100, '2.1K'),
-            findRichText: true,
-          ),
-          findsOneWidget,
-        );
+          final followerText = l10n.messageRequestFollowersCount(2100, '2.1K');
+          expect(
+            find.textContaining(followerText, findRichText: true),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsLabel(followerText), findsOneWidget);
+        } finally {
+          semantics.dispose();
+        }
       });
 
       testWidgets('renders the video count from ProfileStats', (tester) async {
@@ -325,7 +333,9 @@ void main() {
         expect(
           find.textContaining(
             l10n.videoFeedLoopCountLine(
-              '10K',
+              StringUtils.formatCompactNumber(
+                profileLoopsVisibilityFloor - 1,
+              ),
               profileLoopsVisibilityFloor - 1,
             ),
             findRichText: true,
@@ -346,7 +356,10 @@ void main() {
 
         expect(
           find.textContaining(
-            l10n.videoFeedLoopCountLine('10K', profileLoopsVisibilityFloor),
+            l10n.videoFeedLoopCountLine(
+              StringUtils.formatCompactNumber(profileLoopsVisibilityFloor),
+              profileLoopsVisibilityFloor,
+            ),
             findRichText: true,
           ),
           findsOneWidget,
@@ -360,38 +373,41 @@ void main() {
         tester,
       ) async {
         final semantics = tester.ensureSemantics();
-        await pumpStats(tester, buildStatsSubject(null));
+        try {
+          await pumpStats(tester, buildStatsSubject(null));
 
-        // A placeholder line stands in while the counts are still arriving.
-        final placeholderFollowers = l10n.messageRequestFollowersCount(
-          99,
-          '99',
-        );
-        final placeholderVideos = l10n.messageRequestVideosCount(99, '99');
-        expect(
-          find.textContaining(placeholderFollowers, findRichText: true),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel(
-            '$placeholderFollowers \u2022 $placeholderVideos',
-          ),
-          findsNothing,
-        );
+          // A placeholder line stands in while the counts are still arriving.
+          final placeholderFollowers = l10n.messageRequestFollowersCount(
+            99,
+            '99',
+          );
+          final placeholderVideos = l10n.messageRequestVideosCount(99, '99');
+          expect(
+            find.textContaining(placeholderFollowers, findRichText: true),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel(
+              '$placeholderFollowers \u2022 $placeholderVideos',
+            ),
+            findsNothing,
+          );
 
-        await tester.pump(const Duration(seconds: 8));
+          await tester.pump(const Duration(seconds: 8));
 
-        // Once the store has plainly not answered, the line goes rather than
-        // shimmering forever or degrading to a dash it cannot pluralise.
-        expect(
-          find.textContaining(placeholderFollowers, findRichText: true),
-          findsNothing,
-        );
-        expect(
-          find.textContaining(placeholderVideos, findRichText: true),
-          findsNothing,
-        );
-        semantics.dispose();
+          // Once the store has plainly not answered, the line goes rather than
+          // shimmering forever or degrading to a dash it cannot pluralise.
+          expect(
+            find.textContaining(placeholderFollowers, findRichText: true),
+            findsNothing,
+          );
+          expect(
+            find.textContaining(placeholderVideos, findRichText: true),
+            findsNothing,
+          );
+        } finally {
+          semantics.dispose();
+        }
       });
 
       // Matches the avatar/handle suppression: a vanished account shows no
