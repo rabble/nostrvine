@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
+import 'package:openvine/bootstrap/bundled_licenses.dart';
 
 /// A bundled OFL font: the family name shown on the license page and the asset
 /// path to its SIL Open Font License 1.1 text.
@@ -29,10 +30,12 @@ const _bundledFontLicenses = <_BundledFontLicense>[
 /// [bundle] is injectable so the entries can be exercised in tests without
 /// touching the global [LicenseRegistry].
 Stream<LicenseEntry> bundledFontLicenseEntries(AssetBundle bundle) async* {
-  for (final font in _bundledFontLicenses) {
-    final licenseText = await bundle.loadString(font.assetPath);
-    yield LicenseEntryWithLineBreaks(<String>[font.family], licenseText);
-  }
+  yield* bundledLicenseEntries(
+    bundle,
+    _bundledFontLicenses.map(
+      (font) => (packages: <String>[font.family], assetPath: font.assetPath),
+    ),
+  );
 }
 
 /// Registers the bundled fonts' OFL licenses with the global [LicenseRegistry].

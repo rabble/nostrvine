@@ -89,6 +89,38 @@ return to stable updates in Developer Options.
 patch number in logs and Crashlytics custom keys. Use those values when
 triaging crashes that may be patch-specific.
 
+### Third-party attribution
+
+`shorebird release` statically links Shorebird's Rust updater into the Flutter
+engine. Flutter's license collector does not discover that native dependency:
+it assembles `NOTICES` from Flutter, `sky_engine`, and packages in the Dart
+package configuration. Divine therefore registers the updater's MIT and
+Apache-2.0 license choices from `assets/licenses/` during app startup so both
+appear under **Shorebird updater** in Settings → Legal → Open Source Licenses.
+The updater is offered under either license at the recipient's option; showing
+both documents records the available choices, rather than asserting that both
+licenses must be satisfied simultaneously.
+
+The bundled texts were copied from `shorebirdtech/updater` at commit
+`1f85c4ab1ee5b540269b9859c75e1bffbb9050c7` (license blob ids
+`6802bc4b80c0f8df1413d55b16267c0969e352c9` and
+`a7e77cb28d386ec6eddeaabf441f91473ddefa1e`). The store engine paired with the
+current Flutter 3.44.9 pin is `27bc060323bfdfe2f5b6732174d4e499e74eca70`.
+
+When Flutter or Shorebird changes, re-check attribution without producing a
+store artifact:
+
+1. Read `bin/internal/engine.version` from the Flutter SDK selected by
+   Shorebird.
+2. Compare the Shorebird fork's root `LICENSE` and cached
+   `bin/cache/pkg/sky_engine/LICENSE` with the corresponding stock Flutter
+   files.
+3. Search those files for `shorebird` and `updater`, and inspect the fork's
+   `flutter_tools` asset collector changes.
+4. Compare the immutable upstream updater license blobs above with the current
+   updater license files. Update the bundled assets and this provenance only
+   when the canonical texts change.
+
 ### Flutter version
 
 Shorebird ships its own Flutter, so `FLUTTER_VERSION` in `codemagic.yaml`
