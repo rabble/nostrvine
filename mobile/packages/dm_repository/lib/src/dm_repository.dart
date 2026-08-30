@@ -948,18 +948,26 @@ class DmRepository {
         category: LogCategory.system,
       );
 
-      // Resolve the user's OWN kind-10050 inbox relays and target the live
-      // subscription at them — as BOTH tempRelays (to add connections outside
-      // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
-      // delivered to relays outside divine's default pool are read. A `null`
-      // result (no kind-10050 / resolve failure) preserves the prior
-      // default-pool behavior. Memoized per session, so the resolve (bounded
-      // by the queryEvents ~5s timeout) only delays the FIRST open. See #4974.
+      // Resolve the user's OWN kind-10050 inbox relays and dial them as
+      // `tempRelays`, so gift wraps a NIP-17 sender delivered outside divine's
+      // default pool are read. `tempRelays` ADDS those connections; the pool
+      // keeps its own subscription. A `null` result (no kind-10050 / resolve
+      // failure) is the plain default-pool read. Memoized per session, so the
+      // resolve (bounded by the queryEvents ~5s timeout) only delays the FIRST
+      // open. See #4974.
+      //
+      // Deliberately NOT `targetRelays`: that parameter is a filter over the
+      // pool, not an addition — `RelayPool.subscribe` skips every pooled relay
+      // the list does not name. Passing the own-inbox list there subtracted
+      // divine's own relay and the four `safeFallbackRelays` that #2931 added
+      // precisely so DMs written to other relays stay visible, which is the
+      // opposite of the intent above. See #7320.
+      //
       // Capture the session token before the await: `filter` was built with
       // the current `_userPubkey`, so if an account switch lands during the
       // resolve we must NOT open a subscription targeting the previous user.
       final gen = _resetGeneration;
-      final ownInbox = await _ownInboxTargetRelays();
+      final ownInbox = await _ownInboxRelays();
       // A teardown (stopListening), account switch (generation bumped), or a
       // competing call may have run during the await — bail rather than open
       // a stale or duplicate subscription.
@@ -975,7 +983,6 @@ class DmRepository {
         [filter],
         subscriptionId: _subscriptionId,
         tempRelays: ownInbox,
-        targetRelays: ownInbox,
       );
 
       _giftWrapSubscription = stream.listen(
@@ -1060,9 +1067,15 @@ class DmRepository {
     return future;
   }
 
-  /// The relays to target the live read at: the user's own kind-10050 relays
-  /// when `found`, else `null` (default pool) on `absent`/`failed`.
-  Future<List<String>?> _ownInboxTargetRelays() async {
+  /// The user's own kind-10050 relays when `found`, else `null` on
+  /// `absent`/`failed`.
+  ///
+  /// Every reader treats a non-null result as relays to reach IN ADDITION to
+  /// the pool — `tempRelays` on the live subscription and on each drain page,
+  /// and publish targets on the read marker (where `NostrClient.publishEvent`
+  /// forwards them as temp relays too). None of them narrows the pool: see the
+  /// `targetRelays` note in [startListening] and #7320.
+  Future<List<String>?> _ownInboxRelays() async {
     final res = await _resolveOwnDmInbox();
     return res.state == _OwnDmInboxState.found ? res.relays : null;
   }
@@ -1574,10 +1587,11 @@ class DmRepository {
           DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // Resolve the user's OWN kind-10050 inbox relays once for the whole
-      // drain (memoized, shared with the live subscription) and target every
-      // page at them so the backfill reads gift wraps delivered outside the
-      // default pool. `null` keeps default-pool-only behavior. See #4974.
-      final ownInbox = await _ownInboxTargetRelays();
+      // drain (memoized, shared with the live subscription) and dial every
+      // page at them as well as the pool, so the backfill reads gift wraps
+      // delivered outside the default pool. `null` keeps default-pool-only
+      // behavior. See #4974.
+      final ownInbox = await _ownInboxRelays();
       if (_ingestSessionEnded(pubkey, gen)) return;
 
       var reachedEnd = false;
@@ -6539,7 +6553,7 @@ class DmRepository {
         'v': _readMarkerPayloadVersion,
         'read': readMap,
       });
-      final ownInbox = await _ownInboxTargetRelays();
+      final ownInbox = await _ownInboxRelays();
       if (_disposed || _resetGeneration != gen) return;
       await service.publishSelfApplicationMarker(
         content: content,

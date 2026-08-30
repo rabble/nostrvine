@@ -4462,8 +4462,8 @@ void main() {
       );
 
       test(
-        'live subscription targets the own kind-10050 inbox relays as BOTH '
-        'tempRelays and targetRelays',
+        'live subscription ADDS the own kind-10050 inbox relays as tempRelays '
+        'and never narrows the pool with targetRelays',
         () async {
           when(
             () => mockNostrClient.queryEventsDetailed(
@@ -4500,9 +4500,13 @@ void main() {
               targetRelays: captureAny(named: 'targetRelays'),
             ),
           ).captured;
+          // tempRelays dials the advertised inbox in ADDITION to the pool.
+          // targetRelays must stay null: it is a filter over the pool, so a
+          // non-null value there drops divine's own relay and the four
+          // safeFallbackRelays #2931 added for exactly this read. See #7320.
           expect(captured, [
             ['wss://own.example'],
-            ['wss://own.example'],
+            null,
           ]);
 
           await repository.stopListening();
