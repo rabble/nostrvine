@@ -146,12 +146,29 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
   /// the view, and a new caller cannot forget it.
   ///
   /// Protected conversations are skipped and remain in the request list.
-  Future<void> removeAllRequests(List<DmConversation> conversations) async {
+  ///
+  /// [withheld] is true when at least one row was kept back, so the caller can
+  /// say why one stayed behind — without it the guard is invisible in the bulk
+  /// path: a list holding nothing but a notice removes nothing, emits nothing,
+  /// and reads as a broken button (#8347).
+  ///
+  /// [failed] is reported separately for the same reason [declineRequest] is
+  /// three-valued: a refusal is not a failure, and the two must not share one
+  /// flag. `removeConversations` runs in a transaction, so a throw rolls back
+  /// every row — reporting only [withheld] there would blame the notice for a
+  /// sweep that removed nothing.
+  ///
+  /// The caller must consume this result rather than reading [state] after the
+  /// await, for the reason given on [declineRequest].
+  Future<({bool withheld, bool failed})> removeAllRequests(
+    List<DmConversation> conversations,
+  ) async {
     final removable = [
       for (final conversation in conversations)
         if (!_isProtected(conversation)) conversation.id,
     ];
-    if (removable.isEmpty) return;
+    final withheld = removable.length != conversations.length;
+    if (removable.isEmpty) return (withheld: withheld, failed: false);
     emit(state.copyWith(status: MessageRequestActionsStatus.processing));
     try {
       await _dmRepository.removeConversations(removable);
@@ -165,6 +182,8 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
       if (!isClosed) {
         emit(state.copyWith(status: MessageRequestActionsStatus.error));
       }
+      return (withheld: withheld, failed: true);
     }
+    return (withheld: withheld, failed: false);
   }
 }

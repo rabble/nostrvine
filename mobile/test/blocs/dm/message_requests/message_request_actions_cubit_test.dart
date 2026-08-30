@@ -398,6 +398,110 @@ void main() {
           verifyNever(() => mockDmRepository.removeConversations(any()));
         },
       );
+
+      // The sweep is silent about what it kept, so the guard is invisible in
+      // the bulk path: with only a notice in the list it removes nothing,
+      // emits nothing, and the button looks broken. The caller needs to know a
+      // row was withheld so it can say so (#8347).
+      test('removeAllRequests reports the notice it withheld', () async {
+        when(
+          () => mockDmRepository.removeConversations(any()),
+        ).thenAnswer((_) async {});
+
+        final cubit = createCubit();
+
+        expect(
+          await cubit.removeAllRequests([
+            _conversation(_testConversationId1, peer: _stranger),
+            _conversation(_testConversationId2, peer: _moderation),
+          ]),
+          (withheld: true, failed: false),
+        );
+        verify(
+          () => mockDmRepository.removeConversations([_testConversationId1]),
+        ).called(1);
+
+        await cubit.close();
+      });
+
+      test('removeAllRequests reports a withheld row it could not sweep at '
+          'all', () async {
+        final cubit = createCubit();
+
+        expect(
+          await cubit.removeAllRequests([
+            _conversation(_testConversationId1, peer: _moderation),
+          ]),
+          (withheld: true, failed: false),
+        );
+        verifyNever(() => mockDmRepository.removeConversations(any()));
+
+        await cubit.close();
+      });
+
+      test(
+        'removeAllRequests reports nothing withheld from a clean sweep',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenAnswer((_) async {});
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+            ]),
+            (withheld: false, failed: false),
+          );
+
+          await cubit.close();
+        },
+      );
+
+      // `removeConversations` is transactional, so a throw leaves every row in
+      // place. Folding that into the withheld flag would tell the user the
+      // notice was the reason a sweep that removed nothing removed nothing.
+      test(
+        'removeAllRequests separates a failed sweep from the row it withheld',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenThrow(Exception('drift is down'));
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+              _conversation(_testConversationId2, peer: _moderation),
+            ]),
+            (withheld: true, failed: true),
+          );
+
+          await cubit.close();
+        },
+      );
+
+      test(
+        'removeAllRequests reports a failure with nothing withheld',
+        () async {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenThrow(Exception('drift is down'));
+
+          final cubit = createCubit();
+
+          expect(
+            await cubit.removeAllRequests([
+              _conversation(_testConversationId1, peer: _stranger),
+            ]),
+            (withheld: false, failed: true),
+          );
+
+          await cubit.close();
+        },
+      );
     });
 
     group('$MessageRequestActionsState', () {
