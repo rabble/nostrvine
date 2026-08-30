@@ -12,6 +12,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -121,6 +122,54 @@ void main() {
 
         expect(find.text('Alice'), findsOneWidget);
       });
+
+      testWidgets(
+        'uses a loading identity before revealing the generated fallback',
+        (tester) async {
+          final testConversation = createTestConversation();
+          final generatedName = UserProfile.defaultDisplayNameFor(otherPubkey);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                profileIdentityResolvingProvider(
+                  otherPubkey,
+                ).overrideWithValue(true),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(tileSemantics(tester).label, contains('Loading'));
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => skeletonizer.enabled),
+            isTrue,
+          );
+
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+
+          expect(find.text(generatedName), findsOneWidget);
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => !skeletonizer.enabled),
+            isTrue,
+          );
+        },
+      );
 
       testWidgets('paints a brand-green heart in a display name', (
         tester,
@@ -1097,6 +1146,8 @@ void main() {
         WidgetTester tester, {
         required bool vanished,
         Locale? locale,
+        bool identityResolving = false,
+        bool settle = true,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
@@ -1108,6 +1159,9 @@ void main() {
               profileVanishedProvider(
                 otherPubkey,
               ).overrideWith((ref) => Stream.value(vanished)),
+              profileIdentityResolvingProvider(
+                otherPubkey,
+              ).overrideWithValue(identityResolving),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -1121,7 +1175,12 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        if (settle) {
+          await tester.pumpAndSettle();
+        } else {
+          await tester.pump();
+          await tester.pump();
+        }
       }
 
       testWidgets('replaces the display name for a deleted account', (
@@ -1148,6 +1207,30 @@ void main() {
         await pumpTile(tester, vanished: true);
 
         expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets('does not hide a deleted identity behind profile loading', (
+        tester,
+      ) async {
+        await pumpTile(
+          tester,
+          vanished: true,
+          identityResolving: true,
+          settle: false,
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(
+          tileSemantics(tester).label,
+          contains(l10n.profileDeletedAccountName),
+        );
+        expect(
+          tester
+              .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+              .every((skeletonizer) => !skeletonizer.enabled),
+          isTrue,
+        );
       });
 
       testWidgets('leaves a live account untouched', (tester) async {

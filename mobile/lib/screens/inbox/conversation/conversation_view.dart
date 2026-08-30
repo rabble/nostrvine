@@ -40,6 +40,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// View for a single DM conversation.
 ///
@@ -63,6 +64,8 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  bool _isOpeningOptions = false;
+
   /// The account this thread addresses. The route passes `participantPubkeys`
   /// as the counterparty list, so self is already excluded.
   String get _otherPubkey => widget.participantPubkeys.isNotEmpty
@@ -80,52 +83,110 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     );
   }
 
-  Future<void> _onOptions(String otherPubkey, String displayName) async {
-    if (otherPubkey.isEmpty) return;
-
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final followRepository = ref.read(followRepositoryProvider);
-    final isBlocked = blocklistRepository.isBlocked(otherPubkey);
-    final isFollowing = followRepository.isFollowing(otherPubkey);
-
-    final result = await VineBottomSheet.show<MoreSheetResult>(
-      context: context,
-      expanded: false,
-      scrollable: false,
-      isScrollControlled: true,
-      body: MoreSheetContent(
-        userIdHex: otherPubkey,
-        displayName: displayName,
-        isFollowing: isFollowing,
-        isBlocked: isBlocked,
-        showReport: true,
-      ),
-      children: const [],
-    );
-
-    if (!mounted || result == null) return;
-
-    switch (result) {
-      case MoreSheetResult.copy:
-        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-        await ClipboardUtils.copyPubkey(context, npub);
-      case MoreSheetResult.unfollow:
-        await followRepository.toggleFollow(otherPubkey);
-      case MoreSheetResult.report:
-        if (!mounted) return;
-        await ReportContentDialog.showForUser(context, userPubkey: otherPubkey);
-      case MoreSheetResult.blockConfirmed:
-        await blocklistRepository.blockUser(
-          otherPubkey,
-          ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+  Future<void> _onOptions(String otherPubkey) async {
+    if (otherPubkey.isEmpty || _isOpeningOptions) return;
+    _isOpeningOptions = true;
+    try {
+      bool isVanished;
+      try {
+        isVanished = await ref.read(
+          profileVanishedSnapshotProvider(otherPubkey).future,
         );
-        if (mounted) context.pop();
-      case MoreSheetResult.unblockConfirmed:
-        await blocklistRepository.unblockUser(otherPubkey);
-      case MoreSheetResult.addToList:
-        // addToList is not surfaced from this caller (showAddToList defaults
-        // to false on MoreSheetContent here), so this branch is unreachable.
-        break;
+      } catch (error, stackTrace) {
+        Log.warning(
+          'Could not read durable vanish state; opening conversation options '
+          'with the live-account identity fallback',
+          name: 'ConversationView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        isVanished = false;
+      }
+      if (!mounted) return;
+
+      final String displayName;
+      final knownName = dmPeerNameWithoutProfile(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+      );
+      if (knownName != null) {
+        displayName = knownName;
+      } else {
+        UserProfile? profile;
+        try {
+          profile = await ref.read(
+            fetchUserProfileProvider(otherPubkey).future,
+          );
+        } catch (error, stackTrace) {
+          Log.warning(
+            'Could not read the conversation peer profile; opening '
+            'conversation options with the generated identity fallback',
+            name: 'ConversationView',
+            category: LogCategory.ui,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+        if (!mounted) return;
+        displayName = dmPeerDisplayName(
+          context,
+          pubkeyHex: otherPubkey,
+          isVanished: isVanished,
+          profile: profile,
+        );
+      }
+
+      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+      final followRepository = ref.read(followRepositoryProvider);
+      final isBlocked = blocklistRepository.isBlocked(otherPubkey);
+      final isFollowing = followRepository.isFollowing(otherPubkey);
+
+      final result = await VineBottomSheet.show<MoreSheetResult>(
+        context: context,
+        expanded: false,
+        scrollable: false,
+        isScrollControlled: true,
+        body: MoreSheetContent(
+          userIdHex: otherPubkey,
+          displayName: displayName,
+          isFollowing: isFollowing,
+          isBlocked: isBlocked,
+          showReport: true,
+        ),
+        children: const [],
+      );
+
+      if (!mounted || result == null) return;
+
+      switch (result) {
+        case MoreSheetResult.copy:
+          final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+          await ClipboardUtils.copyPubkey(context, npub);
+        case MoreSheetResult.unfollow:
+          await followRepository.toggleFollow(otherPubkey);
+        case MoreSheetResult.report:
+          if (!mounted) return;
+          await ReportContentDialog.showForUser(
+            context,
+            userPubkey: otherPubkey,
+          );
+        case MoreSheetResult.blockConfirmed:
+          await blocklistRepository.blockUser(
+            otherPubkey,
+            ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+          );
+          if (mounted) context.pop();
+        case MoreSheetResult.unblockConfirmed:
+          await blocklistRepository.unblockUser(otherPubkey);
+        case MoreSheetResult.addToList:
+          // addToList is not surfaced from this caller (showAddToList defaults
+          // to false on MoreSheetContent here), so this branch is unreachable.
+          break;
+      }
+    } finally {
+      _isOpeningOptions = false;
     }
   }
 
@@ -160,6 +221,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
     // The conversation and its history remain readable — they are the viewer's
     // own copy of messages a NIP-62 vanish cannot retract. Only the header
     // identity changes.
@@ -171,7 +235,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       profile: profile,
+      isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
     final claimedNip05 = profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
@@ -251,6 +320,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                       children: [
                         ConversationAppBar(
                           displayName: displayName,
+                          isResolving: isIdentityResolving,
+                          loadingDisplayName: visualDisplayName,
                           handle: handle,
                           onBack: () => context.pop(),
                           onTitleTap: otherPubkey.isNotEmpty
@@ -258,7 +329,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
                                 )
                               : null,
-                          onOptions: () => _onOptions(otherPubkey, displayName),
+                          onOptions: () => _onOptions(otherPubkey),
                         ),
                         Expanded(
                           // Force the messages card to fill the available width
@@ -280,6 +351,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
+                                  isResolving: isIdentityResolving,
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,
@@ -613,6 +685,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.isResolving,
     required this.reactionsEnabled,
     required this.sendRecoveryEnabled,
     this.imageUrl,
@@ -627,6 +700,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final bool isResolving;
   final bool reactionsEnabled;
 
   /// Whether tapping a failed own bubble may offer to resend it.
@@ -662,11 +736,14 @@ class _ConversationContent extends StatelessWidget {
           ConversationStatus.loaded =>
             selected.messages.isEmpty
                 ? EmptyConversation(
-                    displayName: displayName,
+                    displayName: isResolving
+                        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+                        : displayName,
                     pubkey: otherPubkey,
                     imageUrl: imageUrl,
                     nip05: nip05,
                     onViewProfile: onViewProfile,
+                    isIdentityResolving: isResolving,
                     mayBeIncomplete: context.select<DmRestoreStatusCubit, bool>(
                       (cubit) => cubit.state.mayBeIncomplete,
                     ),

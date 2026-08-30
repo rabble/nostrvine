@@ -57,11 +57,19 @@ String dmPeerDisplayName(
   required bool isVanished,
   UserProfile? profile,
   String? displayNameOverride,
+  bool isResolving = false,
 }) => dmPeerName(
   pubkeyHex: pubkeyHex,
   isVanished: isVanished,
   isModeration: isModerationAccount(pubkeyHex),
   labels: dmPeerLabels(context),
-  profileName: profile?.bestDisplayName,
+  profileName: switch (profile) {
+    UserProfile(displayName: final name?) when name.isNotEmpty =>
+      UserProfile.sanitizeDisplayName(name),
+    UserProfile(name: final name?) when name.isNotEmpty =>
+      UserProfile.sanitizeDisplayName(name),
+    _ => null,
+  },
   displayNameOverride: displayNameOverride,
+  isResolving: isResolving,
 );

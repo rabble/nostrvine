@@ -69,6 +69,9 @@ String? dmPeerSubstituteName({
 /// [profileName] is the caller's already-resolved step-4 value: the widget
 /// chain passes `profile?.bestDisplayName`, and the BLoC passes its cached
 /// entry. Both may be null, and the generated fallback answers for them.
+///
+/// While [isResolving] is true, the generated fallback is withheld so a
+/// deterministic placeholder is not presented as the peer's real identity.
 String dmPeerName({
   required String pubkeyHex,
   required bool isVanished,
@@ -76,6 +79,7 @@ String dmPeerName({
   required DmPeerLabels labels,
   String? profileName,
   String? displayNameOverride,
+  bool isResolving = false,
 }) {
   final substitute = dmPeerSubstituteName(
     isVanished: isVanished,
@@ -84,5 +88,7 @@ String dmPeerName({
     displayNameOverride: displayNameOverride,
   );
   if (substitute != null) return substitute;
-  return profileName ?? UserProfile.defaultDisplayNameFor(pubkeyHex);
+  if (profileName != null) return profileName;
+  if (isResolving) return '';
+  return UserProfile.defaultDisplayNameFor(pubkeyHex);
 }

@@ -8,13 +8,18 @@ void main() {
     Widget buildSubject({
       required bool isLoading,
       Duration fallthroughTimeout = const Duration(seconds: 7),
+      bool excludeSemantics = false,
     }) {
       return MaterialApp(
         home: Scaffold(
           body: IdentitySkeletonizer(
             isLoading: isLoading,
             fallthroughTimeout: fallthroughTimeout,
-            child: const SizedBox.square(dimension: 64, key: Key('child')),
+            excludeSemantics: excludeSemantics,
+            child: Semantics(
+              label: 'Identity',
+              child: const SizedBox.square(dimension: 64, key: Key('child')),
+            ),
           ),
         ),
       );
@@ -42,6 +47,35 @@ void main() {
       await tester.pumpWidget(buildSubject(isLoading: true));
 
       expect(findSkeletonizer(tester).enabled, isTrue);
+    });
+
+    testWidgets('keeps semantics by default while shimmering', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(buildSubject(isLoading: true));
+
+      expect(find.bySemanticsLabel('Identity'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('can hide placeholder semantics only while shimmering', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        buildSubject(
+          isLoading: true,
+          fallthroughTimeout: const Duration(seconds: 3),
+          excludeSemantics: true,
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Identity'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(find.bySemanticsLabel('Identity'), findsOneWidget);
+      await tester.pumpAndSettle();
+      semantics.dispose();
     });
 
     testWidgets(

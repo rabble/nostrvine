@@ -22,6 +22,23 @@ final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
       .map((pubkeys) => pubkeys.toSet());
 });
 
+/// Whether a peer's profile identity is still being resolved.
+///
+/// The reactive profile stream intentionally emits `null` while the read
+/// repository is unavailable, so its value alone cannot distinguish that
+/// cold-start state from a settled account with no profile. The one-shot
+/// provider owns the cache lookup and fresh fetch. Waiting for both paths keeps
+/// the signal aligned with widgets that consume either one, and auto-disposal
+/// releases their per-pubkey watchers when the surface unmounts.
+// ignore: specify_nonobvious_property_types
+final profileIdentityResolvingProvider = Provider.autoDispose
+    .family<bool, String>((ref, pubkey) {
+      if (ref.watch(profileReadRepositoryProvider) == null) return true;
+      final fetched = ref.watch(fetchUserProfileProvider(pubkey));
+      final reactive = ref.watch(userProfileReactiveProvider(pubkey));
+      return fetched.isLoading || reactive.isLoading;
+    });
+
 /// One-shot durable vanish lookup for imperative paths that must resolve the
 /// state before acting instead of treating [profileVanishedProvider]'s loading
 /// placeholder as a live account.

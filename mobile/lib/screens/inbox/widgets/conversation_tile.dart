@@ -67,6 +67,9 @@ class ConversationTile extends ConsumerWidget {
     );
 
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
 
     // The thread and its history stay — the messages are the viewer's own copy
     // and a NIP-62 vanish cannot retract them. Only the counterparty's identity
@@ -81,7 +84,15 @@ class ConversationTile extends ConsumerWidget {
       isVanished: isDeleted,
       displayNameOverride: displayNameOverride,
       profile: profileAsync.asData?.value,
+      isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final accessibilityName = isIdentityResolving
+        ? context.l10n.commonLoading
+        : displayName;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     final imageUrl = isDeleted
         ? null
@@ -105,8 +116,8 @@ class ConversationTile extends ConsumerWidget {
       // preview; mirror it for assistive tech by prefixing the unread status
       // to the row label (same pattern as the notification rows).
       label: conversation.isRead
-          ? context.l10n.inboxConversationTileLabel(displayName)
-          : context.l10n.inboxConversationTileLabelUnread(displayName),
+          ? context.l10n.inboxConversationTileLabel(accessibilityName)
+          : context.l10n.inboxConversationTileLabelUnread(accessibilityName),
       // Only advertise the long-press affordance when there is one: the hint
       // is a promise to assistive tech, and rows built without a handler
       // (the pinned support row) have no action sheet to open.
@@ -141,18 +152,22 @@ class ConversationTile extends ConsumerWidget {
               // not, instead of drifting down with a centered column.
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: UserAvatar(
-                    imageUrl: imageUrl,
-                    name: displayName,
-                    placeholderSeed: otherPubkey,
-                    size: 40,
-                    // Bundled artwork for the moderation account, whose kind-0
-                    // picture does not survive the SVG parser.
-                    contentOverride: isModerationAccount(otherPubkey)
-                        ? const ModerationAvatar()
-                        : null,
+                IdentitySkeletonizer(
+                  isLoading: isIdentityResolving,
+                  excludeSemantics: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: UserAvatar(
+                      imageUrl: imageUrl,
+                      name: visualDisplayName,
+                      placeholderSeed: otherPubkey,
+                      size: 40,
+                      // Bundled artwork for the moderation account, whose kind-0
+                      // picture does not survive the SVG parser.
+                      contentOverride: isModerationAccount(otherPubkey)
+                          ? const ModerationAvatar()
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -164,13 +179,17 @@ class ConversationTile extends ConsumerWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: DivineHeartText(
-                              displayName,
-                              style: VineTheme.titleMediumFont(
-                                color: context.vineColors.primaryText,
+                            child: IdentitySkeletonizer(
+                              isLoading: isIdentityResolving,
+                              excludeSemantics: true,
+                              child: DivineHeartText(
+                                visualDisplayName,
+                                style: VineTheme.titleMediumFont(
+                                  color: context.vineColors.primaryText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (relativeTime.isNotEmpty) ...[

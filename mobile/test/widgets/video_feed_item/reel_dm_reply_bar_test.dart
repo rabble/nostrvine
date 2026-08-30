@@ -30,15 +30,16 @@ const _peer =
 const _reelId =
     'rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr';
 
-DmReplyContext context({bool isOwn = false}) => DmReplyContext(
-  conversationId: 'convo-id',
-  participantPubkeys: const [_peer],
-  isGroup: false,
-  sharedReelMessageId: _reelId,
-  messageAuthorPubkey: _peer,
-  hintName: 'Alice',
-  isOwnMessage: isOwn,
-);
+DmReplyContext context({bool isOwn = false, String hintName = 'Alice'}) =>
+    DmReplyContext(
+      conversationId: 'convo-id',
+      participantPubkeys: const [_peer],
+      isGroup: false,
+      sharedReelMessageId: _reelId,
+      messageAuthorPubkey: _peer,
+      hintName: hintName,
+      isOwnMessage: isOwn,
+    );
 
 void main() {
   late _MockDmRepository dmRepo;
@@ -149,6 +150,18 @@ void main() {
       await tester.pump();
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.dmReelReplyComposerHint('Alice')), findsOneWidget);
+    });
+
+    testWidgets('shows a generic hint while the peer name resolves', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(context(hintName: '')));
+      await tester.pump();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.text(l10n.dmReelReplyComposerSemanticLabel),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows "reply to yourself" hint on own reel', (tester) async {

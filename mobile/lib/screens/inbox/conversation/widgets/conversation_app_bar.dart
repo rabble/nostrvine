@@ -16,6 +16,8 @@ class ConversationAppBar extends StatelessWidget
     required this.handle,
     required this.onBack,
     required this.onOptions,
+    this.isResolving = false,
+    this.loadingDisplayName,
     this.onTitleTap,
     super.key,
   });
@@ -24,6 +26,8 @@ class ConversationAppBar extends StatelessWidget
   final String handle;
   final VoidCallback onBack;
   final VoidCallback onOptions;
+  final bool isResolving;
+  final String? loadingDisplayName;
 
   /// Called when the user taps the name/handle in the app bar.
   final VoidCallback? onTitleTap;
@@ -34,7 +38,24 @@ class ConversationAppBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     return DiVineAppBar(
-      title: displayName,
+      title: isResolving ? null : displayName,
+      titleWidget: isResolving
+          ? Semantics(
+              label: context.l10n.commonLoading,
+              child: IdentitySkeletonizer(
+                isLoading: true,
+                excludeSemantics: true,
+                child: Text(
+                  loadingDisplayName ?? context.l10n.commonLoading,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+          : null,
       subtitle: handle.isNotEmpty ? handle : null,
       titleMode: onTitleTap != null
           ? DiVineAppBarTitleMode.tappable

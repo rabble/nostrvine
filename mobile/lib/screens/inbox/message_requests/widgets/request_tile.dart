@@ -39,6 +39,9 @@ class RequestTile extends ConsumerWidget {
     );
 
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
 
     // Same treatment as [ConversationTile]: a request from an account that
     // later vanished is named for the state, not for the generated handle the
@@ -52,7 +55,12 @@ class RequestTile extends ConsumerWidget {
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       profile: profileAsync.asData?.value,
+      isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     final imageUrl = isDeleted
         ? null
@@ -72,7 +80,9 @@ class RequestTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: context.l10n.inboxRequestTileLabel(displayName),
+      label: context.l10n.inboxRequestTileLabel(
+        isIdentityResolving ? context.l10n.commonLoading : displayName,
+      ),
       child: GestureDetector(
         onTap: () {
           Log.debug(
@@ -94,16 +104,20 @@ class RequestTile extends ConsumerWidget {
             child: Row(
               spacing: 20,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: UserAvatar(
-                    imageUrl: imageUrl,
-                    name: displayName,
-                    placeholderSeed: otherPubkey,
-                    size: 40,
-                    contentOverride: isModerationAccount(otherPubkey)
-                        ? const ModerationAvatar()
-                        : null,
+                IdentitySkeletonizer(
+                  isLoading: isIdentityResolving,
+                  excludeSemantics: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: UserAvatar(
+                      imageUrl: imageUrl,
+                      name: visualDisplayName,
+                      placeholderSeed: otherPubkey,
+                      size: 40,
+                      contentOverride: isModerationAccount(otherPubkey)
+                          ? const ModerationAvatar()
+                          : null,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -113,13 +127,17 @@ class RequestTile extends ConsumerWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              displayName,
-                              style: VineTheme.titleMediumFont(
-                                color: context.vineColors.primaryText,
+                            child: IdentitySkeletonizer(
+                              isLoading: isIdentityResolving,
+                              excludeSemantics: true,
+                              child: Text(
+                                visualDisplayName,
+                                style: VineTheme.titleMediumFont(
+                                  color: context.vineColors.primaryText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (relativeTime.isNotEmpty) ...[
