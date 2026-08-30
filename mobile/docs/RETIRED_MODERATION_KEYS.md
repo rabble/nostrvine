@@ -15,7 +15,7 @@ Read this before adding an entry.
 
 | Pubkey | Retired | Rotated by |
 |---|---|---|
-| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-15 | `divine-moderation-service#31` (`8dd56cbc9`), which unified signing on `NOSTR_PRIVATE_KEY` |
+| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-15 | `divinevideo/divine-moderation-service#31` (`8dd56cbc9`), which unified signing on `NOSTR_PRIVATE_KEY` |
 
 ### `121b915b…`
 
@@ -25,22 +25,34 @@ moderation key is not one revocation:
 
 | Role | Revoked |
 |---|---|
-| Moderation DM + label signing identity | 2026-03-15, by the rotation itself |
-| Relay admin pubkey | 2026-03-17, in the infrastructure config, across all four environments |
-| NIP-32 labeler this app subscribed to | 2026-03-20, `divine-mobile#2321` — plus `ModerationLabelService._migrateLegacyPubkey`, which unsubscribes it on every init |
+| Moderation DM + label signing identity | 2026-03-15, `divinevideo/divine-moderation-service#31` |
+| Relay admin pubkey | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production Funnelcake API and relay overlays |
+| NIP-32 labeler this app subscribed to | 2026-03-20, `divinevideo/divine-mobile#2321` — plus `ModerationLabelService._migrateLegacyPubkey`, which unsubscribes it on every init |
 
-`divine-mobile#2321` is frequently cited as the retirement. It is not — it is
-the client catching up five days later. The key stopped being the moderation
-account on 2026-03-15.
+`divinevideo/divine-mobile#2321` is frequently cited as the retirement. It is
+not — it is the client catching up five days later. The key stopped being the
+moderation account on 2026-03-15.
+
+Funnelcake's `nostr.trusted_labelers` and `nostr.moderation_sources` tables are
+a separate trust surface from the relay-admin list. Their configured identity
+currently differs from the user-facing moderation account; whether that is an
+intentional automated role or drift is tracked in
+`divinevideo/divine-mobile#8253`. A rotation must audit and reconcile those
+tables with the intended labeler roles rather than assuming every moderation
+role uses the shared support identity.
 
 ## What the client does with a retired key
 
 | Behaviour | Where |
 |---|---|
-| Recognised as moderation — official display name | `moderation_identity.dart`, via `isModerationAccount` |
+| Recognised as moderation — official display name and inbox search name | `dm_peer_identity.dart`, `moderation_identity.dart`, and `dm_peer_name.dart`, via `isModerationAccount` |
 | Recognised as moderation — bundled wordmark avatar | `conversation_tile.dart`, `request_tile.dart`, `request_preview_view.dart`, `empty_conversation.dart` |
-| Composer closed, thread labelled retired | `conversation_view.dart`, via `isRetiredModerationAccount` |
-| Outbound sends refused at the policy layer | `dmSendPolicyProvider` → `terminallyBlocked` |
+| Conversation and request rows labelled closed | `conversation_tile.dart` and `request_tile.dart`, via `isRetiredModerationAccount` |
+| Composer closed; banner routes replies to the current support key | `conversation_view.dart`, via `isRetiredModerationAccount` and `kModerationPubkeyHex` |
+| Pinned support row, unread partition, and retired predicates wired into list state | `inbox_page.dart`, `message_requests_page.dart`, `app_shell_badge_scope.dart`, and `ConversationListBloc` |
+| Destructive request action withheld for moderation threads | `request_preview_view.dart`, via `isModerationAccount` |
+| Outbound sends refused at the lowest repository send primitive | `dmSendPolicyProvider` → `DmSendPolicyDecision.terminallyBlocked` |
+| Pre-rotation threads excluded from pinned-support adoption | `DmRepository.extractPinnedSupport` |
 | Labeler subscription migrated to the current key | `ModerationLabelService._migrateLegacyPubkey` |
 
 `isModerationAccount` answers *"is this the moderation team"* and is true for
@@ -50,9 +62,13 @@ Anything picking a **send target** must use `kModerationPubkeyHex` and neither
 predicate.
 
 Recognition is keyed on the pubkey alone: it does not consider when a message
-arrived relative to the rotation, and the layers below the UI — `dm_repository`
-included — have no notion of a retired key at all. Whether that should change
-is an open product question, tracked with the custody work rather than here.
+arrived relative to the rotation. The repository layer is nevertheless
+retired-key-aware at the two delivery seams that matter: the injected
+`DmSendPolicy` blocks every outbound publisher at the lowest send primitive,
+and pinned-support extraction avoids adopting a pre-rotation thread whose
+participants would route replies to the retired key. The medium- and long-term
+policy for recognising newly discovered events from a retired shared identity
+is tracked in `divinevideo/divine-mobile#8355`.
 
 ## Rotating the moderation key
 
@@ -62,17 +78,23 @@ The client half is small and belongs in one PR:
    naming the rotation commit and date.
 2. Add a row to [the register](#the-register) above, including every role the
    key held — check for relay admin and labeler roles, not just DM signing.
-3. Update `kModerationPubkeyHex` to the incoming key. It is the NIP-05
-   fallback; live resolution of `moderation@divine.video` is the primary path,
-   so a stale constant fails quietly rather than loudly.
+3. Update `kModerationPubkeyHex` to the incoming shared support key. This is a
+   mandatory routing change: the constant is the report target, pinned support
+   row destination, protected-minor gate anchor, unread partition, retired
+   thread redirect target, and `ModerationLabelService`'s NIP-05 fallback. A
+   stale value silently routes support traffic to the retired account even
+   when live NIP-05 resolution succeeds elsewhere.
 4. Confirm `ModerationLabelService._migrateLegacyPubkey` covers the new entry
    — it reads the list, so it does, but the test should say so.
 
 The service and infrastructure half — rotating the signing key, updating the
-relay admin list, republishing kind-0 and kind-10050, repointing NIP-05 — lives
-outside this repo. No step-by-step procedure for it is written down anywhere;
-the March 2026 rotation had to be reconstructed from PR bodies after the fact.
-If you run the next one, write it down.
+relay admin list, republishing kind-0 and kind-10050, repointing NIP-05, and
+auditing Funnelcake's `nostr.trusted_labelers` and
+`nostr.moderation_sources` — lives outside this repo. Do not assume those trust
+tables must use the user-facing support key: reconcile them with the approved
+human-support and automated-labeler roles in `divinevideo/divine-mobile#8253`.
+No step-by-step service procedure is written down; the policy and procedure
+requirements are tracked in `divinevideo/divine-mobile#8355`.
 
 ### What a rotation cannot fix
 
@@ -96,5 +118,7 @@ there rather than inferring it from this repo.
 
 ## Open items
 
-- `divinevideo/divine-mobile#7851` — custody of `121b915b…`, and this register.
-- No written procedure for the service-side half of a rotation.
+- `divinevideo/divine-mobile#8355` — codify and validate the medium- and
+  long-term shared moderation identity, custody, and rotation policy.
+- `divinevideo/divine-mobile#8253` — decide whether the user-facing support
+  identity and Funnelcake's trusted labeler are intentionally separate roles.
