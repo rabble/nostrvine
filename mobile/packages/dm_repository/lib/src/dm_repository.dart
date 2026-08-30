@@ -907,10 +907,12 @@ class DmRepository {
       // uniform on [0, 2d) — half the intended margin, on average. See #8209.
       //
       // Falling back to the rumor boundary keeps the previous behavior for an
-      // install that has not processed an event since upgrading. The fallback
-      // can only ever widen: for any single event the wire stamp is at or
-      // below the rumor stamp, so `newestWireSyncedAt <= newestSyncedAt` and
-      // the derived `since:` never moves later than it does today.
+      // install that has not processed an event since upgrading. A delayed
+      // retry may re-wrap an old rumor with a recent wire stamp, so switching
+      // to the wire boundary can narrow that fallback window. It still keeps
+      // the full required overlap in the relay's clock: a compliant wrap's
+      // wire stamp is at most its publication time, and every later compliant
+      // wrap is stamped no earlier than its publication time minus two days.
       final newest = _syncState?.newestSyncedAt(_userPubkey);
       final newestWire = _syncState?.newestWireSyncedAt(_userPubkey);
       final isFirstOpen = newest == null;

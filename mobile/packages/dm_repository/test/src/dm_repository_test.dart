@@ -4130,13 +4130,15 @@ void main() {
           // The invariant the window has to hold: our newest processed wrap
           // was stamped at or below the moment it was published, so any wrap
           // published from that moment onward — even one backdated the full
-          // two days NIP-17 allows — is at or above `wire - 2d`. Deriving the
-          // boundary from the rumor clock breaks it, because the rumor stamp
-          // sits above the wire stamp by that wrap's own backdate.
+          // two days NIP-17 allows — is at or above `wire - 2d`. Use an old
+          // rumor re-wrapped recently (the retry behavior in GiftWrapUtil) to
+          // cover the case where the wire boundary narrows the rumor fallback.
           const publishedAt = 1700000000;
           const wireNewest = publishedAt - 3600;
-          const rumorNewest = publishedAt + 86400;
+          const rumorNewest = publishedAt - 86400;
           const worstCaseOuter = publishedAt - 2 * 86400;
+
+          expect(wireNewest, greaterThan(rumorNewest));
 
           final controller = StreamController<Event>();
           when(

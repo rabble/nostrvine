@@ -108,12 +108,12 @@ class DmSyncState {
   ///
   /// [newestSyncedAt] tracks the inner NIP-59 rumor instead, because that is
   /// the honest send time the UI orders by. The two clocks are not
-  /// interchangeable: NIP-17 requires the outer wrap to be backdated by a
-  /// random 0..2 day offset, so the wire stamp trails the rumor stamp by that
-  /// offset. Deriving `since:` from the rumor clock therefore spends part of
-  /// the intended 2-day overlap before the window even opens, and any wrap
-  /// whose backdate exceeds what is left is dropped by the relay and never
-  /// requested again. See #8209.
+  /// interchangeable: NIP-17 derives the outer wrap stamp from publication
+  /// time with a random 0..2 day backdate, independently of the rumor stamp.
+  /// Deriving `since:` from the rumor clock can therefore spend part of the
+  /// intended 2-day overlap before the window even opens, and any wrap whose
+  /// backdate exceeds what is left is dropped by the relay and never requested
+  /// again. See #8209.
   int? newestWireSyncedAt(String pubkey) =>
       _prefs.getInt('$_newestWirePrefix$pubkey');
 
