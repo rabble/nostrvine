@@ -74,9 +74,7 @@ class ConversationTile extends ConsumerWidget {
     // The thread and its history stay — the messages are the viewer's own copy
     // and a NIP-62 vanish cannot retract them. Only the counterparty's identity
     // is replaced.
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
 
     final peerName = dmPeerDisplayName(
       context,

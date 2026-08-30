@@ -1854,9 +1854,7 @@ void main() {
             hasMore: false,
           ),
           additionalOverrides: [
-            profileVanishedProvider(
-              otherPubkey,
-            ).overrideWith((ref) => Stream.value(true)),
+            profileVanishedProvider(otherPubkey).overrideWith((ref) => true),
             profileVanishedSnapshotProvider(
               otherPubkey,
             ).overrideWith((ref) async => true),

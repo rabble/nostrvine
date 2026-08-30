@@ -456,9 +456,7 @@ void main() {
             mockNip05VerificationService: createMockNip05VerificationService(),
             mockFollowRepository: mockFollowRepository,
           ),
-          profileVanishedProvider(
-            userIdHex,
-          ).overrideWith((ref) => Stream.value(isVanished)),
+          profileVanishedProvider(userIdHex).overrideWith((ref) => isVanished),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future

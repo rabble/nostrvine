@@ -1164,7 +1164,7 @@ void main() {
               ),
               profileVanishedProvider(
                 otherPubkey,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              ).overrideWith((ref) => vanished),
               profileIdentityResolvingProvider(
                 otherPubkey,
               ).overrideWithValue(identityResolving),

@@ -446,9 +446,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               // Name the state rather than pass a deleted account's identity
               // downstream. ProfileHeaderWidget applies the same rule to the
               // avatar and the route hints, which it resolves itself.
-              final isVanished =
-                  ref.watch(profileVanishedProvider(widget.pubkey)).value ??
-                  false;
+              final isVanished = ref.watch(
+                profileVanishedProvider(widget.pubkey),
+              );
               final headerProfile = isVanished
                   ? null
                   : switch (state) {

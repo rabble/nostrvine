@@ -66,7 +66,7 @@ void main() {
           ).overrideWith((ref) async => riverpodProfile),
           profileVanishedProvider(
             _testUserHex,
-          ).overrideWith((ref) => Stream.value(isVanished)),
+          ).overrideWith((ref) => isVanished),
         ],
         child: MaterialApp(home: Scaffold(body: layer)),
       );

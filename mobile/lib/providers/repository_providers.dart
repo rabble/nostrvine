@@ -38,6 +38,7 @@ import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -440,6 +441,10 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
   // needs them — a relay Kind 0 can resurrect an evicted account regardless of
   // whether this instance warms the cache.
   unawaited(repo.loadVanishedPubkeys());
+  // Prime the keep-alive source used by profileVanishedProvider before DM
+  // surfaces mount, so its synchronous derived value does not sample the
+  // source during its one initial AsyncLoading state.
+  ref.listen(vanishedProfilePubkeysProvider, (_, _) {});
 
   if (warmCache) {
     // Pre-load known cached pubkeys and wire into SubscriptionManager

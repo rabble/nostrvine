@@ -14,7 +14,7 @@ part 'user_profile_providers.g.dart';
 
 const _blockedProfileFetchChunkSize = 50;
 
-final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
+final vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
   return ref
       .watch(databaseProvider)
       .vanishedProfilesDao
@@ -185,9 +185,13 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// This is deliberately synchronous: the keep-alive pubkey stream is primed
+/// when the profile repository is built, so wrapping this derived value in a
+/// stream would only manufacture an `AsyncLoading` state for consumers.
 @riverpod
-Stream<bool> profileVanished(Ref ref, String pubkey) {
+bool profileVanished(Ref ref, String pubkey) {
   final pubkeys =
-      ref.watch(_vanishedProfilePubkeysProvider).value ?? const <String>{};
-  return Stream.value(pubkeys.contains(pubkey));
+      ref.watch(vanishedProfilePubkeysProvider).value ?? const <String>{};
+  return pubkeys.contains(pubkey);
 }

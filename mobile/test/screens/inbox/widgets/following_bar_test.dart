@@ -242,9 +242,7 @@ void main() {
                 (ref) async =>
                     createTestProfile(pubkey: pubkey1, displayName: 'Alice'),
               ),
-              profileVanishedProvider(
-                pubkey1,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              profileVanishedProvider(pubkey1).overrideWith((ref) => vanished),
             ],
           ),
         );

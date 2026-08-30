@@ -90,9 +90,7 @@ class _FollowingUserButton extends ConsumerWidget {
 
     // A vanish cannot rewrite the viewer's own contact list, so the account
     // stays in this bar. Show it as deleted rather than under a stale name.
-    final isDeleted = ref
-        .watch(profileVanishedProvider(pubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(pubkey));
 
     final displayName = dmPeerDisplayName(
       context,

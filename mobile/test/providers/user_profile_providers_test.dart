@@ -46,6 +46,11 @@ class _TestNostrSession extends NostrSession {
   NostrSessionReadiness build() => _readiness;
 }
 
+void _ignoreVanishedPubkeysChange(
+  AsyncValue<Set<String>>? previous,
+  AsyncValue<Set<String>> next,
+) {}
+
 void main() {
   const pubkey =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -207,6 +212,72 @@ void main() {
         container.exists(profileIdentityResolvingProvider(pubkey)),
         isFalse,
       );
+    });
+  });
+
+  group('profileVanishedProvider', () {
+    test(
+      'returns the durable value synchronously after the source resolves',
+      () async {
+        final database = _MockAppDatabase();
+        final vanishedProfilesDao = _MockVanishedProfilesDao();
+        when(
+          () => database.vanishedProfilesDao,
+        ).thenReturn(vanishedProfilesDao);
+        when(
+          vanishedProfilesDao.watchAllPubkeys,
+        ).thenAnswer((_) => Stream.value([pubkey]));
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWithValue(database)],
+        );
+        addTearDown(container.dispose);
+
+        final sourceSub = container.listen(
+          vanishedProfilePubkeysProvider,
+          _ignoreVanishedPubkeysChange,
+          fireImmediately: true,
+        );
+        addTearDown(sourceSub.close);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container.read(profileVanishedProvider(pubkey)), isTrue);
+      },
+    );
+
+    test('updates directly when the durable source changes', () async {
+      final database = _MockAppDatabase();
+      final vanishedProfilesDao = _MockVanishedProfilesDao();
+      final pubkeys = StreamController<List<String>>();
+      addTearDown(pubkeys.close);
+      when(() => database.vanishedProfilesDao).thenReturn(vanishedProfilesDao);
+      when(
+        vanishedProfilesDao.watchAllPubkeys,
+      ).thenAnswer((_) => pubkeys.stream);
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final sourceSub = container.listen(
+        vanishedProfilePubkeysProvider,
+        _ignoreVanishedPubkeysChange,
+        fireImmediately: true,
+      );
+      addTearDown(sourceSub.close);
+      final values = <bool>[];
+      final profileSub = container.listen(
+        profileVanishedProvider(pubkey),
+        (_, value) => values.add(value),
+        fireImmediately: true,
+      );
+      addTearDown(profileSub.close);
+
+      pubkeys.add(const []);
+      await Future<void>.delayed(Duration.zero);
+      pubkeys.add([pubkey]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(values, [false, true]);
     });
   });
 

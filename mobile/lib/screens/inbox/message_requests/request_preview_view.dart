@@ -114,9 +114,7 @@ class RequestPreviewView extends ConsumerWidget {
     // through to [OtherProfileScreen], which already names a vanished account
     // for the state — so without this the same tap sequence showed a generated
     // handle and then "Deleted account" (#8185).
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
 
     // Suppressing the profile object as well as the name matches
     // [OtherProfileScreen], which nulls its own header profile on a vanish

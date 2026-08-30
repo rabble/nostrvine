@@ -479,6 +479,10 @@ final class FetchUserProfileFamily extends $Family
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// This is deliberately synchronous: the keep-alive pubkey stream is primed
+/// when the profile repository is built, so wrapping this derived value in a
+/// stream would only manufacture an `AsyncLoading` state for consumers.
 
 @ProviderFor(profileVanished)
 final profileVanishedProvider = ProfileVanishedFamily._();
@@ -489,16 +493,24 @@ final profileVanishedProvider = ProfileVanishedFamily._();
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// This is deliberately synchronous: the keep-alive pubkey stream is primed
+/// when the profile repository is built, so wrapping this derived value in a
+/// stream would only manufacture an `AsyncLoading` state for consumers.
 
 final class ProfileVanishedProvider
-    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
-    with $FutureModifier<bool>, $StreamProvider<bool> {
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
   /// Whether the account behind [pubkey] has requested NIP-62 deletion.
   ///
   /// Backed by the durable `vanished_profiles` table, so a cold start resolves
   /// without a network round trip, and it flips live when a fetch discovers a
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
+  ///
+  /// This is deliberately synchronous: the keep-alive pubkey stream is primed
+  /// when the profile repository is built, so wrapping this derived value in a
+  /// stream would only manufacture an `AsyncLoading` state for consumers.
   ProfileVanishedProvider._({
     required ProfileVanishedFamily super.from,
     required String super.argument,
@@ -522,13 +534,21 @@ final class ProfileVanishedProvider
 
   @$internal
   @override
-  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  Stream<bool> create(Ref ref) {
+  bool create(Ref ref) {
     final argument = this.argument as String;
     return profileVanished(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
   }
 
   @override
@@ -542,7 +562,7 @@ final class ProfileVanishedProvider
   }
 }
 
-String _$profileVanishedHash() => r'9c15d7c790f73dd872f1cf8e8c690ef0f411ba17';
+String _$profileVanishedHash() => r'29720937045a4363d508c27d1a2bf503d6f41bf7';
 
 /// Whether the account behind [pubkey] has requested NIP-62 deletion.
 ///
@@ -550,9 +570,13 @@ String _$profileVanishedHash() => r'9c15d7c790f73dd872f1cf8e8c690ef0f411ba17';
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// This is deliberately synchronous: the keep-alive pubkey stream is primed
+/// when the profile repository is built, so wrapping this derived value in a
+/// stream would only manufacture an `AsyncLoading` state for consumers.
 
 final class ProfileVanishedFamily extends $Family
-    with $FunctionalFamilyOverride<Stream<bool>, String> {
+    with $FunctionalFamilyOverride<bool, String> {
   ProfileVanishedFamily._()
     : super(
         retry: null,
@@ -568,6 +592,10 @@ final class ProfileVanishedFamily extends $Family
   /// without a network round trip, and it flips live when a fetch discovers a
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
+  ///
+  /// This is deliberately synchronous: the keep-alive pubkey stream is primed
+  /// when the profile repository is built, so wrapping this derived value in a
+  /// stream would only manufacture an `AsyncLoading` state for consumers.
 
   ProfileVanishedProvider call(String pubkey) =>
       ProfileVanishedProvider._(argument: pubkey, from: this);
