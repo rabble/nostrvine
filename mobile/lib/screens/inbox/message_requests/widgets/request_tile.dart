@@ -50,7 +50,7 @@ class RequestTile extends ConsumerWidget {
         .watch(profileVanishedProvider(otherPubkey))
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final displayName = dmPeerDisplayName(
+    final peerName = dmPeerDisplayName(
       context,
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
@@ -61,6 +61,18 @@ class RequestTile extends ConsumerWidget {
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
         : displayName;
+
+    // A group reaches this list like any other unfollowed thread —
+    // `classifyPotentialRequests` routes "1:1 or group alike" — so the row has
+    // to name the room, not whichever member `otherPubkey` picked.
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: conversation.participantPubkeys,
+      currentUserPubkey: currentUserPubkey,
+      isGroup: conversation.isGroup,
+      peerName: peerName,
+      subject: conversation.subject,
+    );
 
     final imageUrl = isDeleted
         ? null

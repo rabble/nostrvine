@@ -17,6 +17,7 @@ void main() {
       bool isBlocked = false,
       String displayName = 'Alice',
       bool isVanished = false,
+      bool isGroup = false,
       Locale? locale,
     }) {
       return testMaterialApp(
@@ -32,6 +33,7 @@ void main() {
                     isVanished: isVanished,
                     isMuted: isMuted,
                     isBlocked: isBlocked,
+                    isGroup: isGroup,
                   );
                   onResult(result);
                 },
@@ -221,6 +223,36 @@ void main() {
 
         expect(callbackCalled, isTrue);
         expect(result, isNull);
+      });
+    });
+
+    // A group sheet has no way to say WHICH account Report and Block would
+    // act on, so it offers neither. Conversation-scoped actions stay.
+    group('a group conversation', () {
+      testWidgets('offers only the conversation-scoped actions', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(onResult: (_) {}, isGroup: true),
+        );
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxActionMute), findsOneWidget);
+        expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+        expect(find.text(l10n.inboxActionReport('Alice')), findsNothing);
+        expect(find.text(l10n.inboxActionBlock('Alice')), findsNothing);
+      });
+
+      testWidgets('a 1:1 still offers both', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(buildSubject(onResult: (_) {}));
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxActionReport('Alice')), findsOneWidget);
+        expect(find.text(l10n.inboxActionBlock('Alice')), findsOneWidget);
       });
     });
   });

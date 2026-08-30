@@ -186,6 +186,7 @@ void main() {
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
       String counterparty = otherPubkey,
+      List<String>? counterparties,
       ConversationState? previousState,
       Future<UserProfile?>? otherProfileFuture,
       Future<bool>? otherProfileVanishedFuture,
@@ -256,7 +257,7 @@ void main() {
               child: BlocProvider<DmRestoreStatusCubit>.value(
                 value: mockRestoreStatusCubit,
                 child: ConversationView(
-                  participantPubkeys: [counterparty],
+                  participantPubkeys: counterparties ?? [counterparty],
                 ),
               ),
             ),
@@ -267,6 +268,66 @@ void main() {
           ? app
           : MockGoRouterProvider(goRouter: goRouter, child: app);
     }
+
+    // Same rule as the inbox action sheet, one screen in: Report and Block
+    // take one account, and on a group `otherPubkey` is whichever counterparty
+    // sorted first — so the sheet would name the thread and act on a stranger.
+    group('options sheet on a group thread', () {
+      const secondPeer =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      Future<void> openOptions(
+        WidgetTester tester, {
+        required List<String> counterparties,
+      }) async {
+        await tester.pumpWidget(
+          buildSubject(
+            counterparties: counterparties,
+            state: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          ),
+        );
+        await tester.pump();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('offers no Report or Block', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openOptions(
+          tester,
+          counterparties: const [otherPubkey, secondPeer],
+        );
+
+        expect(find.text(l10n.profileCopyPublicKey), findsOneWidget);
+        expect(
+          find.textContaining(l10n.profileBlockDisplayName('')),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(l10n.profileReportDisplayName('')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a 1:1 thread still offers both', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openOptions(tester, counterparties: const [otherPubkey]);
+
+        expect(
+          find.textContaining(l10n.profileBlockDisplayName('')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.profileReportDisplayName('')),
+          findsOneWidget,
+        );
+      });
+    });
 
     group('double-tap to like', () {
       DmMessage reactableMessage({required bool sent}) => DmMessage(

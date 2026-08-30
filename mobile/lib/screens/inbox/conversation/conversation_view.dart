@@ -86,6 +86,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   Future<void> _onOptions(String otherPubkey) async {
     if (otherPubkey.isEmpty || _isOpeningOptions) return;
     _isOpeningOptions = true;
+    // Self is already excluded from the route's counterparty list, so more
+    // than one of them is a group.
+    final isGroup = widget.participantPubkeys.length > 1;
     try {
       bool isVanished;
       try {
@@ -153,7 +156,15 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
           displayName: displayName,
           isFollowing: isFollowing,
           isBlocked: isBlocked,
-          showReport: true,
+          // Same rule as the inbox action sheet: Report and Block take one
+          // account, and `otherPubkey` on a group is whichever member sorted
+          // first — so offering them under a room's name reads as dealing
+          // with the thread while acting on a stranger. Copy, Unfollow and
+          // Add to list stay: each plainly names the person it affects and
+          // none implies the thread stops. An individual is still reportable
+          // and blockable from their own profile.
+          showReport: !isGroup,
+          showBlock: !isGroup,
         ),
         children: const [],
       );

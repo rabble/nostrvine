@@ -33,6 +33,7 @@ class MoreSheetContent extends StatefulWidget {
     this.initialMode = MoreSheetMode.menu,
     this.showAddToList = false,
     this.showReport = false,
+    this.showBlock = true,
     super.key,
   });
 
@@ -59,6 +60,13 @@ class MoreSheetContent extends StatefulWidget {
   /// Hidden on the current user's own profile, where reporting yourself
   /// is meaningless.
   final bool showReport;
+
+  /// Whether to show the "Block"/"Unblock" action.
+  ///
+  /// Defaults to true — every profile surface offers it. A group DM thread
+  /// passes false: block takes one account, and that sheet is opened from a
+  /// room whose name is not any one member's.
+  final bool showBlock;
 
   @override
   State<MoreSheetContent> createState() => _MoreSheetContentState();
@@ -169,13 +177,15 @@ class _MoreSheetContentState extends State<MoreSheetContent>
       isBlocked: widget.isBlocked,
       onCopy: () => Navigator.of(context).pop(MoreSheetResult.copy),
       onUnfollow: () => Navigator.of(context).pop(MoreSheetResult.unfollow),
-      onBlockTap: () {
-        if (widget.isBlocked) {
-          _transitionTo(MoreSheetMode.unblockConfirmation);
-        } else {
-          _transitionTo(MoreSheetMode.blockConfirmation);
-        }
-      },
+      onBlockTap: widget.showBlock
+          ? () {
+              if (widget.isBlocked) {
+                _transitionTo(MoreSheetMode.unblockConfirmation);
+              } else {
+                _transitionTo(MoreSheetMode.blockConfirmation);
+              }
+            }
+          : null,
       onAddToList: widget.showAddToList
           ? () => Navigator.of(context).pop(MoreSheetResult.addToList)
           : null,

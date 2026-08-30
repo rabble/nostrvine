@@ -15,7 +15,7 @@ class MoreSheetMenu extends StatelessWidget {
     required this.isBlocked,
     required this.onCopy,
     required this.onUnfollow,
-    required this.onBlockTap,
+    this.onBlockTap,
     this.onAddToList,
     this.onReport,
     super.key,
@@ -37,7 +37,12 @@ class MoreSheetMenu extends StatelessWidget {
   final VoidCallback onUnfollow;
 
   /// Called when block/unblock is tapped.
-  final VoidCallback onBlockTap;
+  /// Opens the block/unblock confirmation.
+  ///
+  /// When null, the action is hidden — the same contract as [onReport]. A
+  /// group DM thread passes null: block takes one account and the sheet has no
+  /// way to say which of the room's members it would be.
+  final VoidCallback? onBlockTap;
 
   /// Optional callback for the "Add to list" action.
   ///
@@ -80,16 +85,17 @@ class MoreSheetMenu extends StatelessWidget {
             label: l10n.profileReportDisplayName(displayName),
             onTap: onReport!,
           ),
-        _MoreSheetMenuItem(
-          icon: isBlocked
-              ? DivineIconName.prohibitInset
-              : DivineIconName.prohibit,
-          label: isBlocked
-              ? l10n.profileUnblockDisplayName(displayName)
-              : l10n.profileBlockDisplayName(displayName),
-          onTap: onBlockTap,
-          color: isBlocked ? context.vineColors.onSurface : VineTheme.error,
-        ),
+        if (onBlockTap != null)
+          _MoreSheetMenuItem(
+            icon: isBlocked
+                ? DivineIconName.prohibitInset
+                : DivineIconName.prohibit,
+            label: isBlocked
+                ? l10n.profileUnblockDisplayName(displayName)
+                : l10n.profileBlockDisplayName(displayName),
+            onTap: onBlockTap!,
+            color: isBlocked ? context.vineColors.onSurface : VineTheme.error,
+          ),
       ],
     );
   }

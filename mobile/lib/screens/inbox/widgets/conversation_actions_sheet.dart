@@ -31,8 +31,8 @@ class ConversationActionsSheet {
     required bool isVanished,
     required bool isMuted,
     required bool isBlocked,
+    required bool isGroup,
     bool canRemove = true,
-    bool isGroup = false,
   }) {
     // A vanished peer can publish again under the same key, and their DMs
     // remain in the recipient's history. Keep Report and Block available for
