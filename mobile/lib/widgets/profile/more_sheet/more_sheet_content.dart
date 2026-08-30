@@ -34,6 +34,7 @@ class MoreSheetContent extends StatefulWidget {
     this.showAddToList = false,
     this.showReport = false,
     this.showBlock = true,
+    this.showCopy = true,
     super.key,
   });
 
@@ -67,6 +68,12 @@ class MoreSheetContent extends StatefulWidget {
   /// passes false: block takes one account, and that sheet is opened from a
   /// room whose name is not any one member's.
   final bool showBlock;
+
+  /// Whether to show the "Copy public key" action.
+  ///
+  /// Defaults to true. A group DM passes false because this sheet's key is
+  /// the first member's key, not the room's identity.
+  final bool showCopy;
 
   @override
   State<MoreSheetContent> createState() => _MoreSheetContentState();
@@ -175,7 +182,9 @@ class _MoreSheetContentState extends State<MoreSheetContent>
       displayName: widget.displayName,
       isFollowing: widget.isFollowing,
       isBlocked: widget.isBlocked,
-      onCopy: () => Navigator.of(context).pop(MoreSheetResult.copy),
+      onCopy: widget.showCopy
+          ? () => Navigator.of(context).pop(MoreSheetResult.copy)
+          : null,
       onUnfollow: () => Navigator.of(context).pop(MoreSheetResult.unfollow),
       onBlockTap: widget.showBlock
           ? () {

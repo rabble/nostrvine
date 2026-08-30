@@ -10,6 +10,14 @@ import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 
+/// Optional data carried when navigating from a conversation row.
+class DmRouteExtra {
+  const DmRouteExtra({required this.participantPubkeys, this.subject});
+
+  final List<String> participantPubkeys;
+  final String? subject;
+}
+
 List<RouteBase> messagingRoutes() {
   return [
     // DM conversation detail (pushed from inbox, no bottom nav)
@@ -19,14 +27,13 @@ List<RouteBase> messagingRoutes() {
       builder: (ctx, st) {
         final id = st.pathParameters['id'];
         if (id == null || id.isEmpty) {
-          return RouteErrorScreen(
-            message: ctx.l10n.routeInvalidConversationId,
-          );
+          return RouteErrorScreen(message: ctx.l10n.routeInvalidConversationId);
         }
-        final participantPubkeys = stringListRouteExtra(st.extra);
+        final extra = dmRouteExtra(st.extra);
         return ConversationPage(
           conversationId: id,
-          participantPubkeys: participantPubkeys,
+          participantPubkeys: extra.participantPubkeys,
+          subject: extra.subject,
         );
       },
     ),
@@ -51,10 +58,11 @@ List<RouteBase> messagingRoutes() {
         }
         // Pubkeys are optional — the page loads them from the DB when not
         // provided (e.g. deep link); DM-restricted users fail closed (#176).
-        final participantPubkeys = stringListRouteExtra(st.extra);
+        final extra = dmRouteExtra(st.extra);
         return RequestPreviewPage(
           conversationId: id,
-          participantPubkeys: participantPubkeys,
+          participantPubkeys: extra.participantPubkeys,
+          subject: extra.subject,
         );
       },
     ),
@@ -71,4 +79,14 @@ List<String> stringListRouteExtra(Object? extra) {
     values.add(item);
   }
   return List<String>.unmodifiable(values);
+}
+
+DmRouteExtra dmRouteExtra(Object? extra) {
+  if (extra is Map) {
+    return DmRouteExtra(
+      participantPubkeys: stringListRouteExtra(extra['participantPubkeys']),
+      subject: extra['subject'] is String ? extra['subject'] as String : null,
+    );
+  }
+  return DmRouteExtra(participantPubkeys: stringListRouteExtra(extra));
 }

@@ -13,8 +13,8 @@ class MoreSheetMenu extends StatelessWidget {
     required this.displayName,
     required this.isFollowing,
     required this.isBlocked,
-    required this.onCopy,
     required this.onUnfollow,
+    this.onCopy,
     this.onBlockTap,
     this.onAddToList,
     this.onReport,
@@ -31,7 +31,7 @@ class MoreSheetMenu extends StatelessWidget {
   final bool isBlocked;
 
   /// Called when copy public key is tapped.
-  final VoidCallback onCopy;
+  final VoidCallback? onCopy;
 
   /// Called when unfollow is tapped.
   final VoidCallback onUnfollow;
@@ -68,11 +68,12 @@ class MoreSheetMenu extends StatelessWidget {
             label: l10n.profileAddToListDisplayName(displayName),
             onTap: onAddToList!,
           ),
-        _MoreSheetMenuItem(
-          icon: DivineIconName.copy,
-          label: l10n.profileCopyPublicKey,
-          onTap: onCopy,
-        ),
+        if (onCopy != null)
+          _MoreSheetMenuItem(
+            icon: DivineIconName.copy,
+            label: l10n.profileCopyPublicKey,
+            onTap: onCopy!,
+          ),
         if (isFollowing)
           _MoreSheetMenuItem(
             icon: DivineIconName.userMinus,

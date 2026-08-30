@@ -50,10 +50,15 @@ import 'package:unified_logger/unified_logger.dart';
 /// Uses [BlocSelector] for child widgets that depend on specific slices of
 /// [ConversationState] to avoid unnecessary rebuilds.
 class ConversationView extends ConsumerStatefulWidget {
-  const ConversationView({required this.participantPubkeys, super.key});
+  const ConversationView({
+    required this.participantPubkeys,
+    this.subject,
+    super.key,
+  });
 
   /// Pubkeys of the other participants (excludes current user).
   final List<String> participantPubkeys;
+  final String? subject;
 
   @override
   ConsumerState<ConversationView> createState() => _ConversationViewState();
@@ -165,6 +170,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
           // and blockable from their own profile.
           showReport: !isGroup,
           showBlock: !isGroup,
+          // Hidden for a group too: this sheet has no room identity to copy,
+          // and `otherPubkey` is an arbitrary member.
+          showCopy: !isGroup,
         ),
         children: const [],
       );
@@ -248,10 +256,22 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       profile: profile,
       isResolving: isResolving,
     );
-    final isIdentityResolving = isResolving && displayName.isEmpty;
-    final visualDisplayName = displayName.isEmpty
+    final isGroup = widget.participantPubkeys.length > 1;
+    final conversationDisplayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: [currentPubkey, ...widget.participantPubkeys],
+      currentUserPubkey: currentPubkey,
+      isGroup: isGroup,
+      peerName: displayName,
+      subject: widget.subject,
+    );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
+    final isIdentityResolving = isResolving && conversationDisplayName.isEmpty;
+    final visualDisplayName = conversationDisplayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
-        : displayName;
+        : conversationDisplayName;
     final claimedNip05 = profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
@@ -330,7 +350,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                     child: Column(
                       children: [
                         ConversationAppBar(
-                          displayName: displayName,
+                          displayName: conversationDisplayName,
                           isResolving: isIdentityResolving,
                           loadingDisplayName: visualDisplayName,
                           handle: handle,
@@ -361,7 +381,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   otherPubkey: otherPubkey,
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
-                                  displayName: displayName,
+                                  displayName: conversationDisplayName,
                                   isResolving: isIdentityResolving,
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&

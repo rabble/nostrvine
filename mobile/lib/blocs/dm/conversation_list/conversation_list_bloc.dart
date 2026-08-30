@@ -777,10 +777,33 @@ class ConversationListBloc
         peerName: peerName,
         groupFallbackName: peerName,
       ).toLowerCase();
+      final hasSubject = c.isGroup && c.subject?.trim().isNotEmpty == true;
+      final knownMemberNames = hasSubject
+          ? c.participantPubkeys
+                .map(
+                  (pubkey) => (
+                    pubkey: pubkey,
+                    name: profileNames[pubkey],
+                  ),
+                )
+                .where(
+                  (entry) =>
+                      entry.name != null &&
+                      entry.name !=
+                          UserProfile.defaultDisplayNameFor(
+                            entry.pubkey,
+                          ),
+                )
+                .map((entry) => entry.name!.toLowerCase())
+          : [peerName.toLowerCase()];
       final preview = peerLabels != null && _retiredModerationAccount(other)
           ? peerLabels.retiredConversationClosed.toLowerCase()
           : c.lastMessageContent?.toLowerCase() ?? '';
-      return name.contains(normalized) || preview.contains(normalized);
+      return name.contains(normalized) ||
+          knownMemberNames.any(
+            (memberName) => memberName.contains(normalized),
+          ) ||
+          preview.contains(normalized);
     }).toList();
   }
 

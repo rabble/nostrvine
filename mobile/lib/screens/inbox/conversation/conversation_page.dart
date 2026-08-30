@@ -28,6 +28,7 @@ class ConversationPage extends ConsumerWidget {
   const ConversationPage({
     required this.conversationId,
     required this.participantPubkeys,
+    this.subject,
     super.key,
   });
 
@@ -40,6 +41,9 @@ class ConversationPage extends ConsumerWidget {
   /// deep link or a browser refresh, so [ConversationParticipantsCubit]
   /// resolves it from the conversation row when it is empty (#3335).
   final List<String> participantPubkeys;
+
+  /// Subject carried from an inbox row to avoid a second read before render.
+  final String? subject;
 
   /// Route name for this screen.
   static const routeName = 'conversation';
@@ -84,15 +88,19 @@ class ConversationPage extends ConsumerWidget {
         isDmRestricted: () => isDmRestricted,
         isApprovedRecipient: officialAccounts.isApprovedMinorDmRecipientSync,
       )..load(),
-      child: _ConversationPageContent(conversationId: conversationId),
+      child: _ConversationPageContent(
+        conversationId: conversationId,
+        subject: subject,
+      ),
     );
   }
 }
 
 class _ConversationPageContent extends ConsumerWidget {
-  const _ConversationPageContent({required this.conversationId});
+  const _ConversationPageContent({required this.conversationId, this.subject});
 
   final String conversationId;
+  final String? subject;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,6 +117,7 @@ class _ConversationPageContent extends ConsumerWidget {
           ConversationParticipantsStatus.ready => _ConversationBlocScope(
             conversationId: conversationId,
             participantPubkeys: state.participantPubkeys,
+            subject: subject,
           ),
         };
       },
@@ -142,10 +151,12 @@ class _ConversationBlocScope extends ConsumerWidget {
   const _ConversationBlocScope({
     required this.conversationId,
     required this.participantPubkeys,
+    this.subject,
   });
 
   final String conversationId;
   final List<String> participantPubkeys;
+  final String? subject;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,13 +201,10 @@ class _ConversationBlocScope extends ConsumerWidget {
         // Reactions cubit; same identity-keying as ConversationBloc.
         BlocProvider<ConversationReactionsCubit>(
           key: ValueKey((reactionsRepository, currentPubkey, 'reactions')),
-          create: (_) =>
-              ConversationReactionsCubit(
-                reactionsRepository: reactionsRepository,
-                ownerPubkey: currentPubkey,
-              )..add(
-                ConversationReactionsStarted(conversationId: conversationId),
-              ),
+          create: (_) => ConversationReactionsCubit(
+            reactionsRepository: reactionsRepository,
+            ownerPubkey: currentPubkey,
+          )..add(ConversationReactionsStarted(conversationId: conversationId)),
         ),
         // Same identity-keying as ConversationBloc above: the response
         // service composes `authServiceProvider` + `nostrServiceProvider`
@@ -219,7 +227,10 @@ class _ConversationBlocScope extends ConsumerWidget {
           ),
         ),
       ],
-      child: ConversationView(participantPubkeys: participantPubkeys),
+      child: ConversationView(
+        participantPubkeys: participantPubkeys,
+        subject: subject,
+      ),
     );
   }
 }

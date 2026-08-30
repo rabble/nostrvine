@@ -303,7 +303,7 @@ void main() {
           counterparties: const [otherPubkey, secondPeer],
         );
 
-        expect(find.text(l10n.profileCopyPublicKey), findsOneWidget);
+        expect(find.text(l10n.profileCopyPublicKey), findsNothing);
         expect(
           find.textContaining(l10n.profileBlockDisplayName('')),
           findsNothing,

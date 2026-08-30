@@ -1,5 +1,5 @@
 // ABOUTME: Bottom sheet with long-press actions for DM conversations.
-// ABOUTME: Provides Mute, Report, Block, and Remove conversation actions.
+// ABOUTME: Provides contextual Mute, Report, Block, and Remove actions.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -37,13 +37,6 @@ class ConversationActionsSheet {
     // A vanished peer can publish again under the same key, and their DMs
     // remain in the recipient's history. Keep Report and Block available for
     // safety, but do not turn the deleted-state label into an identity.
-    final blockLabel = switch ((isBlocked, isVanished)) {
-      (true, true) => context.l10n.inboxActionUnblockVanishedAccount,
-      (true, false) => context.l10n.inboxActionUnblock(displayName),
-      (false, true) => context.l10n.inboxActionBlockVanishedAccount,
-      (false, false) => context.l10n.inboxActionBlock(displayName),
-    };
-
     return VineBottomSheet.show<ConversationAction>(
       context: context,
       scrollable: false,
@@ -73,7 +66,13 @@ class ConversationActionsSheet {
               ),
               _ActionTile(
                 icon: DivineIconName.eyeSlash,
-                label: blockLabel,
+                label: switch ((isBlocked, isVanished)) {
+                  (true, true) =>
+                    context.l10n.inboxActionUnblockVanishedAccount,
+                  (true, false) => context.l10n.inboxActionUnblock(displayName),
+                  (false, true) => context.l10n.inboxActionBlockVanishedAccount,
+                  (false, false) => context.l10n.inboxActionBlock(displayName),
+                },
                 isDestructive: !isBlocked,
                 // Block becomes the last row when Remove is withdrawn, so it
                 // owns the missing divider rather than leaving a trailing rule.

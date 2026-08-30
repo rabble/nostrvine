@@ -36,7 +36,9 @@ import 'package:skeletonizer/skeletonizer.dart';
 /// a "View profile" button, message count text, and two action buttons:
 /// "View messages" (accept) and "Decline and remove".
 class RequestPreviewView extends ConsumerWidget {
-  const RequestPreviewView({super.key});
+  const RequestPreviewView({this.subject, super.key});
+
+  final String? subject;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,13 +140,24 @@ class RequestPreviewView extends ConsumerWidget {
               .asData
               ?.value;
 
-    final displayName = dmPeerDisplayName(
+    final peerName = dmPeerDisplayName(
       context,
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       profile: visibleProfile,
       isResolving: isResolving,
     );
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: [currentPubkey, ...participantPubkeys],
+      currentUserPubkey: currentPubkey,
+      isGroup: participantPubkeys.length > 1,
+      peerName: peerName,
+      subject: subject,
+    );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
     final isIdentityResolving = isResolving && displayName.isEmpty;
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
@@ -198,6 +211,7 @@ class RequestPreviewView extends ConsumerWidget {
             _ActionButtons(
               participantPubkeys: participantPubkeys,
               displayName: displayName,
+              subject: subject,
             ),
           ],
         ),
@@ -721,10 +735,12 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.participantPubkeys,
     required this.displayName,
+    this.subject,
   });
 
   final List<String> participantPubkeys;
   final String displayName;
+  final String? subject;
 
   @override
   Widget build(BuildContext context) {
@@ -738,7 +754,12 @@ class _ActionButtons extends StatelessWidget {
             context.pushReplacementNamed(
               ConversationPage.routeName,
               pathParameters: {'id': conversationId},
-              extra: participantPubkeys,
+              extra: subject == null
+                  ? participantPubkeys
+                  : {
+                      'participantPubkeys': participantPubkeys,
+                      'subject': subject,
+                    },
             );
           },
         ),

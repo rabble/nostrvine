@@ -86,14 +86,6 @@ class ConversationTile extends ConsumerWidget {
       profile: profileAsync.asData?.value,
       isResolving: isResolving,
     );
-    final isIdentityResolving = isResolving && displayName.isEmpty;
-    final accessibilityName = isIdentityResolving
-        ? context.l10n.commonLoading
-        : displayName;
-    final visualDisplayName = displayName.isEmpty
-        ? UserProfile.defaultDisplayNameFor(otherPubkey)
-        : displayName;
-
     // A group is named for the room, not for whichever peer happens to sort
     // first: `otherPubkey` above is an arbitrary member, and naming the row
     // after them hides that anyone else is in it.
@@ -105,6 +97,16 @@ class ConversationTile extends ConsumerWidget {
       peerName: peerName,
       subject: conversation.subject,
     );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final accessibilityName = isIdentityResolving
+        ? context.l10n.commonLoading
+        : displayName;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     final imageUrl = isDeleted
         ? null
@@ -170,13 +172,20 @@ class ConversationTile extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: UserAvatar(
-                      imageUrl: imageUrl,
+                      // A group has no single member's photo to show; the room
+                      // icon matches the room title beside it.
+                      imageUrl: conversation.isGroup ? null : imageUrl,
                       name: visualDisplayName,
                       placeholderSeed: otherPubkey,
                       size: 40,
-                      // Bundled artwork for the moderation account, whose kind-0
-                      // picture does not survive the SVG parser.
-                      contentOverride: isModerationAccount(otherPubkey)
+                      // Bundled artwork for the moderation account, whose
+                      // kind-0 picture does not survive the SVG parser.
+                      contentOverride: conversation.isGroup
+                          ? DivineIcon(
+                              icon: DivineIconName.users,
+                              color: context.vineColors.primaryText,
+                            )
+                          : isModerationAccount(otherPubkey)
                           ? const ModerationAvatar()
                           : null,
                     ),

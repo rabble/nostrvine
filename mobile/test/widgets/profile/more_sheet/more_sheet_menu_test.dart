@@ -30,7 +30,7 @@ void main() {
           displayName: displayName,
           isFollowing: isFollowing,
           isBlocked: isBlocked,
-          onCopy: onCopy ?? () {},
+          onCopy: blockable ? (onCopy ?? () {}) : null,
           onUnfollow: onUnfollow ?? () {},
           onBlockTap: blockable ? (onBlockTap ?? () {}) : null,
           onAddToList: onAddToList,
@@ -63,8 +63,9 @@ void main() {
         find.text(l10n.profileBlockDisplayName(displayName)),
         findsNothing,
       );
-      // The actions that name their own target survive.
-      expect(find.text(l10n.profileCopyPublicKey), findsOneWidget);
+      // Copy also targets one account, so it is hidden until the group menu
+      // can offer an explicit member target.
+      expect(find.text(l10n.profileCopyPublicKey), findsNothing);
     });
 
     testWidgets('hides Unblock when onBlockTap is null and blocked', (

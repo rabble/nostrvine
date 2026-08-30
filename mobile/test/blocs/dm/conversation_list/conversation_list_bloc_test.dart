@@ -2452,7 +2452,7 @@ void main() {
       });
 
       test(
-        'is not found by a participant the titled row never shows',
+        'is not found by a generated name the titled row never shows',
         () async {
           _stubStreams(
             mockDmRepository,
@@ -2480,6 +2480,58 @@ void main() {
           expect(state.visibleConversations, isEmpty);
         },
       );
+
+      test('is also found by a known participant name', () async {
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            _testPubkey2: UserProfile(
+              pubkey: _testPubkey2,
+              displayName: 'Alice',
+              rawData: const {},
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              eventId: _testConversationId1,
+            ),
+          },
+        );
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'titled-group',
+              isGroup: true,
+              subject: 'Weekend trip',
+              participantPubkeys: const [
+                _testPubkey1,
+                _testPubkey2,
+                _testPubkey3,
+              ],
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        bloc.add(const ConversationListStarted());
+        await bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+        bloc.add(const ConversationListSearchQueryChanged('alice'));
+        final state = await bloc.stream
+            .firstWhere(
+              (s) =>
+                  s.searchQuery == 'alice' && s.visibleConversations.isNotEmpty,
+            )
+            .timeout(const Duration(seconds: 5));
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['titled-group']),
+        );
+      });
 
       // Without a subject the row DOES render a participant's name, inside
       // "<peer> and N others" — so that name must still match.

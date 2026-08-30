@@ -310,8 +310,9 @@ class _InboxTabPane extends StatelessWidget {
 void _pushConversation(
   BuildContext context,
   String conversationId,
-  List<String> participantPubkeys,
-) {
+  List<String> participantPubkeys, [
+  String? subject,
+]) {
   Log.info(
     '🚀 Pushing conversation: id=$conversationId',
     name: 'InboxView',
@@ -319,7 +320,9 @@ void _pushConversation(
   );
   context.push(
     ConversationPage.pathForId(conversationId),
-    extra: participantPubkeys,
+    extra: subject == null
+        ? participantPubkeys
+        : {'participantPubkeys': participantPubkeys, 'subject': subject},
   );
 }
 
@@ -996,7 +999,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         .where((pk) => pk != widget.currentUserPubkey)
         .toList();
 
-    _pushConversation(context, conversation.id, otherPubkeys);
+    _pushConversation(
+      context,
+      conversation.id,
+      otherPubkeys,
+      conversation.subject,
+    );
   }
 
   Future<void> _onConversationLongPressed(
