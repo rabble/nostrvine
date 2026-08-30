@@ -202,22 +202,29 @@ class _FeedModeContent extends StatelessWidget {
               child: GestureDetector(
                 behavior: .opaque,
                 onTap: onTap,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 12,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: VineTheme.headlineSmallFont(
-                          color: VineTheme.whiteText,
-                        ).copyWith(shadows: VineTheme.buttonShadows),
+                // Interactive instances need a 48dp target. Preview instances
+                // have no onTap and retain their intrinsic height.
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: onTap == null ? 0 : kMinInteractiveDimension,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 12,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: VineTheme.headlineSmallFont(
+                            color: VineTheme.whiteText,
+                          ).copyWith(shadows: VineTheme.buttonShadows),
+                        ),
                       ),
-                    ),
-                    const _FeedModeCaret(),
-                  ],
+                      const _FeedModeCaret(),
+                    ],
+                  ),
                 ),
               ),
             ),

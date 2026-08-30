@@ -15,6 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -49,8 +50,11 @@ void main() {
       mockVolumeCubit.close();
     });
 
-    // ignore: strict_raw_type
-    Widget createTestWidget({List overrides = const []}) {
+    Widget createTestWidget({
+      // ignore: strict_raw_type
+      List overrides = const [],
+      bool isPreviewMode = false,
+    }) {
       return ProviderScope(
         overrides: overrides.cast(),
         child: MaterialApp(
@@ -66,7 +70,7 @@ void main() {
                       value: mockVolumeCubit,
                     ),
                   ],
-                  child: const FeedModeSwitch(),
+                  child: FeedModeSwitch(isPreviewMode: isPreviewMode),
                 ),
               ],
             ),
@@ -97,6 +101,56 @@ void main() {
         videoUrl: 'https://example.com/video.mp4',
       );
     }
+
+    group('Tap Target', () {
+      Future<void> pumpDefault(WidgetTester tester) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoFeedBlocState(status: VideoFeedStatus.success));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+      }
+
+      Finder labelTarget() => find
+          .ancestor(
+            of: find.text(l10n.feedModeForYou),
+            matching: find.byType(GestureDetector),
+          )
+          .first;
+
+      testWidgets('meets the Android tap target guideline', (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpDefault(tester);
+
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('does not grow the live header beyond its settings target', (
+        tester,
+      ) async {
+        await pumpDefault(tester);
+
+        final headerRow = find
+            .ancestor(
+              of: find.byType(FeedSettingsMenu),
+              matching: find.byType(Row),
+            )
+            .first;
+        expect(tester.getSize(headerRow).height, kMinInteractiveDimension);
+      });
+
+      testWidgets('does not reserve a tap target in preview mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget(isPreviewMode: true));
+
+        expect(
+          tester.getSize(labelTarget()).height,
+          lessThan(kMinInteractiveDimension),
+        );
+      });
+    });
 
     group('Feed Source Labels', () {
       testWidgets('displays "For You" label for the default home source', (
