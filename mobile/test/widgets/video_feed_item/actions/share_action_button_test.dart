@@ -229,7 +229,9 @@ void main() {
               home: StatefulBuilder(
                 builder: (context, setState) {
                   rebuildHost = setState;
-                  return Scaffold(body: ShareActionButton(video: testVideo));
+                  return Scaffold(
+                    body: ShareActionButton(video: testVideo),
+                  );
                 },
               ),
               additionalOverrides: [
@@ -563,7 +565,10 @@ void main() {
             await tester.pumpAndSettle();
 
             expect(find.text('Share with'), findsNothing);
-            expect(find.text(l10n.sharePostSharedWithCount(2)), findsOneWidget);
+            expect(
+              find.text(l10n.sharePostSharedWithCount(2)),
+              findsOneWidget,
+            );
             expect(find.text(l10n.dmReelReplyViewChat), findsNothing);
           },
         );

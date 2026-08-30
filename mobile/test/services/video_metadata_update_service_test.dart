@@ -769,7 +769,10 @@ void main() {
 
         expect(result, isA<VideoUpdateSuccess>());
         expect(capturedTags.where((tag) => tag.first == 't'), isEmpty);
-        expect(capturedTags, contains(equals(['proofmode', 'proof-manifest'])));
+        expect(
+          capturedTags,
+          contains(equals(['proofmode', 'proof-manifest'])),
+        );
       });
 
       test(
