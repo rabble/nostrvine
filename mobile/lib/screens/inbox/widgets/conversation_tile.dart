@@ -97,12 +97,6 @@ class ConversationTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
-    final effectiveSubtitleOverride =
-        subtitleOverride ??
-        (isRetiredModerationAccount(otherPubkey)
-            ? context.l10n.dmRetiredThreadClosedTitle
-            : null);
-
     final openThread = onTap;
 
     return Semantics(
@@ -194,7 +188,11 @@ class ConversationTile extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      if (effectiveSubtitleOverride case final subtitle?) ...[
+                      // The closed marker ranks under an explicit override,
+                      // unchanged from #6416: the one caller that can pass
+                      // both is the Blocked slice's synthesised row, where
+                      // "you blocked this account" is the more urgent claim.
+                      if (subtitleOverride case final subtitle?) ...[
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
@@ -204,6 +202,9 @@ class ConversationTile extends ConsumerWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      ] else if (isRetiredModerationAccount(otherPubkey)) ...[
+                        const SizedBox(height: 4),
+                        const ClosedThreadSubtitle(maxLines: 2),
                       ] else if (conversation.lastMessageContent != null) ...[
                         const SizedBox(height: 4),
                         _ConversationPreviewText(
