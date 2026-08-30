@@ -825,13 +825,15 @@ class DmReactionsRepository {
     }
     String? targetMessageId;
     String? targetAuthor;
+    // Last tag wins in each family. NIP-25 puts the reaction's target last
+    // when a client includes extras ("the target event `id` should be last
+    // of the `e` tags", likewise the pubkey "last the `p` tags"), so a peer
+    // that leads with the thread root would otherwise bind the reaction to
+    // the wrong message. #7333.
     for (final tag in rumorEvent.tags) {
-      if (tag.length >= 2) {
-        if (tag[0] == 'e' && targetMessageId == null) {
-          targetMessageId = tag[1];
-        }
-        if (tag[0] == 'p' && targetAuthor == null) targetAuthor = tag[1];
-      }
+      if (tag.length < 2) continue;
+      if (tag[0] == 'e') targetMessageId = tag[1];
+      if (tag[0] == 'p') targetAuthor = tag[1];
     }
     if (targetMessageId == null ||
         targetMessageId.isEmpty ||

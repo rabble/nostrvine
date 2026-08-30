@@ -36,6 +36,14 @@ const _reactionRumorId =
 const _giftWrapId =
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
+/// A thread-root `e` tag a peer client may place AHEAD of the target,
+/// and a mentioned `p` tag ahead of the target's author. NIP-25 puts the
+/// real target last in each family, so these two exist to be ignored.
+const _threadRootId =
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+const _mentionedPubkey =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
@@ -1236,6 +1244,58 @@ void main() {
       final repository = createRepository();
       final outcome = await repository.persistIncoming(
         rumorEvent: reactionRumor(),
+        giftWrapId: _giftWrapId,
+      );
+
+      expect(outcome, DmWrapOutcome.processed);
+      verify(
+        () => mockDao.upsertIncoming(
+          id: _reactionRumorId,
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _otherPubkey,
+          reactorPubkey: _ownerPubkey,
+          emoji: '🔥',
+          createdAt: 1_700_000_000,
+          giftWrapId: _giftWrapId,
+          ownerPubkey: _ownerPubkey,
+        ),
+      ).called(1);
+    });
+
+    test('persistIncoming binds the LAST e and p tag per NIP-25', () async {
+      // NIP-25: "If a client decides to include other `e`, which not
+      // recommended, the target event `id` should be last of the `e` tags",
+      // and likewise the target pubkey "should be last the `p` tags". A peer
+      // that threads its reaction puts the root first, so first-wins binds
+      // the reaction to the wrong message — painted on the wrong bubble, or
+      // written against no bubble at all and then cemented in the dedup
+      // ledger as `processed`, which no later launch re-derives. #7333.
+      when(
+        () => mockDao.upsertIncoming(
+          id: any(named: 'id'),
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: any(named: 'targetMessageId'),
+          targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          reactorPubkey: any(named: 'reactorPubkey'),
+          emoji: any(named: 'emoji'),
+          createdAt: any(named: 'createdAt'),
+          giftWrapId: any(named: 'giftWrapId'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final repository = createRepository();
+      final outcome = await repository.persistIncoming(
+        rumorEvent: reactionRumor(
+          tags: [
+            ['e', _threadRootId],
+            ['e', _targetMessageId],
+            ['p', _mentionedPubkey],
+            ['p', _otherPubkey],
+            ['k', EventKind.privateDirectMessage.toString()],
+          ],
+        ),
         giftWrapId: _giftWrapId,
       );
 
