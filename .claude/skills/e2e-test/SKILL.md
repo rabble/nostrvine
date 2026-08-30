@@ -172,6 +172,15 @@ docker build -f Dockerfile.local -t divine-invite-darshan:local .
 docker tag divine-invite-darshan:local ghcr.io/divinevideo/divine-invite-darshan:e2e
 ```
 
+The published image is amd64-only, and Compose selects `linux/amd64`
+explicitly so Apple Silicon can run it through emulation. A local build
+on Apple Silicon is arm64-native, so select that platform before starting
+the stack:
+
+```bash
+export INVITE_PLATFORM=linux/arm64
+```
+
 `invite` is one of the few services without `pull_policy: always`, so
 a plain `mise run local_up` keeps your tag. Use `local_up_cached` if
 you have overridden a service that *does* pull on every start.
