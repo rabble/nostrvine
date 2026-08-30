@@ -155,11 +155,13 @@ void main() {
         final protectedId = await seedConversation([_owner, _protectedPeer]);
         final ordinaryId = await seedConversation([_owner, _ordinaryPeer]);
         final otherId = await seedConversation([_owner, _otherPeer]);
+        const missingId = 'missing-conversation';
 
         final outcome = await repository.removeConversations([
           protectedId,
           ordinaryId,
           otherId,
+          missingId,
         ]);
 
         expect(outcome.removed, equals(2));

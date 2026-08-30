@@ -159,7 +159,7 @@ void main() {
         setUp: () {
           when(
             () => mockDmRepository.markConversationsAsRead(any()),
-          ).thenAnswer((_) async => ConversationRemovalOutcome.removed);
+          ).thenAnswer((_) async {});
         },
         build: createCubit,
         act: (cubit) => cubit.markAllRequestsAsRead([

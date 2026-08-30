@@ -6800,6 +6800,7 @@ class DmRepository {
       }
     }
     if (removable.isEmpty) return (removed: 0, refused: refused);
+    var removed = 0;
     await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
       // mid-flight must not mix one account's reads with another's writes.
@@ -6815,7 +6816,7 @@ class DmRepository {
         removable,
         ownerPubkey: ownerOrNull,
       );
-      await _conversationsDao.deleteMultiple(
+      removed = await _conversationsDao.deleteMultiple(
         removable,
         ownerPubkey: ownerOrNull,
       );
@@ -6828,7 +6829,7 @@ class DmRepository {
         ownerPubkey: owner,
       );
     });
-    return (removed: removable.length, refused: refused);
+    return (removed: removed, refused: refused);
   }
 
   /// Count the total number of messages in a conversation.
