@@ -118,14 +118,13 @@ void main() {
       required List<List<String>> tags,
       required String content,
       String? id,
-      int? createdAt,
     }) {
       final event = Event(
         pubkey,
         kind,
         tags,
         content,
-        createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
       event.id = id ?? 'test_event_${DateTime.now().millisecondsSinceEpoch}';
       event.sig = 'test_signature';
@@ -680,7 +679,11 @@ void main() {
         when(
           () => mockNostrService.queryEvents(any()),
         ).thenAnswer((_) async => contentEvents);
-        final signedEvents = <Event>[];
+        // One interleaved timeline, not two per-phase lists: separate
+        // sign-order and publish-order lists are each satisfied by the
+        // sign/publish/sign/publish interleaving this change exists to
+        // remove, so only a merged timeline can fail on it.
+        final timeline = <String>[];
         when(
           () => mockAuthService.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -689,24 +692,26 @@ void main() {
           ),
         ).thenAnswer((invocation) async {
           final kind = invocation.namedArguments[#kind] as int;
-          final event = createTestEvent(
+          timeline.add('sign:$kind');
+          return createTestEvent(
             pubkey: testPublicKey,
             kind: kind,
             tags: const [],
             content: 'deletion',
-            createdAt: 100 + signedEvents.length,
           );
-          signedEvents.add(event);
-          return event;
         });
-        final publishedEvents = <Event>[];
+        void recordPublish(Invocation invocation) {
+          final event = invocation.positionalArguments.single as Event;
+          timeline.add('publish:${event.kind}');
+        }
+
         when(
           () => mockNostrService.publishEventAwaitOk(
             any(),
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((invocation) async {
-          publishedEvents.add(invocation.positionalArguments.single as Event);
+          recordPublish(invocation);
           return _confirmed;
         });
         when(
@@ -715,24 +720,21 @@ void main() {
             timeout: any(named: 'timeout'),
           ),
         ).thenAnswer((invocation) async {
-          publishedEvents.add(invocation.positionalArguments.single as Event);
+          recordPublish(invocation);
           return _confirmed;
         });
 
         final result = await service.deleteAccount();
 
         expect(result.success, isTrue);
-        expect(signedEvents.map((event) => event.kind), [5, 5, 62]);
-        expect(publishedEvents.map((event) => event.kind), [5, 5, 62]);
-        expect(
-          signedEvents.last.createdAt,
-          greaterThanOrEqualTo(
-            signedEvents
-                .take(2)
-                .map((event) => event.createdAt)
-                .reduce((first, second) => first > second ? first : second),
-          ),
-        );
+        expect(timeline, [
+          'sign:5',
+          'sign:5',
+          'sign:62',
+          'publish:5',
+          'publish:5',
+          'publish:62',
+        ]);
       },
     );
 
