@@ -15,6 +15,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/documents_path_provider.dart';
@@ -123,6 +125,13 @@ MockAuthService createMockAuthService() {
   ).thenReturn(AuthenticationSource.none);
   when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
   when(() => mockAuth.isNip07Available).thenReturn(false);
+  when(() => mockAuth.signerReadiness).thenReturn(SignerReadiness.pending);
+  when(
+    () => mockAuth.authRpcCapability,
+  ).thenReturn(AuthRpcCapability.unavailable);
+  when(
+    () => mockAuth.authRpcCapabilityStream,
+  ).thenAnswer((_) => const Stream<AuthRpcCapability>.empty());
 
   // Stub authState and authStateStream so currentAuthStateProvider does not
   // crash with type 'Null' is not a subtype of type 'Stream<AuthState>'

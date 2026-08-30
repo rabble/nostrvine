@@ -1,10 +1,14 @@
 // ABOUTME: Tests the account-deletion recovery providers used by routing.
 // ABOUTME: Verifies lookup readiness remains fail-closed until signing works.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -30,7 +34,9 @@ void main() {
         final repository = _MockDeletionRepository();
         final authService = _MockAuthService();
         when(repository.fetchCurrent).thenAnswer((_) async => null);
-        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        when(
+          () => authService.signerReadiness,
+        ).thenReturn(SignerReadiness.ready);
         final container = ProviderContainer(
           overrides: [
             authServiceProvider.overrideWithValue(authService),
@@ -65,7 +71,9 @@ void main() {
     test('lookup stays fail-closed while signing is unavailable', () async {
       final repository = _MockDeletionRepository();
       final authService = _MockAuthService();
-      when(() => authService.canPublishNostrWritesNow).thenReturn(false);
+      when(
+        () => authService.signerReadiness,
+      ).thenReturn(SignerReadiness.pending);
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(authService),
@@ -92,6 +100,44 @@ void main() {
         container.read(currentAccountDeletionAttemptProvider).isLoading,
         true,
       );
+      verifyNever(repository.fetchCurrent);
+    });
+
+    test('permanent signer failure settles as a typed error', () async {
+      final repository = _MockDeletionRepository();
+      final authService = _MockAuthService();
+      when(
+        () => authService.signerReadiness,
+      ).thenReturn(SignerReadiness.unavailable);
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.unavailable,
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final settled = Completer<AsyncValue<AccountDeletionAttempt?>>();
+      final subscription = container.listen(
+        currentAccountDeletionAttemptProvider,
+        (_, next) {
+          if (next.hasError && !next.isLoading && !settled.isCompleted) {
+            settled.complete(next);
+          }
+        },
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      final result = await settled.future;
+      expect(result.isLoading, isFalse);
+      expect(result.error, isA<AccountDeletionStatusUnavailable>());
       verifyNever(repository.fetchCurrent);
     });
   });

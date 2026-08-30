@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -33,12 +34,31 @@ final currentAccountDeletionAttemptProvider =
       }
       final authService = ref.watch(authServiceProvider);
       ref.watch(currentAuthRpcCapabilityProvider);
-      if (!authService.canPublishNostrWritesNow) {
-        final waitingForReadiness = Completer<AccountDeletionAttempt?>();
-        ref.onDispose(waitingForReadiness.complete);
-        return waitingForReadiness.future;
+      switch (authService.signerReadiness) {
+        case SignerReadiness.pending:
+          final waitingForReadiness = Completer<AccountDeletionAttempt?>();
+          ref.onDispose(
+            () => waitingForReadiness.completeError(
+              const _SignerReadinessWaitCancelled(),
+            ),
+          );
+          return waitingForReadiness.future;
+        case SignerReadiness.unavailable:
+          throw const AccountDeletionStatusUnavailable();
+        case SignerReadiness.ready:
+          return ref
+              .watch(accountDeletionRecoveryRepositoryProvider)
+              .fetchCurrent();
       }
-      return ref
-          .watch(accountDeletionRecoveryRepositoryProvider)
-          .fetchCurrent();
-    });
+    }, retry: (_, _) => null);
+
+class AccountDeletionStatusUnavailable implements Exception {
+  const AccountDeletionStatusUnavailable();
+
+  @override
+  String toString() => 'AccountDeletionStatusUnavailable';
+}
+
+class _SignerReadinessWaitCancelled implements Exception {
+  const _SignerReadinessWaitCancelled();
+}
