@@ -51,8 +51,9 @@ the relay and API overlays. A rotation that goes looking for "the relay admin
 key" will find `81549bc0…` and rotate the wrong thing.
 
 Funnelcake's `nostr.trusted_labelers` and `nostr.moderation_sources` tables are
-a separate trust surface again, from both of those. Their configured identity
-currently differs from the user-facing moderation account; whether that is an
+a third trust surface, distinct from both of the above. Their configured
+identity differs from the user-facing moderation account — it is `81549bc0…`
+as well, so that key holds this role on top of relay admin. Whether that is an
 intentional automated role or drift is tracked in
 `divinevideo/divine-mobile#8253`. A rotation must audit and reconcile those
 tables with the intended labeler roles rather than assuming every moderation
