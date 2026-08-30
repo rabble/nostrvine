@@ -912,7 +912,6 @@ class DmRepository {
       // the derived `since:` never moves later than it does today.
       final newest = _syncState?.newestSyncedAt(_userPubkey);
       final newestWire = _syncState?.newestWireSyncedAt(_userPubkey);
-      final sinceBoundary = newestWire ?? newest;
       final isFirstOpen = newest == null;
       final filter = nostr_filter.Filter(
         kinds: [
@@ -922,7 +921,7 @@ class DmRepository {
         ],
         p: [_userPubkey],
         limit: isFirstOpen ? 50 : null,
-        since: isFirstOpen ? null : (sinceBoundary! - 2 * 86400),
+        since: newest == null ? null : (newestWire ?? newest) - 2 * 86400,
       );
 
       Log.info(
