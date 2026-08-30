@@ -106,6 +106,7 @@ class RequestTile extends ConsumerWidget {
               children: [
                 IdentitySkeletonizer(
                   isLoading: isIdentityResolving,
+                  excludeSemantics: true,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: UserAvatar(
@@ -128,6 +129,7 @@ class RequestTile extends ConsumerWidget {
                           Expanded(
                             child: IdentitySkeletonizer(
                               isLoading: isIdentityResolving,
+                              excludeSemantics: true,
                               child: Text(
                                 visualDisplayName,
                                 style: VineTheme.titleMediumFont(

@@ -34,6 +34,7 @@ import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:videos_repository/videos_repository.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -186,6 +187,7 @@ void main() {
       DmRestoreStatusState? restoreStatus,
       String counterparty = otherPubkey,
       ConversationState? previousState,
+      Future<UserProfile?>? otherProfileFuture,
       bool isIdentityResolving = false,
     }) {
       final effectiveState = state ?? const ConversationState();
@@ -218,10 +220,15 @@ void main() {
           profileReadRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
             counterparty,
-          ).overrideWith((ref) async => otherProfile),
+          ).overrideWith(
+            (ref) => otherProfileFuture ?? Future.value(otherProfile),
+          ),
           profileVanishedProvider(
             counterparty,
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
+          profileVanishedSnapshotProvider(
+            counterparty,
+          ).overrideWith((ref) async => otherProfileVanished),
           profileIdentityResolvingProvider(
             counterparty,
           ).overrideWithValue(isIdentityResolving),
@@ -674,19 +681,34 @@ void main() {
         expect(find.byType(ConversationAppBar), findsOneWidget);
       });
 
-      testWidgets('disables profile options while the peer name resolves', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildSubject(isIdentityResolving: true));
-        await tester.pump();
+      testWidgets(
+        'waits for the peer identity before opening profile options',
+        (
+          tester,
+        ) async {
+          final profileCompleter = Completer<UserProfile?>();
+          await tester.pumpWidget(
+            buildSubject(
+              otherProfileFuture: profileCompleter.future,
+              isIdentityResolving: true,
+            ),
+          );
+          await tester.pump();
 
-        expect(
-          tester
-              .widget<ConversationAppBar>(find.byType(ConversationAppBar))
-              .onOptions,
-          isNull,
-        );
-      });
+          await tester.tap(
+            find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+          );
+          await tester.pump();
+
+          expect(find.byType(MoreSheetContent), findsNothing);
+
+          profileCompleter.complete(null);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.byType(MoreSheetContent), findsOneWidget);
+        },
+      );
 
       testWidgets('renders $MessageInputBar', (tester) async {
         await tester.pumpWidget(buildSubject());

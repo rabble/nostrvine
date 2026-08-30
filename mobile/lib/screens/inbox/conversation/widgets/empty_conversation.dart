@@ -53,6 +53,7 @@ class EmptyConversation extends StatelessWidget {
           // Avatar
           IdentitySkeletonizer(
             isLoading: isIdentityResolving,
+            excludeSemantics: true,
             child: UserAvatar(
               imageUrl: imageUrl,
               name: displayName,
@@ -67,6 +68,7 @@ class EmptyConversation extends StatelessWidget {
           // User info
           IdentitySkeletonizer(
             isLoading: isIdentityResolving,
+            excludeSemantics: true,
             child: Text(
               displayName,
               style: VineTheme.titleLargeFont(

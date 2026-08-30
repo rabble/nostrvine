@@ -80,8 +80,24 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     );
   }
 
-  Future<void> _onOptions(String otherPubkey, String displayName) async {
+  Future<void> _onOptions(String otherPubkey) async {
     if (otherPubkey.isEmpty) return;
+
+    final profileFuture = ref.read(
+      fetchUserProfileProvider(otherPubkey).future,
+    );
+    final vanishedFuture = ref.read(
+      profileVanishedSnapshotProvider(otherPubkey).future,
+    );
+    final profile = await profileFuture;
+    final isVanished = await vanishedFuture;
+    if (!mounted) return;
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isVanished,
+      profile: profile,
+    );
 
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
@@ -268,9 +284,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
                                 )
                               : null,
-                          onOptions: isIdentityResolving
-                              ? null
-                              : () => _onOptions(otherPubkey, displayName),
+                          onOptions: () => _onOptions(otherPubkey),
                         ),
                         Expanded(
                           // Force the messages card to fill the available width

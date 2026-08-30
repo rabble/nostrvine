@@ -28,6 +28,7 @@ class IdentitySkeletonizer extends StatefulWidget {
     required this.isLoading,
     required this.child,
     this.fallthroughTimeout = const Duration(seconds: 7),
+    this.excludeSemantics = false,
     super.key,
   });
 
@@ -41,6 +42,12 @@ class IdentitySkeletonizer extends StatefulWidget {
   /// who genuinely has no Kind 0 sees the underlying generated-name
   /// fallback instead of an infinite shimmer.
   final Duration fallthroughTimeout;
+
+  /// Hides placeholder identity semantics while the shimmer is active.
+  ///
+  /// Opt in only when the child is wholly placeholder content. Interactive
+  /// [Skeleton.keep] descendants must remain available to assistive tech.
+  final bool excludeSemantics;
 
   /// The avatar + name subtree to skeletonize.
   final Widget child;
@@ -87,14 +94,13 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
   @override
   Widget build(BuildContext context) {
     final isSkeletonized = widget.isLoading && !_timeoutExpired;
-    return ExcludeSemantics(
-      excluding: isSkeletonized,
-      child: Skeletonizer(
-        enabled: isSkeletonized,
-        enableSwitchAnimation: true,
-        effect: vineSkeletonEffectOf(context),
-        child: widget.child,
-      ),
+    final skeleton = Skeletonizer(
+      enabled: isSkeletonized,
+      enableSwitchAnimation: true,
+      effect: vineSkeletonEffectOf(context),
+      child: widget.child,
     );
+    if (!widget.excludeSemantics) return skeleton;
+    return ExcludeSemantics(excluding: isSkeletonized, child: skeleton);
   }
 }

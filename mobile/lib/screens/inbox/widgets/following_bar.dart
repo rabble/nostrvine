@@ -122,6 +122,7 @@ class _FollowingUserButton extends ConsumerWidget {
           children: [
             IdentitySkeletonizer(
               isLoading: isIdentityResolving,
+              excludeSemantics: true,
               child: UserAvatar(
                 imageUrl: imageUrl,
                 name: visualDisplayName,
@@ -131,6 +132,7 @@ class _FollowingUserButton extends ConsumerWidget {
             ),
             IdentitySkeletonizer(
               isLoading: isIdentityResolving,
+              excludeSemantics: true,
               child: Text(
                 visualDisplayName,
                 textScaler: TextScaler.noScaling,

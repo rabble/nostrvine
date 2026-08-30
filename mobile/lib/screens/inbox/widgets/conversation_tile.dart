@@ -154,6 +154,7 @@ class ConversationTile extends ConsumerWidget {
               children: [
                 IdentitySkeletonizer(
                   isLoading: isIdentityResolving,
+                  excludeSemantics: true,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: UserAvatar(
@@ -180,6 +181,7 @@ class ConversationTile extends ConsumerWidget {
                           Expanded(
                             child: IdentitySkeletonizer(
                               isLoading: isIdentityResolving,
+                              excludeSemantics: true,
                               child: DivineHeartText(
                                 visualDisplayName,
                                 style: VineTheme.titleMediumFont(

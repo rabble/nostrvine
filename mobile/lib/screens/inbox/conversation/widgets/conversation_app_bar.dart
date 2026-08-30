@@ -25,7 +25,7 @@ class ConversationAppBar extends StatelessWidget
   final String displayName;
   final String handle;
   final VoidCallback onBack;
-  final VoidCallback? onOptions;
+  final VoidCallback onOptions;
   final bool isResolving;
   final String? loadingDisplayName;
 
@@ -42,6 +42,7 @@ class ConversationAppBar extends StatelessWidget
       titleWidget: isResolving
           ? IdentitySkeletonizer(
               isLoading: true,
+              excludeSemantics: true,
               child: Text(
                 loadingDisplayName ?? context.l10n.commonLoading,
                 style: VineTheme.titleMediumFont(

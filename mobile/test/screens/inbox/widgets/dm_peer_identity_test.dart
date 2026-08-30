@@ -86,6 +86,28 @@ void main() {
       expect(find.text('Profile'), findsOneWidget);
     });
 
+    testWidgets('withholds a generated profile fallback while resolving', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          (context) => dmPeerDisplayName(
+            context,
+            pubkeyHex: pubkey,
+            isVanished: false,
+            profile: _profile(pubkey, ''),
+            isResolving: true,
+          ),
+        ),
+      );
+
+      expect(
+        find.text(UserProfile.defaultDisplayNameFor(pubkey)),
+        findsNothing,
+      );
+      expect(find.text(''), findsOneWidget);
+    });
+
     testWidgets('generates a name when no identity is available', (
       tester,
     ) async {

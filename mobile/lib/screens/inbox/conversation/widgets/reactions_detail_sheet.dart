@@ -199,6 +199,7 @@ class _ReactorRow extends ConsumerWidget {
           // would slice its border into arcs (the "cut border" artifact).
           leading: IdentitySkeletonizer(
             isLoading: isIdentityResolving,
+            excludeSemantics: true,
             child: UserAvatar(
               // `watchProfile` is an ungated `select(userProfiles)`, so a row
               // that outlived its tombstone still streams a picture here.
@@ -210,6 +211,7 @@ class _ReactorRow extends ConsumerWidget {
           ),
           title: IdentitySkeletonizer(
             isLoading: isIdentityResolving,
+            excludeSemantics: true,
             child: Text(
               visualName,
               maxLines: 1,

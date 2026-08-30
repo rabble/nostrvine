@@ -137,6 +137,7 @@ class RequestPreviewView extends ConsumerWidget {
         titleWidget: isIdentityResolving
             ? IdentitySkeletonizer(
                 isLoading: true,
+                excludeSemantics: true,
                 child: Text(
                   visualDisplayName,
                   style: VineTheme.titleMediumFont(
@@ -309,6 +310,7 @@ class _ProfileContent extends StatelessWidget {
             children: [
               IdentitySkeletonizer(
                 isLoading: isResolving,
+                excludeSemantics: true,
                 child: UserAvatar(
                   imageUrl: imageUrl,
                   name: visualDisplayName,
@@ -322,6 +324,7 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 32),
               IdentitySkeletonizer(
                 isLoading: isResolving,
+                excludeSemantics: true,
                 child: Text(
                   visualDisplayName,
                   style: VineTheme.titleLargeFont(
