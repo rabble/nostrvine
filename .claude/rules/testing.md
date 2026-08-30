@@ -667,6 +667,35 @@ dead letter — the `vgv-tag-gate` CI job enforces this.
 | A `<Platform>.instance` singleton (`PathProviderPlatform`, `WebViewPlatform`, …) | Snapshot in `setUp`/`setUpAll`, restore in the matching `tearDown`/`tearDownAll` (`check_process_global_mutations.sh` enforces). |
 | `HttpOverrides.global` | Not allowed in a merged test — tag the file `['skip_very_good_optimization', 'integration']` (`check_http_overrides_isolation.sh` enforces). |
 | View config (`tester.view.physicalSize` / `devicePixelRatio` / `setSurfaceSize`) | Pair every override with an `addTearDown` reset (`resetPhysicalSize`, `resetDevicePixelRatio`, `setSurfaceSize(null)`). |
+| A service you registered with `BackgroundActivityManager` (`AuthService`, `UploadManager`, `AnalyticsService`) | Dispose it — all three unregister in `dispose()`. If a test drives the manager directly, `addTearDown(BackgroundActivityManager().resetForTesting)`. Enforced at runtime under `DIVINE_STRICT_GLOBALS`. |
+
+### Heal-and-blame harness (BackgroundActivityManager)
+
+`BackgroundActivityManager` is a process-global singleton whose registry only
+ever grows. Services join it in `initialize()` and leave in `dispose()`, and
+nothing else clears it — so a registration that outlives its test keeps
+receiving lifecycle callbacks for the rest of the merged isolate. The bill
+comes due at whichever later suite drives a lifecycle transition through a
+mounted `AppLifecycleHandler`: `_restoreServices()` calls `onAppResumed()` on
+every stranger in the list, inside the *current* test's zone, and
+`_verifyInvariants` blames whatever that leaves behind on a test that never
+asked for it (#6880).
+
+Its `isAppInForeground` flag leaks the same way and is the trigger half —
+`resumed` only fans out when the manager currently believes it is
+backgrounded, so a stale `false` from an earlier test is what arms it.
+
+So `flutter_test_config.dart` registers a root `tearDown` that resets the
+manager and, under `DIVINE_STRICT_GLOBALS`, fails the test that dirtied it.
+`resetForTesting()` — not `dispose()` — is the correct reset: `dispose()`
+leaves `_isInitialized` set, so a later `initialize()` silently no-ops, and it
+leaves the foreground flag wherever the last lifecycle event put it.
+
+This shape is invisible to `check_process_global_mutations.sh`, which matches
+**assignments** to a known list of globals. A registry that accumulates through
+a method call (`registerService(this)`) is neither an assignment nor a settable
+global, so the runtime tearDown is the guard — and it is the stronger one, since
+it sees every registrant rather than a hard-coded list.
 
 ### Heal-and-blame harness (the 5 shared channels)
 
