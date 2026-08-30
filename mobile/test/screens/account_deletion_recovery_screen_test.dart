@@ -245,6 +245,8 @@ void main() {
         find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
         findsOneWidget,
       );
+      await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
+      verify(cubit.retry).called(1);
     });
 
     testWidgets('signer failure asks the user to sign in again', (

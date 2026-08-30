@@ -62,6 +62,36 @@ void main() {
       );
     });
 
+    test(
+      'remote Keycast identity stays pending before capability sampling',
+      () {
+        final identity = KeycastNostrIdentity(
+          pubkey: pubkey,
+          rpcSigner: _MockSigner(),
+        );
+
+        expect(
+          resolveSignerReadiness(
+            identity,
+            AuthRpcCapability.unavailable,
+            rpcCapabilityInitialized: false,
+          ),
+          SignerReadiness.pending,
+        );
+      },
+    );
+
+    test('pubkey-only identity stays pending before capability sampling', () {
+      expect(
+        resolveSignerReadiness(
+          PubkeyOnlyNostrIdentity(pubkey: pubkey),
+          AuthRpcCapability.unavailable,
+          rpcCapabilityInitialized: false,
+        ),
+        SignerReadiness.pending,
+      );
+    });
+
     test('local and interactive identities are always ready', () {
       final keyContainer = _MockKeyContainer();
       when(() => keyContainer.publicKeyHex).thenReturn(pubkey);

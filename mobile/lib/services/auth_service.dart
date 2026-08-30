@@ -254,6 +254,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   // RPC capability state — separate from AuthState so the router doesn't
   // need to know about remote signer warmup.
   AuthRpcCapability _authRpcCapability = AuthRpcCapability.unavailable;
+  bool _authRpcCapabilityInitialized = false;
 
   // NIP-46 bunker signer state
   NostrRemoteSigner? _bunkerSigner;
@@ -431,8 +432,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// No stream carries this value, so sample it at the moment of use. A push
   /// consumer that waits for it to change must also watch a rebuild trigger
   /// such as `currentAuthRpcCapabilityProvider` (#6977).
-  SignerReadiness get signerReadiness =>
-      resolveSignerReadiness(_currentIdentity, _authRpcCapability);
+  SignerReadiness get signerReadiness => resolveSignerReadiness(
+    _currentIdentity,
+    _authRpcCapability,
+    rpcCapabilityInitialized: _authRpcCapabilityInitialized,
+  );
 
   /// Whether this identity can publish Nostr writes right now.
   ///
@@ -2722,6 +2726,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _setAuthState(AuthState.authenticating);
     _lastError = null;
     _hasExpiredOAuthSession = false;
+    _authRpcCapabilityInitialized = false;
 
     try {
       // Unbound session: pubkey unknown here, treat as same — a wrong close
@@ -4376,6 +4381,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   void _setRpcCapability(AuthRpcCapability capability) {
+    _authRpcCapabilityInitialized = true;
     if (_authRpcCapability != capability) {
       final previous = _authRpcCapability;
       _authRpcCapability = capability;

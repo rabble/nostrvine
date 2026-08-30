@@ -28,29 +28,34 @@ final accountDeletionRecoveryRepositoryProvider =
     });
 
 final currentAccountDeletionAttemptProvider =
-    FutureProvider<AccountDeletionAttempt?>((ref) async {
-      if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
-        return null;
-      }
-      final authService = ref.watch(authServiceProvider);
-      ref.watch(currentAuthRpcCapabilityProvider);
-      switch (authService.signerReadiness) {
-        case SignerReadiness.pending:
-          final waitingForReadiness = Completer<AccountDeletionAttempt?>();
-          ref.onDispose(
-            () => waitingForReadiness.completeError(
-              const _SignerReadinessWaitCancelled(),
-            ),
-          );
-          return waitingForReadiness.future;
-        case SignerReadiness.unavailable:
-          throw const AccountDeletionStatusUnavailable();
-        case SignerReadiness.ready:
-          return ref
-              .watch(accountDeletionRecoveryRepositoryProvider)
-              .fetchCurrent();
-      }
-    }, retry: (_, _) => null);
+    FutureProvider<AccountDeletionAttempt?>(
+      (ref) async {
+        if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
+          return null;
+        }
+        final authService = ref.watch(authServiceProvider);
+        ref.watch(currentAuthRpcCapabilityProvider);
+        switch (authService.signerReadiness) {
+          case SignerReadiness.pending:
+            final waitingForReadiness = Completer<AccountDeletionAttempt?>();
+            ref.onDispose(
+              () => waitingForReadiness.completeError(
+                const _SignerReadinessWaitCancelled(),
+              ),
+            );
+            return waitingForReadiness.future;
+          case SignerReadiness.unavailable:
+            throw const AccountDeletionStatusUnavailable();
+          case SignerReadiness.ready:
+            return ref
+                .watch(accountDeletionRecoveryRepositoryProvider)
+                .fetchCurrent();
+        }
+      },
+      retry: (retryCount, error) => error is AccountDeletionStatusUnavailable
+          ? null
+          : ProviderContainer.defaultRetry(retryCount, error),
+    );
 
 class AccountDeletionStatusUnavailable implements Exception {
   const AccountDeletionStatusUnavailable();
@@ -61,4 +66,7 @@ class AccountDeletionStatusUnavailable implements Exception {
 
 class _SignerReadinessWaitCancelled implements Exception {
   const _SignerReadinessWaitCancelled();
+
+  @override
+  String toString() => '_SignerReadinessWaitCancelled';
 }

@@ -124,21 +124,29 @@ void main() {
       verifyNever(repository.fetchCurrent);
     });
 
-    test('retry remains deterministic while signer is unavailable', () async {
-      when(
-        () => authService.signerReadiness,
-      ).thenReturn(SignerReadiness.unavailable);
-      final cubit = buildCubit();
-      addTearDown(cubit.close);
+    test(
+      'retry refreshes an expired session while signer is unavailable',
+      () async {
+        when(
+          () => authService.signerReadiness,
+        ).thenReturn(SignerReadiness.unavailable);
+        when(
+          () => authService.tryRefreshExpiredSession(),
+        ).thenAnswer((_) async => false);
+        final cubit = buildCubit();
+        cubit.signerUnavailable();
+        addTearDown(cubit.close);
 
-      await cubit.retry();
+        await cubit.retry();
 
-      expect(
-        cubit.state.failure,
-        AccountDeletionRecoveryFailure.signerUnavailable,
-      );
-      verifyNever(repository.fetchCurrent);
-    });
+        verify(authService.tryRefreshExpiredSession).called(1);
+        expect(
+          cubit.state.failure,
+          AccountDeletionRecoveryFailure.signerUnavailable,
+        );
+        verifyNever(repository.fetchCurrent);
+      },
+    );
   });
 
   group('load', () {
@@ -435,5 +443,31 @@ void main() {
 
       expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
     });
+
+    test(
+      'close while waiting for signer refresh drops the resumed emit',
+      () async {
+        final refresh = Completer<bool>();
+        when(
+          () => authService.signerReadiness,
+        ).thenReturn(SignerReadiness.unavailable);
+        when(
+          () => authService.tryRefreshExpiredSession(),
+        ).thenAnswer((_) => refresh.future);
+        final cubit = buildCubit();
+        cubit.signerUnavailable();
+
+        final retry = cubit.retry();
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        refresh.complete(false);
+        await retry;
+
+        expect(
+          cubit.state.status,
+          AccountDeletionRecoveryStatus.loading,
+        );
+      },
+    );
   });
 }

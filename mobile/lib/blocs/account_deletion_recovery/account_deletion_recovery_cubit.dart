@@ -80,17 +80,29 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     }
   }
 
-  Future<void> retry() {
+  Future<void> retry() async {
     if (_authService.signerReadiness == SignerReadiness.unavailable) {
-      signerUnavailable();
-      return Future.value();
+      final generation = _beginOperation();
+      emitIfOpen(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.loading,
+        ),
+      );
+      final refreshed = await _authService.tryRefreshExpiredSession();
+      if (!_isCurrent(generation)) return;
+      if (refreshed) {
+        await load();
+      } else {
+        signerUnavailable();
+      }
+      return;
     }
     return load();
   }
 
   void signerUnavailable() {
     _beginOperation();
-    emit(
+    emitIfOpen(
       const AccountDeletionRecoveryState(
         status: AccountDeletionRecoveryStatus.loadFailed,
         failure: AccountDeletionRecoveryFailure.signerUnavailable,
