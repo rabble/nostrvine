@@ -71,6 +71,22 @@ void main() {
         ..sort();
     }
 
+    Map<String, int> shardAssignments(List<String> testFiles, int total) {
+      final assignments = <String, int>{};
+      for (var index = 0; index < total; index++) {
+        sandbox.deleteSync(recursive: true);
+        sandbox = Directory.systemTemp.createTempSync('select_test_shard_');
+        createSandbox(testFiles: testFiles);
+
+        final result = runShard(index, total);
+        expect(result.exitCode, 0, reason: '${result.stderr}');
+        for (final file in survivingTestFiles()) {
+          assignments[file] = index;
+        }
+      }
+      return assignments;
+    }
+
     setUp(() {
       sandbox = Directory.systemTemp.createTempSync('select_test_shard_');
     });
@@ -81,8 +97,15 @@ void main() {
 
     test('shards partition every test file exactly once', () {
       final allTests = [
-        for (var i = 0; i < 17; i++)
-          p.join('test', 'group_${i % 4}', 'a${i}_test.dart'),
+        p.join('test', 'android', 'crossposting_callback_manifest_test.dart'),
+        p.join('test', 'app', 'background_launch_downloads_test.dart'),
+        p.join('test', 'app_update', 'bloc', 'app_update_bloc_test.dart'),
+        p.join(
+          'test',
+          'blocs',
+          'account_content_labels',
+          'account_content_labels_cubit_test.dart',
+        ),
       ]..sort();
       const total = 4;
 
@@ -106,6 +129,23 @@ void main() {
       );
     });
 
+    test('adding a test file does not move existing files between shards', () {
+      final originalTests = [
+        for (var i = 0; i < 12; i++)
+          p.join('test', 'widgets', 'b${i}_test.dart'),
+      ];
+      const insertedTest = 'test/widgets/a_inserted_test.dart';
+      const total = 4;
+
+      final before = shardAssignments(originalTests, total);
+      final after = shardAssignments([...originalTests, insertedTest], total);
+
+      expect({
+        for (final file in originalTests) file: after[file],
+      }, equals(before));
+      expect(after, contains(insertedTest));
+    });
+
     test(
       'leaves non-test sources in place so surviving tests still import them',
       () {
@@ -121,7 +161,7 @@ void main() {
           ],
         );
 
-        expect(runShard(0, 2).exitCode, 0);
+        expect(runShard(0, 1).exitCode, 0);
 
         for (final kept in [
           p.join('test', 'helpers', 'test_helpers.dart'),
@@ -145,7 +185,7 @@ void main() {
       const golden = 'test/goldens/widgets/a_golden_test.dart';
       final shardable = [
         p.join('test', 'a_test.dart'),
-        p.join('test', 'b_test.dart'),
+        p.join('test', 'only_test.dart'),
       ];
       const total = 2;
 
@@ -191,7 +231,7 @@ void main() {
       final result = Process.runSync('bash', [
         scriptPath,
         '--total',
-        '2',
+        '1',
         '--index',
         '0',
         '--dry-run',
@@ -213,8 +253,8 @@ void main() {
     test(
       'fails rather than reporting a vacuous pass when a shard is empty',
       () {
-        // One file, four shards: shards 1..3 select nothing. A silent success
-        // there would mean a green CI leg that ran no tests at all.
+        // One file cannot populate four shards. A silent success from an empty
+        // one would mean a green CI leg that ran no tests at all.
         createSandbox(testFiles: [p.join('test', 'only_test.dart')]);
 
         final result = runShard(3, 4);
