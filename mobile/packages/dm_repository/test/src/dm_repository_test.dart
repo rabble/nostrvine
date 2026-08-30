@@ -4630,14 +4630,23 @@ void main() {
         'an account switch during the own-inbox resolve bails the old '
         "user's subscription and frees the new user to subscribe",
         () async {
-          final resolveA = Completer<List<Event>>();
-          final resolveB = Completer<List<Event>>();
+          // The own-inbox resolve reads through `queryEventsDetailed` (#8212).
+          // Stubbing `queryEvents` here held nothing in flight: production
+          // stopped calling it, so the read fell through to the shared
+          // answered-empty default and returned before the switch.
+          final resolveA =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          final resolveB =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
           var resolveCalls = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer((_) {
             resolveCalls++;
@@ -4666,7 +4675,12 @@ void main() {
             messageService: mockMessageService,
           );
 
-          resolveA.complete(const <Event>[]);
+          // A's resolve must genuinely be in flight at the moment of the
+          // switch, or this test proves nothing about the race it names.
+          await pumpEventQueue();
+          expect(resolveCalls, 1);
+
+          resolveA.complete(answeredList(const <Event>[]));
           await pendingA;
 
           // A's continuation bailed — no subscription opened under A's id.
@@ -4681,7 +4695,7 @@ void main() {
 
           // _subscribing was released, so B opens its own subscription.
           final pendingB = repository.startListening();
-          resolveB.complete(const <Event>[]);
+          resolveB.complete(answeredList(const <Event>[]));
           await pendingB;
           verify(
             () => mockNostrClient.subscribe(
