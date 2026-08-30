@@ -2980,6 +2980,7 @@ class DmRepository {
   }
 
   Future<void> _handleNip04Event(Event nip04Event) async {
+    final ownerPubkey = _userPubkey;
     try {
       // Dedup: use event ID as giftWrapId for the unique index. The
       // processed-wraps ledger also carries NIP-04 event ids that were
@@ -2990,7 +2991,7 @@ class DmRepository {
         // path does. A kind 4 is its own envelope, so the stamp the relay
         // filtered to deliver this replay is the event's own `created_at`.
         await _syncState?.recordWireSeen(
-          _userPubkey,
+          ownerPubkey,
           createdAt: nip04Event.createdAt,
         );
         if (_historyDrain == null) {

@@ -4162,6 +4162,7 @@ void main() {
                     ),
                   ).captured.single
                   as List<nostr_filter.Filter>;
+          expect(captured.single.since, wireNewest - 2 * 86400);
           expect(captured.single.since, lessThanOrEqualTo(worstCaseOuter));
 
           await repository.stopListening();
@@ -11064,6 +11065,64 @@ void main() {
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'duplicate NIP-04 wire boundary stays scoped to the event owner during '
+        'an account switch',
+        () async {
+          final nip04Event = createNip04Event();
+          final dedupStarted = Completer<void>();
+          final dedupResult = Completer<bool>();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) {
+            dedupStarted.complete();
+            return dedupResult.future;
+          });
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) async => 'should not reach',
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          controller.add(nip04Event);
+          await dedupStarted.future;
+
+          final nextUserSelfConversationId = DmRepository.computeConversationId(
+            [_validPubkeyB, _validPubkeyB],
+          );
+          when(
+            () => mockConversationsDao.getConversation(
+              nextUserSelfConversationId,
+              ownerPubkey: _validPubkeyB,
+            ),
+          ).thenAnswer((_) async => null);
+          repository.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          dedupResult.complete(true);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('skips NIP-04 events with no p tag', () async {
         final nip04Event = createNip04Event(tags: []);
