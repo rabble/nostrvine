@@ -15,6 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -117,15 +118,6 @@ void main() {
           )
           .first;
 
-      testWidgets('the feed-mode label clears the 48dp minimum', (
-        tester,
-      ) async {
-        await pumpDefault(tester);
-
-        // 36dp on device before this constraint — under both platform minimums.
-        expect(tester.getSize(labelTarget()).height, kMinInteractiveDimension);
-      });
-
       testWidgets('meets the Android tap target guideline', (tester) async {
         final handle = tester.ensureSemantics();
         await pumpDefault(tester);
@@ -134,18 +126,18 @@ void main() {
         handle.dispose();
       });
 
-      testWidgets('costs the header no height', (tester) async {
+      testWidgets('does not grow the live header beyond its settings target', (
+        tester,
+      ) async {
         await pumpDefault(tester);
 
-        // The trailing settings button is already 48dp, so constraining the
-        // label to match cannot push the header down. 16 + 48 + 16.
-        final header = find
+        final headerRow = find
             .ancestor(
-              of: find.text(l10n.feedModeForYou),
-              matching: find.byType(Padding),
+              of: find.byType(FeedSettingsMenu),
+              matching: find.byType(Row),
             )
             .first;
-        expect(tester.getSize(header).height, 80.0);
+        expect(tester.getSize(headerRow).height, kMinInteractiveDimension);
       });
 
       testWidgets('does not reserve a tap target in preview mode', (
