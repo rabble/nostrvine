@@ -77,17 +77,17 @@ assert_stderr_lacks() {
     fi
 }
 
-assert_file_contains() {
-    local needle="$1" file="$2" message="$3"
+assert_file_matches() {
+    local pattern="$1" file="$2" message="$3"
 
-    if ! grep -qF -- "$needle" "$file"; then
-        fail "$message" "missing from ${file}: ${needle}"
+    if ! grep -qE -- "$pattern" "$file"; then
+        fail "$message" "missing from ${file}: ${pattern}"
     fi
 }
 
 # The full interpolation is the behavior: amd64 by default, with a native
 # platform override for locally built images.
-assert_file_contains 'platform: ${INVITE_PLATFORM:-linux/amd64}' "$COMPOSE_FILE" \
+assert_file_matches '^[[:space:]]+platform: \$\{INVITE_PLATFORM:-linux/amd64\}$' "$COMPOSE_FILE" \
     "the invite image platform default and override should remain configured"
 
 # --- Sandbox ----------------------------------------------------------------
