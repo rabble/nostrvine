@@ -327,10 +327,13 @@ class _ProfileContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              _MessageCountDescription(
-                displayName: displayName,
-                messageCount: messageCount,
-              ),
+              if (isRetiredModerationAccount(otherPubkey))
+                const _ClosedNoticeDescription()
+              else
+                _MessageCountDescription(
+                  displayName: displayName,
+                  messageCount: messageCount,
+                ),
               _InvitePreview(
                 messages: messages,
                 senderDisplayName: displayName,
@@ -411,6 +414,50 @@ class _StatsLine extends StatelessWidget {
         color: context.vineColors.onSurfaceVariant,
       ),
       textAlign: TextAlign.center,
+    );
+  }
+}
+
+/// Replaces the overture on a retired moderation notice, whose key nobody is
+/// behind. "Wants to message you" is wrong twice over there: the account was
+/// retired, and an enforcement notice is not a social approach.
+///
+/// Reuses the two ARB keys `_ClosedThreadNotice` renders in
+/// `conversation_view.dart`, which the request row also already shows, so the
+/// three surfaces a user crosses in one tap sequence cannot drift onto
+/// different wording (#6971).
+///
+/// Deliberately copy only. The thread behind "View messages" carries the
+/// redirect to the live support account, and this screen has been kept light
+/// on controls since #8090 pulled one back out of it.
+class _ClosedNoticeDescription extends StatelessWidget {
+  const _ClosedNoticeDescription();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        spacing: 8,
+        children: [
+          Text(
+            l10n.dmRetiredThreadClosedTitle,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.dmRetiredThreadClosedBody,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
