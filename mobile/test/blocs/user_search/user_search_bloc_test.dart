@@ -40,9 +40,11 @@ void main() {
 
     UserSearchBloc createBloc({
       Duration? searchTimeout = const Duration(seconds: 20),
+      String? excludedPubkey,
     }) => UserSearchBloc(
       profileRepository: mockProfileRepository,
       searchTimeout: searchTimeout,
+      excludedPubkey: excludedPubkey,
     );
 
     UserProfile createTestProfile(String pubkey, String displayName) {
@@ -83,6 +85,8 @@ void main() {
       );
     }
 
+    const debounceDuration = Duration(milliseconds: 400);
+
     test('initial state is correct', () {
       final bloc = createBloc();
       expect(bloc.state.status, UserSearchStatus.initial);
@@ -95,10 +99,32 @@ void main() {
       bloc.close();
     });
 
-    group('UserSearchQueryChanged', () {
-      // Debounce duration used in the BLoC
-      const debounceDuration = Duration(milliseconds: 400);
+    blocTest<UserSearchBloc, UserSearchState>(
+      'omits the excluded pubkey case-insensitively',
+      setUp: () {
+        when(
+          () => mockProfileRepository.searchUsersProgressive(
+            query: 'alice',
+            limit: 50,
+            sortBy: 'followers',
+          ),
+        ).thenAnswer(
+          (_) => progressive([
+            createTestProfile('a' * 64, 'Alice'),
+            createTestProfile('b' * 64, 'Bob'),
+          ]),
+        );
+      },
+      build: () => createBloc(excludedPubkey: ('a' * 64).toUpperCase()),
+      act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+      wait: debounceDuration,
+      verify: (bloc) {
+        expect(bloc.state.results.map((profile) => profile.pubkey), ['b' * 64]);
+        expect(bloc.state.offset, 2);
+      },
+    );
 
+    group('UserSearchQueryChanged', () {
       blocTest<UserSearchBloc, UserSearchState>(
         'emits [searching, searching(results), success] when search succeeds',
         setUp: () {

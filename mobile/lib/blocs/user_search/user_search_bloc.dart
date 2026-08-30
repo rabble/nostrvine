@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -32,6 +33,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     FollowRepository? followRepository,
     this.hasVideos = false,
     this.searchTimeout = userSearchOuterTimeout,
+    this.excludedPubkey,
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
        _followRepository = followRepository,
@@ -61,6 +63,18 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   /// Set to `null` to disable the timeout entirely, which is useful in widget
   /// tests that rely on `pumpAndSettle()` with internally created blocs.
   final Duration? searchTimeout;
+
+  /// A pubkey to omit from every result page, such as a recipient picker's
+  /// signed-in viewer.
+  final String? excludedPubkey;
+
+  List<UserProfile> _visibleProfiles(Iterable<UserProfile> profiles) {
+    final excluded = excludedPubkey;
+    if (excluded == null) return profiles.toList();
+    return profiles
+        .where((profile) => !pubkeysEqual(profile.pubkey, excluded))
+        .toList();
+  }
 
   Future<void> _onQueryChanged(
     UserSearchQueryChanged event,
@@ -92,6 +106,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
+    var latestUnfilteredCount = 0;
     var latestSourceOutcomes = _pendingSourceOutcomes();
     // Snapshot of sources whose terminal status has already been
     // forwarded to feedTracker — prevents duplicate events when a
@@ -118,11 +133,13 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             ? searchStream
             : searchStream.timeout(searchTimeout!),
         onData: (result) {
-          if (!trackedFirst && result.profiles.isNotEmpty) {
+          latestUnfilteredCount = result.profiles.length;
+          final visibleProfiles = _visibleProfiles(result.profiles);
+          if (!trackedFirst && visibleProfiles.isNotEmpty) {
             trackedFirst = true;
             _feedTracker?.markFirstVideosReceived(
               'user_search',
-              result.profiles.length,
+              visibleProfiles.length,
             );
           }
           for (final entry in result.sources.entries) {
@@ -134,8 +151,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
           latestSourceOutcomes = result.sources;
           return state.copyWith(
             status: UserSearchStatus.loading,
-            results: result.profiles,
-            resultCount: result.profiles.length,
+            results: visibleProfiles,
+            resultCount: visibleProfiles.length,
             sourceOutcomes: result.sources,
           );
         },
@@ -144,8 +161,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
-          offset: state.results.length,
-          hasMore: state.results.length == _pageSize,
+          offset: latestUnfilteredCount,
+          hasMore: latestUnfilteredCount == _pageSize,
           isLoadingMore: false,
         ),
       );
@@ -222,14 +239,15 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       // counting the profiles in the terminal envelope (filter+boost
       // applied) against pagination state. The new page is the slice
       // that the repository computed for offset > 0.
-      final newPage = result.profiles;
+      final unfilteredPageCount = result.profiles.length;
+      final newPage = _visibleProfiles(result.profiles);
       final allResults = [...state.results, ...newPage];
 
       emit(
         state.copyWith(
           results: allResults,
-          offset: allResults.length,
-          hasMore: newPage.length == _pageSize,
+          offset: state.offset + unfilteredPageCount,
+          hasMore: unfilteredPageCount == _pageSize,
           isLoadingMore: false,
         ),
       );

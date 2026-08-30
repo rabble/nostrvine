@@ -13,6 +13,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/share_sheet/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
@@ -40,6 +41,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required VideoSharingService videoSharingService,
     required ProfileReader profileRepository,
     required FollowRepository followRepository,
+    required String currentUserPubkey,
     Future<BookmarksRepository?>? bookmarksRepositoryFuture,
     BaseCacheManager? cacheManager,
     VideoClipImportService? videoClipImportService,
@@ -48,6 +50,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
        _videoSharingService = videoSharingService,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
+       _currentUserPubkey = currentUserPubkey,
        _bookmarksRepositoryFuture = bookmarksRepositoryFuture,
        _cacheManager = cacheManager,
        _videoClipImportService = videoClipImportService,
@@ -75,6 +78,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final VideoSharingService _videoSharingService;
   final ProfileReader _profileRepository;
   final FollowRepository _followRepository;
+  final String _currentUserPubkey;
   final Future<BookmarksRepository?>? _bookmarksRepositoryFuture;
   final BaseCacheManager? _cacheManager;
   final VideoClipImportService? _videoClipImportService;
@@ -100,8 +104,16 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     );
 
     try {
-      final recentUsers = _videoSharingService.recentlySharedWith;
-      final followList = _followRepository.followingPubkeys;
+      // Divine does not support a self-addressed conversation (#8351), so
+      // the viewer is never a share target. Both sources can carry them: a
+      // contact list written by another Nostr client can self-follow, and
+      // recents accumulate whoever a share was sent to.
+      final recentUsers = _videoSharingService.recentlySharedWith
+          .where((user) => !_isSelf(user.pubkey))
+          .toList();
+      final followList = _followRepository.followingPubkeys.where(
+        (pubkey) => !_isSelf(pubkey),
+      );
       final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
 
       final remainingFollows = followList
@@ -234,6 +246,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
   }
 
+  /// Whether [pubkey] addresses the viewer.
+  ///
+  /// Case-insensitive, because a pubkey that reaches Divine from another
+  /// client may be upper-case hex.
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
+
   // --------------------------------------------------------------------------
   // Recipient selection
   // --------------------------------------------------------------------------
@@ -243,6 +261,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     Emitter<ShareSheetState> emit,
   ) {
     final recipient = event.recipient;
+    // Find People searches all users, so it can surface the viewer even
+    // though neither contact source offers them (#8351).
+    if (_isSelf(recipient.pubkey)) return;
+
     final updatedSelection = state.isSelected(recipient)
         ? [
             for (final r in state.selectedRecipients)

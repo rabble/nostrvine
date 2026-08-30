@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -19,8 +20,10 @@ class NewMessageSearchBloc
   NewMessageSearchBloc({
     required ProfileRepository profileRepository,
     required FollowRepository followRepository,
+    required String currentUserPubkey,
   }) : _profileRepository = profileRepository,
        _followRepository = followRepository,
+       _currentUserPubkey = currentUserPubkey,
        super(const NewMessageSearchState()) {
     on<NewMessageSearchStarted>(_onStarted);
     on<NewMessageSearchQueryChanged>(
@@ -32,12 +35,15 @@ class NewMessageSearchBloc
 
   final ProfileRepository _profileRepository;
   final FollowRepository _followRepository;
+  final String _currentUserPubkey;
 
   Future<void> _onStarted(
     NewMessageSearchStarted event,
     Emitter<NewMessageSearchState> emit,
   ) async {
-    final pubkeys = _followRepository.followingPubkeys;
+    final pubkeys = _followRepository.followingPubkeys.where(
+      (pubkey) => !_isSelf(pubkey),
+    );
     final futures = pubkeys.map(
       (pk) => _profileRepository.getCachedProfile(pubkey: pk),
     );
@@ -83,11 +89,11 @@ class NewMessageSearchBloc
     );
 
     try {
-      final networkResults = await _profileRepository.searchUsers(
+      final networkResults = (await _profileRepository.searchUsers(
         query: query,
         limit: 50,
         sortBy: profileSearchSortFollowers,
-      );
+      )).where((profile) => !_isSelf(profile.pubkey)).toList();
 
       Log.debug(
         'Query "$query": ${networkResults.length} network results',
@@ -121,6 +127,18 @@ class NewMessageSearchBloc
       ),
     );
   }
+
+  /// Whether [pubkey] addresses the viewer.
+  ///
+  /// Divine does not support a self-addressed conversation (#8351, decided
+  /// on #8261), so the viewer is never a candidate recipient. Filtered here in
+  /// the picker rather than in the follow list: a contact list written by
+  /// another Nostr client can legitimately self-follow, and only the merge
+  /// path strips that — every other path assigns the list as received.
+  ///
+  /// Case-insensitive, because a pubkey that reaches Divine from another
+  /// client may be upper-case hex.
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
 
   /// Filters contacts by display name or NIP-05.
   static List<UserProfile> _filterContacts(

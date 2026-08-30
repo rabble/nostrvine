@@ -20,6 +20,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 class FindPeopleSheet extends ConsumerStatefulWidget {
   const FindPeopleSheet({
     required this.contacts,
+    required this.currentUserPubkey,
     this.scrollController,
     this.searchTimeout = const Duration(seconds: 20),
     super.key,
@@ -27,6 +28,9 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
 
   /// Pre-loaded contacts from the parent share sheet BLoC.
   final List<ShareableUser> contacts;
+
+  /// The signed-in user, excluded from DM recipient search results.
+  final String currentUserPubkey;
 
   /// Scroll controller handed down by the enclosing [VineBottomSheet] so
   /// flinging the result list drags the sheet itself.
@@ -49,6 +53,7 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
   /// need to load them independently.
   static Future<ShareableUser?> show(
     BuildContext context, {
+    required String currentUserPubkey,
     List<ShareableUser> contacts = const [],
   }) {
     return VineBottomSheet.show<ShareableUser>(
@@ -60,6 +65,7 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
       minChildSize: VineTheme.bottomSheetDismissFloor,
       buildScrollBody: (scrollController) => FindPeopleSheet(
         contacts: contacts,
+        currentUserPubkey: currentUserPubkey,
         scrollController: scrollController,
       ),
     );
@@ -79,6 +85,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
       _searchBloc = UserSearchBloc(
         profileRepository: profileRepo,
         searchTimeout: widget.searchTimeout,
+        excludedPubkey: widget.currentUserPubkey,
       );
     }
   }

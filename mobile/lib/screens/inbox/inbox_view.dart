@@ -423,17 +423,20 @@ class _MessagesContent extends ConsumerWidget {
       return;
     }
 
+    // Read before opening the sheet: the picker needs it to exclude the
+    // viewer from its own candidate list (#8351), and with no signed-in
+    // pubkey there is nobody to message anyway.
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (currentPubkey == null) return;
+
     final selectedUser = await NewMessageSheet.show(
       context,
       profileRepository: profileRepo,
       followRepository: ref.read(followRepositoryProvider),
+      currentUserPubkey: currentPubkey,
     );
 
     if (selectedUser == null || !context.mounted) return;
-
-    final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (currentPubkey == null) return;
 
     final conversationId = DmRepository.computeConversationId([
       currentPubkey,
@@ -672,6 +675,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             child: _searchFocused
                 ? const SizedBox(width: double.infinity)
                 : FollowingBar(
+                    currentUserPubkey: widget.currentUserPubkey,
                     onUserTapped: (pubkey) {
                       Log.info(
                         '👤 User tapped in following bar: ${pubkeyForLogs(pubkey)}',
