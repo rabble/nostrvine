@@ -516,7 +516,17 @@ jobs:
         # AppDatabase "database is locked", no path_provider collisions (#3137).
         # concurrency=1 once pushed the job past 1 hour because each tagged file
         # pays a full Dart VM startup; a higher ceiling overlaps those startups.
-        run: very_good test --optimization --concurrency=4 --exclude-tags integration --test-randomize-ordering-seed random
+        #
+        # DIVINE_STRICT_CHANNELS makes the heal-and-blame tearDown in
+        # test/flutter_test_config.dart fail the test that left a shared
+        # MethodChannel handler replaced, instead of only healing it for the
+        # next suite (#5738). Without it the guard repairs the leak silently
+        # and nothing reports who caused it, so the next such regression is
+        # found the same way #5738 was: as an order-dependent failure
+        # cross-attributed to an innocent suite. Turned on once the full suite
+        # was proven clean under it, which the harness comment set as the
+        # condition.
+        run: very_good test --optimization --concurrency=4 --exclude-tags integration --dart-define=DIVINE_STRICT_CHANNELS=true --test-randomize-ordering-seed random
   vgv-tag-gate:
     name: VGV Tag Gate
     needs: changes

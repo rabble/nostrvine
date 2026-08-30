@@ -128,9 +128,13 @@ if [ "$VERY_GOOD_CURRENT_VERSION" != "$VERY_GOOD_CLI_VERSION" ]; then
 fi
 
 flutter pub get
+# DIVINE_STRICT_CHANNELS matches Mobile CI: a test that leaves a shared
+# MethodChannel handler replaced fails here rather than being healed silently,
+# so the leak surfaces before the push instead of in someone else's suite.
 PATH="$PUB_CACHE_BIN:$PATH" "$VERY_GOOD_BIN" test \
   --optimization \
   --concurrency=4 \
   --exclude-tags "integration || golden" \
+  --dart-define=DIVINE_STRICT_CHANNELS=true \
   --test-randomize-ordering-seed random
 """
