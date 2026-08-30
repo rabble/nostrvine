@@ -202,22 +202,32 @@ class _FeedModeContent extends StatelessWidget {
               child: GestureDetector(
                 behavior: .opaque,
                 onTap: onTap,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 12,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: VineTheme.headlineSmallFont(
-                          color: VineTheme.whiteText,
-                        ).copyWith(shadows: VineTheme.buttonShadows),
+                // The label and caret are intrinsically 36dp tall, which fails
+                // androidTapTargetGuideline (48). Free to fix: the trailing
+                // settings button is already 48dp, so the header row does not
+                // grow. minHeight, not a fixed height, so it still grows with
+                // the system font scale (.claude/rules/accessibility.md).
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: kMinInteractiveDimension,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 12,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: VineTheme.headlineSmallFont(
+                            color: VineTheme.whiteText,
+                          ).copyWith(shadows: VineTheme.buttonShadows),
+                        ),
                       ),
-                    ),
-                    const _FeedModeCaret(),
-                  ],
+                      const _FeedModeCaret(),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -98,6 +98,54 @@ void main() {
       );
     }
 
+    group('Tap Target', () {
+      Future<void> pumpDefault(WidgetTester tester) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoFeedBlocState(status: VideoFeedStatus.success));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+      }
+
+      Finder labelTarget() => find
+          .ancestor(
+            of: find.text(l10n.feedModeForYou),
+            matching: find.byType(GestureDetector),
+          )
+          .first;
+
+      testWidgets('the feed-mode label clears the 48dp minimum', (
+        tester,
+      ) async {
+        await pumpDefault(tester);
+
+        // 36dp on device before this constraint — under both platform minimums.
+        expect(tester.getSize(labelTarget()).height, kMinInteractiveDimension);
+      });
+
+      testWidgets('meets the Android tap target guideline', (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpDefault(tester);
+
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        handle.dispose();
+      });
+
+      testWidgets('costs the header no height', (tester) async {
+        await pumpDefault(tester);
+
+        // The trailing settings button is already 48dp, so constraining the
+        // label to match cannot push the header down. 16 + 48 + 16.
+        final header = find
+            .ancestor(
+              of: find.text(l10n.feedModeForYou),
+              matching: find.byType(Padding),
+            )
+            .first;
+        expect(tester.getSize(header).height, 80.0);
+      });
+    });
+
     group('Feed Source Labels', () {
       testWidgets('displays "For You" label for the default home source', (
         tester,
