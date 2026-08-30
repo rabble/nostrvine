@@ -3637,11 +3637,12 @@ class DmRepository {
     }
 
     // Divine does not support a self-addressed conversation (#8351, decided
-    // on #8261). Refused here rather than in the UI so every caller is covered —
-    // share-to-DM, collaborator invites, the retry paths, and whatever is
-    // added next. Returned rather than thrown because callers already branch
-    // on `success` and one of them, `CollaboratorInviteService.sendInvites`,
-    // loops without a catch: a throw would abort the remaining invites.
+    // on #8261). Refused here rather than in the UI so every caller is
+    // covered — share-to-DM, collaborator invites, the retry paths, and
+    // whatever is added next. Returned rather than thrown because callers
+    // already branch on `success` and one of them,
+    // `CollaboratorInviteService.sendInvites`, loops without a catch: a
+    // throw would abort the remaining invites.
     //
     // A published self-send is not merely useless, it is permanent. The
     // receive path drops a wrap whose participants collapse to a single
