@@ -112,21 +112,26 @@ MockSharedPreferences createMockSharedPreferences() {
 }
 
 /// Creates a properly stubbed MockAuthService for testing
-MockAuthService createMockAuthService() {
+MockAuthService createMockAuthService({
+  AuthState authState = AuthState.unauthenticated,
+  String? currentPublicKeyHex,
+}) {
   final mockAuth = MockAuthService();
 
   // Stub common auth methods with sensible defaults
-  when(() => mockAuth.isAuthenticated).thenReturn(false);
+  when(
+    () => mockAuth.isAuthenticated,
+  ).thenReturn(authState == AuthState.authenticated);
   when(() => mockAuth.canExportLocalNsec).thenReturn(false);
   when(
     () => mockAuth.authenticationSource,
   ).thenReturn(AuthenticationSource.none);
-  when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
+  when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPublicKeyHex);
   when(() => mockAuth.isNip07Available).thenReturn(false);
 
   // Stub authState and authStateStream so currentAuthStateProvider does not
   // crash with type 'Null' is not a subtype of type 'Stream<AuthState>'
-  when(() => mockAuth.authState).thenReturn(AuthState.unauthenticated);
+  when(() => mockAuth.authState).thenReturn(authState);
   when(
     () => mockAuth.authStateStream,
   ).thenAnswer((_) => const Stream<AuthState>.empty());

@@ -16,6 +16,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
@@ -194,10 +195,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text(l10n.profileSetupUsernameInvalidFormat),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.profileSetupUsernameInvalidFormat), findsOneWidget);
     });
 
     testWidgets('shows the localized edge-hyphen error', (tester) async {
@@ -242,10 +240,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text(l10n.profileSetupUsernameInvalidLength),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.profileSetupUsernameInvalidLength), findsOneWidget);
     });
   });
 
@@ -300,9 +295,7 @@ void main() {
         home: Scaffold(
           body: TextField(
             controller: controller,
-            inputFormatters: const [
-              LowercaseTextInputFormatter(),
-            ],
+            inputFormatters: const [LowercaseTextInputFormatter()],
           ),
         ),
       );
@@ -601,9 +594,10 @@ void main() {
     late MockProfileRepository mockProfileRepository;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn(testNpub);
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
@@ -712,9 +706,10 @@ void main() {
     late _MockMyProfileBloc mockMyProfileBloc;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn('npub-test-profile');
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
@@ -782,15 +777,13 @@ void main() {
           ),
           GoRoute(
             path: '/profile/:npub',
-            builder: (context, state) => const Scaffold(
-              body: Text('Profile destination'),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Text('Profile destination')),
           ),
           GoRoute(
             path: '/home/:tab',
-            builder: (context, state) => const Scaffold(
-              body: Text('Home destination'),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Text('Home destination')),
           ),
         ],
       );
@@ -1030,9 +1023,7 @@ void main() {
 
       testWidgets(
         'a fresher Divine handle refreshes an untouched cached handle',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final controller = StreamController<MyProfileState>();
           addTearDown(controller.close);
           whenListen(
@@ -1079,9 +1070,7 @@ void main() {
 
           await pumpScreen(tester);
           controller.add(
-            MyProfileLoading(
-              profile: cachedProfile(banner: '0x33ccbf'),
-            ),
+            MyProfileLoading(profile: cachedProfile(banner: '0x33ccbf')),
           );
           await tester.pump();
 
@@ -1188,10 +1177,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.profileSetupUnsavedChangesTitle),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.profileSetupUnsavedChangesTitle), findsOneWidget);
         expect(find.text('Profile destination'), findsNothing);
       });
 
@@ -1210,10 +1196,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(l10n.profileSetupUnsavedChangesTitle),
-          findsNothing,
-        );
+        expect(find.text(l10n.profileSetupUnsavedChangesTitle), findsNothing);
         expect(find.byType(ProfileSetupScreenView), findsOneWidget);
       });
 
@@ -1282,17 +1265,12 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.profileSetupUnsavedChangesTitle),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.profileSetupUnsavedChangesTitle), findsOneWidget);
         expect(
           find.text(l10n.profileSetupUnsavedChangesSaveButton),
           findsNothing,
         );
-        verifyNever(
-          () => mockEditorBloc.add(any(that: isA<ProfileSaved>())),
-        );
+        verifyNever(() => mockEditorBloc.add(any(that: isA<ProfileSaved>())));
       });
 
       testWidgets('clean cancel leaves without showing prompt', (tester) async {
@@ -1305,10 +1283,7 @@ void main() {
         await tester.tap(find.text(l10n.commonCancel));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(l10n.profileSetupUnsavedChangesTitle),
-          findsNothing,
-        );
+        expect(find.text(l10n.profileSetupUnsavedChangesTitle), findsNothing);
         expect(find.text('Profile destination'), findsOneWidget);
       });
 
@@ -1352,9 +1327,7 @@ void main() {
                 fetchUserProfileProvider(
                   testPubkeyHex,
                 ).overrideWith((ref) async => null),
-                userProfileReactiveProvider(
-                  testPubkeyHex,
-                ).overrideWith(
+                userProfileReactiveProvider(testPubkeyHex).overrideWith(
                   (ref) => Stream<models.UserProfile?>.value(null),
                 ),
               ],
@@ -1450,95 +1423,85 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      testWidgets(
-        'pre-filled hex banner shows color preview',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              persistedBanner: '0x33ccbf',
-              pendingBannerColor: Color(0xFF33CCBF),
-            ),
-          );
+      testWidgets('pre-filled hex banner shows color preview', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: '0x33ccbf',
+            pendingBannerColor: Color(0xFF33CCBF),
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsNothing,
+        );
+      });
 
-      testWidgets(
-        'pre-filled URL banner shows image preview',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              persistedBanner: 'https://cdn.example.com/banner.jpg',
-            ),
-          );
+      testWidgets('pre-filled URL banner shows image preview', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: 'https://cdn.example.com/banner.jpg',
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsNothing,
+        );
+      });
 
-      testWidgets(
-        'staged pendingBannerUrl shows image preview from that URL',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerStatus: PendingBannerStatus.staged,
-              pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
-            ),
-          );
+      testWidgets('staged pendingBannerUrl shows image preview from that URL', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            pendingBannerStatus: PendingBannerStatus.staged,
+            pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'staged pendingBannerColor shows color preview, no image',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerColor: Color(0xFFFF0000),
-            ),
-          );
+      testWidgets('staged pendingBannerColor shows color preview, no image', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(pendingBannerColor: Color(0xFFFF0000)),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsNothing,
+        );
+      });
 
       testWidgets('the banner sheet offers an image link', (tester) async {
         await pumpScreen(tester);
@@ -1599,10 +1562,7 @@ void main() {
         await tester.tap(find.text(l10n.profileSetupImagePasteLink));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text('https://cdn.example.com/banner.jpg'),
-          findsOneWidget,
-        );
+        expect(find.text('https://cdn.example.com/banner.jpg'), findsOneWidget);
       });
 
       testWidgets('the link sheet opens empty on a persisted colour', (
@@ -1698,66 +1658,54 @@ void main() {
               captureAny(that: isA<ProfileBannerColorSelected>()),
             ),
           ).captured;
-          expect(
-            captured.whereType<ProfileBannerColorSelected>(),
-            isNotEmpty,
-          );
+          expect(captured.whereType<ProfileBannerColorSelected>(), isNotEmpty);
         },
       );
 
-      testWidgets(
-        'tapping Clear when a banner is staged dispatches '
-        '$ProfileBannerCleared',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerStatus: PendingBannerStatus.staged,
-              pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
-            ),
-          );
+      testWidgets('tapping Clear when a banner is staged dispatches '
+          '$ProfileBannerCleared', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            pendingBannerStatus: PendingBannerStatus.staged,
+            pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
-          await tester.pumpAndSettle();
-          final clearButton = find.text(l10n.profileSetupBannerClearButton);
-          await tester.ensureVisible(clearButton);
-          await tester.tap(clearButton);
-          await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+        final clearButton = find.text(l10n.profileSetupBannerClearButton);
+        await tester.ensureVisible(clearButton);
+        await tester.tap(clearButton);
+        await tester.pumpAndSettle();
 
-          verify(
-            () => mockEditorBloc.add(const ProfileBannerCleared()),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockEditorBloc.add(const ProfileBannerCleared()),
+        ).called(1);
+      });
 
-      testWidgets(
-        'Save dispatches $ProfileSaved without legacy banner field — '
-        'bloc resolves it from state.effectiveBanner',
-        (tester) async {
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+      testWidgets('Save dispatches $ProfileSaved without legacy banner field — '
+          'bloc resolves it from state.effectiveBanner', (tester) async {
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          // Provide a display name so the save proceeds.
-          await tester.enterText(find.byType(TextField).first, 'Test User');
-          await tester.pumpAndSettle();
+        // Provide a display name so the save proceeds.
+        await tester.enterText(find.byType(TextField).first, 'Test User');
+        await tester.pumpAndSettle();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.profileSetupSaveButton));
-          await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileSetupSaveButton));
+        await tester.pumpAndSettle();
 
-          final captured = verify(
-            () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
-          ).captured;
-          expect(captured.whereType<ProfileSaved>(), isNotEmpty);
-          expect(
-            captured.whereType<ProfileSaved>().last.banner,
-            isNull,
-          );
-        },
-      );
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
+        ).captured;
+        expect(captured.whereType<ProfileSaved>(), isNotEmpty);
+        expect(captured.whereType<ProfileSaved>().last.banner, isNull);
+      });
     });
   });
 }

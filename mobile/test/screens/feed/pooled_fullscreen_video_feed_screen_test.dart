@@ -29,6 +29,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -699,9 +700,9 @@ void main() {
                 videos: [video],
               ),
               additionalOverrides: [
-                userProfileReactiveProvider(testPubkey).overrideWith(
-                  (ref) => Stream<UserProfile?>.value(null),
-                ),
+                userProfileReactiveProvider(
+                  testPubkey,
+                ).overrideWith((ref) => Stream<UserProfile?>.value(null)),
               ],
             ),
           );
@@ -820,11 +821,10 @@ void main() {
         'resizes for the keyboard only while its OWN composer is focused — '
         'not for a modal (e.g. the share sheet) on top (#5758)',
         (tester) async {
-          final mockAuth = createMockAuthService();
-          when(() => mockAuth.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuth.currentPublicKeyHex,
-          ).thenReturn('a' * 64);
+          final mockAuth = createMockAuthService(
+            authState: AuthState.authenticated,
+            currentPublicKeyHex: 'a' * 64,
+          );
 
           final videos = createTestVideos();
 
@@ -1035,66 +1035,63 @@ void main() {
         },
       );
 
-      testWidgets(
-        'hands back to onBack instead of popping when status becomes '
-        'emptyAfterRemoval in embedded video mode',
-        (tester) async {
-          final videos = createTestVideos(count: 1);
-          final initialState = FullscreenFeedState(
-            status: FullscreenFeedStatus.ready,
-            videos: videos,
-          );
-          final emptyState = FullscreenFeedState(
-            status: FullscreenFeedStatus.emptyAfterRemoval,
-            removedVideoIds: {videos.first.id},
-          );
-          final controller = StreamController<FullscreenFeedState>();
-          addTearDown(controller.close);
-          whenListen(mockBloc, controller.stream, initialState: initialState);
+      testWidgets('hands back to onBack instead of popping when status becomes '
+          'emptyAfterRemoval in embedded video mode', (tester) async {
+        final videos = createTestVideos(count: 1);
+        final initialState = FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: videos,
+        );
+        final emptyState = FullscreenFeedState(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+          removedVideoIds: {videos.first.id},
+        );
+        final controller = StreamController<FullscreenFeedState>();
+        addTearDown(controller.close);
+        whenListen(mockBloc, controller.stream, initialState: initialState);
 
-          var onBackCalls = 0;
-          var popCount = 0;
-          final observer = _PopCountingObserver(onPop: () => popCount++);
+        var onBackCalls = 0;
+        var popCount = 0;
+        final observer = _PopCountingObserver(onPop: () => popCount++);
 
-          await tester.pumpWidget(
-            testProviderScope(
-              mockProfileRepository: mockProfileRepository,
-              mockNip05VerificationService: mockNip05VerificationService,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                navigatorObservers: [observer],
-                home: Builder(
-                  builder: (context) => Scaffold(
-                    body: ElevatedButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => buildContent(
-                            contextTitle: 'Embedded',
-                            onBack: () => onBackCalls++,
-                          ),
+        await tester.pumpWidget(
+          testProviderScope(
+            mockProfileRepository: mockProfileRepository,
+            mockNip05VerificationService: mockNip05VerificationService,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              navigatorObservers: [observer],
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => buildContent(
+                          contextTitle: 'Embedded',
+                          onBack: () => onBackCalls++,
                         ),
                       ),
-                      child: const Text('open'),
                     ),
+                    child: const Text('open'),
                   ),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.tap(find.text('open'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-          controller.add(emptyState);
-          await tester.pump();
+        controller.add(emptyState);
+        await tester.pump();
 
-          expect(onBackCalls, 1);
-          // Auto-empty must return to the parent grid, not pop the route.
-          expect(popCount, 0);
-        },
-      );
+        expect(onBackCalls, 1);
+        // Auto-empty must return to the parent grid, not pop the route.
+        expect(popCount, 0);
+      });
 
       testWidgets(
         'shows the category title in the fullscreen app bar when provided',
@@ -1161,28 +1158,25 @@ void main() {
         ).called(1);
       });
 
-      testWidgets(
-        'does not dispatch FullscreenFeedLoadMoreRequested when '
-        'canLoadMore is false',
-        (tester) async {
-          final videos = createTestVideos();
+      testWidgets('does not dispatch FullscreenFeedLoadMoreRequested when '
+          'canLoadMore is false', (tester) async {
+        final videos = createTestVideos();
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
             ),
-          );
+          ),
+        );
 
-          nativeFeed(tester).onNearEnd?.call();
+        nativeFeed(tester).onNearEnd?.call();
 
-          verifyNever(
-            () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
-          );
-        },
-      );
+        verifyNever(
+          () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
+        );
+      });
 
       testWidgets('passes nearEndThreshold of 10 to InfiniteVideoFeed', (
         tester,
@@ -1227,52 +1221,50 @@ void main() {
         },
       );
 
-      testWidgets(
-        'hides LoadingMorePill when isLoadingMore is false',
-        (tester) async {
-          final videos = createTestVideos();
+      testWidgets('hides LoadingMorePill when isLoadingMore is false', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-                currentIndex: videos.length - 1,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              currentIndex: videos.length - 1,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          final pill = tester.widget<LoadingMorePill>(
-            find.byType(LoadingMorePill),
-          );
-          expect(pill.isVisible, isFalse);
-        },
-      );
+        final pill = tester.widget<LoadingMorePill>(
+          find.byType(LoadingMorePill),
+        );
+        expect(pill.isVisible, isFalse);
+      });
 
-      testWidgets(
-        'hides LoadingMorePill when not on the last video',
-        (tester) async {
-          final videos = createTestVideos();
+      testWidgets('hides LoadingMorePill when not on the last video', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-                isLoadingMore: true,
-                canLoadMore: true,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              isLoadingMore: true,
+              canLoadMore: true,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          final pill = tester.widget<LoadingMorePill>(
-            find.byType(LoadingMorePill),
-          );
-          expect(pill.isVisible, isFalse);
-        },
-      );
+        final pill = tester.widget<LoadingMorePill>(
+          find.byType(LoadingMorePill),
+        );
+        expect(pill.isVisible, isFalse);
+      });
 
       testWidgets(
         'LoadingMorePill renders localized feedLoadingMore copy when visible',
@@ -1543,94 +1535,90 @@ void main() {
         },
       );
 
-      testWidgets(
-        'verify age retries playback with viewer auth headers',
-        (tester) async {
-          const sha256 =
-              'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
-          const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
-          const headers = {'Authorization': 'Nostr fullscreen-token'};
-          final nativePlayer = _NativePlayerHarness(tester)..install();
-          addTearDown(nativePlayer.dispose);
-          final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
-          final video = createTestVideoEvent(
-            id: testVideoId1,
-            pubkey: testPubkey,
-            videoUrl: videoUrl,
-            sha256: sha256,
-          );
+      testWidgets('verify age retries playback with viewer auth headers', (
+        tester,
+      ) async {
+        const sha256 =
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+        const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
+        const headers = {'Authorization': 'Nostr fullscreen-token'};
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+        final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
+        final video = createTestVideoEvent(
+          id: testVideoId1,
+          pubkey: testPubkey,
+          videoUrl: videoUrl,
+          sha256: sha256,
+        );
 
-          when(
-            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
-              context: any(named: 'context'),
-              sha256Hash: sha256,
-              url: videoUrl,
-              serverUrl: 'https://media.divine.video',
-              category: 'video',
+        when(
+          () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: sha256,
+            url: videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthAuthorized(headers));
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: [video],
             ),
-          ).thenAnswer((_) async => const ViewerAuthAuthorized(headers));
-
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: [video],
+            additionalOverrides: [
+              mediaAuthInterceptorProvider.overrideWithValue(
+                mockMediaAuthInterceptor,
               ),
-              additionalOverrides: [
-                mediaAuthInterceptorProvider.overrideWithValue(
-                  mockMediaAuthInterceptor,
-                ),
-              ],
-            ),
-          );
-          await tester.pump();
+            ],
+          ),
+        );
+        await tester.pump();
 
-          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
-            tester.element(find.byType(FullscreenFeedContent)),
-          );
-          cubit.report(video.id, PlaybackStatus.ageRestricted);
-          await tester.pump();
+        final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+          tester.element(find.byType(FullscreenFeedContent)),
+        );
+        cubit.report(video.id, PlaybackStatus.ageRestricted);
+        await tester.pump();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
-          expect(find.byType(ModeratedContentOverlay), findsOneWidget);
-          expect(
-            find.text(l10n.videoErrorVerifyAgeButton),
-            findsOneWidget,
-          );
+        expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+        expect(find.text(l10n.videoErrorVerifyAgeButton), findsOneWidget);
 
-          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
-          await tester.pump();
-          await tester.pump();
+        await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
+        await tester.pump();
+        await tester.pump();
 
-          verify(
-            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
-              context: any(named: 'context'),
-              sha256Hash: sha256,
-              url: videoUrl,
-              serverUrl: 'https://media.divine.video',
-              category: 'video',
-            ),
-          ).called(1);
-          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
-          expect(
-            nativePlayer.setClipsArguments,
-            contains(
-              predicate<Map<Object?, Object?>>((arguments) {
-                final clips = arguments['clips'];
-                if (clips is! List || clips.isEmpty) return false;
-                final clip = clips.first;
-                if (clip is! Map || clip['uri'] != videoUrl) {
-                  return false;
-                }
-                final httpHeaders = clip['httpHeaders'];
-                return httpHeaders is Map &&
-                    httpHeaders['Authorization'] == headers['Authorization'];
-              }),
-            ),
-          );
-        },
-      );
+        verify(
+          () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: sha256,
+            url: videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).called(1);
+        expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+        expect(
+          nativePlayer.setClipsArguments,
+          contains(
+            predicate<Map<Object?, Object?>>((arguments) {
+              final clips = arguments['clips'];
+              if (clips is! List || clips.isEmpty) return false;
+              final clip = clips.first;
+              if (clip is! Map || clip['uri'] != videoUrl) {
+                return false;
+              }
+              final httpHeaders = clip['httpHeaders'];
+              return httpHeaders is Map &&
+                  httpHeaders['Authorization'] == headers['Authorization'];
+            }),
+          ),
+        );
+      });
 
       testWidgets(
         'verify age authenticates the optimized source for a bare-hash URL',
@@ -1736,9 +1724,10 @@ void main() {
         tester,
       ) async {
         final videos = createTestVideos();
-        final mockAuth = createMockAuthService();
-        when(() => mockAuth.isAuthenticated).thenReturn(true);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(testPubkey);
+        final mockAuth = createMockAuthService(
+          authState: AuthState.authenticated,
+          currentPublicKeyHex: testPubkey,
+        );
 
         await tester.pumpWidget(
           buildSubject(
@@ -1767,9 +1756,10 @@ void main() {
         'hides owner edit and delete actions for non-owned videos in the more menu',
         (tester) async {
           final videos = createTestVideos();
-          final mockAuth = createMockAuthService();
-          when(() => mockAuth.isAuthenticated).thenReturn(true);
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(otherPubkey);
+          final mockAuth = createMockAuthService(
+            authState: AuthState.authenticated,
+            currentPublicKeyHex: otherPubkey,
+          );
 
           await tester.pumpWidget(
             buildSubject(
@@ -1851,9 +1841,7 @@ void main() {
         nativeFeed(tester).onVideoLoopCompleted?.call(0);
         await tester.pump();
 
-        verifyNever(
-          () => mockBloc.add(const FullscreenFeedIndexChanged(1)),
-        );
+        verifyNever(() => mockBloc.add(const FullscreenFeedIndexChanged(1)));
       });
     });
 

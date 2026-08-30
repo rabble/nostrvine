@@ -19,6 +19,7 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
@@ -159,9 +160,7 @@ void main() {
       when(
         () => videosRepository.removedVideoIds,
       ).thenAnswer((_) => const Stream<String>.empty());
-      when(
-        () => videosRepository.isVideoKnownDeleted(any()),
-      ).thenReturn(false);
+      when(() => videosRepository.isVideoKnownDeleted(any())).thenReturn(false);
       when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
@@ -400,11 +399,12 @@ void main() {
         const viewerB =
             '2222222222222222222222222222222222222222222222222222222222222222';
         var currentViewer = viewerA;
-        final authService = createMockAuthService();
+        final authService = createMockAuthService(
+          authState: AuthState.authenticated,
+        );
         when(
           () => authService.currentPublicKeyHex,
         ).thenAnswer((_) => currentViewer);
-        when(() => authService.isAuthenticated).thenReturn(true);
         when(() => authService.isAnonymous).thenReturn(false);
         when(() => authService.hasExpiredOAuthSession).thenReturn(false);
         when(() => authService.isRpcUpgradeInProgress).thenReturn(false);
@@ -467,46 +467,45 @@ void main() {
       },
     );
 
-    testWidgets(
-      'pull-to-refresh completes after a viewed tab settled empty',
-      (tester) async {
-        final curatedListService = _MockCuratedListService();
-        when(() => curatedListService.lists).thenReturn(const []);
-        when(() => curatedListService.myLists).thenReturn(const []);
-        when(
-          () => curatedListService.fetchUserListsFromRelays(
-            force: any(named: 'force'),
-          ),
-        ).thenAnswer((_) async {});
+    testWidgets('pull-to-refresh completes after a viewed tab settled empty', (
+      tester,
+    ) async {
+      final curatedListService = _MockCuratedListService();
+      when(() => curatedListService.lists).thenReturn(const []);
+      when(() => curatedListService.myLists).thenReturn(const []);
+      when(
+        () => curatedListService.fetchUserListsFromRelays(
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async {});
 
-        await tester.pumpWidget(
-          buildSubject(
-            isOwnProfile: true,
-            curatedListService: curatedListService,
-          ),
-        );
-        await tester.pump();
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: true,
+          curatedListService: curatedListService,
+        ),
+      );
+      await tester.pump();
 
-        // View Lists so it joins the set of tabs a refresh re-syncs, and let
-        // it settle on the empty list collection.
-        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
-        tabBar.controller!.animateTo(
-          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.lists),
-        );
-        await tester.pumpAndSettle();
+      // View Lists so it joins the set of tabs a refresh re-syncs, and let
+      // it settle on the empty list collection.
+      final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+      tabBar.controller!.animateTo(
+        profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.lists),
+      );
+      await tester.pumpAndSettle();
 
-        final refreshIndicator = tester.widget<RefreshIndicator>(
-          find.byType(RefreshIndicator),
-        );
-        var refreshed = false;
-        unawaited(refreshIndicator.onRefresh().then((_) => refreshed = true));
-        await tester.pumpAndSettle();
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      var refreshed = false;
+      unawaited(refreshIndicator.onRefresh().then((_) => refreshed = true));
+      await tester.pumpAndSettle();
 
-        // The spinner runs until this future resolves, so a tab that reports
-        // no state change leaves the user stuck on it forever.
-        expect(refreshed, isTrue);
-      },
-    );
+      // The spinner runs until this future resolves, so a tab that reports
+      // no state change leaves the user stuck on it forever.
+      expect(refreshed, isTrue);
+    });
 
     testWidgets(
       "pull-to-refresh completes when the next pull lands during a tab's "

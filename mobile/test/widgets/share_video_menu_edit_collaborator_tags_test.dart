@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
@@ -75,16 +76,16 @@ void main() {
   });
 
   setUp(() {
-    mockAuthService = createMockAuthService();
+    mockAuthService = createMockAuthService(
+      authState: AuthState.authenticated,
+      currentPublicKeyHex: ownerPubkey,
+    );
     mockNostrService = createMockNostrService();
     mockBlossomUploadService = _MockBlossomUploadService();
     mockDmRepository = _MockDmRepository();
     mockPersonalEventCacheService = _MockPersonalEventCacheService();
     mockVideoEventService = _MockVideoEventService();
     capturedTags = [];
-
-    when(() => mockAuthService.isAuthenticated).thenReturn(true);
-    when(() => mockAuthService.currentPublicKeyHex).thenReturn(ownerPubkey);
 
     late Event signedEvent;
     when(
