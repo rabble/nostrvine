@@ -10457,10 +10457,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Simulation d\'examen de compte de mineur effacée';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Dossier d\'examen simulé 13-15 activé';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Dossier support simulé moins de 13 ans activé';
 

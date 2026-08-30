@@ -10504,10 +10504,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wyczyszczono symulację weryfikacji konta osoby niepełnoletniej';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Włączono symulowaną sprawę weryfikacji 13–15';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Włączono symulowaną sprawę wsparcia poniżej 13 lat';
 

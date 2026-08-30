@@ -9690,9 +9690,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsMinorReviewClearedToast => '未成年账号审核模拟已清除';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast => '已启用 13-15 岁审核案件模拟';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast => '已启用 13 岁以下协助案件模拟';
 
   @override

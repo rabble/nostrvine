@@ -17482,12 +17482,6 @@ abstract class AppLocalizations {
   /// **'Minor account review simulation cleared'**
   String get devOptionsMinorReviewClearedToast;
 
-  /// No description provided for @devOptionsMinorReviewTeenEnabledToast.
-  ///
-  /// In en, this message translates to:
-  /// **'Simulated 13-15 review case enabled'**
-  String get devOptionsMinorReviewTeenEnabledToast;
-
   /// No description provided for @devOptionsMinorReviewUnder13EnabledToast.
   ///
   /// In en, this message translates to:

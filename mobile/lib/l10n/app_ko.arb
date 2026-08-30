@@ -3419,7 +3419,6 @@
     "devOptionsMinorReviewUnder13Title": "13세 미만 지원 케이스 시뮬레이션",
     "devOptionsMinorReviewUnder13Subtitle": "보호자 이메일 안내만 있는 제한된 계정",
     "devOptionsMinorReviewClearedToast": "미성년자 계정 검토 시뮬레이션을 해제했어요",
-    "devOptionsMinorReviewTeenEnabledToast": "13~15세 검토 케이스 시뮬레이션을 켰어요",
     "devOptionsMinorReviewUnder13EnabledToast": "13세 미만 지원 케이스 시뮬레이션을 켰어요",
     "devOptionsProtectedMinorSimulationTitle": "보호 대상 미성년자 시뮬레이션",
     "devOptionsProtectedMinorCurrentStateLabel": "현재 상태",

@@ -10381,10 +10381,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Simulação de análise de conta de menor limpa';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Caso simulado de análise 13-15 ativado';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Caso simulado de suporte de menor de 13 ativado';
 

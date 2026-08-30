@@ -10222,10 +10222,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Reşit olmayan hesap incelemesi simülasyonu temizlendi';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simüle edilmiş 13-15 inceleme vakası açıldı';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simüle edilmiş 13 yaş altı destek vakası açıldı';
 

@@ -5619,7 +5619,6 @@
   "devOptionsMinorReviewUnder13Title": "13 سال سے کم سپورٹ کیس سیمولیٹ کریں",
   "devOptionsMinorReviewUnder13Subtitle": "صرف والدین ای میل ہدایات والا محدود اکاؤنٹ",
   "devOptionsMinorReviewClearedToast": "نابالغ اکاؤنٹ جائزہ سیمولیشن صاف ہو گئی",
-  "devOptionsMinorReviewTeenEnabledToast": "سیمولیٹ شدہ 13-15 جائزہ کیس فعال",
   "devOptionsMinorReviewUnder13EnabledToast": "سیمولیٹ شدہ 13 سال سے کم سپورٹ کیس فعال",
   "devOptionsProtectedMinorSimulationTitle": "محفوظ نابالغ سیمولیشن",
   "devOptionsProtectedMinorCurrentStateLabel": "موجودہ حالت",

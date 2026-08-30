@@ -9803,10 +9803,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsMinorReviewClearedToast => '미성년자 계정 검토 시뮬레이션을 해제했어요';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      '13~15세 검토 케이스 시뮬레이션을 켰어요';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       '13세 미만 지원 케이스 시뮬레이션을 켰어요';
 

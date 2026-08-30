@@ -10531,10 +10531,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Simularea verificării contului de minor a fost ștearsă';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Cazul simulat de verificare 13-15 a fost activat';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Cazul simulat de asistență sub 13 ani a fost activat';
 

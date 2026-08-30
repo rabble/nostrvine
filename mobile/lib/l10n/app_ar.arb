@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "محاكاة حالة دعم لمن هم دون 13",
     "devOptionsMinorReviewUnder13Subtitle": "حساب مقيّد مع تعليمات بريد الوالدين فقط",
     "devOptionsMinorReviewClearedToast": "تم مسح محاكاة مراجعة حساب القاصر",
-    "devOptionsMinorReviewTeenEnabledToast": "تم تفعيل حالة المراجعة المحاكاة 13–15",
     "devOptionsMinorReviewUnder13EnabledToast": "تم تفعيل حالة الدعم المحاكاة لمن هم دون 13",
     "devOptionsProtectedMinorSimulationTitle": "محاكاة القاصر المحمي",
     "devOptionsProtectedMinorCurrentStateLabel": "الحالة الحالية",

@@ -10265,10 +10265,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã xóa mô phỏng xem xét tài khoản vị thành niên';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Đã bật mô phỏng hồ sơ xem xét 13-15';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Đã bật mô phỏng hồ sơ hỗ trợ dưới 13';
 

@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Simulera supportärende under 13",
     "devOptionsMinorReviewUnder13Subtitle": "Begränsat konto med instruktioner enbart via förälderns mejl",
     "devOptionsMinorReviewClearedToast": "Simuleringen av kontogranskning för minderårig rensad",
-    "devOptionsMinorReviewTeenEnabledToast": "Simulerat granskningsärende 13–15 aktiverat",
     "devOptionsMinorReviewUnder13EnabledToast": "Simulerat supportärende under 13 aktiverat",
     "devOptionsProtectedMinorSimulationTitle": "Simulering av skyddad minderårig",
     "devOptionsProtectedMinorCurrentStateLabel": "Nuvarande status",

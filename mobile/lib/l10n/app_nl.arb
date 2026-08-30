@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Supportzaak onder de 13 simuleren",
     "devOptionsMinorReviewUnder13Subtitle": "Beperkt account met instructies alleen via e-mail van de ouder",
     "devOptionsMinorReviewClearedToast": "Simulatie accountbeoordeling minderjarige gewist",
-    "devOptionsMinorReviewTeenEnabledToast": "Gesimuleerde beoordelingszaak 13-15 ingeschakeld",
     "devOptionsMinorReviewUnder13EnabledToast": "Gesimuleerde supportzaak onder de 13 ingeschakeld",
     "devOptionsProtectedMinorSimulationTitle": "Simulatie beschermde minderjarige",
     "devOptionsProtectedMinorCurrentStateLabel": "Huidige status",

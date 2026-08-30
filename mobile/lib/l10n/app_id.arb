@@ -3881,7 +3881,6 @@
     "devOptionsMinorReviewUnder13Title": "Simulasikan kasus dukungan di bawah 13",
     "devOptionsMinorReviewUnder13Subtitle": "Akun dibatasi dengan petunjuk hanya lewat email orang tua",
     "devOptionsMinorReviewClearedToast": "Simulasi peninjauan akun anak di bawah umur dibersihkan",
-    "devOptionsMinorReviewTeenEnabledToast": "Simulasi kasus peninjauan 13-15 diaktifkan",
     "devOptionsMinorReviewUnder13EnabledToast": "Simulasi kasus dukungan di bawah 13 diaktifkan",
     "devOptionsProtectedMinorSimulationTitle": "Simulasi anak di bawah umur yang dilindungi",
     "devOptionsProtectedMinorCurrentStateLabel": "Status saat ini",

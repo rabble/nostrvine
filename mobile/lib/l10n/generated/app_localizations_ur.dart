@@ -10302,10 +10302,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'نابالغ اکاؤنٹ جائزہ سیمولیشن صاف ہو گئی';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'سیمولیٹ شدہ 13-15 جائزہ کیس فعال';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'سیمولیٹ شدہ 13 سال سے کم سپورٹ کیس فعال';
 

@@ -9788,10 +9788,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsMinorReviewClearedToast => '未成年アカウント審査のシミュレーションを解除しました';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      '13〜15歳の審査ケースのシミュレーションを有効にしました';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       '13歳未満のサポートケースのシミュレーションを有効にしました';
 

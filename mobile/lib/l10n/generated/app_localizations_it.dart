@@ -10429,10 +10429,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Simulazione revisione account di minore azzerata';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Caso di revisione simulato 13-15 attivato';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Caso di assistenza simulato sotto i 13 attivato';
 

@@ -10361,10 +10361,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Simulatie accountbeoordeling minderjarige gewist';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Gesimuleerde beoordelingszaak 13-15 ingeschakeld';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Gesimuleerde supportzaak onder de 13 ingeschakeld';
 

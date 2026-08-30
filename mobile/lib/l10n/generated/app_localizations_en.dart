@@ -10403,10 +10403,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Minor account review simulation cleared';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulated 13-15 review case enabled';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simulated under-13 support case enabled';
 

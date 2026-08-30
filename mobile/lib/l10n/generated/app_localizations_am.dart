@@ -10041,10 +10041,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'የአካለ መጠን ያልደረሰ መለያ ግምገማ ማስመሰያ ጸድቷል';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'የተመሰለው የ13–15 ግምገማ ጉዳይ በርቷል';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'የተመሰለው ከ13 በታች የድጋፍ ጉዳይ በርቷል';
 

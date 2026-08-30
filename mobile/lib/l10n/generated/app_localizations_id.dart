@@ -10226,10 +10226,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Simulasi peninjauan akun anak di bawah umur dibersihkan';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulasi kasus peninjauan 13-15 diaktifkan';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simulasi kasus dukungan di bawah 13 diaktifkan';
 

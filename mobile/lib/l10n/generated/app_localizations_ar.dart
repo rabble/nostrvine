@@ -10230,10 +10230,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم مسح محاكاة مراجعة حساب القاصر';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'تم تفعيل حالة المراجعة المحاكاة 13–15';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'تم تفعيل حالة الدعم المحاكاة لمن هم دون 13';
 

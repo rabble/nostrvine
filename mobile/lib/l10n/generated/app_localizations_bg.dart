@@ -10403,10 +10403,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Симулацията на преглед на профил на непълнолетен е изчистена';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Симулираният случай за преглед 13–15 е включен';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Симулираният случай за поддръжка под 13 е включен';
 

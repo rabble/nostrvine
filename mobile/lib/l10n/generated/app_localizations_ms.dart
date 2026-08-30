@@ -10319,10 +10319,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Simulasi semakan akaun bawah umur dikosongkan';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Kes semakan 13-15 simulasi didayakan';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Kes sokongan bawah 13 simulasi didayakan';
 

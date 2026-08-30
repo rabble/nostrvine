@@ -10429,10 +10429,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Simulation der Minderjährigen-Kontoprüfung zurückgesetzt';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulierter Prüffall 13–15 aktiviert';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simulierter Support-Fall unter 13 aktiviert';
 

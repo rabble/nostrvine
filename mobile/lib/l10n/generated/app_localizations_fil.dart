@@ -10396,10 +10396,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Na-clear ang simulasyon ng pagsusuri ng account ng menor de edad';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Naka-on ang na-simulate na kaso ng pagsusuri 13-15';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Naka-on ang na-simulate na support case na wala pang 13';
 

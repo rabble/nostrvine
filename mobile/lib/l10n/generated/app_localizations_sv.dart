@@ -10306,10 +10306,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Simuleringen av kontogranskning för minderårig rensad';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulerat granskningsärende 13–15 aktiverat';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simulerat supportärende under 13 aktiverat';
 
