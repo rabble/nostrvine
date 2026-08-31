@@ -1116,6 +1116,118 @@ void main() {
         await manager.initialize();
       });
 
+      test(
+        'reconnects disconnected relays in parallel, not in series',
+        () async {
+          // Each connect is bounded at 10s + a 2s orphan close, so a serial
+          // loop costs 12s x N. On device that was 48s for four unreachable
+          // relays (#7091). The startup path already does this with Future.wait
+          // -- "reduces startup from O(n * timeout) to O(max timeout)".
+          const perConnect = Duration(milliseconds: 300);
+          when(
+            () => mockRelayPool.add(
+              any(),
+              autoSubscribe: any(named: 'autoSubscribe'),
+            ),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(perConnect);
+            return false;
+          });
+          for (final url in const [
+            'wss://a.example.com',
+            'wss://b.example.com',
+            'wss://c.example.com',
+          ]) {
+            await manager.addRelay(url);
+          }
+
+          final stopwatch = Stopwatch()..start();
+          await manager.retryDisconnectedRelays();
+          stopwatch.stop();
+
+          expect(
+            stopwatch.elapsed,
+            lessThan(perConnect * 2),
+            reason:
+                'three 300ms connects run concurrently should cost about '
+                'one of them, not three',
+          );
+        },
+      );
+
+      test('concurrent callers join one sweep instead of stacking', () async {
+        // Nothing deduplicated in-flight sweeps, and one call site fires this
+        // unawaited, so a subscribe racing a send at cold start stacked whole
+        // sweeps: seven were observed overlapping on device (#7091). Each
+        // rebuilds a fresh relay object and disposes the previous one, so the
+        // connection-state guard one layer down cannot collapse them.
+        var connectAttempts = 0;
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async {
+          connectAttempts++;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return false;
+        });
+        await manager.addRelay('wss://solo.example.com');
+        connectAttempts = 0;
+
+        await Future.wait([
+          manager.retryDisconnectedRelays(),
+          manager.retryDisconnectedRelays(),
+          manager.retryDisconnectedRelays(),
+        ]);
+
+        expect(
+          connectAttempts,
+          1,
+          reason:
+              'three overlapping callers should share one sweep, not dial '
+              'the same relay three times',
+        );
+      });
+
+      test('a wedged connect cannot outlive the sweep budget', () async {
+        // Parallelising bounds the sweep at one connect, but only while every
+        // connect honours its own timeout. Nothing above them enforces that,
+        // and one awaited path below the socket layer can retry for minutes.
+        final original = RelayManager.reconnectSweepBudget;
+        RelayManager.reconnectSweepBudget = const Duration(milliseconds: 200);
+        addTearDown(() => RelayManager.reconnectSweepBudget = original);
+
+        // Register the relay while connects still resolve, then wedge: the
+        // add path awaits the same seam, so wedging first would hang setup
+        // rather than the sweep under test.
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
+        await manager.addRelay('wss://wedged.example.com');
+
+        final wedged = Completer<bool>();
+        addTearDown(() {
+          if (!wedged.isCompleted) wedged.complete(false);
+        });
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) => wedged.future);
+
+        await manager.retryDisconnectedRelays().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => throw StateError(
+            'retryDisconnectedRelays outlived its sweep budget',
+          ),
+        );
+      });
+
       test('retries connection to disconnected relays', () async {
         // First connection fails
         when(
