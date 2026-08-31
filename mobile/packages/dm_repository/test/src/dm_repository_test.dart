@@ -704,12 +704,6 @@ void main() {
           createdAt: createdAt,
         );
       });
-
-      // Default: the send policy permits everyone (behavior preserved). The
-      // protected-minor gate tests override this per-recipient. (#176)
-      when(
-        () => mockMessageService.canSendTo(any()),
-      ).thenAnswer((_) async => true);
     });
 
     DmRepository createRepository({
@@ -870,6 +864,13 @@ void main() {
       ),
     ).thenAnswer((_) async => false);
 
+    // #176's protected-minor gate: whether this recipient may be messaged.
+    // The gate tests override it per-recipient; every other send group needs
+    // the permissive default stated rather than inherited.
+    void stubSendPolicyPermitsEveryone() => when(
+      () => mockMessageService.canSendTo(any()),
+    ).thenAnswer((_) async => true);
+
     group('computeConversationId', () {
       test('returns same hash regardless of order', () {
         final resultAB = DmRepository.computeConversationId(
@@ -953,6 +954,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('sendMessage', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test('throws $ArgumentError for invalid pubkey', () {
         final repository = createRepository();
 
@@ -10259,6 +10262,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       setUp(stubNoCrossProtocolTwinAvailable);
 
       /// The fallback moderation pubkey (inlined from ModerationLabelService).
@@ -11863,6 +11868,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('dual-send NIP-04 fallback', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -16527,6 +16534,8 @@ void main() {
     });
 
     group('sendMessage - replyToId', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test('includes reply-to tag when replyToId is provided', () async {
         stubSendRumor(
           (_, recipientPubkey) async => NIP17SendResult.success(
@@ -16629,6 +16638,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('sendGroupMessage - success', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -16959,6 +16970,8 @@ void main() {
     });
 
     group('sendSharedVideoGroup', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -17561,6 +17574,8 @@ void main() {
     });
 
     group('_sendNip04Message failure paths', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test(
         'returns failure when signer is null',
         () async {
@@ -17966,6 +17981,8 @@ void main() {
     });
 
     group('sendMessage preserves existing conversation metadata', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test(
         'uses existing createdAt and dmProtocol from conversation',
         () async {
@@ -18079,6 +18096,8 @@ void main() {
     });
 
     group('sendMessage with outgoing_dms queue wired in', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       setUp(() {
@@ -19336,6 +19355,8 @@ void main() {
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       setUp(stubNoMessageForSendBatch);
 
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
