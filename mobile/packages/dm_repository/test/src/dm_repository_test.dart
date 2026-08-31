@@ -4265,8 +4265,8 @@ void main() {
           // Resolution runs OUTSIDE the publish backstop, and the sweep guard
           // budgets a fixed margin for it. On device it took 51s on a real send
           // while the capped publish took 10ms (#7091), so the margin was a
-          // heuristic rather than a guarantee. Stubbed inline rather than in the
-          // shared setUp: that setUp is frozen at its current stub count.
+          // heuristic rather than a guarantee. Stubbed inline, not in
+          // the shared setUp: that setUp is frozen at its stub count.
           final original = DmRepository.inboxResolutionBudget;
           DmRepository.inboxResolutionBudget = const Duration(
             milliseconds: 200,
