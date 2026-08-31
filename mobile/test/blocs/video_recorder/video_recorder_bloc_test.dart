@@ -1046,23 +1046,27 @@ void main() {
     });
 
     group('VideoRecorderFocusPointSet', () {
-      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+      test(
         'emits focusPoint then resets to zero after the auto-hide timer',
-        setUp: () {
-          when(
-            () => cameraService.setFocusPoint(any()),
-          ).thenAnswer((_) async => true);
+        () {
+          fakeAsync((async) {
+            when(
+              () => cameraService.setFocusPoint(any()),
+            ).thenAnswer((_) async => true);
+
+            final bloc = buildBloc();
+            bloc.add(const VideoRecorderFocusPointSet(Offset(0.5, 0.5)));
+            async.flushMicrotasks();
+            expect(bloc.state.focusPoint, const Offset(0.5, 0.5));
+
+            async.elapse(const Duration(milliseconds: 800));
+            async.flushMicrotasks();
+            expect(bloc.state.focusPoint, Offset.zero);
+
+            unawaited(bloc.close());
+            async.flushMicrotasks();
+          });
         },
-        build: buildBloc,
-        act: (bloc) async {
-          bloc.add(const VideoRecorderFocusPointSet(Offset(0.5, 0.5)));
-          // The auto-hide timer is 800ms — give it room to fire.
-          await Future<void>.delayed(const Duration(milliseconds: 900));
-        },
-        expect: () => const [
-          VideoRecorderBlocState(focusPoint: Offset(0.5, 0.5)),
-          VideoRecorderBlocState(),
-        ],
       );
     });
 
