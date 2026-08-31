@@ -243,7 +243,15 @@ class VideoSharingService {
       skipNip04Fallback: true,
     );
 
-    if (result.success) {
+    // Soft-unconfirmed sends stay in the durable queue and render like the
+    // ordinary DM optimistic bubble. Use that queue handle as the share result
+    // identity so the sheet reports success without minting a second rumor.
+    final optimisticMessageId = result.success
+        ? result.messageEventId
+        : result.retryablePending
+        ? result.queuedRumorId
+        : null;
+    if (optimisticMessageId != null) {
       _shareHistory[recipientPubkey] = DateTime.now();
       // Fire-and-forget: this only refreshes the in-memory recents list for
       // the next share-sheet open. Awaiting it kept the success toast waiting
@@ -261,7 +269,7 @@ class VideoSharingService {
       );
 
       return ShareResult.createSuccess(
-        result.messageEventId!,
+        optimisticMessageId,
         conversationId: conversationId,
       );
     }

@@ -113,6 +113,43 @@ void main() {
     });
 
     test(
+      'preserves retryable-pending without reporting a hard failure',
+      () async {
+        when(
+          () => dmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+            additionalTags: any(named: 'additionalTags'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.failure(
+            'Recipient DM inbox unreadable; published to the fallback pool',
+            retryablePending: true,
+            queuedRumorId: 'queued-rumor-id',
+          ),
+        );
+
+        final result = await service.sendInvite(
+          collaboratorPubkey: collaboratorPubkey,
+          creatorPubkey: creatorPubkey,
+          videoAddress: videoAddress,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.retryablePending, isTrue);
+        expect(result.error, isNull);
+        expect(
+          CollaboratorInviteBatchResult(
+            results: {collaboratorPubkey: result},
+          ).hasFailures,
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'content endsWith invitePlaintextSuffix (contract for UI suppression)',
       () async {
         when(

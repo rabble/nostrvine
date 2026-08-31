@@ -34,7 +34,6 @@ import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../helpers/fake_relay.dart';
-import '../helpers/navigation_helpers.dart';
 import '../helpers/test_setup.dart';
 
 class _MockDmReactionsRepository extends Mock
@@ -166,10 +165,9 @@ void main() {
     );
   }
 
-  group('#7316 reel reply Retry re-drives instead of re-sending', () {
+  group('#7316 reel reply soft-unconfirmed delivery', () {
     testWidgets(
-      'soft-unconfirmed send: Retry re-drives the parked outgoing_dms row '
-      'and never enqueues a second one',
+      'stays optimistic and parks exactly one outgoing_dms row',
       (tester) async {
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
@@ -192,12 +190,11 @@ void main() {
         await tester.tap(find.byType(IconButton));
         await tester.pump();
 
-        final failed = await waitForWidget(
-          tester,
-          find.text(l10n.dmSendFailedRetry),
-          maxSeconds: 45,
-        );
-        expect(failed, isTrue, reason: 'retry snackbar never appeared');
+        // Let the send run its full OK-confirm budget. A soft-unconfirmed
+        // result is durable and retryable in the background, so it must stay
+        // optimistic instead of presenting the manual hard-failure action.
+        await pumpUntilSettled(tester, maxSeconds: 20);
+        expect(find.text(l10n.dmSendFailedRetry), findsNothing);
 
         final afterFirst = await stack.db.outgoingDmsDao.getForConversation(
           conversationId: replyContext.conversationId,
@@ -212,69 +209,10 @@ void main() {
           hasLength(1),
           reason: 'the first send must park exactly one durable row',
         );
-        final firstRumorId = afterFirst.single.id;
-
-        // Pump the snackbar's entrance animation to completion before tapping.
-        // `waitForWidget` returns as soon as the label EXISTS, which is the
-        // first frame of the slide-in — the action is still translated away
-        // from where the finder reports it, and the tap misses.
-        //
-        // This doubles as the clock guard: `pump(duration)` advances real time
-        // under the integration binding, and the wall clock must cross a full
-        // second before the retry or the second rumor hashes to the same id
-        // (`created_at` is seconds) and `enqueue`'s insertOrIgnore silently
-        // coalesces the two rows. A human tapping a snackbar always clears
-        // that bar; making it explicit keeps the test measuring the retry
-        // rather than the clock.
-        await pumpUntilSettled(tester, maxSeconds: 3);
-
-        // ── Retry ──
-        logPhase('── Phase 2: tap Retry ──');
-        final wrapsBeforeRetry = relay.publishedEventIds.length;
-        await tester.tap(
-          find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
-        );
-        await tester.pump();
-
-        // Let the second send run its full OK-confirm budget.
-        await pumpUntilSettled(tester, maxSeconds: 20);
-
-        // Positive control. Without it a tap that silently missed (the
-        // snackbar hit-test trap above) would leave one row and read as
-        // "no bug" — the most dangerous possible false negative for this
-        // test. A retry that really ran publishes at least one more wrap.
-        logPhase(
-          'wraps published: $wrapsBeforeRetry before retry, '
-          '${relay.publishedEventIds.length} after',
-        );
         expect(
-          relay.publishedEventIds.length,
-          greaterThan(wrapsBeforeRetry),
-          reason: 'the Retry tap never dispatched a send — test is invalid',
-        );
-
-        final afterRetry = await stack.db.outgoingDmsDao.getForConversation(
-          conversationId: replyContext.conversationId,
-          ownerPubkey: senderPubkey,
-        );
-        logPhase('rows after retry: ${afterRetry.length}');
-        for (final row in afterRetry) {
-          logPhase('  row id=${row.id} content="${row.content}"');
-        }
-
-        // The contract. Retry replays the SAME rumor, so the queue still holds
-        // exactly one row under the original id. Before the #7316 fix this was
-        // two rows under two ids, which the receiver keys `direct_messages` on
-        // and therefore renders as two messages.
-        expect(
-          afterRetry.map((r) => r.id).toSet(),
-          {firstRumorId},
-          reason: 'Retry must re-drive the parked row, not mint a second rumor',
-        );
-        expect(
-          afterRetry.single.content,
+          afterFirst.single.content,
           'reel reply probe',
-          reason: 'the surviving row still carries the reply text',
+          reason: 'the parked row still carries the reply text',
         );
       },
       timeout: const Timeout(Duration(minutes: 3)),

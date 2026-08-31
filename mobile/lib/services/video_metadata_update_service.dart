@@ -569,6 +569,8 @@ class VideoMetadataUpdateService {
       previousCollaboratorPubkeys: initialCollaboratorPubkeys,
       updatedCollaboratorPubkeys: updatedCollaboratorPubkeys,
     );
-    return results.values.where((r) => !r.success).length;
+    return results.values
+        .where((result) => !result.success && !result.retryablePending)
+        .length;
   }
 }
