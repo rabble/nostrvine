@@ -17,6 +17,31 @@ class MockConnectionStatusService extends Mock
 
 class MockPendingActionsDao extends Mock implements PendingActionsDao {}
 
+class _ThrowOncePendingActionsDao extends PendingActionsDao {
+  _ThrowOncePendingActionsDao(super.attachedDatabase);
+
+  var _shouldThrow = true;
+
+  @override
+  Future<bool> updateStatus(
+    String id,
+    PendingActionStatus status, {
+    String? lastError,
+    int? retryCount,
+  }) {
+    if (_shouldThrow) {
+      _shouldThrow = false;
+      throw StateError('database unavailable');
+    }
+    return super.updateStatus(
+      id,
+      status,
+      lastError: lastError,
+      retryCount: retryCount,
+    );
+  }
+}
+
 class _TerminalActionException implements TerminalSocialActionException {
   const _TerminalActionException();
 }
@@ -418,6 +443,43 @@ void main() {
         verify(
           () => mockDao.updateStatus(action.id, PendingActionStatus.syncing),
         ).called(2);
+      });
+
+      test('retries after a DAO error releases the sync guard', () async {
+        when(() => mockConnectionService.isOnline).thenReturn(false);
+
+        service.dispose();
+        service = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: _ThrowOncePendingActionsDao(database),
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 0,
+            initialDelay: Duration.zero,
+            maxDelay: Duration.zero,
+            resyncDelay: Duration.zero,
+          ),
+        );
+        await service.initialize();
+
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+
+        when(() => mockConnectionService.isOnline).thenReturn(true);
+        var executorCalls = 0;
+        service.registerExecutor(PendingActionType.like, (_) async {
+          executorCalls++;
+        });
+
+        await expectLater(service.syncPendingActions(), throwsStateError);
+
+        expect(service.isSyncing, isFalse);
+        await pumpEventQueue();
+        expect(executorCalls, equals(1));
+        expect(service.pendingActions, isEmpty);
       });
 
       test('marks action as failed after max retries', () async {
