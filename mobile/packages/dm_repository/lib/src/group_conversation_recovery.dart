@@ -105,15 +105,23 @@ Map<String, List<RecoveryMessageFacts>> bucketByRoom(
 /// duplicate-conversation bug (#2740) that the destructive pass was written to
 /// fix.
 ///
-/// Two independent positive signals, either of which is enough:
+/// The one positive signal, and it is required: **two or more distinct senders
+/// inside this exact room**. A mention names a third party; it does not make
+/// them speak. For a bucket keyed on `{me, A, B}` to hold two senders, A must
+/// have written to `{me, B}` *and* B to `{me, A}` — which no mention produces,
+/// because a mention-widened thread has exactly one author.
 ///
-/// * **Two or more distinct senders.** A mention names a third party; it does
-///   not make them speak.
-/// * **No reply-mention shape.** #2740 records the real-world cause as
-///   "NIP-10 reply mentions", and a reply carries an `e` tag. A message that
-///   widens the room *and* replies to a message in a strictly smaller room is
-///   a mention rather than a membership. When no message in the bucket has such
-///   a parent, the widening is not explained by a mention.
+/// A single-sender room is **deliberately skipped**, even though some of those
+/// are real groups whose other members stayed quiet. That case is
+/// indistinguishable from a mention-widened 1:1 (see above), and this pass does
+/// not guess: a wrong restore is a user-visible phantom conversation, whereas a
+/// skip leaves the thread exactly as the user already sees it.
+///
+/// The reply-mention shape is kept as an additional **veto**, not as a grant.
+/// #2740 records the real-world cause as "NIP-10 reply mentions", and a reply
+/// carries an `e` tag; a message that widens the room *and* replies into a
+/// strictly smaller one is a mention. It costs nothing to honour that even when
+/// the sender count already said yes.
 ///
 /// [roomsByMessageId] must resolve reply parents across the *whole* source
 /// conversation, not just this bucket — a mention-reply's parent lives in the
@@ -123,7 +131,7 @@ bool isAttestedGroup(
   Map<String, Set<String>> roomsByMessageId,
 ) {
   if (bucket.isEmpty) return false;
-  if (bucket.map((m) => m.senderPubkey).toSet().length >= 2) return true;
+  if (bucket.map((m) => m.senderPubkey).toSet().length < 2) return false;
   return !bucket.any((m) => _repliesIntoASmallerRoom(m, roomsByMessageId));
 }
 

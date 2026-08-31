@@ -140,11 +140,27 @@ void main() {
       expect(isAttestedGroup(bucket, _roomsOf(bucket)), isTrue);
     });
 
-    test('attests a single-sender room with no reply-mention shape', () {
+    test('REFUSES a single-sender room, even with no reply-mention shape', () {
+      // Indistinguishable from a mention-widened 1:1 whose widening message
+      // simply is not a reply, so there is no `e` tag to veto on. Skipped
+      // rather than guessed: a wrong restore is a visible phantom thread,
+      // while a skip leaves the thread exactly as the user already sees it.
       final bucket = [
         _facts(id: 'g1', sender: _alice, pTags: [_me, _bob]),
       ];
-      expect(isAttestedGroup(bucket, _roomsOf(bucket)), isTrue);
+      expect(isAttestedGroup(bucket, _roomsOf(bucket)), isFalse);
+    });
+
+    test('REFUSES a widened reply whose parent is no longer on disk', () {
+      // The `e`-tag veto cannot fire without a resolvable parent, so the
+      // sender count is the only thing between this and a phantom.
+      final orphan = _facts(
+        id: 'g1',
+        sender: _alice,
+        pTags: [_me, _bob],
+        replyToId: 'purged',
+      );
+      expect(isAttestedGroup([orphan], _roomsOf([orphan])), isFalse);
     });
 
     test('REFUSES the reply-mention shape #2740 describes', () {
@@ -166,8 +182,8 @@ void main() {
       final first = _facts(id: 'g1', sender: _alice, pTags: [_me, _bob]);
       final reply = _facts(
         id: 'g2',
-        sender: _alice,
-        pTags: [_me, _bob],
+        sender: _bob,
+        pTags: [_me, _alice],
         replyToId: 'g1',
       );
       final rooms = _roomsOf([first, reply]);
@@ -175,14 +191,31 @@ void main() {
       expect(isAttestedGroup([first, reply], rooms), isTrue);
     });
 
-    test('an unresolvable reply parent does not veto attestation', () {
-      final orphan = _facts(
+    test('the e-tag veto still applies even when two senders spoke', () {
+      // Belt and braces: the sender count says yes, the reply shape says the
+      // widening is a mention. The veto wins.
+      final plain = _facts(id: 'p1', sender: _alice, pTags: [_me]);
+      final a = _facts(
+        id: 'm1',
+        sender: _alice,
+        pTags: [_me, _bob],
+        replyToId: 'p1',
+      );
+      final b = _facts(id: 'm2', sender: _bob, pTags: [_me, _alice]);
+      final rooms = _roomsOf([plain, a, b]);
+
+      expect(isAttestedGroup([a, b], rooms), isFalse);
+    });
+
+    test('an unresolvable reply parent does not veto a two-sender room', () {
+      final a = _facts(
         id: 'g1',
         sender: _alice,
         pTags: [_me, _bob],
         replyToId: 'gone',
       );
-      expect(isAttestedGroup([orphan], _roomsOf([orphan])), isTrue);
+      final b = _facts(id: 'g2', sender: _bob, pTags: [_me, _alice]);
+      expect(isAttestedGroup([a, b], _roomsOf([a, b])), isTrue);
     });
 
     test('an empty bucket is never attested', () {

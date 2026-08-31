@@ -627,6 +627,49 @@ void main() {
       );
     });
 
+    test(
+      'leaves a single-sender widened room alone (no e tag to veto on)',
+      () async {
+        // The widening message is NOT a reply, so the e-tag veto cannot fire and
+        // the sender count is the only guard. Indistinguishable from a real
+        // group whose other member never spoke, so the pass declines to guess.
+        final oneToOneId = await seedConversation([_me, _alice]);
+        await seedMessage(
+          id: 'd1',
+          conversationId: oneToOneId,
+          sender: _alice,
+          pTags: [_me],
+        );
+        final widenedId = await seedConversation([_me, _alice, _bob]);
+        await seedMessage(
+          id: 'w1',
+          conversationId: widenedId,
+          sender: _alice,
+          pTags: [_me, _bob],
+          createdAt: 1700000002,
+        );
+
+        await runHistoricalPass();
+        await recoverViaSetCredentials();
+
+        expect(
+          await conversations.getConversation(widenedId, ownerPubkey: _me),
+          isNull,
+          reason:
+              'one sender is not evidence of a room; restoring would risk '
+              'a phantom conversation',
+        );
+        expect(
+          (await messages.getMessagesForConversation(
+            oneToOneId,
+            ownerPubkey: _me,
+          )).map((m) => m.id).toSet(),
+          equals({'d1', 'w1'}),
+          reason: 'and the messages stay exactly where the user sees them',
+        );
+      },
+    );
+
     test('respects a removal tombstone for the reconstructed room', () async {
       final oneToOneId = await seedConversation([_me, _alice]);
       await seedMessage(
