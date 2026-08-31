@@ -1397,6 +1397,36 @@ void main() {
       });
 
       test(
+        'returns inviteFailureCount = 0 when the invite remains queued',
+        () async {
+          when(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Delivery confirmation pending',
+              retryablePending: true,
+            ),
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(
+              collaboratorPubkeys: const {newCollaborator},
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect((result as VideoUpdateSuccess).inviteFailureCount, equals(0));
+        },
+      );
+
+      test(
         'returns inviteFailureCount = 0 when no new collaborators were added',
         () async {
           final result = await service.updateVideo(
