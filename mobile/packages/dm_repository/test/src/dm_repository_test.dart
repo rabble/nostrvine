@@ -562,6 +562,32 @@ void main() {
       registerFallbackValue(Duration.zero);
     });
 
+    // Everything registered below is a THROW-GUARD, not a decision.
+    //
+    // The distinction is what #8399 turns on. A *decision* stub stands in for a
+    // branch production takes, so inheriting one invisibly can make a class of
+    // bug unobservable -- that is how #7324 stayed green here for months. Those
+    // have been moved to the groups that depend on them and are declared there
+    // by name -- `stubSendPolicyPermitsEveryone`,
+    // `stubNoCrossProtocolTwinAvailable` and friends, defined just below
+    // `createRepository`.
+    //
+    // What is left exists only because an unstubbed mocktail member *throws*.
+    // No branch reads these values:
+    //
+    //   * relay counters      -- interpolated into a log line
+    //   * runInTransaction    -- runs the callback inline; on 11 persist paths
+    //   * markAsRead          -- both production call sites are a bare `await`
+    //   * getAllConversations, both backfills, publishSelfApplicationMarker
+    //                         -- production CATCHES their throw and logs it, so
+    //                            removing them keeps the suite green while
+    //                            silently running it against an error branch
+    //   * buildRumor/buildGroupRumor -- faithful fakes, not constants; they
+    //                            compute real event ids from their arguments
+    //
+    // Before removing anything here, check the run's logs as well as the test
+    // count: grep for `type 'Null' is not a subtype of type '` and compare
+    // against the baseline. A green suite is necessary but not sufficient.
     setUp(() {
       mockNostrClient = _MockNostrClient();
       mockMessageService = _MockNIP17MessageService();
