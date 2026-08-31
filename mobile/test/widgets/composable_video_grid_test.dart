@@ -40,6 +40,7 @@ import 'package:openvine/repositories/creator_delete_enforcement_repository.dart
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -60,6 +61,9 @@ class _MockEnforcementRepository extends Mock
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _MockSubscribedListVideoCache extends Mock
+    implements SubscribedListVideoCache {}
+
 /// Provider overrides every scope in this file needs.
 ///
 /// [ComposableVideoGrid] renders `UserName`, which reaches the user-profile
@@ -71,6 +75,7 @@ List<Override> _gridOverrides(
   broken_tracker.BrokenVideoTracker tracker, {
   MockNostrClient? nostrService,
   MockAuthService? authService,
+  SubscribedListVideoCache? subscribedListCache,
   List<Override> extra = const [],
 }) => [
   sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
@@ -79,7 +84,7 @@ List<Override> _gridOverrides(
     nostrService ?? createMockNostrService(),
   ),
   brokenVideoTrackerProvider.overrideWith((ref) async => tracker),
-  subscribedListVideoCacheProvider.overrideWithValue(null),
+  subscribedListVideoCacheProvider.overrideWithValue(subscribedListCache),
   userProfileReactiveProvider.overrideWith((ref, pubkey) => Stream.value(null)),
   ...extra,
 ];
@@ -834,6 +839,50 @@ void main() {
         const inner = Radius.circular(4);
         expect(tileRadius(tester, 0), const BorderRadius.all(inner));
         expect(tileRadius(tester, 1), const BorderRadius.all(inner));
+      });
+    });
+
+    group('subscribed-list badge', () {
+      Finder badgeFinder() => find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineIcon && widget.icon == DivineIconName.images,
+      );
+
+      Widget buildGrid({required bool showBadge}) {
+        final cache = _MockSubscribedListVideoCache();
+        when(() => cache.getListsForVideo(any())).thenReturn({'some-list'});
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker, subscribedListCache: cache),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: testVideos.take(2).toList(),
+                showSubscribedListBadge: showBadge,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('marks tiles whose video is in a subscribed list', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildGrid(showBadge: true));
+        await tester.pump();
+
+        expect(badgeFinder(), findsNWidgets(2));
+      });
+
+      testWidgets('shows no badge when the caller turns it off', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildGrid(showBadge: false));
+        await tester.pump();
+
+        expect(badgeFinder(), findsNothing);
       });
     });
 

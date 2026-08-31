@@ -54,6 +54,7 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
     this.headerSlivers = const [],
     this.selectedVideoIds,
     this.topOuterRadius,
+    this.showSubscribedListBadge = true,
   });
 
   final List<VideoEvent> videos;
@@ -90,6 +91,11 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
   /// [onVideoTap] — the caller decides they toggle — and the own-video
   /// long-press menu is suppressed.
   final Set<String>? selectedVideoIds;
+
+  /// Whether tiles show the corner badge marking a video that is in one of
+  /// the viewer's subscribed lists. A list detail screen turns this off —
+  /// there the badge is true for every tile and says nothing.
+  final bool showSubscribedListBadge;
 
   /// Rounds the grid block's outer top corners by clipping the first row's
   /// outermost tiles (first tile's top-left, last first-row tile's
@@ -244,7 +250,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
     Widget buildItem(BuildContext context, int index) {
       final video = videosToShow[index];
-      final listIds = subscribedListCache?.getListsForVideo(video.id);
+      final listIds = widget.showSubscribedListBadge
+          ? subscribedListCache?.getListsForVideo(video.id)
+          : null;
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
 
       final isOwnVideo = viewerPubkey != null && viewerPubkey == video.pubkey;
