@@ -830,6 +830,7 @@ void main() {
           rumorEvent: any(named: 'rumorEvent'),
           recipientPubkey: any(named: 'recipientPubkey'),
           targetRelays: any(named: 'targetRelays'),
+          selfWrapTargetRelays: any(named: 'selfWrapTargetRelays'),
           awaitRecipientOk: any(named: 'awaitRecipientOk'),
           selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
         ),
@@ -12400,6 +12401,152 @@ void main() {
             () => mockDirectMessagesDao.markMessageDeletionSent(
               _rumorEventId,
               ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'routes the delete-for-everyone kind-5 to the recipient '
+        'kind-10050 inbox',
+        () async {
+          final repo = createRepository();
+
+          when(() => mockNostrClient.configuredRelays).thenReturn(const [
+            'wss://relay.divine.video',
+          ]);
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA, // current user
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Recipient advertises a DM inbox. Before #7321's sibling fix the
+          // delete-for-everyone fan-out omitted targetRelays entirely while
+          // still demanding an OK, so the OK came from the default pool — a
+          // false "confirmed" for an inbox-only reader.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (invocation) async {
+              final filters =
+                  invocation.positionalArguments.first
+                      as List<nostr_filter.Filter>;
+              final author = filters.single.authors!.single;
+              return answeredList([
+                Event(
+                  author,
+                  EventKind.dmRelaysList,
+                  [
+                    ['relay', 'wss://inbox.example'],
+                  ],
+                  '',
+                  createdAt: 1700000000,
+                ),
+              ]);
+            },
+          );
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          // The wire attempt is unawaited, so let it settle.
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: ['wss://inbox.example'],
+              selfWrapTargetRelays: const [
+                'wss://relay.divine.video',
+                'wss://inbox.example',
+              ],
+              awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
             ),
           ).called(1);
         },

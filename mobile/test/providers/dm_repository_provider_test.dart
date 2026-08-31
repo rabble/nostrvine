@@ -50,6 +50,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(<nostr_filter.Filter>[_FakeFilter()]);
+    registerFallbackValue(Duration.zero);
   });
 
   group('dmRepositoryProvider (#2931)', () {
@@ -82,6 +83,22 @@ void main() {
         ),
       ).thenAnswer((_) => const Stream<Event>.empty());
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          events: const <Event>[],
+          noRelays: false,
+          timedOut: false,
+        ),
+      );
 
       // AuthService stubs for auth-state-driven providers.
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -140,6 +157,10 @@ void main() {
       ).called(1);
       expect(repository.isInitialized, isTrue);
       expect(repository.userPubkey, equals(testPubkey));
+      expect(
+        container.read(dmReactionsRepositoryProvider).hasDmInboxRelayResolver,
+        isTrue,
+      );
     });
 
     // #8391: the removal policy is what stops ANY caller destroying a Divine

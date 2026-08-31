@@ -6074,6 +6074,21 @@ class DmRepository {
     required Event deletion,
     required List<String> recipients,
   }) async {
+    // Resolve every recipient's kind-10050 inbox concurrently BEFORE the loop,
+    // exactly as `sendMessage` and `sendGroupMessage` do. Without it the
+    // OK-confirm below is satisfied by the default pool rather than the
+    // recipient's own inbox — a false "confirmed" for a recipient who only
+    // reads their advertised inbox. Resolution never throws (it degrades to
+    // null → default pool), so a failed lookup cannot abort the fan-out.
+    final inboxByRecipient = <String, List<String>?>{};
+    final selfWrapRelays = _selfWrapTargetRelays();
+    await Future.wait([
+      for (final recipient in recipients)
+        resolveDmInboxRelays(
+          recipient,
+        ).then((relays) => inboxByRecipient[recipient] = relays),
+    ]);
+    final selfWrapTargets = await selfWrapRelays;
     NIP17SendSuccess? lastSuccess;
     final failures = <NIP17SendFailure>[];
     for (final recipient in recipients) {
@@ -6081,6 +6096,8 @@ class DmRepository {
           .sendRumor(
             rumorEvent: deletion,
             recipientPubkey: recipient,
+            targetRelays: inboxByRecipient[recipient],
+            selfWrapTargetRelays: selfWrapTargets,
             awaitRecipientOk: true,
           )
           .timeout(
