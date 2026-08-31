@@ -235,9 +235,24 @@ class _DivineAppState extends ConsumerState<DivineApp>
 
   static const int _bytesPerMb = 1024 * 1024;
 
-  static int _currentRssBytes() => kIsWeb ? 0 : io.ProcessInfo.currentRss;
+  static int _currentRssBytes() => _probe(() => io.ProcessInfo.currentRss);
 
-  static int _peakRssBytes() => kIsWeb ? 0 : io.ProcessInfo.maxRss;
+  static int _peakRssBytes() => _probe(() => io.ProcessInfo.maxRss);
+
+  /// Reads a `ProcessInfo` memory gauge, or 0 where it is unavailable.
+  ///
+  /// The probes throw on platforms that do not implement them. A throw here
+  /// would take out the memory-pressure handler's load shedding along with
+  /// the reading, which is the opposite of what the caller needs.
+  static int _probe(int Function() read) {
+    if (kIsWeb) return 0;
+    try {
+      final value = read();
+      return value < 0 ? 0 : value;
+    } on Object catch (_) {
+      return 0;
+    }
+  }
 
   static String _rssMb(int bytes) => (bytes / _bytesPerMb).toStringAsFixed(1);
 
