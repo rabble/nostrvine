@@ -20,16 +20,16 @@ void main() {
     late Directory tmp;
 
     List<SharedSetupStub> scan(String source) {
-      File('${tmp.path}/t/subject_test.dart').writeAsStringSync(source);
+      File('${tmp.path}/test/subject_test.dart').writeAsStringSync(source);
       return findSharedSetupStubs(
-        Directory('${tmp.path}/t'),
+        Directory('${tmp.path}/test'),
         pathPrefix: tmp.path,
       );
     }
 
     setUp(() {
       tmp = Directory.systemTemp.createTempSync('shared_setup_stub_test');
-      Directory('${tmp.path}/t').createSync(recursive: true);
+      Directory('${tmp.path}/test').createSync(recursive: true);
     });
 
     tearDown(() {
@@ -95,6 +95,64 @@ void main() {
 }
 ''');
         expect(sites, hasLength(1));
+      });
+
+      test('stubs in a same-file helper passed directly to setUp', () {
+        final sites = scan('''
+void stubSharedDefaults() {
+  when(() => dao.foo()).thenReturn(true);
+  when(() => dao.bar()).thenReturn(false);
+}
+
+void main() {
+  setUp(stubSharedDefaults);
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+        expect(sites, hasLength(2));
+      });
+
+      test('stubs in a local helper called by a setUp callback', () {
+        final sites = scan('''
+void main() {
+  void stubSharedDefaults() {
+    when(() => dao.foo()).thenReturn(true);
+    when(() => dao.bar()).thenReturn(false);
+  }
+
+  setUp(() {
+    stubSharedDefaults();
+  });
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+        expect(sites, hasLength(2));
+      });
+
+      test('same-file helper traversal stops at cycles', () {
+        final sites = scan('''
+void helperA() {
+  when(() => dao.foo()).thenReturn(true);
+  helperB();
+}
+
+void helperB() {
+  when(() => dao.bar()).thenReturn(false);
+  helperA();
+}
+
+void main() {
+  setUp(helperA);
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+        expect(sites, hasLength(2));
       });
     });
 
@@ -183,6 +241,52 @@ void main() {
 }
 ''');
         expect(sites, isEmpty);
+      });
+
+      test('a helper imported from another file', () {
+        final sites = scan('''
+void main() {
+  setUp(importedStubDefaults);
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+        expect(sites, isEmpty);
+      });
+
+      test('a helper tear-off passed to an unrelated call', () {
+        final sites = scan('''
+void stubDefaults() {
+  when(() => dao.foo()).thenReturn(true);
+}
+
+void main() {
+  setUp(() {
+    registerCallback(stubDefaults);
+  });
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+        expect(sites, isEmpty);
+      });
+
+      test('files outside test-runner directories', () {
+        final libDir = Directory('${tmp.path}/lib')..createSync();
+        File('${libDir.path}/subject_test.dart').writeAsStringSync('''
+void main() {
+  setUp(() {
+    when(() => dao.foo()).thenReturn(true);
+  });
+  group('a', () {
+    test('x', () {});
+  });
+}
+''');
+
+        expect(findSharedSetupStubs(libDir, pathPrefix: tmp.path), isEmpty);
       });
     });
 

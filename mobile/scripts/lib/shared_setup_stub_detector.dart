@@ -40,6 +40,9 @@
 //   `registerFallbackValue`, and channel handlers are not stubbed decisions.
 // * A `when(` outside any `setUp` — a stub inside a test body is already local,
 //   which is exactly the shape this ratchet pushes work toward.
+// * Stubs reached only through dynamic dispatch or an imported helper. Direct
+//   calls and tear-offs of same-file helpers are followed, because extracting
+//   a shared setUp body does not reduce how many tests inherit its stubs.
 //
 // The count is deliberately blind to WHAT is stubbed. A stub standing in for a
 // decision production branches on is the hazard; one that exists only because
@@ -61,6 +64,7 @@ import 'package:analyzer/dart/analysis/features.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/source/line_info.dart';
 
 const _setUpNames = {'setUp', 'setUpAll'};
 const _stubNames = {'when', 'whenListen'};
@@ -163,7 +167,17 @@ Never _usage() {
   exit(2);
 }
 
-bool _isTestFile(File f) => f.path.endsWith('_test.dart');
+const _testDirectories = {'test', 'integration_test'};
+const _excludedDirectories = {'.dart_tool', 'build', '.worktrees'};
+
+bool _isTestFile(File file) {
+  final path = file.path;
+  if (!path.endsWith('_test.dart')) return false;
+  final segments = path.split('/');
+  final directories = segments.sublist(0, segments.length - 1);
+  if (directories.any(_excludedDirectories.contains)) return false;
+  return directories.any(_testDirectories.contains);
+}
 
 List<SharedSetupStub> _scan(File file, String pathPrefix) {
   final content = file.readAsStringSync();
@@ -178,7 +192,7 @@ List<SharedSetupStub> _scan(File file, String pathPrefix) {
     if (rel.startsWith('/')) rel = rel.substring(1);
   }
   final lineInfo = result.lineInfo;
-  final visitor = _Visitor(rel, lineInfo);
+  final visitor = _Visitor(rel, lineInfo, _SameFileFunctions(result.unit));
   result.unit.accept(visitor);
   return visitor.found;
 }
@@ -188,10 +202,11 @@ String? _plainName(MethodInvocation node) =>
     node.target == null ? node.methodName.name : null;
 
 class _Visitor extends RecursiveAstVisitor<void> {
-  _Visitor(this.path, this.lineInfo);
+  _Visitor(this.path, this.lineInfo, this.functions);
 
   final String path;
-  final dynamic lineInfo;
+  final LineInfo lineInfo;
+  final _SameFileFunctions functions;
   final found = <SharedSetupStub>[];
 
   @override
@@ -210,7 +225,7 @@ class _Visitor extends RecursiveAstVisitor<void> {
           found.add(
             SharedSetupStub(
               path,
-              lineInfo.getLocation(stub.offset).lineNumber as int,
+              lineInfo.getLocation(stub.offset).lineNumber,
               name,
               scopeLabel,
               _groupDepth(node),
@@ -258,9 +273,92 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
   /// The `when(...)` / `whenListen(...)` calls inside this setUp's callback.
   List<MethodInvocation> _stubCalls(MethodInvocation setUpCall) {
-    final collector = _StubCollector();
+    final collector = _StubCollector(functions);
+    for (final argument in setUpCall.argumentList.arguments) {
+      if (argument is SimpleIdentifier) {
+        collector.follow(argument.name, argument);
+      }
+    }
     setUpCall.argumentList.accept(collector);
     return collector.calls;
+  }
+}
+
+/// Directly callable functions declared in this file.
+///
+/// Resolution is deliberately lexical and syntax-only. It follows top-level
+/// functions and local functions whose enclosing block contains the call, but
+/// not imported helpers, instance methods, or values passed through variables.
+class _SameFileFunctions {
+  _SameFileFunctions(CompilationUnit unit) {
+    unit.accept(_FunctionDeclarationCollector(_byName));
+  }
+
+  final _byName = <String, List<_FunctionBody>>{};
+
+  _FunctionBody? resolve(String name, AstNode callSite) {
+    final candidates = _byName[name];
+    if (candidates == null) return null;
+    final visible = candidates.where((candidate) {
+      final scope = candidate.scope;
+      return scope == null || _isAncestorOf(scope, callSite);
+    }).toList();
+    if (visible.isEmpty) return null;
+    visible.sort(
+      (a, b) => _ancestorDepth(b.scope).compareTo(_ancestorDepth(a.scope)),
+    );
+    return visible.first;
+  }
+
+  static bool _isAncestorOf(AstNode ancestor, AstNode node) {
+    for (AstNode? current = node; current != null; current = current.parent) {
+      if (identical(current, ancestor)) return true;
+    }
+    return false;
+  }
+
+  static int _ancestorDepth(AstNode? node) {
+    var depth = 0;
+    for (var current = node; current != null; current = current.parent) {
+      depth++;
+    }
+    return depth;
+  }
+}
+
+class _FunctionBody {
+  const _FunctionBody(this.body, this.scope);
+
+  final FunctionBody body;
+  final AstNode? scope;
+}
+
+class _FunctionDeclarationCollector extends RecursiveAstVisitor<void> {
+  _FunctionDeclarationCollector(this.byName);
+
+  final Map<String, List<_FunctionBody>> byName;
+
+  void _add(String name, FunctionBody body, AstNode? scope) {
+    byName.putIfAbsent(name, () => []).add(_FunctionBody(body, scope));
+  }
+
+  @override
+  void visitFunctionDeclaration(FunctionDeclaration node) {
+    if (node.parent is CompilationUnit) {
+      _add(node.name.lexeme, node.functionExpression.body, null);
+    }
+    super.visitFunctionDeclaration(node);
+  }
+
+  @override
+  void visitFunctionDeclarationStatement(FunctionDeclarationStatement node) {
+    final declaration = node.functionDeclaration;
+    _add(
+      declaration.name.lexeme,
+      declaration.functionExpression.body,
+      node.parent,
+    );
+    super.visitFunctionDeclarationStatement(node);
   }
 }
 
@@ -305,12 +403,30 @@ class _TestFinder extends RecursiveAstVisitor<void> {
 }
 
 class _StubCollector extends RecursiveAstVisitor<void> {
+  _StubCollector(this.functions, [Set<FunctionBody>? activeHelpers])
+    : activeHelpers = activeHelpers ?? <FunctionBody>{};
+
+  final _SameFileFunctions functions;
+  final Set<FunctionBody> activeHelpers;
   final calls = <MethodInvocation>[];
+
+  void follow(String name, AstNode callSite) {
+    final helper = functions.resolve(name, callSite);
+    if (helper == null || !activeHelpers.add(helper.body)) return;
+    final nested = _StubCollector(functions, activeHelpers);
+    helper.body.accept(nested);
+    calls.addAll(nested.calls);
+    activeHelpers.remove(helper.body);
+  }
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final n = _plainName(node);
-    if (n != null && _stubNames.contains(n)) calls.add(node);
+    if (n != null && _stubNames.contains(n)) {
+      calls.add(node);
+    } else if (n != null) {
+      follow(n, node);
+    }
     super.visitMethodInvocation(node);
   }
 }
