@@ -594,22 +594,6 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
-  /// Move all messages from one conversation to another.
-  Future<int> reassignConversation({
-    required String fromConversationId,
-    required String toConversationId,
-    String? ownerPubkey,
-  }) {
-    return (update(directMessages)..where(
-          (t) =>
-              t.conversationId.equals(fromConversationId) &
-              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
-        ))
-        .write(
-          DirectMessagesCompanion(conversationId: Value(toConversationId)),
-        );
-  }
-
   /// Count messages in a conversation.
   Future<int> countMessages(
     String conversationId, {

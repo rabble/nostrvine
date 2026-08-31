@@ -16240,13 +16240,6 @@ void main() {
         );
 
         when(
-          () => mockDirectMessagesDao.reassignConversation(
-            fromConversationId: any(named: 'fromConversationId'),
-            toConversationId: any(named: 'toConversationId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 1);
-        when(
           () => mockConversationsDao.deleteConversation(
             any(),
             ownerPubkey: any(named: 'ownerPubkey'),
@@ -16276,13 +16269,6 @@ void main() {
         verifyNever(
           () => mockConversationsDao.deleteConversation(
             groupId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-        verifyNever(
-          () => mockDirectMessagesDao.reassignConversation(
-            fromConversationId: groupId,
-            toConversationId: any(named: 'toConversationId'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
