@@ -667,7 +667,7 @@ dead letter — the `vgv-tag-gate` CI job enforces this.
 | A `<Platform>.instance` singleton (`PathProviderPlatform`, `WebViewPlatform`, …) | Snapshot in `setUp`/`setUpAll`, restore in the matching `tearDown`/`tearDownAll` (`check_process_global_mutations.sh` enforces). |
 | `HttpOverrides.global` | Not allowed in a merged test — tag the file `['skip_very_good_optimization', 'integration']` (`check_http_overrides_isolation.sh` enforces). |
 | View config (`tester.view.physicalSize` / `devicePixelRatio` / `setSurfaceSize`) | Pair every override with an `addTearDown` reset (`resetPhysicalSize`, `resetDevicePixelRatio`, `setSurfaceSize(null)`). |
-| A service you registered with `BackgroundActivityManager` (`AuthService`, `UploadManager`, `AnalyticsService`) | Dispose it — all three unregister in `dispose()`. If a test drives the manager directly, `addTearDown(BackgroundActivityManager().resetForTesting)`. Enforced at runtime under `DIVINE_STRICT_GLOBALS`. |
+| A service you registered with `BackgroundActivityManager` (`AuthService`, `UploadManager`, `AnalyticsService`) | Dispose it — all three unregister in `dispose()`. If a test drives the manager directly, `addTearDown(BackgroundActivityManager().resetForTesting)`. Enforced at runtime under `DIVINE_STRICT_GLOBALS`. `UploadManager` can still register *after* dispose if `initialize()` is in flight when it happens (#8413), so the runtime guard is what catches that, not the call site. |
 
 ### Heal-and-blame harness (BackgroundActivityManager)
 
