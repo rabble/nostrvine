@@ -25,12 +25,14 @@ class PendingActionRetryConfig {
     this.initialDelay = const Duration(seconds: 2),
     this.maxDelay = const Duration(minutes: 5),
     this.backoffMultiplier = 2.0,
+    this.resyncDelay = const Duration(seconds: 30),
   });
 
   final int maxRetries;
   final Duration initialDelay;
   final Duration maxDelay;
   final double backoffMultiplier;
+  final Duration resyncDelay;
 }
 
 /// Service for managing offline social actions with automatic sync on reconnect.
@@ -60,6 +62,7 @@ class PendingActionService extends ChangeNotifier {
   bool _isInitialized = false;
   bool _isSyncing = false;
   StreamSubscription<List<PendingAction>>? _dbSubscription;
+  Timer? _syncRetryTimer;
 
   /// Executors for different action types
   final Map<PendingActionType, ActionExecutor> _executors = {};
@@ -139,7 +142,7 @@ class PendingActionService extends ChangeNotifier {
 
       // If online, try to sync any pending actions
       if (_connectionStatusService.isOnline && pendingActions.isNotEmpty) {
-        unawaited(syncPendingActions());
+        _syncPendingActionsUnawaited();
       }
     } catch (e) {
       Log.error(
@@ -201,6 +204,8 @@ class PendingActionService extends ChangeNotifier {
     await _dao.upsertAction(action);
     await _refreshCache();
 
+    if (_connectionStatusService.isOnline) _scheduleSyncRetry();
+
     Log.info(
       'Queued action: ${action.type} on $targetId',
       name: 'PendingActionService',
@@ -257,48 +262,66 @@ class PendingActionService extends ChangeNotifier {
       return;
     }
 
-    final actions = await _dao.getPendingActions(_userPubkey);
-    if (actions.isEmpty) {
-      Log.debug(
-        'No pending actions to sync',
-        name: 'PendingActionService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
+    // Claim the slot before the first suspension point. The DAO read below
+    // is an await, so two calls arriving close together could both clear the
+    // guard above and run the loop, publishing every queued action twice.
+    // The finally also releases the slot when a DAO operation escapes, which
+    // would otherwise leave the service unable to sync again for the session.
     _isSyncing = true;
-    notifyListeners();
-
-    Log.info(
-      'Starting sync of ${actions.length} pending actions',
-      name: 'PendingActionService',
-      category: LogCategory.system,
-    );
-
-    for (final action in actions) {
-      if (!_connectionStatusService.isOnline) {
-        Log.warning(
-          'Lost connectivity during sync, pausing',
+    var startedSync = false;
+    var shouldRetry = pendingActions.isNotEmpty;
+    try {
+      final actions = await _dao.getPendingActions(_userPubkey);
+      shouldRetry = actions.isNotEmpty;
+      if (actions.isEmpty) {
+        Log.debug(
+          'No pending actions to sync',
           name: 'PendingActionService',
           category: LogCategory.system,
         );
-        break;
+        return;
       }
 
-      await _syncAction(action);
+      startedSync = true;
+      notifyListeners();
+
+      Log.info(
+        'Starting sync of ${actions.length} pending actions',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+      );
+
+      for (final action in actions) {
+        if (!_connectionStatusService.isOnline) {
+          Log.warning(
+            'Lost connectivity during sync, pausing',
+            name: 'PendingActionService',
+            category: LogCategory.system,
+          );
+          break;
+        }
+
+        await _syncAction(action);
+      }
+
+      await _refreshCache();
+
+      final remaining = await _dao.getPendingActions(_userPubkey);
+      shouldRetry = remaining.isNotEmpty;
+      Log.info(
+        'Sync complete. Remaining pending: ${remaining.length}',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+      );
+    } finally {
+      _isSyncing = false;
+      if (shouldRetry && _connectionStatusService.isOnline) {
+        _scheduleSyncRetry();
+      } else {
+        _cancelSyncRetry();
+      }
+      if (startedSync) notifyListeners();
     }
-
-    _isSyncing = false;
-    await _refreshCache();
-    notifyListeners();
-
-    final remaining = await _dao.getPendingActions(_userPubkey);
-    Log.info(
-      'Sync complete. Remaining pending: ${remaining.length}',
-      name: 'PendingActionService',
-      category: LogCategory.system,
-    );
   }
 
   /// Clear completed actions older than specified duration
@@ -318,6 +341,7 @@ class PendingActionService extends ChangeNotifier {
 
   /// Clear all data (for logout)
   Future<void> clearAll() async {
+    _cancelSyncRetry();
     await _dao.clearAll(_userPubkey);
     _cachedPendingActions = [];
     _cachedAllActions = [];
@@ -333,6 +357,7 @@ class PendingActionService extends ChangeNotifier {
   /// Dispose resources
   @override
   void dispose() {
+    _cancelSyncRetry();
     _connectionStatusService.removeListener(_onConnectivityChange);
     _dbSubscription?.cancel();
     _pendingActionsController.close();
@@ -372,13 +397,47 @@ class PendingActionService extends ChangeNotifier {
 
   void _onConnectivityChange() {
     if (_connectionStatusService.isOnline && pendingActions.isNotEmpty) {
+      _cancelSyncRetry();
       Log.info(
         'Connectivity restored, triggering sync',
         name: 'PendingActionService',
         category: LogCategory.system,
       );
-      unawaited(syncPendingActions());
+      _syncPendingActionsUnawaited();
+    } else if (!_connectionStatusService.isOnline) {
+      _cancelSyncRetry();
     }
+  }
+
+  void _scheduleSyncRetry() {
+    if (_syncRetryTimer?.isActive ?? false) return;
+    _syncRetryTimer = Timer(_retryConfig.resyncDelay, () {
+      _syncRetryTimer = null;
+      _syncPendingActionsUnawaited();
+    });
+  }
+
+  void _syncPendingActionsUnawaited() {
+    unawaited(_syncPendingActionsAndLog());
+  }
+
+  Future<void> _syncPendingActionsAndLog() async {
+    try {
+      await syncPendingActions();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to sync pending actions',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _cancelSyncRetry() {
+    _syncRetryTimer?.cancel();
+    _syncRetryTimer = null;
   }
 
   Future<void> _syncAction(PendingAction action) async {

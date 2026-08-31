@@ -2,6 +2,8 @@
 // ABOUTME: Tests offline action queuing, sync on reconnect, and action
 // ABOUTME: cancellation using Drift database
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,33 @@ import 'package:openvine/services/pending_action_service.dart';
 
 class MockConnectionStatusService extends Mock
     implements ConnectionStatusService {}
+
+class MockPendingActionsDao extends Mock implements PendingActionsDao {}
+
+class _ThrowOncePendingActionsDao extends PendingActionsDao {
+  _ThrowOncePendingActionsDao(super.attachedDatabase);
+
+  var _shouldThrow = true;
+
+  @override
+  Future<bool> updateStatus(
+    String id,
+    PendingActionStatus status, {
+    String? lastError,
+    int? retryCount,
+  }) {
+    if (_shouldThrow) {
+      _shouldThrow = false;
+      throw StateError('database unavailable');
+    }
+    return super.updateStatus(
+      id,
+      status,
+      lastError: lastError,
+      retryCount: retryCount,
+    );
+  }
+}
 
 class _TerminalActionException implements TerminalSocialActionException {
   const _TerminalActionException();
@@ -273,6 +302,183 @@ void main() {
 
         expect(executedActions.length, equals(1));
         expect(executedActions.first.targetId, equals('event123'));
+        expect(service.pendingActions, isEmpty);
+      });
+
+      test('retries an online action queued after initialization', () async {
+        service.dispose();
+        service = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: dao,
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 0,
+            initialDelay: Duration.zero,
+            maxDelay: Duration.zero,
+            resyncDelay: Duration.zero,
+          ),
+        );
+        await service.initialize();
+
+        var calls = 0;
+        final completed = Completer<void>();
+        service.addListener(() {
+          if (calls >= 2 &&
+              !service.isSyncing &&
+              service.pendingActions.isEmpty &&
+              !completed.isCompleted) {
+            completed.complete();
+          }
+        });
+        service.registerExecutor(PendingActionType.like, (_) async {
+          calls++;
+          if (calls == 1) throw Exception('Network error');
+        });
+
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+        await completed.future;
+
+        expect(
+          calls,
+          equals(2),
+          reason: 'a transient failure must retain the existing retry cadence',
+        );
+      });
+
+      test(
+        'does not run twice when called again during the DAO read',
+        () async {
+          // Regression for a TOCTOU window (#6934). _isSyncing used to be set
+          // only AFTER `await _dao.getPendingActions(...)`, so two calls
+          // arriving inside that suspension point both cleared the guard and
+          // both ran the loop — publishing every queued action twice. The 30s
+          // ConnectionStatusService loop produced exactly such a pair, 100ms
+          // apart. The guard is now claimed before the first await.
+          when(() => mockConnectionService.isOnline).thenReturn(true);
+
+          await service.queueAction(
+            type: PendingActionType.like,
+            targetId: 'event123',
+            authorPubkey: 'author123',
+          );
+
+          final gate = Completer<void>();
+          var executorCalls = 0;
+          service.registerExecutor(PendingActionType.like, (_) async {
+            executorCalls++;
+            await gate.future;
+          });
+
+          // No yield between the two calls. An async body runs synchronously up
+          // to its first await, so the fixed version claims _isSyncing before
+          // suspending on the DAO read and the second call bails out. With the
+          // flag set after that await instead, both calls clear the guard and
+          // both run the loop — which is the bug. Yielding here would hide it,
+          // because the first call would have set the flag either way.
+          final first = service.syncPendingActions();
+          final second = service.syncPendingActions();
+
+          gate.complete();
+          await Future.wait([first, second]);
+
+          expect(
+            executorCalls,
+            equals(1),
+            reason: 'a concurrent call must not re-publish the queued action',
+          );
+        },
+      );
+
+      test('releases the sync guard when the DAO throws', () async {
+        // _syncAction catches executor failures, so they cannot escape the
+        // sync loop. A DAO failure while marking an action as syncing does
+        // escape, and used to leave _isSyncing true because the reset lived
+        // only on the success path.
+        final mockDao = MockPendingActionsDao();
+        final action = PendingAction.create(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          userPubkey: testUserPubkey,
+          authorPubkey: 'author123',
+        );
+        var pendingReads = 0;
+        when(
+          () => mockDao.resetSyncingToPending(testUserPubkey),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDao.getPendingActions(testUserPubkey),
+        ).thenAnswer((_) async => pendingReads++ == 0 ? const [] : [action]);
+        when(
+          () => mockDao.getAllActions(testUserPubkey),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockDao.watchPendingActions(testUserPubkey),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockDao.updateStatus(action.id, PendingActionStatus.syncing),
+        ).thenThrow(StateError('database unavailable'));
+
+        final failingService = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: mockDao,
+          userPubkey: testUserPubkey,
+        );
+        addTearDown(failingService.dispose);
+        await failingService.initialize();
+        failingService.registerExecutor(PendingActionType.like, (_) async {});
+
+        await expectLater(
+          failingService.syncPendingActions(),
+          throwsA(isA<StateError>()),
+        );
+        await expectLater(
+          failingService.syncPendingActions(),
+          throwsA(isA<StateError>()),
+        );
+
+        verify(
+          () => mockDao.updateStatus(action.id, PendingActionStatus.syncing),
+        ).called(2);
+      });
+
+      test('retries after a DAO error releases the sync guard', () async {
+        when(() => mockConnectionService.isOnline).thenReturn(false);
+
+        service.dispose();
+        service = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: _ThrowOncePendingActionsDao(database),
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 0,
+            initialDelay: Duration.zero,
+            maxDelay: Duration.zero,
+            resyncDelay: Duration.zero,
+          ),
+        );
+        await service.initialize();
+
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+
+        when(() => mockConnectionService.isOnline).thenReturn(true);
+        var executorCalls = 0;
+        service.registerExecutor(PendingActionType.like, (_) async {
+          executorCalls++;
+        });
+
+        await expectLater(service.syncPendingActions(), throwsStateError);
+
+        expect(service.isSyncing, isFalse);
+        await pumpEventQueue();
+        expect(executorCalls, equals(1));
         expect(service.pendingActions, isEmpty);
       });
 
