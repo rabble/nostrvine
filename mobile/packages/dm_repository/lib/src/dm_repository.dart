@@ -3361,10 +3361,36 @@ class DmRepository {
   /// The read is deliberately non-authoritative: it runs on every send,
   /// degrades to the default pool whether the list is absent or unreadable,
   /// and overwrites nothing — so it keeps the cache and the first answer it
-  /// gets rather than waiting for full relay settlement (#8212). Reporting an
-  /// unreadable recipient inbox as delivery is a separate defect, #7317.
+  /// gets rather than waiting for full relay settlement (#8212).
+  ///
+  /// Routing only needs the relays, so this signature stays. A caller that
+  /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
+  /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
+  /// #7317. `sendGroupMessage` is the last caller here that still needs the
+  /// upgrade (#8434).
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
     return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
+  }
+
+  /// Re-classifies a publish that a relay confirmed but which was routed to
+  /// the default pool because the recipient's inbox could not be read.
+  ///
+  /// [DmInboxResolution.absent] is left alone: the recipient advertises no
+  /// inbox, so the pool is where they read and the `OK` is real delivery.
+  /// [DmInboxResolution.unreadable] is a fact about our own read — the wrap
+  /// may be sitting on relays the recipient never queries, so it is reported
+  /// soft-unconfirmed and the durable row is kept for the sweep to re-resolve
+  /// (#7317). Shared by the initial send and the retry so the sweep cannot
+  /// undo what the send path preserved.
+  NIP17SendResult _downgradeFallbackPoolDelivery(
+    NIP17SendResult result,
+    DmInboxResolution state,
+  ) {
+    if (!result.success || state != DmInboxResolution.unreadable) return result;
+    return const NIP17SendResult.failure(
+      'Recipient DM inbox unreadable; published to the fallback pool',
+      retryablePending: true,
+    );
   }
 
   /// [resolveDmInboxRelays], plus why it returned what it did.
@@ -3450,9 +3476,11 @@ class DmRepository {
   /// found / absent / failed outcome (#4974).
   ///
   /// Collapsing absent and failed to `null` (as the public
-  /// [resolveDmInboxRelays] does) is safe for the send path and the live
-  /// read (both fall back to the default pool either way), but RC3 must tell
-  /// them apart — see [ensureDmRelayListPublished].
+  /// [resolveDmInboxRelays] does) is safe for anything that only ROUTES —
+  /// both fall back to the default pool either way. Anything that reports
+  /// delivery, or replaces the list it read, must tell them apart: see
+  /// [resolveDmInboxRelaysDetailed] (#7317) and [ensureDmRelayListPublished]
+  /// (#8212) respectively.
   ///
   /// [requireAuthoritative] is what makes `absent` trustworthy enough to
   /// publish over. RC3 REPLACES whatever the user advertises, so it may only
@@ -4004,15 +4032,9 @@ class DmRepository {
     // Only when the queue is wired: with no row to preserve there is nothing to
     // gain, and downgrading would skip the local persist and drop the message
     // from the conversation.
-    final result =
-        (publishResult.success &&
-            inbox.state == DmInboxResolution.unreadable &&
-            outgoingDao != null)
-        ? const NIP17SendResult.failure(
-            'Recipient DM inbox unreadable; published to the fallback pool',
-            retryablePending: true,
-          )
-        : publishResult;
+    final result = outgoingDao == null
+        ? publishResult
+        : _downgradeFallbackPoolDelivery(publishResult, inbox.state);
 
     if (result.success) {
       // Persist our own sent message locally so it appears immediately
@@ -4704,18 +4726,28 @@ class DmRepository {
     // recipient's own inbox — a false "confirmed" for a recipient who only
     // reads their advertised inbox. Resolution never throws (it degrades to
     // null), so it cannot abort a sweep pass.
-    final (inboxRelays, selfWrapRelays) = await (
-      resolveDmInboxRelays(row.recipientPubkey),
+    final (inbox, selfWrapRelays) = await (
+      resolveDmInboxRelaysDetailed(row.recipientPubkey),
       _selfWrapTargetRelays(),
     ).wait;
 
-    final result = await _sendRumorWithTimeout(
+    final publishResult = await _sendRumorWithTimeout(
       rumor: rumor,
       recipientPubkey: row.recipientPubkey,
-      targetRelays: inboxRelays,
+      targetRelays: inbox.relays,
       selfWrapTargetRelays: selfWrapRelays,
       awaitRecipientOk: true,
     );
+
+    // Same rule as the initial send: a default-pool `OK` is not delivery when
+    // the recipient's inbox stayed unreadable. Without this the sweep undoes
+    // the send path's fix — it re-resolves to null, republishes to the pool,
+    // scores the OK as success and deletes the row, converging on the old
+    // false-`delivered` outcome one sweep later (#7317).
+    //
+    // `dao` is non-null here (guarded above), so unlike `sendMessage` there is
+    // always a row to preserve.
+    final result = _downgradeFallbackPoolDelivery(publishResult, inbox.state);
 
     if (result.success) {
       // Mirror sendMessage's happy-path transaction: persist

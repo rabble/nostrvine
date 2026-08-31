@@ -21869,6 +21869,52 @@ void main() {
       });
 
       test(
+        'an unreadable recipient inbox on retry is NOT delivery: the sweep '
+        'must not consume the row a soft send preserved (#7317)',
+        () async {
+          // Persistently unreadable — the same state the original send saw.
+          // Without this fix the sweep re-resolves to null, publishes to the
+          // pool, scores the OK as success and deletes the row, converging on
+          // exactly the pre-fix outcome ~160s later.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => unansweredList(noRelays: true));
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(_rumorEventId),
+          ).called(1);
+        },
+      );
+
+      test(
         'skips the local persist when the row is cancelled while the '
         'replay publish is in flight — the message must not resurrect',
         () async {
