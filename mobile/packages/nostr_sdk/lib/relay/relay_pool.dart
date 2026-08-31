@@ -371,6 +371,20 @@ class RelayPool {
   Relay? _pooledRelayForTempAddr(String addr) =>
       _relays[addr] ?? _relays[_relayIdentity(addr)];
 
+  /// Whether [addrs] names [url], comparing on [_relayIdentity] rather than
+  /// raw strings. `subscribe`/`query` run their `targetRelays` through
+  /// [handleAddrList] (which ADDS a trailing slash) but compare against pool
+  /// keys from `normalizeRelayUrl` (which STRIPS one), so a raw `contains`
+  /// matched no pooled relay and turned the filter into a universal
+  /// exclusion. #8377.
+  bool _namesRelay(List<String> addrs, String url) {
+    final wanted = _relayIdentity(url);
+    for (final addr in addrs) {
+      if (_relayIdentity(addr) == wanted) return true;
+    }
+    return false;
+  }
+
   bool _isExplicitAuthRequiredReason(String message) {
     final lower = message.trim().toLowerCase();
     return lower.startsWith('auth-required');
@@ -1896,10 +1910,8 @@ class RelayPool {
         var relayAddr = entry.key;
         var relay = entry.value;
 
-        if (targetRelays != null) {
-          if (!targetRelays.contains(relayAddr)) {
-            continue;
-          }
+        if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
         }
 
         relayDoSubscribe(relay, subscription, sendAfterAuth);
@@ -2141,10 +2153,8 @@ class RelayPool {
         var relayAddr = entry.key;
         var relay = entry.value;
 
-        if (targetRelays != null) {
-          if (!targetRelays.contains(relayAddr)) {
-            continue;
-          }
+        if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
         }
 
         queryFutures.add(sendQueryTo(relay));
