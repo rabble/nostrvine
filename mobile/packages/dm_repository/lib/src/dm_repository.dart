@@ -23,6 +23,7 @@ import 'package:dm_repository/src/dm_removal_policy.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
+import 'package:dm_repository/src/dm_subscription_ids.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
 import 'package:dm_repository/src/group_conversation_recovery.dart';
@@ -989,7 +990,7 @@ class DmRepository {
         return;
       }
 
-      _subscriptionId = 'dm_inbox_$_userPubkey';
+      _subscriptionId = dmInboxSubscriptionId(_userPubkey);
       final stream = _nostrClient.subscribe(
         [filter],
         subscriptionId: _subscriptionId,
@@ -1206,7 +1207,7 @@ class DmRepository {
               limit: DmHistoryDrainConfig.pageSize,
             ),
           ],
-          subscriptionId: 'dm_drain_nip04_${pubkey}_$page',
+          subscriptionId: dmNip04DrainSubscriptionId(pubkey, page),
           useCache: false,
           requireAllRelaysSettled: true,
         );
@@ -1619,7 +1620,7 @@ class DmRepository {
         final historyPage = await _fetchHistoryPage(
           until: cursor,
           limit: DmHistoryDrainConfig.pageSize,
-          subscriptionId: 'dm_drain_${pubkey}_$page',
+          subscriptionId: dmHistoryDrainSubscriptionId(pubkey, page),
           pubkey: pubkey,
           generation: gen,
           tempRelays: ownInbox,

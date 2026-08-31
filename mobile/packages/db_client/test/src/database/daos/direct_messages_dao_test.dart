@@ -865,7 +865,7 @@ void main() {
         );
       });
 
-      test('will not move another owner\'s row', () async {
+      test("will not move another owner's row", () async {
         await dao.insertMessage(
           id: 'theirs',
           conversationId: conversationId1,

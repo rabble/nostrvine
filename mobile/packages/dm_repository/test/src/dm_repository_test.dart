@@ -4754,7 +4754,7 @@ void main() {
           verifyNever(
             () => mockNostrClient.subscribe(
               any(),
-              subscriptionId: 'dm_inbox_$_validPubkeyA',
+              subscriptionId: dmInboxSubscriptionId(_validPubkeyA),
               tempRelays: any(named: 'tempRelays'),
               targetRelays: any(named: 'targetRelays'),
             ),
@@ -4766,7 +4766,7 @@ void main() {
               verify(
                     () => mockNostrClient.subscribe(
                       captureAny(),
-                      subscriptionId: 'dm_inbox_$_validPubkeyB',
+                      subscriptionId: dmInboxSubscriptionId(_validPubkeyB),
                       tempRelays: any(named: 'tempRelays'),
                       targetRelays: any(named: 'targetRelays'),
                     ),
