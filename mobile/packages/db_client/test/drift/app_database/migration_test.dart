@@ -10,6 +10,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v10.dart' as v10;
 import 'generated/schema_v11.dart' as v11;
+import 'generated/schema_v12.dart' as v12;
 import 'generated/schema_v9.dart' as v9;
 
 void main() {
@@ -21,19 +22,19 @@ void main() {
   });
 
   group('schema validation', () {
-    test('current schema version is 11', () {
-      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 11);
+    test('current schema version is 12', () {
+      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 12);
     });
 
-    test('v11 schema is valid and up to date', () async {
-      final schema = await verifier.schemaAt(11);
+    test('v12 schema is valid and up to date', () async {
+      final schema = await verifier.schemaAt(12);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
     test(
-      'a v10 direct message arrives at v11 with no twin already absorbed',
+      'a v10 direct message arrives at v12 with no twin already absorbed',
       () async {
         // twin_collapsed defaults to false for historical rows. Defaulting the
         // other way would let a genuine duplicate through on every row that
@@ -41,9 +42,9 @@ void main() {
         // See #8211.
         await verifier.testWithDataIntegrity(
           oldVersion: 10,
-          newVersion: 11,
+          newVersion: 12,
           createOld: v10.DatabaseAtV10.new,
-          createNew: v11.DatabaseAtV11.new,
+          createNew: v12.DatabaseAtV12.new,
           openTestedDatabase: AppDatabase.new,
           createItems: (batch, oldDb) => batch.insert(
             oldDb.directMessages,
@@ -73,9 +74,9 @@ void main() {
         // up every historical row as work. See #8165.
         await verifier.testWithDataIntegrity(
           oldVersion: 9,
-          newVersion: 11,
+          newVersion: 12,
           createOld: v9.DatabaseAtV9.new,
-          createNew: v11.DatabaseAtV11.new,
+          createNew: v12.DatabaseAtV12.new,
           openTestedDatabase: AppDatabase.new,
           createItems: (batch, oldDb) => batch.insert(
             oldDb.directMessages,
@@ -98,10 +99,10 @@ void main() {
       },
     );
 
-    test('v8 schema migrates to v11', () async {
+    test('v8 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(8);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       const conversationId =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -123,45 +124,45 @@ void main() {
       await db.close();
     });
 
-    test('v7 schema migrates to v11', () async {
+    test('v7 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(7);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
-    test('v6 schema migrates to v11', () async {
+    test('v6 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
-    test('v5 schema migrates to v11', () async {
+    test('v5 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(5);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
-    test('v3 schema migrates to v11', () async {
+    test('v3 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(3);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
-    test('v2 schema migrates to v11', () async {
+    test('v2 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(2);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
-    test('legacy v1 schema migrates to v11', () async {
+    test('legacy v1 schema migrates to v12', () async {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
       await db.close();
     });
 
@@ -189,7 +190,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
 
       final rows = await db
           .customSelect(
@@ -212,9 +213,9 @@ void main() {
     test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 11,
+        newVersion: 12,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v11.DatabaseAtV11.new,
+        createNew: v12.DatabaseAtV12.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -248,7 +249,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 11);
+        await verifier.migrateAndValidate(db, 12);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -269,7 +270,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 11);
+        await verifier.migrateAndValidate(db, 12);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -282,9 +283,9 @@ void main() {
     test('v6 copies a distinct pre-v5 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 11,
+        newVersion: 12,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v11.DatabaseAtV11.new,
+        createNew: v12.DatabaseAtV12.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           batch
@@ -349,7 +350,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
 
       final row = await db
           .customSelect(
@@ -404,7 +405,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 11);
+        await verifier.migrateAndValidate(db, 12);
 
         final row = await db
             .customSelect(
@@ -442,7 +443,7 @@ void main() {
 
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 11);
+      await verifier.migrateAndValidate(db, 12);
 
       final rows = await db
           .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
@@ -451,5 +452,220 @@ void main() {
       expect(present, containsAll(consolidated));
       await db.close();
     });
+  });
+
+  group('v12 blocked-retraction repair', () {
+    // A delete-for-everyone the recipient's send policy refused was left
+    // soft-deleted and terminal: the sweep needs `deletion_pending`, and
+    // `deleteMessageForEveryone` returns early on `is_deleted`. The repair
+    // clears `is_deleted` so the message and its re-tap come back, and keeps
+    // the status as the durable record of the refusal. See #8284.
+    final sender = 'a' * 64;
+    final peer = 'b' * 64;
+    final other = 'c' * 64;
+    final conversationId = 'd' * 64;
+    const rumorJson = '{"kind":5,"content":""}';
+
+    Future<void> runRepair({
+      required String participantPubkeys,
+      required Value<int> isGroup,
+      required Value<String?> deletionPublishStatus,
+      required Future<void> Function(v12.DirectMessagesData row) validate,
+      Value<String?> deletionRumorJson = const Value(rumorJson),
+    }) async {
+      await verifier.testWithDataIntegrity(
+        oldVersion: 11,
+        newVersion: 12,
+        createOld: v11.DatabaseAtV11.new,
+        createNew: v12.DatabaseAtV12.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insert(
+            oldDb.conversations,
+            v11.ConversationsCompanion.insert(
+              id: conversationId,
+              participantPubkeys: participantPubkeys,
+              isGroup: isGroup,
+              createdAt: 1700000000,
+              ownerPubkey: Value(sender),
+            ),
+          );
+          batch.insert(
+            oldDb.directMessages,
+            v11.DirectMessagesCompanion.insert(
+              id: 'e' * 64,
+              conversationId: conversationId,
+              senderPubkey: sender,
+              content: 'a message the sender believes was retracted',
+              createdAt: 1700000000,
+              giftWrapId: 'f' * 64,
+              isDeleted: const Value(1),
+              ownerPubkey: Value(sender),
+              deletionRumorJson: deletionRumorJson,
+              deletionPublishStatus: deletionPublishStatus,
+            ),
+          );
+        },
+        validateItems: (newDb) async {
+          await validate(await newDb.select(newDb.directMessages).getSingle());
+        },
+      );
+    }
+
+    test('restores a one-to-one retraction every recipient refused', () async {
+      // One recipient after the sender is dropped, so `deletion_blocked` here
+      // cannot be the mixed fan-out: an accepting recipient would have left no
+      // failure to classify.
+      await runRepair(
+        participantPubkeys: '["$sender","$peer"]',
+        isGroup: const Value(0),
+        deletionPublishStatus: const Value('deletion_blocked'),
+        validate: (row) async {
+          expect(row.isDeleted, 0);
+          // The refusal stays on the record: it keeps the row off the retry
+          // sweep and is what marks the restored bubble.
+          expect(row.deletionPublishStatus, 'deletion_blocked');
+          expect(row.deletionRumorJson, rumorJson);
+        },
+      );
+    });
+
+    test('leaves a group retraction hidden', () async {
+      // Two recipients: the row cannot say whether both refused or only one
+      // did while the other dropped the message. Un-hiding would claim it is
+      // still there for a thread that mostly retracted it.
+      await runRepair(
+        participantPubkeys: '["$sender","$peer","$other"]',
+        isGroup: const Value(1),
+        deletionPublishStatus: const Value('deletion_blocked'),
+        validate: (row) async {
+          expect(row.isDeleted, 1);
+          expect(row.deletionPublishStatus, 'deletion_blocked');
+        },
+      );
+    });
+
+    test('leaves a retraction whose conversation is gone hidden', () async {
+      // Nothing proves one-to-one when the conversation row is absent, so the
+      // count comes back zero and the row is left alone rather than restored
+      // on an assumption.
+      await verifier.testWithDataIntegrity(
+        oldVersion: 11,
+        newVersion: 12,
+        createOld: v11.DatabaseAtV11.new,
+        createNew: v12.DatabaseAtV12.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) => batch.insert(
+          oldDb.directMessages,
+          v11.DirectMessagesCompanion.insert(
+            id: 'e' * 64,
+            conversationId: conversationId,
+            senderPubkey: sender,
+            content: 'a message whose conversation row is gone',
+            createdAt: 1700000000,
+            giftWrapId: 'f' * 64,
+            isDeleted: const Value(1),
+            ownerPubkey: Value(sender),
+            deletionRumorJson: const Value(rumorJson),
+            deletionPublishStatus: const Value('deletion_blocked'),
+          ),
+        ),
+        validateItems: (newDb) async {
+          final row = await newDb.select(newDb.directMessages).getSingle();
+          expect(row.isDeleted, 1);
+        },
+      );
+    });
+
+    test('leaves a confirmed retraction hidden', () async {
+      // `deletion_sent` means every recipient's wrap was confirmed. That
+      // message really is gone for them; restoring it would resurrect it for
+      // the sender alone and invite a second kind-5 for a retraction that
+      // already landed. The success path nulls the rumor, so the fixture does
+      // too.
+      await runRepair(
+        participantPubkeys: '["$sender","$peer"]',
+        isGroup: const Value(0),
+        deletionPublishStatus: const Value('deletion_sent'),
+        deletionRumorJson: const Value(null),
+        validate: (row) async {
+          expect(row.isDeleted, 1);
+          expect(row.deletionPublishStatus, 'deletion_sent');
+        },
+      );
+    });
+
+    test(
+      'leaves a multi-recipient retraction hidden with no group flag',
+      () async {
+        // The participant count is the load-bearing guard, not `is_group`: two
+        // recipients is a fan-out whose refusal the row cannot tell apart from a
+        // partial one, however the conversation happens to be flagged.
+        await runRepair(
+          participantPubkeys: '["$sender","$peer","$other"]',
+          isGroup: const Value(0),
+          deletionPublishStatus: const Value('deletion_blocked'),
+          validate: (row) async => expect(row.isDeleted, 1),
+        );
+      },
+    );
+
+    test(
+      'leaves a one-participant conversation flagged as a group hidden',
+      () async {
+        // A legacy row inflated to a group and since collapsed to one
+        // participant is not provably one-to-one, so it fails closed.
+        await runRepair(
+          participantPubkeys: '["$sender","$peer"]',
+          isGroup: const Value(1),
+          deletionPublishStatus: const Value('deletion_blocked'),
+          validate: (row) async => expect(row.isDeleted, 1),
+        );
+      },
+    );
+
+    test('leaves a retraction still awaiting delivery hidden', () async {
+      // `deletion_pending` is not a refusal — the sweep still owns it, and it
+      // may yet be delivered.
+      await runRepair(
+        participantPubkeys: '["$sender","$peer"]',
+        isGroup: const Value(0),
+        deletionPublishStatus: const Value('deletion_pending'),
+        validate: (row) async {
+          expect(row.isDeleted, 1);
+          expect(row.deletionPublishStatus, 'deletion_pending');
+        },
+      );
+    });
+
+    test('leaves a peer-applied deletion hidden', () async {
+      // An inbound kind-5 applied locally by `markMessageDeleted` sets
+      // `is_deleted` with no status. Restoring it would resurrect a message
+      // its author retracted.
+      await runRepair(
+        participantPubkeys: '["$sender","$peer"]',
+        isGroup: const Value(0),
+        deletionPublishStatus: const Value(null),
+        validate: (row) async {
+          expect(row.isDeleted, 1);
+          expect(row.deletionPublishStatus, isNull);
+        },
+      );
+    });
+
+    test(
+      'leaves a retraction with an unreadable participant list hidden',
+      () async {
+        // The repair must be total over whatever is on disk: an unparseable
+        // participant list cannot prove one-to-one, and must not abort the
+        // upgrade either.
+        await runRepair(
+          participantPubkeys: 'not json',
+          isGroup: const Value(0),
+          deletionPublishStatus: const Value('deletion_blocked'),
+          validate: (row) async => expect(row.isDeleted, 1),
+        );
+      },
+    );
   });
 }
