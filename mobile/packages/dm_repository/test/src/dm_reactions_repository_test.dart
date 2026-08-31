@@ -2186,6 +2186,64 @@ void main() {
           expect(resolveCalls, 1);
         },
       );
+
+      test(
+        'an emoji swap persists its deletion before inbox resolution finishes',
+        () async {
+          final deletionRumor = reactionRumor(
+            id: _giftWrapId,
+            content: '',
+            kind: EventKind.eventDeletion,
+            tags: [
+              ['e', _reactionRumorId],
+              ['k', EventKind.reaction.toString()],
+            ],
+          );
+          stubPublishPath(superseded: const [_reactionRumorId]);
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: _otherPubkey,
+              content: '',
+              eventKind: EventKind.eventDeletion,
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenReturn(deletionRumor);
+          when(
+            () => mockDao.markOwnDeletionPending(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDao.markDeletionSent(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer((_) async {});
+
+          final inboxResolution = Completer<List<String>?>();
+          addTearDown(() {
+            if (!inboxResolution.isCompleted) inboxResolution.complete(inbox);
+          });
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) => inboxResolution.future);
+
+          final publish = publishReaction(repository);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockDao.markOwnDeletionPending(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+            ),
+          ).called(1);
+
+          inboxResolution.complete(inbox);
+          await publish;
+        },
+      );
     });
   });
 }

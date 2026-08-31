@@ -170,6 +170,10 @@ class DmReactionsRepository {
   /// Has the repository been wired with auth credentials?
   bool get isInitialized => _messageService != null && _userPubkey.isNotEmpty;
 
+  /// Whether recipient inbox routing has been wired by the app layer.
+  @visibleForTesting
+  bool get hasDmInboxRelayResolver => _resolveDmInboxRelays != null;
+
   /// Set the credentials needed for outgoing publishes.
   void setCredentials({
     required String userPubkey,
@@ -379,7 +383,7 @@ class DmReactionsRepository {
     // answer that cannot have changed. Resolved here rather than inside
     // `_fanOutRumor` so both share it; the optimistic row is already written
     // above, so this never delays the visible chip.
-    final inboxByRecipient = await _resolveInboxes(recipients);
+    final inboxes = _resolveInboxes(recipients);
 
     for (final priorId in superseded) {
       await _durablyDeleteReaction(
@@ -388,10 +392,11 @@ class DmReactionsRepository {
         messageService: messageService,
         reportSite:
             DmReactionsRepositoryReportableSites.publishSupersedeDeletion,
-        inboxByRecipient: inboxByRecipient,
+        inboxes: inboxes,
       );
     }
 
+    final inboxByRecipient = await inboxes;
     try {
       final result = await _fanOutRumor(
         messageService: messageService,
@@ -664,7 +669,7 @@ class DmReactionsRepository {
     required List<String> recipients,
     required NIP17MessageService messageService,
     required String reportSite,
-    Map<String, List<String>?>? inboxByRecipient,
+    Future<Map<String, List<String>?>>? inboxes,
   }) async {
     if (recipients.isEmpty) return;
     final deletion = messageService.buildRumor(
@@ -694,7 +699,7 @@ class DmReactionsRepository {
         deletion: deletion,
         recipients: recipients,
         messageService: messageService,
-        inboxByRecipient: inboxByRecipient,
+        inboxes: inboxes,
       ),
     );
   }
@@ -821,9 +826,10 @@ class DmReactionsRepository {
     required Event deletion,
     required List<String> recipients,
     required NIP17MessageService messageService,
-    Map<String, List<String>?>? inboxByRecipient,
+    Future<Map<String, List<String>?>>? inboxes,
   }) async {
     try {
+      final inboxByRecipient = await inboxes;
       final result = await _fanOutRumor(
         messageService: messageService,
         rumor: deletion,
