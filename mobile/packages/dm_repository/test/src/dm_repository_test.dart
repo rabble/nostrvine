@@ -562,6 +562,35 @@ void main() {
       registerFallbackValue(Duration.zero);
     });
 
+    // Everything registered below is a THROW-GUARD, not a decision.
+    //
+    // The distinction is what #8399 turns on. A *decision* stub stands in for a
+    // branch production takes, so inheriting one invisibly can make a class of
+    // bug unobservable -- that is how #7324 stayed green here for months. Those
+    // have been moved to the groups that depend on them and are declared there
+    // by name -- `stubSendPolicyPermitsEveryone`,
+    // `stubNoCrossProtocolTwinAvailable` and friends, defined just below
+    // `createRepository`.
+    //
+    // What is left exists only because an unstubbed mocktail member *throws*.
+    // No branch reads these values:
+    //
+    //   * relay counters      -- interpolated into a log line
+    //   * runInTransaction    -- runs the callback inline; on 11 persist paths
+    //   * markAsRead          -- both production call sites are a bare `await`
+    //   * queryEventsDetailed -- send/listener inbox resolution catches its
+    //                            throw; RC3 re-declares the answered-empty
+    //                            decision explicitly in its own group
+    //   * getAllConversations, both backfills, publishSelfApplicationMarker
+    //                         -- production CATCHES their throw and logs it, so
+    //                            removing them keeps the suite green while
+    //                            silently running it against an error branch
+    //   * buildRumor/buildGroupRumor -- faithful fakes, not constants; they
+    //                            compute real event ids from their arguments
+    //
+    // Before removing anything here, check the run's logs as well as the test
+    // count: grep for `type 'Null' is not a subtype of type '` and compare
+    // against the baseline. A green suite is necessary but not sufficient.
     setUp(() {
       mockNostrClient = _MockNostrClient();
       mockMessageService = _MockNIP17MessageService();
@@ -582,21 +611,9 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      // Default for the batched drain dedup probe (#13): nothing already
-      // persisted. The drain group overrides this with a stateful version so
-      // its inclusive-`until` boundary re-request is deduped.
-      when(
-        () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
-      ).thenAnswer((_) async => const <String>{});
-
-      // Default for every queryEventsDetailed read — the kind-10050 lookups
-      // (resolveDmInboxRelays() on the send path, the memoized own-inbox
-      // resolve, the RC3 publish check) and the history drain's paged reads.
-      // ANSWERED and empty: the relays replied and there is genuinely nothing,
-      // which is what every test that cares about neither read assumed when
-      // both went through queryEvents. An UNANSWERED empty is a different
-      // outcome — absence the RC3 publisher must not act on (#8212), a page the
-      // drain must not read as exhaustion (#8209) — and is stubbed explicitly.
+      // Catch guard for the broad send/listener kind-10050 lookup surface.
+      // Without this, those tests stay green but silently exercise the failed
+      // lookup branch. RC3 re-declares the answered-empty decision by name.
       when(
         () => mockNostrClient.queryEventsDetailed(
           any(),
@@ -634,50 +651,6 @@ void main() {
         await callback();
       });
 
-      // Global stub for the recovery path's group-sibling dedup probe: by
-      // default no batch sibling is persisted yet, so recoverFullSend
-      // inserts normally. Group-recovery tests that exercise the dedup
-      // restub this to true. Still used by the cross-protocol receive dedup
-      // and by the legacy null-batch fallback in group recovery.
-      when(
-        () => mockDirectMessagesDao.hasMatchingMessage(
-          counterpart: any(named: 'counterpart'),
-          conversationId: any(named: 'conversationId'),
-          senderPubkey: any(named: 'senderPubkey'),
-          content: any(named: 'content'),
-          createdAt: any(named: 'createdAt'),
-          windowSeconds: any(named: 'windowSeconds'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
-      // Same default for the cross-protocol twin claim, which the peer receive
-      // paths use instead of hasMatchingMessage (#8211): no twin is available,
-      // so an arrival persists. Dedup tests restub this to true.
-      when(
-        () => mockDirectMessagesDao.claimCrossProtocolTwin(
-          counterpart: any(named: 'counterpart'),
-          conversationId: any(named: 'conversationId'),
-          senderPubkey: any(named: 'senderPubkey'),
-          content: any(named: 'content'),
-          createdAt: any(named: 'createdAt'),
-          windowSeconds: any(named: 'windowSeconds'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
-      // Global stub for the durable batch-id dedup probe: the send + recovery
-      // paths now match a group send's persisted local message by its stamped
-      // sendBatchId (not the collision-prone content/timestamp window). Default
-      // to "not yet persisted" so happy-path group send + recovery insert
-      // normally; dedup tests restub this to true.
-      when(
-        () => mockDirectMessagesDao.hasMessageWithSendBatchId(
-          batchId: any(named: 'batchId'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
       // Global stub for markAsRead — every live-send path now marks the
       // conversation read in the same transaction (#5515: sending implies
       // read). Default to a successful flip so send tests don't restub it.
@@ -691,13 +664,6 @@ void main() {
       // Global stubs for the #4977 read-state cursor surface so any path that
       // touches the marker reconcile / debounced publish / drain floor has a
       // default. Tests that assert on these restub or verify as needed.
-      when(
-        () => mockConversationsDao.applyReadCursor(
-          any(),
-          any(),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => true);
       when(
         () => mockConversationsDao.lastSentTimestampsByConversation(
           any(),
@@ -781,12 +747,6 @@ void main() {
           createdAt: createdAt,
         );
       });
-
-      // Default: the send policy permits everyone (behavior preserved). The
-      // protected-minor gate tests override this per-recipient. (#176)
-      when(
-        () => mockMessageService.canSendTo(any()),
-      ).thenAnswer((_) async => true);
     });
 
     DmRepository createRepository({
@@ -884,6 +844,76 @@ void main() {
     // Static helpers
     // -----------------------------------------------------------------
 
+    // Decision stubs, declared by the groups that depend on them rather than
+    // inherited from the shared setUp. Each replaces a branch production takes,
+    // so a test that needs one should say so (#8399).
+
+    void stubReadCursorRowMatched() => when(
+      () => mockConversationsDao.applyReadCursor(
+        any(),
+        any(),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => true);
+
+    void stubRelayReadAnsweredEmpty() => when(
+      () => mockNostrClient.queryEventsDetailed(
+        any(),
+        subscriptionId: any(named: 'subscriptionId'),
+        useCache: any(named: 'useCache'),
+        tempRelays: any(named: 'tempRelays'),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer((_) async => answeredList(const <Event>[]));
+
+    void stubNoPersistedGiftWrapIds() => when(
+      () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
+    ).thenAnswer((_) async => const <String>{});
+
+    void stubNoMessageForSendBatch() => when(
+      () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+        batchId: any(named: 'batchId'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    // #7324's stub: whether a same-protocol row already matches. Constant
+    // `false` here is what let the collapsed-duplicate bug stay green, so the
+    // groups that lean on it say so.
+    void stubNoMatchingStoredMessage() => when(
+      () => mockDirectMessagesDao.hasMatchingMessage(
+        counterpart: any(named: 'counterpart'),
+        conversationId: any(named: 'conversationId'),
+        senderPubkey: any(named: 'senderPubkey'),
+        content: any(named: 'content'),
+        createdAt: any(named: 'createdAt'),
+        windowSeconds: any(named: 'windowSeconds'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    // #8211's claim: a stored cross-protocol twin may absorb exactly one
+    // arrival. `false` means no twin is available, so an arrival persists.
+    void stubNoCrossProtocolTwinAvailable() => when(
+      () => mockDirectMessagesDao.claimCrossProtocolTwin(
+        counterpart: any(named: 'counterpart'),
+        conversationId: any(named: 'conversationId'),
+        senderPubkey: any(named: 'senderPubkey'),
+        content: any(named: 'content'),
+        createdAt: any(named: 'createdAt'),
+        windowSeconds: any(named: 'windowSeconds'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    // #176's protected-minor gate: whether this recipient may be messaged.
+    // The gate tests override it per-recipient; every other send group needs
+    // the permissive default stated rather than inherited.
+    void stubSendPolicyPermitsEveryone() => when(
+      () => mockMessageService.canSendTo(any()),
+    ).thenAnswer((_) async => true);
+
     group('computeConversationId', () {
       test('returns same hash regardless of order', () {
         final resultAB = DmRepository.computeConversationId(
@@ -967,6 +997,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('sendMessage', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test('throws $ArgumentError for invalid pubkey', () {
         final repository = createRepository();
 
@@ -1667,6 +1699,13 @@ void main() {
     // -----------------------------------------------------------------
 
     group('receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
+      setUp(stubNoPersistedGiftWrapIds);
+      // The drain's read-state restore calls applyReadCursor; unstubbed it
+      // throws into a catch, which no test failure would show.
+      setUp(stubReadCursorRowMatched);
+
       Event createGiftWrapEvent({String? id}) {
         return Event.fromJson({
           'id': id ?? _giftWrapEventId,
@@ -4733,6 +4772,8 @@ void main() {
     });
 
     group('ensureDmRelayListPublished (#4974 RC3)', () {
+      setUp(stubRelayReadAnsweredEmpty);
+
       Event existingInbox(List<String> relays) => Event(
         _validPubkeyA,
         EventKind.dmRelaysList,
@@ -5496,6 +5537,8 @@ void main() {
     });
 
     group('backfillHistoryIfNeeded', () {
+      setUp(stubReadCursorRowMatched);
+
       // Kind-5 deletions with no tags flow through _handleIncomingEvent
       // with zero decryption / DAO side effects, so they exercise the
       // drain's pagination control flow in isolation.
@@ -7076,6 +7119,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('history drain batch decryption (#5391)', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       // A new recipient keypair per test so the real NIP-44 unwrap in the
       // batched decrypt worker succeeds (the shared _validPubkey* constants
       // are not a real keypair).
@@ -8581,6 +8626,8 @@ void main() {
     });
 
     group('read-state marker (#4977)', () {
+      setUp(stubReadCursorRowMatched);
+
       final tupleKey = (<String>[
         _validPubkeyA,
         _validPubkeyB,
@@ -9097,6 +9144,8 @@ void main() {
     // needed: the `_validPubkey*` fixtures are arbitrary hex, not keypairs,
     // so they cannot produce a seal whose signature verifies. #7343.
     group('read-state marker forgery, real NIP-59 crypto (#7343)', () {
+      setUp(stubReadCursorRowMatched);
+
       const victimPrivate =
           '5c0c523f52a5b6fad39ed2403092df8cebc36318b39383bca6c00808626fab3a';
       const attackerPrivate =
@@ -9499,6 +9548,8 @@ void main() {
     });
 
     group('_handleGiftWrapEvent preserves existing state', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -9667,6 +9718,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('Kind 15 receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -10252,6 +10305,10 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       /// The fallback moderation pubkey (inlined from ModerationLabelService).
       const moderationPubkey =
           '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
@@ -10601,6 +10658,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('NIP-04 receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       /// Helper to create a NIP-04 (kind 4) event.
       Event createNip04Event({
         String? id,
@@ -11852,6 +11911,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('dual-send NIP-04 fallback', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -12882,6 +12943,8 @@ void main() {
     // Canonicalization: extra p-tags routing
     // -----------------------------------------------------------------
     group('canonicalize 1:1 participants', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       Event createGiftWrapEvent({String? id}) {
         return Event.fromJson({
           'id': id ?? _giftWrapEventId,
@@ -15204,6 +15267,8 @@ void main() {
     });
 
     group('receive pipeline - processed-wrap dedup ledger (#5452)', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       Event giftWrap() => Event.fromJson({
         'id': _giftWrapEventId,
         'pubkey': _validPubkeyC,
@@ -16512,6 +16577,8 @@ void main() {
     });
 
     group('sendMessage - replyToId', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test('includes reply-to tag when replyToId is provided', () async {
         stubSendRumor(
           (_, recipientPubkey) async => NIP17SendResult.success(
@@ -16614,6 +16681,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('sendGroupMessage - success', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -16944,6 +17013,8 @@ void main() {
     });
 
     group('sendSharedVideoGroup', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -17546,6 +17617,8 @@ void main() {
     });
 
     group('_sendNip04Message failure paths', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test(
         'returns failure when signer is null',
         () async {
@@ -17951,6 +18024,8 @@ void main() {
     });
 
     group('sendMessage preserves existing conversation metadata', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       test(
         'uses existing createdAt and dmProtocol from conversation',
         () async {
@@ -18064,6 +18139,8 @@ void main() {
     });
 
     group('sendMessage with outgoing_dms queue wired in', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       setUp(() {
@@ -19321,6 +19398,10 @@ void main() {
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
+      setUp(stubSendPolicyPermitsEveryone);
+
+      setUp(stubNoMessageForSendBatch);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       setUp(() {
@@ -21662,6 +21743,8 @@ void main() {
     });
 
     group('recoverFullSend', () {
+      setUp(stubNoMatchingStoredMessage);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       // A fixed rumor JSON that Event.fromJson can parse — the
