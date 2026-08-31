@@ -51,6 +51,8 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
     this.isLoadingMore = false,
     this.hasMoreContent = false,
     this.loadMoreThreshold = 5,
+    this.headerSlivers = const [],
+    this.selectedVideoIds,
   });
 
   final List<VideoEvent> videos;
@@ -76,6 +78,17 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
 
   /// Number of items from the bottom to trigger load more.
   final int loadMoreThreshold;
+
+  /// Slivers rendered above the grid inside its scroll view, so they scroll
+  /// away with the content (e.g. a list detail hero header). Also rendered
+  /// above the empty state so the header survives an empty list.
+  final List<Widget> headerSlivers;
+
+  /// When non-null the grid is in selection mode: every tile shows a
+  /// selection circle (checked for ids in this set), taps still go through
+  /// [onVideoTap] — the caller decides they toggle — and the own-video
+  /// long-press menu is suppressed.
+  final Set<String>? selectedVideoIds;
 
   @override
   ConsumerState<ComposableVideoGrid> createState() =>
@@ -211,16 +224,19 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
       final isOwnVideo = viewerPubkey != null && viewerPubkey == video.pubkey;
 
+      final selectedIds = widget.selectedVideoIds;
       return _VideoItem(
         video: video,
         aspectRatio: widget.thumbnailAspectRatio,
         onVideoTap: widget.onVideoTap,
         index: index,
         displayedVideos: videosToShow,
-        onLongPress: isOwnVideo
+        // In selection mode a long-press menu would fight the toggle gesture.
+        onLongPress: isOwnVideo && selectedIds == null
             ? () => _showVideoContextMenu(context, video)
             : null,
         isInSubscribedList: isInSubscribedList,
+        isSelected: selectedIds?.contains(video.id),
       );
     }
 
@@ -254,6 +270,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       scrollCacheExtent: ScrollCacheExtent.pixels(cacheExtent),
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        ...widget.headerSlivers,
         SliverPadding(padding: gridPadding, sliver: gridSliver),
         if (showLoadingIndicator)
           SliverToBoxAdapter(
@@ -268,18 +285,21 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   Widget _buildEmptyState(BuildContext context) {
     final emptyState = widget.emptyBuilder!();
 
-    if (widget.onRefresh == null) {
+    // Nothing to scroll for: no header above and no pull-to-refresh.
+    if (widget.onRefresh == null && widget.headerSlivers.isEmpty) {
       return emptyState;
     }
 
-    return _wrapWithRefreshIndicator(
-      context,
-      CustomScrollView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [SliverFillRemaining(hasScrollBody: false, child: emptyState)],
-      ),
+    final scrollView = CustomScrollView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        ...widget.headerSlivers,
+        SliverFillRemaining(hasScrollBody: false, child: emptyState),
+      ],
     );
+
+    return _wrapWithRefreshIndicator(context, scrollView);
   }
 
   Widget _wrapWithRefreshIndicator(BuildContext context, Widget child) {
@@ -319,6 +339,7 @@ class _VideoItem extends StatelessWidget {
     required this.displayedVideos,
     this.onLongPress,
     this.isInSubscribedList = false,
+    this.isSelected,
   });
 
   final VideoEvent video;
@@ -332,12 +353,17 @@ class _VideoItem extends StatelessWidget {
   final List<VideoEvent> displayedVideos;
   final bool isInSubscribedList;
 
+  /// Selection-mode state: `null` outside selection mode, otherwise whether
+  /// this tile is currently selected.
+  final bool? isSelected;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'video_thumbnail_$index',
       label: context.l10n.profileVideoThumbnailLabel(index + 1),
       button: true,
+      selected: isSelected,
       onLongPress: onLongPress,
       onLongPressHint: onLongPress == null
           ? null
@@ -373,9 +399,53 @@ class _VideoItem extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (isSelected case final isSelected?)
+                PositionedDirectional(
+                  top: 8,
+                  end: 8,
+                  child: _SelectionBadge(isSelected: isSelected),
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Selection-mode circle drawn on a tile: an outlined circle when
+/// unselected, a filled check when selected.
+///
+/// Sits on a video frame, so its colors are fixed media chrome
+/// ([VineTheme] constants), not adaptive tokens. The state is announced via
+/// the tile's `Semantics(selected:)`, so the badge itself stays decorative.
+class _SelectionBadge extends StatelessWidget {
+  const _SelectionBadge({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? VineTheme.vineGreen : VineTheme.scrim15,
+          border: isSelected
+              ? null
+              : Border.all(color: VineTheme.whiteText, width: 2),
+        ),
+        child: isSelected
+            ? const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.check,
+                  size: 14,
+                  color: VineTheme.whiteText,
+                ),
+              )
+            : null,
       ),
     );
   }

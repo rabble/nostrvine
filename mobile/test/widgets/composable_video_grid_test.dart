@@ -23,6 +23,7 @@
 import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -658,6 +659,138 @@ void main() {
           ),
         );
         expect(editTile.enabled, isTrue);
+      });
+    });
+
+    group('selection mode', () {
+      Widget buildGrid({required Set<String> selectedVideoIds}) {
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: testVideos.take(2).toList(),
+                selectedVideoIds: selectedVideoIds,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('shows a check only on the selected tile', (tester) async {
+        await tester.pumpWidget(buildGrid(selectedVideoIds: {'video1'}));
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.check,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('announces per-tile selection state to assistive tech', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(buildGrid(selectedVideoIds: {'video1'}));
+        await tester.pump();
+
+        expect(
+          tester.getSemantics(find.bySemanticsIdentifier('video_thumbnail_0')),
+          isSemantics(isSelected: true),
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsIdentifier('video_thumbnail_1')),
+          isSemantics(isSelected: false),
+        );
+        semantics.dispose();
+      });
+
+      testWidgets('shows no selection circles outside selection mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.check,
+          ),
+          findsNothing,
+        );
+      });
+    });
+
+    group('header slivers', () {
+      testWidgets('renders header slivers above the grid', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  headerSlivers: const [
+                    SliverToBoxAdapter(child: Text('HEADER')),
+                  ],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('HEADER'), findsOneWidget);
+        expect(find.byType(GestureDetector), findsNWidgets(2));
+      });
+
+      testWidgets('keeps header slivers above the empty state', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: const [],
+                  headerSlivers: const [
+                    SliverToBoxAdapter(child: Text('HEADER')),
+                  ],
+                  onVideoTap: (videos, index) {},
+                  emptyBuilder: () => const Text('EMPTY'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('HEADER'), findsOneWidget);
+        expect(find.text('EMPTY'), findsOneWidget);
       });
     });
 
