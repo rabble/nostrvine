@@ -103,12 +103,14 @@ class DmReactionRetryService {
     required DmReactionsRepository reactionsRepository,
     required Stream<bool> appForegroundStream,
     Stream<void>? retryTriggerStream,
+    OfflineProbe? isOffline,
     DmReactionRetryConfig retryConfig = const DmReactionRetryConfig(),
     DateTime Function() now = DateTime.now,
     CrashReportingService? crashReporting,
   }) : _repository = reactionsRepository,
        _appForegroundStream = appForegroundStream,
        _retryTriggerStream = retryTriggerStream,
+       _isOffline = isOffline,
        _config = retryConfig,
        _now = now,
        _crashReporting = crashReporting ?? CrashReportingService.instance;
@@ -121,6 +123,17 @@ class DmReactionRetryService {
   /// during a brief network drop is re-driven the moment the network returns —
   /// without waiting for the user to background and re-foreground the app.
   final Stream<void>? _retryTriggerStream;
+
+  /// Connectivity probe (same contract as `NIP17MessageService`'s). When it
+  /// reports offline the pass is skipped entirely: every dispatch would
+  /// deterministically hit the send path's own offline fail-fast, and
+  /// [_driveTargets] charges a target's budget on any non-success result. So
+  /// five foreground transitions in airplane mode would otherwise exhaust a
+  /// pending removal, after which the sweep skips it for the rest of the
+  /// process and the kind-5 never publishes — invisibly, because the chip is
+  /// already filtered out of the thread. [_retryTriggerStream] re-fires the
+  /// sweep when the network returns. Mirrors `OutgoingDmRetryService`. #7319.
+  final OfflineProbe? _isOffline;
 
   final DmReactionRetryConfig _config;
   final DateTime Function() _now;
@@ -203,6 +216,20 @@ class DmReactionRetryService {
     _isSweeping = true;
 
     try {
+      // Offline: every dispatch would deterministically hit the send path's
+      // own offline fail-fast, and _driveTargets charges the budget on any
+      // non-success result. Gate the whole pass rather than the dispatch, so
+      // no target is charged for a network outage. _retryTriggerStream
+      // re-fires the sweep when connectivity returns. #7319.
+      if (await _isOfflineSafely()) {
+        Log.debug(
+          'device offline; skipping sweep without charging retry budgets',
+          name: 'DmReactionRetryService',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
       final reactionTargets = await _repository.retryableReactions();
       final deletionTargets = await _repository.retryableDeletions();
       _pruneTracking(<String>{
@@ -361,6 +388,26 @@ class DmReactionRetryService {
       skippedExhausted: skippedExhausted,
       skippedTooYoung: skippedTooYoung,
     );
+  }
+
+  /// Probe connectivity, treating a broken probe as online.
+  ///
+  /// A probe that throws must never disable retries outright — that would
+  /// turn a transient platform-channel error into a permanently stalled
+  /// queue. Mirrors `OutgoingDmRetryService._isOfflineSafely`.
+  Future<bool> _isOfflineSafely() async {
+    final probe = _isOffline;
+    if (probe == null) return false;
+    try {
+      return await probe();
+    } on Object catch (e) {
+      Log.warning(
+        'offline probe failed; assuming online: $e',
+        name: 'DmReactionRetryService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
   }
 
   void _pruneTracking(Set<String> liveIds) {
