@@ -598,7 +598,7 @@ class NIP17MessageService {
       // publish backstop instead (#7091). Fail CLOSED to temporarily-blocked:
       // this is a safety gate, and a retryable refusal is the safe reading of
       // "we could not determine whether this recipient is permitted".
-      final DmSendPolicyDecision policyDecision;
+      DmSendPolicyDecision policyDecision;
       try {
         policyDecision = await _sendPolicy(
           recipientPubkey,
@@ -610,9 +610,7 @@ class NIP17MessageService {
           'temporarily blocked',
           category: LogCategory.system,
         );
-        return const NIP17SendResult.failure(
-          'temporarily blocked: protected-minor status unresolved',
-        );
+        policyDecision = DmSendPolicyDecision.temporarilyBlocked;
       }
       if (policyDecision != DmSendPolicyDecision.allowed) {
         Log.info(

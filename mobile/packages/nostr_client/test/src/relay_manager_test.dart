@@ -1123,16 +1123,13 @@ void main() {
           // loop costs 12s x N. On device that was 48s for four unreachable
           // relays (#7091). The startup path already does this with Future.wait
           // -- "reduces startup from O(n * timeout) to O(max timeout)".
-          const perConnect = Duration(milliseconds: 300);
+          final pendingConnects = <Completer<bool>>[];
           when(
             () => mockRelayPool.add(
               any(),
               autoSubscribe: any(named: 'autoSubscribe'),
             ),
-          ).thenAnswer((_) async {
-            await Future<void>.delayed(perConnect);
-            return false;
-          });
+          ).thenAnswer((_) async => false);
           for (final url in const [
             'wss://a.example.com',
             'wss://b.example.com',
@@ -1140,18 +1137,30 @@ void main() {
           ]) {
             await manager.addRelay(url);
           }
+          when(
+            () => mockRelayPool.add(
+              any(),
+              autoSubscribe: any(named: 'autoSubscribe'),
+            ),
+          ).thenAnswer((_) {
+            final pending = Completer<bool>();
+            pendingConnects.add(pending);
+            return pending.future;
+          });
 
-          final stopwatch = Stopwatch()..start();
-          await manager.retryDisconnectedRelays();
-          stopwatch.stop();
+          final retry = manager.retryDisconnectedRelays();
 
           expect(
-            stopwatch.elapsed,
-            lessThan(perConnect * 2),
+            pendingConnects,
+            hasLength(3),
             reason:
-                'three 300ms connects run concurrently should cost about '
-                'one of them, not three',
+                'every disconnected relay must begin dialling before any '
+                'single dial completes',
           );
+          for (final pending in pendingConnects) {
+            pending.complete(false);
+          }
+          await retry;
         },
       );
 
@@ -1167,15 +1176,21 @@ void main() {
             any(),
             autoSubscribe: any(named: 'autoSubscribe'),
           ),
-        ).thenAnswer((_) async {
-          connectAttempts++;
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          return false;
-        });
+        ).thenAnswer((_) async => false);
         await manager.addRelay('wss://solo.example.com');
-        connectAttempts = 0;
 
-        await Future.wait([
+        final connectGate = Completer<bool>();
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) {
+          connectAttempts++;
+          return connectGate.future;
+        });
+
+        final callers = Future.wait([
           manager.retryDisconnectedRelays(),
           manager.retryDisconnectedRelays(),
           manager.retryDisconnectedRelays(),
@@ -1188,6 +1203,8 @@ void main() {
               'three overlapping callers should share one sweep, not dial '
               'the same relay three times',
         );
+        connectGate.complete(false);
+        await callers;
       });
 
       test('a wedged connect cannot outlive the sweep budget', () async {
@@ -1195,7 +1212,7 @@ void main() {
         // connect honours its own timeout. Nothing above them enforces that,
         // and one awaited path below the socket layer can retry for minutes.
         final original = RelayManager.reconnectSweepBudget;
-        RelayManager.reconnectSweepBudget = const Duration(milliseconds: 200);
+        RelayManager.reconnectSweepBudget = Duration.zero;
         addTearDown(() => RelayManager.reconnectSweepBudget = original);
 
         // Register the relay while connects still resolve, then wedge: the
@@ -1208,6 +1225,7 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
         await manager.addRelay('wss://wedged.example.com');
+        clearInteractions(mockRelayPool);
 
         final wedged = Completer<bool>();
         addTearDown(() {
@@ -1220,11 +1238,28 @@ void main() {
           ),
         ).thenAnswer((_) => wedged.future);
 
-        await manager.retryDisconnectedRelays().timeout(
-          const Duration(seconds: 2),
-          onTimeout: () => throw StateError(
-            'retryDisconnectedRelays outlived its sweep budget',
+        await manager.retryDisconnectedRelays();
+        expect(
+          manager.getRelayStatus('wss://wedged.example.com')?.state,
+          RelayState.connecting,
+          reason: 'an unresolved dial is not a failed dial',
+        );
+
+        final joined = manager.retryDisconnectedRelays();
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
           ),
+        ).called(1);
+
+        wedged.complete(true);
+        await joined;
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          manager.getRelayStatus('wss://wedged.example.com')?.state,
+          RelayState.connected,
+          reason: 'a dial that succeeds after the caller budget is still live',
         );
       });
 

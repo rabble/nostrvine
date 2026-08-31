@@ -5453,6 +5453,70 @@ void main() {
     });
 
     group('end-to-end query timeout (#7091)', () {
+      test(
+        'a pool waiter that exhausts its budget never starts a query',
+        () async {
+          final originalMax = NostrClient.maxConcurrentQueries;
+          NostrClient.maxConcurrentQueries = 1;
+          addTearDown(() => NostrClient.maxConcurrentQueries = originalMax);
+
+          final firstQueryStarted = Completer<void>();
+          final releaseFirstQuery = Completer<void>();
+          var queryCount = 0;
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async {
+            queryCount++;
+            if (queryCount == 1) {
+              firstQueryStarted.complete();
+              await releaseFirstQuery.future;
+            }
+            return const [];
+          });
+
+          final pooledClient = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+          );
+          addTearDown(pooledClient.dispose);
+          final firstQuery = pooledClient.queryEventsDetailed(
+            [
+              Filter(kinds: const [EventKind.textNote]),
+            ],
+            useCache: false,
+          );
+          await firstQueryStarted.future;
+
+          final expired = await pooledClient.queryEventsDetailed(
+            [
+              Filter(kinds: const [EventKind.reaction]),
+            ],
+            useCache: false,
+            timeout: Duration.zero,
+          );
+          expect(expired.timedOut, isTrue);
+
+          releaseFirstQuery.complete();
+          await firstQuery;
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            queryCount,
+            1,
+            reason:
+                'an expired pool waiter must release its eventual slot '
+                'without dispatching abandoned network work',
+          );
+        },
+      );
+
       test('a stalled reconnect is spent from the query budget', () async {
         // An empty connected set routes the call through the pre-query
         // reconnect. That reconnect is awaited, so unless it spends from the
@@ -5484,36 +5548,46 @@ void main() {
           ),
         ).thenAnswer((_) => stalledQuery.future);
 
-        final stopwatch = Stopwatch()..start();
-        final result = await client
-            .queryEventsDetailed(
-              [
-                Filter(kinds: const [EventKind.dmRelaysList]),
-              ],
-              useCache: false,
-              timeout: const Duration(seconds: 1),
-            )
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => throw StateError(
-                'queryEventsDetailed outlived its declared 1s timeout: the '
-                'reconnect is not spent from the query budget',
-              ),
-            );
-        stopwatch.stop();
-
-        expect(
-          stopwatch.elapsed,
-          lessThan(const Duration(seconds: 3)),
-          reason:
-              'the declared 1s timeout must bound the whole call, not '
-              'just the websocket leg',
+        final result = await client.queryEventsDetailed(
+          [
+            Filter(kinds: const [EventKind.dmRelaysList]),
+          ],
+          useCache: false,
+          timeout: Duration.zero,
         );
         expect(
           result.timedOut,
           isTrue,
           reason: 'exhausting the budget is inconclusive, not an empty answer',
         );
+      });
+
+      test('the non-pooled query path spends the same deadline', () async {
+        final stalledQuery = Completer<List<Event>>();
+        addTearDown(() {
+          if (!stalledQuery.isCompleted) stalledQuery.complete(const []);
+        });
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) => stalledQuery.future);
+
+        final result = await client.queryEventsDetailed(
+          [
+            Filter(kinds: const [EventKind.metadata]),
+          ],
+          useCache: false,
+          useQueryPool: false,
+          timeout: Duration.zero,
+        );
+
+        expect(result.timedOut, isTrue);
       });
     });
   });

@@ -864,6 +864,12 @@ class NostrClient {
   /// list. If the client is disposed while a call is in flight, the
   /// network query is skipped and only cached results are returned.
   ///
+  /// [timeout] is an end-to-end deadline for the cache read, reconnect sweep,
+  /// query-pool acquisition, and WebSocket query together. Exhausting it
+  /// returns `timedOut: true`. A pool waiter that expires remains in the
+  /// package's FIFO only until a resource reaches it; it releases that resource
+  /// without dispatching network work.
+  ///
   /// `timedOut: false` with an empty `events` normally means "the relays
   /// answered and there is nothing", but only for a caller that is content to
   /// be told about the relays that answered *first*: a relay that stays
@@ -989,6 +995,26 @@ class NostrClient {
       timeout: timeout,
       requireAllRelaysSettled: requireAllRelaysSettled,
     );
+
+    Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+    runPooledWebSocketQuery() async {
+      final acquisition = _queryPool.request();
+      PoolResource resource;
+      try {
+        resource = await acquisition.timeout(remainingTimeout());
+      } on TimeoutException {
+        // package:pool cannot remove a waiter from its FIFO. Drain it when a
+        // slot eventually reaches it, but never run the abandoned callback.
+        unawaited(acquisition.then((resource) => resource.release()));
+        rethrow;
+      }
+      try {
+        return await runWebSocketQuery().timeout(remainingTimeout());
+      } finally {
+        resource.release();
+      }
+    }
+
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
@@ -1021,17 +1047,15 @@ class NostrClient {
     } else {
       try {
         websocketResult = useQueryPool
-            ? await _queryPool
-                  .withResource(runWebSocketQuery)
-                  .timeout(remainingTimeout())
-            : await runWebSocketQuery();
+            ? await runPooledWebSocketQuery()
+            : await runWebSocketQuery().timeout(remainingTimeout());
       } on TimeoutException {
-        // The budget went before a slot did. Nothing was asked of the relays,
-        // and they are still reachable, so this is the same inconclusive
-        // answer a relay that never settled gives — not a participation
-        // failure. `Pool`'s own `timeout:` cannot express this: it is an
-        // inactivity timer reset on every acquire and release, so a busy pool
-        // resets it forever while one waiter starves.
+        // The budget expired before the query settled. This is the same
+        // inconclusive answer a relay that never settled gives — not a
+        // participation failure. `Pool`'s own `timeout:` cannot express the
+        // acquisition half: it is an inactivity timer reset on every acquire
+        // and release, so a busy pool resets it forever while one waiter
+        // starves.
         websocketResult = (
           events: <Event>[],
           timedOut: true,

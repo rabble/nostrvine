@@ -4268,9 +4268,7 @@ void main() {
           // heuristic rather than a guarantee. Stubbed inline, not in
           // the shared setUp: that setUp is frozen at its stub count.
           final original = DmRepository.inboxResolutionBudget;
-          DmRepository.inboxResolutionBudget = const Duration(
-            milliseconds: 200,
-          );
+          DmRepository.inboxResolutionBudget = Duration.zero;
           addTearDown(() => DmRepository.inboxResolutionBudget = original);
 
           final stalledRead =
@@ -4296,15 +4294,7 @@ void main() {
           final repository = createRepository();
 
           expect(
-            await repository
-                .resolveDmInboxRelays(_validPubkeyB)
-                .timeout(
-                  const Duration(seconds: 2),
-                  onTimeout: () => throw StateError(
-                    'resolveDmInboxRelays outlived its budget; the send-level '
-                    'margin that depends on it is not a guarantee',
-                  ),
-                ),
+            await repository.resolveDmInboxRelays(_validPubkeyB),
             isNull,
             reason: 'an unread inbox degrades to the default pool, as today',
           );
