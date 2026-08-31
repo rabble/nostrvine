@@ -330,6 +330,18 @@ jobs:
           # can only shrink. Fix with emitIfOpen / addIfOpen from
           # lib/blocs/close_guard.dart.
           bash scripts/check_post_close_emit_ceiling.sh
+      - name: 🧷 Verify shared-setUp stubs do not accrete (inherited-stub ratchet)
+        run: |
+          # Issue #8399, follow-up to #8170 / #7324. A stub in a shared setUp is
+          # invisible at every call site that inherits it, so a class of bug can
+          # go unobservable across a whole file -- #7324 shipped exactly that
+          # way. The shape also accretes silently: dm_repository_test.dart's
+          # block went from 6 stubs to 21 across 13 PRs, none of which looked
+          # wrong alone. Freezes the per-file count of stubs registered in a
+          # file-level or outermost-group setUp that descendant groups inherit,
+          # for files carrying 10 or more. Fix by declaring the stub in the
+          # groups that depend on it.
+          bash scripts/check_shared_setup_stubs.sh
       - name: 🔑 Verify no Nostr ID is shortened into a log (full-identifier ratchet)
         run: |
           # Issue #3372. Freezes at ZERO the per-file count of Nostr identifiers
