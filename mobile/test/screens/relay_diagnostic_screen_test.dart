@@ -24,6 +24,10 @@ void main() {
 
     setUp(() {
       nostrClient = _MockNostrClient();
+      videoEventService = _MockVideoEventService();
+    });
+
+    void stubScreenDependencies() {
       when(nostrClient.getRelayStats).thenAnswer((_) async => null);
       when(nostrClient.retryDisconnectedRelays).thenAnswer((_) async {});
       when(() => nostrClient.connectedRelayCount).thenReturn(2);
@@ -32,12 +36,11 @@ void main() {
       when(() => nostrClient.relayStatuses).thenReturn(const {});
       when(() => nostrClient.isInitialized).thenReturn(true);
 
-      videoEventService = _MockVideoEventService();
       when(() => videoEventService.discoveryVideos).thenReturn(const []);
       when(() => videoEventService.homeFeedVideos).thenReturn(const []);
       when(() => videoEventService.isLoading).thenReturn(false);
       when(() => videoEventService.error).thenReturn(null);
-    });
+    }
 
     Future<void> pumpScreen(WidgetTester tester) async {
       await tester.pumpWidget(
@@ -64,6 +67,7 @@ void main() {
       testWidgets('reports the connected count without a wall-clock wait', (
         tester,
       ) async {
+        stubScreenDependencies();
         await pumpScreen(tester);
         final l10n = AppLocalizations.of(
           tester.element(find.byType(RelayDiagnosticScreen)),
@@ -91,6 +95,7 @@ void main() {
       testWidgets('reads the count only after the retry future resolves', (
         tester,
       ) async {
+        stubScreenDependencies();
         // The count must be sampled after retryDisconnectedRelays completes,
         // not before — otherwise the snackbar reports a stale number. Holding
         // the future open proves the read is downstream of it.
