@@ -456,6 +456,11 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
+    env:
+      # Single copy of the pin: the install step activates this version and the
+      # replay recipe prints it. A second hardcoded copy could drift from what
+      # CI actually ran, which is the failure the recipe exists to prevent.
+      VERY_GOOD_CLI_VERSION: "1.3.0"
     strategy:
       # Every shard must report. Stopping the others on one failure hides
       # additional failures and forces a second full round-trip to find them.
@@ -496,10 +501,11 @@ jobs:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
       - name: 🛠️ Install Very Good CLI
-        # Pinned so the optimizer's bundle mechanics don't float under CI. 1.3.0
-        # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
+        # Pinned so the optimizer's bundle mechanics don't float under CI. The
+        # version lives in VERY_GOOD_CLI_VERSION above so the replay recipe
+        # prints the same one; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
         # mechanics (package workflows pin 1.1.1 via very_good_workflows). #5738.
-        run: dart pub global activate very_good_cli 1.3.0
+        run: dart pub global activate very_good_cli "$VERY_GOOD_CLI_VERSION"
       - name: 🔪 Reduce test/ to this shard
         # --optimization bundles every untagged test file into ONE suite, so
         # --concurrency=4 has nothing left to schedule once the 18 tagged files
@@ -562,9 +568,16 @@ jobs:
             echo '```bash'
             echo "# select_test_shard.sh DELETES test files. Use a throwaway worktree."
             echo "git worktree add /tmp/shard-replay $sha"
-            echo "cd /tmp/shard-replay/mobile && flutter pub get"
+            echo "cd /tmp/shard-replay/mobile"
+            echo "# Pin the toolchain. The optimizer's bundle mechanics are version-sensitive,"
+            echo "# so a stray flutter or very_good on PATH can bundle differently and replay"
+            echo "# green against a failure that is still there. mise install reads the Flutter"
+            echo "# pin from mobile/mise.toml; \`dart pub global run\` needs no PUB_CACHE on PATH."
+            echo "mise install"
+            echo "mise exec -- dart pub global activate very_good_cli $VERY_GOOD_CLI_VERSION"
+            echo "mise exec -- flutter pub get"
             echo "bash scripts/ci/select_test_shard.sh --total ${{ strategy.job-total }} --index ${{ strategy.job-index }} --force"
-            echo "very_good test $TEST_FLAGS --test-randomize-ordering-seed $TEST_SEED"
+            echo "mise exec -- dart pub global run very_good_cli:very_good test $TEST_FLAGS --test-randomize-ordering-seed $TEST_SEED"
             echo '```'
             echo
             echo "Replay at that commit: a shard is a partition of the test files that exist there."
