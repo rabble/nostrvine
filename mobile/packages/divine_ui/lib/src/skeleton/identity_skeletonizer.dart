@@ -56,6 +56,31 @@ class IdentitySkeletonizer extends StatefulWidget {
   State<IdentitySkeletonizer> createState() => _IdentitySkeletonizerState();
 }
 
+/// Lays the switch animation out from the leading edge, filling the slot.
+///
+/// `AnimatedSwitcher`'s default layout builder is a `Stack` with
+/// `alignment: Alignment.center`, so every name wrapped by this widget was
+/// centred inside whatever slot it was given — visibly so in the inbox, where
+/// the conversation title floated while the preview beneath it stayed
+/// left-aligned. The switch animation is worth keeping; the centring is not.
+///
+/// `StackFit.expand` matters as much as the alignment: a loose `Stack` lets a
+/// `Text` shrink to its intrinsic width, which both re-introduces the drift and
+/// defeats `TextOverflow.ellipsis`.
+Widget _leadingAlignedSwitcherLayout(
+  Widget? currentChild,
+  List<Widget> previousChildren,
+) {
+  return Stack(
+    fit: StackFit.expand,
+    alignment: AlignmentDirectional.centerStart,
+    children: <Widget>[
+      ...previousChildren,
+      ?currentChild,
+    ],
+  );
+}
+
 class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
   Timer? _timer;
   bool _timeoutExpired = false;
@@ -97,6 +122,9 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
     final skeleton = Skeletonizer(
       enabled: isSkeletonized,
       enableSwitchAnimation: true,
+      switchAnimationConfig: const SwitchAnimationConfig(
+        layoutBuilder: _leadingAlignedSwitcherLayout,
+      ),
       effect: vineSkeletonEffectOf(context),
       child: widget.child,
     );
