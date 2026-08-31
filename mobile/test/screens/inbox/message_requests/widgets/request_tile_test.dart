@@ -389,7 +389,7 @@ void main() {
               ),
               profileVanishedProvider(
                 otherPubkey,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              ).overrideWith((ref) => vanished),
             ],
             home: Scaffold(
               body: RequestTile(

@@ -195,9 +195,7 @@ void main() {
 
     testWidgets(
       'filters reactions from blockedPubkeys out of the pill (#5418)',
-      (
-        tester,
-      ) async {
+      (tester) async {
         primeState(
           stateWith([
             makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
@@ -513,7 +511,7 @@ void main() {
               ),
               profileVanishedProvider(
                 otherPubkey,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              ).overrideWith((ref) => vanished),
             ],
           ),
         );

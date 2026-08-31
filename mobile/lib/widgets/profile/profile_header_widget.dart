@@ -183,8 +183,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // fetchUserProfileProvider, and the route hints — so evicting the cached
     // row is not enough on its own: the hints are supplied by whoever
     // navigated here and outlive the cache entirely.
-    final isVanished =
-        ref.watch(profileVanishedProvider(widget.userIdHex)).value ?? false;
+    final isVanished = ref.watch(profileVanishedProvider(widget.userIdHex));
 
     final UserProfile? effectiveProfile;
     final bool isLoadingIdentity;

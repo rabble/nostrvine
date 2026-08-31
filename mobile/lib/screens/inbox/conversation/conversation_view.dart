@@ -246,9 +246,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // The conversation and its history remain readable — they are the viewer's
     // own copy of messages a NIP-62 vanish cannot retract. Only the header
     // identity changes.
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
     final displayName = dmPeerDisplayName(
       context,
       pubkeyHex: otherPubkey,

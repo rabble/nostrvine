@@ -14,14 +14,6 @@ part 'user_profile_providers.g.dart';
 
 const _blockedProfileFetchChunkSize = 50;
 
-final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
-  return ref
-      .watch(databaseProvider)
-      .vanishedProfilesDao
-      .watchAllPubkeys()
-      .map((pubkeys) => pubkeys.toSet());
-});
-
 /// Whether a peer's profile identity is still being resolved.
 ///
 /// The reactive profile stream intentionally emits `null` while the read
@@ -40,8 +32,12 @@ final profileIdentityResolvingProvider = Provider.autoDispose
     });
 
 /// One-shot durable vanish lookup for imperative paths that must resolve the
-/// state before acting instead of treating [profileVanishedProvider]'s loading
-/// placeholder as a live account.
+/// state before acting.
+///
+/// [profileVanishedProvider] reports `false` until its shared Drift stream
+/// first emits — right for a widget that repaints on the next tick, wrong for
+/// a read-once caller, which would commit to the live-account branch and
+/// never revisit it.
 // ignore: specify_nonobvious_property_types
 final profileVanishedSnapshotProvider = FutureProvider.autoDispose
     .family<bool, String>((ref, pubkey) {
@@ -185,9 +181,17 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 @riverpod
-Stream<bool> profileVanished(Ref ref, String pubkey) {
+bool profileVanished(Ref ref, String pubkey) {
   final pubkeys =
-      ref.watch(_vanishedProfilePubkeysProvider).value ?? const <String>{};
-  return Stream.value(pubkeys.contains(pubkey));
+      ref.watch(vanishedProfilePubkeysProvider).value ?? const <String>{};
+  return pubkeys.contains(pubkey);
 }

@@ -306,10 +306,10 @@ class _PoppingEmojiState extends State<_PoppingEmoji>
     duration: _emojiPopDuration,
   );
 
-  late final Animation<double> _scale = Tween<double>(begin: 0.6, end: 1)
-      .animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-      );
+  late final Animation<double> _scale = Tween<double>(
+    begin: 0.6,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
   @override
   void initState() {
@@ -410,9 +410,7 @@ class _PillAvatar extends ConsumerWidget {
     // The pill is what opens the reactor sheet, so it resolves the vanish the
     // same way: a peer whose photo is still on the pill and whose sheet row
     // reads "Deleted account" is the divergence this pill would introduce.
-    final isVanished = ref
-        .watch(profileVanishedProvider(pubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isVanished = ref.watch(profileVanishedProvider(pubkey));
 
     // cornerRadius == diameter / 2 makes UserAvatar a true circle whose own
     // border is circular too. Clipping the default rounded-square avatar to a

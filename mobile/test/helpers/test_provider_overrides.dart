@@ -451,7 +451,7 @@ List<dynamic> getStandardTestOverrides({
     // which widget tests do not wire, and the inbox surfaces watch it on every
     // build. Tests that exercise the deleted-account treatment override it
     // again with `additionalOverrides`.
-    profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
+    profileVanishedProvider.overrideWith((ref, pubkey) => false),
     profileVanishedSnapshotProvider.overrideWith((ref, pubkey) async => false),
     // Existing widget fixtures provide profiles through their original
     // reactive/one-shot provider. Keep the new derived loading signal settled

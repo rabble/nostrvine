@@ -233,7 +233,7 @@ void main() {
           ).overrideWith((ref) => Stream.value(otherStats)),
           profileVanishedProvider(
             counterparty,
-          ).overrideWith((ref) => Stream.value(otherProfileVanished)),
+          ).overrideWith((ref) => otherProfileVanished),
           profileVanishedSnapshotProvider(
             counterparty,
           ).overrideWith(

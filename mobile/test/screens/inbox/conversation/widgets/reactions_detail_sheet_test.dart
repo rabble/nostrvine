@@ -372,7 +372,7 @@ void main() {
               ).overrideWith((ref) => Stream.value(aliceProfile())),
               profileVanishedProvider(
                 otherPubkey,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              ).overrideWith((ref) => vanished),
             ],
           ),
         );
@@ -408,9 +408,7 @@ void main() {
 
       testWidgets(
         'names the vanished reactor for the state in the a11y label',
-        (
-          tester,
-        ) async {
+        (tester) async {
           await openWith(tester, vanished: true);
 
           // The row's label is the only place the reactor's name reaches

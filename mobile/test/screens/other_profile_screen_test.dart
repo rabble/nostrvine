@@ -159,9 +159,7 @@ void main() {
     when(
       () => videosRepository.removedVideoIds,
     ).thenAnswer((_) => const Stream<String>.empty());
-    when(
-      () => videosRepository.isVideoKnownDeleted(any()),
-    ).thenReturn(false);
+    when(() => videosRepository.isVideoKnownDeleted(any())).thenReturn(false);
 
     when(
       () => videoEventService.authorVideos(any()),
@@ -278,9 +276,7 @@ void main() {
         // Element-level, since the standard overrides already claim the
         // family and Riverpod rejects a second family override.
         if (isVanished)
-          profileVanishedProvider(
-            targetPubkey,
-          ).overrideWith((ref) => Stream.value(true)),
+          profileVanishedProvider(targetPubkey).overrideWith((ref) => true),
       ],
     );
   }

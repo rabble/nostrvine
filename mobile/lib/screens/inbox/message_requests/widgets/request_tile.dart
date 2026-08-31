@@ -46,9 +46,7 @@ class RequestTile extends ConsumerWidget {
     // Same treatment as [ConversationTile]: a request from an account that
     // later vanished is named for the state, not for the generated handle the
     // eviction leaves behind (#8185).
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
 
     final peerName = dmPeerDisplayName(
       context,

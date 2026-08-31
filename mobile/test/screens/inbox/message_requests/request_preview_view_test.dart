@@ -198,7 +198,7 @@ void main() {
             ).overrideWith((ref) => Stream.value(stats)),
             profileVanishedProvider(
               otherPubkey,
-            ).overrideWith((ref) => Stream.value(vanished)),
+            ).overrideWith((ref) => vanished),
           ],
           home: MockGoRouterProvider(
             goRouter: mockGoRouter,
@@ -651,7 +651,7 @@ void main() {
             ).overrideWith((ref) => Stream.value(testProfile)),
             profileVanishedProvider(
               otherPubkey,
-            ).overrideWith((ref) => Stream.value(vanished)),
+            ).overrideWith((ref) => vanished),
           ],
           home: MockGoRouterProvider(
             goRouter: mockGoRouter,

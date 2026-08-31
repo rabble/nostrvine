@@ -152,9 +152,9 @@ class _ReactorRow extends ConsumerWidget {
     // "Deleted account" thread can open names its reactors a different way.
     // In a group thread the reactor need not be the counterparty at all, so
     // this is the only DM surface that can name a third participant.
-    final isVanished = ref
-        .watch(profileVanishedProvider(reaction.reactorPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isVanished = ref.watch(
+      profileVanishedProvider(reaction.reactorPubkey),
+    );
 
     final name = dmPeerDisplayName(
       context,
