@@ -831,7 +831,7 @@ void main() {
     // inherited from the shared setUp. Each replaces a branch production takes,
     // so a test that needs one should say so (#8399).
 
-    void stubNoStoredReadCursorRow() => when(
+    void stubReadCursorRowMatched() => when(
       () => mockConversationsDao.applyReadCursor(
         any(),
         any(),
@@ -981,6 +981,7 @@ void main() {
 
     group('sendMessage', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       test('throws $ArgumentError for invalid pubkey', () {
         final repository = createRepository();
@@ -1687,7 +1688,7 @@ void main() {
       setUp(stubNoPersistedGiftWrapIds);
       // The drain's read-state restore calls applyReadCursor; unstubbed it
       // throws into a catch, which no test failure would show.
-      setUp(stubNoStoredReadCursorRow);
+      setUp(stubReadCursorRowMatched);
 
       Event createGiftWrapEvent({String? id}) {
         return Event.fromJson({
@@ -5520,7 +5521,7 @@ void main() {
     });
 
     group('backfillHistoryIfNeeded', () {
-      setUp(stubNoStoredReadCursorRow);
+      setUp(stubReadCursorRowMatched);
 
       // Kind-5 deletions with no tags flow through _handleIncomingEvent
       // with zero decryption / DAO side effects, so they exercise the
@@ -8609,7 +8610,7 @@ void main() {
     });
 
     group('read-state marker (#4977)', () {
-      setUp(stubNoStoredReadCursorRow);
+      setUp(stubReadCursorRowMatched);
 
       final tupleKey = (<String>[
         _validPubkeyA,
@@ -9127,7 +9128,7 @@ void main() {
     // needed: the `_validPubkey*` fixtures are arbitrary hex, not keypairs,
     // so they cannot produce a seal whose signature verifies. #7343.
     group('read-state marker forgery, real NIP-59 crypto (#7343)', () {
-      setUp(stubNoStoredReadCursorRow);
+      setUp(stubReadCursorRowMatched);
 
       const victimPrivate =
           '5c0c523f52a5b6fad39ed2403092df8cebc36318b39383bca6c00808626fab3a';
@@ -10289,6 +10290,7 @@ void main() {
 
     group('moderation DM scenarios', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       setUp(stubNoCrossProtocolTwinAvailable);
 
@@ -11895,6 +11897,7 @@ void main() {
 
     group('dual-send NIP-04 fallback', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -16561,6 +16564,7 @@ void main() {
 
     group('sendMessage - replyToId', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       test('includes reply-to tag when replyToId is provided', () async {
         stubSendRumor(
@@ -16665,6 +16669,7 @@ void main() {
 
     group('sendGroupMessage - success', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -16997,6 +17002,7 @@ void main() {
 
     group('sendSharedVideoGroup', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -17601,6 +17607,7 @@ void main() {
 
     group('_sendNip04Message failure paths', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       test(
         'returns failure when signer is null',
@@ -18008,6 +18015,7 @@ void main() {
 
     group('sendMessage preserves existing conversation metadata', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       test(
         'uses existing createdAt and dmProtocol from conversation',
@@ -18123,6 +18131,7 @@ void main() {
 
     group('sendMessage with outgoing_dms queue wired in', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
@@ -19382,6 +19391,7 @@ void main() {
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
       setUp(stubSendPolicyPermitsEveryone);
+      setUp(stubRelayReadAnsweredEmpty);
 
       setUp(stubNoMessageForSendBatch);
 
@@ -21726,6 +21736,7 @@ void main() {
     });
 
     group('recoverFullSend', () {
+      setUp(stubRelayReadAnsweredEmpty);
       setUp(stubNoMatchingStoredMessage);
 
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
