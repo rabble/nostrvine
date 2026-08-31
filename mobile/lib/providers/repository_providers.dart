@@ -440,9 +440,11 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
   // needs them — a relay Kind 0 can resurrect an evicted account regardless of
   // whether this instance warms the cache.
   unawaited(repo.loadVanishedPubkeys());
-  // Prime the keep-alive source used by profileVanishedProvider before DM
-  // surfaces mount, so its synchronous derived value does not sample the
-  // source during its one initial AsyncLoading state.
+  // Prime the vanish source before DM surfaces mount, so the synchronous
+  // derived value does not sample it during its initial AsyncLoading state.
+  // This one line is what orders the vanish signal ahead of
+  // profileIdentityResolvingProvider; nothing in the graph couples them.
+  // Pinned by test/providers/repository_providers_test.dart.
   ref.listen(vanishedProfilePubkeysProvider, (_, _) {});
 
   if (warmCache) {
