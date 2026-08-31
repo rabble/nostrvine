@@ -153,8 +153,16 @@ class UserAvatar extends StatelessWidget {
   /// costs 48 MB of bitmap to fill 4 KB of pixels — and `SizedBox.square`
   /// above bounds layout, not decode. Height is deliberately left to
   /// [ResizeImage] so the aspect ratio survives.
-  int _decodeWidth(BuildContext context) =>
-      (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+  ///
+  /// Returns null for a non-finite or non-positive [size], leaving the
+  /// framework to decode at native resolution. A `double.infinity` slot
+  /// (an avatar told to fill its cell) would otherwise reach
+  /// `(size * dpr).ceil()`, which throws. Mirrors
+  /// `_VideoThumbnailWidgetState._decodeWidth`.
+  int? _decodeWidth(BuildContext context) {
+    if (!size.isFinite || size <= 0) return null;
+    return (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+  }
 
   Widget _buildContent(BuildContext context) {
     if (contentOverride case final override?) {

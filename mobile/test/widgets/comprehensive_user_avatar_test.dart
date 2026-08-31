@@ -686,6 +686,40 @@ void main() {
         expect((provider as ResizeImage).width, equals(120));
         expect(provider.height, isNull);
       });
+
+      testWidgets('leaves the decode unbounded for a non-finite size', (
+        tester,
+      ) async {
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 40,
+                height: 40,
+                child: UserAvatar(
+                  imageProvider: MemoryImage(
+                    Uint8List.fromList(_transparentImageBytes),
+                  ),
+                  size: double.infinity,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // An infinite slot must not reach (size * dpr).ceil(), which throws.
+        // The provider is used unwrapped so the framework decodes natively.
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.widget<Image>(find.byType(Image)).image,
+          isA<MemoryImage>(),
+        );
+      });
     });
 
     group('Multiple Avatars', () {
