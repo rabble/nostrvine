@@ -7216,8 +7216,11 @@ class DmRepository {
         continue;
       }
       final restoredId = computeConversationId(room.toList());
-      if (!alreadyRestoredRoomIds.contains(restoredId) &&
-          !isAttestedGroup(bucket, roomsByMessageId)) {
+      if (!isAttestedGroup(
+        bucket,
+        roomsByMessageId,
+        requireMultipleSenders: !alreadyRestoredRoomIds.contains(restoredId),
+      )) {
         continue;
       }
       if (await _restoreGroupConversation(

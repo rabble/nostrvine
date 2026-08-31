@@ -666,6 +666,69 @@ void main() {
       },
     );
 
+    test('keeps the reply-mention veto during the second sweep', () async {
+      final aliceOneToOneId = await seedConversation([_me, _alice]);
+      final bobOneToOneId = await seedConversation([_me, _bob]);
+      final groupId = await seedConversation([_me, _alice, _bob]);
+      await seedMessage(
+        id: 'g1',
+        conversationId: groupId,
+        sender: _alice,
+        pTags: [_me, _bob],
+        createdAt: 1700000002,
+      );
+      await seedMessage(
+        id: 'g2',
+        conversationId: groupId,
+        sender: _bob,
+        pTags: [_me, _alice],
+        createdAt: 1700000003,
+      );
+      await seedMessage(
+        id: 'n1',
+        conversationId: bobOneToOneId,
+        sender: _bob,
+        pTags: [_me],
+        createdAt: 1700000004,
+      );
+
+      await runHistoricalPass();
+      await seedMessage(
+        id: 'n2',
+        conversationId: bobOneToOneId,
+        sender: _bob,
+        pTags: [_me, _alice],
+        replyToId: 'n1',
+        createdAt: 1700000005,
+      );
+
+      await recoverViaSetCredentials();
+
+      expect(
+        (await messages.getMessagesForConversation(
+          groupId,
+          ownerPubkey: _me,
+        )).map((m) => m.id).toSet(),
+        equals({'g1', 'g2'}),
+        reason: 'attestation must not override the reply-mention veto',
+      );
+      expect(
+        (await messages.getMessagesForConversation(
+          bobOneToOneId,
+          ownerPubkey: _me,
+        )).map((m) => m.id).toSet(),
+        equals({'n1', 'n2'}),
+        reason: 'the mention stays in the healthy 1:1 where the user saw it',
+      );
+      expect(
+        await conversations.getConversation(
+          aliceOneToOneId,
+          ownerPubkey: _me,
+        ),
+        isNotNull,
+      );
+    });
+
     test('a malformed conversation does not block later recovery', () async {
       final oneToOneId = await seedConversation([_me, _alice]);
       final groupId = await seedConversation([_me, _alice, _bob]);

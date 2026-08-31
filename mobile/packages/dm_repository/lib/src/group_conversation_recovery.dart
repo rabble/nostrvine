@@ -122,16 +122,22 @@ Map<String, List<RecoveryMessageFacts>> bucketByRoom(
 /// carries an `e` tag; a message that widens the room *and* replies into a
 /// strictly smaller one is a mention. It costs nothing to honour that even when
 /// the sender count already said yes.
+/// This veto applies to the whole bucket, so one such mention leaves even an
+/// otherwise genuine room untouched rather than risking a destructive move.
 ///
 /// [roomsByMessageId] must resolve reply parents across the *whole* source
 /// conversation, not just this bucket — a mention-reply's parent lives in the
 /// narrower room by definition.
 bool isAttestedGroup(
   List<RecoveryMessageFacts> bucket,
-  Map<String, Set<String>> roomsByMessageId,
-) {
+  Map<String, Set<String>> roomsByMessageId, {
+  bool requireMultipleSenders = true,
+}) {
   if (bucket.isEmpty) return false;
-  if (bucket.map((m) => m.senderPubkey).toSet().length < 2) return false;
+  if (requireMultipleSenders &&
+      bucket.map((m) => m.senderPubkey).toSet().length < 2) {
+    return false;
+  }
   return !bucket.any((m) => _repliesIntoASmallerRoom(m, roomsByMessageId));
 }
 
