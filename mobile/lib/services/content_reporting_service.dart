@@ -209,6 +209,26 @@ class ContentReportingService {
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
 
+      // Self-report guard (#8352). A bare user report carries only a `p` tag,
+      // so when reporter and target are the same pubkey the published kind-1984
+      // event names the report's own author as the reported party — a permanent,
+      // public record with no signal to a moderator that they are the same
+      // person. Refuse it before anything is built or published. Silent, like
+      // the follow/unfollow/mute self-guards: a user who reaches this is not
+      // doing it deliberately, so we return success and simply publish nothing.
+      final reporterPubkey = _authService.currentPublicKeyHex;
+      if (reporterPubkey != null && reporterPubkey == authorPubkey) {
+        Log.info(
+          'Refused a self-report before publishing (target == reporter)',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+        return ReportResult.createSuccess(
+          reportId,
+          delivery: ReportDelivery.localOnly,
+        );
+      }
+
       // Redact once, here, so every projection of this report inherits it.
       // The kind-1984 event is published to relays in plaintext and the
       // Zendesk ticket can be mirrored publicly, so a credential pasted into

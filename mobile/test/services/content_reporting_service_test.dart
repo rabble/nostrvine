@@ -335,6 +335,60 @@ void main() {
       },
     );
 
+    test(
+      'reportContent() silently refuses a self-report (target == reporter) '
+      'without building or publishing any event (#8352)',
+      () async {
+        // Publishing WOULD succeed here — the point is that the guard refuses
+        // before we ever reach signing or the relay.
+        final wouldBeEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: const <List<String>>[],
+          content: '',
+        );
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => wouldBeEvent);
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => PublishSuccess(event: wouldBeEvent));
+
+        // Act: target the reporter's own pubkey (== currentPublicKeyHex).
+        final result = await service.reportContent(
+          eventId: _validEventId('a'),
+          authorPubkey: testPublicKey,
+          reason: ContentFilterReason.other,
+          details: 'accidental self-report',
+        );
+
+        // Silent success to the caller, nothing left the device, and neither
+        // signing nor publishing was ever attempted.
+        expect(result.success, isTrue);
+        expect(result.delivery, ReportDelivery.localOnly);
+        verifyNever(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      },
+    );
+
     test('reportContent() handles all ContentFilterReason types including '
         'aiGenerated', () async {
       // Arrange
