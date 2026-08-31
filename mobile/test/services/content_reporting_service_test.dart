@@ -372,7 +372,7 @@ void main() {
         // Silent success to the caller, nothing left the device, and neither
         // signing nor publishing was ever attempted.
         expect(result.success, isTrue);
-        expect(result.delivery, ReportDelivery.localOnly);
+        expect(result.delivery, ReportDelivery.refused);
         verifyNever(
           () => mockAuthService.createAndSignEvent(
             kind: any(named: 'kind'),

@@ -30,6 +30,13 @@ enum ReportDelivery {
   /// which nothing in the app ever replays — so it is a dead letter
   /// unless the user submits again.
   localOnly,
+
+  /// The report was deliberately refused before anything was built,
+  /// published, or recorded — e.g. a self-report (#8352). Distinct from
+  /// [localOnly]: there is no local record, and callers must treat it as a
+  /// silent no-op, never as a failed delivery to retry or hand to a fallback
+  /// channel such as the moderation DM.
+  refused,
 }
 
 /// Report submission result
@@ -217,7 +224,8 @@ class ContentReportingService {
       // the follow/unfollow/mute self-guards: a user who reaches this is not
       // doing it deliberately, so we return success and simply publish nothing.
       final reporterPubkey = _authService.currentPublicKeyHex;
-      if (reporterPubkey != null && reporterPubkey == authorPubkey) {
+      if (reporterPubkey != null &&
+          reporterPubkey.toLowerCase() == authorPubkey.toLowerCase()) {
         Log.info(
           'Refused a self-report before publishing (target == reporter)',
           name: 'ContentReportingService',
@@ -225,7 +233,7 @@ class ContentReportingService {
         );
         return ReportResult.createSuccess(
           reportId,
-          delivery: ReportDelivery.localOnly,
+          delivery: ReportDelivery.refused,
         );
       }
 

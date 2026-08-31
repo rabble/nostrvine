@@ -161,6 +161,45 @@ void main() {
       },
     );
 
+    blocTest<ReportSubmissionCubit, ReportSubmissionState>(
+      'a refused self-report is silent — confirmation shown, nothing sent (#8352)',
+      build: () {
+        when(
+          () => reportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer(
+          (_) async => ReportResult.createSuccess(
+            'id',
+            delivery: ReportDelivery.refused,
+          ),
+        );
+        return buildCubit();
+      },
+      act: submit,
+      verify: (cubit) {
+        // Silent success — unlike the `localOnly` offline path, a refusal must
+        // NOT hand off to the moderation DM, or a self-naming report would
+        // still leave the device privately (the exact bug #8352 fixes).
+        expect(cubit.state.status, ReportSubmissionStatus.submitted);
+        verifyNever(
+          () => dmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        );
+      },
+    );
+
     test('hands back the rejection detail for the inline error', () async {
       when(
         () => reportingService.reportContent(
