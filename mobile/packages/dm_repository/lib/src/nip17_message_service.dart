@@ -528,6 +528,15 @@ class NIP17MessageService {
   /// (PR #3910) will surface the self-wrap outcome separately so the
   /// repository can mark each wrap status independently.
   ///
+  /// [targetRelays] routes the RECIPIENT's wrap; [selfWrapTargetRelays] routes
+  /// the sender's own copy, and the two are deliberately separate because they
+  /// address different people. `null` on either keeps that wrap on the default
+  /// pool. The self-copy's destination is the sender's own kind-10050 DM inbox
+  /// unioned with the pool — a bare pool publish never reached the inbox relays
+  /// the sender advertises to everyone else, so their own replies were missing
+  /// from any client reading that inbox (#7328). `DmRepository` resolves the
+  /// union; see `DmRepository._selfWrapTargetRelays`.
+  ///
   /// [selfWrapOnSoftUnconfirmed] controls whether the self-addressed wrap is
   /// still published when the recipient publish ends soft-unconfirmed (frame
   /// written, no OK). Reactions keep the default `true` — a lost OK may mean
@@ -570,6 +579,7 @@ class NIP17MessageService {
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
+    List<String>? selfWrapTargetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
     Duration? recipientWrapBuildTimeout = DmBatchSendBudget.recipientWrapBuild,
@@ -749,6 +759,7 @@ class NIP17MessageService {
               rumorEvent: rumorEvent,
               wrapBuildTimeout: selfWrapBound,
               prebuiltSelfWrap: prebuiltSelfWrap,
+              targetRelays: selfWrapTargetRelays,
             );
 
         if (outcome.confirmed) {
@@ -828,6 +839,7 @@ class NIP17MessageService {
         rumorEvent: rumorEvent,
         wrapBuildTimeout: selfWrapBound,
         prebuiltSelfWrap: prebuiltSelfWrap,
+        targetRelays: selfWrapTargetRelays,
       );
 
       Log.info(
@@ -923,7 +935,10 @@ class NIP17MessageService {
   /// [NIP17SendResult.failure] when the self-wrap could not be built
   /// or did not reach a relay.
   @useResult
-  Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
+  Future<NIP17SendResult> publishSelfWrap({
+    required Event rumorEvent,
+    List<String>? targetRelays,
+  }) async {
     try {
       // Same fail-fast as sendRumor: a frame buffered to a stale-`connected`
       // socket while offline would count as PublishSuccess and mark the
@@ -950,6 +965,7 @@ class NIP17MessageService {
         nostr: nostr,
         rumorEvent: rumorEvent,
         wrapBuildTimeout: DmSendBudget.selfWrapUncappedBuild,
+        targetRelays: targetRelays,
       );
       if (!published) {
         return const NIP17SendResult.failure('Self-wrap publish failed');
@@ -988,6 +1004,7 @@ class NIP17MessageService {
     required Event rumorEvent,
     required Duration? wrapBuildTimeout,
     Event? prebuiltSelfWrap,
+    List<String>? targetRelays,
   }) async {
     try {
       // Bounded: letting these 2 remote round trips run unbounded is what
@@ -1035,22 +1052,44 @@ class NIP17MessageService {
       // cap and misclassify a recipient-confirmed send as retryable-pending.
       // try/on rather than onTimeout: the future's reified type can be a
       // PublishResult subtype, which an onTimeout closure cannot satisfy.
+      // Naming relays here is what carries the self-copy to the sender's own
+      // kind-10050 DM inbox; `null` keeps the historic plain-pool publish.
+      // #7328.
+      final destination = (targetRelays != null && targetRelays.isNotEmpty)
+          ? targetRelays
+          : null;
       PublishResult published;
       try {
-        published = await _nostrService
-            .publishEvent(selfWrapEvent)
-            .timeout(_selfWrapPublishTimeout);
+        published =
+            await (destination == null
+                    ? _nostrService.publishEvent(selfWrapEvent)
+                    : _nostrService.publishEvent(
+                        selfWrapEvent,
+                        targetRelays: destination,
+                      ))
+                .timeout(_selfWrapPublishTimeout);
       } on TimeoutException {
         published = const PublishFailed();
       }
+      // Name the destination on both outcomes. Reporting only a bare
+      // success/failure is what let a self-copy that never reached the
+      // sender's advertised inbox read as delivered (#7328), and support
+      // cannot tell those apart from the event id alone.
+      final destinationForLog = destination?.join(', ') ?? 'default pool';
       if (published is! PublishSuccess) {
         Log.warning(
           'Self-wrap publish failed — the sender will not see this '
-          'message on other devices or after a reinstall.',
+          'message on other devices or after a reinstall '
+          '(event=${selfWrapEvent.id}, relays=$destinationForLog)',
           category: LogCategory.system,
         );
         return false;
       }
+      Log.info(
+        'Self-wrap published (event=${selfWrapEvent.id}, '
+        'relays=$destinationForLog)',
+        category: LogCategory.system,
+      );
       return true;
     } on Object catch (e) {
       Log.error(
@@ -1113,6 +1152,7 @@ class NIP17MessageService {
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
     List<String>? targetRelays,
+    List<String>? selfWrapTargetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
   }) async {
@@ -1126,6 +1166,7 @@ class NIP17MessageService {
       rumorEvent: rumor,
       recipientPubkey: recipientPubkey,
       targetRelays: targetRelays,
+      selfWrapTargetRelays: selfWrapTargetRelays,
       awaitRecipientOk: awaitRecipientOk,
       selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
       // No caller of this method owns an outgoing_dms row, so a bounded

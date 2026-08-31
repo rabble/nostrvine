@@ -19520,6 +19520,12 @@ void main() {
         'resolves each recipient kind-10050 inbox and OK-confirms every '
         'per-recipient wrap against it',
         () async {
+          // The author-agnostic stub below also answers the SENDER's own
+          // kind-10050 lookup, so the self-wrap destination resolves too and
+          // reads the pool to union with it (#7328).
+          when(() => mockNostrClient.configuredRelays).thenReturn(const [
+            'wss://relay.divine.video',
+          ]);
           // Both recipients advertise a DM inbox (the stub returns it for any
           // author query); each wrap must route there with OK-confirm, not the
           // default pool.
@@ -19572,6 +19578,13 @@ void main() {
                 rumorEvent: any(named: 'rumorEvent'),
                 recipientPubkey: recipient,
                 targetRelays: ['wss://inbox.example'],
+                // The self-copy is addressed to the SENDER, so unlike
+                // targetRelays it does not vary per recipient — it is the pool
+                // unioned with the sender's own advertised inbox (#7328).
+                selfWrapTargetRelays: const [
+                  'wss://relay.divine.video',
+                  'wss://inbox.example',
+                ],
                 awaitRecipientOk: true,
                 selfWrapOnSoftUnconfirmed: any(
                   named: 'selfWrapOnSoftUnconfirmed',

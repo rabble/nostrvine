@@ -1090,6 +1090,32 @@ class DmRepository {
     return res.state == _OwnDmInboxState.found ? res.relays : null;
   }
 
+  /// Where the sender's own gift-wrap copy of an outgoing DM should land: the
+  /// configured pool UNION the user's advertised kind-10050 DM inbox.
+  ///
+  /// `null` when no inbox is advertised (`absent`/`failed`), which keeps the
+  /// historic plain-pool publish for those accounts.
+  ///
+  /// The union is the whole point. `NostrClient.publishEvent` forwards one set
+  /// as BOTH `targetRelays` and `tempRelays`, and `targetRelays` FILTERS the
+  /// pool (`RelayPool._sendCollect`) rather than adding to it — so passing the
+  /// inbox alone would have swapped the pool's write redundancy for inbox
+  /// reach instead of gaining both. Naming the pool's own URLs alongside the
+  /// inbox keeps every pool relay past that filter, while the unpooled inbox
+  /// relays get a temporary connection. #7328.
+  ///
+  /// Before this, the self-copy went to the pool only. Divine advertises
+  /// `nos.lol` and `relay.primal.net` in every account's kind-10050 (the app
+  /// layer's `IndexerRelayConfig.dmInboxTaggedRelays`, passed in as
+  /// [_dmInboxTaggedRelays]), and neither joins the pool unless NIP-65
+  /// discovery came back empty — so the sender's own replies were absent from
+  /// two of the three relays their own inbox list points at.
+  Future<List<String>?> _selfWrapTargetRelays() async {
+    final ownInbox = await _ownInboxRelays();
+    if (ownInbox == null || ownInbox.isEmpty) return null;
+    return <String>{..._nostrClient.configuredRelays, ...ownInbox}.toList();
+  }
+
   /// Fetches a single older page of DM events (gift wraps, NIP-04,
   /// deletions) addressed to [pubkey] from the relay older than [until]
   /// (inclusive), capped to [limit]. Each event flows through
@@ -3881,7 +3907,12 @@ class DmRepository {
     // default relay pool so reachability is preserved for recipients who
     // have not published a DM inbox. Resolved after the queue enqueue
     // above so the optimistic UI echo is never delayed by this lookup.
-    final inboxRelays = await resolveDmInboxRelays(recipientPubkey);
+    // Both lookups together: the sender's own inbox is memoized per session,
+    // so pairing it with the recipient's costs no extra round trip.
+    final (inboxRelays, selfWrapRelays) = await (
+      resolveDmInboxRelays(recipientPubkey),
+      _selfWrapTargetRelays(),
+    ).wait;
 
     // OK-confirm the recipient wrap: a WebSocket frame-accept is a false
     // positive on a flaky single relay (the relay may never store the event),
@@ -3893,6 +3924,7 @@ class DmRepository {
       rumor: rumor,
       recipientPubkey: recipientPubkey,
       targetRelays: inboxRelays,
+      selfWrapTargetRelays: selfWrapRelays,
       awaitRecipientOk: true,
     );
 
@@ -4344,7 +4376,24 @@ class DmRepository {
       return NIP17SendResult.failure('rumor JSON parse failed: $e');
     }
 
-    final result = await _messageService!.publishSelfWrap(rumorEvent: rumor);
+    // Session-identity token before the inbox lookup: `ownerPubkey` was checked
+    // against `_userPubkey` above, but an account switch during this await
+    // would otherwise resolve the NEW account's inbox and publish the previous
+    // account's rumor to it. Bail retryable instead — the row stays queued and
+    // the next sweep re-drives it under the right identity.
+    final gen = _resetGeneration;
+    final selfWrapRelays = await _selfWrapTargetRelays();
+    if (_disposed || _resetGeneration != gen) {
+      return const NIP17SendResult.failure(
+        'self-wrap recovery abandoned: account changed mid-flight',
+        retryablePending: true,
+      );
+    }
+
+    final result = await _messageService!.publishSelfWrap(
+      rumorEvent: rumor,
+      targetRelays: selfWrapRelays,
+    );
 
     if (result.success) {
       // Both wraps have landed. Mirror sendMessage's full-delivery
@@ -4569,12 +4618,16 @@ class DmRepository {
     // recipient's own inbox — a false "confirmed" for a recipient who only
     // reads their advertised inbox. Resolution never throws (it degrades to
     // null), so it cannot abort a sweep pass.
-    final inboxRelays = await resolveDmInboxRelays(row.recipientPubkey);
+    final (inboxRelays, selfWrapRelays) = await (
+      resolveDmInboxRelays(row.recipientPubkey),
+      _selfWrapTargetRelays(),
+    ).wait;
 
     final result = await _sendRumorWithTimeout(
       rumor: rumor,
       recipientPubkey: row.recipientPubkey,
       targetRelays: inboxRelays,
+      selfWrapTargetRelays: selfWrapRelays,
       awaitRecipientOk: true,
     );
 
@@ -5224,6 +5277,7 @@ class DmRepository {
     required Event rumor,
     required String recipientPubkey,
     List<String>? targetRelays,
+    List<String>? selfWrapTargetRelays,
     bool awaitRecipientOk = false,
   }) {
     return _messageService!
@@ -5231,6 +5285,7 @@ class DmRepository {
           rumorEvent: rumor,
           recipientPubkey: recipientPubkey,
           targetRelays: targetRelays,
+          selfWrapTargetRelays: selfWrapTargetRelays,
           awaitRecipientOk: awaitRecipientOk,
           // A soft-unconfirmed message send must NOT publish the self-wrap:
           // the durable queue replays the full send until the recipient wrap
@@ -5364,6 +5419,10 @@ class DmRepository {
       for (final pubkey in recipientPubkeys)
         resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
     ]);
+
+    // One destination for every self-copy in the batch — it is addressed to
+    // the sender, not to a recipient, so it does not vary per wrap.
+    final selfWrapRelays = await _selfWrapTargetRelays();
 
     // Per-recipient durable handle for the queue row. The wire rumor is shared
     // across the batch, so the rumor id alone can no longer key a row: the
@@ -5562,6 +5621,7 @@ class DmRepository {
             rumor: groupRumor,
             recipientPubkey: pubkey,
             targetRelays: inboxByRecipient[pubkey],
+            selfWrapTargetRelays: selfWrapRelays,
             awaitRecipientOk: true,
           ),
         );

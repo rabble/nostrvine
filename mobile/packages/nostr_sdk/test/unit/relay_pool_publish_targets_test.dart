@@ -467,4 +467,104 @@ void main() {
       },
     );
   });
+
+  group('RelayPool publish target identity', () {
+    // The pool stores its keys through `normalizeRelayUrl`, which STRIPS a
+    // trailing slash.
+    const pooledUrl = 'wss://relay.divine.video';
+    // A `relay` tag lifted verbatim off someone's kind-10050. Whether it
+    // carries a trailing slash is that author's choice, not ours — and the
+    // publish path, unlike subscribe/query, does not run its targets through
+    // `handleAddrList` first. #8377 / #7328.
+    const slashedTarget = 'wss://relay.divine.video/';
+    const eventId = 'slashed-publish-target-event-id';
+
+    late Nostr nostr;
+    late FakeWebSocketChannelFactory pooledFactory;
+
+    setUp(() async {
+      final signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      // Every temp socket refuses, so the only way an EVENT can reach the
+      // relay is over the POOLED connection. Without this the temp-relay arm
+      // would dial a second socket to the same host and mask the bug.
+      nostr = Nostr(
+        signer,
+        [],
+        (url) => RelayBase(
+          url,
+          RelayStatus(url),
+          channelFactory: FakeWebSocketChannelFactory(
+            readyError: StateError('temp socket refused'),
+          ),
+        ),
+      );
+      await nostr.refreshPublicKey();
+
+      pooledFactory = FakeWebSocketChannelFactory();
+      await nostr.relayPool.add(
+        RelayBase(
+          pooledUrl,
+          RelayStatus(pooledUrl),
+          channelFactory: pooledFactory,
+        ),
+      );
+    });
+
+    tearDown(() => nostr.relayPool.removeAll());
+
+    /// EVENT frames that actually went down a socket [pooledFactory] made.
+    List<dynamic> pooledEventFrames() => pooledFactory.createdChannels
+        .expand((channel) => channel.sentMessages)
+        .where(
+          (message) =>
+              (jsonDecode(message as String) as List<dynamic>).first == 'EVENT',
+        )
+        .toList();
+
+    test('a trailing-slash target still reaches the pooled socket', () async {
+      await nostr.relayPool.send(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': 1059},
+        ],
+        targetRelays: const [slashedTarget],
+      );
+
+      // Counted, not `contains`-ed: the failure this guards is "the pooled
+      // socket was skipped and a second one dialed instead", and a
+      // membership matcher cannot tell one delivery from two.
+      expect(
+        pooledEventFrames(),
+        hasLength(1),
+        reason:
+            'the caller named this exact relay; comparing the target to the '
+            'pool key as a raw string drops the pooled socket over a '
+            'trailing slash and sends over a duplicate temp connection '
+            'instead',
+      );
+    });
+
+    test('a target naming a different relay still excludes the pool', () async {
+      await nostr.relayPool.send(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': 1059},
+        ],
+        targetRelays: const ['wss://relay.elsewhere.example'],
+      );
+
+      // The companion assertion: identity-matching must not turn the filter
+      // into a no-op. A target that names nobody in the pool still narrows it
+      // to nothing.
+      expect(
+        pooledEventFrames(),
+        isEmpty,
+        reason:
+            'targetRelays is a filter — a relay the caller did not name must '
+            'not receive the event just because the comparison got looser',
+      );
+    });
+  });
 }
