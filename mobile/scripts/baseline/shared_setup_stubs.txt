@@ -7,7 +7,7 @@
 # declare the stub in the groups that depend on it (#8399, #8170, #7324).
 # Regenerate after relocating stubs:
 #   UPDATE_BASELINE=1 bash scripts/check_shared_setup_stubs.sh
-packages/dm_repository/test/src/dm_repository_test.dart	20
+packages/dm_repository/test/src/dm_repository_test.dart	14
 packages/nostr_client/test/src/relay_manager_test.dart	10
 packages/profile_repository/test/src/identity_claims_repository_test.dart	12
 packages/profile_repository/test/src/profile_repository_pending_save_test.dart	11
