@@ -70,7 +70,10 @@ void main() {
 
       test('dispose is safe when initialize never ran', () {
         expect(analyticsService.dispose, returnsNormally);
-        expect(registeredServiceNames(), isEmpty);
+        // Scoped to this service rather than asserting the whole registry is
+        // empty: it is a process-global shared by every suite in the merged
+        // isolate, so `isEmpty` would fail here for another test's leak.
+        expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
       });
 
       test('a deferred initialize cannot re-register after dispose', () async {
