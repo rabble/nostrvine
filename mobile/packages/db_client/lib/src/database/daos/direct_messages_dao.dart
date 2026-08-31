@@ -126,6 +126,56 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return inserted != null;
   }
 
+  /// Every row in a conversation, **including** soft-deleted ones, oldest
+  /// first.
+  ///
+  /// [getMessagesForConversation] filters `is_deleted`, which is right for
+  /// rendering and wrong for repair: the group-conversation recovery pass
+  /// (#8407) reconstructs a destroyed room's membership from the stored
+  /// rumor `p` tags, and a room whose surviving rows happen to be soft-deleted
+  /// would otherwise look like an ordinary 1:1.
+  ///
+  /// Oldest first so a caller walking a reply chain sees a parent before its
+  /// children.
+  Future<List<DirectMessageRow>> getAllMessagesForConversationIncludingDeleted(
+    String conversationId, {
+    required String ownerPubkey,
+  }) {
+    return (select(directMessages)
+          ..where(
+            (t) =>
+                t.conversationId.equals(conversationId) &
+                _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+        .get();
+  }
+
+  /// Re-point an explicit set of messages at [toConversationId].
+  ///
+  /// Deliberately keyed on message ids rather than a source conversation.
+  /// #8401 deleted a `reassignConversation({fromConversationId, ...})` whose
+  /// whole-conversation shape is what let a startup pass fold a group into a
+  /// 1:1 and erase its other participants; taking ids makes that bulk merge
+  /// unexpressible here.
+  ///
+  /// Returns the number of rows moved.
+  Future<int> reassignMessages({
+    required List<String> messageIds,
+    required String toConversationId,
+    required String ownerPubkey,
+  }) {
+    if (messageIds.isEmpty) return Future.value(0);
+    return (update(directMessages)..where(
+          (t) =>
+              t.id.isIn(messageIds) &
+              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .write(
+          DirectMessagesCompanion(conversationId: Value(toConversationId)),
+        );
+  }
+
   /// Get messages for a conversation, newest first.
   ///
   /// Excludes soft-deleted messages (NIP-09 kind 5).

@@ -25,6 +25,7 @@ import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
+import 'package:dm_repository/src/group_conversation_recovery.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
@@ -7033,6 +7034,200 @@ class DmRepository {
     await _backfillCurrentUserHasSent();
     await _backfillConversationPreviews();
     await _purgeReactionsStrandedByRemoval();
+    await _recoverGroupConversations();
+  }
+
+  /// Rebuilds group conversations a startup dedup pass destroyed (#8407).
+  ///
+  /// Until #8401 a per-launch pass bucketed conversations by their
+  /// alphabetically-first peer and merged any bucket with more than one entry,
+  /// reading nothing about `isGroup`. A group `[me, A, B]` and a 1:1 `[me, A]`
+  /// share the key `A`, so the group's messages were re-parented onto the 1:1
+  /// and the group row was deleted. That destroyed the participant list, and
+  /// it keeps destroying the room's future: nothing recreates a group row, so
+  /// replies reach only the surviving peer and every other member's next
+  /// message forks into its own 1:1.
+  ///
+  /// The membership survived on the messages. `reassignConversation` wrote a
+  /// single column, so each re-parented row still carries the rumor's `p`
+  /// tags, and NIP-17 defines the room as `pubkey` + `p` tags.
+  ///
+  /// Additive by construction: this only ever inserts a conversation row and
+  /// moves messages, never deletes a row. A destructive per-launch pass is
+  /// what caused the damage.
+  Future<void> _recoverGroupConversations() async {
+    final owner = _ownerPubkey;
+    if (owner == null) return;
+    final syncState = _syncState;
+    // The pass is naturally idempotent — once the rows are moved, the 1:1 no
+    // longer holds foreign-participant messages — so the marker is a cost
+    // guard, not a correctness one. `_watchConversationRows` gates the
+    // conversation-list stream on this maintenance future, and a full scan on
+    // every launch would delay inbox render. With no sync state (most
+    // fixtures) just run: idempotency makes that safe.
+    if (syncState != null &&
+        syncState.groupRecoveryVersion(owner) >=
+            DmSyncState.currentGroupRecoveryVersion) {
+      return;
+    }
+    try {
+      var restored = 0;
+      for (final conversation in await _conversationsDao.getAllConversations(
+        ownerPubkey: owner,
+      )) {
+        restored += await _recoverGroupsFrom(conversation, owner);
+      }
+      await syncState?.setGroupRecoveryVersion(
+        owner,
+        DmSyncState.currentGroupRecoveryVersion,
+      );
+      if (restored > 0) {
+        Log.info(
+          'Restored $restored group conversation(s) erased by the startup '
+          'dedup pass',
+          category: LogCategory.system,
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to recover group conversations: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Restores every attested room hiding inside [conversation]. Returns how
+  /// many were restored.
+  Future<int> _recoverGroupsFrom(
+    ConversationRow conversation,
+    String owner,
+  ) async {
+    if (conversation.isGroup) return 0;
+    final declared = (jsonDecode(conversation.participantPubkeys) as List)
+        .cast<String>()
+        .toSet();
+    if (declared.length != 2) return 0;
+
+    // Raw read: the rendering read filters `is_deleted`, and a room whose
+    // surviving rows are soft-deleted would look like an ordinary 1:1.
+    final rows = await _directMessagesDao
+        .getAllMessagesForConversationIncludingDeleted(
+          conversation.id,
+          ownerPubkey: owner,
+        );
+    if (rows.isEmpty) return 0;
+
+    final facts = <RecoveryMessageFacts>[];
+    for (final row in rows) {
+      // Read the raw column, not `DmMessage.tags`: `_parseTagsJson` maps null,
+      // empty and malformed alike to `const []`, and a legacy row can be null
+      // because `tags_json` arrived through ADD COLUMN, which does not
+      // backfill.
+      final participants = reconstructParticipants(
+        row.tagsJson,
+        row.senderPubkey,
+      );
+      if (participants.isEmpty) continue;
+      facts.add(
+        RecoveryMessageFacts(
+          id: row.id,
+          senderPubkey: row.senderPubkey,
+          participants: participants,
+          replyToId: row.replyToId,
+          subject: row.subject,
+          createdAt: row.createdAt,
+        ),
+      );
+    }
+    if (facts.isEmpty) return 0;
+
+    final roomsByMessageId = {for (final f in facts) f.id: f.participants};
+    final declaredKey = canonicalParticipantKey(declared);
+    var restored = 0;
+
+    for (final entry in bucketByRoom(facts).entries) {
+      if (entry.key == declaredKey) continue;
+      final bucket = entry.value;
+      final room = bucket.first.participants;
+      // Only a strictly wider room is damage; anything else is a shape this
+      // pass does not understand and must not touch.
+      if (!declared.every(room.contains) || room.length <= declared.length) {
+        continue;
+      }
+      if (!isAttestedGroup(bucket, roomsByMessageId)) continue;
+      if (await _restoreGroupConversation(
+        conversation: conversation,
+        room: room,
+        bucket: bucket,
+        owner: owner,
+      )) {
+        restored++;
+      }
+    }
+    return restored;
+  }
+
+  /// Recreates one room and moves its messages. Returns whether it ran.
+  Future<bool> _restoreGroupConversation({
+    required ConversationRow conversation,
+    required Set<String> room,
+    required List<RecoveryMessageFacts> bucket,
+    required String owner,
+  }) async {
+    final participants = room.toList()..sort();
+    final restoredId = computeConversationId(participants);
+    if (restoredId == conversation.id) return false;
+
+    // Never resurrect a room the user deliberately removed (#7811).
+    final removedAt = await _removedConversationsDao?.removedAtFor(
+      conversationId: restoredId,
+      ownerPubkey: owner,
+    );
+    if (removedAt != null) return false;
+
+    final newest = bucket.reduce(
+      (a, b) => b.createdAt >= a.createdAt ? b : a,
+    );
+    final messageIds = [for (final m in bucket) m.id];
+
+    await _conversationsDao.runInTransaction(() async {
+      await _conversationsDao.upsertConversation(
+        id: restoredId,
+        participantPubkeys: jsonEncode(participants),
+        isGroup: true,
+        createdAt: conversation.createdAt,
+        lastMessageTimestamp: newest.createdAt,
+        lastMessageSenderPubkey: newest.senderPubkey,
+        // NIP-17: the newest subject in the room is the room's subject.
+        subject: newestSubject(bucket),
+        // Inherited, not derived. `currentUserHasSent: false` plus an
+        // unfollowed peer routes a conversation into Message Requests, so
+        // deriving these from the moved messages would let a repair hide
+        // content the user could already see in the damaged thread.
+        isRead: conversation.isRead,
+        currentUserHasSent: conversation.currentUserHasSent,
+        ownerPubkey: owner,
+        dmProtocol: conversation.dmProtocol,
+      );
+      await _directMessagesDao.reassignMessages(
+        messageIds: messageIds,
+        toConversationId: restoredId,
+        ownerPubkey: owner,
+      );
+      // Reactions record the conversation their target belongs to and render
+      // off that pair, so they move with the messages or the chips vanish.
+      await _reactionsRepository?.reassignForMovedMessages(
+        targetMessageIds: messageIds,
+        toConversationId: restoredId,
+        ownerPubkey: owner,
+      );
+    });
+
+    await _refreshConversationPreview(restoredId);
+    await _refreshConversationPreview(conversation.id);
+    return true;
   }
 
   /// Drops reaction rows left behind by a conversation removal on a build that

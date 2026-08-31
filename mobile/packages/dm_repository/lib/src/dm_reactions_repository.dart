@@ -215,6 +215,26 @@ class DmReactionsRepository {
     return _reactionsDao.deleteSuppressedByRemoval(ownerPubkey: ownerPubkey);
   }
 
+  /// Follow [targetMessageIds] to [toConversationId] after those messages
+  /// were moved between conversations.
+  ///
+  /// A reaction row records the conversation its target message belongs to,
+  /// and the live render index is keyed on that pair, so a move that leaves
+  /// reactions behind silently drops the chips and strands rows the retry
+  /// sweep still owns (#7857). Called by the group-conversation recovery pass
+  /// (#8407) inside the same transaction as the message move.
+  Future<int> reassignForMovedMessages({
+    required Iterable<String> targetMessageIds,
+    required String toConversationId,
+    required String ownerPubkey,
+  }) {
+    return _reactionsDao.reassignForTargetMessages(
+      targetMessageIds: targetMessageIds,
+      toConversationId: toConversationId,
+      ownerPubkey: ownerPubkey,
+    );
+  }
+
   /// Reactive stream of every live reaction in [conversationId] for the
   /// current account, collapsed to at most one reaction per reactor per
   /// target message (the cap-at-one invariant — see [_collapsePerReactor]).

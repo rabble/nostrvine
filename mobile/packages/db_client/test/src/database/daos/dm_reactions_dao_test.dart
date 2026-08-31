@@ -813,6 +813,58 @@ void main() {
       },
     );
 
+    group('reassignForTargetMessages', () {
+      test('follows the named targets to the new conversation', () async {
+        await insertPending();
+        await insertPending(
+          id: _sentId,
+          targetMessageId: _otherTargetMessageId,
+          createdAt: 1_700_000_001,
+        );
+
+        final moved = await dao.reassignForTargetMessages(
+          targetMessageIds: const [_targetMessageId],
+          toConversationId: _otherConversationId,
+          ownerPubkey: _ownerA,
+        );
+
+        expect(moved, equals(1));
+        final rows = await database.select(database.dmMessageReactions).get();
+        expect(
+          {for (final r in rows) r.id: r.conversationId},
+          equals({
+            _pendingId: _otherConversationId,
+            _sentId: _conversationId,
+          }),
+          reason: 'only the named target moves',
+        );
+      });
+
+      test("will not move another owner's reaction", () async {
+        await insertPending(id: _otherOwnerReactionId, ownerPubkey: _ownerB);
+
+        expect(
+          await dao.reassignForTargetMessages(
+            targetMessageIds: const [_targetMessageId],
+            toConversationId: _otherConversationId,
+            ownerPubkey: _ownerA,
+          ),
+          equals(0),
+        );
+      });
+
+      test('is a no-op for an empty target list', () async {
+        expect(
+          await dao.reassignForTargetMessages(
+            targetMessageIds: const [],
+            toConversationId: _otherConversationId,
+            ownerPubkey: _ownerA,
+          ),
+          equals(0),
+        );
+      });
+    });
+
     group('removed-conversation tombstone suppression', () {
       /// The `createdAt` [insertPending] uses by default.
       const reactionAt = 1_700_000_000;

@@ -395,6 +395,7 @@ class _FakeDmSyncState implements DmSyncState {
   bool drainCompleteOverride = false;
   int? drainCursorOverride;
   int drainVersionOverride = 0;
+  int groupRecoveryVersionOverride = 0;
   final List<String> markedCompletePubkeys = <String>[];
   final List<int> persistedDrainCursors = <int>[];
   final List<String> upgradedPubkeys = <String>[];
@@ -429,6 +430,14 @@ class _FakeDmSyncState implements DmSyncState {
   @override
   Future<void> setDrainVersion(String pubkey, int version) async {
     drainVersionOverride = version;
+  }
+
+  @override
+  int groupRecoveryVersion(String pubkey) => groupRecoveryVersionOverride;
+
+  @override
+  Future<void> setGroupRecoveryVersion(String pubkey, int version) async {
+    groupRecoveryVersionOverride = version;
   }
 
   @override
