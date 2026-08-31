@@ -698,7 +698,7 @@ class _ListHeroHeader extends StatelessWidget {
         children: [
           Text(
             name,
-            style: VineTheme.headlineMediumFont(
+            style: VineTheme.headlineSmallFont(
               color: context.vineColors.primaryText,
             ),
           ),
