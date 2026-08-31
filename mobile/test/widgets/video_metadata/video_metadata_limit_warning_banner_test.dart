@@ -58,7 +58,12 @@ void main() {
     testWidgets('warning has correct background color', (tester) async {
       await tester.pumpWidget(buildWidget(metadataLimitReached: true));
 
-      final container = tester.widget<Container>(find.byType(Container).first);
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(VideoMetadataLimitWarningBanner),
+          matching: find.byType(Container),
+        ),
+      );
       final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, equals(VineTheme.contentWarningBackground));
     });
@@ -66,7 +71,12 @@ void main() {
     testWidgets('warning has rounded corners', (tester) async {
       await tester.pumpWidget(buildWidget(metadataLimitReached: true));
 
-      final container = tester.widget<Container>(find.byType(Container).first);
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(VideoMetadataLimitWarningBanner),
+          matching: find.byType(Container),
+        ),
+      );
       final decoration = container.decoration! as BoxDecoration;
       expect(decoration.borderRadius, equals(BorderRadius.circular(16)));
     });

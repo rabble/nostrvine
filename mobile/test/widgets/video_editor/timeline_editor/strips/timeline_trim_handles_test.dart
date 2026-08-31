@@ -73,7 +73,12 @@ void main() {
         await tester.pumpWidget(buildWidget(handleColor: color));
 
         final decorated = tester.widget<DecoratedBox>(
-          find.byType(DecoratedBox).first,
+          find
+              .descendant(
+                of: find.byType(TimelineTrimHandles),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
         );
         final decoration = decorated.decoration as BoxDecoration;
         expect(decoration.border, isNotNull);
@@ -239,15 +244,10 @@ void main() {
     group('narrow widths', () {
       testWidgets(
         'extends left hit testing beyond the original outward range',
-        (
-          tester,
-        ) async {
+        (tester) async {
           const trimWidth = 20.0;
           await tester.pumpWidget(
-            buildWidget(
-              width: trimWidth,
-              trimWidth: trimWidth,
-            ),
+            buildWidget(width: trimWidth, trimWidth: trimWidth),
           );
 
           final box = tester.renderObject<RenderBox>(
@@ -267,15 +267,10 @@ void main() {
 
       testWidgets(
         'extends right hit testing beyond the original outward range',
-        (
-          tester,
-        ) async {
+        (tester) async {
           const trimWidth = 20.0;
           await tester.pumpWidget(
-            buildWidget(
-              width: trimWidth,
-              trimWidth: trimWidth,
-            ),
+            buildWidget(width: trimWidth, trimWidth: trimWidth),
           );
 
           final box = tester.renderObject<RenderBox>(
@@ -343,7 +338,12 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         final decorated = tester.widget<DecoratedBox>(
-          find.byType(DecoratedBox).first,
+          find
+              .descendant(
+                of: find.byType(TimelineTrimHandles),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
         );
         final decoration = decorated.decoration as BoxDecoration;
         expect(
