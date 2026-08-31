@@ -194,6 +194,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               builder: (context, selectedVideoIds) => ComposableVideoGrid(
                 videos: videos,
                 useMasonryLayout: true,
+                // Edge-to-edge like the Explore grids: the 4px column gap
+                // comes from the grid's spacing, not outer side padding.
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 topOuterRadius: VineTheme.shellInnerCornerRadius,
                 selectedVideoIds: selectedVideoIds,
                 onVideoTap: (videoList, index) =>
@@ -206,6 +209,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           return ComposableVideoGrid(
             videos: videos,
             useMasonryLayout: true,
+            // Edge-to-edge like the Explore grids: the 4px column gap comes
+            // from the grid's spacing, not outer side padding.
+            padding: const EdgeInsets.symmetric(vertical: 4),
             topOuterRadius: VineTheme.shellInnerCornerRadius,
             headerSlivers: [
               SliverToBoxAdapter(
