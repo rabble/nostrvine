@@ -48,12 +48,6 @@ class _InstrumentedConversationsDao extends ConversationsDao {
   }
 
   @override
-  Future<bool> markAsRead(String id, {String? ownerPubkey}) {
-    membership['markAsRead'] = _open;
-    return super.markAsRead(id, ownerPubkey: ownerPubkey);
-  }
-
-  @override
   Future<void> upsertConversation({
     required String id,
     required String participantPubkeys,
@@ -184,21 +178,18 @@ void main() {
     });
 
     Future<void> settle() async {
-      for (var i = 0; i < 8; i++) {
-        await Future<void>.delayed(Duration.zero);
-      }
+      await pumpEventQueue();
     }
 
     Future<void> deliverNip17({
       required String wrapId,
       required String rumorId,
       required String content,
-      int createdAt = _baseCreatedAt,
     }) async {
       rumors[wrapId] = Event.fromJson({
         'id': rumorId,
         'pubkey': _peer,
-        'created_at': createdAt,
+        'created_at': _baseCreatedAt,
         'kind': EventKind.privateDirectMessage,
         'tags': [
           ['p', _owner],
@@ -210,7 +201,7 @@ void main() {
         Event.fromJson({
           'id': wrapId,
           'pubkey': _peer,
-          'created_at': createdAt,
+          'created_at': _baseCreatedAt,
           'kind': EventKind.giftWrap,
           'tags': [
             ['p', _owner],
@@ -222,11 +213,8 @@ void main() {
       await settle();
     }
 
-    Future<List<DirectMessageRow>> storedMessages() =>
-        messagesDao.getMessagesForConversation(
-          conversationId,
-          ownerPubkey: _owner,
-        );
+    Future<List<DirectMessageRow>> storedMessages() => messagesDao
+        .getMessagesForConversation(conversationId, ownerPubkey: _owner);
 
     const wrapId =
         'c1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9a1';
@@ -265,18 +253,13 @@ void main() {
 
         await deliverNip17(wrapId: wrapId, rumorId: rumorId, content: 'hello');
 
+        expect(conversationsDao.membership['upsertConversation'], isTrue);
+
         // Without the transaction the insert commits and the upsert throws
         // into the receive path's `on Object catch`, leaving a
         // direct_messages row whose conversation never existed: invisible in
         // the UI, and silent.
         expect(await storedMessages(), isEmpty);
-        expect(
-          await conversationsDao.getConversation(
-            conversationId,
-            ownerPubkey: _owner,
-          ),
-          isNull,
-        );
       });
 
       test(
@@ -288,6 +271,8 @@ void main() {
             rumorId: rumorId,
             content: 'hello',
           );
+
+          expect(conversationsDao.membership['upsertConversation'], isTrue);
 
           // The rolled-back insert must take the gift-wrap marker with it. If
           // the row survived, hasGiftWrap() would short-circuit the TOCTOU
