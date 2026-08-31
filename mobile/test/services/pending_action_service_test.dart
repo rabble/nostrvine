@@ -280,6 +280,50 @@ void main() {
         expect(service.pendingActions, isEmpty);
       });
 
+      test('retries an online action queued after initialization', () async {
+        service.dispose();
+        service = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: dao,
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 0,
+            initialDelay: Duration.zero,
+            maxDelay: Duration.zero,
+            resyncDelay: Duration.zero,
+          ),
+        );
+        await service.initialize();
+
+        var calls = 0;
+        final completed = Completer<void>();
+        service.addListener(() {
+          if (calls >= 2 &&
+              !service.isSyncing &&
+              service.pendingActions.isEmpty &&
+              !completed.isCompleted) {
+            completed.complete();
+          }
+        });
+        service.registerExecutor(PendingActionType.like, (_) async {
+          calls++;
+          if (calls == 1) throw Exception('Network error');
+        });
+
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+        await completed.future;
+
+        expect(
+          calls,
+          equals(2),
+          reason: 'a transient failure must retain the existing retry cadence',
+        );
+      });
+
       test(
         'does not run twice when called again during the DAO read',
         () async {

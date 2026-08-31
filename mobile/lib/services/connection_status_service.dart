@@ -1,6 +1,5 @@
-// ABOUTME: Monitors network connectivity and relay connection status
-// ABOUTME: Provides reactive connection state updates for UI components
-// ABOUTME: Supports reconnect callbacks for sync-on-reconnect functionality
+// ABOUTME: Holds relay connection state and publishes it to UI and services
+// ABOUTME: Fed by callers via updateRelayStatus; it polls nothing itself
 
 import 'dart:async';
 
@@ -10,23 +9,23 @@ import 'package:unified_logger/unified_logger.dart';
 /// Callback type for reconnect events
 typedef OnReconnectCallback = void Function();
 
-/// Monitors connection status for relays and network connectivity.
+/// Holds relay connection state and publishes changes to its listeners.
 ///
-/// The periodic check remains until #8331 replaces it with real relay-status
-/// wiring. Its notifications also re-drive pending actions queued while a
-/// signer is temporarily unavailable, so removing it independently would
-/// strand those actions for the rest of the session.
+/// This is a passive store: it learns about connectivity only through
+/// [updateRelayStatus], and performs no polling or probing of its own.
+///
+/// Nothing currently calls [updateRelayStatus], so [isOnline] stays at its
+/// initial `true` for the life of the app even when every relay is down,
+/// tracked in #8331. Until that is wired up, treat [isOnline] as "not known
+/// to be offline" rather than as a live signal.
 class ConnectionStatusService extends ChangeNotifier {
-  ConnectionStatusService() {
-    _startMonitoring();
-  }
+  ConnectionStatusService();
 
   bool _isConnected = true;
   bool _isConnecting = false;
   final Map<String, bool> _relayStatuses = {};
 
   final _statusController = StreamController<bool>.broadcast();
-  Timer? _monitoringTimer;
 
   /// Callbacks to invoke when connection is restored (offline -> online)
   final List<OnReconnectCallback> _reconnectCallbacks = [];
@@ -118,16 +117,6 @@ class ConnectionStatusService extends ChangeNotifier {
     }
   }
 
-  /// Forces a connection check.
-  Future<void> checkConnection() async {
-    setConnecting(true);
-
-    // Placeholder until #8331 feeds real relay connectivity into this service.
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    setConnecting(false);
-  }
-
   /// Gets connection information for debugging/analytics
   Map<String, dynamic> getConnectionInfo() {
     return {
@@ -140,23 +129,8 @@ class ConnectionStatusService extends ChangeNotifier {
     };
   }
 
-  /// Starts periodic monitoring of connection status.
-  void _startMonitoring() {
-    _monitoringTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => checkConnection(),
-    );
-  }
-
-  /// Stops monitoring and cleans up resources.
-  void stopMonitoring() {
-    _monitoringTimer?.cancel();
-    _monitoringTimer = null;
-  }
-
   @override
   void dispose() {
-    stopMonitoring();
     _statusController.close();
     super.dispose();
   }

@@ -1,12 +1,28 @@
 // ABOUTME: Unit tests for ConnectionStatusService.
-// ABOUTME: Pins how relay updates drive online state and reconnect callbacks.
+// ABOUTME: Pins that it arms no periodic work and that relay updates drive it.
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/connection_status_service.dart';
 
 void main() {
   group(ConnectionStatusService, () {
     group('lifecycle', () {
+      test('notifies nothing on its own once constructed', () {
+        fakeAsync((async) {
+          final service = ConnectionStatusService();
+          addTearDown(service.dispose);
+
+          var notifications = 0;
+          service.addListener(() => notifications++);
+
+          async.elapse(const Duration(minutes: 5));
+
+          expect(notifications, isZero);
+          expect(service.isConnecting, isFalse);
+        });
+      });
+
       test('completes its status stream on dispose', () async {
         final service = ConnectionStatusService();
         final closed = expectLater(service.statusStream, emitsDone);

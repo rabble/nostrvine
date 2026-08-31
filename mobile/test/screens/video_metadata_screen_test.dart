@@ -419,7 +419,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             connectionStatusServiceProvider.overrideWithValue(
-              _StubConnectionStatusService(),
+              ConnectionStatusService(),
             ),
             clipManagerProvider.overrideWith(
               () => _MockClipManagerNotifier([testClip]),
@@ -494,7 +494,7 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               connectionStatusServiceProvider.overrideWithValue(
-                _StubConnectionStatusService(),
+                ConnectionStatusService(),
               ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
@@ -577,7 +577,7 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               connectionStatusServiceProvider.overrideWithValue(
-                _StubConnectionStatusService(),
+                ConnectionStatusService(),
               ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
@@ -645,7 +645,7 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               connectionStatusServiceProvider.overrideWithValue(
-                _StubConnectionStatusService(),
+                ConnectionStatusService(),
               ),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
@@ -750,16 +750,6 @@ void main() {
       });
     });
   });
-}
-
-/// [ConnectionStatusService] starts a `Timer.periodic` from its constructor,
-/// which survives the widget test and trips `!timersPending` at teardown. The
-/// C2PA prompt only reads `isOnline`, so cancelling the poll leaves the value
-/// under test intact.
-class _StubConnectionStatusService extends ConnectionStatusService {
-  _StubConnectionStatusService() {
-    stopMonitoring();
-  }
 }
 
 /// Mock clip manager notifier for testing.
