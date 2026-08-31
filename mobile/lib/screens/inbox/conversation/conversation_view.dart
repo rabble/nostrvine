@@ -247,6 +247,20 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               .watch(nip05VerificationProvider(otherPubkey))
               .whenOrNull(data: (status) => status)
         : null;
+    // Counts live in the `profile_statistics` store, not on the profile.
+    // `UserProfile.restFollowerCount` reads `rawData['follower_count']`, which
+    // only the people-search shape ever writes and which is never persisted to
+    // the cache this screen reads — so it was permanently null here and the
+    // social-proof fallback never fired (#8403). The repository routes
+    // `GET /api/users/{pubkey}`'s `social` block into `profile_statistics`
+    // instead. A vanished account takes the branch below and never reaches the
+    // resolver; `fetchFreshProfile` short-circuits for it in any case.
+    final followerCount = ref
+        .watch(userProfileStatsReactiveProvider(otherPubkey))
+        .asData
+        ?.value
+        ?.followers;
+
     // Prefer the profile's NIP-05 / divine handle when set, otherwise the
     // follow relationship — which tells the viewer which of several
     // same-named people they are messaging, as a truncated npub never did.
@@ -260,7 +274,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 relationship:
                     ref.watch(followRelationshipProvider(otherPubkey)).value ??
                     FollowRelationship.none,
-                followerCount: profile?.restFollowerCount,
+                followerCount: followerCount,
               ) ??
               '';
 
