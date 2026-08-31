@@ -57,7 +57,20 @@ class DmSyncState {
   /// drain; the gift wraps are still there to recover (funnelcake retains kind
   /// 1059 indefinitely), and the drain is unawaited background work that
   /// resumes from its persisted cursor, so the cost is bounded and one-time.
-  static const int currentDrainVersion = 4;
+  ///
+  /// Bumped to 5 for #8362: #8217 and #8361 fixed #8209's two mechanisms
+  /// forward, but neither recovers a gift wrap an install already lost. The
+  /// `since:` fix only re-exposes a band as wide as the newest wrap's own
+  /// backdate, and that floor only rises, so anything missed longer ago stays
+  /// outside every future window. The history drain is the one path that
+  /// reaches below the live window, and an established install has already
+  /// latched [historyDrainComplete].
+  ///
+  /// This bump is only useful together with the cursor seeding fixed in
+  /// [upgradeDrainVersionIfNeeded]: on its own it re-reads history below
+  /// [oldestSyncedAt], recovers nothing, and re-latches completion off the
+  /// resulting empty page — spending the recovery pass it exists to provide.
+  static const int currentDrainVersion = 5;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
   /// `created_at` before callers should stop treating it as an honest send
@@ -215,8 +228,7 @@ class DmSyncState {
 
     if (!repaired) return;
 
-    await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
+    await _armRedrainFromNow(pubkey, nowSec);
   }
 
   /// Whether the one-time full-history drain has completed for [pubkey].
@@ -251,18 +263,43 @@ class DmSyncState {
 
   /// Forces a one-time re-drain for [pubkey] when its persisted
   /// [drainVersion] is below [currentDrainVersion], by clearing the
-  /// completion flag and resume cursor, then stamping the current version.
+  /// completion flag and seeding the resume cursor at now, then stamping the
+  /// current version.
   ///
   /// This is the recovery path for installs stranded by an older drain that
   /// marked [historyDrainComplete] without fully recovering history (#5202).
   /// A no-op for fresh installs (nothing to clear) and for installs already
   /// at the current version. Idempotent: after the bump the version matches,
   /// so it does not loop on every inbox open.
+  ///
+  /// The cursor is **seeded at now, not removed** — for the same reason
+  /// [repairPoisonedBoundaries] seeds it. `DmRepository` resolves the drain's
+  /// `until:` as `historyDrainCursor ?? oldestSyncedAt ?? now` and pages
+  /// strictly downward from it, and [markHistoryDrainComplete] has already
+  /// removed the cursor on any install this method can help. Removing it
+  /// therefore seeds from [oldestSyncedAt] — the floor of the account's whole
+  /// history — so the pass re-reads only history the install already has.
+  ///
+  /// That was survivable for the earlier bumps because their missing history
+  /// sat *below* [oldestSyncedAt]: a prematurely latched drain has more
+  /// history underneath it. #8209's `since:` residue is the first class where
+  /// the loss sits *above* the seed, near the live window's own floor, so
+  /// removing the cursor would spend the one-shot recovery pass on a window
+  /// that cannot contain it. Seeding at now covers both. See #8362.
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
     if (drainVersion(pubkey) >= currentDrainVersion) return;
-    await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.remove('$_drainCursorPrefix$pubkey');
+    if (historyDrainComplete(pubkey)) {
+      await _armRedrainFromNow(
+        pubkey,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+    }
     await setDrainVersion(pubkey, currentDrainVersion);
+  }
+
+  Future<void> _armRedrainFromNow(String pubkey, int nowSec) async {
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
   }
 
   /// The outer gift-wrap `created_at` (unix seconds) the history drain has

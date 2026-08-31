@@ -444,8 +444,10 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
     if (drainVersionOverride >= DmSyncState.currentDrainVersion) return;
     upgradedPubkeys.add(pubkey);
-    drainCompleteOverride = false;
-    drainCursorOverride = null;
+    if (drainCompleteOverride) {
+      drainCompleteOverride = false;
+      drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    }
     drainVersionOverride = DmSyncState.currentDrainVersion;
   }
 
@@ -453,11 +455,28 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> repairPoisonedBoundaries(String pubkey) async {
     repairedPubkeys.add(pubkey);
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    var repaired = false;
     final newest = newestOverride;
-    if (newest != null && newest > nowSec + DmSyncState.maxFutureSkewSeconds) {
+    if (newest != null && newest > nowSec) {
       newestOverride = nowSec;
+      repaired = true;
+    }
+    final newestWire = newestWireOverride;
+    if (newestWire != null && newestWire > nowSec) {
+      newestWireOverride = nowSec;
+      repaired = true;
+    }
+    final oldest = oldestOverride;
+    if (oldest != null &&
+        (oldest < DmSyncState.minPlausibleCreatedAt || oldest > nowSec)) {
+      oldestOverride = oldest < DmSyncState.minPlausibleCreatedAt
+          ? DmSyncState.minPlausibleCreatedAt
+          : nowSec;
+      repaired = true;
+    }
+    if (repaired) {
       drainCompleteOverride = false;
-      drainCursorOverride = null;
+      drainCursorOverride = nowSec;
     }
   }
 
@@ -6379,13 +6398,19 @@ void main() {
         're-runs once for an install stranded complete by an older drain '
         '(drainVersion below current) — #5202',
         () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final oldestRumor = nowSec - 90 * 86400;
           final capturedUntil = <int?>[];
           stubFiniteHistory(const <Event>[], capturedUntil);
 
           // Pre-#5202 install: flagged complete at an older drain version
-          // while history still exists on the relay.
+          // while history still exists on the relay. oldestSyncedAt is set
+          // because a real install always has one - leaving it null let the
+          // seed fall through to `now` and made this assertion vacuous.
           final syncState = _FakeDmSyncState()
             ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
             ..drainVersionOverride = 0;
           final repository = createRepository(syncState: syncState);
 
@@ -6395,6 +6420,9 @@ void main() {
           // then re-completed cleanly (default 3 relays connected).
           expect(syncState.upgradedPubkeys, isNotEmpty);
           expect(capturedUntil, isNotEmpty);
+          // Not merely "a query happened": the forced pass must start ABOVE
+          // oldestSyncedAt, or it only re-reads history the install has.
+          expect(capturedUntil.first, greaterThan(oldestRumor));
           expect(syncState.drainCompleteOverride, isTrue);
           expect(
             syncState.drainVersionOverride,
@@ -6404,9 +6432,50 @@ void main() {
       );
 
       test(
+        'a forced re-drain requests the recent window the eroded since: '
+        'stranded, not just history below oldestSyncedAt — #8362',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Established install: the drain completed months ago, so
+          // markHistoryDrainComplete already removed the resume cursor and
+          // oldestSyncedAt is the floor of the whole account history.
+          final oldestRumor = nowSec - 90 * 86400;
+          // A gift wrap the pre-#8361 `since:` window dropped. Its OUTER
+          // stamp sits just under the two-day overlap - far ABOVE the
+          // account's oldest rumor, which is why seeding the forced pass at
+          // oldestSyncedAt never asks for it.
+          final strandedOuter = nowSec - 2 * 86400 - 3600;
+
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(<Event>[deletion(strandedOuter)], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
+            ..drainVersionOverride = DmSyncState.currentDrainVersion - 1;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(
+            capturedUntil.any((until) => (until ?? 0) >= strandedOuter),
+            isTrue,
+            reason:
+                'the forced pass must request a window that covers the '
+                'stranded wrap; seeding at oldestSyncedAt asks only for '
+                '${nowSec - oldestRumor}s-old history and recovers nothing',
+          );
+        },
+      );
+
+      test(
         're-arms an install the pre-#8209 drain latched complete while '
         'history was still on the relay',
         () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final oldestRumor = nowSec - 90 * 86400;
           final capturedUntil = <int?>[];
           stubFiniteHistory(const <Event>[], capturedUntil);
 
@@ -6418,6 +6487,8 @@ void main() {
           // fails if #8209 ships without one.
           final syncState = _FakeDmSyncState()
             ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
             ..drainVersionOverride = 3;
           final repository = createRepository(syncState: syncState);
 
@@ -6425,6 +6496,7 @@ void main() {
 
           expect(syncState.upgradedPubkeys, isNotEmpty);
           expect(capturedUntil, isNotEmpty);
+          expect(capturedUntil.first, greaterThan(oldestRumor));
           expect(syncState.drainCompleteOverride, isTrue);
         },
       );
