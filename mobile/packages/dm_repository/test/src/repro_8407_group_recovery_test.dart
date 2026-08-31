@@ -630,9 +630,10 @@ void main() {
     test(
       'leaves a single-sender widened room alone (no e tag to veto on)',
       () async {
-        // The widening message is NOT a reply, so the e-tag veto cannot fire and
-        // the sender count is the only guard. Indistinguishable from a real
-        // group whose other member never spoke, so the pass declines to guess.
+        // The widening message is NOT a reply, so the e-tag veto cannot
+        // fire and the sender count is the only guard. Indistinguishable
+        // from a real group whose other member never spoke, so the pass
+        // declines to guess.
         final oneToOneId = await seedConversation([_me, _alice]);
         await seedMessage(
           id: 'd1',
