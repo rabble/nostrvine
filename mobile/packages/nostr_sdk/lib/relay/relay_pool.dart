@@ -377,6 +377,16 @@ class RelayPool {
   /// keys from `normalizeRelayUrl` (which STRIPS one), so a raw `contains`
   /// matched no pooled relay and turned the filter into a universal
   /// exclusion. #8377.
+  ///
+  /// The publish path reaches the same trap by a different route. [_sendCollect]
+  /// does NOT run its `targetRelays` through [handleAddrList], so the strings it
+  /// compares are whatever the caller passed — for a DM those are `relay` tag
+  /// values lifted verbatim off a kind-10050 event, written by another client and
+  /// carrying a trailing slash or not at its author's whim. A raw `contains` there
+  /// silently drops the pooled socket for a relay the caller explicitly named, and
+  /// the event reaches it only if the temp-relay arm happens to redial it. Both the
+  /// fan-out and [_intendedPublishTargets] — which must agree, or the reachable
+  /// denominator diverges from what was actually written — compare through here.
   bool _namesRelay(List<String> addrs, String url) {
     final wanted = _relayIdentity(url);
     for (final addr in addrs) {
@@ -2290,7 +2300,7 @@ class RelayPool {
       }
 
       if (targetRelays != null && targetRelays.isNotEmpty) {
-        if (!targetRelays.contains(relay.url)) {
+        if (!_namesRelay(targetRelays, relay.url)) {
           // not contain this relay
           continue;
         }
@@ -2520,7 +2530,7 @@ class RelayPool {
     final hasFilter = targetRelays != null && targetRelays.isNotEmpty;
     for (final relay in _relaysSnapshot()) {
       if (isEvent && !relay.relayStatus.writeAccess) continue;
-      if (hasFilter && !targetRelays.contains(relay.url)) continue;
+      if (hasFilter && !_namesRelay(targetRelays, relay.url)) continue;
       expected.add(relay.url);
       if (isEvent &&
           !hasFilter &&
