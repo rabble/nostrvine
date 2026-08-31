@@ -1401,6 +1401,41 @@ void main() {
           ).called(1);
         });
 
+        test('does not cache an ambiguous zero video count', () async {
+          // `get_user_stats` maps both a miss and a ClickHouse failure to a
+          // default, so funnelcake answers 200 with `video_count: 0` when the
+          // summary table is down — the same ambiguity the social counts
+          // already withhold. Writing it would overwrite a good baseline
+          // with a zero (#8403).
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 1976,
+                'following_count': 12,
+              }),
+              stats: ProfileStatsData.fromJson(const {'video_count': 0}),
+            ),
+          );
+
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+          // The social counts are real and cached; the zero video count is
+          // withheld, so the DAO keeps whatever baseline the row already has.
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              followerCount: 1976,
+              followingCount: 12,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+            ),
+          ).called(1);
+        });
+
         test('caches mixed social responses per field', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
