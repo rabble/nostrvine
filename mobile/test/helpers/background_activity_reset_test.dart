@@ -77,6 +77,15 @@ void main() {
         expect(manager.getStatus()['registeredServices'], 0);
       });
 
+      test('clears an initialized manager, and its periodic timer', () async {
+        await manager.initialize();
+        expect(manager.getStatus()['isInitialized'], isTrue);
+
+        healAndBlameBackgroundActivity(strict: false);
+
+        expect(manager.getStatus()['isInitialized'], isFalse);
+      });
+
       test('restores a background state the test left behind', () {
         manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
         expect(manager.isAppInForeground, isFalse);
@@ -98,6 +107,21 @@ void main() {
               (f) => f.message,
               'message',
               allOf(contains('RecordingService'), contains('#6880')),
+            ),
+          ),
+        );
+      });
+
+      test('names a manager left initialized', () async {
+        await manager.initialize();
+
+        expect(
+          () => healAndBlameBackgroundActivity(strict: true),
+          throwsA(
+            isA<TestFailure>().having(
+              (f) => f.message,
+              'message',
+              contains('left the manager initialized'),
             ),
           ),
         );

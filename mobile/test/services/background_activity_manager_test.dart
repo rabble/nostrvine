@@ -1,7 +1,10 @@
-// Test for BackgroundActivityManager functionality
-// Permanent: exercises process-wide WidgetsBinding lifecycle notifications and
-// BackgroundActivityManager singleton state; keep isolated until the manager is
-// injectable/resettable per test.
+// ABOUTME: Tests BackgroundActivityManager's lifecycle fan-out and reset.
+// ABOUTME: Drives the process-global singleton directly through every state.
+// Isolated because this suite walks the singleton through background, resumed
+// and terminating states and asserts on the shared instance between steps. It
+// no longer needs isolation for lack of a reset — resetForTesting() exists as
+// of #8398, and setUp/tearDown use it — so untagging is a live candidate, but
+// that belongs to its own change with its own merged-isolate verification.
 @Tags(['skip_very_good_optimization'])
 library;
 
@@ -104,16 +107,17 @@ void main() {
         expect(manager.isAppInForeground, isTrue);
       });
 
-      test('clears the initialized latch so initialize runs again', () async {
+      test('clears the initialized latch', () async {
         await manager.initialize();
+        // Asserting the pre-state is what makes the post-state meaningful:
+        // without it the test passes whether or not reset clears the latch.
+        expect(manager.getStatus()['isInitialized'], isTrue);
 
         manager.resetForTesting();
-        await manager.initialize();
 
-        // dispose() leaves the latch set, so a second initialize would no-op
-        // and never re-arm the periodic cleanup. reset must not.
-        expect(manager.isAppInForeground, isTrue);
-        expect(manager.getStatus()['registeredServices'], 0);
+        // dispose() leaves this set, so a later initialize() would no-op and
+        // never re-arm the periodic cleanup. reset must not.
+        expect(manager.getStatus()['isInitialized'], isFalse);
       });
     });
 

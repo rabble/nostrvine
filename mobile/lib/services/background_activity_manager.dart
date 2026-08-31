@@ -277,6 +277,11 @@ class BackgroundActivityManager {
   Map<String, dynamic> getStatus() {
     return {
       'isAppInForeground': _isAppInForeground,
+      // Reported because it gates [initialize] and owns the periodic cleanup
+      // timer: an instance left initialized keeps a 5-minute Timer.periodic
+      // alive, which in the merged test isolate outlives the test that armed
+      // it (#8398).
+      'isInitialized': _isInitialized,
       'registeredServices': _registeredServices.length,
       'serviceNames': _registeredServices.map((s) => s.serviceName).toList(),
     };

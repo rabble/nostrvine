@@ -15,11 +15,14 @@ String? findBackgroundActivityViolation() {
   final status = manager.getStatus();
   final services = (status['serviceNames']! as List).cast<String>();
   final backgrounded = status['isAppInForeground'] == false;
-  if (services.isEmpty && !backgrounded) return null;
+  final initialized = status['isInitialized'] == true;
+  if (services.isEmpty && !backgrounded && !initialized) return null;
 
   final parts = <String>[
     if (services.isNotEmpty) 'left ${services.join(', ')} registered',
     if (backgrounded) 'left the app in the background state',
+    if (initialized)
+      'left the manager initialized, with its periodic cleanup timer armed',
   ];
   return parts.join(' and ');
 }
