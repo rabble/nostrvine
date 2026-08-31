@@ -168,6 +168,46 @@ void main() {
       );
     });
 
+    // #8394 empties the peer name while a profile resolves so a generated
+    // handle is never shown as real. Falling through here would render
+    // "and 2 others" beside a name that has not arrived — the interaction
+    // only exists where that change meets group naming.
+    test('withholds an untitled room while the peer name is resolving', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: '',
+          groupFallbackName: ' and 2 others',
+        ),
+        isEmpty,
+      );
+    });
+
+    // A subject needs no profile, so it must render immediately rather than
+    // wait behind a lookup it does not depend on.
+    test('still renders a titled room while the peer name is resolving', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: '',
+          groupFallbackName: ' and 2 others',
+          subject: 'Weekend trip',
+        ),
+        equals('Weekend trip'),
+      );
+    });
+
+    test('a resolving 1:1 stays empty, as #8394 intends', () {
+      expect(
+        dmConversationTitle(
+          isGroup: false,
+          peerName: '',
+          groupFallbackName: 'unused',
+        ),
+        isEmpty,
+      );
+    });
+
     test('an untitled group falls back to the participant label', () {
       expect(
         dmConversationTitle(

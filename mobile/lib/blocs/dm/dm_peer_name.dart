@@ -82,6 +82,11 @@ String dmConversationTitle({
   if (!isGroup) return peerName;
   final titled = subject?.trim();
   if (titled != null && titled.isNotEmpty) return titled;
+  // An empty [peerName] is #8394's "still resolving" signal. A titled room is
+  // named above without a profile, but an untitled one is named FOR its peer,
+  // so falling through would render "and 2 others" beside a name that has not
+  // arrived. Propagate the empty instead and let the caller skeleton it.
+  if (peerName.isEmpty) return '';
   return groupFallbackName;
 }
 
