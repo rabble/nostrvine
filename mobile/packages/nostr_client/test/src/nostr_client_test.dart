@@ -5451,5 +5451,70 @@ void main() {
         expect(capturedFilters.first['authors'], contains(testPublicKey));
       });
     });
+
+    group('end-to-end query timeout (#7091)', () {
+      test('a stalled reconnect is spent from the query budget', () async {
+        // An empty connected set routes the call through the pre-query
+        // reconnect. That reconnect is awaited, so unless it spends from the
+        // same budget the declared timeout bounds only the websocket leg --
+        // measured at 48s against a declared 5s on device (#7091).
+        when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+        final stalledReconnect = Completer<void>();
+        addTearDown(() {
+          if (!stalledReconnect.isCompleted) stalledReconnect.complete();
+        });
+        when(
+          mockRelayManager.retryDisconnectedRelays,
+        ).thenAnswer((_) => stalledReconnect.future);
+        // A real REQ does not settle in a microtask, so an instantly
+        // completing stub would win the race against a zero-length deadline
+        // and hide the behaviour under test.
+        final stalledQuery = Completer<List<Event>>();
+        addTearDown(() {
+          if (!stalledQuery.isCompleted) stalledQuery.complete(const []);
+        });
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) => stalledQuery.future);
+
+        final stopwatch = Stopwatch()..start();
+        final result = await client
+            .queryEventsDetailed(
+              [
+                Filter(kinds: const [EventKind.dmRelaysList]),
+              ],
+              useCache: false,
+              timeout: const Duration(seconds: 1),
+            )
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => throw StateError(
+                'queryEventsDetailed outlived its declared 1s timeout: the '
+                'reconnect is not spent from the query budget',
+              ),
+            );
+        stopwatch.stop();
+
+        expect(
+          stopwatch.elapsed,
+          lessThan(const Duration(seconds: 3)),
+          reason:
+              'the declared 1s timeout must bound the whole call, not '
+              'just the websocket leg',
+        );
+        expect(
+          result.timedOut,
+          isTrue,
+          reason: 'exhausting the budget is inconclusive, not an empty answer',
+        );
+      });
+    });
   });
 }
