@@ -577,7 +577,10 @@ jobs:
             echo "mise exec -- dart pub global activate very_good_cli $VERY_GOOD_CLI_VERSION"
             echo "mise exec -- flutter pub get"
             echo "bash scripts/ci/select_test_shard.sh --total ${{ strategy.job-total }} --index ${{ strategy.job-index }} --force"
-            echo "mise exec -- dart pub global run very_good_cli:very_good test $TEST_FLAGS --test-randomize-ordering-seed $TEST_SEED"
+            echo "# CI=true prefixes the test command only. GitHub sets it job-wide, so a"
+            echo "# CI-gated test passes locally without it — but exporting it would also"
+            echo "# satisfy select_test_shard.sh's guard and let that delete run unasked."
+            echo "CI=true mise exec -- dart pub global run very_good_cli:very_good test $TEST_FLAGS --test-randomize-ordering-seed $TEST_SEED"
             echo '```'
             echo
             echo "Replay at that commit: a shard is a partition of the test files that exist there."
