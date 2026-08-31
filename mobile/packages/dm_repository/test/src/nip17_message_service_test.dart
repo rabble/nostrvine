@@ -524,12 +524,101 @@ void main() {
           );
 
           // The first publish is the recipient gift wrap; it must be routed
-          // to the recipient's NIP-17 DM inbox relays (the self-wrap, if any,
-          // follows with no targetRelays).
+          // to the recipient's NIP-17 DM inbox relays.
           expect(captured, isNotEmpty);
           expect(captured.first, const ['wss://inbox.example.com']);
         },
       );
+
+      group('self-wrap destination (#7328)', () {
+        late NIP17MessageService selfService;
+        late List<List<String>?> captured;
+
+        setUp(() {
+          // Real curve self key, or the self-addressed wrap never builds and
+          // never reaches publishEvent — the module-level placeholder key
+          // silently produces a one-publish send and the assertions below
+          // would pass against a self-wrap that does not exist.
+          selfService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+          );
+          captured = <List<String>?>[];
+          when(
+            () => mockNostrClient.publishEvent(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.namedArguments[#targetRelays] as List<String>?,
+            );
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
+          });
+        });
+
+        Future<NIP17SendResult> send({List<String>? selfWrapTargetRelays}) {
+          final rumor = selfService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'routed message',
+          );
+          return selfService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+            targetRelays: const ['wss://inbox.example.com'],
+            selfWrapTargetRelays: selfWrapTargetRelays,
+          );
+        }
+
+        test('routes the self-wrap to its own relay set', () async {
+          final result = await send(
+            selfWrapTargetRelays: const [
+              'wss://relay.divine.video',
+              'wss://nos.lol',
+            ],
+          );
+
+          expect(result.selfWrapPublished, isTrue);
+          // Asserted as the whole ordered list, not `captured.first` plus a
+          // membership check: the defect is a per-wrap destination, so the
+          // only assertion that can catch the self-wrap inheriting the
+          // recipient's relays — or losing its own — names both entries.
+          expect(captured, hasLength(2));
+          expect(captured, [
+            const ['wss://inbox.example.com'],
+            const ['wss://relay.divine.video', 'wss://nos.lol'],
+          ]);
+        });
+
+        test(
+          'publishes the self-wrap bare when no relay set is supplied',
+          () async {
+            // The `absent`/`failed` own-inbox outcome. Preserving the bare
+            // publish is what keeps an account with no advertised kind-10050
+            // on exactly its pre-#7328 behaviour.
+            final result = await send();
+
+            expect(result.selfWrapPublished, isTrue);
+            expect(captured, hasLength(2));
+            expect(captured.last, isNull);
+          },
+        );
+
+        test('treats an empty relay set as no relay set', () async {
+          // A kind-10050 that parsed to zero usable relays must not narrow the
+          // publish to nothing — `_sendCollect` skips the filter only when the
+          // list is null OR empty, but relying on that coincidence across two
+          // packages is how a silent total-loss regression gets in.
+          final result = await send(selfWrapTargetRelays: const []);
+
+          expect(result.selfWrapPublished, isTrue);
+          expect(captured, hasLength(2));
+          expect(captured.last, isNull);
+        });
+      });
     });
 
     group('sendRumor awaitRecipientOk (reaction OK-confirm path)', () {
