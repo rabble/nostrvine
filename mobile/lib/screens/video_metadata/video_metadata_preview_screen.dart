@@ -89,17 +89,20 @@ class _VideoMetadataPreviewScreenState
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     _routeAnimation = animation;
 
-    // No enclosing route means no transition to wait for.
-    if (animation == null || animation.status == AnimationStatus.completed) {
+    // No enclosing route means no transition to wait for. A route can report
+    // completed briefly before Navigator starts its entrance animation, so
+    // mirror every later status instead of treating the first completed value
+    // as irreversible readiness.
+    if (animation == null) {
       _isPreviewReady.value = true;
       return;
     }
     animation.addStatusListener(_onRouteAnimationStatus);
+    _onRouteAnimationStatus(animation.status);
   }
 
   void _onRouteAnimationStatus(AnimationStatus status) {
-    if (status != AnimationStatus.completed) return;
-    _isPreviewReady.value = true;
+    _isPreviewReady.value = status == AnimationStatus.completed;
   }
 
   /// Initializes the video player and starts playback.

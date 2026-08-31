@@ -235,7 +235,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildTestWidget());
-      // Pump past the 350ms hero animation timer in initState
+      // Let the enclosing MaterialPageRoute finish its entrance animation.
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(VideoMetadataPreviewScreen), findsOneWidget);
@@ -403,6 +403,72 @@ void main() {
       );
     });
 
+    testWidgets(
+      'activates the overlay only when its route animation completes',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              videoPublishProvider.overrideWith(
+                () => _MockVideoPublishNotifier(
+                  const VideoPublishProviderState(),
+                ),
+              ),
+              videoEditorProvider.overrideWith(_MockVideoEditorNotifier.new),
+              nostrServiceProvider.overrideWithValue(_FakeNostrClient()),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                      PageRouteBuilder<void>(
+                        transitionDuration: const Duration(seconds: 1),
+                        pageBuilder: (_, _, _) =>
+                            VideoMetadataPreviewScreen(clip: _createTestClip()),
+                      ),
+                    ),
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final route = ModalRoute.of(
+          tester.element(find.byType(VideoMetadataPreviewScreen)),
+        )!;
+        expect(route.animation!.status, isNot(AnimationStatus.completed));
+        expect(route.animation!.value, lessThan(1));
+        expect(
+          tester
+              .widget<VideoOverlayActions>(find.byType(VideoOverlayActions))
+              .isActive,
+          isFalse,
+          reason:
+              'elapsed time alone must not reveal the overlay mid-transition',
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(route.animation!.status, AnimationStatus.completed);
+        expect(
+          tester
+              .widget<VideoOverlayActions>(find.byType(VideoOverlayActions))
+              .isActive,
+          isTrue,
+        );
+      },
+    );
+
     testWidgets('morphs the hero flight corners in both directions', (
       tester,
     ) async {
@@ -516,7 +582,7 @@ void main() {
         findsNothing,
       );
 
-      // Settle the flight and the overlay timer the screen starts on mount.
+      // Settle the flight and the route-driven overlay readiness listener.
       await tester.pumpAndSettle();
     });
 

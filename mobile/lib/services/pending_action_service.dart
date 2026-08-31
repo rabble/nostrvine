@@ -260,8 +260,8 @@ class PendingActionService extends ChangeNotifier {
     // Claim the slot before the first suspension point. The DAO read below
     // is an await, so two calls arriving close together could both clear the
     // guard above and run the loop, publishing every queued action twice.
-    // The finally also releases the slot when _syncAction throws, which
-    // previously left the service unable to sync again for the session.
+    // The finally also releases the slot when a DAO operation escapes, which
+    // would otherwise leave the service unable to sync again for the session.
     _isSyncing = true;
     try {
       final actions = await _dao.getPendingActions(_userPubkey);

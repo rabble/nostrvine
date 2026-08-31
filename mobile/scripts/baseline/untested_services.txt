@@ -9,6 +9,7 @@ auth_service # defer: #4339 oversized-file split
 broken_video_tracker
 camera_base_service
 collaborator_invite_local_state_adapter # noise: local-state adapter
+connection_status_service
 crash_reporting_service # defer: #4338 C2 singleton-to-DI
 curated_list_service
 geo_blocking_service

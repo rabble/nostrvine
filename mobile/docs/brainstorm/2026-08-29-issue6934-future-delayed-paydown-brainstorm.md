@@ -1,7 +1,7 @@
 # Brainstorm: paying down the remaining production `Future.delayed` sites
 
 Date: 2026-08-29
-Seeded by: `tasks/findings_6934.md` (11 hypotheses, all load-bearing ones at 1.0)
+Seeded by: the #6934 issue inventory and a repository-wide code audit
 
 Issue: #6934 (child of #4339, follow-up to closed #4517)
 
@@ -31,8 +31,7 @@ before starting rather than to inherit either issue's numbers.
   `grep -lE` and the baseline stores bare paths with no counts, so a **partial**
   migration moves nothing — only fully clearing a file drops it from the baseline.
   Every commit below therefore clears the files it touches completely. (A baselined
-  file can also gain unlimited new sites without failing CI; that hole is a follow-up,
-  not this PR.)
+  file can also gain unlimited new sites without failing CI; #8458 tracks that hole.)
 - **Test-scoped sibling ratchet.** `future_delayed_tests.txt` (34 entries) does **not**
   list any of the six existing test files for these production files. Adding a single
   `Future.delayed` to them would grow that baseline and fail CI. New tests must drive
@@ -61,7 +60,7 @@ before starting rather than to inherit either issue's numbers.
   `AnimationController` and documents *"instead of guessing with `[Future.delayed]`"*.
   That dartdoc is itself one of the two ratchet false positives.
 
-## What the investigation established (see `tasks/findings_6934.md`)
+## What the investigation established
 
 Two findings reshape the solution space, and both are settled at full confidence:
 
@@ -77,41 +76,43 @@ Two findings reshape the solution space, and both are settled at full confidence
    The `Future.delayed` production ratchet is the only one of the eight that greps raw
    source — which is why two of its eleven entries are comment-only and the baseline can
    never reach zero. Fixing it is a consistency change, not a new idea.
-2. **Four of the eleven sites are not debt at all.** Two are in `VideoProcessingService`,
-   which has zero code references anywhere in the repo; one is an explicitly fake
-   *"Simulate connection check"* wait; one is a 2 s wait for work that is already awaited
-   seven layers down to `await channel.ready`. For these the remedy is deletion, not
-   replacement.
+2. **Three of the eleven sites can be removed outright.** Two are in
+   `VideoProcessingService`, which has zero code references anywhere in the repo; one is a
+   2 s wait for work that is already awaited seven layers down to `await channel.ready`.
+   The fake `ConnectionStatusService` check looks equally removable in isolation, but its
+   notifications are also the only in-session trigger that drains actions queued while a
+   signer is temporarily unavailable. It must remain until #8331 supplies a real signal.
 
 ## The eleven sites, by behavioural category
 
 | # | category | sites | remedy shape |
 |---|---|---|---|
 | 1 | dead code | `video_processing_service.dart` ×2 | delete the service |
-| 2 | fake work | `connection_status_service.dart` ×1 | delete the wait |
+| 2 | temporary queue trigger | `connection_status_service.dart` ×1 | retain until #8331 wires a real signal |
 | 3 | redundant wait | `relay_diagnostic_screen.dart` ×1 | delete the line |
 | 4 | animation timing | `more_sheet_content.dart`, `video_metadata_preview_screen.dart` | drive off the animation that already exists |
 | 5 | owned wait | `discover_lists_screen.dart` ×2, `upload_initialization_helper.dart` ×1, and the two `clearAll` sites | owned `Timer`, or a lifecycle hook |
 
-Categories 1-3 account for **4 of 11** sites and need no coordination primitive at all.
+Categories 1 and 3 account for **3 of 11** sites and need no coordination primitive at all.
 That is the single most important input to choosing an approach.
 
 ## Approaches Explored
 
 ### Approach A: Per-site remedy, grouped into category commits
 
-**Description.** No new abstraction. Delete what is dead or redundant (categories 1-3),
+**Description.** No new abstraction. Delete what is dead or redundant (categories 1 and 3),
 drive the animation sites off the controller/route animation each already owns
 (category 4), and use the established 54-file `Timer? _field` + cancel-in-`dispose`
-pattern only where a wait is genuinely required (category 5). One PR, one commit per
-category, each independently revertable.
+pattern only where a wait is genuinely required (category 5). Category 2 stays until
+#8331 replaces its accidental queue trigger. One PR, one commit per category, each
+independently revertable.
 
 **Layers affected:** UI (screens, widgets), Provider/Notifier, Service. No repository or
 client changes.
 
 **Pros:**
 - Matches the dominant existing convention exactly; nothing new for a reviewer to learn.
-- Deletes ~40% of the problem instead of migrating it.
+- Deletes the three sites proven redundant instead of migrating them.
 - Each remedy is the *strongest* one its context supports, so the ratchet going green
   actually means something.
 - No new public API surface, which is what the global review rule asks for.
@@ -196,8 +197,8 @@ positives), declare the count truthful, and accept the remaining sites as tolera
 **Cons:**
 - **Directly contradicts the issue**, which states this is a paydown tracker and not a
   request to weaken the ratchet.
-- Would leave a proven data-loss race, a 30 s spurious-sync loop, a dead service and a
-  gratuitous 2 s button delay in place.
+- Would leave a proven data-loss race, a temporary 30 s queue trigger, a dead service and
+  a gratuitous 2 s button delay in place.
 
 **Complexity:** Low
 
@@ -217,10 +218,9 @@ zero, and the hand-rolled `Timer?` field has 54. Approach A also lets each remed
 strongest one its site supports, which is what makes a green ratchet mean something after
 this lands.
 
-`AsyncUtils` is deliberately left alone. Its hollowness is now documented in the findings
-file and worth its own issue, but repairing a shared utility whose second adopter is the
-very service this PR is already changing would make the blast radius much harder to
-review.
+`AsyncUtils` is deliberately left alone. Its hollowness is documented here and tracked
+in #8457, because repairing a shared utility whose second adopter is
+`PendingActionService` would make the blast radius much harder to review.
 
 ## Open Questions for /plan
 
@@ -234,8 +234,8 @@ review.
 - [ ] Deleting `VideoProcessingService` removes a service that *has* a test, so the
       untested-services floor is unaffected — but `COVERAGE_GAPS.md` and
       `TEST_QUALITY_AUDIT.md` both name the file. Update or leave those audit docs?
-- [ ] Where exactly to tighten the `_isSyncing` guard in `PendingActionService` so the
-      TOCTOU window closes without changing the offline-sync contract.
+- [x] Tighten `_isSyncing` before the first DAO read and release it in `finally`; pin the
+      exceptional path with a DAO failure, since executor failures are caught internally.
 - [ ] Exact commit split within the PR: five behavioural categories plus detector fix plus
       baseline regeneration — does the baseline regeneration ride with each commit or land
       once at the end?

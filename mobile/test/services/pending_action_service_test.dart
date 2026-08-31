@@ -15,6 +15,8 @@ import 'package:openvine/services/pending_action_service.dart';
 class MockConnectionStatusService extends Mock
     implements ConnectionStatusService {}
 
+class MockPendingActionsDao extends Mock implements PendingActionsDao {}
+
 class _TerminalActionException implements TerminalSocialActionException {
   const _TerminalActionException();
 }
@@ -322,37 +324,56 @@ void main() {
         },
       );
 
-      test('releases the sync guard when an executor throws', () async {
-        // The old code set _isSyncing = false only on the success path, so a
-        // throwing executor left the service permanently unable to sync.
-        when(() => mockConnectionService.isOnline).thenReturn(true);
-
-        await service.queueAction(
+      test('releases the sync guard when the DAO throws', () async {
+        // _syncAction catches executor failures, so they cannot escape the
+        // sync loop. A DAO failure while marking an action as syncing does
+        // escape, and used to leave _isSyncing true because the reset lived
+        // only on the success path.
+        final mockDao = MockPendingActionsDao();
+        final action = PendingAction.create(
           type: PendingActionType.like,
           targetId: 'event123',
+          userPubkey: testUserPubkey,
           authorPubkey: 'author123',
         );
+        var pendingReads = 0;
+        when(
+          () => mockDao.resetSyncingToPending(testUserPubkey),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDao.getPendingActions(testUserPubkey),
+        ).thenAnswer((_) async => pendingReads++ == 0 ? const [] : [action]);
+        when(
+          () => mockDao.getAllActions(testUserPubkey),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockDao.watchPendingActions(testUserPubkey),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockDao.updateStatus(action.id, PendingActionStatus.syncing),
+        ).thenThrow(StateError('database unavailable'));
 
-        var calls = 0;
-        service.registerExecutor(PendingActionType.like, (_) async {
-          calls++;
-          throw Exception('Network error');
-        });
-
-        await service.syncPendingActions();
-        final afterFirstSync = calls;
-        await service.syncPendingActions();
-
-        expect(
-          afterFirstSync,
-          greaterThan(0),
-          reason: 'the first sync must have reached the executor',
+        final failingService = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: mockDao,
+          userPubkey: testUserPubkey,
         );
-        expect(
-          calls,
-          greaterThan(afterFirstSync),
-          reason: 'a second sync must still be possible after a failure',
+        addTearDown(failingService.dispose);
+        await failingService.initialize();
+        failingService.registerExecutor(PendingActionType.like, (_) async {});
+
+        await expectLater(
+          failingService.syncPendingActions(),
+          throwsA(isA<StateError>()),
         );
+        await expectLater(
+          failingService.syncPendingActions(),
+          throwsA(isA<StateError>()),
+        );
+
+        verify(
+          () => mockDao.updateStatus(action.id, PendingActionStatus.syncing),
+        ).called(2);
       });
 
       test('marks action as failed after max retries', () async {
