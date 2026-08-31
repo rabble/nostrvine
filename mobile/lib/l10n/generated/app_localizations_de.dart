@@ -5792,6 +5792,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmSendFailedMessage => 'Nachricht konnte nicht gesendet werden';
 
   @override
+  String get dmResendFailedMessage => 'Konnte weiterhin nicht gesendet werden';
+
+  @override
   String get dmSendFailedSubtitle =>
       'Sende sie jetzt erneut oder versuche es nicht mehr.';
 

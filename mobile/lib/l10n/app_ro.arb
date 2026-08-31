@@ -2162,6 +2162,7 @@
     "dmRetiredThreadClosedBody": "Am mutat Divine Moderation pe un cont nou. Acesta nu mai este citit de nimeni.",
     "dmRetiredThreadOpenSupport": "Scrie către Divine Moderation",
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",
+    "dmResendFailedMessage": "Tot nu a putut fi trimis",
     "dmSendFailedSubtitle": "Retrimite-l acum sau nu mai încerca.",
     "dmSendFailedRetry": "Reîncearcă",
     "dmSendPartialMessage": "Trimis, dar nu s-a sincronizat cu celelalte dispozitive",

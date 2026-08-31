@@ -1914,13 +1914,15 @@ void main() {
           isA<ConversationState>().having(
             (s) => s.sendStatus,
             'sendStatus',
-            SendStatus.failed,
+            SendStatus.resendFailed,
           ),
         ],
       );
 
       blocTest<ConversationBloc, ConversationState>(
-        're-raises failed when a hard-failed row still cannot be recovered',
+        'raises resendFailed, not failed, when a hard-failed row still '
+        'cannot be recovered — the bubble was already red, so re-raising '
+        'failed would leave the resend with no visible outcome (#8461)',
         setUp: () {
           when(
             () => mockDmRepository.recoverFullSend(
@@ -1948,7 +1950,42 @@ void main() {
           isA<ConversationState>().having(
             (s) => s.sendStatus,
             'sendStatus',
-            SendStatus.failed,
+            SendStatus.resendFailed,
+          ),
+        ],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'keeps resendFailed distinct from the first-send failure status so '
+        'the view can toast one and stay silent for the other (#8461)',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverFullSend(
+              rumorId: rumorId1,
+              resetRetryBudget: true,
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay still down'),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.failed,
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            isNot(SendStatus.failed),
           ),
         ],
       );

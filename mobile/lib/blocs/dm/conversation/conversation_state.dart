@@ -18,12 +18,22 @@ enum ConversationStatus { initial, loading, loaded, error }
 /// [failed] leans on the red "Not delivered" bubble as its affordance, so it
 /// raises no toast. [blocked] and [noRecipient] never produce a queue row and
 /// therefore never produce a bubble, which is why both are toasted instead.
+///
+/// [resendFailed] is that same failure reached from an explicit resend, and it
+/// is separate precisely because the bubble affordance does NOT work twice: the
+/// row was already red before the tap, so re-emitting [failed] leaves the
+/// before and after states identical and the resend is indistinguishable from
+/// a tap that did nothing (#8461). It is toasted for that reason.
 enum SendStatus {
   idle,
   sending,
   sent,
   sentPartial,
   failed,
+
+  /// A user-initiated resend that failed again. See the enum doc: this is
+  /// [failed] with a working affordance, not a different repository outcome.
+  resendFailed,
   blocked,
 
   /// Dispatched with an empty recipient list (#7335). Refused before the

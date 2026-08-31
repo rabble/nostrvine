@@ -5722,6 +5722,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get dmSendFailedMessage => 'Mesej tidak dapat dihantar';
 
   @override
+  String get dmResendFailedMessage => 'Masih tidak dapat dihantar';
+
+  @override
   String get dmSendFailedSubtitle =>
       'Hantar semula sekarang, atau berhenti mencuba.';
 

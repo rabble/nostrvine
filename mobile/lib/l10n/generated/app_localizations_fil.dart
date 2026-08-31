@@ -5753,6 +5753,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmSendFailedMessage => 'Hindi naipadala ang message';
 
   @override
+  String get dmResendFailedMessage => 'Hindi pa rin naipadala';
+
+  @override
   String get dmSendFailedSubtitle =>
       'I-resend ito ngayon, o itigil ang pagsubok.';
 

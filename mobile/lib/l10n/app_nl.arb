@@ -2162,6 +2162,7 @@
     "dmRetiredThreadClosedBody": "We hebben Divine Moderation naar een nieuw account verplaatst. Dit account leest niemand meer.",
     "dmRetiredThreadOpenSupport": "Bericht sturen naar Divine Moderation",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
+    "dmResendFailedMessage": "Kon nog steeds niet worden verzonden",
     "dmSendFailedSubtitle": "Verstuur het nu opnieuw, of stop met proberen.",
     "dmSendFailedRetry": "Opnieuw",
     "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",

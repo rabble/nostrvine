@@ -3550,6 +3550,10 @@
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."
   },
+  "dmResendFailedMessage": "Still couldn't send",
+  "@dmResendFailedMessage": {
+    "description": "SnackBar text shown in a DM conversation when the user taps Resend on a failed message and the retry fails again. Distinct from `dmSendFailedMessage`, which titles the recovery sheet and announces a FIRST send failure: on a resend the bubble is already red, so the red bubble cannot signal the new attempt and a toast is the only feedback the user gets."
+  },
   "dmSendFailedSubtitle": "Resend it now, or stop trying.",
   "@dmSendFailedSubtitle": {
     "description": "Subtitle in the recovery bottom sheet shown when a failed own DM bubble is tapped, below the `dmSendFailedMessage` title."

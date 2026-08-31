@@ -2170,6 +2170,7 @@
     "dmRetiredThreadClosedBody": "Movimos Divine Moderation a una cuenta nueva. Ya nadie lee esta.",
     "dmRetiredThreadOpenSupport": "Enviar mensaje a Divine Moderation",
     "dmSendFailedMessage": "No se pudo enviar el mensaje",
+    "dmResendFailedMessage": "Sigue sin poder enviarse",
     "dmSendFailedSubtitle": "Reenvíalo ahora o deja de intentarlo.",
     "dmSendFailedRetry": "Reintentar",
     "dmSendPartialMessage": "Enviado, pero no se sincronizó con tus otros dispositivos",

@@ -505,8 +505,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       emit(state.copyWith(sendStatus: SendStatus.sent));
     } else {
       // Some rows are still hard-failing. They remain `failed` in the queue
-      // (red bubbles) and are re-tappable to resend; just re-raise the status.
-      emit(state.copyWith(sendStatus: SendStatus.failed));
+      // (red bubbles) and are re-tappable to resend. Re-raising `failed` here
+      // would leave the UI byte-identical to before the tap — the bubble was
+      // already red — so the resend reads as a tap that did nothing (#8461).
+      // `resendFailed` carries that the attempt happened and lost, which is
+      // the part the red bubble cannot express a second time.
+      emit(state.copyWith(sendStatus: SendStatus.resendFailed));
     }
     // Reflect the recovery's queue-row transitions (a row re-marked `failed`,
     // or deleted on success) immediately — a watch tick fired mid-handler can

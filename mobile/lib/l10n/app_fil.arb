@@ -1434,6 +1434,7 @@
     "dmRetiredThreadClosedBody": "Inilipat namin ang Divine Moderation sa bagong account. Wala nang nagbabasa nito.",
     "dmRetiredThreadOpenSupport": "I-message ang Divine Moderation",
     "dmSendFailedMessage": "Hindi naipadala ang message",
+    "dmResendFailedMessage": "Hindi pa rin naipadala",
     "dmSendFailedSubtitle": "I-resend ito ngayon, o itigil ang pagsubok.",
     "dmSendFailedRetry": "Subukan ulit",
     "dmSendPartialMessage": "Naipadala, pero hindi nag-sync sa iba mong device",

@@ -5720,6 +5720,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get dmSendFailedMessage => 'پیغام نہیں بھیجا جا سکا';
 
   @override
+  String get dmResendFailedMessage => 'اب بھی نہیں بھیجا جا سکا';
+
+  @override
   String get dmSendFailedSubtitle => 'ابھی دوبارہ بھیجیں، یا کوشش بند کر دیں۔';
 
   @override
