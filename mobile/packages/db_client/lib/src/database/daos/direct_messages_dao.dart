@@ -609,11 +609,6 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return result.read(directMessages.id.count()) ?? 0;
   }
 
-  /// Run a callback inside a database transaction.
-  Future<T> runInTransaction<T>(Future<T> Function() action) {
-    return attachedDatabase.transaction(action);
-  }
-
   /// Deletes DMs for the departing account plus unattributed legacy rows.
   ///
   /// Ambiguous rows must never cross an account boundary and become visible to
