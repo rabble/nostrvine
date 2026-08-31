@@ -91,9 +91,7 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       // A deliberately refused report (a self-report, #8352) is a silent
       // success: return true so the caller shows the normal confirmation
       // rather than a failure, since nothing was (or ever will be) sent.
-      return result.success &&
-          (result.delivery == ReportDelivery.reached ||
-              result.delivery == ReportDelivery.refused);
+      return result.isSilentSuccess;
     } catch (e, stackTrace) {
       // `ContentReportingService.reportUser` returns `ReportResult.failure`
       // for expected publish/auth problems. Any throw escaping here is

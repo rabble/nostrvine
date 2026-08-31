@@ -152,16 +152,14 @@ void main() {
             validId('c1'): '34236:${validId('author1')}:reply-d',
           };
           verify(
-            () => mockLikesRepository.getVoteCounts(
-              [validId('c1')],
-              addressableIds: expected,
-            ),
+            () => mockLikesRepository.getVoteCounts([
+              validId('c1'),
+            ], addressableIds: expected),
           ).called(1);
           verify(
-            () => mockLikesRepository.getUserVoteStatuses(
-              [validId('c1')],
-              addressableIds: expected,
-            ),
+            () => mockLikesRepository.getUserVoteStatuses([
+              validId('c1'),
+            ], addressableIds: expected),
           ).called(1);
         },
       );
@@ -564,6 +562,34 @@ void main() {
             ),
           ).called(1);
         },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'emits no error when the report is deliberately refused',
+        setUp: () {
+          when(
+            () => mockContentReportingService.reportContent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              reason: any(named: 'reason'),
+              details: any(named: 'details'),
+            ),
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'rid',
+              delivery: ReportDelivery.refused,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentReportRequested(
+            commentId: validId('c1'),
+            authorPubkey: validId('a1'),
+            reason: ContentFilterReason.spam,
+          ),
+        ),
+        expect: () => isEmpty,
       );
 
       blocTest<CommentReactionsBloc, CommentReactionsState>(

@@ -127,6 +127,35 @@ void main() {
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'returns true when a self-report is deliberately refused',
+        setUp: () {
+          when(
+            () => mockReportingService.reportUser(
+              userPubkey: pubkey,
+              reason: ContentFilterReason.other,
+              details: 'Reported from DM conversation',
+            ),
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'report-id',
+              delivery: ReportDelivery.refused,
+            ),
+          );
+        },
+        build: createCubit,
+        act: (cubit) async {
+          final result = await cubit.reportUser(pubkey);
+          expect(result, isTrue);
+        },
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          const ConversationActionsState(),
+        ],
+      );
+
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
         'returns false when the report reached no channel',
         // #6387: `success` is true even when the relay publish and the
         // Zendesk ticket both failed. The caller renders a

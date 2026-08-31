@@ -328,7 +328,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
             );
       if (isClosed) return;
 
-      if (result.success && result.delivery == ReportDelivery.refused) {
+      if (result.isSilentSuccess && result.delivery == ReportDelivery.refused) {
         // A deliberate refusal — a self-report (#8352). Nothing was built,
         // published, or recorded, and nothing should be sent: not the
         // kind-1984 event, and NOT the moderation DM. Unlike `localOnly`

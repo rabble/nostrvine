@@ -362,9 +362,7 @@ class CommentReactionsBloc
       // A deliberately refused report (a self-report, #8352) is a silent
       // success like `reached` — it must not surface as a failure the user
       // could "retry", since it will always refuse identically.
-      if (!result.success ||
-          (result.delivery != ReportDelivery.reached &&
-              result.delivery != ReportDelivery.refused)) {
+      if (!result.isSilentSuccess) {
         Log.warning(
           'Comment report not delivered '
           '(success=${result.success}, delivery=${result.delivery}): '
