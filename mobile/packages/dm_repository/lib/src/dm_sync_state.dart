@@ -220,8 +220,7 @@ class DmSyncState {
 
     if (!repaired) return;
 
-    await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
+    await _armRedrainFromNow(pubkey, nowSec);
   }
 
   /// Whether the one-time full-history drain has completed for [pubkey].
@@ -281,35 +280,19 @@ class DmSyncState {
   /// that cannot contain it. Seeding at now covers both. See #8362.
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
     if (drainVersion(pubkey) >= currentDrainVersion) return;
-    if (_needsForcedRedrain(pubkey)) {
-      await _prefs.remove('$_drainCompletePrefix$pubkey');
-      await _prefs.setInt(
-        '$_drainCursorPrefix$pubkey',
+    if (historyDrainComplete(pubkey)) {
+      await _armRedrainFromNow(
+        pubkey,
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
     }
     await setDrainVersion(pubkey, currentDrainVersion);
   }
 
-  /// Whether a version bump has anything to recover for [pubkey].
-  ///
-  /// Two conditions, both necessary:
-  ///
-  /// * [historyDrainComplete] — only a *latched* install needs forcing. One
-  ///   that never completed a drain still owns a meaningful resume state, and
-  ///   overwriting its cursor here would widen an ordinary in-progress drain
-  ///   for no recovery benefit.
-  /// * [newestSyncedAt] is non-null — the install has processed at least one
-  ///   DM under some build. A latched install that never processed one drained
-  ///   an empty history and would drain an empty history again.
-  ///
-  /// Deliberately *not* "the rumor boundary leads the wire boundary". That
-  /// reads like stronger evidence and is weaker: an unwrapped NIP-04 kind 4
-  /// feeds its own `created_at` to both boundaries, so an install whose newest
-  /// DM is a legacy kind 4 has `newestSyncedAt == newestWireSyncedAt` and
-  /// would be skipped while still holding a stranded NIP-17 band. See #8362.
-  bool _needsForcedRedrain(String pubkey) =>
-      historyDrainComplete(pubkey) && newestSyncedAt(pubkey) != null;
+  Future<void> _armRedrainFromNow(String pubkey, int nowSec) async {
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
+  }
 
   /// The outer gift-wrap `created_at` (unix seconds) the history drain has
   /// paged down to for [pubkey], or `null` if no drain has persisted a

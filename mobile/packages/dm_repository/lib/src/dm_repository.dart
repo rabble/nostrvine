@@ -1551,15 +1551,7 @@ class DmRepository {
     // the relay still holds unrecovered history. A drain-version bump clears
     // the stale flag once so recovery runs again. No-op once at the current
     // version, so it does not loop on every inbox open. See #5202.
-    final wasComplete = syncState.historyDrainComplete(pubkey);
     await syncState.upgradeDrainVersionIfNeeded(pubkey);
-    // A pass the version bump un-latched, rather than an ordinary drain. The
-    // completion log below reports it separately: nothing else can size how
-    // much a forced recovery actually recovers, and #8362 shipped without
-    // being able to answer that. Derived from the flag transition rather than
-    // a return value so no API surface is added for a log line.
-    final forcedRecovery =
-        wasComplete && !syncState.historyDrainComplete(pubkey);
     if (syncState.historyDrainComplete(pubkey)) {
       Log.info(
         'DM history drain skipped for ${pubkeyForLogs(pubkey)}: already '
@@ -1773,8 +1765,6 @@ class DmRepository {
           await _restoreReadStateAfterDrain(pubkey, gen);
           Log.info(
             'DM history drain complete for ${pubkeyForLogs(pubkey)}: '
-            '${forcedRecovery ? 'forced recovery pass '
-                      '(v${DmSyncState.currentDrainVersion}), ' : ''}'
             'pages=$pagesRun, eventsFetched=$totalEvents',
             category: LogCategory.system,
           );

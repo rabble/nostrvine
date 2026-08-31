@@ -435,7 +435,7 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
     if (drainVersionOverride >= DmSyncState.currentDrainVersion) return;
     upgradedPubkeys.add(pubkey);
-    if (drainCompleteOverride && newestOverride != null) {
+    if (drainCompleteOverride) {
       drainCompleteOverride = false;
       drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     }
@@ -446,11 +446,28 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> repairPoisonedBoundaries(String pubkey) async {
     repairedPubkeys.add(pubkey);
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    var repaired = false;
     final newest = newestOverride;
-    if (newest != null && newest > nowSec + DmSyncState.maxFutureSkewSeconds) {
+    if (newest != null && newest > nowSec) {
       newestOverride = nowSec;
+      repaired = true;
+    }
+    final newestWire = newestWireOverride;
+    if (newestWire != null && newestWire > nowSec) {
+      newestWireOverride = nowSec;
+      repaired = true;
+    }
+    final oldest = oldestOverride;
+    if (oldest != null &&
+        (oldest < DmSyncState.minPlausibleCreatedAt || oldest > nowSec)) {
+      oldestOverride = oldest < DmSyncState.minPlausibleCreatedAt
+          ? DmSyncState.minPlausibleCreatedAt
+          : nowSec;
+      repaired = true;
+    }
+    if (repaired) {
       drainCompleteOverride = false;
-      drainCursorOverride = null;
+      drainCursorOverride = nowSec;
     }
   }
 

@@ -230,9 +230,7 @@ void main() {
         'cursor at now, and stamps the current version when below it',
         () async {
           final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-          // Simulate an install stranded by an older, buggy drain. It has
-          // processed DMs, which is what distinguishes it from an install
-          // whose completed drain genuinely found nothing.
+          // Simulate an established install stranded by an older, buggy drain.
           await state.recordSeen(pkA, createdAt: before - 3600);
           await state.markHistoryDrainComplete(pkA);
           await state.setHistoryDrainCursor(pkA, 1234);
@@ -275,6 +273,42 @@ void main() {
           );
           // The band #8361 re-exposes sits just under the two-day overlap.
           expect(cursor, greaterThan(nowSec - 2 * 86400));
+        },
+      );
+
+      test(
+        're-arms a completed pre-guard drain with no recorded messages',
+        () async {
+          final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, 0);
+
+          expect(state.newestSyncedAt(pkA), isNull);
+          expect(state.oldestSyncedAt(pkA), isNull);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(
+            state.historyDrainCursor(pkA),
+            inInclusiveRange(before, after),
+          );
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test(
+        'preserves an in-progress drain cursor while stamping its version',
+        () async {
+          await state.setHistoryDrainCursor(pkA, 1234);
+          await state.setDrainVersion(pkA, 0);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCursor(pkA), 1234);
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
         },
       );
 
