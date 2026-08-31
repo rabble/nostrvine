@@ -48,8 +48,8 @@ void main() {
 
     test('recovers the sender the group rumor deliberately omits', () {
       // buildGroupRumor never p-tags the sender, so the tags alone are always
-      // short exactly one member.
-      expect(pTagsOf(_tags([_me, _bob])), equals({_me, _bob}));
+      // short exactly one member — Alice appears only because she sent it.
+      expect(_tags([_me, _bob]).contains(_alice), isFalse);
       expect(
         reconstructParticipants(_tags([_me, _bob]), _alice),
         contains(_alice),
@@ -63,24 +63,28 @@ void main() {
       );
     });
 
-    test('null, empty and malformed tags yield no p tags', () {
-      expect(pTagsOf(null), isEmpty);
-      expect(pTagsOf(''), isEmpty);
-      expect(pTagsOf('not json'), isEmpty);
-      expect(pTagsOf('{"not":"a list"}'), isEmpty);
+    test('null, empty and malformed tags leave only the sender', () {
+      for (final tags in <String?>[null, '', 'not json', '{"not":"a list"}']) {
+        expect(
+          reconstructParticipants(tags, _alice),
+          equals({_alice}),
+          reason: 'a row that names no room must not widen one',
+        );
+      }
     });
 
     test('ignores malformed and non-p entries without throwing', () {
       expect(
-        pTagsOf(
+        reconstructParticipants(
           jsonEncode([
             ['p'],
             ['p', 42],
             ['e', 'abc'],
             ['p', _bob],
           ]),
+          _alice,
         ),
-        equals({_bob}),
+        equals({_bob, _alice}),
       );
     });
   });

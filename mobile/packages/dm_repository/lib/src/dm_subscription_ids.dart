@@ -20,17 +20,17 @@ const int nip01MaxSubscriptionIdLength = 64;
 /// also the reason to hash instead of taking a prefix of the pubkey: a
 /// shortened public identifier looks correlatable and is not, whereas a digest
 /// is honestly opaque and never mistaken for the key itself.
-String dmSubscriptionAccountTag(String pubkey) =>
+String _accountTag(String pubkey) =>
     sha256.convert(utf8.encode(pubkey)).toString().substring(0, 16);
 
 /// Subscription id for the live gift-wrap inbox of [pubkey].
 String dmInboxSubscriptionId(String pubkey) =>
-    'dm_inbox_${dmSubscriptionAccountTag(pubkey)}';
+    'dm_inbox_${_accountTag(pubkey)}';
 
 /// Subscription id for page [page] of the NIP-17 history drain of [pubkey].
 String dmHistoryDrainSubscriptionId(String pubkey, int page) =>
-    'dm_drain_${dmSubscriptionAccountTag(pubkey)}_$page';
+    'dm_drain_${_accountTag(pubkey)}_$page';
 
 /// Subscription id for page [page] of the NIP-04 history drain of [pubkey].
 String dmNip04DrainSubscriptionId(String pubkey, int page) =>
-    'dm_drain_nip04_${dmSubscriptionAccountTag(pubkey)}_$page';
+    'dm_drain_nip04_${_accountTag(pubkey)}_$page';

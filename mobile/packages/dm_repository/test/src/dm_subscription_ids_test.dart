@@ -74,14 +74,22 @@ void main() {
       );
     });
 
-    test('the account tag is a digest, not a shortened pubkey', () {
-      final tag = dmSubscriptionAccountTag(_pubkey);
+    test('the account component is a digest, not a shortened pubkey', () {
+      final id = dmInboxSubscriptionId(_pubkey);
+      final tag = id.substring('dm_inbox_'.length);
+
+      expect(tag, isNotEmpty);
       expect(
         _pubkey.startsWith(tag),
         isFalse,
         reason:
             'a truncated public identifier looks correlatable and is not; '
             'a digest is honestly opaque',
+      );
+      expect(
+        id.contains(_pubkey),
+        isFalse,
+        reason: 'the raw pubkey must not appear in the id at all',
       );
     });
   });

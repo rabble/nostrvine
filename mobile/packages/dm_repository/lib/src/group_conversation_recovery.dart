@@ -48,12 +48,10 @@ class RecoveryMessageFacts {
 /// the raw column rather than a parsed model precisely so those two cases stay
 /// distinguishable from "tags present but no `p` entries".
 Set<String> reconstructParticipants(String? tagsJson, String senderPubkey) {
-  return {...pTagsOf(tagsJson), senderPubkey};
+  return {..._pTagsOf(tagsJson), senderPubkey};
 }
 
-/// The `p` tag values in a raw `tags_json` column, or empty if absent or
-/// malformed.
-Set<String> pTagsOf(String? tagsJson) {
+Set<String> _pTagsOf(String? tagsJson) {
   if (tagsJson == null || tagsJson.isEmpty) return const {};
   final Object? decoded;
   try {
