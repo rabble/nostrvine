@@ -480,9 +480,13 @@ final class FetchUserProfileFamily extends $Family
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
 ///
-/// This is deliberately synchronous: the keep-alive pubkey stream is primed
-/// when the profile repository is built, so wrapping this derived value in a
-/// stream would only manufacture an `AsyncLoading` state for consumers.
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 @ProviderFor(profileVanished)
 final profileVanishedProvider = ProfileVanishedFamily._();
@@ -494,9 +498,13 @@ final profileVanishedProvider = ProfileVanishedFamily._();
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
 ///
-/// This is deliberately synchronous: the keep-alive pubkey stream is primed
-/// when the profile repository is built, so wrapping this derived value in a
-/// stream would only manufacture an `AsyncLoading` state for consumers.
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 final class ProfileVanishedProvider
     extends $FunctionalProvider<bool, bool, bool>
@@ -508,9 +516,13 @@ final class ProfileVanishedProvider
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
   ///
-  /// This is deliberately synchronous: the keep-alive pubkey stream is primed
-  /// when the profile repository is built, so wrapping this derived value in a
-  /// stream would only manufacture an `AsyncLoading` state for consumers.
+  /// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+  /// window belongs to the source stream, so returning a `Stream<bool>` would
+  /// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+  /// Building the profile repository subscribes the source, so the wait starts
+  /// no later than the moment the profile graph can leave `isLoading`; that
+  /// ordering is what keeps a vanished account from rendering a generated name
+  /// first (#8208), and `repository_providers_test.dart` pins it.
   ProfileVanishedProvider._({
     required ProfileVanishedFamily super.from,
     required String super.argument,
@@ -571,9 +583,13 @@ String _$profileVanishedHash() => r'29720937045a4363d508c27d1a2bf503d6f41bf7';
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
 ///
-/// This is deliberately synchronous: the keep-alive pubkey stream is primed
-/// when the profile repository is built, so wrapping this derived value in a
-/// stream would only manufacture an `AsyncLoading` state for consumers.
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 final class ProfileVanishedFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
@@ -593,9 +609,13 @@ final class ProfileVanishedFamily extends $Family
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
   ///
-  /// This is deliberately synchronous: the keep-alive pubkey stream is primed
-  /// when the profile repository is built, so wrapping this derived value in a
-  /// stream would only manufacture an `AsyncLoading` state for consumers.
+  /// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+  /// window belongs to the source stream, so returning a `Stream<bool>` would
+  /// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+  /// Building the profile repository subscribes the source, so the wait starts
+  /// no later than the moment the profile graph can leave `isLoading`; that
+  /// ordering is what keeps a vanished account from rendering a generated name
+  /// first (#8208), and `repository_providers_test.dart` pins it.
 
   ProfileVanishedProvider call(String pubkey) =>
       ProfileVanishedProvider._(argument: pubkey, from: this);
