@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,6 +39,68 @@ void main() {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       analyticsService = AnalyticsService(disableNostrPublishing: true);
+    });
+
+    group('background activity registration', () {
+      List<String> registeredServiceNames() =>
+          (BackgroundActivityManager().getStatus()['serviceNames']! as List)
+              .cast<String>();
+
+      test(
+        'initialize registers with the background activity manager',
+        () async {
+          await analyticsService.initialize();
+
+          expect(registeredServiceNames(), contains('AnalyticsService'));
+        },
+      );
+
+      test('dispose unregisters from the background activity manager', () async {
+        await analyticsService.initialize();
+        expect(registeredServiceNames(), contains('AnalyticsService'));
+
+        analyticsService.dispose();
+
+        // The manager is a process-global singleton, so an instance left in
+        // its registry keeps receiving lifecycle callbacks for the life of the
+        // process — across provider rebuilds in the app, and across every
+        // later suite in the merged test isolate (#6880).
+        expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
+      });
+
+      test('dispose is safe when initialize never ran', () {
+        expect(analyticsService.dispose, returnsNormally);
+        // Scoped to this service rather than asserting the whole registry is
+        // empty: it is a process-global shared by every suite in the merged
+        // isolate, so `isEmpty` would fail here for another test's leak.
+        expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
+      });
+
+      test('a deferred initialize cannot re-register after dispose', () async {
+        // analyticsServiceProvider defers initialize onto a microtask, so a
+        // container torn down before that microtask lands calls dispose()
+        // first. Without the guard the late initialize re-registers a dead
+        // instance that nothing can ever unregister (#8398).
+        final pending = Future.microtask(analyticsService.initialize);
+        analyticsService.dispose();
+        await pending;
+
+        expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
+      });
+
+      test(
+        'dispose while initialize is awaiting prevents registration',
+        () async {
+          // initialize() runs synchronously up to its first await, so
+          // disposing here lands between that suspension point and the
+          // registration. An entry guard alone would not catch this (#8398).
+          final pending = analyticsService.initialize();
+          analyticsService.dispose();
+          await pending;
+
+          expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
+        },
+      );
     });
 
     tearDown(() async {

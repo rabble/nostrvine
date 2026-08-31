@@ -277,6 +277,11 @@ class BackgroundActivityManager {
   Map<String, dynamic> getStatus() {
     return {
       'isAppInForeground': _isAppInForeground,
+      // Reported because it gates [initialize] and owns the periodic cleanup
+      // timer: an instance left initialized keeps a 5-minute Timer.periodic
+      // alive, which in the merged test isolate outlives the test that armed
+      // it (#8398).
+      'isInitialized': _isInitialized,
       'registeredServices': _registeredServices.length,
       'serviceNames': _registeredServices.map((s) => s.serviceName).toList(),
     };
@@ -286,6 +291,24 @@ class BackgroundActivityManager {
     _backgroundSuspensionTimer?.cancel();
     _periodicCleanupTimer?.cancel();
     _registeredServices.clear();
+  }
+
+  /// Restores this process-global singleton to its construction state.
+  ///
+  /// [dispose] is not a substitute: it leaves [_isInitialized] set, so a later
+  /// [initialize] silently no-ops and never re-arms the periodic cleanup, and
+  /// it leaves [_isAppInForeground] wherever the last lifecycle event put it.
+  /// A stale `false` there is what turns a later `resumed` into a fan-out over
+  /// whatever is still registered (#6880).
+  @visibleForTesting
+  void resetForTesting() {
+    _backgroundSuspensionTimer?.cancel();
+    _backgroundSuspensionTimer = null;
+    _periodicCleanupTimer?.cancel();
+    _periodicCleanupTimer = null;
+    _registeredServices.clear();
+    _isAppInForeground = true;
+    _isInitialized = false;
   }
 }
 

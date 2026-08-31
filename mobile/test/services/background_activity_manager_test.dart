@@ -1,7 +1,10 @@
-// Test for BackgroundActivityManager functionality
-// Permanent: exercises process-wide WidgetsBinding lifecycle notifications and
-// BackgroundActivityManager singleton state; keep isolated until the manager is
-// injectable/resettable per test.
+// ABOUTME: Tests BackgroundActivityManager's lifecycle fan-out and reset.
+// ABOUTME: Drives the process-global singleton directly through every state.
+// Isolated because this suite walks the singleton through background, resumed
+// and terminating states and asserts on the shared instance between steps. It
+// no longer needs isolation for lack of a reset — resetForTesting() exists as
+// of #8398, and setUp/tearDown use it — so untagging is a live candidate, but
+// that belongs to its own change with its own merged-isolate verification.
 @Tags(['skip_very_good_optimization'])
 library;
 
@@ -70,16 +73,52 @@ void main() {
 
     setUp(() async {
       manager = BackgroundActivityManager();
-      manager.dispose();
       testService = TestBackgroundService();
 
       // BackgroundActivityManager is a process-wide singleton. Tests in this
-      // file share the same instance and run in random order, so clear any
-      // prior registrations/timers, reset its state to foreground, and drain
-      // pending lifecycle notifications before each test. Otherwise a prior
-      // test can leak services or stale background state into the next case.
-      manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
+      // file share the same instance and run in random order, so restore it to
+      // its construction state and drain pending lifecycle notifications
+      // before each test. Otherwise a prior test can leak services or stale
+      // background state into the next case.
+      manager.resetForTesting();
       await pumpEventQueue();
+    });
+
+    // Several cases below deliberately end in the background state. Restore
+    // the singleton so it is not left that way for the rest of the process —
+    // a stale `false` turns the next `resumed` anywhere into a fan-out (#6880).
+    tearDown(() => manager.resetForTesting());
+
+    group('resetForTesting', () {
+      test('clears registrations', () {
+        manager.registerService(testService);
+
+        manager.resetForTesting();
+
+        expect(manager.getStatus()['registeredServices'], 0);
+      });
+
+      test('restores the foreground state', () {
+        manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
+        expect(manager.isAppInForeground, isFalse);
+
+        manager.resetForTesting();
+
+        expect(manager.isAppInForeground, isTrue);
+      });
+
+      test('clears the initialized latch', () async {
+        await manager.initialize();
+        // Asserting the pre-state is what makes the post-state meaningful:
+        // without it the test passes whether or not reset clears the latch.
+        expect(manager.getStatus()['isInitialized'], isTrue);
+
+        manager.resetForTesting();
+
+        // dispose() leaves this set, so a later initialize() would no-op and
+        // never re-arm the periodic cleanup. reset must not.
+        expect(manager.getStatus()['isInitialized'], isFalse);
+      });
     });
 
     test('should start in foreground state', () {
