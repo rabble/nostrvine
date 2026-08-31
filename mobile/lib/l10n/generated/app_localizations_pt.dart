@@ -4854,7 +4854,50 @@ class AppLocalizationsPt extends AppLocalizations {
   String get listEditTitle => 'Editar lista';
 
   @override
-  String get listEditAction => 'Editar lista';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Compartilhar lista';
@@ -5979,23 +6022,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get curatedListFailedToLoad => 'Falha ao carregar lista';
 
   @override
-  String get curatedListNoVideosAvailable => 'Nenhum vídeo disponível';
-
-  @override
   String get curatedListVideoNotAvailable => 'Vídeo indisponível';
 
   @override
   String get curatedListActionsTooltip => 'Ações da lista';
-
-  @override
-  String get curatedListUnfollowAction => 'Deixar de seguir a lista';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Você deixou de seguir a lista';
-
-  @override
-  String get curatedListUnfollowFailed =>
-      'Não foi possível deixar de seguir a lista';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Excluir lista?';

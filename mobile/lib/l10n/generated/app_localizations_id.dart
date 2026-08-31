@@ -4753,7 +4753,50 @@ class AppLocalizationsId extends AppLocalizations {
   String get listEditTitle => 'Edit daftar';
 
   @override
-  String get listEditAction => 'Edit daftar';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Bagikan daftar';
@@ -5868,23 +5911,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get curatedListFailedToLoad => 'Gagal memuat daftar';
 
   @override
-  String get curatedListNoVideosAvailable => 'Tidak ada video tersedia';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video tidak tersedia';
 
   @override
   String get curatedListActionsTooltip => 'Tindakan daftar';
-
-  @override
-  String get curatedListUnfollowAction => 'Berhenti mengikuti daftar';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Berhenti mengikuti daftar';
-
-  @override
-  String get curatedListUnfollowFailed =>
-      'Tidak bisa berhenti mengikuti daftar';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Hapus daftar?';

@@ -4872,7 +4872,50 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listEditTitle => 'Редактирай списъка';
 
   @override
-  String get listEditAction => 'Редактирай списъка';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Сподели списъка';
@@ -5993,22 +6036,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get curatedListFailedToLoad => 'Зареждането на списъка не успя';
 
   @override
-  String get curatedListNoVideosAvailable => 'Няма налични видеа';
-
-  @override
   String get curatedListVideoNotAvailable => 'Видеото не е налично';
 
   @override
   String get curatedListActionsTooltip => 'Действия за списъка';
-
-  @override
-  String get curatedListUnfollowAction => 'Спри да следваш списъка';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Спря да следваш списъка';
-
-  @override
-  String get curatedListUnfollowFailed => 'Списъкът не можа да бъде отписан';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Да изтрием списъка?';

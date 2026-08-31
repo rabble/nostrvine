@@ -4824,7 +4824,50 @@ class AppLocalizationsMs extends AppLocalizations {
   String get listEditTitle => 'Edit senarai';
 
   @override
-  String get listEditAction => 'Edit senarai';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Kongsi senarai';
@@ -5945,22 +5988,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get curatedListFailedToLoad => 'Gagal memuatkan senarai';
 
   @override
-  String get curatedListNoVideosAvailable => 'Tiada video tersedia';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video tidak tersedia';
 
   @override
   String get curatedListActionsTooltip => 'Tindakan senarai';
-
-  @override
-  String get curatedListUnfollowAction => 'Nyahikut senarai';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Senarai dinyahikut';
-
-  @override
-  String get curatedListUnfollowFailed => 'Tidak dapat menyahikut senarai';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Padam senarai?';

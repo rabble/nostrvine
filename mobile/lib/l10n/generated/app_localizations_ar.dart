@@ -4781,7 +4781,50 @@ class AppLocalizationsAr extends AppLocalizations {
   String get listEditTitle => 'تعديل القائمة';
 
   @override
-  String get listEditAction => 'تعديل القائمة';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'مشاركة القائمة';
@@ -5892,22 +5935,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get curatedListFailedToLoad => 'فشل تحميل القائمة';
 
   @override
-  String get curatedListNoVideosAvailable => 'لا توجد فيديوهات متاحة';
-
-  @override
   String get curatedListVideoNotAvailable => 'الفيديو غير متاح';
 
   @override
   String get curatedListActionsTooltip => 'إجراءات القائمة';
-
-  @override
-  String get curatedListUnfollowAction => 'إلغاء متابعة القائمة';
-
-  @override
-  String get curatedListUnfollowedSnack => 'تم إلغاء متابعة القائمة';
-
-  @override
-  String get curatedListUnfollowFailed => 'تعذّر إلغاء متابعة القائمة';
 
   @override
   String get curatedListDeleteConfirmTitle => 'حذف القائمة؟';

@@ -2975,7 +2975,29 @@
   "listVisibilityPrivate": "Private",
   "profileListsEmpty": "No lists yet. Make one for the loops you want to keep together.",
   "listEditTitle": "Edit list",
-  "listEditAction": "Edit list",
+  "listEditInfoAction": "Edit list info",
+  "listManagePostsAction": "Manage posts",
+  "listFollowButton": "Follow",
+  "@listFollowButton": {
+    "description": "Button to follow (subscribe to) a curated video list. Not a person-follow — some locales translate the two differently."
+  },
+  "listFollowingButton": "Following",
+  "@listFollowingButton": {
+    "description": "State of the list follow button once the viewer follows the list. Tapping it unfollows."
+  },
+  "listRemovePostsButton": "{count, plural, =0{Remove post} =1{Remove post} other{Remove {count} posts}}",
+  "@listRemovePostsButton": {
+    "description": "Manage-posts action button. Zero keeps the singular label on the disabled button.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "listRemovePostsSuccess": "{count, plural, =1{Removed 1 post} other{Removed {count} posts}}",
+  "@listRemovePostsSuccess": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "listRemovePostsFailure": "{count, plural, =1{Couldn't remove 1 post. Try again.} other{Couldn't remove {count} posts. Try again.}}",
+  "@listRemovePostsFailure": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "listShareAction": "Share list",
   "listShareFailed": "Couldn't share this list. Try again.",
   "listSave": "Save",
@@ -3822,12 +3844,8 @@
   "curatedListEmptySubtitle": "Add some videos to get started",
   "curatedListLoadingVideos": "Loading videos...",
   "curatedListFailedToLoad": "Failed to load list",
-  "curatedListNoVideosAvailable": "No videos available",
   "curatedListVideoNotAvailable": "Video not available",
   "curatedListActionsTooltip": "List actions",
-  "curatedListUnfollowAction": "Unfollow list",
-  "curatedListUnfollowedSnack": "Unfollowed list",
-  "curatedListUnfollowFailed": "Couldn't unfollow list",
   "curatedListDeleteConfirmTitle": "Delete list?",
   "curatedListDeleteConfirmBody": "This removes the list from relays. Videos in the list will not be deleted.",
   "curatedListDeletedSnack": "Deleted list",

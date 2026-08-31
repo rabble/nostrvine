@@ -4546,7 +4546,50 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listEditTitle => '목록 편집';
 
   @override
-  String get listEditAction => '목록 편집';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => '목록 공유';
@@ -5637,22 +5680,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get curatedListFailedToLoad => '리스트를 불러오지 못했어요';
 
   @override
-  String get curatedListNoVideosAvailable => '사용할 수 있는 영상이 없어요';
-
-  @override
   String get curatedListVideoNotAvailable => '영상을 사용할 수 없어요';
 
   @override
   String get curatedListActionsTooltip => '목록 작업';
-
-  @override
-  String get curatedListUnfollowAction => '목록 언팔로우';
-
-  @override
-  String get curatedListUnfollowedSnack => '목록을 언팔로우했어요';
-
-  @override
-  String get curatedListUnfollowFailed => '목록을 언팔로우하지 못했어요';
 
   @override
   String get curatedListDeleteConfirmTitle => '목록을 삭제할까요?';

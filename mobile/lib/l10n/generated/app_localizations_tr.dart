@@ -4760,7 +4760,50 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listEditTitle => 'Listeyi düzenle';
 
   @override
-  String get listEditAction => 'Listeyi düzenle';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Listeyi paylaş';
@@ -5870,22 +5913,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get curatedListFailedToLoad => 'Liste yüklenemedi';
 
   @override
-  String get curatedListNoVideosAvailable => 'Mevcut video yok';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video mevcut değil';
 
   @override
   String get curatedListActionsTooltip => 'Liste işlemleri';
-
-  @override
-  String get curatedListUnfollowAction => 'Listeyi takipten çık';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Listeyi takipten çıkıldı';
-
-  @override
-  String get curatedListUnfollowFailed => 'Liste takipten çıkılamadı';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Liste silinsin mi?';

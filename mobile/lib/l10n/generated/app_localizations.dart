@@ -8257,11 +8257,47 @@ abstract class AppLocalizations {
   /// **'Edit list'**
   String get listEditTitle;
 
-  /// No description provided for @listEditAction.
+  /// No description provided for @listEditInfoAction.
   ///
   /// In en, this message translates to:
-  /// **'Edit list'**
-  String get listEditAction;
+  /// **'Edit list info'**
+  String get listEditInfoAction;
+
+  /// No description provided for @listManagePostsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage posts'**
+  String get listManagePostsAction;
+
+  /// Button to follow (subscribe to) a curated video list. Not a person-follow — some locales translate the two differently.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get listFollowButton;
+
+  /// State of the list follow button once the viewer follows the list. Tapping it unfollows.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get listFollowingButton;
+
+  /// Manage-posts action button. Zero keeps the singular label on the disabled button.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Remove post} =1{Remove post} other{Remove {count} posts}}'**
+  String listRemovePostsButton(int count);
+
+  /// No description provided for @listRemovePostsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Removed 1 post} other{Removed {count} posts}}'**
+  String listRemovePostsSuccess(int count);
+
+  /// No description provided for @listRemovePostsFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Couldn\'t remove 1 post. Try again.} other{Couldn\'t remove {count} posts. Try again.}}'**
+  String listRemovePostsFailure(int count);
 
   /// No description provided for @listShareAction.
   ///
@@ -10249,12 +10285,6 @@ abstract class AppLocalizations {
   /// **'Failed to load list'**
   String get curatedListFailedToLoad;
 
-  /// No description provided for @curatedListNoVideosAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No videos available'**
-  String get curatedListNoVideosAvailable;
-
   /// No description provided for @curatedListVideoNotAvailable.
   ///
   /// In en, this message translates to:
@@ -10266,24 +10296,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'List actions'**
   String get curatedListActionsTooltip;
-
-  /// No description provided for @curatedListUnfollowAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Unfollow list'**
-  String get curatedListUnfollowAction;
-
-  /// No description provided for @curatedListUnfollowedSnack.
-  ///
-  /// In en, this message translates to:
-  /// **'Unfollowed list'**
-  String get curatedListUnfollowedSnack;
-
-  /// No description provided for @curatedListUnfollowFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t unfollow list'**
-  String get curatedListUnfollowFailed;
 
   /// No description provided for @curatedListDeleteConfirmTitle.
   ///

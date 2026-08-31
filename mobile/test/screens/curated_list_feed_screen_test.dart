@@ -1,5 +1,5 @@
-// ABOUTME: Tests for curated list feed owner/subscription actions.
-// ABOUTME: Verifies subscribed external lists expose an explicit unfollow menu.
+// ABOUTME: Tests for the curated list detail screen: hero header, viewer
+// ABOUTME: follow/share actions, owner actions sheet, and manage-posts mode.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
 
@@ -84,6 +85,17 @@ void main() {
           curatedListsStateProvider.overrideWith(
             () => _TestCuratedListsState(mockService, list),
           ),
+          // The hero header and grid live in the videos provider's data
+          // branch, so resolve it with an empty grid instead of leaving the
+          // screen on the loading spinner.
+          if (videoIds != null)
+            videoEventsByIdsProvider(
+              videoIds,
+            ).overrideWith((ref) => Stream.value(const <VideoEvent>[]))
+          else
+            curatedListVideoEventsProvider(
+              listId,
+            ).overrideWith((ref) => Stream.value(const <VideoEvent>[])),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -97,138 +109,76 @@ void main() {
       return app;
     }
 
-    testWidgets('back button pops when the router can pop', (tester) async {
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
-      when(() => goRouter.pop<Object?>()).thenReturn(null);
+    void stubOwnedList({
+      String listId = 'owned-list',
+      String name = 'Owned List',
+      String? pubkey = 'owned-pubkey',
+      List<String> videoEventIds = const [],
+      bool isPublic = true,
+    }) {
+      when(() => mockService.isOwnedList(listId)).thenReturn(true);
+      when(() => mockService.isSubscribedToList(listId)).thenReturn(false);
+      when(() => mockService.getListById(listId)).thenReturn(
+        CuratedList(
+          id: listId,
+          name: name,
+          pubkey: pubkey,
+          videoEventIds: videoEventIds,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          isPublic: isPublic,
+        ),
+      );
+    }
 
-      await tester.pumpWidget(buildSubject(goRouter: goRouter));
-      await tester.pump();
+    Future<void> openOwnerSheet(WidgetTester tester) async {
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
+    }
 
-      await tester.tap(find.byTooltip('Back'));
-
-      verify(() => goRouter.pop<Object?>()).called(1);
-    });
-
-    testWidgets(
-      'back button falls back to the home feed when there is nothing to pop '
-      '(cold-start deep link)',
-      (tester) async {
+    group('navigation', () {
+      testWidgets('back button pops when the router can pop', (tester) async {
         final goRouter = MockGoRouter();
-        when(goRouter.canPop).thenReturn(false);
-        when(() => goRouter.go(any())).thenReturn(null);
+        when(goRouter.canPop).thenReturn(true);
+        when(() => goRouter.pop<Object?>()).thenReturn(null);
 
         await tester.pumpWidget(buildSubject(goRouter: goRouter));
+        await tester.pump();
         await tester.pump();
 
         await tester.tap(find.byTooltip('Back'));
 
-        verify(() => goRouter.go(defaultSafePopFallback)).called(1);
-        verifyNever(() => goRouter.pop<Object?>());
-      },
-    );
+        verify(() => goRouter.pop<Object?>()).called(1);
+      });
 
-    testWidgets('shows unfollow list action for subscribed external list', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
+      testWidgets(
+        'back button falls back to the home feed when there is nothing to pop '
+        '(cold-start deep link)',
+        (tester) async {
+          final goRouter = MockGoRouter();
+          when(goRouter.canPop).thenReturn(false);
+          when(() => goRouter.go(any())).thenReturn(null);
 
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
+          await tester.pumpWidget(buildSubject(goRouter: goRouter));
+          await tester.pump();
+          await tester.pump();
 
-      expect(find.text(l10n.curatedListUnfollowAction), findsOneWidget);
-      expect(find.text(l10n.listDeleteAction), findsNothing);
-    });
+          await tester.tap(find.byTooltip('Back'));
 
-    testWidgets('hides list actions for unsubscribed external list', (
-      tester,
-    ) async {
-      isSubscribed = false;
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
-      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
-      expect(find.text(l10n.listDeleteAction), findsNothing);
-    });
-
-    testWidgets('omits custom app bar actions for unsubscribed external list', (
-      tester,
-    ) async {
-      isSubscribed = false;
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
-      expect(appBar.customActions, isEmpty);
-    });
-
-    testWidgets('shows subscribe action for external list', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
-      expect(appBar.actions, hasLength(1));
-    });
-
-    testWidgets('hides subscribe action for owned list', (tester) async {
-      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-
-      await tester.pumpWidget(
-        buildSubject(
-          listId: 'owned-list',
-          listName: 'Owned List',
-          authorPubkey: 'owned-pubkey',
-        ),
+          verify(() => goRouter.go(defaultSafePopFallback)).called(1);
+          verifyNever(() => goRouter.pop<Object?>());
+        },
       );
-      await tester.pump();
-
-      final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
-      expect(appBar.actions, isEmpty);
     });
 
-    testWidgets('shows delete action for owned subscribed list', (
-      tester,
-    ) async {
-      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-
-      await tester.pumpWidget(
-        buildSubject(
-          listId: 'owned-list',
-          listName: 'Owned List',
-          authorPubkey: 'owned-pubkey',
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.listDeleteAction), findsOneWidget);
-      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
-    });
-
-    testWidgets(
-      'owned-list route shows its stored video count and visibility',
-      (tester) async {
-        when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-        when(
-          () => mockService.isSubscribedToList('owned-list'),
-        ).thenReturn(false);
-        when(() => mockService.getListById('owned-list')).thenReturn(
-          CuratedList(
-            id: 'owned-list',
-            name: 'Puppets',
-            videoEventIds: const ['one', 'two', 'three'],
-            createdAt: DateTime(2026),
-            updatedAt: DateTime(2026),
-            isPublic: false,
-          ),
+    group('hero header', () {
+      testWidgets('shows title, count, and visibility for an owned list', (
+        tester,
+      ) async {
+        stubOwnedList(
+          name: 'Puppets',
+          videoEventIds: const ['one', 'two', 'three'],
+          isPublic: false,
         );
 
         await tester.pumpWidget(
@@ -241,272 +191,355 @@ void main() {
           ),
         );
         await tester.pump();
+        await tester.pump();
 
-        expect(
-          find.text(
-            '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPrivate}',
+        expect(find.text('Puppets'), findsOneWidget);
+        expect(find.text(l10n.listVideoCount(3)), findsOneWidget);
+        expect(find.text(l10n.listVisibilityPrivate), findsOneWidget);
+        expect(find.text(l10n.listByAuthorPrefix), findsNothing);
+      });
+
+      testWidgets("shows author attribution for someone else's list", (
+        tester,
+      ) async {
+        when(() => mockService.isOwnedList('external-list')).thenReturn(false);
+        when(() => mockService.getListById('external-list')).thenReturn(
+          CuratedList(
+            id: 'external-list',
+            name: 'Subscribed List',
+            pubkey:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            videoEventIds: const ['one', 'two', 'three'],
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
           ),
-          findsOneWidget,
         );
-      },
-    );
 
-    testWidgets('route without extras shows stored author and video count', (
-      tester,
-    ) async {
-      when(() => mockService.isOwnedList('external-list')).thenReturn(false);
-      when(() => mockService.getListById('external-list')).thenReturn(
-        CuratedList(
-          id: 'external-list',
-          name: 'Subscribed List',
-          pubkey:
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          videoEventIds: const ['one', 'two', 'three'],
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-        ),
-      );
+        await tester.pumpWidget(
+          buildSubject(
+            listName: 'Subscribed List',
+            authorPubkey: null,
+            videoIds: null,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
 
-      await tester.pumpWidget(
-        buildSubject(
-          listName: 'Subscribed List',
-          authorPubkey: null,
-          videoIds: null,
-        ),
-      );
-      await tester.pump();
+        expect(find.text(l10n.listByAuthorPrefix), findsOneWidget);
+        expect(find.text(l10n.listVideoCount(3)), findsOneWidget);
+        expect(find.text(l10n.listVisibilityPublic), findsNothing);
+      });
 
-      expect(find.text(l10n.listByAuthorPrefix), findsOneWidget);
-      expect(find.text(' • ${l10n.listVideoCount(3)}'), findsOneWidget);
+      testWidgets('shows the list description when one exists', (tester) async {
+        stubOwnedList(name: 'Puppets');
+        when(() => mockService.getListById('owned-list')).thenReturn(
+          CuratedList(
+            id: 'owned-list',
+            name: 'Puppets',
+            pubkey: 'owned-pubkey',
+            description: 'Hands in socks.',
+            videoEventIds: const [],
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Puppets'),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Hands in socks.'), findsOneWidget);
+      });
     });
 
-    testWidgets('owned list suppresses author attribution', (tester) async {
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-      when(
-        () => mockService.isSubscribedToList('owned-list'),
-      ).thenReturn(false);
-      when(() => mockService.getListById('owned-list')).thenReturn(
-        CuratedList(
-          id: 'owned-list',
-          name: 'Puppets',
-          pubkey:
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          videoEventIds: const ['one', 'two', 'three'],
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-        ),
-      );
+    group('viewer actions', () {
+      testWidgets('shows follow pill and share action for a public list', (
+        tester,
+      ) async {
+        isSubscribed = false;
+        when(() => mockService.getListById('external-list')).thenReturn(
+          CuratedList(
+            id: 'external-list',
+            name: 'External List',
+            pubkey: 'external-pubkey',
+            videoEventIds: const [],
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        );
 
-      await tester.pumpWidget(
-        buildSubject(
-          listId: 'owned-list',
-          listName: 'Puppets',
-          authorPubkey: null,
-          videoIds: null,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
 
-      expect(find.text(l10n.listByAuthorPrefix), findsNothing);
-      expect(
-        find.text(
-          '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPublic}',
-        ),
-        findsOneWidget,
-      );
-    });
+        expect(find.text(l10n.listFollowButton), findsOneWidget);
+        expect(find.byTooltip(l10n.listShareAction), findsOneWidget);
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+      });
 
-    testWidgets('owned public list offers edit, share, and delete', (
-      tester,
-    ) async {
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-      when(
-        () => mockService.isSubscribedToList('owned-list'),
-      ).thenReturn(false);
-      when(() => mockService.getListById('owned-list')).thenReturn(
-        CuratedList(
-          id: 'owned-list',
-          name: 'Puppets',
-          pubkey: 'owned-pubkey',
-          videoEventIds: const [],
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-        ),
-      );
+      testWidgets('follow pill reads Following when subscribed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
 
-      await tester.pumpWidget(
-        buildSubject(listId: 'owned-list', listName: 'Puppets'),
-      );
-      await tester.pump();
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
+        expect(find.text(l10n.listFollowingButton), findsOneWidget);
+        expect(find.text(l10n.listFollowButton), findsNothing);
+      });
 
-      expect(find.text(l10n.listEditAction), findsOneWidget);
-      expect(find.text(l10n.listShareAction), findsOneWidget);
-      expect(find.text(l10n.listDeleteAction), findsOneWidget);
-    });
-
-    testWidgets('owned public list without an author hides share', (
-      tester,
-    ) async {
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-      when(
-        () => mockService.isSubscribedToList('owned-list'),
-      ).thenReturn(false);
-      when(() => mockService.getListById('owned-list')).thenReturn(
-        CuratedList(
-          id: 'owned-list',
-          name: 'Puppets',
-          videoEventIds: const [],
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-        ),
-      );
-
-      await tester.pumpWidget(
-        buildSubject(listId: 'owned-list', listName: 'Puppets'),
-      );
-      await tester.pump();
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.listShareAction), findsNothing);
-      expect(find.text(l10n.listEditAction), findsOneWidget);
-      expect(find.text(l10n.listDeleteAction), findsOneWidget);
-    });
-
-    testWidgets('delete confirms then calls service and pops', (tester) async {
-      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-      when(
-        () => mockService.deleteOwnedList('owned-list'),
-      ).thenAnswer((_) async => true);
-      final goRouter = MockGoRouter();
-      when(goRouter.canPop).thenReturn(true);
-      when(() => goRouter.pop<Object?>()).thenReturn(null);
-
-      await tester.pumpWidget(
-        buildSubject(
-          listId: 'owned-list',
-          listName: 'Owned List',
-          authorPubkey: 'owned-pubkey',
-          goRouter: goRouter,
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.listDeleteAction));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
-
-      await tester.tap(find.text(l10n.commonDelete));
-      await tester.pumpAndSettle();
-
-      verify(() => mockService.deleteOwnedList('owned-list')).called(1);
-      verify(() => goRouter.pop<Object?>()).called(1);
-      expect(find.text(l10n.curatedListDeletedSnack), findsOneWidget);
-      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
-    });
-
-    testWidgets('delete cancel dismisses without deleting', (tester) async {
-      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
-      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
-
-      await tester.pumpWidget(
-        buildSubject(
-          listId: 'owned-list',
-          listName: 'Owned List',
-          authorPubkey: 'owned-pubkey',
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.listDeleteAction));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
-
-      await tester.tap(find.text(l10n.commonCancel));
-      await tester.pumpAndSettle();
-
-      verifyNever(() => mockService.deleteOwnedList('owned-list'));
-      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsNothing);
-    });
-
-    testWidgets(
-      'delete confirmation buttons no-op once their route is torn down',
-      (tester) async {
+      testWidgets('hides the share action for a private or unknown list', (
+        tester,
+      ) async {
         when(
-          () => mockService.isSubscribedToList('owned-list'),
-        ).thenReturn(true);
-        when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+          () => mockService.getListById('external-list'),
+        ).thenReturn(null);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byTooltip(l10n.listShareAction), findsNothing);
+      });
+
+      testWidgets('tapping the pill toggles the subscription', (tester) async {
+        when(() => mockService.unsubscribeFromList('external-list')).thenAnswer(
+          (_) async {
+            isSubscribed = false;
+            return true;
+          },
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.listFollowingButton));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockService.unsubscribeFromList('external-list'),
+        ).called(1);
+        expect(find.text(l10n.listFollowButton), findsOneWidget);
+      });
+
+      testWidgets('viewer never sees the owner actions menu', (tester) async {
+        isSubscribed = false;
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+      });
+    });
+
+    group('owner actions sheet', () {
+      testWidgets('owner sees the menu and no follow pill', (tester) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsOneWidget);
+        expect(find.text(l10n.listFollowButton), findsNothing);
+        expect(find.text(l10n.listFollowingButton), findsNothing);
+        final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
+        expect(appBar.customActions, isEmpty);
+      });
+
+      testWidgets('sheet offers edit, manage posts, share, and delete', (
+        tester,
+      ) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+        await openOwnerSheet(tester);
+
+        expect(find.text(l10n.listEditInfoAction), findsOneWidget);
+        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
+        expect(find.text(l10n.listShareAction), findsOneWidget);
+        expect(find.text(l10n.listDeleteAction), findsOneWidget);
+      });
+
+      testWidgets('sheet hides share for a list without an author', (
+        tester,
+      ) async {
+        stubOwnedList(pubkey: null);
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+        await openOwnerSheet(tester);
+
+        expect(find.text(l10n.listShareAction), findsNothing);
+        expect(find.text(l10n.listEditInfoAction), findsOneWidget);
+        expect(find.text(l10n.listDeleteAction), findsOneWidget);
+      });
+
+      testWidgets('delete confirms then calls service and pops', (
+        tester,
+      ) async {
+        stubOwnedList();
+        final goRouter = MockGoRouter();
+        when(goRouter.canPop).thenReturn(true);
+        when(() => goRouter.pop<Object?>()).thenReturn(null);
 
         await tester.pumpWidget(
           buildSubject(
             listId: 'owned-list',
             listName: 'Owned List',
-            authorPubkey: 'owned-pubkey',
+            goRouter: goRouter,
           ),
         );
         await tester.pump();
+        await tester.pump();
 
-        await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-        await tester.pumpAndSettle();
+        await openOwnerSheet(tester);
         await tester.tap(find.text(l10n.listDeleteAction));
         await tester.pumpAndSettle();
+        expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
 
-        VoidCallback actionFor(String label) => tester
-            .widget<TextButton>(
-              find.ancestor(
-                of: find.text(label),
-                matching: find.byType(TextButton),
-              ),
-            )
-            .onPressed!;
-
-        final cancel = actionFor(l10n.commonCancel);
-        final confirm = actionFor(l10n.commonDelete);
-
-        // Stands in for anything that drops the dialog's route while the tap
-        // is in flight — a feature-flag flip re-inflating the app shell, a
-        // redirect, a deep link.
-        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.tap(find.text(l10n.commonDelete));
         await tester.pumpAndSettle();
 
-        expect(cancel, returnsNormally);
-        expect(confirm, returnsNormally);
-      },
-    );
-
-    testWidgets('unfollow calls service and updates action state', (
-      tester,
-    ) async {
-      when(() => mockService.unsubscribeFromList('external-list')).thenAnswer((
-        _,
-      ) async {
-        isSubscribed = false;
-        return true;
+        verify(() => mockService.deleteOwnedList('owned-list')).called(1);
+        verify(() => goRouter.pop<Object?>()).called(1);
+        expect(find.text(l10n.curatedListDeletedSnack), findsOneWidget);
       });
 
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
+      testWidgets('delete cancel dismisses without deleting', (tester) async {
+        stubOwnedList();
 
-      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.curatedListUnfollowAction));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
 
-      verify(() => mockService.unsubscribeFromList('external-list')).called(1);
-      expect(find.text(l10n.curatedListUnfollowedSnack), findsOneWidget);
+        await openOwnerSheet(tester);
+        await tester.tap(find.text(l10n.listDeleteAction));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
 
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
+        await tester.tap(find.text(l10n.commonCancel));
+        await tester.pumpAndSettle();
 
-      expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
-      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
+        verifyNever(() => mockService.deleteOwnedList('owned-list'));
+        expect(find.text(l10n.curatedListDeleteConfirmTitle), findsNothing);
+      });
+
+      testWidgets(
+        'delete confirmation buttons no-op once their route is torn down',
+        (tester) async {
+          stubOwnedList();
+
+          await tester.pumpWidget(
+            buildSubject(listId: 'owned-list', listName: 'Owned List'),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await openOwnerSheet(tester);
+          await tester.tap(find.text(l10n.listDeleteAction));
+          await tester.pumpAndSettle();
+
+          VoidCallback actionFor(String label) => tester
+              .widget<TextButton>(
+                find.ancestor(
+                  of: find.text(label),
+                  matching: find.byType(TextButton),
+                ),
+              )
+              .onPressed!;
+
+          final cancel = actionFor(l10n.commonCancel);
+          final confirm = actionFor(l10n.commonDelete);
+
+          // Stands in for anything that drops the dialog's route while the
+          // tap is in flight — a feature-flag flip re-inflating the app
+          // shell, a redirect, a deep link.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+
+          expect(cancel, returnsNormally);
+          expect(confirm, returnsNormally);
+        },
+      );
+    });
+
+    group('manage posts mode', () {
+      Future<void> enterManageMode(WidgetTester tester) async {
+        await openOwnerSheet(tester);
+        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('entering shows the inline title and disabled remove bar', (
+        tester,
+      ) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+        await enterManageMode(tester);
+
+        // Title moves from the hero into the app bar; with the hero hidden
+        // the name renders exactly once.
+        expect(find.text('Owned List'), findsOneWidget);
+        expect(find.text(l10n.listRemovePostsButton(0)), findsOneWidget);
+        final button = tester.widget<DivineButton>(
+          find.ancestor(
+            of: find.text(l10n.listRemovePostsButton(0)),
+            matching: find.byType(DivineButton),
+          ),
+        );
+        expect(button.onPressed, isNull);
+        // Hero header is hidden while managing.
+        expect(find.text(l10n.listVideoCount(0)), findsNothing);
+      });
+
+      testWidgets('back exits manage mode instead of popping the route', (
+        tester,
+      ) async {
+        stubOwnedList();
+        final goRouter = MockGoRouter();
+        when(goRouter.canPop).thenReturn(true);
+        when(() => goRouter.pop<Object?>()).thenReturn(null);
+
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            goRouter: goRouter,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await enterManageMode(tester);
+
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => goRouter.pop<Object?>());
+        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsOneWidget);
+      });
     });
   });
 }

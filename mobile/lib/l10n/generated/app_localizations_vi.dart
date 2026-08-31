@@ -4788,7 +4788,50 @@ class AppLocalizationsVi extends AppLocalizations {
   String get listEditTitle => 'Sửa danh sách';
 
   @override
-  String get listEditAction => 'Sửa danh sách';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Chia sẻ danh sách';
@@ -5906,22 +5949,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get curatedListFailedToLoad => 'Không tải được danh sách';
 
   @override
-  String get curatedListNoVideosAvailable => 'Không có video nào';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video không khả dụng';
 
   @override
   String get curatedListActionsTooltip => 'Thao tác với danh sách';
-
-  @override
-  String get curatedListUnfollowAction => 'Bỏ theo dõi danh sách';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Đã bỏ theo dõi danh sách';
-
-  @override
-  String get curatedListUnfollowFailed => 'Không bỏ theo dõi được danh sách';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Xóa danh sách?';

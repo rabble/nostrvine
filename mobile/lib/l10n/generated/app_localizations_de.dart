@@ -4883,7 +4883,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listEditTitle => 'Liste bearbeiten';
 
   @override
-  String get listEditAction => 'Liste bearbeiten';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Liste teilen';
@@ -6018,22 +6061,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get curatedListFailedToLoad => 'Liste konnte nicht geladen werden';
 
   @override
-  String get curatedListNoVideosAvailable => 'Keine Videos verfügbar';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video nicht verfügbar';
 
   @override
   String get curatedListActionsTooltip => 'Listenaktionen';
-
-  @override
-  String get curatedListUnfollowAction => 'Liste nicht mehr folgen';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Liste nicht mehr gefolgt';
-
-  @override
-  String get curatedListUnfollowFailed => 'Liste konnte nicht entfolgt werden';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Liste löschen?';

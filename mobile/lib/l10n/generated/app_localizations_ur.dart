@@ -4824,7 +4824,50 @@ class AppLocalizationsUr extends AppLocalizations {
   String get listEditTitle => 'فہرست میں ترمیم کریں';
 
   @override
-  String get listEditAction => 'فہرست میں ترمیم کریں';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'فہرست شیئر کریں';
@@ -5941,22 +5984,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get curatedListFailedToLoad => 'فہرست لوڈ نہیں ہو سکی';
 
   @override
-  String get curatedListNoVideosAvailable => 'کوئی ویڈیو دستیاب نہیں';
-
-  @override
   String get curatedListVideoNotAvailable => 'ویڈیو دستیاب نہیں';
 
   @override
   String get curatedListActionsTooltip => 'فہرست کارروائیاں';
-
-  @override
-  String get curatedListUnfollowAction => 'فہرست ان فالو کریں';
-
-  @override
-  String get curatedListUnfollowedSnack => 'فہرست ان فالو ہو گئی';
-
-  @override
-  String get curatedListUnfollowFailed => 'فہرست ان فالو نہیں ہو سکی';
 
   @override
   String get curatedListDeleteConfirmTitle => 'فہرست حذف کریں؟';

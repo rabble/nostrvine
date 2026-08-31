@@ -4868,7 +4868,50 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listEditTitle => 'Editar lista';
 
   @override
-  String get listEditAction => 'Editar lista';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Compartir lista';
@@ -5991,22 +6034,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get curatedListFailedToLoad => 'No se pudo cargar la lista';
 
   @override
-  String get curatedListNoVideosAvailable => 'No hay videos disponibles';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video no disponible';
 
   @override
   String get curatedListActionsTooltip => 'Acciones de la lista';
-
-  @override
-  String get curatedListUnfollowAction => 'Dejar de seguir la lista';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Dejaste de seguir la lista';
-
-  @override
-  String get curatedListUnfollowFailed => 'No se pudo dejar de seguir la lista';
 
   @override
   String get curatedListDeleteConfirmTitle => '¿Eliminar la lista?';
