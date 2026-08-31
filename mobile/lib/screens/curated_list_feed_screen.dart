@@ -229,8 +229,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               });
             },
             onRefresh: () async {
-              // Refresh by invalidating the provider
-              ref.invalidate(curatedListVideoEventsProvider(widget.listId));
+              _refreshListVideos();
             },
             emptyBuilder: () => const _EmptyListMessage(),
           );
@@ -238,9 +237,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         loading: () => const _ListLoadingView(),
         error: (error, stack) => _ListErrorView(
           error: error,
-          onRetry: () {
-            ref.invalidate(curatedListVideoEventsProvider(widget.listId));
-          },
+          onRetry: _refreshListVideos,
         ),
       ),
       bottomNavigationBar: _manageCubit == null
@@ -315,13 +312,23 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     cubit.close();
   }
 
+  /// Drop both cached layers: the id-list provider and the video stream
+  /// that watches it. Invalidating only the stream re-runs it against the
+  /// id provider's cached value, which is how a removed post kept its
+  /// tile on screen.
+  void _refreshListVideos() {
+    ref
+      ..invalidate(curatedListVideosProvider(widget.listId))
+      ..invalidate(curatedListVideoEventsProvider(widget.listId));
+  }
+
   void _onRemovalFinished(
     BuildContext context,
     CuratedListManagePostsState state,
   ) {
     final failed = state.status == CuratedListManagePostsStatus.failure;
     // On failure some removals may still have landed, so refresh either way.
-    ref.invalidate(curatedListVideoEventsProvider(widget.listId));
+    _refreshListVideos();
     final message = failed
         ? context.l10n.listRemovePostsFailure(state.failedCount)
         : context.l10n.listRemovePostsSuccess(state.removedCount);

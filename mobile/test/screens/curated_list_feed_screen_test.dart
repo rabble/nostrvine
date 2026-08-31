@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:riverpod/misc.dart' show Override;
 
 import '../helpers/go_router.dart';
 import '../helpers/test_provider_overrides.dart';
@@ -61,6 +62,8 @@ void main() {
       List<String>? videoIds = const [],
       bool isPublic = true,
       MockGoRouter? goRouter,
+      List<Override> extraOverrides = const [],
+      bool overrideVideoEvents = true,
     }) {
       final list = CuratedList(
         id: listId,
@@ -87,15 +90,17 @@ void main() {
           ),
           // The hero header and grid live in the videos provider's data
           // branch, so resolve it with an empty grid instead of leaving the
-          // screen on the loading spinner.
-          if (videoIds != null)
+          // screen on the loading spinner. Callers that override the same
+          // providers themselves win via extraOverrides (last one applies).
+          if (overrideVideoEvents && videoIds != null)
             videoEventsByIdsProvider(
               videoIds,
             ).overrideWith((ref) => Stream.value(const <VideoEvent>[]))
-          else
+          else if (overrideVideoEvents)
             curatedListVideoEventsProvider(
               listId,
             ).overrideWith((ref) => Stream.value(const <VideoEvent>[])),
+          ...extraOverrides,
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -512,6 +517,76 @@ void main() {
         expect(button.onPressed, isNull);
         // Hero header is hidden while managing.
         expect(find.text(l10n.listVideoCount(0)), findsNothing);
+      });
+
+      testWidgets('removal refreshes the id provider so the tile disappears', (
+        tester,
+      ) async {
+        stubOwnedList();
+        when(
+          () => mockService.removeVideoFromList('owned-list', any()),
+        ).thenAnswer((_) async => true);
+        // Keep the real subscribed-list cache out of the tile chain, as the
+        // grid's own tests do.
+
+        final video = VideoEvent(
+          id: 'a' * 64,
+          pubkey: 'b' * 64,
+          content: 'A cat video',
+          title: 'A cat video',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          duration: 5,
+          createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          timestamp: DateTime(2026),
+        );
+
+        // Mirrors production's two cached layers: the video stream watches
+        // the id-list provider. The id provider serves one id on the first
+        // read and none after that, so the removed tile only disappears if
+        // the removal listener invalidates the ID layer too — invalidating
+        // just the stream re-runs it against the cached ids (the bug).
+        var idReads = 0;
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            videoIds: null,
+            overrideVideoEvents: false,
+            extraOverrides: [
+              subscribedListVideoCacheProvider.overrideWithValue(null),
+              curatedListVideosProvider('owned-list').overrideWith((ref) async {
+                idReads++;
+                return idReads == 1 ? [video.id] : const <String>[];
+              }),
+              curatedListVideoEventsProvider('owned-list').overrideWith((
+                ref,
+              ) async* {
+                final ids = await ref.watch(
+                  curatedListVideosProvider('owned-list').future,
+                );
+                yield [for (final _ in ids) video];
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('A cat video'), findsOneWidget);
+
+        await enterManageMode(tester);
+        await tester.tap(find.text('A cat video'));
+        await tester.pump();
+        await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockService.removeVideoFromList('owned-list', video.id),
+        ).called(1);
+        expect(find.text(l10n.listRemovePostsSuccess(1)), findsOneWidget);
+        expect(find.text('A cat video'), findsNothing);
+        expect(find.text(l10n.curatedListEmptyTitle), findsOneWidget);
       });
 
       testWidgets('back exits manage mode instead of popping the route', (
