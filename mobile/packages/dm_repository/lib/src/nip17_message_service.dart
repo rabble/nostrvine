@@ -735,7 +735,25 @@ class NIP17MessageService {
         // Kind-aware noun for logs and error strings: this path serves both
         // reaction (kind 7) and message (kind 14/15) sends, and a log that
         // says "reaction" for a text message misdirects field debugging.
-        final isReaction = rumorEvent.kind == EventKind.reaction;
+        // A wrapped kind-5 is a DELETION of something, and which noun it takes
+        // depends on what it deletes — a reaction removal and a message
+        // delete-for-everyone both arrive here as kind 5. NIP-09's `k` tag
+        // names the deleted kind, and both builders set it
+        // (`DmReactionsRepository._durablyDeleteReaction` writes 7,
+        // `DmRepository._driveDeleteForEveryone` writes the row's message
+        // kind), so read it rather than guessing. Without this a reaction
+        // removal logs as "message" and sends field debugging to the wrong
+        // send path.
+        final deletesReaction =
+            rumorEvent.kind == EventKind.eventDeletion &&
+            rumorEvent.tags.any(
+              (tag) =>
+                  tag.length >= 2 &&
+                  tag[0] == 'k' &&
+                  tag[1] == '${EventKind.reaction}',
+            );
+        final isReaction =
+            rumorEvent.kind == EventKind.reaction || deletesReaction;
         final rumorNoun = isReaction ? 'reaction' : 'message';
         final rumorNounCapitalized = isReaction ? 'Reaction' : 'Message';
 
