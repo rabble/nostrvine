@@ -151,15 +151,13 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 
     // Build a lookup map: event ID -> parsed VideoEvent for enrichment
     final nostrEventsMap = <String, VideoEvent>{};
+    var parsedCount = 0;
+    var withBlurhash = 0;
     for (final event in nostrEvents) {
       try {
         final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
-        Log.info(
-          'enrichVideos: parsed Nostr event ${parsed.id} '
-          'blurhash=${parsed.blurhash} '
-          'rawTags.len=${parsed.rawTags.length}',
-          name: callerName,
-        );
+        parsedCount++;
+        if (parsed.blurhash != null) withBlurhash++;
         if (parsed.rawTags.isNotEmpty) {
           nostrEventsMap[parsed.id] = parsed;
         }
@@ -167,6 +165,15 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
         // Skip events that fail to parse
       }
     }
+    // One line per batch, not per event. A bug report carries only the last
+    // 50 entries of any level, and a 50-video batch logging per event took
+    // ~40% of that window on #8300's report — crowding out the context the
+    // report was filed to capture.
+    Log.info(
+      'enrichVideos: parsed $parsedCount/${nostrEvents.length} Nostr events, '
+      '$withBlurhash with a blurhash, ${nostrEventsMap.length} with tags',
+      name: callerName,
+    );
 
     if (nostrEventsMap.isEmpty) {
       attemptTracker?.recordAttemptResults(
