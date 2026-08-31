@@ -16,7 +16,11 @@ class MemorySnapshot {
   /// Resident set size at sample time, in bytes.
   final int rssBytes;
 
-  /// Highest [rssBytes] observed by the sampler so far, in bytes.
+  /// Highest resident set size this process has reached, in bytes.
+  ///
+  /// Sourced from the OS high-water mark, so it covers spikes that occur
+  /// between samples. Falls back to the highest sampled [rssBytes] where no
+  /// OS gauge is available (web).
   final int peakRssBytes;
 
   /// Live `divine_video_player` native controllers.
@@ -35,20 +39,30 @@ class MemorySnapshot {
 ///
 /// All inputs are injected as callbacks so the service stays Flutter-free and
 /// trivially testable. Production wiring supplies a `readRssBytes` backed by
-/// `ProcessInfo.currentRss` and an `emit` that logs and annotates Crashlytics.
+/// `ProcessInfo.currentRss`, a `readPeakRssBytes` backed by
+/// `ProcessInfo.maxRss`, and an `emit` that logs and annotates Crashlytics.
+///
+/// The peak must come from the OS rather than from this sampler's own
+/// readings. Sampling on an interval can only ever report a peak it happened
+/// to land on, and the allocation that gets an app jetsammed is over long
+/// before the next tick: a 1.0.20 report measured 229.3 MB of sampled peak in
+/// a process whose OS high-water mark was 2266.0 MB (#8300).
 class MemoryTelemetryService {
   MemoryTelemetryService({
     required int Function() readRssBytes,
+    required int Function() readPeakRssBytes,
     required int Function() nativeControllerCount,
     required int Function() queueDepth,
     required void Function(MemorySnapshot) emit,
     this.interval = const Duration(seconds: 30),
   }) : _readRssBytes = readRssBytes,
+       _readPeakRssBytes = readPeakRssBytes,
        _nativeControllerCount = nativeControllerCount,
        _queueDepth = queueDepth,
        _emit = emit;
 
   final int Function() _readRssBytes;
+  final int Function() _readPeakRssBytes;
   final int Function() _nativeControllerCount;
   final int Function() _queueDepth;
   final void Function(MemorySnapshot) _emit;
@@ -60,9 +74,15 @@ class MemoryTelemetryService {
   int _peakRssBytes = 0;
 
   /// Reads every gauge once, updates the running peak, and emits a snapshot.
+  ///
+  /// The peak is the OS high-water mark, floored by the highest sampled RSS
+  /// so a platform without an OS gauge still reports something monotonic.
   void sampleOnce() {
     final rss = _readRssBytes();
-    _peakRssBytes = math.max(_peakRssBytes, rss);
+    _peakRssBytes = math.max(
+      math.max(_peakRssBytes, rss),
+      _readPeakRssBytes(),
+    );
     _emit(
       MemorySnapshot(
         rssBytes: rss,

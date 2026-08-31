@@ -15,12 +15,14 @@ void main() {
 
     MemoryTelemetryService build({
       required int Function() readRssBytes,
+      int Function() readPeakRssBytes = _zero,
       int Function() nativeControllerCount = _zero,
       int Function() queueDepth = _zero,
       Duration interval = const Duration(seconds: 30),
     }) {
       return MemoryTelemetryService(
         readRssBytes: readRssBytes,
+        readPeakRssBytes: readPeakRssBytes,
         nativeControllerCount: nativeControllerCount,
         queueDepth: queueDepth,
         emit: emitted.add,
@@ -40,6 +42,63 @@ void main() {
 
       expect(emitted.map((s) => s.rssBytes), equals([100, 300, 200]));
       expect(emitted.map((s) => s.peakRssBytes), equals([100, 300, 300]));
+    });
+
+    test('peakRssBytes reports a spike that landed between samples', () {
+      // The shape measured on the 1.0.20 report in #8300: every sampled RSS
+      // sat near 200 MB while the OS high-water mark was an order of
+      // magnitude higher, because the allocation that drives an iOS memory
+      // kill is over long before the next 30s tick.
+      const mb = 1024 * 1024;
+      final sampled = [201 * mb, 229 * mb, 188 * mb];
+      var index = 0;
+      final service = build(
+        readRssBytes: () => sampled[index++],
+        readPeakRssBytes: () => 2266 * mb,
+      );
+
+      service
+        ..sampleOnce()
+        ..sampleOnce()
+        ..sampleOnce();
+
+      expect(
+        emitted.map((s) => s.peakRssBytes),
+        everyElement(equals(2266 * mb)),
+      );
+    });
+
+    test('peakRssBytes stays monotonic when the OS gauge reads lower', () {
+      // Web has no OS gauge and reports 0; the sampled max still has to hold.
+      final readings = [100, 500, 200];
+      var index = 0;
+      final service = build(readRssBytes: () => readings[index++]);
+
+      service
+        ..sampleOnce()
+        ..sampleOnce()
+        ..sampleOnce();
+
+      expect(emitted.map((s) => s.peakRssBytes), equals([100, 500, 500]));
+    });
+
+    test('peakRssBytes tracks the OS gauge upward between samples', () {
+      // Consecutive log lines are what localize a spike to a 30s window, so
+      // a rising OS mark has to move the reported peak on the next sample.
+      final peaks = [100, 900, 900];
+      var index = 0;
+      final service = build(
+        readRssBytes: () => 100,
+        readPeakRssBytes: () => peaks[index++],
+      );
+
+      service
+        ..sampleOnce()
+        ..sampleOnce()
+        ..sampleOnce();
+
+      expect(emitted.map((s) => s.rssBytes), equals([100, 100, 100]));
+      expect(emitted.map((s) => s.peakRssBytes), equals([100, 900, 900]));
     });
 
     test('snapshot carries the injected controller and queue gauges', () {
