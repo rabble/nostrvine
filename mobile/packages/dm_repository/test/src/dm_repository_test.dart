@@ -578,6 +578,9 @@ void main() {
     //   * relay counters      -- interpolated into a log line
     //   * runInTransaction    -- runs the callback inline; on 11 persist paths
     //   * markAsRead          -- both production call sites are a bare `await`
+    //   * queryEventsDetailed -- send/listener inbox resolution catches its
+    //                            throw; RC3 re-declares the answered-empty
+    //                            decision explicitly in its own group
     //   * getAllConversations, both backfills, publishSelfApplicationMarker
     //                         -- production CATCHES their throw and logs it, so
     //                            removing them keeps the suite green while
@@ -607,6 +610,20 @@ void main() {
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) async => []);
+
+      // Catch guard for the broad send/listener kind-10050 lookup surface.
+      // Without this, those tests stay green but silently exercise the failed
+      // lookup branch. RC3 re-declares the answered-empty decision by name.
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async => answeredList(const <Event>[]));
 
       // Stub backfillCurrentUserHasSent for _backfillCurrentUserHasSent().
       when(
@@ -981,7 +998,6 @@ void main() {
 
     group('sendMessage', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       test('throws $ArgumentError for invalid pubkey', () {
         final repository = createRepository();
@@ -10290,7 +10306,6 @@ void main() {
 
     group('moderation DM scenarios', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       setUp(stubNoCrossProtocolTwinAvailable);
 
@@ -11897,7 +11912,6 @@ void main() {
 
     group('dual-send NIP-04 fallback', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -16564,7 +16578,6 @@ void main() {
 
     group('sendMessage - replyToId', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       test('includes reply-to tag when replyToId is provided', () async {
         stubSendRumor(
@@ -16669,7 +16682,6 @@ void main() {
 
     group('sendGroupMessage - success', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -17002,7 +17014,6 @@ void main() {
 
     group('sendSharedVideoGroup', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       void stubDaoInserts() {
         when(
@@ -17607,7 +17618,6 @@ void main() {
 
     group('_sendNip04Message failure paths', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       test(
         'returns failure when signer is null',
@@ -18015,7 +18025,6 @@ void main() {
 
     group('sendMessage preserves existing conversation metadata', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       test(
         'uses existing createdAt and dmProtocol from conversation',
@@ -18131,7 +18140,6 @@ void main() {
 
     group('sendMessage with outgoing_dms queue wired in', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
@@ -19391,7 +19399,6 @@ void main() {
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
       setUp(stubSendPolicyPermitsEveryone);
-      setUp(stubRelayReadAnsweredEmpty);
 
       setUp(stubNoMessageForSendBatch);
 
@@ -21736,7 +21743,6 @@ void main() {
     });
 
     group('recoverFullSend', () {
-      setUp(stubRelayReadAnsweredEmpty);
       setUp(stubNoMatchingStoredMessage);
 
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
