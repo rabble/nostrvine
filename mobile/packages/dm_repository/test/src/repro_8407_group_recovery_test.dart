@@ -18,6 +18,8 @@ const _alice =
     '2222222222222222222222222222222222222222222222222222222222222222';
 const _carol =
     '4444444444444444444444444444444444444444444444444444444444444444';
+const _dave =
+    '5555555555555555555555555555555555555555555555555555555555555555';
 const _bob = '3333333333333333333333333333333333333333333333333333333333333333';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -25,6 +27,8 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockMessageService extends Mock implements NIP17MessageService {}
 
 class _MockSigner extends Mock implements NostrSigner {}
+
+class _MockReactionsRepository extends Mock implements DmReactionsRepository {}
 
 void main() {
   group('#8407 reproduction', () {
@@ -507,6 +511,7 @@ void main() {
 
     Future<DmRepository> recoverViaSetCredentials({
       DmSyncState? syncState,
+      DmReactionsRepository? reactionsRepository,
     }) async {
       final nostrClient = _MockNostrClient();
       when(() => nostrClient.connectedRelayCount).thenReturn(1);
@@ -518,12 +523,14 @@ void main() {
             conversationsDao: conversations,
             removedConversationsDao: db.removedConversationsDao,
             syncState: syncState,
-            reactionsRepository: DmReactionsRepository(
-              reactionsDao: db.dmReactionsDao,
-              conversationsDao: conversations,
-              directMessagesDao: messages,
-              userPubkey: _me,
-            ),
+            reactionsRepository:
+                reactionsRepository ??
+                DmReactionsRepository(
+                  reactionsDao: db.dmReactionsDao,
+                  conversationsDao: conversations,
+                  directMessagesDao: messages,
+                  userPubkey: _me,
+                ),
           )..setCredentials(
             userPubkey: _me,
             signer: _MockSigner(),
@@ -711,6 +718,80 @@ void main() {
           ownerPubkey: _me,
         )).map((m) => m.id),
         isEmpty,
+      );
+    });
+
+    test('a failed room does not block recovery of later rooms', () async {
+      final failedGroupId = await seedConversation([_me, _alice, _bob]);
+      await seedConversation([_me, _alice]);
+      await seedMessage(
+        id: 'failed-g1',
+        conversationId: failedGroupId,
+        sender: _alice,
+        pTags: [_me, _bob],
+      );
+      await seedMessage(
+        id: 'failed-g2',
+        conversationId: failedGroupId,
+        sender: _bob,
+        pTags: [_me, _alice],
+      );
+
+      final restoredGroupId = await seedConversation([_me, _carol, _dave]);
+      await seedConversation([_me, _carol]);
+      await seedMessage(
+        id: 'restored-g1',
+        conversationId: restoredGroupId,
+        sender: _carol,
+        pTags: [_me, _dave],
+      );
+      await seedMessage(
+        id: 'restored-g2',
+        conversationId: restoredGroupId,
+        sender: _dave,
+        pTags: [_me, _carol],
+      );
+
+      await runHistoricalPass();
+      final reactionsRepository = _MockReactionsRepository();
+      when(
+        () => reactionsRepository.purgeStrandedByRemoval(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => reactionsRepository.reassignForMovedMessages(
+          targetMessageIds: any(named: 'targetMessageIds'),
+          toConversationId: any(named: 'toConversationId'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((invocation) async {
+        final ids =
+            invocation.namedArguments[#targetMessageIds]! as Iterable<String>;
+        if (ids.contains('failed-g1')) throw StateError('injected failure');
+        return 0;
+      });
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final syncState = DmSyncState(await SharedPreferences.getInstance());
+
+      await recoverViaSetCredentials(
+        syncState: syncState,
+        reactionsRepository: reactionsRepository,
+      );
+
+      expect(
+        await conversations.getConversation(failedGroupId, ownerPubkey: _me),
+        isNull,
+      );
+      expect(
+        await conversations.getConversation(restoredGroupId, ownerPubkey: _me),
+        isNotNull,
+        reason: 'a failure in another conversation must not abort this room',
+      );
+      expect(
+        syncState.groupRecoveryVersion(_me),
+        0,
+        reason: 'the failed room must remain eligible for a later retry',
       );
     });
 

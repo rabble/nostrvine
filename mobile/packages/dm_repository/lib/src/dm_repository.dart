@@ -7076,8 +7076,16 @@ class DmRepository {
         ownerPubkey: owner,
       );
       final restoredRoomIds = <String>{};
+      final failedConversationIds = <String>{};
+      var recoveryFailed = false;
       for (final conversation in conversations) {
-        restoredRoomIds.addAll(await _recoverGroupsFrom(conversation, owner));
+        final restored = await _tryRecoverGroupsFrom(conversation, owner);
+        if (restored == null) {
+          recoveryFailed = true;
+          failedConversationIds.add(conversation.id);
+        } else {
+          restoredRoomIds.addAll(restored);
+        }
       }
       // A message received after the destructive pass could fork into another
       // 1:1 with only one sender, so that bucket cannot attest itself. Once an
@@ -7085,17 +7093,21 @@ class DmRepository {
       // evidence. Sweep the remaining 1:1s again and reunite those forks.
       if (restoredRoomIds.isNotEmpty) {
         for (final conversation in conversations) {
-          await _recoverGroupsFrom(
+          if (failedConversationIds.contains(conversation.id)) continue;
+          final restored = await _tryRecoverGroupsFrom(
             conversation,
             owner,
             alreadyRestoredRoomIds: restoredRoomIds,
           );
+          if (restored == null) recoveryFailed = true;
         }
       }
-      await syncState?.setGroupRecoveryVersion(
-        owner,
-        DmSyncState.currentGroupRecoveryVersion,
-      );
+      if (!recoveryFailed) {
+        await syncState?.setGroupRecoveryVersion(
+          owner,
+          DmSyncState.currentGroupRecoveryVersion,
+        );
+      }
       if (restoredRoomIds.isNotEmpty) {
         Log.info(
           'Restored ${restoredRoomIds.length} group conversation(s) erased by '
@@ -7110,6 +7122,28 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  Future<Set<String>?> _tryRecoverGroupsFrom(
+    ConversationRow conversation,
+    String owner, {
+    Set<String> alreadyRestoredRoomIds = const <String>{},
+  }) async {
+    try {
+      return await _recoverGroupsFrom(
+        conversation,
+        owner,
+        alreadyRestoredRoomIds: alreadyRestoredRoomIds,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to recover groups from one conversation: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
