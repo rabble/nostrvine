@@ -1469,6 +1469,48 @@ void main() {
         },
       );
 
+      test(
+        'successful publish does not warn for a queued collaborator invite',
+        () async {
+          const collaboratorPubkey =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(
+              results: {
+                collaboratorPubkey: CollaboratorInviteResult(
+                  success: false,
+                  retryablePending: true,
+                ),
+              },
+            ),
+          );
+
+          final result = await service.publishVideo(
+            draft: _createTestDraft(
+              collaboratorPubkeys: {collaboratorPubkey},
+            ),
+          );
+
+          expect(result, isA<PublishSuccess>());
+          expect((result as PublishSuccess).inviteWarnings, isEmpty);
+        },
+      );
+
       test('returns error when video event publishing fails', () async {
         // Arrange
         when(() => mockAuthService.isAuthenticated).thenReturn(true);

@@ -10,16 +10,26 @@ import 'package:openvine/l10n/l10n.dart';
 class CollaboratorInviteResult extends Equatable {
   const CollaboratorInviteResult({
     required this.success,
+    this.retryablePending = false,
     this.messageEventId,
     this.error,
   });
 
   final bool success;
+
+  /// The invite has a durable queue row and will be retried in the background.
+  /// This is neither confirmed delivery nor a user-actionable hard failure.
+  final bool retryablePending;
   final String? messageEventId;
   final String? error;
 
   @override
-  List<Object?> get props => [success, messageEventId, error];
+  List<Object?> get props => [
+    success,
+    retryablePending,
+    messageEventId,
+    error,
+  ];
 }
 
 class CollaboratorInviteBatchResult extends Equatable {
@@ -27,7 +37,10 @@ class CollaboratorInviteBatchResult extends Equatable {
 
   final Map<String, CollaboratorInviteResult> results;
 
-  bool get hasFailures => results.values.any((result) => !result.success);
+  /// Whether any invite hard-failed. Retryable pending rows are still active.
+  bool get hasFailures => results.values.any(
+    (result) => !result.success && !result.retryablePending,
+  );
 
   @override
   List<Object?> get props => [results];
@@ -118,8 +131,9 @@ class CollaboratorInviteService {
 
     return CollaboratorInviteResult(
       success: result.success,
+      retryablePending: result.retryablePending,
       messageEventId: result.messageEventId,
-      error: result.error,
+      error: result.retryablePending ? null : result.error,
     );
   }
 

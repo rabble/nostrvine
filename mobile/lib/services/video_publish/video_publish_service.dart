@@ -639,7 +639,9 @@ class VideoPublishService {
       );
       if (result.hasFailures) {
         final failures = result.results.entries
-            .where((entry) => !entry.value.success)
+            .where(
+              (entry) => !entry.value.success && !entry.value.retryablePending,
+            )
             .map((entry) => '${entry.key}:${entry.value.error ?? "unknown"}')
             .join(', ');
         Log.error(
@@ -649,7 +651,9 @@ class VideoPublishService {
         );
       }
       return result.results.entries
-          .where((entry) => !entry.value.success)
+          .where(
+            (entry) => !entry.value.success && !entry.value.retryablePending,
+          )
           .map(
             (entry) => CollaboratorInviteWarning(
               collaboratorPubkey: entry.key,

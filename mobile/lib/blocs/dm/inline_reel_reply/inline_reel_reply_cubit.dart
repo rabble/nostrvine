@@ -71,7 +71,9 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
                 content: trimmed,
                 replyToId: _replyContext.sharedReelMessageId,
               );
-        ok = results.any((r) => r.success);
+        ok =
+            results.any((r) => r.success) ||
+            (results.isNotEmpty && results.every((r) => r.retryablePending));
         parked = [for (final r in results) ?r.queuedRumorId];
       } else {
         final result = videoRef != null
@@ -90,7 +92,7 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
                 content: trimmed,
                 replyToId: _replyContext.sharedReelMessageId,
               );
-        ok = result.success;
+        ok = result.success || result.retryablePending;
         parked = [?result.queuedRumorId];
       }
       if (!isClosed) {

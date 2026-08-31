@@ -551,7 +551,6 @@ void main() {
       ).thenAnswer(
         (_) async => const NIP17SendResult.failure(
           'no relay responded',
-          retryablePending: true,
           queuedRumorId: 'parked-row',
         ),
       );
@@ -612,7 +611,6 @@ void main() {
       ).thenAnswer(
         (_) async => const NIP17SendResult.failure(
           'no relay responded',
-          retryablePending: true,
           queuedRumorId: 'parked-row',
         ),
       );
@@ -684,7 +682,6 @@ void main() {
         if (sends == 1) {
           return const NIP17SendResult.failure(
             'no relay responded',
-            retryablePending: true,
             queuedRumorId: 'parked-row',
           );
         }

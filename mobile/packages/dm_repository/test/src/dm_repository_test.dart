@@ -4790,6 +4790,68 @@ void main() {
         },
       );
 
+      test(
+        'an inconclusive own-inbox read is not memoized and the next consumer '
+        're-queries',
+        () async {
+          var resolveQueries = 0;
+          final capturedDrainTempRelays = <List<String>?>[];
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+              resolveQueries++;
+              return resolveQueries == 1
+                  ? unansweredList(timedOut: true)
+                  : answeredList([
+                      ownInbox(['wss://own.example']),
+                    ]);
+            }
+            if (filter.p?.isNotEmpty ?? false) {
+              capturedDrainTempRelays.add(
+                inv.namedArguments[#tempRelays] as List<String>?,
+              );
+            }
+            return answeredPage(const <Event>[]);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+          await repository.startListening();
+          await repository.backfillHistoryIfNeeded();
+
+          expect(resolveQueries, 2);
+          expect(
+            capturedDrainTempRelays,
+            contains(equals(['wss://own.example'])),
+          );
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
       // NOTE: the analogous "stopListening() during the resolve" case shares
       // the identical session-token guard (stopListening bumps _resetGeneration
       // exactly as _resetState does), so the account-switch test below covers

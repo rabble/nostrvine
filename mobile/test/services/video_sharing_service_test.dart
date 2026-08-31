@@ -534,6 +534,53 @@ void main() {
     });
 
     test(
+      'treats a retryable-pending NIP-17 share as optimistically sent',
+      () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(() => mockAuthService.canPublishNostrWritesNow).thenReturn(true);
+        when(
+          () => mockDmRepository.sendSharedVideo(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            baseContent: any(named: 'baseContent'),
+            videoKind: any(named: 'videoKind'),
+            videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+            videoDTag: any(named: 'videoDTag'),
+            videoEventId: any(named: 'videoEventId'),
+            relayHint: any(named: 'relayHint'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.failure(
+            'Recipient DM inbox unreadable; published to the fallback pool',
+            retryablePending: true,
+            queuedRumorId: 'queued-rumor-id',
+          ),
+        );
+        when(
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final now = DateTime.now();
+        final result = await nip17Service.shareVideoWithUser(
+          video: VideoEvent(
+            id: _testVideoId,
+            pubkey: _testPubkey,
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            timestamp: now,
+            content: 'Test',
+          ),
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.messageEventId, 'queued-rumor-id');
+        expect(result.conversationId, isNotNull);
+      },
+    );
+
+    test(
       'shareVideoWithMultipleUsers: one recipient failing does not abort the '
       'rest, and each outcome is reported',
       () async {
