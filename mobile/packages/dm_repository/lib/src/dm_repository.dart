@@ -7072,20 +7072,34 @@ class DmRepository {
       return;
     }
     try {
-      var restored = 0;
-      for (final conversation in await _conversationsDao.getAllConversations(
+      final conversations = await _conversationsDao.getAllConversations(
         ownerPubkey: owner,
-      )) {
-        restored += await _recoverGroupsFrom(conversation, owner);
+      );
+      final restoredRoomIds = <String>{};
+      for (final conversation in conversations) {
+        restoredRoomIds.addAll(await _recoverGroupsFrom(conversation, owner));
+      }
+      // A message received after the destructive pass could fork into another
+      // 1:1 with only one sender, so that bucket cannot attest itself. Once an
+      // exact room has been restored above, its existence supplies the missing
+      // evidence. Sweep the remaining 1:1s again and reunite those forks.
+      if (restoredRoomIds.isNotEmpty) {
+        for (final conversation in conversations) {
+          await _recoverGroupsFrom(
+            conversation,
+            owner,
+            alreadyRestoredRoomIds: restoredRoomIds,
+          );
+        }
       }
       await syncState?.setGroupRecoveryVersion(
         owner,
         DmSyncState.currentGroupRecoveryVersion,
       );
-      if (restored > 0) {
+      if (restoredRoomIds.isNotEmpty) {
         Log.info(
-          'Restored $restored group conversation(s) erased by the startup '
-          'dedup pass',
+          'Restored ${restoredRoomIds.length} group conversation(s) erased by '
+          'the startup dedup pass',
           category: LogCategory.system,
         );
       }
@@ -7099,17 +7113,27 @@ class DmRepository {
     }
   }
 
-  /// Restores every attested room hiding inside [conversation]. Returns how
-  /// many were restored.
-  Future<int> _recoverGroupsFrom(
+  /// Restores every attested room hiding inside [conversation].
+  ///
+  /// [alreadyRestoredRoomIds] permits a second sweep to reunite single-sender
+  /// forks with a room that the first sweep positively attested.
+  Future<Set<String>> _recoverGroupsFrom(
     ConversationRow conversation,
-    String owner,
-  ) async {
-    if (conversation.isGroup) return 0;
-    final declared = (jsonDecode(conversation.participantPubkeys) as List)
-        .cast<String>()
-        .toSet();
-    if (declared.length != 2) return 0;
+    String owner, {
+    Set<String> alreadyRestoredRoomIds = const <String>{},
+  }) async {
+    if (conversation.isGroup) return const <String>{};
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(conversation.participantPubkeys);
+    } on FormatException {
+      return const <String>{};
+    }
+    if (decoded is! List || decoded.any((value) => value is! String)) {
+      return const <String>{};
+    }
+    final declared = decoded.cast<String>().toSet();
+    if (declared.length != 2) return const <String>{};
 
     // Raw read: the rendering read filters `is_deleted`, and a room whose
     // surviving rows are soft-deleted would look like an ordinary 1:1.
@@ -7118,7 +7142,7 @@ class DmRepository {
           conversation.id,
           ownerPubkey: owner,
         );
-    if (rows.isEmpty) return 0;
+    if (rows.isEmpty) return const <String>{};
 
     final facts = <RecoveryMessageFacts>[];
     for (final row in rows) {
@@ -7142,11 +7166,11 @@ class DmRepository {
         ),
       );
     }
-    if (facts.isEmpty) return 0;
+    if (facts.isEmpty) return const <String>{};
 
     final roomsByMessageId = {for (final f in facts) f.id: f.participants};
     final declaredKey = canonicalParticipantKey(declared);
-    var restored = 0;
+    final restoredRoomIds = <String>{};
 
     for (final entry in bucketByRoom(facts).entries) {
       if (entry.key == declaredKey) continue;
@@ -7157,17 +7181,21 @@ class DmRepository {
       if (!declared.every(room.contains) || room.length <= declared.length) {
         continue;
       }
-      if (!isAttestedGroup(bucket, roomsByMessageId)) continue;
+      final restoredId = computeConversationId(room.toList());
+      if (!alreadyRestoredRoomIds.contains(restoredId) &&
+          !isAttestedGroup(bucket, roomsByMessageId)) {
+        continue;
+      }
       if (await _restoreGroupConversation(
         conversation: conversation,
         room: room,
         bucket: bucket,
         owner: owner,
       )) {
-        restored++;
+        restoredRoomIds.add(restoredId);
       }
     }
-    return restored;
+    return restoredRoomIds;
   }
 
   /// Recreates one room and moves its messages. Returns whether it ran.

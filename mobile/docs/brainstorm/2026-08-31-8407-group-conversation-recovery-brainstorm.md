@@ -124,7 +124,8 @@ leaving the ambiguous remainder in exactly its current state. It converts a bloc
 product decision into a non-blocking one about the residual set.
 
 C also captures the value R5.2 identified: for every room it restores, it repairs future
-routing, not just history.
+routing and uses the restored room as evidence to reunite post-damage messages that had
+already forked into another 1:1.
 
 If the product answer later turns out to be "follow NIP-17", C's detection and
 reconstruction code is exactly what B needs — C is a strict subset of B, not a detour.

@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _me = '1111111111111111111111111111111111111111111111111111111111111111';
 const _alice =
@@ -499,7 +500,9 @@ void main() {
     // The fix: the recovery pass, driven through real production wiring.
     // ---------------------------------------------------------------------
 
-    Future<DmRepository> recoverViaSetCredentials() async {
+    Future<DmRepository> recoverViaSetCredentials({
+      DmSyncState? syncState,
+    }) async {
       final nostrClient = _MockNostrClient();
       when(() => nostrClient.connectedRelayCount).thenReturn(1);
       when(() => nostrClient.configuredRelayCount).thenReturn(1);
@@ -509,6 +512,7 @@ void main() {
             directMessagesDao: messages,
             conversationsDao: conversations,
             removedConversationsDao: db.removedConversationsDao,
+            syncState: syncState,
             reactionsRepository: DmReactionsRepository(
               reactionsDao: db.dmReactionsDao,
               conversationsDao: conversations,
@@ -591,6 +595,119 @@ void main() {
         );
       },
     );
+
+    test(
+      'moves a post-damage fork after another 1:1 attests the room',
+      () async {
+        final aliceOneToOneId = await seedConversation([_me, _alice]);
+        await seedMessage(
+          id: 'd1',
+          conversationId: aliceOneToOneId,
+          sender: _alice,
+          pTags: [_me],
+        );
+        final bobOneToOneId = await seedConversation([_me, _bob]);
+        final groupId = await seedConversation([_me, _alice, _bob]);
+        await seedMessage(
+          id: 'g1',
+          conversationId: groupId,
+          sender: _alice,
+          pTags: [_me, _bob],
+          createdAt: 1700000002,
+        );
+        await seedMessage(
+          id: 'g2',
+          conversationId: groupId,
+          sender: _bob,
+          pTags: [_me, _alice],
+          createdAt: 1700000003,
+        );
+
+        await runHistoricalPass();
+        await seedMessage(
+          id: 'post-damage-bob',
+          conversationId: bobOneToOneId,
+          sender: _bob,
+          pTags: [_me, _alice],
+          createdAt: 1700000004,
+        );
+
+        await recoverViaSetCredentials();
+
+        expect(
+          (await messages.getMessagesForConversation(
+            groupId,
+            ownerPubkey: _me,
+          )).map((m) => m.id).toSet(),
+          equals({'g1', 'g2', 'post-damage-bob'}),
+          reason:
+              'the room restored from the Alice 1:1 attests the same room '
+              'named by the single-sender fork in the Bob 1:1',
+        );
+        expect(
+          await messages.getMessagesForConversation(
+            bobOneToOneId,
+            ownerPubkey: _me,
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('a malformed conversation does not block later recovery', () async {
+      final oneToOneId = await seedConversation([_me, _alice]);
+      final groupId = await seedConversation([_me, _alice, _bob]);
+      await seedMessage(
+        id: 'g1',
+        conversationId: groupId,
+        sender: _alice,
+        pTags: [_me, _bob],
+        createdAt: 1700000002,
+      );
+      await seedMessage(
+        id: 'g2',
+        conversationId: groupId,
+        sender: _bob,
+        pTags: [_me, _alice],
+        createdAt: 1700000003,
+      );
+
+      await runHistoricalPass();
+      await conversations.upsertConversation(
+        id: 'malformed',
+        participantPubkeys: '{not json',
+        isGroup: false,
+        createdAt: 1700000000,
+        lastMessageTimestamp: 1700000010,
+        ownerPubkey: _me,
+      );
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final syncState = DmSyncState(await SharedPreferences.getInstance());
+      try {
+        await recoverViaSetCredentials(syncState: syncState);
+      } on FormatException {
+        // Rendering the deliberately corrupt row is outside this recovery
+        // pass. The maintenance work must still continue past it.
+      }
+
+      expect(
+        await conversations.getConversation(groupId, ownerPubkey: _me),
+        isNotNull,
+        reason: 'one malformed row must not abort recovery for the account',
+      );
+      expect(
+        syncState.groupRecoveryVersion(_me),
+        DmSyncState.currentGroupRecoveryVersion,
+        reason: 'the malformed row must not force this pass on every launch',
+      );
+      expect(
+        (await messages.getMessagesForConversation(
+          oneToOneId,
+          ownerPubkey: _me,
+        )).map((m) => m.id),
+        isEmpty,
+      );
+    });
 
     test('leaves the unattested reply-mention shape alone', () async {
       final oneToOneId = await seedConversation([_me, _alice]);
