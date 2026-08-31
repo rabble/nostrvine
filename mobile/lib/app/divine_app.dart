@@ -149,7 +149,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
       },
     );
     _memoryTelemetry = MemoryTelemetryService(
-      readRssBytes: () => kIsWeb ? 0 : io.ProcessInfo.currentRss,
+      readRssBytes: _currentRssBytes,
+      readPeakRssBytes: _peakRssBytes,
       nativeControllerCount: () =>
           DivineVideoPlayerController.liveControllerCount,
       queueDepth: () =>
@@ -217,8 +218,28 @@ class _DivineAppState extends ConsumerState<DivineApp>
 
   @override
   void didHaveMemoryPressure() {
+    // Warning, not info: a bug report keeps the last 200 error/warning
+    // entries but only the last 50 of any level, so an info line is gone
+    // within a minute of ordinary use. This is the one signal that tells an
+    // OS memory kill apart from a native crash Crashlytics missed (#8300),
+    // so it has to survive a whole session.
+    Log.warning(
+      'OS memory pressure at rss ${_rssMb(_currentRssBytes())} MB '
+      '(peak ${_rssMb(_peakRssBytes())} MB) — shedding image cache '
+      'and low-priority ingestion',
+      name: 'MemoryTelemetry',
+      category: LogCategory.system,
+    );
     _memoryPressureHandler.onMemoryPressure();
   }
+
+  static const int _bytesPerMb = 1024 * 1024;
+
+  static int _currentRssBytes() => kIsWeb ? 0 : io.ProcessInfo.currentRss;
+
+  static int _peakRssBytes() => kIsWeb ? 0 : io.ProcessInfo.maxRss;
+
+  static String _rssMb(int bytes) => (bytes / _bytesPerMb).toStringAsFixed(1);
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -243,9 +264,8 @@ class _DivineAppState extends ConsumerState<DivineApp>
   /// Logs a memory snapshot at info and annotates Crashlytics custom keys so
   /// OOM crash reports carry the last-seen memory footprint and gauges.
   void _emitMemorySnapshot(MemorySnapshot snapshot) {
-    const bytesPerMb = 1024 * 1024;
-    final rssMb = (snapshot.rssBytes / bytesPerMb).toStringAsFixed(1);
-    final peakMb = (snapshot.peakRssBytes / bytesPerMb).toStringAsFixed(1);
+    final rssMb = _rssMb(snapshot.rssBytes);
+    final peakMb = _rssMb(snapshot.peakRssBytes);
     Log.info(
       'Memory: rss $rssMb MB (peak $peakMb MB), '
       'vc_native=${snapshot.nativeControllers}, '
