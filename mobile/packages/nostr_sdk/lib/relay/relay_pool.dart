@@ -371,6 +371,20 @@ class RelayPool {
   Relay? _pooledRelayForTempAddr(String addr) =>
       _relays[addr] ?? _relays[_relayIdentity(addr)];
 
+  /// Whether [addrs] names [url], comparing on [_relayIdentity] rather than
+  /// raw strings. `subscribe`/`query` run their `targetRelays` through
+  /// [handleAddrList] (which ADDS a trailing slash) but compare against pool
+  /// keys from `normalizeRelayUrl` (which STRIPS one), so a raw `contains`
+  /// matched no pooled relay and turned the filter into a universal
+  /// exclusion. #8377.
+  bool _namesRelay(List<String> addrs, String url) {
+    final wanted = _relayIdentity(url);
+    for (final addr in addrs) {
+      if (_relayIdentity(addr) == wanted) return true;
+    }
+    return false;
+  }
+
   bool _isExplicitAuthRequiredReason(String message) {
     final lower = message.trim().toLowerCase();
     return lower.startsWith('auth-required');
@@ -1868,6 +1882,7 @@ class RelayPool {
     );
     _subscriptions[subscription.id] = subscription;
     _subscriptionSentAt[subscription.id] = DateTime.now();
+    final subscribedRelayIdentities = <String>{};
     log(
       '📋 subscribe: id=${subscription.id}, '
       'relays=${_relays.length}, filters=$filters',
@@ -1880,6 +1895,9 @@ class RelayPool {
         // check if normal relays has this temp relay, try to get relay from normal relays
         Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
+        if (!subscribedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
+        }
 
         relayDoSubscribe(
           relay,
@@ -1896,10 +1914,11 @@ class RelayPool {
         var relayAddr = entry.key;
         var relay = entry.value;
 
-        if (targetRelays != null) {
-          if (!targetRelays.contains(relayAddr)) {
-            continue;
-          }
+        if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
+        }
+        if (!subscribedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
         }
 
         relayDoSubscribe(relay, subscription, sendAfterAuth);
@@ -2111,6 +2130,7 @@ class RelayPool {
     // to the relay's url when it took the REQ, so the fan-out can report who
     // is actually able to answer.
     final queryFutures = <Future<String?>>[];
+    final queriedRelayIdentities = <String>{};
 
     Future<String?> sendQueryTo(
       Relay relay, {
@@ -2130,6 +2150,9 @@ class RelayPool {
         // check if normal relays has this temp relay, try to get relay from normal relays
         Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
+        if (!queriedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
+        }
 
         queryFutures.add(sendQueryTo(relay, runBeforeConnected: true));
       }
@@ -2141,10 +2164,11 @@ class RelayPool {
         var relayAddr = entry.key;
         var relay = entry.value;
 
-        if (targetRelays != null) {
-          if (!targetRelays.contains(relayAddr)) {
-            continue;
-          }
+        if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
+        }
+        if (!queriedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
         }
 
         queryFutures.add(sendQueryTo(relay));

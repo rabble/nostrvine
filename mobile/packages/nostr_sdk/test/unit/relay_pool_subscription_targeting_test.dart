@@ -1,5 +1,6 @@
-// ABOUTME: Pins how RelayPool.subscribe routes a REQ when tempRelays and
-// ABOUTME: targetRelays are supplied, over real sockets rather than mocks.
+// ABOUTME: Pins how RelayPool.subscribe and .query route a REQ when
+// ABOUTME: tempRelays and targetRelays are supplied, over real sockets
+// ABOUTME: rather than mocks.
 
 import 'dart:convert';
 
@@ -29,7 +30,7 @@ List<String> _reqIds(FakeWebSocketChannelFactory factory) {
 }
 
 void main() {
-  group('RelayPool.subscribe relay routing', () {
+  group('RelayPool relay routing', () {
     // The production shape this guards: divine's own relay plus one of the
     // four IndexerRelayConfig.safeFallbackRelays that #2931 connects so DMs
     // written to other relays stay visible.
@@ -113,24 +114,118 @@ void main() {
       },
     );
 
-    test('targetRelays narrows the pool away, even when it names a pooled '
-        'relay verbatim', () async {
-      // `targetRelays` is a filter over the pool, not an addition — the
-      // fallback pooled relay is skipped. The named pooled relay is supplied
-      // through tempRelays too, but must reuse the existing pooled socket
-      // rather than opening a duplicate connection.
-      nostr.relayPool.subscribe(
+    test(
+      'targetRelays keeps the pooled relay it names and skips the rest',
+      () async {
+        // #8377: the membership test compares a `handleAddrList`-normalized
+        // target (trailing slash ADDED) against a pool key from
+        // `normalizeRelayUrl` (trailing slash STRIPPED). Before the fix those
+        // never match, so `targetRelays` is a universal exclusion and NOTHING
+        // is subscribed. No tempRelays here — a temp entry would reach the
+        // pooled socket by the other path and mask the bug.
+        nostr.relayPool.subscribe(
+          filters,
+          (_) {},
+          id: 'target-only',
+          targetRelays: const [pooledPrimary],
+        );
+        await _waitForReq(primaryFactory, 'target-only');
+
+        expect(_reqIds(primaryFactory), contains('target-only'));
+        expect(_reqIds(fallbackFactory), isNot(contains('target-only')));
+        expect(tempRelaysGenerated, isEmpty);
+      },
+    );
+
+    test(
+      'targetRelays matches a pooled relay given with a trailing slash',
+      () async {
+        // The identity must hold from both directions: a caller that already
+        // supplies the slashed form names the same pooled relay.
+        nostr.relayPool.subscribe(
+          filters,
+          (_) {},
+          id: 'target-slashed',
+          targetRelays: const ['$pooledPrimary/'],
+        );
+        await _waitForReq(primaryFactory, 'target-slashed');
+
+        expect(_reqIds(primaryFactory), contains('target-slashed'));
+        expect(_reqIds(fallbackFactory), isNot(contains('target-slashed')));
+        expect(tempRelaysGenerated, isEmpty);
+      },
+    );
+
+    test('query targetRelays asks only the pooled relay it names', () async {
+      // The same membership test guards `query` (#8377). `sentTo` names the
+      // relays that took the REQ, so an empty result is the universal
+      // exclusion this fixes — not "every relay had nothing".
+      final result = await nostr.relayPool.query(
         filters,
         (_) {},
-        id: 'targeted',
-        tempRelays: const [pooledPrimary],
+        id: 'query-target',
         targetRelays: const [pooledPrimary],
       );
-      await _waitForReq(primaryFactory, 'targeted');
 
-      expect(_reqIds(primaryFactory), contains('targeted'));
-      expect(_reqIds(fallbackFactory), isNot(contains('targeted')));
-      expect(tempRelaysGenerated, isEmpty);
+      expect(result.sentTo, contains(pooledPrimary));
+      expect(result.sentTo, isNot(contains(pooledFallback)));
     });
+
+    test('query targetRelays accepts the trailing-slash form', () async {
+      final result = await nostr.relayPool.query(
+        filters,
+        (_) {},
+        id: 'query-target-slashed',
+        targetRelays: const ['$pooledPrimary/'],
+      );
+
+      expect(result.sentTo, [pooledPrimary]);
+      expect(_reqIds(fallbackFactory), isNot(contains('query-target-slashed')));
+    });
+
+    test(
+      'targetRelays and tempRelays naming one pooled relay share its socket',
+      () async {
+        // `targetRelays` filters the pool down to the named relay, so the
+        // fallback is skipped. Naming that same relay through tempRelays as
+        // well must reuse the pooled socket rather than dialing a duplicate.
+        nostr.relayPool.subscribe(
+          filters,
+          (_) {},
+          id: 'targeted',
+          tempRelays: const [pooledPrimary],
+          targetRelays: const [pooledPrimary],
+        );
+        await _waitForReq(primaryFactory, 'targeted');
+
+        expect(
+          _reqIds(primaryFactory).where((id) => id == 'targeted'),
+          hasLength(1),
+        );
+        expect(_reqIds(fallbackFactory), isNot(contains('targeted')));
+        expect(tempRelaysGenerated, isEmpty);
+      },
+    );
+
+    test(
+      'query sends one REQ when targetRelays and tempRelays name one pool relay',
+      () async {
+        final result = await nostr.relayPool.query(
+          filters,
+          (_) {},
+          id: 'query-targeted',
+          tempRelays: const [pooledPrimary],
+          targetRelays: const [pooledPrimary],
+        );
+
+        expect(
+          _reqIds(primaryFactory).where((id) => id == 'query-targeted'),
+          hasLength(1),
+        );
+        expect(result.sentTo, [pooledPrimary]);
+        expect(_reqIds(fallbackFactory), isNot(contains('query-targeted')));
+        expect(tempRelaysGenerated, isEmpty);
+      },
+    );
   });
 }
