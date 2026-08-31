@@ -389,6 +389,29 @@ void main() {
       },
     );
 
+    test(
+      'reportContent() self-report guard is case-insensitive (#8352)',
+      () async {
+        // authorPubkey can arrive uppercased (it is copied from Event.pubkey),
+        // while currentPublicKeyHex is lowercase. The guard must still catch it.
+        final result = await service.reportContent(
+          eventId: _validEventId('a'),
+          authorPubkey: testPublicKey.toUpperCase(),
+          reason: ContentFilterReason.other,
+          details: 'accidental self-report, upper-cased target',
+        );
+
+        expect(result.success, isTrue);
+        expect(result.delivery, ReportDelivery.refused);
+        verifyNever(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      },
+    );
+
     test('reportContent() handles all ContentFilterReason types including '
         'aiGenerated', () async {
       // Arrange
