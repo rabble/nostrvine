@@ -608,23 +608,6 @@ void main() {
         await callback();
       });
 
-      // Global stub for the recovery path's group-sibling dedup probe: by
-      // default no batch sibling is persisted yet, so recoverFullSend
-      // inserts normally. Group-recovery tests that exercise the dedup
-      // restub this to true. Still used by the cross-protocol receive dedup
-      // and by the legacy null-batch fallback in group recovery.
-      when(
-        () => mockDirectMessagesDao.hasMatchingMessage(
-          counterpart: any(named: 'counterpart'),
-          conversationId: any(named: 'conversationId'),
-          senderPubkey: any(named: 'senderPubkey'),
-          content: any(named: 'content'),
-          createdAt: any(named: 'createdAt'),
-          windowSeconds: any(named: 'windowSeconds'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
       // Same default for the cross-protocol twin claim, which the peer receive
       // paths use instead of hasMatchingMessage (#8211): no twin is available,
       // so an arrival persists. Dedup tests restub this to true.
@@ -869,6 +852,21 @@ void main() {
     void stubNoMessageForSendBatch() => when(
       () => mockDirectMessagesDao.hasMessageWithSendBatchId(
         batchId: any(named: 'batchId'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    // #7324's stub: whether a same-protocol row already matches. Constant
+    // `false` here is what let the collapsed-duplicate bug stay green, so the
+    // groups that lean on it say so.
+    void stubNoMatchingStoredMessage() => when(
+      () => mockDirectMessagesDao.hasMatchingMessage(
+        counterpart: any(named: 'counterpart'),
+        conversationId: any(named: 'conversationId'),
+        senderPubkey: any(named: 'senderPubkey'),
+        content: any(named: 'content'),
+        createdAt: any(named: 'createdAt'),
+        windowSeconds: any(named: 'windowSeconds'),
         ownerPubkey: any(named: 'ownerPubkey'),
       ),
     ).thenAnswer((_) async => false);
@@ -21666,6 +21664,8 @@ void main() {
     });
 
     group('recoverFullSend', () {
+      setUp(stubNoMatchingStoredMessage);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       // A fixed rumor JSON that Event.fromJson can parse — the
