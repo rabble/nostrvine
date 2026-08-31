@@ -582,32 +582,6 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      // Default for the batched drain dedup probe (#13): nothing already
-      // persisted. The drain group overrides this with a stateful version so
-      // its inclusive-`until` boundary re-request is deduped.
-      when(
-        () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
-      ).thenAnswer((_) async => const <String>{});
-
-      // Default for every queryEventsDetailed read — the kind-10050 lookups
-      // (resolveDmInboxRelays() on the send path, the memoized own-inbox
-      // resolve, the RC3 publish check) and the history drain's paged reads.
-      // ANSWERED and empty: the relays replied and there is genuinely nothing,
-      // which is what every test that cares about neither read assumed when
-      // both went through queryEvents. An UNANSWERED empty is a different
-      // outcome — absence the RC3 publisher must not act on (#8212), a page the
-      // drain must not read as exhaustion (#8209) — and is stubbed explicitly.
-      when(
-        () => mockNostrClient.queryEventsDetailed(
-          any(),
-          subscriptionId: any(named: 'subscriptionId'),
-          useCache: any(named: 'useCache'),
-          tempRelays: any(named: 'tempRelays'),
-          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          timeout: any(named: 'timeout'),
-        ),
-      ).thenAnswer((_) async => answeredList(const <Event>[]));
-
       // Stub backfillCurrentUserHasSent for _backfillCurrentUserHasSent().
       when(
         () => mockConversationsDao.backfillCurrentUserHasSent(any()),
@@ -666,18 +640,6 @@ void main() {
         ),
       ).thenAnswer((_) async => false);
 
-      // Global stub for the durable batch-id dedup probe: the send + recovery
-      // paths now match a group send's persisted local message by its stamped
-      // sendBatchId (not the collision-prone content/timestamp window). Default
-      // to "not yet persisted" so happy-path group send + recovery insert
-      // normally; dedup tests restub this to true.
-      when(
-        () => mockDirectMessagesDao.hasMessageWithSendBatchId(
-          batchId: any(named: 'batchId'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
       // Global stub for markAsRead — every live-send path now marks the
       // conversation read in the same transaction (#5515: sending implies
       // read). Default to a successful flip so send tests don't restub it.
@@ -691,13 +653,6 @@ void main() {
       // Global stubs for the #4977 read-state cursor surface so any path that
       // touches the marker reconcile / debounced publish / drain floor has a
       // default. Tests that assert on these restub or verify as needed.
-      when(
-        () => mockConversationsDao.applyReadCursor(
-          any(),
-          any(),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => true);
       when(
         () => mockConversationsDao.lastSentTimestampsByConversation(
           any(),
@@ -883,6 +838,40 @@ void main() {
     // -----------------------------------------------------------------
     // Static helpers
     // -----------------------------------------------------------------
+
+    // Decision stubs, declared by the groups that depend on them rather than
+    // inherited from the shared setUp. Each replaces a branch production takes,
+    // so a test that needs one should say so (#8399).
+
+    void stubNoStoredReadCursorRow() => when(
+      () => mockConversationsDao.applyReadCursor(
+        any(),
+        any(),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => true);
+
+    void stubRelayReadAnsweredEmpty() => when(
+      () => mockNostrClient.queryEventsDetailed(
+        any(),
+        subscriptionId: any(named: 'subscriptionId'),
+        useCache: any(named: 'useCache'),
+        tempRelays: any(named: 'tempRelays'),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer((_) async => answeredList(const <Event>[]));
+
+    void stubNoPersistedGiftWrapIds() => when(
+      () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
+    ).thenAnswer((_) async => const <String>{});
+
+    void stubNoMessageForSendBatch() => when(
+      () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+        batchId: any(named: 'batchId'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
 
     group('computeConversationId', () {
       test('returns same hash regardless of order', () {
@@ -1667,6 +1656,11 @@ void main() {
     // -----------------------------------------------------------------
 
     group('receive pipeline', () {
+      setUp(stubNoPersistedGiftWrapIds);
+      // The drain's read-state restore calls applyReadCursor; unstubbed it
+      // throws into a catch, which no test failure would show.
+      setUp(stubNoStoredReadCursorRow);
+
       Event createGiftWrapEvent({String? id}) {
         return Event.fromJson({
           'id': id ?? _giftWrapEventId,
@@ -4733,6 +4727,8 @@ void main() {
     });
 
     group('ensureDmRelayListPublished (#4974 RC3)', () {
+      setUp(stubRelayReadAnsweredEmpty);
+
       Event existingInbox(List<String> relays) => Event(
         _validPubkeyA,
         EventKind.dmRelaysList,
@@ -5496,6 +5492,8 @@ void main() {
     });
 
     group('backfillHistoryIfNeeded', () {
+      setUp(stubNoStoredReadCursorRow);
+
       // Kind-5 deletions with no tags flow through _handleIncomingEvent
       // with zero decryption / DAO side effects, so they exercise the
       // drain's pagination control flow in isolation.
@@ -8581,6 +8579,8 @@ void main() {
     });
 
     group('read-state marker (#4977)', () {
+      setUp(stubNoStoredReadCursorRow);
+
       final tupleKey = (<String>[
         _validPubkeyA,
         _validPubkeyB,
@@ -9097,6 +9097,8 @@ void main() {
     // needed: the `_validPubkey*` fixtures are arbitrary hex, not keypairs,
     // so they cannot produce a seal whose signature verifies. #7343.
     group('read-state marker forgery, real NIP-59 crypto (#7343)', () {
+      setUp(stubNoStoredReadCursorRow);
+
       const victimPrivate =
           '5c0c523f52a5b6fad39ed2403092df8cebc36318b39383bca6c00808626fab3a';
       const attackerPrivate =
@@ -19321,6 +19323,8 @@ void main() {
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
+      setUp(stubNoMessageForSendBatch);
+
       late _MockOutgoingDmsDao mockOutgoingDmsDao;
 
       setUp(() {
