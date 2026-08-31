@@ -105,17 +105,18 @@ Map<String, List<RecoveryMessageFacts>> bucketByRoom(
 /// duplicate-conversation bug (#2740) that the destructive pass was written to
 /// fix.
 ///
-/// The required high-confidence signal is **two or more distinct senders inside
-/// this exact room**. One mention names a third party; it does not make them
-/// speak. Independent mentions by any two senders can still produce the same
-/// bytes as a real room, so this is deliberately conservative rather than
-/// conclusive.
+/// For a room without prior attestation, the required high-confidence signal is
+/// **two or more distinct senders inside this exact room**. One mention names a
+/// third party; it does not make them speak. Independent mentions by any two
+/// senders can still produce the same bytes as a real room, so this is
+/// deliberately conservative rather than conclusive.
 ///
-/// A single-sender room is **deliberately skipped**, even though some of those
-/// are real groups whose other members stayed quiet. That case is
-/// indistinguishable from a mention-widened 1:1 (see above), and this pass does
-/// not guess: a wrong restore is a user-visible phantom conversation, whereas a
-/// skip leaves the thread exactly as the user already sees it.
+/// A single-sender room without prior attestation is **deliberately skipped**,
+/// even though some of those are real groups whose other members stayed quiet.
+/// That case is indistinguishable from a mention-widened 1:1 (see above), and
+/// this pass does not guess: a wrong restore is a user-visible phantom
+/// conversation, whereas a skip leaves the thread exactly as the user already
+/// sees it.
 ///
 /// The reply-mention shape is kept as an additional **veto**, not as a grant.
 /// #2740 records the real-world cause as "NIP-10 reply mentions", and a reply
@@ -128,6 +129,8 @@ Map<String, List<RecoveryMessageFacts>> bucketByRoom(
 /// [roomsByMessageId] must resolve reply parents across the *whole* source
 /// conversation, not just this bucket — a mention-reply's parent lives in the
 /// narrower room by definition.
+/// Set [requireMultipleSenders] to false only when another source conversation
+/// already attested this exact room; the reply-mention veto still applies.
 bool isAttestedGroup(
   List<RecoveryMessageFacts> bucket,
   Map<String, Set<String>> roomsByMessageId, {
