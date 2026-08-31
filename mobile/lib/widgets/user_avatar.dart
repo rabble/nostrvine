@@ -101,7 +101,7 @@ class UserAvatar extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildContent(),
+            _buildContent(context),
             DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(_cornerRadius),
@@ -145,14 +145,29 @@ class UserAvatar extends StatelessWidget {
     name: name,
   );
 
-  Widget _buildContent() {
+  /// Decode width for this avatar's slot, in device pixels.
+  ///
+  /// An avatar URL is an arbitrary user-supplied kind-0 `picture` at an
+  /// arbitrary resolution, and the slot is usually 32-44pt. Without a hint
+  /// Flutter decodes at the source's full resolution, so a 4000x3000 photo
+  /// costs 48 MB of bitmap to fill 4 KB of pixels — and `SizedBox.square`
+  /// above bounds layout, not decode. Height is deliberately left to
+  /// [ResizeImage] so the aspect ratio survives.
+  int _decodeWidth(BuildContext context) =>
+      (size * MediaQuery.devicePixelRatioOf(context)).ceil();
+
+  Widget _buildContent(BuildContext context) {
     if (contentOverride case final override?) {
       return override;
     }
 
     if (imageProvider != null) {
       return Image(
-        image: imageProvider!,
+        image: ResizeImage.resizeIfNeeded(
+          _decodeWidth(context),
+          null,
+          imageProvider!,
+        ),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
       );
@@ -177,6 +192,7 @@ class UserAvatar extends StatelessWidget {
 
       return VineCachedImage(
         imageUrl: imageUrl!,
+        memCacheWidth: _decodeWidth(context),
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {
           final failureKind = AvatarFailureCache.instance.recordFailureForError(

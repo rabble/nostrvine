@@ -259,7 +259,7 @@ void main() {
         expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('renders provided imageProvider directly', (tester) async {
+      testWidgets('renders the provided imageProvider', (tester) async {
         final provider = MemoryImage(
           Uint8List.fromList(_transparentImageBytes),
         );
@@ -277,7 +277,10 @@ void main() {
         expect(find.byType(VineCachedImage), findsNothing);
         expect(find.byType(Image), findsOneWidget);
         final image = tester.widget<Image>(find.byType(Image));
-        expect(image.image, same(provider));
+        // Wrapped for a bounded decode, but still resolving the caller's
+        // provider — see the 'Decode size' group for the bound itself.
+        expect(image.image, isA<ResizeImage>());
+        expect((image.image as ResizeImage).imageProvider, same(provider));
       });
 
       testWidgets('uses explicit placeholder tone when provided', (
@@ -601,6 +604,87 @@ void main() {
 
         await tester.pumpAndSettle();
         expect(find.byType(UserAvatar), findsOneWidget);
+      });
+    });
+
+    group('Decode size', () {
+      testWidgets('bounds the network decode to the slot in device pixels', (
+        tester,
+      ) async {
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UserAvatar(
+                imageUrl: 'https://example.com/avatar.jpg',
+                size: 32,
+              ),
+            ),
+          ),
+        );
+
+        final image = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
+        );
+        // 32pt slot at 3x. Without this hint Flutter decodes the source at
+        // full resolution, which is how a 32x32 avatar costs tens of MB.
+        expect(image.memCacheWidth, equals(96));
+        // Left null so ResizeImage preserves the source aspect ratio.
+        expect(image.memCacheHeight, isNull);
+      });
+
+      testWidgets('scales the decode hint with the slot size', (tester) async {
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UserAvatar(
+                imageUrl: 'https://example.com/avatar.jpg',
+                size: 120,
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          tester
+              .widget<VineCachedImage>(find.byType(VineCachedImage))
+              .memCacheWidth,
+          equals(240),
+        );
+      });
+
+      testWidgets('bounds a caller-supplied ImageProvider too', (tester) async {
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UserAvatar(
+                imageProvider: MemoryImage(
+                  Uint8List.fromList(_transparentImageBytes),
+                ),
+                size: 40,
+              ),
+            ),
+          ),
+        );
+
+        final provider = tester.widget<Image>(find.byType(Image)).image;
+        expect(provider, isA<ResizeImage>());
+        expect((provider as ResizeImage).width, equals(120));
+        expect(provider.height, isNull);
       });
     });
 
