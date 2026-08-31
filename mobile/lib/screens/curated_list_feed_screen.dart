@@ -191,60 +191,64 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             >(
               bloc: cubit,
               selector: (state) => state.selectedVideoIds,
-              builder: (context, selectedVideoIds) => ComposableVideoGrid(
-                videos: videos,
-                useMasonryLayout: true,
-                // Edge-to-edge like the Explore grids: the 4px column gap
-                // comes from the grid's spacing, not outer side padding.
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                topOuterRadius: VineTheme.shellInnerCornerRadius,
-                showSubscribedListBadge: false,
-                selectedVideoIds: selectedVideoIds,
-                onVideoTap: (videoList, index) =>
-                    cubit.togglePost(videoList[index].id),
-                emptyBuilder: () => const _EmptyListMessage(),
+              builder: (context, selectedVideoIds) => _RoundedGridViewport(
+                child: ComposableVideoGrid(
+                  videos: videos,
+                  useMasonryLayout: true,
+                  // Edge-to-edge like the Explore grids: the 4px column gap
+                  // comes from the grid's spacing, not outer side padding.
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  topOuterRadius: VineTheme.shellInnerCornerRadius,
+                  showSubscribedListBadge: false,
+                  selectedVideoIds: selectedVideoIds,
+                  onVideoTap: (videoList, index) =>
+                      cubit.togglePost(videoList[index].id),
+                  emptyBuilder: () => const _EmptyListMessage(),
+                ),
               ),
             );
           }
 
-          return ComposableVideoGrid(
-            videos: videos,
-            useMasonryLayout: true,
-            // Edge-to-edge like the Explore grids: the 4px column gap comes
-            // from the grid's spacing, not outer side padding.
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            topOuterRadius: VineTheme.shellInnerCornerRadius,
-            showSubscribedListBadge: false,
-            headerSlivers: [
-              SliverToBoxAdapter(
-                child: _ListHeroHeader(
-                  name: list?.name ?? widget.listName,
-                  videoCount:
-                      widget.videoIds?.length ??
-                      list?.videoEventIds.length ??
-                      0,
-                  description: list?.description,
-                  authorPubkey: isOwned
-                      ? null
-                      : widget.authorPubkey ?? list?.pubkey,
-                  isPublic: list?.isPublic,
-                  onAuthorTap: _openAuthorProfile,
+          return _RoundedGridViewport(
+            child: ComposableVideoGrid(
+              videos: videos,
+              useMasonryLayout: true,
+              // Edge-to-edge like the Explore grids: the 4px column gap comes
+              // from the grid's spacing, not outer side padding.
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              topOuterRadius: VineTheme.shellInnerCornerRadius,
+              showSubscribedListBadge: false,
+              headerSlivers: [
+                SliverToBoxAdapter(
+                  child: _ListHeroHeader(
+                    name: list?.name ?? widget.listName,
+                    videoCount:
+                        widget.videoIds?.length ??
+                        list?.videoEventIds.length ??
+                        0,
+                    description: list?.description,
+                    authorPubkey: isOwned
+                        ? null
+                        : widget.authorPubkey ?? list?.pubkey,
+                    isPublic: list?.isPublic,
+                    onAuthorTap: _openAuthorProfile,
+                  ),
                 ),
-              ),
-            ],
-            onVideoTap: (videoList, index) {
-              Log.info(
-                'Tapped video in curated list: ${videoList[index].id}',
-                category: LogCategory.ui,
-              );
-              setState(() {
-                _activeVideoIndex = index;
-              });
-            },
-            onRefresh: () async {
-              _refreshListVideos();
-            },
-            emptyBuilder: () => const _EmptyListMessage(),
+              ],
+              onVideoTap: (videoList, index) {
+                Log.info(
+                  'Tapped video in curated list: ${videoList[index].id}',
+                  category: LogCategory.ui,
+                );
+                setState(() {
+                  _activeVideoIndex = index;
+                });
+              },
+              onRefresh: () async {
+                _refreshListVideos();
+              },
+              emptyBuilder: () => const _EmptyListMessage(),
+            ),
           );
         },
         loading: () => const _ListLoadingView(),
@@ -593,6 +597,27 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         });
       }
     }
+  }
+}
+
+/// Clips the scrolling grid region's top corners, so content sliding under
+/// the app bar keeps the same rounded seam the design's radius cap draws.
+///
+/// Complements [ComposableVideoGrid.topOuterRadius]: that rounds the grid
+/// block itself at rest, this rounds the viewport while scrolled.
+class _RoundedGridViewport extends StatelessWidget {
+  const _RoundedGridViewport({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.shellInnerCornerRadius),
+      ),
+      child: child,
+    );
   }
 }
 

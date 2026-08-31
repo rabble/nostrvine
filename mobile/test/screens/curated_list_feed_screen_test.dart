@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:riverpod/misc.dart' show Override;
 
 import '../helpers/go_router.dart';
@@ -483,6 +484,35 @@ void main() {
           expect(confirm, returnsNormally);
         },
       );
+    });
+
+    group('grid viewport', () {
+      testWidgets('clips the scrolling grid region at the top corners', (
+        tester,
+      ) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final clip = tester.widget<ClipRRect>(
+          find
+              .ancestor(
+                of: find.byType(ComposableVideoGrid),
+                matching: find.byType(ClipRRect),
+              )
+              .first,
+        );
+        expect(
+          clip.borderRadius,
+          const BorderRadius.vertical(
+            top: Radius.circular(VineTheme.shellInnerCornerRadius),
+          ),
+        );
+      });
     });
 
     group('manage posts mode', () {
