@@ -1882,6 +1882,7 @@ class RelayPool {
     );
     _subscriptions[subscription.id] = subscription;
     _subscriptionSentAt[subscription.id] = DateTime.now();
+    final subscribedRelayIdentities = <String>{};
     log(
       '📋 subscribe: id=${subscription.id}, '
       'relays=${_relays.length}, filters=$filters',
@@ -1894,6 +1895,9 @@ class RelayPool {
         // check if normal relays has this temp relay, try to get relay from normal relays
         Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
+        if (!subscribedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
+        }
 
         relayDoSubscribe(
           relay,
@@ -1911,6 +1915,9 @@ class RelayPool {
         var relay = entry.value;
 
         if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
+        }
+        if (!subscribedRelayIdentities.add(_relayIdentity(relay.url))) {
           continue;
         }
 
@@ -2123,6 +2130,7 @@ class RelayPool {
     // to the relay's url when it took the REQ, so the fan-out can report who
     // is actually able to answer.
     final queryFutures = <Future<String?>>[];
+    final queriedRelayIdentities = <String>{};
 
     Future<String?> sendQueryTo(
       Relay relay, {
@@ -2142,6 +2150,9 @@ class RelayPool {
         // check if normal relays has this temp relay, try to get relay from normal relays
         Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
+        if (!queriedRelayIdentities.add(_relayIdentity(relay.url))) {
+          continue;
+        }
 
         queryFutures.add(sendQueryTo(relay, runBeforeConnected: true));
       }
@@ -2154,6 +2165,9 @@ class RelayPool {
         var relay = entry.value;
 
         if (targetRelays != null && !_namesRelay(targetRelays, relayAddr)) {
+          continue;
+        }
+        if (!queriedRelayIdentities.add(_relayIdentity(relay.url))) {
           continue;
         }
 

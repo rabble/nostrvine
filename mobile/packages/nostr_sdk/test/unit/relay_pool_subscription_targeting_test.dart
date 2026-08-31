@@ -171,6 +171,18 @@ void main() {
       expect(result.sentTo, isNot(contains(pooledFallback)));
     });
 
+    test('query targetRelays accepts the trailing-slash form', () async {
+      final result = await nostr.relayPool.query(
+        filters,
+        (_) {},
+        id: 'query-target-slashed',
+        targetRelays: const ['$pooledPrimary/'],
+      );
+
+      expect(result.sentTo, [pooledPrimary]);
+      expect(_reqIds(fallbackFactory), isNot(contains('query-target-slashed')));
+    });
+
     test(
       'targetRelays and tempRelays naming one pooled relay share its socket',
       () async {
@@ -186,8 +198,32 @@ void main() {
         );
         await _waitForReq(primaryFactory, 'targeted');
 
-        expect(_reqIds(primaryFactory), contains('targeted'));
+        expect(
+          _reqIds(primaryFactory).where((id) => id == 'targeted'),
+          hasLength(1),
+        );
         expect(_reqIds(fallbackFactory), isNot(contains('targeted')));
+        expect(tempRelaysGenerated, isEmpty);
+      },
+    );
+
+    test(
+      'query sends one REQ when targetRelays and tempRelays name one pool relay',
+      () async {
+        final result = await nostr.relayPool.query(
+          filters,
+          (_) {},
+          id: 'query-targeted',
+          tempRelays: const [pooledPrimary],
+          targetRelays: const [pooledPrimary],
+        );
+
+        expect(
+          _reqIds(primaryFactory).where((id) => id == 'query-targeted'),
+          hasLength(1),
+        );
+        expect(result.sentTo, [pooledPrimary]);
+        expect(_reqIds(fallbackFactory), isNot(contains('query-targeted')));
         expect(tempRelaysGenerated, isEmpty);
       },
     );
