@@ -573,6 +573,7 @@ void main() {
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
+      when(() => mockNostrClient.isRelayAllowed(any())).thenReturn(true);
 
       // Stub getNewestMessageTimestamp for startListening() windowing.
       when(
@@ -725,7 +726,6 @@ void main() {
           content: any(named: 'content'),
           tags: any(named: 'tags'),
           eventKind: any(named: 'eventKind'),
-          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -819,10 +819,11 @@ void main() {
       NostrSigner? signer,
       DmDecryptIsolateSpawner? decryptIsolateSpawner,
       DmVerifyIsolateSpawner? verifyIsolateSpawner,
-      // #4974 RC3: default the feature on + inject a stable relay so the
-      // existing RC3 tests exercise the publish path; gating tests override.
-      bool publishDmRelayListEnabled = true,
+      // #4974: inject a stable advertised relay so the publish tests exercise
+      // the real path; tests that assert the unconfigured no-op pass null.
       String? dmInboxRelayUrl = 'wss://relay.divine.video',
+      List<String> dmInboxDiscoveryRelays = const <String>[],
+      List<String> dmInboxTaggedRelays = const <String>[],
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
       String Function()? sendBatchIdGenerator,
     }) {
@@ -848,8 +849,9 @@ void main() {
             verifyIsolateSpawner ?? () async => _RecordingVerifyWorker(),
         syncState: syncState,
         reactionsRepository: reactionsRepository,
-        publishDmRelayListEnabled: publishDmRelayListEnabled,
         dmInboxRelayUrl: dmInboxRelayUrl,
+        dmInboxTaggedRelays: dmInboxTaggedRelays,
+        dmInboxDiscoveryRelays: dmInboxDiscoveryRelays,
         readMarkerDebounceDelay: readMarkerDebounceDelay,
         sendBatchIdGenerator: sendBatchIdGenerator,
         errorReporter: (error, stackTrace, {required site}) {
@@ -4462,8 +4464,8 @@ void main() {
       );
 
       test(
-        'live subscription targets the own kind-10050 inbox relays as BOTH '
-        'tempRelays and targetRelays',
+        'live subscription ADDS the own kind-10050 inbox relays as tempRelays '
+        'and never narrows the pool with targetRelays',
         () async {
           when(
             () => mockNostrClient.queryEventsDetailed(
@@ -4500,9 +4502,13 @@ void main() {
               targetRelays: captureAny(named: 'targetRelays'),
             ),
           ).captured;
+          // tempRelays dials the advertised inbox in ADDITION to the pool.
+          // targetRelays must stay null: it is a filter over the pool, so a
+          // non-null value there drops divine's own relay and the four
+          // safeFallbackRelays #2931 added for exactly this read. See #7320.
           expect(captured, [
             ['wss://own.example'],
-            ['wss://own.example'],
+            null,
           ]);
 
           await repository.stopListening();
@@ -4741,6 +4747,22 @@ void main() {
         noResponseFrom: const [],
       );
 
+      /// An outcome where each of [acceptedBy] said `OK true` and every other
+      /// target rejected with a kind-policy message, the way `relay.nos.social`
+      /// and `user.kindpag.es` answer a kind-10050 today.
+      PublishOutcome partialOutcome({
+        required List<String> targets,
+        required List<String> acceptedBy,
+      }) => PublishOutcome(
+        eventId: 'eid',
+        acceptedBy: acceptedBy,
+        rejectedBy: {
+          for (final url in targets)
+            if (!acceptedBy.contains(url)) url: 'blocked: kind not allowed',
+        },
+        noResponseFrom: const [],
+      );
+
       test(
         'publishes a kind-10050 advertising the injected stable relay when '
         'absent and records the flag on a confirmed OK',
@@ -4775,6 +4797,173 @@ void main() {
           );
         },
       );
+
+      group('discovery relays (#7336)', () {
+        const divine = 'wss://relay.divine.video';
+        const dmFallback1 = 'wss://nos.lol';
+        const dmFallback2 = 'wss://relay.primal.net';
+        const discovery = 'wss://purplepag.es';
+
+        test(
+          'publishes to the advertised and discovery relays, while tagging '
+          'the three DM relays only',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
+                acceptedBy: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [
+                dmFallback1,
+                dmFallback2,
+                discovery,
+              ],
+              dmInboxTaggedRelays: const [dmFallback1, dmFallback2],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            final captured = verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                captureAny(),
+                targetRelays: captureAny(named: 'targetRelays'),
+              ),
+            ).captured;
+            // The EVENT is copied to the discovery indexer, but the list names
+            // only relays Divine actually drains for incoming DMs.
+            expect((captured[0] as Event).tags, [
+              ['relay', divine],
+              ['relay', dmFallback1],
+              ['relay', dmFallback2],
+            ]);
+            expect(captured[1], [
+              divine,
+              dmFallback1,
+              dmFallback2,
+              discovery,
+            ]);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a discovery relay refusing the kind is best-effort — the list is '
+          'still published',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [divine],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // Discovery is a bonus, not a precondition: a third-party relay
+            // changing its kind policy must never put every account into a
+            // republish loop on each login.
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a discovery relay accepting does NOT stand in for the advertised '
+          'relay refusing — retries next login',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [discovery],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // "Something accepted" is the wrong bar. The advertised relay is
+            // the one divine drains, so a list that never reached it leaves
+            // the account undeliverable while the flag says it is done.
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
+
+        test(
+          'drops a discovery relay whose URL is not a usable relay',
+          () async {
+            when(
+              () =>
+                  mockNostrClient.isRelayAllowed('http://not-a-relay.example'),
+            ).thenReturn(false);
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer((_) async => outcome(accepted: true));
+
+            final repository = createRepository(
+              syncState: _FakeDmSyncState(),
+              dmInboxDiscoveryRelays: const [
+                'http://not-a-relay.example',
+                discovery,
+              ],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            final captured = verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: captureAny(named: 'targetRelays'),
+              ),
+            ).captured;
+            expect(captured.single, [divine, discovery]);
+          },
+        );
+      });
 
       test(
         'does NOT record the flag when no relay accepts — retries next login',
@@ -4885,11 +5074,11 @@ void main() {
         );
       });
 
-      test('is a no-op when the feature flag is off', () async {
+      test('is a no-op when no advertised relay is configured', () async {
         final syncState = _FakeDmSyncState();
         final repository = createRepository(
           syncState: syncState,
-          publishDmRelayListEnabled: false,
+          dmInboxRelayUrl: null,
         );
         await repository.ensureDmRelayListPublished();
 
@@ -8432,7 +8621,6 @@ void main() {
               content: captureAny(named: 'content'),
               tags: captureAny(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           ).captured;
           expect(captured, isNotEmpty);
@@ -8441,7 +8629,6 @@ void main() {
           expect(payload['v'], 1);
           expect((payload['read'] as Map)[tupleKey], 1700000200);
           expect(tags, contains(equals(['d', 'divine/dm-read/v1'])));
-
           // Self-only: a read marker never goes out as a counterparty message.
           verifyNever(
             () => mockMessageService.sendRumor(
@@ -8477,7 +8664,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           );
         },
@@ -8503,7 +8689,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
@@ -8626,7 +8811,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           ).called(1);
         },
@@ -8650,7 +8834,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         );
       });
@@ -8692,7 +8875,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           );
         },
@@ -8717,7 +8899,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         );
       });

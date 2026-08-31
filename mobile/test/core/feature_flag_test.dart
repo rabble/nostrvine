@@ -63,10 +63,6 @@ void main() {
         FeatureFlag.communityContentWarnings.audience,
         FeatureFlagAudience.internal,
       );
-      expect(
-        FeatureFlag.publishDmRelayList.audience,
-        FeatureFlagAudience.internal,
-      );
       expect(FeatureFlag.feedTuning.audience, FeatureFlagAudience.internal);
       expect(
         FeatureFlag.postPublishConfirmationExperiment.audience,

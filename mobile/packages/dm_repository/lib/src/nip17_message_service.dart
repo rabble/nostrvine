@@ -1063,9 +1063,8 @@ class NIP17MessageService {
   }
 
   /// Build a kind-[eventKind] rumor with [content] + [tags] and publish it as
-  /// a **self-addressed** NIP-59 gift wrap (never to a counterparty) to
-  /// [targetRelays] — the user's own DM inbox relays, or the default pool when
-  /// `null`/empty. Returns `true` when the wrap reached at least one relay.
+  /// a **self-addressed** NIP-59 gift wrap (never to a counterparty) to the
+  /// default pool. Returns `true` when the wrap reached at least one relay.
   ///
   /// Used for the DM read-state cursor marker (#4977): a kind-30078
   /// application-data rumor whose `content` is the read map. The gift-wrap seal
@@ -1077,7 +1076,6 @@ class NIP17MessageService {
     required String content,
     required List<List<String>> tags,
     int eventKind = EventKind.appSpecificData,
-    List<String>? targetRelays,
   }) async {
     try {
       final nostr = Nostr(_signer, [], _dummyRelayGenerator);
@@ -1089,12 +1087,7 @@ class NIP17MessageService {
         receiverPublicKey: _senderPublicKey,
       ).timeout(DmSendBudget.selfWrapUncappedBuild, onTimeout: () => null);
       if (selfWrapEvent == null) return false;
-      final published = (targetRelays != null && targetRelays.isNotEmpty)
-          ? await _nostrService.publishEvent(
-              selfWrapEvent,
-              targetRelays: targetRelays,
-            )
-          : await _nostrService.publishEvent(selfWrapEvent);
+      final published = await _nostrService.publishEvent(selfWrapEvent);
       return published is PublishSuccess;
     } on Object catch (e, stackTrace) {
       Log.error(

@@ -130,9 +130,9 @@ void main() {
         );
         final authService = buildAuthService(discovery);
 
-        List<String>? capturedRelayUrls;
+        final capturedRelayUrls = <List<String>>[];
         authService.registerUserRelaysDiscoveredCallback(
-          (_, urls) => capturedRelayUrls = urls,
+          (_, urls) => capturedRelayUrls.add(urls),
         );
 
         // ACT
@@ -142,10 +142,13 @@ void main() {
         // fallback set.
         expect(
           capturedRelayUrls,
-          equals(['wss://relay.example.com', 'wss://relay.user-chosen.org']),
+          equals([
+            ['wss://relay.example.com', 'wss://relay.user-chosen.org'],
+            IndexerRelayConfig.dmInboxTaggedRelays,
+          ]),
         );
         expect(
-          capturedRelayUrls,
+          capturedRelayUrls.first,
           isNot(equals(IndexerRelayConfig.safeFallbackRelays)),
         );
 

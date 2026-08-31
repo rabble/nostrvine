@@ -24,8 +24,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/hive_box_names.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/bookmark_signer_adapter.dart';
@@ -45,6 +43,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/pending_action_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -694,15 +693,8 @@ DmRepository dmRepository(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
 
-  // #4974 RC3: gate self-publishing the user's kind-10050 behind the feature
-  // flag (default OFF until the backend relay accepts the kind), and advertise
-  // the environment's stable DM relay (same source as the kind-10002
-  // bootstrap), not the volatile connected-relay getter. Read, not watch, so a
-  // flag flip doesn't churn the live DM subscription — the provider body
-  // re-runs (and re-reads the flag) on each auth change.
-  final publishDmRelayListEnabled = ref.read(
-    isFeatureEnabledProvider(FeatureFlag.publishDmRelayList),
-  );
+  // Advertise the environment's stable DM relay (same source as the
+  // kind-10002 bootstrap), not the volatile connected-relay getter. #4974.
   final dmInboxRelayUrl = ref.read(currentEnvironmentProvider).relayUrl;
 
   final repository = DmRepository(
@@ -720,8 +712,9 @@ DmRepository dmRepository(Ref ref) {
     // this repository, so putting the policy here is what stops a caller
     // inheriting nothing (#8391). Current AND retired keys, matching #8302.
     removalPolicy: isModerationAccount,
-    publishDmRelayListEnabled: publishDmRelayListEnabled,
     dmInboxRelayUrl: dmInboxRelayUrl,
+    dmInboxTaggedRelays: IndexerRelayConfig.dmInboxTaggedRelays,
+    dmInboxDiscoveryRelays: IndexerRelayConfig.dmInboxDiscoveryRelays,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(

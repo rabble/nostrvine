@@ -362,6 +362,15 @@ class RelayPool {
   List<MapEntry<String, Relay>> _cacheRelayEntriesSnapshot() =>
       _cacheRelays.entries.toList(growable: false);
 
+  /// RelayManager stores pooled URLs without a trailing slash, while
+  /// [RelayAddrUtil.handle] adds one for temporary relay addresses. Keep the
+  /// wire address unchanged, but use one identity for pool/temp comparisons.
+  String _relayIdentity(String url) =>
+      url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+
+  Relay? _pooledRelayForTempAddr(String addr) =>
+      _relays[addr] ?? _relays[_relayIdentity(addr)];
+
   bool _isExplicitAuthRequiredReason(String message) {
     final lower = message.trim().toLowerCase();
     return lower.startsWith('auth-required');
@@ -1869,7 +1878,7 @@ class RelayPool {
         relayTypes.contains(RelayType.temp)) {
       for (var tempRelayAddr in tempRelays) {
         // check if normal relays has this temp relay, try to get relay from normal relays
-        Relay? relay = _relays[tempRelayAddr];
+        Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
 
         relayDoSubscribe(
@@ -2119,7 +2128,7 @@ class RelayPool {
         relayTypes.contains(RelayType.temp)) {
       for (var tempRelayAddr in tempRelays) {
         // check if normal relays has this temp relay, try to get relay from normal relays
-        Relay? relay = _relays[tempRelayAddr];
+        Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
 
         queryFutures.add(sendQueryTo(relay, runBeforeConnected: true));
@@ -2365,7 +2374,9 @@ class RelayPool {
 
     if (tempRelays != null) {
       for (var tempRelayAddr in tempRelays) {
-        if (attemptedRelayUrls.contains(tempRelayAddr)) {
+        if (attemptedRelayUrls.any(
+          (url) => _relayIdentity(url) == _relayIdentity(tempRelayAddr),
+        )) {
           continue;
         }
         attemptedRelayUrls.add(tempRelayAddr);
@@ -2990,7 +3001,7 @@ class RelayPool {
         tempRelays.isNotEmpty &&
         relayTypes.contains(RelayType.temp)) {
       for (var tempRelayAddr in tempRelays) {
-        Relay? relay = _relays[tempRelayAddr];
+        Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
         relaysToTry.add(relay);
       }
