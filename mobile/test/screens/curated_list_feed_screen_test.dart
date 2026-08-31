@@ -284,6 +284,15 @@ void main() {
         expect(find.text(l10n.listFollowButton), findsOneWidget);
         expect(find.byTooltip(l10n.listShareAction), findsOneWidget);
         expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+
+        // Share is the rightmost control in the row, after the follow pill.
+        final followRight = tester
+            .getTopRight(find.text(l10n.listFollowButton))
+            .dx;
+        final shareLeft = tester
+            .getTopLeft(find.byTooltip(l10n.listShareAction))
+            .dx;
+        expect(shareLeft, greaterThan(followRight));
       });
 
       testWidgets('follow pill reads Following when subscribed', (

@@ -130,12 +130,6 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         // route, and a raw pop would throw GoError.
         onBackPressed: context.safePop,
         actions: [
-          if (!isOwned && isShareable)
-            DiVineAppBarAction(
-              icon: SvgIconSource(DivineIconName.share.assetPath),
-              onPressed: _shareList,
-              tooltip: context.l10n.listShareAction,
-            ),
           if (isOwned)
             DiVineAppBarAction(
               icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
@@ -149,6 +143,23 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               isSubscribed: isSubscribed,
               isBusy: _isTogglingSubscription,
               onPressed: _toggleSubscription,
+            ),
+          if (!isOwned && isShareable)
+            DivineAppBarIconButton(
+              icon: SvgIconSource(DivineIconName.shareFat.assetPath),
+              onPressed: _shareList,
+              tooltip: context.l10n.listShareAction,
+              semanticLabel: context.l10n.listShareAction,
+              // Match the bar's own action chrome (the back button): green
+              // glyph on the bordered surface container.
+              backgroundColor: context.vineColors.surfaceContainer,
+              borderSide: BorderSide(
+                color: context.vineColors.outlineMuted,
+                width: 2,
+              ),
+              iconColor: context.vineColors.isLight
+                  ? VineTheme.primaryAccessible
+                  : VineTheme.primary,
             ),
         ],
       );
