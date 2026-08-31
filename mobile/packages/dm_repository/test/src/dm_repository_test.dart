@@ -608,21 +608,6 @@ void main() {
         await callback();
       });
 
-      // Same default for the cross-protocol twin claim, which the peer receive
-      // paths use instead of hasMatchingMessage (#8211): no twin is available,
-      // so an arrival persists. Dedup tests restub this to true.
-      when(
-        () => mockDirectMessagesDao.claimCrossProtocolTwin(
-          counterpart: any(named: 'counterpart'),
-          conversationId: any(named: 'conversationId'),
-          senderPubkey: any(named: 'senderPubkey'),
-          content: any(named: 'content'),
-          createdAt: any(named: 'createdAt'),
-          windowSeconds: any(named: 'windowSeconds'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => false);
-
       // Global stub for markAsRead — every live-send path now marks the
       // conversation read in the same transaction (#5515: sending implies
       // read). Default to a successful flip so send tests don't restub it.
@@ -861,6 +846,20 @@ void main() {
     // groups that lean on it say so.
     void stubNoMatchingStoredMessage() => when(
       () => mockDirectMessagesDao.hasMatchingMessage(
+        counterpart: any(named: 'counterpart'),
+        conversationId: any(named: 'conversationId'),
+        senderPubkey: any(named: 'senderPubkey'),
+        content: any(named: 'content'),
+        createdAt: any(named: 'createdAt'),
+        windowSeconds: any(named: 'windowSeconds'),
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    // #8211's claim: a stored cross-protocol twin may absorb exactly one
+    // arrival. `false` means no twin is available, so an arrival persists.
+    void stubNoCrossProtocolTwinAvailable() => when(
+      () => mockDirectMessagesDao.claimCrossProtocolTwin(
         counterpart: any(named: 'counterpart'),
         conversationId: any(named: 'conversationId'),
         senderPubkey: any(named: 'senderPubkey'),
@@ -1654,6 +1653,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       setUp(stubNoPersistedGiftWrapIds);
       // The drain's read-state restore calls applyReadCursor; unstubbed it
       // throws into a catch, which no test failure would show.
@@ -7072,6 +7073,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('history drain batch decryption (#5391)', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       // A new recipient keypair per test so the real NIP-44 unwrap in the
       // batched decrypt worker succeeds (the shared _validPubkey* constants
       // are not a real keypair).
@@ -9499,6 +9502,8 @@ void main() {
     });
 
     group('_handleGiftWrapEvent preserves existing state', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -9667,6 +9672,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('Kind 15 receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
@@ -10252,6 +10259,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('moderation DM scenarios', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       /// The fallback moderation pubkey (inlined from ModerationLabelService).
       const moderationPubkey =
           '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
@@ -10601,6 +10610,8 @@ void main() {
     // -----------------------------------------------------------------
 
     group('NIP-04 receive pipeline', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       /// Helper to create a NIP-04 (kind 4) event.
       Event createNip04Event({
         String? id,
@@ -12882,6 +12893,8 @@ void main() {
     // Canonicalization: extra p-tags routing
     // -----------------------------------------------------------------
     group('canonicalize 1:1 participants', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       Event createGiftWrapEvent({String? id}) {
         return Event.fromJson({
           'id': id ?? _giftWrapEventId,
@@ -15204,6 +15217,8 @@ void main() {
     });
 
     group('receive pipeline - processed-wrap dedup ledger (#5452)', () {
+      setUp(stubNoCrossProtocolTwinAvailable);
+
       Event giftWrap() => Event.fromJson({
         'id': _giftWrapEventId,
         'pubkey': _validPubkeyC,
