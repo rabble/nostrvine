@@ -33,8 +33,14 @@ String? findBackgroundActivityViolation() {
 /// every later test inheriting the first one's. Compliant tests never trip it.
 void healAndBlameBackgroundActivity({required bool strict}) {
   final violation = findBackgroundActivityViolation();
-  if (violation == null) return;
+  // Heal unconditionally. [findBackgroundActivityViolation] reads getStatus(),
+  // which reports three of the five fields resetForTesting() restores — both
+  // timers are missing from it — so a clean status is not proof the manager is
+  // at rest. No such state is reachable through the public API today, but
+  // making the heal conditional on an incomplete observation is what would
+  // hide the next one. Blame is unaffected: the violation is read first.
   BackgroundActivityManager().resetForTesting();
+  if (violation == null) return;
   if (strict) {
     fail(
       'This test $violation. BackgroundActivityManager is a process-global '
