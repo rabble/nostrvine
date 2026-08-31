@@ -192,10 +192,6 @@ void main() {
       /// 'identity_change')` -> `ConversationsDao.clearForAccountSwitch`), so
       /// at most one account's rows exist on a device. Keeping both here
       /// proves the badge counts by owner rather than by row count.
-      ///
-      /// Each conversation needs a distinct [peer]: post-auth maintenance runs
-      /// `_mergeDuplicateConversations`, which collapses two rows that share a
-      /// peer into one canonical 1:1.
       Future<void> seedUnreadConversation({
         required String id,
         required String owner,

@@ -784,7 +784,7 @@ class DmRepository {
     }
 
     // Run post-auth maintenance sequentially so each step operates on the
-    // final state of the previous one (e.g. backfill runs after merge).
+    // final state of the previous one.
     _postAuthMaintenance = _runPostAuthMaintenance();
     unawaited(_postAuthMaintenance);
   }
@@ -6988,93 +6988,6 @@ class DmRepository {
   // Helpers
   // -------------------------------------------------------------------------
 
-  /// Merges duplicate conversations where the same 1:1 peer appears as
-  /// multiple conversations due to extra p-tags in NIP-17 events.
-  ///
-  /// For each peer that has more than one conversation with the current user,
-  /// keeps the canonical 1:1 conversation and merges the rest into it.
-  /// Idempotent and safe to run on every startup.
-  Future<void> _mergeDuplicateConversations() async {
-    try {
-      final allConversations = await _conversationsDao.getAllConversations(
-        ownerPubkey: _ownerPubkey,
-      );
-
-      // Group conversations by peer pubkey to find duplicates.
-      final peerGroups = <String, List<ConversationRow>>{};
-      for (final conv in allConversations) {
-        final participants = (jsonDecode(conv.participantPubkeys) as List)
-            .cast<String>();
-        final peers = participants.where((pk) => pk != _userPubkey).toList()
-          ..sort();
-        if (peers.isEmpty) continue;
-
-        // Use the first peer as the grouping key.
-        final peerKey = peers.first;
-        peerGroups.putIfAbsent(peerKey, () => []).add(conv);
-      }
-
-      for (final entry in peerGroups.entries) {
-        if (entry.value.length <= 1) continue;
-
-        final canonical1to1Participants = [_userPubkey, entry.key]..sort();
-        final canonicalId = computeConversationId(canonical1to1Participants);
-
-        // Check if the canonical 1:1 row already exists.
-        final hasCanonicalRow = entry.value.any((c) => c.id == canonicalId);
-
-        // Merge all conversations into the canonical 1:1 ID.
-        await _conversationsDao.runInTransaction(() async {
-          for (final conv in entry.value) {
-            if (conv.id == canonicalId) continue;
-
-            await _directMessagesDao.reassignConversation(
-              fromConversationId: conv.id,
-              toConversationId: canonicalId,
-              ownerPubkey: _userPubkey,
-            );
-            await _conversationsDao.deleteConversation(
-              conv.id,
-              ownerPubkey: _ownerPubkey,
-            );
-          }
-
-          // If the canonical 1:1 row didn't exist, create it from the most
-          // recent duplicate's metadata. Read state is the conservative
-          // merge — unread if ANY merged duplicate is unread — so
-          // canonicalization never silently drops a real unread signal from
-          // an older duplicate.
-          if (!hasCanonicalRow) {
-            final source = entry.value.first;
-            await _conversationsDao.upsertConversation(
-              id: canonicalId,
-              participantPubkeys: jsonEncode(canonical1to1Participants),
-              isGroup: false,
-              createdAt: source.createdAt,
-              lastMessageContent: source.lastMessageContent,
-              lastMessageTimestamp: source.lastMessageTimestamp,
-              lastMessageSenderPubkey: source.lastMessageSenderPubkey,
-              isRead: entry.value.every((c) => c.isRead),
-              currentUserHasSent: source.currentUserHasSent,
-              ownerPubkey: source.ownerPubkey,
-              dmProtocol: source.dmProtocol,
-            );
-          }
-        });
-
-        // Refresh preview from actual messages.
-        await _refreshConversationPreview(canonicalId);
-      }
-    } on Object catch (e, stackTrace) {
-      Log.error(
-        'Failed to merge duplicate conversations: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
   /// Removes phantom self-conversations created by the self-wrap bug where
   /// `_resolveConversationParticipants` produced `[self, self]`.
   ///
@@ -7114,10 +7027,8 @@ class DmRepository {
   }
 
   /// Runs post-auth cleanup and migration tasks sequentially so each step
-  /// operates on the final state of the previous one (e.g. backfill runs
-  /// after merge creates canonical conversation rows).
+  /// operates on the final state of the previous one.
   Future<void> _runPostAuthMaintenance() async {
-    await _mergeDuplicateConversations();
     await _cleanupSelfConversations();
     await _backfillCurrentUserHasSent();
     await _backfillConversationPreviews();
