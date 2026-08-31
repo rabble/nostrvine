@@ -558,6 +558,30 @@ UPDATE_BASELINE=1 bash mobile/scripts/check_skip_ceiling.sh
 Runs in CI only, in the `Generated Files` job; the pre-push hook does not
 cover it.
 
+### Shared-setup stub ceiling
+
+Mocktail `when` / `whenListen` registrations inherited from a file-level or
+outermost-group `setUp` are frozen per file by
+`mobile/scripts/check_shared_setup_stubs.sh` (#8399). The detector follows
+direct calls and tear-offs of helpers declared in the same file: extracting a
+shared setup body into a named helper improves readability, but does not reduce
+the number of tests that inherit its decisions and therefore does not reduce
+the count.
+
+Move each decision stub—and a named helper invocation when useful—into the
+groups whose tests depend on it. A leaf group's own setup is not counted because
+the dependency is adjacent to the tests it governs. After reducing a file's
+shared reach, lock in the lower ceiling and commit the baseline:
+
+```bash
+cd mobile
+dart run scripts/lib/shared_setup_stub_detector.dart test integration_test packages --path-prefix . --detail
+UPDATE_BASELINE=1 bash scripts/check_shared_setup_stubs.sh
+```
+
+Runs in CI only, in the `Generated Files` job; the pre-push hook does not cover
+it.
+
 ---
 
 ## Widget tests that use `context.l10n`
