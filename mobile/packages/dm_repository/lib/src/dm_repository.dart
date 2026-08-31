@@ -3356,8 +3356,7 @@ class DmRepository {
   ///
   /// Mutable only so a test can shorten it; nothing in the app writes it.
   @visibleForTesting
-  static Duration inboxResolutionBudget =
-      _dmInboxQueryTimeout + const Duration(seconds: 2);
+  static Duration inboxResolutionBudget = DmSendBudget.inboxResolution;
 
   /// Filters and bounds the relay URLs advertised in a kind-10050.
   ///

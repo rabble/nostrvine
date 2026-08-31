@@ -812,6 +812,52 @@ void main() {
         },
       );
 
+      test('a hung connectivity probe cannot stall the send', () {
+        // The probe is a raw platform-channel round trip with no timeout, and
+        // `_isOfflineSafely`'s try/catch cannot help: a wedged channel is a
+        // hang, not a throw. It sits INSIDE the publish backstop, so it spends
+        // the cap that exists for a wedged signer (#7091).
+        //
+        // Fail open to ONLINE on timeout, matching the probe's existing
+        // contract that a flaky probe never blocks a send that might succeed.
+        final hungProbe = Completer<bool>();
+        addTearDown(() {
+          if (!hungProbe.isCompleted) hungProbe.complete(false);
+        });
+        final service = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: getPublicKey(_testPrivateKey),
+          nostrService: mockNostrClient,
+          isOffline: () => hungProbe.future,
+        );
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments[0] as Event),
+        );
+
+        NIP17SendResult? result;
+        fakeAsync((async) {
+          unawaited(
+            service
+                .sendRumor(
+                  rumorEvent: service.buildRumor(
+                    recipientPubkey: _recipientPubkey,
+                    content: 'probe hangs',
+                  ),
+                  recipientPubkey: _recipientPubkey,
+                )
+                .then((r) => result = r),
+          );
+          async.elapse(DmSendBudget.connectivityProbe * 4);
+        });
+
+        expect(
+          result,
+          isNotNull,
+          reason: 'a wedged probe must not hold the send open to the backstop',
+        );
+      });
+
       test(
         'device offline (probe) → hard failure BEFORE any publish; no '
         'OK-confirm attempt, no self-wrap (#6046)',
