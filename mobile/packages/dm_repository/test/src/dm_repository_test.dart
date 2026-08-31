@@ -4437,6 +4437,14 @@ void main() {
           ),
         ).thenThrow(Exception('relay down'));
         final repository = createRepository();
+        // The relay list is still null — the send falls back to the pool. But
+        // the CALLER must be able to tell this apart from genuine absence, or
+        // it scores a fallback-pool OK as delivery (#7317).
+        final resolved = await repository.resolveDmInboxRelaysDetailed(
+          _validPubkeyB,
+        );
+        expect(resolved.relays, isNull);
+        expect(resolved.state, DmInboxResolution.unreadable);
         expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
       });
 
@@ -4472,6 +4480,115 @@ void main() {
           ['wss://relay-tag.example', 'wss://r-tag.example'],
         );
       });
+    });
+
+    group('resolveDmInboxRelaysDetailed', () {
+      Event kind10050Event(List<String> relays) => Event(
+        _validPubkeyB,
+        EventKind.dmRelaysList,
+        [
+          for (final r in relays) ['relay', r],
+        ],
+        '',
+        createdAt: 1700000000,
+      );
+
+      void stubQueryDetailed(
+        ({List<Event> events, bool timedOut, bool noRelays}) answer,
+      ) {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => answer);
+      }
+
+      test('reports found when the recipient advertises an inbox', () async {
+        stubQueryDetailed(
+          answeredList([
+            kind10050Event(['wss://inbox.example']),
+          ]),
+        );
+        final repository = createRepository();
+        final resolved = await repository.resolveDmInboxRelaysDetailed(
+          _validPubkeyB,
+        );
+        expect(resolved.state, DmInboxResolution.found);
+        expect(resolved.relays, ['wss://inbox.example']);
+      });
+
+      test(
+        'reports absent when the relays answered and there is no inbox',
+        () async {
+          stubQueryDetailed(answeredList(const <Event>[]));
+          final repository = createRepository();
+          final resolved = await repository.resolveDmInboxRelaysDetailed(
+            _validPubkeyB,
+          );
+          expect(resolved.state, DmInboxResolution.absent);
+          expect(resolved.relays, isNull);
+        },
+      );
+
+      test('reports unreadable when no relay took the REQ', () async {
+        stubQueryDetailed(unansweredList(noRelays: true));
+        final repository = createRepository();
+        final resolved = await repository.resolveDmInboxRelaysDetailed(
+          _validPubkeyB,
+        );
+        expect(resolved.state, DmInboxResolution.unreadable);
+        expect(resolved.relays, isNull);
+      });
+
+      test('reports unreadable when nothing settled in the budget', () async {
+        stubQueryDetailed(unansweredList(timedOut: true));
+        final repository = createRepository();
+        final resolved = await repository.resolveDmInboxRelaysDetailed(
+          _validPubkeyB,
+        );
+        expect(resolved.state, DmInboxResolution.unreadable);
+        expect(resolved.relays, isNull);
+      });
+
+      test(
+        'a list returned alongside an unsettled relay is FOUND, not unreadable '
+        '- the local cache leg is merged in regardless of the relay leg, so '
+        'checking the flags before the events would discard a real answer',
+        () async {
+          stubQueryDetailed((
+            events: [
+              kind10050Event(['wss://inbox.example']),
+            ],
+            timedOut: true,
+            noRelays: false,
+          ));
+          final repository = createRepository();
+          final resolved = await repository.resolveDmInboxRelaysDetailed(
+            _validPubkeyB,
+          );
+          expect(resolved.state, DmInboxResolution.found);
+          expect(resolved.relays, ['wss://inbox.example']);
+        },
+      );
+
+      test(
+        'an inbox whose relay tags are all inadmissible is absent, not '
+        'unreadable - the relays answered and we read what they said',
+        () async {
+          stubQueryDetailed(answeredList([kind10050Event(const [])]));
+          final repository = createRepository();
+          final resolved = await repository.resolveDmInboxRelaysDetailed(
+            _validPubkeyB,
+          );
+          expect(resolved.state, DmInboxResolution.absent);
+          expect(resolved.relays, isNull);
+        },
+      );
     });
 
     group('own kind-10050 receive targeting (#4974 RC2)', () {
@@ -18088,6 +18205,94 @@ void main() {
               lastError: any(named: 'lastError'),
             ),
           );
+        },
+      );
+
+      test(
+        'an unreadable recipient inbox is NOT delivery: a fallback-pool OK '
+        'keeps the row pending instead of deleting it (#7317)',
+        () async {
+          // The recipient DOES advertise an inbox; our pool just could not
+          // read it. The publish still lands on the default pool and the
+          // relay still says OK - which is exactly the false positive.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => unansweredList(noRelays: true));
+          stubSendRumor(
+            // selfWrapPublished defaults true, which is the arm that deletes
+            // the row — the exact behaviour under test.
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap-on-the-fallback-pool',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'routed to the fallback pool',
+          );
+
+          // Reported as retryable-pending, not delivered.
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          // The retry handle SURVIVES - this is the whole point. Without it
+          // no sweep can ever re-resolve the recipient's inbox.
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.id),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a recipient who genuinely advertises no inbox is still delivered - '
+        'the fallback lands where they read, so #7317 must not regress it',
+        () async {
+          // setUp stubs queryEventsDetailed -> answeredList([]): the relays
+          // answered and there is no kind-10050. Conclusive absence.
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'no inbox advertised',
+          );
+
+          expect(result.success, isTrue);
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          verify(() => mockOutgoingDmsDao.deleteById(enqueued.id)).called(1);
+          verifyNever(() => mockOutgoingDmsDao.incrementRetry(any()));
         },
       );
 
