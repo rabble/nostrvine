@@ -5306,6 +5306,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      '이 그룹 대화가 받은 편지함에서 삭제돼요. 누군가 그룹에 다시 메시지를 보내면 새 대화가 시작돼요.';
+
+  @override
   String get inboxRemoveConfirmConfirm => '삭제';
 
   @override
@@ -5551,6 +5555,16 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return '안 읽음, $displayName님과의 대화';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count명',
+    );
+    return '$name 외 $_temp0';
   }
 
   @override

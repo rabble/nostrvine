@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -124,6 +125,96 @@ void main() {
       expect(
         find.text(UserProfile.defaultDisplayNameFor(pubkey)),
         findsOneWidget,
+      );
+    });
+  });
+
+  group('dmConversationDisplayTitle', () {
+    const me =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const bob =
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const carol =
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+    testWidgets('a 1:1 renders the peer name it was handed', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          (context) => dmConversationDisplayTitle(
+            context,
+            participantPubkeys: const [me, pubkey],
+            currentUserPubkey: me,
+            isGroup: false,
+            peerName: 'Alice',
+            subject: 'Weekend trip',
+          ),
+        ),
+      );
+
+      expect(find.text('Alice'), findsOneWidget);
+    });
+
+    testWidgets('a titled group renders its NIP-17 subject', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          (context) => dmConversationDisplayTitle(
+            context,
+            participantPubkeys: const [me, pubkey, bob],
+            currentUserPubkey: me,
+            isGroup: true,
+            peerName: 'Alice',
+            subject: 'Weekend trip',
+          ),
+        ),
+      );
+
+      expect(find.text('Weekend trip'), findsOneWidget);
+      expect(find.text('Alice'), findsNothing);
+    });
+
+    testWidgets('an untitled 3-person group counts one other', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        buildSubject(
+          (context) => dmConversationDisplayTitle(
+            context,
+            participantPubkeys: const [me, pubkey, bob],
+            currentUserPubkey: me,
+            isGroup: true,
+            peerName: 'Alice',
+          ),
+        ),
+      );
+
+      expect(
+        find.text(l10n.inboxGroupConversationTitle('Alice', 1)),
+        findsOneWidget,
+      );
+    });
+
+    // The viewer is in `participantPubkeys`; counting them would tell the
+    // third member of a room that two OTHER people are in it with them.
+    testWidgets('never counts the viewer among the others', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        buildSubject(
+          (context) => dmConversationDisplayTitle(
+            context,
+            participantPubkeys: const [me, pubkey, bob, carol],
+            currentUserPubkey: me,
+            isGroup: true,
+            peerName: 'Alice',
+          ),
+        ),
+      );
+
+      expect(
+        find.text(l10n.inboxGroupConversationTitle('Alice', 2)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.inboxGroupConversationTitle('Alice', 3)),
+        findsNothing,
       );
     });
   });

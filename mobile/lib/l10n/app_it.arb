@@ -2014,6 +2014,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "Questo rimuove la conversazione di gruppo dalla tua posta in arrivo. Se qualcuno scrive di nuovo nel gruppo, inizia una nuova conversazione.",
     "inboxRemoveConfirmConfirm": "Rimuovi",
     "inboxRemoveConfirmTitle": "Rimuovere la conversazione?",
     "inboxRemovedConversation": "Conversazione rimossa",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "Non letta, conversazione con {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} e {count, plural, =1{{count} altra persona} other{{count} altre persone}}",
     "inboxConversationTileLongPressHint": "Mostra le azioni della conversazione",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Azioni lista",

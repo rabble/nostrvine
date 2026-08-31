@@ -759,16 +759,51 @@ class ConversationListBloc
     final normalized = query.toLowerCase();
     return result.where((c) {
       final other = _otherParticipant(c, userPubkey);
-      final name = _peerName(
+      final peerName = _peerName(
         other,
         profileNames: profileNames,
         vanishedPubkeys: vanishedPubkeys,
         peerLabels: peerLabels,
+      );
+      // Match what the row RENDERS, which for a titled group is its NIP-17
+      // subject and not any participant's name (#8204's rule, one layer out).
+      // `groupFallbackName` is the peer name on purpose: an untitled group
+      // renders "<peer> and N others", so the peer name is the only part of it
+      // worth matching — "others" is not a search term, and the count is not
+      // one the viewer typed.
+      final name = dmConversationTitle(
+        isGroup: c.isGroup,
+        subject: c.subject,
+        peerName: peerName,
+        groupFallbackName: peerName,
       ).toLowerCase();
+      final hasSubject = c.isGroup && c.subject?.trim().isNotEmpty == true;
+      final knownMemberNames = hasSubject
+          ? c.participantPubkeys
+                .map(
+                  (pubkey) => (
+                    pubkey: pubkey,
+                    name: profileNames[pubkey],
+                  ),
+                )
+                .where(
+                  (entry) =>
+                      entry.name != null &&
+                      entry.name !=
+                          UserProfile.defaultDisplayNameFor(
+                            entry.pubkey,
+                          ),
+                )
+                .map((entry) => entry.name!.toLowerCase())
+          : [peerName.toLowerCase()];
       final preview = peerLabels != null && _retiredModerationAccount(other)
           ? peerLabels.retiredConversationClosed.toLowerCase()
           : c.lastMessageContent?.toLowerCase() ?? '';
-      return name.contains(normalized) || preview.contains(normalized);
+      return name.contains(normalized) ||
+          knownMemberNames.any(
+            (memberName) => memberName.contains(normalized),
+          ) ||
+          preview.contains(normalized);
     }).toList();
   }
 

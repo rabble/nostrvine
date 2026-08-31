@@ -42,6 +42,36 @@ DmPeerLabels dmPeerLabels(BuildContext context) => DmPeerLabels(
   retiredConversationClosed: context.l10n.dmRetiredThreadClosedTitle,
 );
 
+/// The conversation's own title: [dmPeerDisplayName] for a 1:1, and for a group
+/// the NIP-17 `subject` when the room carries one, else `"<peer> and N others"`.
+///
+/// Thin `BuildContext` wrapper over [dmConversationTitle]; the precedence lives
+/// there so `ConversationListBloc` can index rows by the string they render
+/// (#8204).
+///
+/// [peerName] is what [dmPeerDisplayName] resolved for the row's first peer. It
+/// is passed in rather than resolved here because a 1:1 name needs a profile
+/// lookup this function has no business performing.
+String dmConversationDisplayTitle(
+  BuildContext context, {
+  required List<String> participantPubkeys,
+  required String currentUserPubkey,
+  required bool isGroup,
+  required String peerName,
+  String? subject,
+}) => dmConversationTitle(
+  isGroup: isGroup,
+  subject: subject,
+  peerName: peerName,
+  groupFallbackName: context.l10n.inboxGroupConversationTitle(
+    peerName,
+    dmGroupOtherCount(
+      participantPubkeys: participantPubkeys,
+      currentUserPubkey: currentUserPubkey,
+    ),
+  ),
+);
+
 /// The full chain: vanished, then [displayNameOverride], then moderation, then
 /// [profile], then the generated fallback.
 ///

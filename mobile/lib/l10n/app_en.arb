@@ -3413,6 +3413,10 @@
       }
     }
   },
+  "inboxRemoveConfirmBodyGroup": "This removes the group conversation from your inbox. If anyone messages the group again, a new conversation starts.",
+  "@inboxRemoveConfirmBodyGroup": {
+    "description": "Body of the remove-conversation confirmation for a GROUP thread. Names nobody, because a group has no single counterparty \u2014 the 1:1 wording `inboxRemoveConfirmBody` says 'your conversation with {displayName}', which would read as a conversation with the room's title. Mirrors `inboxRemoveConfirmBodyVanishedAccount`, which is name-free for the same reason."
+  },
   "inboxRemoveConfirmConfirm": "Remove",
   "inboxConversationMuted": "Conversation muted",
   "inboxConversationUnmuted": "Conversation unmuted",
@@ -3748,6 +3752,14 @@
         "type": "String",
         "example": "Alice"
       }
+    }
+  },
+  "inboxGroupConversationTitle": "{name} and {count, plural, =1{{count} other} other{{count} others}}",
+  "@inboxGroupConversationTitle": {
+    "description": "Names a group DM thread that carries no NIP-17 `subject` tag, from the first other participant plus how many participants remain beyond them. Example: 'Alice and 2 others'. A room that DOES carry a subject renders that instead, untranslated, because a participant chose it.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
     }
   },
   "inboxConversationTileLongPressHint": "Show conversation actions",

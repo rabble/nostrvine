@@ -2062,6 +2062,139 @@ void main() {
         expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
       });
 
+      // A group room has no single counterparty. `otherPubkey` is whichever
+      // peer sorts first, so naming the row after them hides that anyone else
+      // is in it, and Report/Block would act on that one account alone while
+      // reading as though they dealt with the thread.
+      group('group conversations', () {
+        const peerA =
+            'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
+        const peerB =
+            'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2';
+
+        DmConversation groupConversation({String? subject}) => DmConversation(
+          id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          participantPubkeys: const [currentPubkey, peerA, peerB],
+          isGroup: true,
+          createdAt: nowUnix,
+          subject: subject,
+          lastMessageContent: 'Anyone free on Saturday?',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        Future<void> openSheet(
+          WidgetTester tester,
+          DmConversation conversation,
+        ) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                visibleConversations: [conversation],
+                hasMore: false,
+              ),
+            ),
+          );
+          await openMessages(tester);
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets('names a titled room by its NIP-17 subject', (
+          tester,
+        ) async {
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          // The row and the sheet it opened must agree, and neither may fall
+          // back to a participant's generated name.
+          expect(find.text('Weekend trip'), findsWidgets);
+          expect(
+            find.text(UserProfile.defaultDisplayNameFor(peerA)),
+            findsNothing,
+          );
+        });
+
+        testWidgets('names an untitled room for who is in it', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation());
+
+          expect(
+            find.text(
+              l10n.inboxGroupConversationTitle(
+                UserProfile.defaultDisplayNameFor(peerA),
+                1,
+              ),
+            ),
+            findsWidgets,
+          );
+        });
+
+        testWidgets('offers no single-target Report or Block', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          // Conversation-scoped actions stay: both mean what they say here.
+          expect(find.text(l10n.inboxActionMute), findsOneWidget);
+          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          // Account-scoped ones do not, in any of their label variants.
+          expect(
+            find.text(l10n.inboxActionReport('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionBlock('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionUnblock('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionReportVanishedAccount),
+            findsNothing,
+          );
+          expect(find.text(l10n.inboxActionBlockVanishedAccount), findsNothing);
+        });
+
+        testWidgets('a 1:1 still offers both, so the guard is not blanket', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final oneToOne = DmConversation(
+            id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+            participantPubkeys: const [currentPubkey, peerA],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+          await openSheet(tester, oneToOne);
+
+          final name = UserProfile.defaultDisplayNameFor(peerA);
+          expect(find.text(l10n.inboxActionReport(name)), findsOneWidget);
+          expect(find.text(l10n.inboxActionBlock(name)), findsOneWidget);
+        });
+
+        // "This removes your conversation with Weekend trip from your inbox"
+        // reads as a conversation with the room, not with the people in it.
+        testWidgets('removes without claiming a conversation with the room', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          await tester.tap(find.text(l10n.inboxActionRemove));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxRemoveConfirmBodyGroup), findsOneWidget);
+          expect(
+            find.text(l10n.inboxRemoveConfirmBody('Weekend trip')),
+            findsNothing,
+          );
+        });
+      });
+
       group('vanished conversation actions', () {
         // #8185, the same shape one layer out: `ConversationTile`
         // short-circuits on the NIP-62 vanish before every other branch, and

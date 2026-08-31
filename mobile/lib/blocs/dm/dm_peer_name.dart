@@ -37,6 +37,59 @@ class DmPeerLabels extends Equatable {
   ];
 }
 
+/// Participants a group's fallback name must account for beyond the one it
+/// names.
+///
+/// Counts peers only — the viewer is always in `participantPubkeys` and naming
+/// a room "Alice and 2 others" to the third member would count them among the
+/// strangers. Returns 0 rather than -1 for a degenerate row with no peer at
+/// all, so the plural never renders a negative.
+int dmGroupOtherCount({
+  required List<String> participantPubkeys,
+  required String currentUserPubkey,
+}) {
+  final peers = participantPubkeys
+      .where((pubkey) => pubkey != currentUserPubkey)
+      .length;
+  return peers <= 1 ? 0 : peers - 1;
+}
+
+/// The title a conversation row and the sheet it opens must agree on.
+///
+/// A 1:1 thread is named for its peer, so [peerName] answers directly. A group
+/// has no single peer to name it after — naming it for `participants.first`
+/// picks an arbitrary member and hides that anyone else is in the room. NIP-17
+/// gives the room a name of its own instead: "An optional `subject` tag defines
+/// the current name/topic of the conversation … The newest `subject` in the
+/// chat room is the subject of the conversation" (NIP-17). Divine has parsed
+/// and stored that tag since the DM repository landed, so a titled room can be
+/// named correctly with what is already on the row.
+///
+/// [groupFallbackName] answers for a room carrying no subject, and is passed in
+/// already formatted for the same reason [dmPeerName] takes `profileName`: the
+/// precedence is shared, the localized string lookup is not — the widget chain
+/// reads it from `context.l10n` and the search index from its injected labels.
+///
+/// An empty or whitespace-only subject is treated as absent. A peer can set one
+/// to any string, and a room titled `"   "` would otherwise render as a blank
+/// row with no way to tell which thread it is.
+String dmConversationTitle({
+  required bool isGroup,
+  required String peerName,
+  required String groupFallbackName,
+  String? subject,
+}) {
+  if (!isGroup) return peerName;
+  final titled = subject?.trim();
+  if (titled != null && titled.isNotEmpty) return titled;
+  // An empty [peerName] is #8394's "still resolving" signal. A titled room is
+  // named above without a profile, but an untitled one is named FOR its peer,
+  // so falling through would render "and 2 others" beside a name that has not
+  // arrived. Propagate the empty instead and let the caller skeleton it.
+  if (peerName.isEmpty) return '';
+  return groupFallbackName;
+}
+
 /// Resolves the profile-independent prefix shared by the row and action sheet.
 String? dmPeerSubstituteName({
   required bool isVanished,

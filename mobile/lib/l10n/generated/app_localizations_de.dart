@@ -5672,6 +5672,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Dadurch wird die Gruppenunterhaltung aus deinem Posteingang entfernt. Wenn jemand wieder in die Gruppe schreibt, beginnt eine neue Unterhaltung.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Entfernen';
 
   @override
@@ -5927,6 +5931,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Ungelesen, Unterhaltung mit $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weitere Personen',
+      one: '$count weitere Person',
+    );
+    return '$name und $_temp0';
   }
 
   @override

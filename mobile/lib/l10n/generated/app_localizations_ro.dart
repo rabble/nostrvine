@@ -5756,6 +5756,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Astfel, conversația de grup este eliminată din inbox. Dacă cineva scrie din nou în grup, începe o conversație nouă.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Elimină';
 
   @override
@@ -6007,6 +6011,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Necitită, conversație cu $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'încă $count de persoane',
+      few: 'încă $count persoane',
+      one: 'încă $count persoană',
+    );
+    return '$name și $_temp0';
   }
 
   @override

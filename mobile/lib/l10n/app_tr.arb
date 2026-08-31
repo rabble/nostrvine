@@ -2011,6 +2011,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "Bu, grup sohbetini gelen kutundan kaldırır. Biri gruba tekrar yazarsa yeni bir sohbet başlar.",
     "inboxRemoveConfirmConfirm": "Kaldır",
     "inboxRemoveConfirmTitle": "Sohbet kaldırılsın mı?",
     "inboxRemovedConversation": "Sohbet kaldırıldı",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "Okunmamış, {displayName} ile sohbet",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} ve {count, plural, other{{count} kişi daha}}",
     "inboxConversationTileLongPressHint": "Sohbet işlemlerini göster",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Liste işlemleri",

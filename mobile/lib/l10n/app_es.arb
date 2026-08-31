@@ -2018,6 +2018,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "Esto quita la conversación grupal de tu bandeja de entrada. Si alguien vuelve a escribir en el grupo, se inicia una conversación nueva.",
     "inboxRemoveConfirmConfirm": "Eliminar",
     "inboxRemoveConfirmTitle": "¿Eliminar conversación?",
     "inboxRemovedConversation": "Conversación eliminada",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "No leída, conversación con {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} y {count, plural, =1{{count} persona más} other{{count} personas más}}",
     "inboxConversationTileLongPressHint": "Mostrar acciones de la conversación",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Acciones de la lista",

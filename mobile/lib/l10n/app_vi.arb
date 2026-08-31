@@ -2830,6 +2830,7 @@
       }
     }
   },
+  "inboxRemoveConfirmBodyGroup": "Thao tác này xóa cuộc trò chuyện nhóm khỏi hộp thư đến. Nếu có ai nhắn tin vào nhóm lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.",
   "inboxRemoveConfirmConfirm": "Xóa",
   "inboxConversationMuted": "Đã tắt thông báo cuộc trò chuyện",
   "inboxConversationUnmuted": "Đã bật lại thông báo cuộc trò chuyện",
@@ -3146,6 +3147,7 @@
       }
     }
   },
+  "inboxGroupConversationTitle": "{name} và {count, plural, other{{count} người khác}}",
   "inboxConversationTileLongPressHint": "Hiện thao tác với cuộc trò chuyện",
   "@inboxConversationTileLongPressHint": {
     "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."

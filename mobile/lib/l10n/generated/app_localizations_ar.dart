@@ -5550,6 +5550,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'يؤدي هذا إلى إزالة محادثة المجموعة من صندوق الوارد. إذا راسل أي شخص المجموعة مرة أخرى، تبدأ محادثة جديدة.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'إزالة';
 
   @override
@@ -5801,6 +5805,19 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'غير مقروءة، محادثة $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شخصًا آخر',
+      few: '$count أشخاص آخرين',
+      two: 'شخصان آخران',
+      one: 'شخص آخر',
+    );
+    return '$name و$_temp0';
   }
 
   @override

@@ -5603,6 +5603,10 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'اس سے گروپ گفتگو آپ کے ان باکس سے ہٹ جائے گی۔ اگر کوئی گروپ میں دوبارہ پیغام بھیجے تو نئی گفتگو شروع ہو جائے گی۔';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'ہٹائیں';
 
   @override
@@ -5853,6 +5857,16 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'غیر پڑھی ہوئی، $displayName کی گفتگو';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count دیگر',
+    );
+    return '$name اور $_temp0';
   }
 
   @override

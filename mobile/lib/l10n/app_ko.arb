@@ -1542,6 +1542,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "이 그룹 대화가 받은 편지함에서 삭제돼요. 누군가 그룹에 다시 메시지를 보내면 새 대화가 시작돼요.",
     "inboxRemoveConfirmConfirm": "삭제",
     "inboxRemoveConfirmTitle": "대화를 삭제할까요?",
     "inboxRemovedConversation": "대화를 삭제했어요",
@@ -3628,6 +3629,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "안 읽음, {displayName}님과의 대화",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} 외 {count, plural, other{{count}명}}",
     "inboxConversationTileLongPressHint": "대화 작업 보기",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "목록 작업",

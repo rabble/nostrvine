@@ -1,5 +1,5 @@
 // ABOUTME: Bottom sheet with long-press actions for DM conversations.
-// ABOUTME: Provides Mute, Report, Block, and Remove conversation actions.
+// ABOUTME: Provides contextual Mute, Report, Block, and Remove actions.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -31,18 +31,12 @@ class ConversationActionsSheet {
     required bool isVanished,
     required bool isMuted,
     required bool isBlocked,
+    required bool isGroup,
     bool canRemove = true,
   }) {
     // A vanished peer can publish again under the same key, and their DMs
     // remain in the recipient's history. Keep Report and Block available for
     // safety, but do not turn the deleted-state label into an identity.
-    final blockLabel = switch ((isBlocked, isVanished)) {
-      (true, true) => context.l10n.inboxActionUnblockVanishedAccount,
-      (true, false) => context.l10n.inboxActionUnblock(displayName),
-      (false, true) => context.l10n.inboxActionBlockVanishedAccount,
-      (false, false) => context.l10n.inboxActionBlock(displayName),
-    };
-
     return VineBottomSheet.show<ConversationAction>(
       context: context,
       scrollable: false,
@@ -56,23 +50,39 @@ class ConversationActionsSheet {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _MuteActionTile(isMuted: isMuted),
-            _ActionTile(
-              icon: DivineIconName.flag,
-              label: isVanished
-                  ? context.l10n.inboxActionReportVanishedAccount
-                  : context.l10n.inboxActionReport(displayName),
-              result: ConversationAction.report,
+            _MuteActionTile(
+              isMuted: isMuted,
+              showDivider: !isGroup || canRemove,
             ),
-            _ActionTile(
-              icon: DivineIconName.eyeSlash,
-              label: blockLabel,
-              isDestructive: !isBlocked,
-              // Block becomes the last row when Remove is withdrawn, so it
-              // owns the missing divider rather than leaving a trailing rule.
-              showDivider: canRemove,
-              result: ConversationAction.block,
-            ),
+            // Report and Block act on ONE account, and a group sheet has no
+            // way to say which — it would act on the arbitrary peer the row
+            // names while reading as though it dealt with the thread. Mute and
+            // Remove are conversation-scoped and mean what they say. An
+            // individual is still blockable from their profile in the thread.
+            if (!isGroup) ...[
+              _ActionTile(
+                icon: DivineIconName.flag,
+                label: isVanished
+                    ? context.l10n.inboxActionReportVanishedAccount
+                    : context.l10n.inboxActionReport(displayName),
+                result: ConversationAction.report,
+              ),
+              _ActionTile(
+                icon: DivineIconName.eyeSlash,
+                label: switch ((isBlocked, isVanished)) {
+                  (true, true) =>
+                    context.l10n.inboxActionUnblockVanishedAccount,
+                  (true, false) => context.l10n.inboxActionUnblock(displayName),
+                  (false, true) => context.l10n.inboxActionBlockVanishedAccount,
+                  (false, false) => context.l10n.inboxActionBlock(displayName),
+                },
+                isDestructive: !isBlocked,
+                // Block becomes the last row when Remove is withdrawn, so it
+                // owns the missing divider rather than leaving a trailing rule.
+                showDivider: canRemove,
+                result: ConversationAction.block,
+              ),
+            ],
             // Withdrawn for a Divine Moderation thread: removal is permanent
             // and the notice is the user's only copy of why they were actioned
             // (#8391). The repository refuses it either way; not offering it
@@ -93,9 +103,14 @@ class ConversationActionsSheet {
 }
 
 class _MuteActionTile extends StatelessWidget {
-  const _MuteActionTile({required this.isMuted});
+  const _MuteActionTile({required this.isMuted, this.showDivider = true});
 
   final bool isMuted;
+
+  /// False when Mute is the only row left — a group thread that also carries a
+  /// removal-protected member withdraws Report, Block AND Remove, and a rule
+  /// under the last row reads as a missing action rather than a separator.
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +119,11 @@ class _MuteActionTile extends StatelessWidget {
       label: context.l10n.inboxActionMute,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: context.vineColors.outlineDisabled),
-          ),
+          border: showDivider
+              ? Border(
+                  bottom: BorderSide(color: context.vineColors.outlineDisabled),
+                )
+              : null,
         ),
         child: Material(
           type: MaterialType.transparency,

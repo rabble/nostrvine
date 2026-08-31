@@ -183,10 +183,17 @@ class _RequestList extends StatelessWidget {
         .where((pk) => pk != currentPubkey)
         .toList();
 
+    final extra = conversation.subject == null
+        ? otherPubkeys
+        : {
+            'participantPubkeys': otherPubkeys,
+            'subject': conversation.subject,
+          };
+
     context.pushNamed(
       RequestPreviewPage.routeName,
       pathParameters: {'id': conversation.id},
-      extra: otherPubkeys,
+      extra: extra,
     );
   }
 }

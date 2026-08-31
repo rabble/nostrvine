@@ -5530,6 +5530,10 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Ini menghapus percakapan grup dari kotak masukmu. Jika ada yang mengirim pesan lagi ke grup, percakapan baru dimulai.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Hapus';
 
   @override
@@ -5779,6 +5783,16 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Belum dibaca, Percakapan dengan $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orang lainnya',
+    );
+    return '$name dan $_temp0';
   }
 
   @override

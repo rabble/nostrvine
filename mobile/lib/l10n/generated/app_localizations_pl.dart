@@ -5741,6 +5741,10 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'To usuwa rozmowę grupową z Twojej skrzynki odbiorczej. Jeśli ktoś znów napisze w grupie, rozpocznie się nowa rozmowa.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Usuń';
 
   @override
@@ -5996,6 +6000,19 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Nieprzeczytana, rozmowa z $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count innych osób',
+      many: '$count innych osób',
+      few: '$count inne osoby',
+      one: '$count inna osoba',
+    );
+    return '$name i $_temp0';
   }
 
   @override

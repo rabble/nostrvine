@@ -2830,6 +2830,7 @@
       }
     }
   },
+  "inboxRemoveConfirmBodyGroup": "这会从你的收件箱中移除这个群聊会话。如果有人再次在群里发消息，会开始一个新会话。",
   "inboxRemoveConfirmConfirm": "删除",
   "inboxConversationMuted": "会话已静音",
   "inboxConversationUnmuted": "会话已取消静音",
@@ -3146,6 +3147,7 @@
       }
     }
   },
+  "inboxGroupConversationTitle": "{name} 和其他 {count, plural, other{{count} 人}}",
   "inboxConversationTileLongPressHint": "显示会话操作",
   "@inboxConversationTileLongPressHint": {
     "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."

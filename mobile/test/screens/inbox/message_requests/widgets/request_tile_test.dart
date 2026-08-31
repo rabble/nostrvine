@@ -299,6 +299,78 @@ void main() {
       });
     });
 
+    // `DmRepository.classifyPotentialRequests` routes an unfollowed thread
+    // here "1:1 or group alike", so a group reaches this list and the row has
+    // to name the room rather than whichever member sorts first.
+    group('group conversations', () {
+      const third =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      DmConversation groupConversation({String? subject}) => DmConversation(
+        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        participantPubkeys: const [currentPubkey, otherPubkey, third],
+        isGroup: true,
+        createdAt: nowUnix,
+        subject: subject,
+        lastMessageContent: 'Anyone free on Saturday?',
+        lastMessageTimestamp: nowUnix,
+      );
+
+      Future<void> pumpTile(
+        WidgetTester tester,
+        DmConversation conversation,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith(
+                (ref) => Stream.value(
+                  createTestProfile(
+                    displayName: 'Alice',
+                  ),
+                ),
+              ),
+            ],
+            home: Scaffold(
+              body: RequestTile(
+                conversation: conversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('renders the NIP-17 subject when the room has one', (
+        tester,
+      ) async {
+        await pumpTile(tester, groupConversation(subject: 'Weekend trip'));
+
+        expect(find.text('Weekend trip'), findsOneWidget);
+        expect(find.text('Alice'), findsNothing);
+      });
+
+      testWidgets('names an untitled room for who is in it', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await pumpTile(tester, groupConversation());
+
+        expect(
+          find.text(l10n.inboxGroupConversationTitle('Alice', 1)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('leaves a 1:1 row naming its peer', (tester) async {
+        await pumpTile(tester, createTestConversation());
+
+        expect(find.text('Alice'), findsOneWidget);
+      });
+    });
+
     group('deleted accounts', () {
       Future<void> pumpTile(
         WidgetTester tester, {

@@ -5532,6 +5532,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Bu, grup sohbetini gelen kutundan kaldırır. Biri gruba tekrar yazarsa yeni bir sohbet başlar.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Kaldır';
 
   @override
@@ -5782,6 +5786,16 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Okunmamış, $displayName ile sohbet';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kişi daha',
+    );
+    return '$name ve $_temp0';
   }
 
   @override
