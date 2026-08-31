@@ -759,6 +759,145 @@ void main() {
       });
     });
 
+    group('getAllMessagesForConversationIncludingDeleted', () {
+      test('returns soft-deleted rows the rendering read hides', () async {
+        await dao.insertMessage(
+          id: 'live',
+          conversationId: conversationId1,
+          senderPubkey: 'sender',
+          content: 'live',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_live',
+          ownerPubkey: 'owner',
+        );
+        await dao.insertMessage(
+          id: 'gone',
+          conversationId: conversationId1,
+          senderPubkey: 'sender',
+          content: 'gone',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_gone',
+          ownerPubkey: 'owner',
+        );
+        await dao.markMessageDeleted('gone', ownerPubkey: 'owner');
+
+        expect(
+          (await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: 'owner',
+          )).map((m) => m.id),
+          equals(['live']),
+        );
+        expect(
+          (await dao.getAllMessagesForConversationIncludingDeleted(
+            conversationId1,
+            ownerPubkey: 'owner',
+          )).map((m) => m.id),
+          equals(['live', 'gone']),
+          reason: 'oldest first, and the soft-deleted row is included',
+        );
+      });
+
+      test('stays inside the owner scope', () async {
+        await dao.insertMessage(
+          id: 'mine',
+          conversationId: conversationId1,
+          senderPubkey: 'sender',
+          content: 'mine',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_mine',
+          ownerPubkey: 'owner',
+        );
+        await dao.insertMessage(
+          id: 'theirs',
+          conversationId: conversationId1,
+          senderPubkey: 'sender',
+          content: 'theirs',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_theirs',
+          ownerPubkey: 'other',
+        );
+
+        expect(
+          (await dao.getAllMessagesForConversationIncludingDeleted(
+            conversationId1,
+            ownerPubkey: 'owner',
+          )).map((m) => m.id),
+          equals(['mine']),
+        );
+      });
+    });
+
+    group('reassignMessages', () {
+      test('moves only the named ids and leaves the rest behind', () async {
+        for (final id in ['a', 'b', 'c']) {
+          await dao.insertMessage(
+            id: id,
+            conversationId: conversationId1,
+            senderPubkey: 'sender',
+            content: id,
+            createdAt: 1700000001,
+            giftWrapId: 'gw_$id',
+            ownerPubkey: 'owner',
+          );
+        }
+
+        final moved = await dao.reassignMessages(
+          messageIds: ['a', 'c'],
+          toConversationId: conversationId2,
+          ownerPubkey: 'owner',
+        );
+
+        expect(moved, equals(2));
+        expect(
+          (await dao.getMessagesForConversation(
+            conversationId2,
+            ownerPubkey: 'owner',
+          )).map((m) => m.id).toSet(),
+          equals({'a', 'c'}),
+        );
+        expect(
+          (await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: 'owner',
+          )).map((m) => m.id).toSet(),
+          equals({'b'}),
+        );
+      });
+
+      test("will not move another owner's row", () async {
+        await dao.insertMessage(
+          id: 'theirs',
+          conversationId: conversationId1,
+          senderPubkey: 'sender',
+          content: 'theirs',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_theirs',
+          ownerPubkey: 'other',
+        );
+
+        expect(
+          await dao.reassignMessages(
+            messageIds: ['theirs'],
+            toConversationId: conversationId2,
+            ownerPubkey: 'owner',
+          ),
+          equals(0),
+        );
+      });
+
+      test('is a no-op for an empty id list', () async {
+        expect(
+          await dao.reassignMessages(
+            messageIds: const [],
+            toConversationId: conversationId2,
+            ownerPubkey: 'owner',
+          ),
+          equals(0),
+        );
+      });
+    });
+
     group('hasGiftWrap', () {
       test('returns true when gift wrap ID exists', () async {
         await dao.insertMessage(

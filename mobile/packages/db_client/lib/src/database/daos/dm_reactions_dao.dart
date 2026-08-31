@@ -537,6 +537,35 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Re-point reactions whose target message moved to another conversation.
+  ///
+  /// `conversation_id` here is the conversation the *target message* belongs
+  /// to, and the live render index is
+  /// `(conversation_id, target_message_id) WHERE is_deleted = 0`. So a caller
+  /// that moves messages between conversations must move their reactions in
+  /// the same transaction, or the chips stop rendering on the moved messages
+  /// and the rows are stranded — which is also the outgoing queue for
+  /// unpublished reactions and kind-5 removals (#7857).
+  ///
+  /// Used by the group-conversation recovery pass (#8407).
+  ///
+  /// No-op returning `0` when [targetMessageIds] is empty.
+  Future<int> reassignForTargetMessages({
+    required Iterable<String> targetMessageIds,
+    required String toConversationId,
+    required String ownerPubkey,
+  }) {
+    final ids = targetMessageIds.toList(growable: false);
+    if (ids.isEmpty) return Future.value(0);
+    return (update(dmMessageReactions)..where(
+          (t) =>
+              t.targetMessageId.isIn(ids) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .write(
+          DmMessageReactionsCompanion(conversationId: Value(toConversationId)),
+        );
+  }
+
   /// Delete everything owned by [ownerPubkey]. Sign-out cleanup.
   Future<int> deleteAllForOwner(String ownerPubkey) async {
     return (delete(

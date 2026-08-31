@@ -395,6 +395,7 @@ class _FakeDmSyncState implements DmSyncState {
   bool drainCompleteOverride = false;
   int? drainCursorOverride;
   int drainVersionOverride = 0;
+  int groupRecoveryVersionOverride = 0;
   final List<String> markedCompletePubkeys = <String>[];
   final List<int> persistedDrainCursors = <int>[];
   final List<String> upgradedPubkeys = <String>[];
@@ -429,6 +430,14 @@ class _FakeDmSyncState implements DmSyncState {
   @override
   Future<void> setDrainVersion(String pubkey, int version) async {
     drainVersionOverride = version;
+  }
+
+  @override
+  int groupRecoveryVersion(String pubkey) => groupRecoveryVersionOverride;
+
+  @override
+  Future<void> setGroupRecoveryVersion(String pubkey, int version) async {
+    groupRecoveryVersionOverride = version;
   }
 
   @override
@@ -4746,7 +4755,7 @@ void main() {
           verifyNever(
             () => mockNostrClient.subscribe(
               any(),
-              subscriptionId: 'dm_inbox_$_validPubkeyA',
+              subscriptionId: dmInboxSubscriptionId(_validPubkeyA),
               tempRelays: any(named: 'tempRelays'),
               targetRelays: any(named: 'targetRelays'),
             ),
@@ -4758,7 +4767,7 @@ void main() {
               verify(
                     () => mockNostrClient.subscribe(
                       captureAny(),
-                      subscriptionId: 'dm_inbox_$_validPubkeyB',
+                      subscriptionId: dmInboxSubscriptionId(_validPubkeyB),
                       tempRelays: any(named: 'tempRelays'),
                       targetRelays: any(named: 'targetRelays'),
                     ),

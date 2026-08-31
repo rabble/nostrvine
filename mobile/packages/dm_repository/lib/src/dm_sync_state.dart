@@ -29,6 +29,7 @@ class DmSyncState {
   static const _drainCursorPrefix = 'dm.historyDrainCursor.';
   static const _drainVersionPrefix = 'dm.historyDrainVersion.';
   static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
+  static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -75,6 +76,13 @@ class DmSyncState {
   /// tolerated skew cannot push the cursor past now. It also avoids silently
   /// dropping messages from devices with a badly drifted clock.
   static const int maxFutureSkewSeconds = 86400;
+
+  /// Version of the group-conversation recovery pass (#8407).
+  ///
+  /// Bump only to force the pass to re-run for every account — e.g. when the
+  /// attestation rule is widened and rooms it previously skipped become
+  /// recoverable. The pass is additive and idempotent, so a re-run is safe.
+  static const int currentGroupRecoveryVersion = 1;
 
   /// Lower bound for a plausible Nostr `created_at` (2020-01-01T00:00:00Z).
   ///
@@ -295,6 +303,16 @@ class DmSyncState {
     await _prefs.setBool('$_dmRelayListPublishedPrefix$pubkey', true);
   }
 
+  /// The group-conversation recovery logic version last run for [pubkey], or
+  /// `0` if it has never run (#8407).
+  int groupRecoveryVersion(String pubkey) =>
+      _prefs.getInt('$_groupRecoveryVersionPrefix$pubkey') ?? 0;
+
+  /// Records that [pubkey] has been through group-recovery [version].
+  Future<void> setGroupRecoveryVersion(String pubkey, int version) async {
+    await _prefs.setInt('$_groupRecoveryVersionPrefix$pubkey', version);
+  }
+
   /// Removes all sync state for [pubkey]. Called on account switch.
   Future<void> clear(String pubkey) async {
     await _prefs.remove('$_newestPrefix$pubkey');
@@ -304,6 +322,7 @@ class DmSyncState {
     await _prefs.remove('$_drainCursorPrefix$pubkey');
     await _prefs.remove('$_drainVersionPrefix$pubkey');
     await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
+    await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -321,7 +340,8 @@ class DmSyncState {
               key.startsWith(_drainCompletePrefix) ||
               key.startsWith(_drainCursorPrefix) ||
               key.startsWith(_drainVersionPrefix) ||
-              key.startsWith(_dmRelayListPublishedPrefix),
+              key.startsWith(_dmRelayListPublishedPrefix) ||
+              key.startsWith(_groupRecoveryVersionPrefix),
         )
         .toList();
     for (final key in keysToRemove) {
