@@ -830,6 +830,7 @@ void main() {
           rumorEvent: any(named: 'rumorEvent'),
           recipientPubkey: any(named: 'recipientPubkey'),
           targetRelays: any(named: 'targetRelays'),
+          selfWrapTargetRelays: any(named: 'selfWrapTargetRelays'),
           awaitRecipientOk: any(named: 'awaitRecipientOk'),
           selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
         ),
@@ -12411,6 +12412,10 @@ void main() {
         () async {
           final repo = createRepository();
 
+          when(() => mockNostrClient.configuredRelays).thenReturn(const [
+            'wss://relay.divine.video',
+          ]);
+
           when(
             () => mockDirectMessagesDao.getMessageById(
               _rumorEventId,
@@ -12506,17 +12511,23 @@ void main() {
               timeout: any(named: 'timeout'),
             ),
           ).thenAnswer(
-            (_) async => answeredList([
-              Event(
-                _validPubkeyB,
-                EventKind.dmRelaysList,
-                [
-                  ['relay', 'wss://inbox.example'],
-                ],
-                '',
-                createdAt: 1700000000,
-              ),
-            ]),
+            (invocation) async {
+              final filters =
+                  invocation.positionalArguments.first
+                      as List<nostr_filter.Filter>;
+              final author = filters.single.authors!.single;
+              return answeredList([
+                Event(
+                  author,
+                  EventKind.dmRelaysList,
+                  [
+                    ['relay', 'wss://inbox.example'],
+                  ],
+                  '',
+                  createdAt: 1700000000,
+                ),
+              ]);
+            },
           );
 
           await repo.deleteMessageForEveryone(_rumorEventId);
@@ -12528,6 +12539,10 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: _validPubkeyB,
               targetRelays: ['wss://inbox.example'],
+              selfWrapTargetRelays: const [
+                'wss://relay.divine.video',
+                'wss://inbox.example',
+              ],
               awaitRecipientOk: true,
               selfWrapOnSoftUnconfirmed: any(
                 named: 'selfWrapOnSoftUnconfirmed',

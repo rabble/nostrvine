@@ -6081,12 +6081,14 @@ class DmRepository {
     // reads their advertised inbox. Resolution never throws (it degrades to
     // null → default pool), so a failed lookup cannot abort the fan-out.
     final inboxByRecipient = <String, List<String>?>{};
+    final selfWrapRelays = _selfWrapTargetRelays();
     await Future.wait([
       for (final recipient in recipients)
         resolveDmInboxRelays(
           recipient,
         ).then((relays) => inboxByRecipient[recipient] = relays),
     ]);
+    final selfWrapTargets = await selfWrapRelays;
     NIP17SendSuccess? lastSuccess;
     final failures = <NIP17SendFailure>[];
     for (final recipient in recipients) {
@@ -6095,6 +6097,7 @@ class DmRepository {
             rumorEvent: deletion,
             recipientPubkey: recipient,
             targetRelays: inboxByRecipient[recipient],
+            selfWrapTargetRelays: selfWrapTargets,
             awaitRecipientOk: true,
           )
           .timeout(
