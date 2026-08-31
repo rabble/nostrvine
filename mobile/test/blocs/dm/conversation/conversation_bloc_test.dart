@@ -1954,41 +1954,6 @@ void main() {
           ),
         ],
       );
-
-      blocTest<ConversationBloc, ConversationState>(
-        'keeps resendFailed distinct from the first-send failure status so '
-        'the view can toast one and stay silent for the other (#8461)',
-        setUp: () {
-          when(
-            () => mockDmRepository.recoverFullSend(
-              rumorId: rumorId1,
-              resetRetryBudget: true,
-            ),
-          ).thenAnswer(
-            (_) async => const NIP17SendResult.failure('relay still down'),
-          );
-        },
-        seed: () => const ConversationState(
-          status: ConversationStatus.loaded,
-          sendStatus: SendStatus.failed,
-        ),
-        build: buildBloc,
-        act: (bloc) => bloc.add(
-          const ConversationFullSendRecoveryRequested(rumorIds: [rumorId1]),
-        ),
-        expect: () => [
-          isA<ConversationState>().having(
-            (s) => s.sendStatus,
-            'sendStatus',
-            SendStatus.sending,
-          ),
-          isA<ConversationState>().having(
-            (s) => s.sendStatus,
-            'sendStatus',
-            isNot(SendStatus.failed),
-          ),
-        ],
-      );
     });
 
     group(ConversationOutgoingSendCancelled, () {

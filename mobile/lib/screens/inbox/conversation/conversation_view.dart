@@ -484,14 +484,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       final message = isRetiredModerationAccount(_otherPubkey)
           ? l10n.dmSendBlockedRetiredMessage
           : l10n.dmSendBlockedMessage;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        message,
-        Directionality.of(context),
-      );
+      _showErrorToastAndAnnounce(context, message);
       return;
     }
 
@@ -502,14 +495,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // participant list.
     if (state.sendStatus == SendStatus.noRecipient) {
       final message = l10n.dmSendNoRecipientMessage;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        message,
-        Directionality.of(context),
-      );
+      _showErrorToastAndAnnounce(context, message);
       return;
     }
 
@@ -520,14 +506,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // and re-tappable, and `resetRetryBudget` has re-armed the sweep.
     if (state.sendStatus == SendStatus.resendFailed) {
       final message = l10n.dmResendFailedMessage;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        message,
-        Directionality.of(context),
-      );
+      _showErrorToastAndAnnounce(context, message);
       return;
     }
 
@@ -578,6 +557,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // Per `accessibility.md`, async visible state changes must announce
     // explicitly — Material's default SnackBar semantics are weaker than the
     // written rule and not guaranteed across platforms.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
+  void _showErrorToastAndAnnounce(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
