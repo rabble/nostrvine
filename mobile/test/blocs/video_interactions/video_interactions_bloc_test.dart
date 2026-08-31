@@ -1112,6 +1112,36 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'rolls back and advances the account restriction revision',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenThrow(const LikeAccountRestrictedException());
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 10,
+            accountRestrictionRevision: 1,
+          ),
+        ],
+      );
+
       // Regression for #3503: when the home feed mounts a feed item whose
       // BlocProvider snapshotted a stale LikesRepository (one wrapping a
       // Nostr instance with an empty cached public key), every sendLike
@@ -1238,6 +1268,51 @@ void main() {
           expect(bloc.state.isLiked, isTrue);
           expect(bloc.state.likeCount, 11);
         },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'older restriction cannot roll back a newer tap',
+        setUp: () {
+          final first = Completer<bool>();
+          final second = Completer<bool>();
+          var call = 0;
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) => call++ == 0 ? first.future : second.future);
+          addTearDown(() {
+            if (!first.isCompleted) first.completeError(Exception('unused'));
+            if (!second.isCompleted) second.complete(false);
+          });
+          Future<void>.delayed(const Duration(milliseconds: 20), () {
+            second.complete(false);
+            first.completeError(const LikeAccountRestrictedException());
+          });
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsLikeToggled());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const VideoInteractionsLikeToggled());
+        },
+        wait: const Duration(milliseconds: 80),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 10,
+          ),
+        ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(

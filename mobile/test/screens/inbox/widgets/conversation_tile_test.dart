@@ -12,6 +12,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -120,6 +121,91 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Alice'), findsOneWidget);
+      });
+
+      testWidgets(
+        'uses a loading identity before revealing the generated fallback',
+        (tester) async {
+          final testConversation = createTestConversation();
+          final generatedName = UserProfile.defaultDisplayNameFor(otherPubkey);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                profileIdentityResolvingProvider(
+                  otherPubkey,
+                ).overrideWithValue(true),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(tileSemantics(tester).label, contains('Loading'));
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => skeletonizer.enabled),
+            isTrue,
+          );
+
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+
+          expect(find.text(generatedName), findsOneWidget);
+          expect(
+            tester
+                .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+                .every((skeletonizer) => !skeletonizer.enabled),
+            isTrue,
+          );
+        },
+      );
+
+      testWidgets('paints a brand-green heart in a display name', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(
+          displayName: 'Alice $divineGreenHeart',
+        );
+        final testConversation = createTestConversation();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final heartFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.heartFill,
+        );
+        expect(heartFinder, findsOneWidget);
+        expect(
+          tester.widget<DivineIcon>(heartFinder).color,
+          VineTheme.vineGreen,
+        );
       });
 
       testWidgets('renders last message content', (tester) async {
@@ -858,6 +944,12 @@ void main() {
           .firstWhere((account) => account.role == 'moderation')
           .pubkeyHex;
 
+      Finder lockFinder() => find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineIcon && widget.icon == DivineIconName.lockSimple,
+        description: 'closed-thread lock',
+      );
+
       Finder wordmarkFinder() => find.byWidgetPredicate(
         (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
         description: 'bundled Divine wordmark',
@@ -944,10 +1036,16 @@ void main() {
       });
 
       // The cases above stub a kind-0 that already carries the right name, so
-      // they cannot catch the naming half. In production there is no kind-0 to
-      // read: the account's is not on the single relay the app queries, and a
-      // retired key has no events at all (#6416).
-      group('with no kind-0 on the relay', () {
+      // they cannot catch the naming half. A retired key is the case that
+      // still has no kind-0 to read anywhere — funnelcake answers for it with
+      // `profile: null`, which maps to `UserProfileNotPublished` and
+      // short-circuits the relay fallback outright, so the lookup can only
+      // return null (#6416). The CURRENT key does resolve today: its kind-0
+      // (`17e11af3…`, 2026-03-12) is on relay.divine.video and funnelcake
+      // serves it — see mobile/docs/RETIRED_MODERATION_KEYS.md. The
+      // substitution still has to hold for both, because a name the viewer
+      // has never seen on an enforcement notice is the failure either way.
+      group('with no profile to resolve', () {
         final l10n = lookupAppLocalizations(const Locale('en'));
 
         Future<void> pumpUnprofiledTileFor(
@@ -997,6 +1095,33 @@ void main() {
           );
         });
 
+        testWidgets('a retired thread is marked closed, not previewed', (
+          tester,
+        ) async {
+          // Name and wordmark are deliberately identical to the live pinned
+          // support row, so the closed sentence used to be the only thing
+          // separating them — rendered in the preview's own slot, font and
+          // colour, which reads as "the last thing they said" rather than as
+          // a status (#7847). The lock is what makes it scan as one.
+          await pumpUnprofiledTileFor(tester, kLegacyModerationPubkeys.first);
+
+          expect(lockFinder(), findsOneWidget);
+        });
+
+        testWidgets('a live moderation thread carries no lock', (
+          tester,
+        ) async {
+          await pumpUnprofiledTileFor(tester, moderationPubkey);
+
+          expect(lockFinder(), findsNothing);
+        });
+
+        testWidgets('an ordinary thread carries no lock', (tester) async {
+          await pumpUnprofiledTileFor(tester, otherPubkey);
+
+          expect(lockFinder(), findsNothing);
+        });
+
         testWidgets('the current key is named without a kind-0 too', (
           tester,
         ) async {
@@ -1026,16 +1151,23 @@ void main() {
       Future<void> pumpTile(
         WidgetTester tester, {
         required bool vanished,
+        Locale? locale,
+        bool identityResolving = false,
+        bool settle = true,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
+            locale: locale,
             additionalOverrides: [
               fetchUserProfileProvider(otherPubkey).overrideWith(
                 (ref) async => createTestProfile(displayName: 'meylis.divine'),
               ),
               profileVanishedProvider(
                 otherPubkey,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              ).overrideWith((ref) => vanished),
+              profileIdentityResolvingProvider(
+                otherPubkey,
+              ).overrideWithValue(identityResolving),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -1049,7 +1181,12 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        if (settle) {
+          await tester.pumpAndSettle();
+        } else {
+          await tester.pump();
+          await tester.pump();
+        }
       }
 
       testWidgets('replaces the display name for a deleted account', (
@@ -1063,17 +1200,43 @@ void main() {
       });
 
       testWidgets('reads the deleted-account copy from l10n', (tester) async {
-        await pumpTile(tester, vanished: true);
+        // Pump in German and require the German string. Asserting the German
+        // copy is *absent* from an English pump passes whether or not the
+        // widget reads l10n, so it proved nothing.
+        await pumpTile(tester, vanished: true, locale: const Locale('de'));
 
-        // Proves the widget resolves the string rather than hardcoding it.
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.profileDeletedAccountName), findsNothing);
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
       });
 
       testWidgets('drops the avatar for a deleted account', (tester) async {
         await pumpTile(tester, vanished: true);
 
         expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets('does not hide a deleted identity behind profile loading', (
+        tester,
+      ) async {
+        await pumpTile(
+          tester,
+          vanished: true,
+          identityResolving: true,
+          settle: false,
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(
+          tileSemantics(tester).label,
+          contains(l10n.profileDeletedAccountName),
+        );
+        expect(
+          tester
+              .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+              .every((skeletonizer) => !skeletonizer.enabled),
+          isTrue,
+        );
       });
 
       testWidgets('leaves a live account untouched', (tester) async {

@@ -17,7 +17,7 @@
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
 # 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
-#   - Options: PRODUCTION, STAGING, TEST, POC
+#   - Options: PRODUCTION, STAGING, POC
 #   - Defaults to PRODUCTION for automatic builds
 # 7 - Create environment variable group "proofmode_credentials" with:
 #   - PROOFMODE_SIGNING_SERVER_ENDPOINT
@@ -33,7 +33,8 @@
 #   - SHOREBIRD_TOKEN (mark as secure) — an API key from the Shorebird
 #     console under Account > API Keys. `shorebird login:ci` is removed;
 #     CI authenticates with API keys only.
-#   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by `shorebird release`)
+#   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by `shorebird release` and
+#     `shorebird patch`)
 #   - SHOREBIRD_PATCH_PRIVATE_KEY (secure private PEM used by `shorebird patch`)
 #   - SHOREBIRD_PROVENANCE_HMAC_KEY (secure random value used only to compare
 #     release and patch configuration without storing or logging its values)
@@ -77,6 +78,12 @@ definitions:
         # an unset variable ships an empty --dart-define that overrides the
         # in-app default and breaks signing on every capture. Require it here.
         REQUIRE_SIGNING_ENDPOINT=1 ./scripts/check_signing_endpoint.sh
+    - &check_coordinator_route
+      name: Check account-deletion coordinator route
+      script: |
+        flutter pub get
+        DEFAULT_ENV="${{ inputs.DEFAULT_ENV }}" \
+          ./scripts/check_coordinator_route_serving.sh
     - &clean_ios_workspace_state
       name: Clean stale Xcode/SPM workspace state
       script: |
@@ -145,6 +152,29 @@ definitions:
     - &pod_install
       name: Run pod install
       script: find . -name "Podfile" -execdir pod install \;
+    - &precache_shorebird_android_artifacts
+      name: Precache Shorebird Android engine artifacts
+      script: |
+        set -euo pipefail
+        # Shorebird ships its own Flutter and precaches only what the host
+        # needs, which on a macOS runner is iOS and desktop. Both Android
+        # workflows build through that Flutter, so without this they fail with
+        # "Flutter debug embedding JAR not found ... Run 'flutter precache
+        # --android'". shorebird_install also rm -rf's ~/.shorebird on any pin
+        # change, discarding whatever an earlier run precached, so this cannot
+        # be a one-time setup step. See #7987.
+        FLUTTER_REVISION=$(shorebird --version 2>/dev/null \
+          | sed -n 's/^Flutter .* revision \([0-9a-f]\{40\}\).*/\1/p')
+        if [ -z "$FLUTTER_REVISION" ]; then
+          echo "ERROR: could not read the Shorebird Flutter revision from 'shorebird --version'."
+          exit 1
+        fi
+        SHOREBIRD_FLUTTER="$HOME/.shorebird/bin/cache/flutter/$FLUTTER_REVISION/bin/flutter"
+        if [ ! -x "$SHOREBIRD_FLUTTER" ]; then
+          echo "ERROR: Shorebird Flutter not found at $SHOREBIRD_FLUTTER"
+          exit 1
+        fi
+        "$SHOREBIRD_FLUTTER" precache --android
     - &setup_local_properties
       name: Set up local.properties
       script: echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/mobile/android/local.properties"
@@ -514,8 +544,16 @@ definitions:
         # behaviour beyond the code fix. Shorebird refuses to patch when it
         # detects native or asset diffs; do NOT add --allow-native-diffs or
         # --allow-asset-diffs to force past that — cut a new release instead.
+        # Signing needs both halves. The private key signs the patch; the
+        # public key goes into the build env as SHOREBIRD_PUBLIC_KEY, the
+        # same way `shorebird release` passes it, and verifies the signature
+        # just produced against itself. Nothing here checks it against the
+        # release's own key, so a rotated key builds green and the patch is
+        # rejected at boot on device. Passing only one fails with "Both
+        # public and private keys must be provided."
         shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem
     - &build_macos
       name: Build macOS app
@@ -606,8 +644,10 @@ definitions:
       script: |
         # See the Android patch step for why there is no --flutter-version and
         # why the dart-defines must match the release's.
+        # See the Android patch step for why both key halves are required.
         shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem \
           --export-options-plist=/Users/builder/export_options.plist
     - &upload_dsyms_to_crashlytics
@@ -883,7 +923,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload IPA to GitHub Release (for direct distribution)
@@ -924,6 +963,7 @@ workflows:
     scripts:
       - *verify_shorebird_release_source
       - *shorebird_install
+      - *check_coordinator_route
       - *check_signing_endpoint
       - *check_supporters_config
       - *check_ios_extension_signing_contract
@@ -964,7 +1004,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1006,7 +1045,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Create a GitHub Release with APK artifacts (for Zapstore)
@@ -1040,6 +1078,7 @@ workflows:
     scripts:
       - *verify_shorebird_release_source
       - *shorebird_install
+      - *check_coordinator_route
       - *check_signing_endpoint
       - *check_supporters_config
       - *enable_spm
@@ -1049,6 +1088,7 @@ workflows:
       - *preflight_shorebird_android_release
       - *write_shorebird_dart_defines
       - *build_apk
+      - *precache_shorebird_android_artifacts
       - *build_aab
       - *emit_shorebird_provenance
       - *publish_github_release
@@ -1121,7 +1161,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1160,6 +1199,7 @@ workflows:
       - *fetch_and_verify_shorebird_provenance
       - *prepare_patch_source
       - *check_ios_extension_signing_contract
+      - *write_shorebird_public_key
       - *write_shorebird_private_key
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -1212,7 +1252,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1246,7 +1285,9 @@ workflows:
       - *prepare_patch_source
       - *setup_local_properties
       - *configure_gradle_memory
+      - *write_shorebird_public_key
       - *write_shorebird_private_key
+      - *precache_shorebird_android_artifacts
       - *patch_android
 
   macos-build:
@@ -1262,7 +1303,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload DMG to GitHub Release (for direct distribution)

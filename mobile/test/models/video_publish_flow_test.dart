@@ -79,25 +79,5 @@ void main() {
         expect(completedUpload.status, equals(UploadStatus.readyToPublish));
       },
     );
-
-    test(
-      'startUpload should complete async upload before returning for publish',
-      () async {
-        // This test documents the EXPECTED behavior (currently failing in production):
-        // startUpload() should either:
-        // 1. Return a Future<PendingUpload> that completes when upload is done, OR
-        // 2. Provide a separate waitForUploadCompletion() method
-
-        // For now, we document that the current implementation is wrong:
-        // Current: startUpload() returns immediately with null videoId/cdnUrl
-        // Expected: Some mechanism to wait for upload completion before publishing
-
-        expect(
-          true,
-          isTrue,
-          reason: 'Test placeholder - implementation needed',
-        );
-      },
-    );
   });
 }

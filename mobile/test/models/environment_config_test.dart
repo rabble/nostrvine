@@ -41,11 +41,10 @@ void main() {
   });
 
   group('AppEnvironment', () {
-    test('has five values', () {
-      expect(AppEnvironment.values.length, 5);
+    test('has four supported values', () {
+      expect(AppEnvironment.values.length, 4);
       expect(AppEnvironment.values, contains(AppEnvironment.poc));
       expect(AppEnvironment.values, contains(AppEnvironment.staging));
-      expect(AppEnvironment.values, contains(AppEnvironment.test));
       expect(AppEnvironment.values, contains(AppEnvironment.production));
       expect(AppEnvironment.values, contains(AppEnvironment.local));
     });
@@ -67,11 +66,6 @@ void main() {
       test('staging returns staging relay', () {
         const config = EnvironmentConfig(environment: AppEnvironment.staging);
         expect(config.relayUrl, 'wss://relay.staging.divine.video');
-      });
-
-      test('test returns test relay', () {
-        const config = EnvironmentConfig(environment: AppEnvironment.test);
-        expect(config.relayUrl, 'wss://relay.test.dvines.org');
       });
 
       test('local returns emulator relay', () {
@@ -97,11 +91,6 @@ void main() {
         expect(config.apiBaseUrl, 'https://relay.staging.divine.video');
       });
 
-      test('test derives from relay URL', () {
-        const config = EnvironmentConfig(environment: AppEnvironment.test);
-        expect(config.apiBaseUrl, 'https://relay.test.dvines.org');
-      });
-
       test('local returns local API URL (unified funnelcake-proxy port)', () {
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         const config = EnvironmentConfig(environment: AppEnvironment.local);
@@ -124,12 +113,10 @@ void main() {
     test('blossomUrl is same for all environments', () {
       const poc = EnvironmentConfig(environment: AppEnvironment.poc);
       const staging = EnvironmentConfig(environment: AppEnvironment.staging);
-      const testEnv = EnvironmentConfig(environment: AppEnvironment.test);
       const prod = EnvironmentConfig.production;
 
       expect(poc.blossomUrl, 'https://media.divine.video');
       expect(staging.blossomUrl, 'https://media.divine.video');
-      expect(testEnv.blossomUrl, 'https://media.divine.video');
       expect(prod.blossomUrl, 'https://media.divine.video');
     });
 
@@ -142,10 +129,6 @@ void main() {
         const EnvironmentConfig(
           environment: AppEnvironment.staging,
         ).isProduction,
-        false,
-      );
-      expect(
-        const EnvironmentConfig(environment: AppEnvironment.test).isProduction,
         false,
       );
       expect(
@@ -170,10 +153,6 @@ void main() {
         'Staging',
       );
       expect(
-        const EnvironmentConfig(environment: AppEnvironment.test).displayName,
-        'Test',
-      );
-      expect(
         const EnvironmentConfig(environment: AppEnvironment.local).displayName,
         'Local',
       );
@@ -193,12 +172,6 @@ void main() {
       expect(
         const EnvironmentConfig(
           environment: AppEnvironment.staging,
-        ).pushServicePubkey,
-        '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
-      );
-      expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.test,
         ).pushServicePubkey,
         '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809',
       );
@@ -226,12 +199,6 @@ void main() {
           environment: AppEnvironment.staging,
         ).indicatorColorValue,
         0xFFFFF140, // accentYellow
-      );
-      expect(
-        const EnvironmentConfig(
-          environment: AppEnvironment.test,
-        ).indicatorColorValue,
-        0xFF34BBF1, // accentBlue
       );
       expect(
         const EnvironmentConfig(
@@ -274,6 +241,29 @@ void main() {
           expect(
             config.nameServerBaseUrl,
             equals('https://names.divine.video'),
+          );
+        }
+      });
+    });
+
+    group('moderationApiBaseUrl', () {
+      test('uses the same service host for every environment', () {
+        for (final environment in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: environment);
+          expect(
+            config.moderationApiBaseUrl,
+            'https://moderation-api.divine.video',
+          );
+        }
+      });
+
+      test('enables creator-delete enforcement only in production', () {
+        for (final environment in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: environment);
+          expect(
+            config.creatorDeleteEnforcementEnabled,
+            environment == AppEnvironment.production,
+            reason: environment.name,
           );
         }
       });

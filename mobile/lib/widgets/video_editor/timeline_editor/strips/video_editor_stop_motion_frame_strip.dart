@@ -95,8 +95,9 @@ class _VideoEditorStopMotionFrameStripState
   int _dragStartIndex = 0;
 
   /// Whether the active drag moves the multi-select block instead of a single
-  /// tile. While set, [_orderedFrames] holds only the *unselected* stills and
-  /// [_blockSlot] is the insertion slot among them.
+  /// tile. While set, every still keeps its slot in [_orderedFrames] — the
+  /// selected ones are only dimmed — and [_blockSlot] is the insertion slot in
+  /// that full layout.
   bool _isBlockDrag = false;
 
   /// The selected stills being block-dragged, in their current order.
@@ -106,12 +107,6 @@ class _VideoEditorStopMotionFrameStripState
   /// (`0.._orderedFrames.length`).
   int _blockSlot = 0;
 
-  /// Maps the pickup finger x (measured in the full N-tile layout) into the
-  /// post-removal (N-1 tile) layout. Without it, a zero-distance block drag
-  /// resolves the finger against the shifted widths and jumps by one tile —
-  /// releasing without dragging would silently reorder. See
-  /// [_onBlockDragStart].
-  double _blockDragOffsetX = 0;
   double _dragTargetOffsetX = 0;
 
   // Finger tracking (global X is the source of truth so auto-scroll and the
@@ -204,6 +199,21 @@ class _VideoEditorStopMotionFrameStripState
     return slot;
   }
 
+  /// Translates a block-drag insertion slot in the full N-tile layout into the
+  /// slot [StopMotionFrameOps.moveFrames] expects — an index among the
+  /// *unselected* stills, which is simply how many of them sit left of it.
+  ///
+  /// A slot anywhere inside a contiguous selected run maps back to that run's
+  /// own home, which is what makes releasing without leaving the block a no-op.
+  int _remainingSlotFor(int fullSlot) {
+    final selection = widget.selectedFrameIndexes;
+    var slot = 0;
+    for (var i = 0; i < fullSlot && i < widget.frames.length; i++) {
+      if (!selection.contains(i)) slot++;
+    }
+    return slot;
+  }
+
   void _onLongPressStart(LongPressStartDetails details) {
     if (widget.frames.length <= 1) return;
     if (widget.isMultiSelectMode) {
@@ -239,6 +249,14 @@ class _VideoEditorStopMotionFrameStripState
   /// Starts dragging the whole multi-select block. Only a long-press on a
   /// *selected* tile picks the block up; there must be at least one
   /// unselected still left to move past.
+  ///
+  /// Unlike the single-tile drag, the selected stills are *not* lifted out of
+  /// the layout — they stay in their slots, dimmed. Collapsing a ten-still
+  /// block out of the strip would shift every remaining tile left by the
+  /// block's width mid-gesture, so the insertion slot could only be tracked
+  /// relative to the block's old home — the marker trailed the finger by the
+  /// whole block, dropping the stills back where the first one used to sit.
+  /// Against a layout that does not move, the slot is the one under the finger.
   void _onBlockDragStart(LongPressStartDetails details) {
     final selection = widget.selectedFrameIndexes;
     if (widget.onBlockMove == null ||
@@ -258,24 +276,10 @@ class _VideoEditorStopMotionFrameStripState
         ? ((fingerX - tileLeft) / tileWidth).clamp(0.0, 1.0)
         : 0.5;
 
-    final blockFrames = <StopMotionClipFrame>[];
-    final remaining = <StopMotionClipFrame>[];
-    for (var i = 0; i < widget.frames.length; i++) {
-      (selection.contains(i) ? blockFrames : remaining).add(widget.frames[i]);
-    }
-
-    // Home slot = the block's leftmost original position among the remaining
-    // stills (all frames before it are unselected, so their count is exactly
-    // the smallest selected index). Anchoring the pickup here — instead of
-    // mapping the raw finger x against the shifted post-removal widths — keeps
-    // a no-drag release a no-op for a contiguous block and drives the offset
-    // that makes dragging land on the right slot.
-    final remainingWidths = [for (final frame in remaining) _tileWidth(frame)];
-    final homeSlot = selection.reduce((a, b) => a < b ? a : b);
-    var homeX = 0.0;
-    for (var i = 0; i < homeSlot; i++) {
-      homeX += remainingWidths[i];
-    }
+    final blockFrames = [
+      for (var i = 0; i < widget.frames.length; i++)
+        if (selection.contains(i)) widget.frames[i],
+    ];
 
     HapticFeedback.mediumImpact();
     widget.onReorderChanged?.call(true);
@@ -283,9 +287,7 @@ class _VideoEditorStopMotionFrameStripState
       _isReordering = true;
       _isBlockDrag = true;
       _blockFrames = blockFrames;
-      _orderedFrames = remaining;
-      _blockSlot = homeSlot;
-      _blockDragOffsetX = fingerX - homeX;
+      _blockSlot = _slotAtX(fingerX, layout.widths);
       _dragGlobalX = details.globalPosition.dx;
       _dragStartGlobalX = details.globalPosition.dx;
       _dragStartLocalX = fingerX;
@@ -307,7 +309,7 @@ class _VideoEditorStopMotionFrameStripState
   void _applyDragTarget() {
     final widths = _computeLayout().widths;
     if (_isBlockDrag) {
-      final slot = _slotAtX(_effectiveLocalX - _blockDragOffsetX, widths);
+      final slot = _slotAtX(_effectiveLocalX, widths);
       if (slot != _blockSlot) {
         HapticFeedback.selectionClick();
         _blockSlot = slot;
@@ -376,7 +378,7 @@ class _VideoEditorStopMotionFrameStripState
     widget.onReorderChanged?.call(false);
 
     if (_isBlockDrag) {
-      final slot = _blockSlot;
+      final slot = _remainingSlotFor(_blockSlot);
       final moved = (_effectiveLocalX - _dragStartLocalX).abs() > 0.5;
       setState(() {
         _isReordering = false;
@@ -445,10 +447,15 @@ class _VideoEditorStopMotionFrameStripState
                     index: i,
                     total: _orderedFrames.length,
                     isSelected:
-                        !_isReordering &&
+                        (_isBlockDrag || !_isReordering) &&
                         (widget.isMultiSelectMode
                             ? widget.selectedFrameIndexes.contains(i)
                             : i == widget.selectedFrameIndex),
+                    // A block member stays in its slot but reads as lifted, so
+                    // the strip shows what is travelling with the finger
+                    // without collapsing under it.
+                    isLifted:
+                        _isBlockDrag && widget.selectedFrameIndexes.contains(i),
                     onTap: _isReordering ? null : () => widget.onFrameTapped(i),
                   ),
                 ),
@@ -546,6 +553,7 @@ class _FrameTile extends StatelessWidget {
     required this.isSelected,
     this.onTap,
     this.isDragging = false,
+    this.isLifted = false,
   });
 
   final StopMotionClipFrame frame;
@@ -554,6 +562,11 @@ class _FrameTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback? onTap;
   final bool isDragging;
+
+  /// Whether this still is part of the block currently travelling with the
+  /// finger. It keeps its slot so the strip's geometry stays stable, and fades
+  /// to read as picked up rather than left behind.
+  final bool isLifted;
 
   @override
   Widget build(BuildContext context) {
@@ -575,7 +588,11 @@ class _FrameTile extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Opacity(
-          opacity: isDragging ? 0.85 : 1,
+          opacity: isLifted
+              ? 0.35
+              : isDragging
+              ? 0.85
+              : 1,
           child: DecoratedBox(
             // Foreground: the image fills the same box, so a background
             // decoration would be painted underneath it and never show.

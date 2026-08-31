@@ -964,22 +964,30 @@ void main() {
       testWidgets(
         'contentWrapper is applied around the sheet inside the modal route',
         (tester) async {
+          ModalRoute<dynamic>? callerRoute;
+          ModalRoute<void>? wrapperRoute;
+
           await tester.pumpWidget(
             MaterialApp(
               home: Scaffold(
                 body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () async {
-                      await VineBottomSheet.show<void>(
-                        context: context,
-                        title: const Text('Wrapped'),
-                        children: const [Text('Body')],
-                        contentWrapper: (wrapperContext, child) =>
-                            _WrapperMarker(child: child),
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
+                  builder: (context) {
+                    callerRoute = ModalRoute.of(context);
+                    return ElevatedButton(
+                      onPressed: () async {
+                        await VineBottomSheet.show<void>(
+                          context: context,
+                          title: const Text('Wrapped'),
+                          children: const [Text('Body')],
+                          contentWrapper: (wrapperContext, child) {
+                            wrapperRoute = ModalRoute.of<void>(wrapperContext);
+                            return _WrapperMarker(child: child);
+                          },
+                        );
+                      },
+                      child: const Text('Open'),
+                    );
+                  },
                 ),
               ),
             ),
@@ -991,6 +999,14 @@ void main() {
           // Wrapper wraps the real sheet content.
           expect(find.byType(_WrapperMarker), findsOneWidget);
           expect(find.text('Body'), findsOneWidget);
+          // The wrapper's context resolves to the sheet's OWN route, not the
+          // route it was opened from. Callers dismiss a sheet by identity from
+          // here (`ModalRoute.of(wrapperContext)`); applying the wrapper above
+          // the modal route instead would hand them the caller's page route,
+          // and removing that takes the user's screen down with it.
+          expect(wrapperRoute, isA<ModalBottomSheetRoute<void>>());
+          expect(callerRoute, isNotNull);
+          expect(wrapperRoute, isNot(same(callerRoute)));
         },
       );
 
@@ -1084,23 +1100,31 @@ void main() {
       testWidgets(
         'contentWrapper is applied in fixed (non-scrollable) mode too',
         (tester) async {
+          ModalRoute<dynamic>? callerRoute;
+          ModalRoute<void>? wrapperRoute;
+
           await tester.pumpWidget(
             MaterialApp(
               home: Scaffold(
                 body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () async {
-                      await VineBottomSheet.show<void>(
-                        context: context,
-                        scrollable: false,
-                        title: const Text('Wrapped Fixed'),
-                        children: const [Text('Fixed Body')],
-                        contentWrapper: (wrapperContext, child) =>
-                            _WrapperMarker(child: child),
-                      );
-                    },
-                    child: const Text('Open Fixed'),
-                  ),
+                  builder: (context) {
+                    callerRoute = ModalRoute.of(context);
+                    return ElevatedButton(
+                      onPressed: () async {
+                        await VineBottomSheet.show<void>(
+                          context: context,
+                          scrollable: false,
+                          title: const Text('Wrapped Fixed'),
+                          children: const [Text('Fixed Body')],
+                          contentWrapper: (wrapperContext, child) {
+                            wrapperRoute = ModalRoute.of<void>(wrapperContext);
+                            return _WrapperMarker(child: child);
+                          },
+                        );
+                      },
+                      child: const Text('Open Fixed'),
+                    );
+                  },
                 ),
               ),
             ),
@@ -1111,6 +1135,10 @@ void main() {
 
           expect(find.byType(_WrapperMarker), findsOneWidget);
           expect(find.text('Fixed Body'), findsOneWidget);
+          // Same route-identity contract as the scrollable path above.
+          expect(wrapperRoute, isA<ModalBottomSheetRoute<void>>());
+          expect(callerRoute, isNotNull);
+          expect(wrapperRoute, isNot(same(callerRoute)));
         },
       );
 

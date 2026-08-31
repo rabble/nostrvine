@@ -695,7 +695,7 @@ void main() {
 
       test('includes provider metadata', () {
         final script = buildBridgeBootstrapScript(nonce: 'n');
-        expect(script, contains("name: 'diVine'"));
+        expect(script, contains("name: 'Divine'"));
         expect(script, contains("supports: ['nip44']"));
       });
 

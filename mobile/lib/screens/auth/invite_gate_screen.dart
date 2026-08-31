@@ -13,6 +13,7 @@ import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/l10n/invite_gate_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -27,6 +28,7 @@ class InviteGateScreen extends StatefulWidget {
     super.key,
     this.initialCode,
     this.initialError,
+    this.initialErrorReason,
     this.initialSourceSlug,
   });
 
@@ -35,6 +37,7 @@ class InviteGateScreen extends StatefulWidget {
 
   final String? initialCode;
   final String? initialError;
+  final InviteGateError? initialErrorReason;
   final String? initialSourceSlug;
 
   @override
@@ -55,8 +58,16 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     );
     final inviteGateBloc = context.read<InviteGateBloc>();
     inviteGateBloc.add(const InviteGateTransientCleared());
-    if (widget.initialError != null && widget.initialError!.isNotEmpty) {
-      inviteGateBloc.add(InviteGateGeneralErrorSet(widget.initialError));
+    final initialErrorReason = widget.initialErrorReason;
+    if (initialErrorReason != null) {
+      inviteGateBloc.add(InviteGateGeneralErrorSet(initialErrorReason));
+    } else if (widget.initialError != null && widget.initialError!.isNotEmpty) {
+      // Only the FACT of an upstream error survives the link; its text does
+      // not. Trusted in-app recovery links use the allowlisted errorReason
+      // parameter instead.
+      inviteGateBloc.add(
+        const InviteGateGeneralErrorSet(InviteGateError.unknown),
+      );
     }
   }
 
@@ -120,8 +131,24 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
 
   void _redirectToCreateAccount() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.go(WelcomeScreen.createAccountPath);
+      if (mounted && !context.read<InviteAvailabilityCubit>().state.isEnabled) {
+        final queryParameters = <String, String>{
+          if (widget.initialCode?.isNotEmpty ?? false)
+            'code': widget.initialCode!,
+          // Preserve the error signal if onboarding flips back to invite-only;
+          // the invite gate discards the raw text before rendering it. See
+          // #8305 for removing this parameter from the remaining auth routes.
+          if (widget.initialError?.isNotEmpty ?? false)
+            'error': widget.initialError!,
+          if (widget.initialSourceSlug?.isNotEmpty ?? false)
+            'sourceSlug': widget.initialSourceSlug!,
+        };
+        context.go(
+          Uri(
+            path: WelcomeScreen.createAccountPath,
+            queryParameters: queryParameters.isEmpty ? null : queryParameters,
+          ).toString(),
+        );
       }
     });
   }
@@ -156,11 +183,11 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
 
     return BlocBuilder<InviteAvailabilityCubit, InviteAvailabilityState>(
       builder: (context, availability) {
-        if (!availability.hasResolved) {
-          return const _InviteLoadingPage();
-        }
         if (!availability.isEnabled) {
           _redirectToCreateAccount();
+          return const _InviteLoadingPage();
+        }
+        if (!availability.hasResolved) {
           return const _InviteLoadingPage();
         }
 
@@ -288,13 +315,21 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               _InviteCodeInput(
                                 controller: controller,
                                 enabled: !state.isValidatingCode,
-                                errorText: state.inviteCodeError,
+                                errorText: switch (state.inviteCodeError) {
+                                  null => null,
+                                  final error =>
+                                    context.l10n.inviteCodeErrorMessage(error),
+                                },
                                 onChanged: onChanged,
                                 onSubmitted: onSubmit,
                               ),
                               if (state.generalError != null) ...[
                                 const SizedBox(height: 16),
-                                AuthErrorBox(message: state.generalError!),
+                                AuthErrorBox(
+                                  message: context.l10n.inviteGateErrorMessage(
+                                    state.generalError!,
+                                  ),
+                                ),
                               ],
 
                               const Spacer(),

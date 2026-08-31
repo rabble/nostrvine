@@ -29,8 +29,21 @@ void main() {
         ),
       );
 
-      final semanticsFinder = find.bySemanticsLabel('Loading comments');
-      expect(semanticsFinder, findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(l10n.commentsLoadingSemanticLabel),
+        findsOneWidget,
+      );
+      // Proves the label comes from l10n rather than a constant that happens
+      // to read the same in English.
+      expect(
+        find.bySemanticsLabel(
+          lookupAppLocalizations(
+            const Locale('es'),
+          ).commentsLoadingSemanticLabel,
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('renders ListView with 6 skeleton items', (tester) async {

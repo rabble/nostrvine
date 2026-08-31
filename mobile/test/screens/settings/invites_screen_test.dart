@@ -75,7 +75,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         expect(find.text('AB23-EF7K'), findsOneWidget);
         expect(find.text('HN4P-QR56'), findsOneWidget);
-        expect(find.text('Share diVine with people you know'), findsOneWidget);
+        // Resolved from l10n, not hardcoded: this assertion should survive a
+        // copy change and fail only if the widget stops reading from l10n.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.invitesShareWithPeople), findsOneWidget);
       });
 
       testWidgets('constrains menu content width on wide screens', (

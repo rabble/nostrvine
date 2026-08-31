@@ -49,8 +49,6 @@
   "settingsCreatorAnalytics": "创作者数据",
   "settingsSupportCenter": "帮助中心",
   "settingsNotifications": "通知",
-  "settingsContentPreferences": "内容偏好",
-  "settingsModerationControls": "屏蔽与静音",
   "settingsBlueskyPublishing": "Bluesky 发布",
   "settingsBlueskyPublishingSubtitle": "管理同步到 Bluesky 的跨平台发布",
   "settingsNostrSettings": "Nostr 设置",
@@ -84,7 +82,7 @@
       }
     }
   },
-  "settingsInvites": "邀请",
+  "settingsShareDivine": "与朋友分享 Divine",
   "settingsSwitchAccount": "切换账号",
   "settingsAddAnotherAccount": "添加其他账号",
   "settingsAccountSwitchFailed": "切换账号失败，请重试。",
@@ -156,6 +154,8 @@
   "contentPreferencesUseDeviceLanguage": "跟随系统语言（默认）",
   "contentPreferencesAudioSharing": "允许他人二次使用我的音频",
   "contentPreferencesAudioSharingSubtitle": "开启后，其他人可以使用你视频中的音频",
+  "contentPreferencesMusicMode": "音乐模式",
+  "contentPreferencesMusicModeSubtitle": "关掉会压扁乐器声的降噪处理。更适合音乐，人声会糙一点。",
   "contentPreferencesAccountLabels": "账号标签",
   "contentPreferencesAccountLabelsEmpty": "为自己的内容打标签",
   "contentPreferencesAccountContentLabels": "账号内容标签",
@@ -204,23 +204,11 @@
       }
     }
   },
-  "profileShareFailed": "分享主页失败：{error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
-  "profileEditProfile": "编辑资料",
-  "profileCreatorAnalytics": "创作者数据",
-  "profileShareProfile": "分享主页",
+  "profileShareFailed": "分享主页失败，请重试。",
   "profileCopyPublicKey": "复制公钥（npub）",
   "profileGetEmbedCode": "获取嵌入代码",
   "profilePublicKeyCopied": "公钥已复制到剪贴板",
   "profileEmbedCodeCopied": "嵌入代码已复制到剪贴板",
-  "profileRefreshTooltip": "刷新",
-  "profileRefreshSemanticLabel": "刷新个人资料",
   "profileMoreTooltip": "更多",
   "profileMoreSemanticLabel": "更多选项",
   "profileAvatarLightboxBarrierLabel": "关闭头像",
@@ -364,10 +352,6 @@
       }
     }
   },
-  "profileUserBlockedTitle": "已屏蔽该用户",
-  "profileUserBlockedContent": "你的信息流中不会再出现该用户的内容。",
-  "profileUserBlockedUnblockHint": "你可以随时在其主页或“设置 > 安全”中取消屏蔽。",
-  "profileCloseButton": "关闭",
   "profileNoCollabsTitle": "还没有合作",
   "profileCollabsOwnEmpty": "你参与合作的视频会显示在这里。",
   "profileCollabsOtherEmpty": "TA 参与合作的视频会显示在这里。",
@@ -407,23 +391,10 @@
   "profileShowLess": "收起",
   "profileCompleteYourProfile": "完善你的资料",
   "profileCompleteSubtitle": "添加名字、简介和头像，马上开始",
-  "profileSetUpButton": "去设置",
-  "profileVerifyingEmail": "正在验证邮箱...",
-  "profileCheckEmailVerification": "到 {email} 查收验证链接",
-  "@profileCheckEmailVerification": {
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "profileWaitingForVerification": "等待邮箱验证",
-  "profileVerificationFailed": "验证失败",
   "profilePleaseTryAgain": "请重试",
   "profileSecureYourAccount": "保护你的账号",
   "profileSecureSubtitle": "添加邮箱和密码，即可在任意设备上找回账号",
   "profileRetryButton": "重试",
-  "profileRegisterButton": "注册",
   "profileSessionExpired": "登录已过期",
   "profileSignInToRestore": "重新登录即可恢复完整访问权限",
   "profileSignInButton": "登录",
@@ -435,6 +406,13 @@
   "profileMyLibraryLabel": "我的作品库",
   "profileMessageLabel": "私信",
   "profileDeletedAccountName": "已注销账号",
+  "inboxActionReportVanishedAccount": "举报此账号",
+  "inboxActionBlockVanishedAccount": "屏蔽此账号",
+  "inboxActionUnblockVanishedAccount": "取消屏蔽此账号",
+  "inboxReportedVanishedAccount": "已举报此账号",
+  "inboxBlockedVanishedAccount": "已屏蔽此账号",
+  "inboxUnblockedVanishedAccount": "已取消屏蔽此账号",
+  "inboxRemoveConfirmBodyVanishedAccount": "这会从你的收件箱中移除这段会话。如果对方再次给你发消息，会开始一个新会话。",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
@@ -446,7 +424,6 @@
   "@profileUserFallback": {
     "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
   },
-  "profileDismissTooltip": "忽略",
   "profileLinkCopied": "主页链接已复制",
   "profileSetupEditProfileTitle": "编辑资料",
   "profileSetupBackLabel": "返回",
@@ -464,36 +441,28 @@
   "profileSetupClaimFailed": "注册用户名失败，请重试。",
   "profileSetupPublishFailed": "发布资料失败，请重试。",
   "profileSetupNoRelaysConnected": "无法连接网络。请检查连接后重试。",
-  "profileSetupRetryLabel": "重试",
   "profileSetupDisplayNameLabel": "昵称",
   "profileSetupDisplayNameRequired": "请输入昵称",
   "profileSetupBioLabel": "简介（可选）",
   "profileSetupWebsiteLabel": "网站（可选）",
   "profileSetupPublicKeyLabel": "公钥（npub）",
   "profileSetupUsernameLabel": "用户名（可选）",
-  "profileSetupUsernameHelper": "你在 Divine 上的唯一标识",
-  "profileSetupProfileColorLabel": "资料颜色（可选）",
+  "profileSetupUsernameHelper": "请使用字母、数字或连字符。你的用户名会成为 divine.video 地址。空格或符号请用在显示名称中。",
   "profileSetupSaveButton": "保存",
   "profileSetupSavingButton": "保存中...",
   "profileSetupImageUrlTitle": "添加图片链接",
-  "profileSetupPictureUploaded": "头像上传成功！",
   "profileSetupImageSelectionFailed": "选择图片失败，请在下方粘贴图片链接。",
   "profileSetupImagesTypeGroup": "图片",
-  "profileSetupCameraAccessFailed": "相机访问失败：{error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "相机权限已关闭，请在设置中开启后拍照。",
+  "cameraPickErrorPermissionRestricted": "此设备不允许访问相机。",
+  "cameraPickErrorBusy": "选择器已经打开，请关闭后重试。",
+  "cameraPickErrorGeneric": "无法打开相机，请重试。",
   "profileSetupGotItButton": "知道了",
   "profileSetupUploadFailedGeneric": "上传失败，请稍后重试。",
   "profileSetupUploadNetworkError": "网络错误：请检查网络连接后重试。",
   "profileSetupUploadAuthError": "认证错误：请退出登录后重新登录。",
   "profileSetupUploadFileTooLarge": "文件过大：请选择更小的图片（最大 10MB）。",
   "profileSetupUploadServerError": "上传失败。我们的服务器暂时开小差了，请稍后再试。",
-  "profileSetupUploadUnsupportedOnWeb": "网页版暂不支持上传头像。请使用 iOS 或 Android 应用，或直接粘贴图片链接。",
   "profileSetupBannerClearButton": "清除头图",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -526,6 +495,7 @@
   "profileSetupCheckAgain": "再查一次",
   "profileSetupUsernameBurned": "该用户名已不可用",
   "profileSetupUsernameInvalidFormat": "仅允许字母、数字和连字符",
+  "profileSetupUsernameInvalidHyphenPlacement": "用户名不能以连字符开头或结尾",
   "profileSetupUsernameInvalidLength": "用户名长度须为 3-63 个字符",
   "profileSetupUsernameNetworkError": "无法检查可用性，请重试。",
   "profileSetupUsernameInvalidFormatGeneric": "用户名格式无效",
@@ -544,8 +514,6 @@
   "profileSetupSupportRequestSent": "请求已发送！我们会尽快回复你。",
   "profileSetupCouldntOpenEmail": "无法打开邮箱。请发送至：names@divine.video",
   "profileSetupSendRequest": "发送请求",
-  "profileSetupPickColorTitle": "挑个颜色",
-  "profileSetupSelectButton": "选择",
   "profileSetupUseOwnNip05": "使用你自己的 NIP-05 地址",
   "profileSetupNip05AddressLabel": "NIP-05 地址",
   "profileSetupExternalNip05InvalidFormat": "NIP-05 格式无效（例如 name@domain.com）",
@@ -575,7 +543,6 @@
   "nostrInfoUsernameDescription": " 一个可读的名字（比如 @name.divine.video），指向你的 npub。它让你的 Nostr 身份更容易识别和验证，类似邮箱地址。",
   "nostrInfoLearnMoreAt": "了解更多：",
   "nostrInfoGotIt": "知道了！",
-  "profileTabRefreshTooltip": "刷新",
   "videoGridRefreshLabel": "正在寻找更多视频",
   "videoGridOptionsTitle": "视频选项",
   "videoGridEditVideo": "编辑视频",
@@ -583,14 +550,6 @@
   "videoGridDeleteVideo": "删除视频",
   "videoGridDeleteVideoSubtitle": "从 Divine 删除此视频。它可能仍会出现在其他 Nostr 客户端上。",
   "videoGridDeletingContent": "正在删除内容...",
-  "videoGridDeleteFailure": "删除内容失败：{error}",
-  "@videoGridDeleteFailure": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreTabFeatured": "精选",
   "exploreTabClassics": "经典",
   "exploreTabNew": "最新",
@@ -603,14 +562,6 @@
   "featuredTabLoadFailed": "无法加载此合集。",
   "featuredTabRetry": "重试",
   "exploreNoVideosAvailable": "暂无视频",
-  "exploreErrorPrefix": "错误：{error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "发现列表",
   "exploreAboutLists": "关于列表",
   "exploreAboutListsDescription": "列表帮你用两种方式整理和策划 Divine 内容：",
@@ -620,14 +571,7 @@
   "exploreVideoListsDescription": "把喜欢的视频做成播放列表，稍后观看",
   "exploreMyLists": "我的列表",
   "exploreSubscribedLists": "订阅的列表",
-  "exploreErrorLoadingLists": "加载列表出错：{error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "加载列表出错，请重试。",
   "exploreNewVideosCount": "{count, plural, =1{1 条新视频} other{{count} 条新视频}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -644,12 +588,9 @@
       }
     }
   },
-  "videoPlayerLoadingVideo": "视频加载中...",
   "videoPlayerPlayVideo": "播放视频",
   "videoPlayerMute": "视频静音",
   "videoPlayerUnmute": "取消静音",
-  "videoPlayerEditVideo": "编辑视频",
-  "videoPlayerEditVideoTooltip": "编辑视频",
   "videoPlayerTapHint": "点按播放或暂停，双击点赞。",
   "videoSettingsMenuOpen": "打开播放设置",
   "@videoSettingsMenuOpen": {
@@ -737,15 +678,10 @@
     "description": "Badge shown next to a label the current viewer has already suggested for this video."
   },
   "videoErrorNotFound": "找不到视频",
-  "videoErrorNetwork": "网络错误",
-  "videoErrorTimeout": "加载超时",
-  "videoErrorFormat": "视频格式错误\n（请重试或换个浏览器）",
-  "videoErrorUnsupportedFormat": "不支持的视频格式",
   "videoErrorPlayback": "视频播放出错",
   "videoErrorAgeRestricted": "年龄限制内容",
   "videoErrorUnavailable": "视频不可用",
   "videoErrorUnavailableBody": "此视频目前不可用。",
-  "videoErrorVerifyAge": "验证年龄",
   "videoErrorRetry": "重试",
   "videoErrorContentRestricted": "内容受限",
   "videoErrorContentRestrictedBody": "该视频因违反我们的内容规则已被移除。",
@@ -786,7 +722,6 @@
     "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."
   },
   "videoDetailCloseSemanticLabel": "关闭视频播放器",
-  "videoFollowButtonFollowing": "已关注",
   "videoFollowButtonFollow": "关注",
   "audioAttributionOriginalSound": "原声",
   "audioAttributionUnavailableSound": "声音不可用",
@@ -945,8 +880,6 @@
   "videoActionRepost": "转发视频",
   "videoActionViewComments": "查看评论",
   "videoActionMoreOptions": "更多选项",
-  "videoActionHideSubtitles": "隐藏字幕",
-  "videoActionShowSubtitles": "显示字幕",
   "videoEngagementLikersTitle": "点赞的人",
   "@videoEngagementLikersTitle": {
     "description": "Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it."
@@ -994,14 +927,6 @@
   "videoOverlayCommentPostFailedSnackbar": "评论发布失败",
   "@videoOverlayCommentPostFailedSnackbar": {
     "description": "Snackbar shown when posting a comment from the inline comment field fails (e.g. relay unreachable)."
-  },
-  "videoDescriptionLoops": "{count} 次循环",
-  "@videoDescriptionLoops": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
   },
   "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{次循环} other{次循环}}",
   "@videoFeedLoopCountLine": {
@@ -1112,6 +1037,27 @@
   },
   "devOptionsDisableDeveloperModeSubtitle": "在设置中隐藏开发者选项",
   "devOptionsDisableDeveloperModeToast": "开发者模式已关闭",
+  "devOptionsShorebirdTitle": "Shorebird 补丁",
+  "devOptionsShorebirdPatchLabel": "当前补丁",
+  "devOptionsShorebirdNoPatch": "未安装补丁",
+  "devOptionsShorebirdUnavailable": "此构建版本不可用",
+  "devOptionsShorebirdUnavailableSubtitle": "补丁仅适用于通过 shorebird release 创建的构建版本。",
+  "devOptionsShorebirdLoading": "正在读取补丁状态…",
+  "devOptionsShorebirdNotChecked": "尚未检查预发布通道。",
+  "devOptionsShorebirdCheck": "检查预发布通道",
+  "devOptionsShorebirdApply": "应用预发布补丁",
+  "devOptionsShorebirdUseStable": "恢复稳定版更新",
+  "devOptionsShorebirdChecking": "正在检查预发布通道…",
+  "devOptionsShorebirdUpdateAvailable": "有预发布补丁可供应用。",
+  "devOptionsShorebirdUpToDate": "此版本没有预发布补丁。",
+  "devOptionsShorebirdRestartRequired": "已下载。请重启应用以加载补丁。",
+  "devOptionsShorebirdRollbackRequired": "回滚已准备就绪。请重启以返回基础版本。",
+  "devOptionsShorebirdApplying": "正在下载并安装…",
+  "devOptionsShorebirdApplied": "已安装。请重启应用以加载补丁。",
+  "devOptionsShorebirdUnchanged": "未安装任何内容。请检查预发布通道后重试。",
+  "devOptionsShorebirdSelectingStableTrack": "正在选择稳定版通道…",
+  "devOptionsShorebirdStableRestored": "已选择稳定版通道。请重启应用以检查稳定版补丁。",
+  "devOptionsShorebirdFailure": "操作失败。请查看日志了解详情。",
   "devOptionsPageLoadTimes": "页面加载时间",
   "devOptionsNoPageLoads": "还没有记录到页面加载。\n在应用里逛逛，就能看到计时数据。",
   "devOptionsPageLoadVisible": "可见：{visibleMs}ms  |  数据：{dataMs}ms",
@@ -1188,14 +1134,6 @@
   "relaySettingsEventsSent": "已发送事件",
   "relaySettingsRequestsThisSession": "本次会话请求数",
   "relaySettingsFailedRequests": "失败请求",
-  "relaySettingsLastError": "最近错误：{error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "正在加载中继信息...",
   "relaySettingsAboutRelay": "关于中继",
   "relaySettingsSupportedNips": "支持的 NIP",
@@ -1316,14 +1254,6 @@
   "nostrSettingsRemoveKeys": "从此设备移除此账号",
   "nostrSettingsRemoveKeysSubtitle": "从此设备移除此账号的本地登录。此账号的本地草稿和片段仍会保留。",
   "nostrSettingsCouldNotRemoveKeys": "无法从此设备移除此账号，请重试。",
-  "nostrSettingsFailedToRemoveKeys": "移除此账号失败：{error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "删除账号和数据",
   "nostrSettingsDeleteAccountSubtitle": "为你的内容发送删除请求，并在此设备上退出登录。中继、客户端、搜索索引和其他已登录设备可能仍会保留副本。",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1424,14 +1354,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "查询失败：{error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "查询失败，请重试。",
   "relayDiagnosticConnectedToRelays": "已连接 {count} 个中继！",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1441,14 +1364,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "无法连接到任何中继",
-  "relayDiagnosticConnectionRetryFailed": "连接重试失败：{error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "连接重试失败，请重试。",
   "relayDiagnosticConnectedAuthenticated": "已连接并完成认证",
   "relayDiagnosticConnectedOnly": "已连接",
   "relayDiagnosticNotConnected": "未连接",
@@ -1472,15 +1388,6 @@
   "notificationSettingsRepostsSubtitle": "当有人转发你的视频时",
   "notificationSettingsNewPosts": "新视频",
   "notificationSettingsNewPostsSubtitle": "当你关注的人发布内容时",
-  "notificationSettingsSystem": "系统",
-  "notificationSettingsSystemSubtitle": "应用更新和系统消息",
-  "notificationSettingsPushNotificationsSection": "推送通知",
-  "notificationSettingsPushNotifications": "推送通知",
-  "notificationSettingsPushNotificationsSubtitle": "应用关闭时也能收到通知",
-  "notificationSettingsSound": "声音",
-  "notificationSettingsSoundSubtitle": "通知时播放声音",
-  "notificationSettingsVibration": "振动",
-  "notificationSettingsVibrationSubtitle": "通知时振动",
   "notificationSettingsActions": "操作",
   "notificationSettingsMarkAllAsRead": "全部标为已读",
   "notificationSettingsMarkAllAsReadSubtitle": "将所有通知标记为已读",
@@ -1489,11 +1396,6 @@
   "notificationSettingsResetToDefaults": "设置已重置为默认值",
   "notificationSettingsAbout": "关于通知",
   "notificationSettingsAboutDescription": "通知由 Nostr 协议驱动。实时更新取决于你与 Nostr 中继的连接，部分通知可能会有延迟。",
-  "safetySettingsTitle": "安全与隐私",
-  "@safetySettingsTitle": {
-    "description": "Safety settings screen app bar title"
-  },
-  "safetySettingsLabel": "设置",
   "safetySettingsWhatYouSee": "你看到的内容",
   "safetySettingsWhatYouPublish": "你发布的内容",
   "safetySettingsShowDivineHostedOnly": "只显示 Divine 托管的视频",
@@ -1882,14 +1784,6 @@
   "authUnableToAccessKeys": "无法访问你的密钥，请重试。",
   "authRegistrationFailed": "注册失败",
   "authRegistrationComplete": "注册完成。请查收你的邮箱。",
-  "authVerificationFailedTitle": "验证失败",
-  "authClose": "关闭",
-  "authAccountSecured": "账号已保护！",
-  "authAccountLinkedToEmail": "你的账号现已绑定邮箱。",
-  "authVerifyYourEmail": "验证你的邮箱",
-  "authClickLinkContinue": "点击邮箱中的链接完成注册。在此期间你可以继续使用应用。",
-  "authWaitingForVerificationEllipsis": "等待验证中...",
-  "authContinueToApp": "进入应用",
   "authFailedToSendResetEmail": "重置邮件发送失败。",
   "authSending": "发送中...",
   "authSignInButton": "登录",
@@ -1905,6 +1799,13 @@
   "authVerificationErrorPinLocked": "尝试次数过多。点重新发送获取新码。",
   "authVerificationErrorPinFailed": "无法验证该验证码，请重试。",
   "authVerificationErrorPinUnavailable": "暂时无法输入验证码。请点击邮件中的链接，或重新发送获取新码。",
+  "authInviteCodeErrorMalformed": "请输入 ABCD-EFGH 格式的邀请码。",
+  "authInviteCodeErrorNotFound": "这个邀请码看起来无效。",
+  "authInviteCodeErrorAlreadyUsed": "这个邀请码已被使用或已撤销。",
+  "authInviteGateErrorCreatorFull": "这位创作者的邀请名额已满",
+  "authInviteGateErrorUnavailable": "这个邀请码不可用。加入候补名单，有名额时我们会给你发送邀请。",
+  "authInviteGateErrorCheckFailed": "无法验证这个邀请码。请重试。",
+  "authInviteGateErrorUnknown": "出了点问题。请重新输入你的邀请码。",
   "authInviteErrorAlreadyUsed": "该邀请码已不可用。返回你的邀请码页面、加入等候名单，或联系客服。",
   "authInviteErrorInvalid": "该邀请码暂时无法使用。返回你的邀请码页面、加入等候名单，或联系客服。",
   "authInviteErrorTemporary": "暂时无法确认你的邀请。返回你的邀请码页面重试，或联系客服。",
@@ -1954,7 +1855,6 @@
   "shareSheetAddToList": "加入列表",
   "shareSheetCopy": "复制",
   "shareSheetShareVia": "分享方式",
-  "shareSheetReport": "举报",
   "shareSheetEventJson": "事件 JSON",
   "shareSheetEventId": "事件 ID",
   "shareSheetMoreActions": "更多操作",
@@ -2002,103 +1902,7 @@
   "watermarkDownloadStageDownloadingDesc": "正在从网络获取视频...",
   "watermarkDownloadStageWatermarkingDesc": "正在盖上 Divine 水印...",
   "watermarkDownloadStageSavingDesc": "正在把带水印的视频保存到你的相册...",
-  "uploadProgressVideoUpload": "视频上传",
-  "uploadProgressPause": "暂停",
-  "uploadProgressResume": "继续",
-  "uploadProgressGoBack": "返回",
-  "uploadProgressRetryWithCount": "重试（还剩 {count} 次）",
-  "@uploadProgressRetryWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressDelete": "删除",
-  "uploadProgressDaysAgo": "{count} 天前",
-  "@uploadProgressDaysAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressHoursAgo": "{count} 小时前",
-  "@uploadProgressHoursAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressMinutesAgo": "{count} 分钟前",
-  "@uploadProgressMinutesAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressJustNow": "刚刚",
-  "uploadProgressUploadingPercent": "上传中 {percent}%",
-  "@uploadProgressUploadingPercent": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressPausedPercent": "已暂停 {percent}%",
-  "@uploadProgressPausedPercent": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "shareMenuTitle": "分享视频",
-  "shareMenuReportAiContent": "举报 AI 内容",
-  "shareMenuReportAiContentSubtitle": "快速举报疑似 AI 生成的内容",
-  "shareMenuReportingAiContent": "正在举报 AI 内容...",
-  "shareMenuFailedToReportContent": "举报内容失败：{error}",
-  "@shareMenuFailedToReportContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuFailedToReportAiContent": "举报 AI 内容失败：{error}",
-  "@shareMenuFailedToReportAiContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuVideoStatus": "视频状态",
-  "shareMenuViewAllLists": "查看所有列表 →",
-  "shareMenuShareWith": "分享给",
-  "shareMenuShareViaOtherApps": "通过其他应用分享",
-  "shareMenuShareViaOtherAppsSubtitle": "通过其他应用分享或复制链接",
-  "shareMenuSaveToGallery": "保存到相册",
-  "shareMenuSaveOriginalSubtitle": "将原始视频保存到相册",
-  "shareMenuSaveWithWatermark": "保存（带水印）",
-  "shareMenuSaveVideo": "保存视频",
-  "shareMenuDownloadWithWatermark": "下载带 Divine 水印的视频",
-  "shareMenuSaveVideoSubtitle": "将视频保存到相册",
-  "shareMenuLists": "列表",
-  "shareMenuAddToList": "加入列表",
-  "shareMenuAddToListSubtitle": "加入你策划的列表",
-  "shareMenuCreateNewList": "创建新列表",
-  "shareMenuCreateNewListSubtitle": "开始一个新的策划合集",
-  "shareMenuRemovedFromList": "已从列表移除",
-  "shareMenuFailedToRemoveFromList": "从列表移除失败",
   "shareMenuBookmarks": "收藏",
-  "shareMenuFollowSets": "人物列表",
-  "shareMenuCreateFollowSet": "创建关注集合",
-  "shareMenuCreateFollowSetSubtitle": "以这位创作者开始一个新合集",
-  "shareMenuAddToFollowSet": "加入关注集合",
   "shareMenuFollowSetsAvailable": "有 {count} 个关注集合可用",
   "@shareMenuFollowSetsAvailable": {
     "placeholders": {
@@ -2108,7 +1912,6 @@
     }
   },
   "peopleListsAddToList": "加入列表",
-  "peopleListsAddToListSubtitle": "把这位创作者放进你的一个列表",
   "peopleListsSheetTitle": "加入列表",
   "peopleListsEmptyTitle": "还没有列表",
   "peopleListsEmptySubtitle": "创建一个列表，开始给人们分组。",
@@ -2200,21 +2003,8 @@
       }
     }
   },
-  "shareMenuAddedToBookmarks": "已加入收藏！",
-  "shareMenuFailedToAddBookmark": "加入收藏失败",
-  "shareMenuCreatedListAndAddedVideo": "已创建列表“{name}”并添加视频",
-  "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuManageContent": "管理内容",
   "shareMenuEditVideo": "编辑视频",
-  "shareMenuEditVideoSubtitle": "更新标题、简介和话题标签",
   "shareMenuDeleteVideo": "删除视频",
-  "shareMenuVideoInTheseLists": "视频已在这些列表中：",
   "shareMenuVideoCount": "{count} 个视频",
   "@shareMenuVideoCount": {
     "placeholders": {
@@ -2223,19 +2013,9 @@
       }
     }
   },
-  "shareMenuClose": "关闭",
   "shareMenuDeleteConfirmation": "这会从 Divine 永久删除该视频。使用其他中继的第三方 Nostr 客户端上可能仍会显示。",
   "shareMenuCancel": "取消",
   "shareMenuDelete": "删除",
-  "shareMenuDeletingContent": "正在删除内容...",
-  "shareMenuFailedToDeleteContent": "删除内容失败：{error}",
-  "@shareMenuFailedToDeleteContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuDeleteFailedNotInitialized": "删除功能还没准备好，请稍后再试。",
   "shareMenuDeleteFailedNotOwner": "你只能删除自己的视频。",
   "shareMenuDeleteFailedNotAuthenticated": "请重新登录后再删除。",
@@ -2244,35 +2024,10 @@
   "shareMenuDeleteFailedRelayNoResponse": "连不上中继。请检查网络连接后重试。",
   "shareMenuDeletePartiallyConfirmed": "已删除。不是所有中继都确认了，所以它可能还会出现在其他应用里。",
   "shareMenuDeleteFailedGeneric": "无法删除此视频，请重试。",
-  "shareMenuFollowSetName": "关注集合名称",
-  "shareMenuFollowSetNameHint": "例如：内容创作者、音乐人等",
-  "shareMenuDescriptionOptional": "描述（可选）",
-  "shareMenuCreate": "创建",
-  "shareMenuCreatedFollowSetAndAddedCreator": "已创建关注集合“{name}”并添加创作者",
-  "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuDone": "完成",
-  "shareMenuEditTitle": "标题",
-  "shareMenuEditTitleHint": "输入视频标题",
-  "shareMenuEditDescription": "简介",
-  "shareMenuEditDescriptionHint": "输入视频简介",
-  "shareMenuEditHashtags": "话题标签",
-  "shareMenuEditHashtagsHint": "用逗号分隔，如：搞笑，猫咪，日常",
-  "shareMenuEditMetadataNote": "注意：只能编辑元数据，视频内容本身无法更改。",
-  "shareMenuDeleting": "删除中...",
   "shareMenuUpdate": "更新",
   "shareMenuChangeCover": "更换封面",
   "@shareMenuChangeCover": {
     "description": "Label for the button that opens the cover-image editor on the video metadata edit screen."
-  },
-  "shareMenuCoverUploadingBackground": "缩略图正在后台上传",
-  "@shareMenuCoverUploadingBackground": {
-    "description": "Toast/snackbar message shown while the new cover thumbnail is being uploaded after saving video metadata."
   },
   "shareMenuVideoUpdated": "视频更新成功",
   "shareMenuVideoUpdatedWithInviteFailures": "视频已更新，但{count, plural, =1{有 1 个合作邀请未能发送。} other{有 {count} 个合作邀请未能发送。}}",
@@ -2284,66 +2039,19 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "更新视频失败：{error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuFailedToDeleteVideo": "删除视频失败：{error}",
-  "@shareMenuFailedToDeleteVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "请重新登录后再试。",
+  "videoUpdateErrorNoPlayableVideo": "这个视频没有可播放的源，无法编辑。",
+  "videoUpdateErrorCouldNotSign": "更新签名失败，请重试。",
+  "videoUpdateErrorPublishRejected": "中继未接受此次更新，请稍后重试。",
+  "videoUpdateErrorGeneric": "无法更新这个视频，请重试。",
   "shareMenuDeleteVideoQuestion": "删除视频？",
-  "shareMenuVideoDeletionRequested": "视频已删除",
-  "shareMenuContentLabels": "内容标签",
-  "shareMenuAddContentLabels": "添加内容标签",
-  "shareMenuClearAll": "全部清除",
-  "shareMenuCollaborators": "协作者",
-  "shareMenuAddCollaborator": "邀请协作者",
-  "shareMenuMutualFollowRequired": "你需要和 {name} 互相关注，才能邀请 TA 成为协作者。",
-  "@shareMenuMutualFollowRequired": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuLoading": "加载中...",
-  "shareMenuInspiredBy": "灵感来自",
-  "shareMenuAddInspirationCredit": "添加灵感来源署名",
-  "shareMenuCreatorCannotBeReferenced": "无法引用该创作者。",
-  "shareMenuUnknown": "未知",
-  "shareMenuUseThisSound": "使用这个声音",
-  "shareMenuOriginalSound": "原声",
+  "shareMenuDeleteCleanupInProgress": "正在移除视频…",
+  "shareMenuDeleteCleanupConfirmed": "视频已删除。",
+  "shareMenuDeleteCleanupDelayed": "视频已删除。它可能需要一点时间才能从所有地方消失。",
+  "shareMenuDeleteCleanupFailed": "视频已删除，但我们无法移除每个副本。请联系支持团队。",
   "authSessionExpired": "你的登录已过期，请重新登录。",
   "authSignInFailed": "登录失败，请重试。",
-  "localeAppLanguage": "应用语言",
-  "localeDeviceDefault": "系统默认",
-  "localeSelectLanguage": "选择语言",
   "webAuthNotSupportedSecureMode": "安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。",
-  "webAuthIntegrationFailed": "认证集成失败：{error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "意外错误：{error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "请输入 bunker URI",
   "webAuthConnectTitle": "连接到 Divine",
   "webAuthChooseMethod": "选择你偏好的 Nostr 认证方式",
@@ -2358,25 +2066,11 @@
   "webAuthNostrHelp": "安装 Alby 或 nos2x 等浏览器扩展体验最省事，也可以用 nsec bunker 进行安全的远程签名。",
   "soundsTitle": "声音",
   "soundsSearchHint": "搜索声音...",
-  "soundsPreviewUnavailable": "无法预览声音——没有可用音频",
-  "soundsPreviewFailed": "预览播放失败：{error}",
-  "@soundsPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "soundsFeaturedSounds": "精选声音",
-  "soundsTrendingSounds": "热门声音",
-  "soundsAllSounds": "全部声音",
   "soundSyncStatusSyncing": "正在同步你的声音…",
   "soundSyncStatusSynced": "声音已是最新",
   "soundSyncStatusFailed": "无法同步你的声音，我们会再试一次。",
   "soundSyncStatusLocked": "无法在此设备上解锁你的同步音库。",
   "soundsSearchResults": "搜索结果",
-  "soundsNoSoundsAvailable": "暂无声音",
-  "soundsNoSoundsDescription": "创作者分享音频后，声音会显示在这里",
   "soundsNoSoundsFound": "没有找到声音",
   "soundsNoSoundsFoundDescription": "换个搜索词试试",
   "soundsSavedToLibrary": "已存入声音库",
@@ -2384,8 +2078,6 @@
   "soundsSavedLibraryTitle": "我的声音",
   "soundsSavedEmptyTitle": "还没有保存的声音",
   "soundsSavedEmptyDescription": "在视频上点“使用这个声音”，就会保存在这里。",
-  "soundsAvailabilityPrivate": "私密",
-  "soundsAvailabilityCommunity": "社区",
   "soundsRemoveSavedSound": "移除声音",
   "savedSoundSaveAction": "保存",
   "savedSoundPausePreviewAction": "暂停试听",
@@ -2396,12 +2088,7 @@
   "soundsRemovedFromLibrary": "已从声音库移除",
   "soundsSaveFailed": "无法保存该声音。请重试。",
   "soundsRemoveFailed": "无法移除该声音。请重试。",
-  "soundsFailedToLoad": "声音加载失败",
-  "soundsRetry": "重试",
-  "soundsScreenLabel": "声音页面",
   "profileTitle": "主页",
-  "profileRefresh": "刷新",
-  "profileRefreshLabel": "刷新主页",
   "profileMoreOptions": "更多选项",
   "profileBlockedUser": "已屏蔽 {name}",
   "@profileBlockedUser": {
@@ -2427,14 +2114,6 @@
       }
     }
   },
-  "profileError": "错误：{error}",
-  "@profileError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "profileFeedError": "连不上服务器。请检查网络连接后重试。",
   "@profileFeedError": {
     "description": "Full-screen message shown when an author's profile feed fails to load."
@@ -2454,17 +2133,6 @@
   "@notificationsRefreshError": {
     "description": "Inline banner above the cached notifications list when the most recent refresh failed but cached items are still rendered. Retry button next to this label reuses the existing `notificationsRetry` key."
   },
-  "notificationsCheckingNew": "正在检查新通知",
-  "notificationsNoneYet": "还没有通知",
-  "notificationsNoneForType": "没有{type}通知",
-  "@notificationsNoneForType": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      }
-    }
-  },
-  "notificationsEmptyDescription": "当有人与你的内容互动时，会显示在这里",
   "notificationsUnreadPrefix": "未读通知",
   "@notificationsUnreadPrefix": {
     "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
@@ -2504,14 +2172,6 @@
   "@notificationsVideoThumbnail": {
     "description": "Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing."
   },
-  "notificationsLoadingType": "正在加载{type}通知...",
-  "@notificationsLoadingType": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      }
-    }
-  },
   "notificationsInviteSingular": "你有 1 个邀请名额，可以分享给朋友！",
   "notificationsInvitePlural": "你有 {count} 个邀请名额，可以分享给朋友！",
   "@notificationsInvitePlural": {
@@ -2521,9 +2181,7 @@
       }
     }
   },
-  "notificationsVideoNotFound": "找不到视频",
   "notificationsVideoUnavailable": "视频不可用",
-  "notificationsFromNotification": "来自通知",
   "feedFailedToLoadVideos": "视频加载失败",
   "feedRetry": "重试",
   "feedNoFollowedUsers": "你还没有关注任何人。\n关注一些人，就能在这里看到他们的视频。",
@@ -2560,8 +2218,6 @@
   "feedLatestEmpty": "还没有新视频。\n过会儿再来看看。",
   "feedClassicEmpty": "还没有经典 Vine。\n过会儿再来看看。",
   "feedExploreVideos": "去探索视频",
-  "feedExternalVideoSlow": "外部视频加载较慢",
-  "feedSkip": "跳过",
   "feedLoadingMore": "正在加载更多视频…",
   "@feedLoadingMore": {
     "description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."
@@ -2570,47 +2226,12 @@
   "@feedRefreshed": {
     "description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."
   },
-  "uploadWaitingToUpload": "等待上传",
   "uploadUploadingVideo": "正在上传视频",
-  "uploadProcessingVideo": "正在处理视频",
-  "uploadProcessingComplete": "处理完成",
-  "uploadPublishedSuccessfully": "发布成功",
-  "uploadFailed": "上传失败",
-  "uploadRetrying": "正在重试上传",
-  "uploadPaused": "上传已暂停",
-  "uploadPercentComplete": "已完成 {percent}%",
-  "@uploadPercentComplete": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadQueuedMessage": "你的视频已排队等待上传",
-  "uploadUploadingMessage": "正在上传到服务器...",
-  "uploadProcessingMessage": "正在处理视频——可能需要几分钟",
-  "uploadReadyToPublishMessage": "视频处理成功，可以发布了",
-  "uploadPublishedMessage": "视频已发布到你的主页",
   "postPublishConfirmationTitle": "已发布到你的主页",
   "postPublishConfirmationView": "查看",
   "postPublishConfirmationShare": "分享",
   "postPublishConfirmationThumbnailLabel": "你刚发布的视频缩略图",
-  "uploadFailedMessage": "上传失败——请重试",
-  "uploadRetryingMessage": "正在重试上传...",
-  "uploadPausedMessage": "上传已被用户暂停",
-  "uploadRetryButton": "重试",
-  "uploadRetryFailed": "重试上传失败：{error}",
-  "@uploadRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "userSearchPrompt": "搜索用户",
   "userSearchNoResults": "没有找到用户",
-  "userSearchFailed": "搜索失败",
-  "userPickerSearchByName": "按名字搜索",
   "userPickerFilterByNameHint": "按名字筛选...",
   "userPickerSearchByNameHint": "按名字搜索...",
   "userPickerClearSearchSemantics": "清除搜索",
@@ -2658,27 +2279,13 @@
   "ageVerificationCreationQuestion": "你年满 16 岁吗？",
   "ageVerificationNo": "否",
   "ageVerificationYes": "是",
-  "shareLinkCopied": "链接已复制到剪贴板",
-  "shareFailedToCopy": "复制链接失败",
-  "shareVideoSubject": "快来看看 Divine 上的这个视频",
-  "shareFailedToShare": "分享失败",
-  "shareVideoTitle": "分享视频",
-  "shareToApps": "分享到其他应用",
-  "shareToAppsSubtitle": "通过消息、社交应用分享",
-  "shareCopyWebLink": "复制网页链接",
-  "shareCopyWebLinkSubtitle": "复制可分享的网页链接",
-  "shareCopyNostrLink": "复制 Nostr 链接",
-  "shareCopyNostrLinkSubtitle": "复制供 Nostr 客户端使用的 nevent 链接",
   "navHome": "首页",
   "navExplore": "探索",
   "navInbox": "私信",
   "navProfile": "我的",
-  "navSearch": "搜索",
-  "navSearchTooltip": "搜索",
   "navMyProfile": "我的主页",
   "navNotifications": "通知",
   "navOpenCamera": "打开相机",
-  "navUnknown": "未知",
   "navExploreClassics": "经典",
   "navExploreNewVideos": "新视频",
   "navExploreTrending": "热门",
@@ -2747,27 +2354,15 @@
       }
     }
   },
-  "supportErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
-  "reportTitle": "举报内容",
   "reportWhyReporting": "你为什么要举报该内容？",
   "reportPolicyNotice": "Divine 会在 24 小时内处理内容举报：移除违规内容，并将发布违规内容的用户清出平台。",
-  "reportAdditionalDetails": "补充说明（可选）",
   "reportBlockUser": "屏蔽该用户",
   "reportCancel": "取消",
   "reportSubmit": "举报",
   "reportSelectReason": "请选择举报该内容的原因",
   "reportOtherRequiresDetails": "选择“其他”时请描述问题",
   "reportDetailsRequired": "请描述问题",
+  "reportDetailsTextOnly": "仅限文字——无法在此附加照片或 GIF。",
   "reportReasonSpam": "垃圾或不受欢迎的内容",
   "reportReasonSpamSubtitle": "不受欢迎或重复的内容",
   "reportReasonHarassment": "骚扰、霸凌或威胁",
@@ -2790,14 +2385,7 @@
   "reportReasonAiGeneratedSubtitle": "疑似 AI 生成的内容",
   "reportReasonOther": "其他违规",
   "reportReasonOtherSubtitle": "以上未列出的违规行为",
-  "reportFailed": "举报内容失败：{error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "举报内容失败，请重试。",
   "reportNotSent": "举报发送失败。请检查连接后重试。",
   "reportReceivedTitle": "举报已收到",
   "reportReceivedThankYou": "谢谢你帮助维护 Divine 的安全。",
@@ -2810,7 +2398,6 @@
   "@reportContactModeration": {
     "description": "Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report."
   },
-  "reportLearnMore": "了解更多",
   "reportLearnMoreAt": "了解更多：",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "关闭",
@@ -2919,7 +2506,7 @@
   "keyManagementKeycastEmailUnverified": "复制私钥前请先验证你的邮箱地址。",
   "keyManagementKeycastDenied": "这个账号的密钥由 Divine 托管，所以这里无法复制。",
   "keyManagementKeycastNoKey": "这个账号没有任何密钥记录。",
-  "keyManagementKeycastGenericFailure": "连不上登录服务",
+  "keyManagementKeycastGenericFailure": "连不上登录服务，请重试。",
   "keyManagementRestrictedTitle": "你的密钥由 Divine 托管",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2934,23 +2521,9 @@
   "keyManagementConfirmImportBody": "这会用导入的身份替换你当前的身份。\n\n如果事先没有备份，你当前的密钥将会丢失。",
   "keyManagementImportConfirm": "导入",
   "keyManagementImportSuccess": "密钥导入成功！",
-  "keyManagementImportFailed": "导入密钥失败：{error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "导入密钥失败，请重试。",
   "keyManagementExportSuccess": "私钥已复制到剪贴板！\n\n请妥善保管。",
-  "keyManagementExportFailed": "导出密钥失败：{error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "导出密钥失败，请重试。",
   "keyManagementYourPublicKeyLabel": "你的公钥（npub）",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -3018,14 +2591,7 @@
     }
   },
   "soundUnableToPreview": "无法预览声音——没有可用音频",
-  "soundPreviewFailed": "预览播放失败：{error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "预览播放失败，请重试。",
   "soundViewSource": "查看来源",
   "soundCloseTooltip": "关闭",
   "exploreNotExploreRoute": "不是探索路由",
@@ -3046,17 +2612,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3267,7 +2822,7 @@
   },
   "inboxActionRemove": "删除会话",
   "inboxRemoveConfirmTitle": "删除会话？",
-  "inboxRemoveConfirmBody": "这会删除你与 {displayName} 的会话。此操作无法撤销。",
+  "inboxRemoveConfirmBody": "这会从你的收件箱中移除你与 {displayName} 的会话。如果对方再次给你发消息，会开始一个新会话。",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {
@@ -3275,6 +2830,7 @@
       }
     }
   },
+  "inboxRemoveConfirmBodyGroup": "这会从你的收件箱中移除这个群聊会话。如果有人再次在群里发消息，会开始一个新会话。",
   "inboxRemoveConfirmConfirm": "删除",
   "inboxConversationMuted": "会话已静音",
   "inboxConversationUnmuted": "会话已取消静音",
@@ -3342,11 +2898,11 @@
   },
   "inboxConversationCollabInvitePreview": "合作邀请",
   "@inboxConversationCollabInvitePreview": {
-    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine."
   },
-  "collaboratorInviteDmBody": "你受邀参与合作制作 {title}：{url}\n\n打开 diVine 查看并接受。",
+  "collaboratorInviteDmBody": "你受邀参与合作制作 {title}：{url}\n\n打开 Divine 查看并接受。",
   "@collaboratorInviteDmBody": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "title": {
         "type": "String",
@@ -3358,9 +2914,9 @@
       }
     }
   },
-  "collaboratorInviteDmBodyUntitled": "你受邀参与合作制作一个视频：{url}\n\n打开 diVine 查看并接受。",
+  "collaboratorInviteDmBodyUntitled": "你受邀参与合作制作一个视频：{url}\n\n打开 Divine 查看并接受。",
   "@collaboratorInviteDmBodyUntitled": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "url": {
         "type": "String",
@@ -3383,6 +2939,7 @@
   },
   "dmSendBlockedRetiredMessage": "没有人会看到这个对话。请改为给 Divine Moderation 发私信。",
   "dmRetiredThreadClosedTitle": "此对话已关闭。",
+  "messageRequestModerationNoticeCannotBeRemoved": "无法移除此 Divine Moderation 通知。",
   "dmRetiredThreadClosedBody": "我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。",
   "dmRetiredThreadOpenSupport": "给 Divine Moderation 发私信",
   "dmSendFailedMessage": "消息发送失败",
@@ -3473,10 +3030,6 @@
   "dmReelReplyViewChat": "查看聊天",
   "@dmReelReplyViewChat": {
     "description": "Tappable action in the 'Sent · View chat' confirmation that opens the DM conversation."
-  },
-  "dmReelReplyViewChatA11yLabel": "打开聊天",
-  "@dmReelReplyViewChatA11yLabel": {
-    "description": "Screen-reader label for the 'View chat' action shown after sending a reply or reaction from the reel player."
   },
   "dmReelReplySentAnnouncement": "回复已发送",
   "@dmReelReplySentAnnouncement": {
@@ -3594,12 +3147,11 @@
       }
     }
   },
+  "inboxGroupConversationTitle": "{name} 和其他 {count, plural, other{{count} 人}}",
   "inboxConversationTileLongPressHint": "显示会话操作",
   "@inboxConversationTileLongPressHint": {
     "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."
   },
-  "reportDialogCancel": "取消",
-  "reportDialogReport": "举报",
   "exploreVideoId": "ID：{id}",
   "@exploreVideoId": {
     "placeholders": {
@@ -3636,24 +3188,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "更新订阅失败：{error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "更新订阅失败，请重试。",
   "discoverListsTitle": "发现列表",
   "discoverListsFailedToLoad": "列表加载失败",
-  "discoverListsFailedToLoadWithError": "列表加载失败：{error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "正在发现公开列表...",
   "discoverListsRelayTimeout": "中继没有及时返回列表。再试一次。",
   "discoverListsServiceUnavailable": "服务不可用。",
@@ -3684,7 +3221,6 @@
   "@commonSomethingWentWrong": {
     "description": "Generic error message shown when an async load fails and no more specific message applies. Must not embed raw exception text."
   },
-  "commonNext": "下一步",
   "commonDelete": "删除",
   "commonCancel": "取消",
   "commonBack": "返回",
@@ -3743,7 +3279,6 @@
   "libraryWebUnavailableDescription": "草稿和片段都保存在你的设备上，打开手机上的 Divine 就能管理它们。",
   "libraryTabDrafts": "草稿",
   "libraryTabClips": "片段",
-  "librarySaveToCameraRollTooltip": "保存到相册",
   "libraryDeleteSelectedClipsTooltip": "删除选中片段",
   "libraryCloseSemanticLabel": "关闭素材库",
   "libraryStopSelectingClipsSemanticLabel": "停止选择片段",
@@ -3759,15 +3294,6 @@
   "librarySortShortestClip": "最短片段",
   "librarySortSquareFirst": "方形优先",
   "librarySortVerticalFirst": "竖屏优先",
-  "libraryDeleteClipsTitle": "删除片段",
-  "libraryDeleteClipsMessage": "确定要删除{count, plural, one{# 个选中的片段} other{# 个选中的片段}}吗？",
-  "@libraryDeleteClipsMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "libraryDeleteClipsWarning": "此操作无法撤销。视频文件将从你的设备上永久删除。",
   "libraryPreparingVideo": "正在准备视频...",
   "libraryCreateVideo": "创作视频 ({count})",
@@ -3793,6 +3319,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "保存到{destination}失败",
   "libraryGalleryPermissionDenied": "{destination}权限被拒绝",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {
@@ -3861,19 +3388,10 @@
   },
   "libraryDeleteClipTitle": "删除片段",
   "libraryDeleteClipMessage": "确定要删除这个片段吗？",
-  "libraryClipSelectionTitle": "片段",
-  "librarySecondsRemaining": "还剩 {seconds} 秒",
-  "@librarySecondsRemaining": {
-    "placeholders": {
-      "seconds": {
-        "type": "String"
-      }
-    }
-  },
   "libraryClipDuration": "{seconds} 秒",
-  "libraryAddClips": "添加",
   "libraryRecordVideo": "录制视频",
   "videoClipSemanticLabel": "视频片段，{duration} 秒",
+  "videoClipArchivedSemanticLabel": "已归档。{label}",
   "videoClipStopMotionSemanticLabel": "定格动画片段，{frames}",
   "@videoClipSemanticLabel": {
     "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
@@ -4115,6 +3633,8 @@
   "inboxRequestsMarkAllRead": "将所有请求标为已读",
   "inboxRequestsRemoveAll": "移除所有请求",
   "messageRequestDeclineAndRemoveButton": "拒绝并移除",
+  "messageRequestDeclinedSnackbar": "已拒绝 {displayName} 的请求",
+  "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
   "messageRequestLoadFailed": "无法加载此请求。",
   "messageRequestFollowersCount": "{count} 位粉丝",
   "@messageRequestFollowersCount": {
@@ -4157,29 +3677,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。",
-  "deleteAccountBurnUsernameFailed": "无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。",
-  "@deleteAccountBurnUsernameFailed": {
-    "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
-  },
-  "deleteAccountBurnUsernameReleased": "你的用户名 {username} 已被永久释放，但我们没能完成账号删除。再次点删除以完成。",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
-  "deleteAccountBurnUsernameToggle": "同时永久放弃 {username}",
-  "@deleteAccountBurnUsernameToggle": {
-    "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountConfirmDeletePrompt": "请输入以下内容确认：",
   "@deleteAccountConfirmDeletePrompt": {
     "description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."
@@ -4193,13 +3690,21 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "从中继删除内容失败",
-  "deleteAccountRelayConfirmationFailed": "我们无法通过中继确认账号删除。请检查网络连接后重试。",
   "deleteAccountDeleteAllContentButton": "删除所有内容",
+  "deleteAccountDeletionUnavailable": "账号删除功能目前不可用。未删除任何内容。",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
+  "accountDeletionRecoveryTitle": "完成账号删除",
+  "accountDeletionRecoveryBody": "我们没能完成账号删除。你的用户名仍为你保留，还可以找回。",
+  "accountDeletionRestoreUsername": "找回我的用户名",
+  "accountDeletionFinishingBody": "你的删除请求仍在处理中。离开此页面前请再确认一次。",
+  "accountDeletionCancellingBody": "我们正在取消你的删除请求。离开此页面前请再确认一次。",
+  "accountDeletionRecoveryFailed": "我们还没能找回你的用户名。请检查网络连接后重试。",
+  "accountDeletionUsernameRestored": "你的用户名已找回，你的账号未被删除。",
+  "accountDeletionRecoveryStatusFailed": "我们无法查询你的删除状态。请检查网络连接后重试。",
   "deleteAccountFinalConfirmationTitle": "⚠️ 最终确认",
   "deleteAccountKeyDeletionWarning": "删除请求已发送，但你的密钥可能未从此设备完全移除。前往“设置 → Nostr 密钥 → 移除密钥”重试。",
   "deleteAccountLocalDataDeletionFailed": "删除请求已发送且你已退出登录，但部分本地数据无法从此设备移除。",
@@ -4222,11 +3727,7 @@
   "@deleteAccountReauthRequired": {
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
-  "deleteAccountServerDeletionFailed": "无法从服务器删除你的账号。请检查网络连接后重试。",
-  "deleteAccountServerDeletionRequiresReauth": "你的帖子删除请求已发送，但我们没能完成账号删除。请重新登录以完成。",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
+  "deleteAccountServerDeletionFailed": "你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。",
   "deleteAccountSuccess": "删除请求已发送。你已在此设备上退出登录。",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
@@ -4239,12 +3740,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "exportProgressStageApplyingTextOverlay": "正在添加文字叠加...",
-  "exportProgressStageComplete": "导出完成！",
-  "exportProgressStageConcatenating": "正在合并片段...",
-  "exportProgressStageError": "导出失败",
-  "exportProgressStageGeneratingThumbnail": "正在生成缩略图...",
-  "exportProgressStageMixingAudio": "正在添加声音...",
   "findPeopleAnonymousUser": "匿名用户",
   "findPeopleNoContacts": "没有找到联系人。\n开始关注一些人，他们就会出现在这里。",
   "geoBlockedCityLabel": "城市",
@@ -4367,17 +3862,9 @@
       }
     }
   },
-  "soundDetailLoadError": "声音加载失败：{error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "声音加载失败，请重试。",
   "soundDetailNotFoundMessage": "找不到这个声音",
   "soundDetailNotFoundTitle": "找不到声音",
-  "videoFeedDescriptionSemanticLabel": "视频简介",
   "videoFeedLoopCountLabel": "🔁 循环 {count} 次",
   "@videoFeedLoopCountLabel": {
     "placeholders": {
@@ -4386,7 +3873,6 @@
       }
     }
   },
-  "videoFeedLoopCountSemanticLabel": "视频循环次数",
   "originalSoundUnavailableBody": "该视频的音频不可单独使用。",
   "originalSoundByCreator": "原声 - {creatorName}",
   "@originalSoundByCreator": {
@@ -4396,26 +3882,11 @@
       }
     }
   },
-  "globalUploadPendingCount": "待上传（{count}）",
-  "@globalUploadPendingCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。",
   "profileBadgeCheckmarkTitle": "个人资料对勾",
-  "profileBadgeCheckmarkBody": "Divine 把这个对勾给团队账号，以及少数经过人工审核的个人资料。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。",
-  "shareVideoInListsCount": "{count, plural, =1{已在 1 个列表中} other{已在 {count} 个列表中}}",
-  "@shareVideoInListsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "profileBadgeCheckmarkBody": "Divine 把这个对勾给团队账号。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。",
   "unfollowConfirmButton": "取消关注",
   "videoClipSaveFailed": "片段保存失败",
   "videoClipSaveTo": "保存到{destination}",
@@ -4467,14 +3938,6 @@
   "bugReportRemoveImage": "移除图片",
   "bugReportUploadFailed": "所选图片上传失败。重试，或不带图片发送报告。",
   "bugReportSendFailed": "Bug 报告发送失败，请稍后再试。",
-  "bugReportFailedWithError": "Bug 报告发送失败：{error}",
-  "@bugReportFailedWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "featureRequestSendRequest": "发送请求",
   "featureRequestSubjectHint": "简要概括你的想法",
   "featureRequestDescriptionRequiredLabel": "你想要什么功能？*",
@@ -4485,14 +3948,6 @@
   "featureRequestWhenHint": "描述一下它会帮上忙的场景",
   "featureRequestSuccessMessage": "谢谢！我们已收到你的功能建议，会认真评估。",
   "featureRequestSendFailed": "功能建议发送失败，请稍后再试。",
-  "featureRequestFailedWithError": "功能建议发送失败：{error}",
-  "@featureRequestFailedWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "notificationFollowBack": "回关",
   "followingTitle": "关注",
   "followingTitleForName": "{displayName} 的关注",
@@ -4522,9 +3977,6 @@
   "followSortTitle": "排序方式",
   "followSortNewest": "最新优先",
   "followSortOldest": "最早优先",
-  "reportMessageTitle": "举报消息",
-  "reportMessageWhyReporting": "你为什么要举报这条消息？",
-  "reportMessageSelectReason": "请选择举报这条消息的原因",
   "newMessageTitle": "新消息",
   "newMessageFindPeople": "找人",
   "newMessageNoContacts": "没有找到联系人。\n关注一些人，他们就会出现在这里。",
@@ -4543,14 +3995,7 @@
   "userNotAvailableTitle": "账号不可用",
   "userNotAvailableBody": "该账号暂时不可用。",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "设置保存失败：{error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "设置保存失败，请重试。",
   "blossomValidServerUrl": "请输入有效的服务器 URL（如 https://blossom.band）",
   "blossomSettingsSaved": "Blossom 设置已保存",
   "blossomSaveTooltip": "保存",
@@ -4664,15 +4109,6 @@
   "searchListsSectionHeader": "列表",
   "searchListsLoadingLabel": "正在加载列表结果",
   "cameraAgeRestriction": "你必须年满 16 岁才能创作内容",
-  "featureRequestCancel": "取消",
-  "keyImportError": "错误：{error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker 中继必须使用 wss://（仅 localhost 允许 ws://）",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
@@ -4903,10 +4339,6 @@
   "@notificationSystemUpdate": {
     "description": "Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement)."
   },
-  "notificationSomeoneLikedYourVideo": "有人点赞了你的视频",
-  "@notificationSomeoneLikedYourVideo": {
-    "description": "Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice."
-  },
   "commentReplyToPrefix": "回复:",
   "@commentReplyToPrefix": {
     "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."
@@ -5034,6 +4466,8 @@
   "cameraPermissionWebUnsupportedTitle": "网页版暂不支持相机",
   "cameraPermissionWebUnsupportedDescription": "网页版暂时无法拍摄和录制视频。",
   "cameraPermissionBackToFeed": "返回信息流",
+  "cameraCouldNotStart": "无法启动相机",
+  "cameraUnsupportedPlatform": "此平台暂不支持相机。\n你仍然可以浏览和观看视频。",
   "cameraPermissionErrorTitle": "权限错误",
   "cameraPermissionErrorDescription": "检查权限时出了点问题。",
   "cameraPermissionRetry": "重试",
@@ -5281,8 +4715,6 @@
   "videoEditorReleaseToDeleteLayer": "松开删除图层",
   "videoEditorDoneLabel": "完成",
   "videoEditorPlayPauseSemanticLabel": "播放或暂停视频",
-  "videoEditorCropSemanticLabel": "裁剪",
-  "videoEditorCannotSplitProcessing": "片段处理中，暂时无法分割。请稍等。",
   "videoEditorSplitPositionInvalid": "分割位置无效。两段都必须至少 {minDurationMs}ms 长。",
   "@videoEditorSplitPositionInvalid": {
     "placeholders": {
@@ -5291,14 +4723,10 @@
       }
     }
   },
-  "videoEditorAddClipFromLibrary": "从作品库添加片段",
   "videoEditorSaveSelectedClip": "保存选中片段",
-  "videoEditorSplitClip": "分割片段",
   "videoEditorSaveClip": "保存片段",
-  "videoEditorDeleteClip": "删除片段",
   "videoEditorClipSavedSuccess": "片段已保存到作品库",
   "videoEditorClipSaveFailed": "片段保存失败",
-  "videoEditorClipDeleted": "片段已删除",
   "videoEditorColorPickerSemanticLabel": "取色器",
   "videoEditorUndoSemanticLabel": "撤销",
   "videoEditorRedoSemanticLabel": "重做",
@@ -5309,8 +4737,6 @@
   "videoEditorNoStickersFound": "没有找到贴纸",
   "videoEditorNoStickersAvailable": "暂无贴纸",
   "videoEditorFailedLoadStickers": "贴纸加载失败",
-  "videoEditorAdjustVolumeTitle": "调节音量",
-  "videoEditorRecordedAudioLabel": "录制的音频",
   "videoEditorVoiceOverLabel": "配音",
   "videoEditorVoiceOverTakeName": "录音 {number}",
   "@videoEditorVoiceOverTakeName": {
@@ -5346,8 +4772,6 @@
   },
   "videoEditorPlaySemanticLabel": "播放",
   "videoEditorPauseSemanticLabel": "暂停",
-  "videoEditorMuteAudioSemanticLabel": "音频静音",
-  "videoEditorUnmuteAudioSemanticLabel": "取消静音",
   "videoEditorVolumeSemanticLabel": "调节音量",
   "videoEditorTimelineVolumePreview": "音量 {percent}%",
   "@videoEditorTimelineVolumePreview": {
@@ -5388,7 +4812,6 @@
   "videoEditorChromaKeyRemoveFailed": "绿幕没能移除。你的片段没有改动。",
   "videoEditorChromaKeyApplying": "正在应用绿幕…",
   "videoEditorChromaKeyPreviewUnavailable": "这台设备无法显示实时预览。导出时你的设置仍然生效。",
-  "videoEditorOriginalAudioLabel": "原始音频",
   "videoEditorClipVolumeLabel": "片段 {index}",
   "@videoEditorClipVolumeLabel": {
     "placeholders": {
@@ -5424,14 +4847,6 @@
         "type": "int"
       }
     }
-  },
-  "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "增加每图帧数",
-  "@videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": {
-    "description": "Accessibility label for the button that lengthens each stop-motion still's hold."
-  },
-  "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "减少每图帧数",
-  "@videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": {
-    "description": "Accessibility label for the button that shortens each stop-motion still's hold."
   },
   "videoEditorStopMotionFrameSemanticLabel": "定格动画第 {position} 帧，共 {total} 帧",
   "@videoEditorStopMotionFrameSemanticLabel": {
@@ -5517,10 +4932,6 @@
   "videoEditorTransformFlipLabel": "翻转",
   "@videoEditorTransformFlipLabel": {
     "description": "Label for the flip action button in the clip transform editor."
-  },
-  "videoEditorTransformRatioLabel": "比例",
-  "@videoEditorTransformRatioLabel": {
-    "description": "Label for the aspect-ratio action button in the clip transform editor."
   },
   "videoEditorTransformResetLabel": "重置",
   "@videoEditorTransformResetLabel": {
@@ -5681,8 +5092,6 @@
   "videoEditorAudioCategoryCommunity": "社区",
   "videoEditorAudioCategoryFeatured": "精选",
   "videoEditorAudioCategoryMySounds": "我的声音",
-  "videoEditorAudioFeaturedEmptyTitle": "精选声音即将上线",
-  "videoEditorAudioFeaturedEmptySubtitle": "准备好之后，我们会把精选声音放在这里。",
   "videoEditorDrawToolArrowSemanticLabel": "箭头工具",
   "videoEditorDrawToolEraserSemanticLabel": "橡皮擦工具",
   "videoEditorDrawToolMarkerSemanticLabel": "马克笔工具",
@@ -5722,7 +5131,6 @@
     }
   },
   "videoEditorTimelineClipReorderHint": "长按重新排序",
-  "videoEditorClipGalleryInstruction": "点按编辑，长按拖动重新排序。",
   "videoEditorTimelineClipMoveLeft": "左移",
   "videoEditorTimelineClipMoveRight": "右移",
   "videoEditorTimelineClipSelectedSemanticLabel": "片段 {index}/{total}，已选中",
@@ -5811,6 +5219,10 @@
   "@videoEditorReverseSelectedFramesSemanticLabel": {
     "description": "Semantic label for the reverse button while stop-motion stills are multi-selected."
   },
+  "videoEditorDuplicateSelectedFramesSemanticLabel": "复制选中帧",
+  "@videoEditorDuplicateSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the duplicate button while stop-motion stills are multi-selected."
+  },
   "videoEditorStopMotionTooShortSnackbar": "视频至少需要 {seconds} 秒——再多拍几帧吧。",
   "@videoEditorStopMotionTooShortSnackbar": {
     "description": "Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.",
@@ -5877,7 +5289,6 @@
   "videoMetadataTitleLabel": "标题",
   "videoMetadataDescriptionLabel": "简介",
   "videoMetadataTagsLabel": "标签",
-  "videoMetadataDeleteTagSemanticLabel": "删除",
   "videoMetadataDeleteTagHint": "删除标签 {tag}",
   "@videoMetadataDeleteTagHint": {
     "placeholders": {
@@ -5889,42 +5300,14 @@
   "videoMetadataContentWarningLabel": "添加内容警告",
   "videoMetadataSelectContentWarningsSemanticLabel": "选择内容警告",
   "videoMetadataContentWarningSelectAllThatApply": "选择所有适用项",
-  "videoMetadataContentWarningDoneButton": "完成",
-  "videoMetadataAudioReuseTitle": "发布这个声音",
   "videoMetadataAudioReuseSubtitle": "让其他人保存并二次使用这个视频的音频。",
   "publishAudioReuseDegradedWarning": "你的视频已发布，但声音未能发布。编辑视频以分享声音。",
   "videoMetadataCollaboratorsLabel": "添加协作者",
   "videoMetadataAddCollaboratorSemanticLabel": "邀请协作者",
-  "videoMetadataCollaboratorsHelpTooltip": "协作者如何运作",
-  "videoMetadataCollaboratorsCount": "{count}/{max} 位协作者",
-  "@videoMetadataCollaboratorsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "videoMetadataRemoveCollaboratorSemanticLabel": "移除协作者",
-  "videoMetadataCollaboratorsHelpMessage": "协作者会作为该帖子的共同创作者被邀请。你只能邀请互相关注的人，对方确认后才会显示为协作者。",
   "videoMetadataMutualFollowersSearchText": "互相关注的人",
-  "videoMetadataMustMutuallyFollowSnackbar": "你需要和 {name} 互相关注，才能邀请 TA 成为协作者。",
-  "@videoMetadataMustMutuallyFollowSnackbar": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "videoMetadataInspiredByLabel": "添加灵感来源",
   "videoMetadataSetInspiredBySemanticLabel": "设置灵感来源",
-  "videoMetadataInspiredByHelpTooltip": "灵感署名如何运作",
-  "videoMetadataInspiredByNone": "无",
-  "videoMetadataInspiredByHelpMessage": "用它来表达致谢。灵感署名和协作者不同：它是对影响的致意，不会把对方标记为共同创作者。",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "无法引用该创作者。",
-  "videoMetadataRemoveInspiredBySemanticLabel": "移除灵感来源",
   "videoMetadataPostDetailsTitle": "帖子详情",
   "videoMetadataSavedToLibrarySnackbar": "已保存到作品库",
   "videoMetadataFailedToSaveSnackbar": "保存失败",
@@ -6033,6 +5416,12 @@
   "badgeDetailEditAction": "编辑徽章",
   "badgeDetailShareAction": "分享",
   "badgeDetailShareMessage": "来看看 Divine 上的这个徽章：{link}",
+  "badgeDetailRevokeAction": "收回徽章",
+  "badgeDetailRevokeTitle": "收回这枚徽章？",
+  "badgeDetailRevokeBody": "这会请求中继删除你颁发给这个人的记录。中继可以拒绝，如果对方已经把徽章固定在资料页，它会一直留在那里，直到本人移除。无论哪种情况，对方都不会收到通知。",
+  "badgeDetailRevokeSelfBody": "这会请求中继删除你颁发给自己的记录，并把徽章从你的资料页移除。如果中继拒绝删除，则不会有任何改变。",
+  "badgeDetailRevokeConfirm": "收回",
+  "badgeDetailRevokeSuccess": "已收回徽章",
   "badgeDetailBlockClaimantsAction": "屏蔽佩戴该徽章的人",
   "badgeDetailBlockClaimantsTitle": "屏蔽佩戴该徽章的人",
   "badgeDetailBlockClaimantsLoadError": "无法加载佩戴该徽章的人",
@@ -6074,7 +5463,6 @@
   },
   "profileBadgeFallbackSemanticLabel": "徽章",
   "minorAccountReviewWelcomePageTitle": "家庭指南",
-  "minorAccountReviewWelcomeCta": "还没满 16 岁？没关系。这里是你可以做的选择。",
   "minorAccountReviewWelcomeTitle": "还没满 16 岁？没关系。",
   "minorAccountReviewWelcomeBody": "如果你点进了这个页面，而不是随便选一个能混进去的答案，这很重要。这说明你诚实、有骨气，也真的在乎身边的人。\n\n各地对 16 岁以下人群的规定不一样。在 Divine，我们希望家人们一起聊一聊，共同决定什么样的社交媒体使用方式才是健康的。",
   "minorAccountReviewModerationTitle": "我们还需要一步",
@@ -6088,7 +5476,6 @@
   "minorAccountReviewChooseAgeBandTitle": "选择适合你的路径",
   "minorAccountReviewUnder13Cta": "13 岁以下",
   "minorAccountReviewTeenCta": "13-15 岁",
-  "minorAccountReviewFamilyResourcesTitle": "对家庭有帮助",
   "minorAccountReviewFamilyResourcesBody": "访问 Divine 家庭指南，获取实用建议、沟通工具和资源，帮助青少年更安全地使用社交媒体。",
   "minorAccountReviewFamilyResourcesCta": "获取家庭指南和建议",
   "minorAccountReviewFooter": "如果你已满 16 岁却被误送到这里，请联系 Divine 客服，会有真人为你审核。",
@@ -6114,9 +5501,6 @@
   "minorAccountReviewOpenSupportCenter": "打开帮助中心",
   "minorAccountReviewOpenModerationMessage": "打开管理消息",
   "minorAccountReviewOpenReviewPage": "打开审核页面",
-  "minorAccountReviewMoveAccountTitle": "你可以带走你的账号",
-  "minorAccountReviewMoveAccountBody": "你仍然可以在其他基础设施上使用你的 Divine 身份。迁移你的账号或下载你的归档。",
-  "minorAccountReviewMoveAccountCta": "迁移你的账号",
   "minorAccountReviewCheckAgain": "再查一次",
   "minorAccountReviewLogOut": "退出登录",
   "minorAccountReviewNextStepTitle": "下一步",
@@ -6140,7 +5524,6 @@
   "minorAccountReviewUnder13ComeBackBody": "根据你所在地的规定，你也许可以回来申请自己的账号。届时，如果你年龄在 13 到 15 岁之间，需要得到家长或监护人的同意。",
   "minorAccountReviewUnder13HonestyTitle": "为什么我们不会叫你直接点返回",
   "minorAccountReviewUnder13HonestyBody": "互联网上的很多东西，都在奖励那些说什么能混过门槛就说什么的人。我们不认为这是好事。没错，你可以回去谎称自己的年龄，但那不诚实，我们也不会教你靠撒谎来得到想要的东西。",
-  "minorAccountReviewUnder13LegalTitle": "为什么答案仍然是不行",
   "minorAccountReviewUnder13LegalBody": "我们希望帮助年轻人以健康、积极的方式使用 Divine，对自己和身边的人都有益。我们也必须遵守各地不同的法律。所以，如果你未满 13 岁，答案就是：今天你还不能拥有自己的账号。",
   "minorAccountReviewTeenBody": "如果该账号属于 13 到 15 岁的人，请通过管理消息或客服渠道，按照家长同意流程的指引操作。",
   "minorAccountReviewParentConsentTitle": "如果账号将属于 13 到 15 岁的人",
@@ -6238,7 +5621,6 @@
   "devOptionsMinorReviewUnder13Title": "模拟 13 岁以下协助案件",
   "devOptionsMinorReviewUnder13Subtitle": "受限账号，仅有家长邮件指引",
   "devOptionsMinorReviewClearedToast": "未成年账号审核模拟已清除",
-  "devOptionsMinorReviewTeenEnabledToast": "已启用 13-15 岁审核案件模拟",
   "devOptionsMinorReviewUnder13EnabledToast": "已启用 13 岁以下协助案件模拟",
   "devOptionsProtectedMinorSimulationTitle": "未成年保护模拟",
   "devOptionsProtectedMinorCurrentStateLabel": "当前状态",
@@ -6263,7 +5645,7 @@
   "devOptionsInviteAvailabilityServerLoading": "服务器值：加载中",
   "devOptionsInviteAvailabilityServerEnabled": "服务器值：已启用",
   "devOptionsInviteAvailabilityServerDisabled": "服务器值：已禁用",
-  "devOptionsInviteAvailabilityServerUnknown": "服务器值：未知（默认启用）",
+  "devOptionsInviteAvailabilityServerUnknown": "服务器值：未知",
   "devOptionsInviteAvailabilityOverrideNone": "覆盖：使用服务器值",
   "devOptionsInviteAvailabilityOverrideEnabled": "覆盖：强制启用",
   "devOptionsInviteAvailabilityOverrideDisabled": "覆盖：强制禁用",
@@ -6381,7 +5763,6 @@
   "minorAccountReviewUnder13WhyTitle": "原因在这里",
   "generalSettingsHoldToRecord": "按住录制",
   "generalSettingsHoldToRecordSubtitle": "按住开始录制，松开停止",
-  "soundsPreviewFailedGeneric": "预览播放失败",
   "uploadPublishedCountMessage": "{count, plural, =1{1 个视频已发布到你的主页} other{{count} 个视频已发布到你的主页}}",
   "@uploadPublishedCountMessage": {
     "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
@@ -7026,6 +6407,11 @@
   "libraryCategoryMoveNewCategory": "新建分类",
   "libraryArchiveAction": "归档",
   "libraryUnarchiveAction": "取消归档",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{保留在此分类中吗？} other{保留在这些分类中吗？}}",
+  "libraryArchiveKeepCategoryAction": "保留在{name}",
+  "libraryArchiveKeepCategoryActionMixed": "保留在各自的分类中",
+  "libraryArchiveRemoveCategoryAction": "从{name}中移除",
+  "libraryArchiveRemoveCategoryActionMixed": "从各自的分类中移除",
   "libraryMoveSelectedClipsTooltip": "移动所选片段",
   "libraryCategoryEmptyTitle": "这里还没有内容",
   "libraryCategoryEmptySubtitle": "选几个片段，把它们移到这个分类里。",
@@ -7073,12 +6459,19 @@
   "dbFailureResetAction": "重置本地数据库",
   "dbFailureConfirmTitle": "重置你的本地数据库？",
   "dbFailureConfirmBody": "你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。",
-  "dbFailureResetConfirm": "重置并关闭",
+  "dbFailureResetConfirm": "立即重置本地数据库",
   "dbFailureCancel": "取消",
   "dbFailureResetFailed": "没有成功。请关闭 Divine 后重试。",
   "dbFailureResetDoneTitle": "本地数据库已重置",
   "dbFailureResetDoneBody": "关闭 Divine 后重新打开 — 下次启动会建立全新的本地数据库。",
   "authSignInOptionsInfo": "关于登录选项",
   "authShowPassword": "显示密码",
-  "authHidePassword": "隐藏密码"
+  "authHidePassword": "隐藏密码",
+  "followUserSemanticLabel": "关注用户",
+  "unfollowUserSemanticLabel": "取消关注用户",
+  "commentsLoadingSemanticLabel": "正在加载评论",
+  "analyticsWindowAll": "全部",
+  "followUserIndexedSemanticLabel": "关注用户 {index}",
+  "unfollowUserIndexedSemanticLabel": "取消关注用户 {index}",
+  "supporterTierMonthlyLabel": "{title} — {price} / 月"
 }

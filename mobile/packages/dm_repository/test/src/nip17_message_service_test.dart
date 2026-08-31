@@ -524,12 +524,101 @@ void main() {
           );
 
           // The first publish is the recipient gift wrap; it must be routed
-          // to the recipient's NIP-17 DM inbox relays (the self-wrap, if any,
-          // follows with no targetRelays).
+          // to the recipient's NIP-17 DM inbox relays.
           expect(captured, isNotEmpty);
           expect(captured.first, const ['wss://inbox.example.com']);
         },
       );
+
+      group('self-wrap destination (#7328)', () {
+        late NIP17MessageService selfService;
+        late List<List<String>?> captured;
+
+        setUp(() {
+          // Real curve self key, or the self-addressed wrap never builds and
+          // never reaches publishEvent — the module-level placeholder key
+          // silently produces a one-publish send and the assertions below
+          // would pass against a self-wrap that does not exist.
+          selfService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+          );
+          captured = <List<String>?>[];
+          when(
+            () => mockNostrClient.publishEvent(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.namedArguments[#targetRelays] as List<String>?,
+            );
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
+          });
+        });
+
+        Future<NIP17SendResult> send({List<String>? selfWrapTargetRelays}) {
+          final rumor = selfService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'routed message',
+          );
+          return selfService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+            targetRelays: const ['wss://inbox.example.com'],
+            selfWrapTargetRelays: selfWrapTargetRelays,
+          );
+        }
+
+        test('routes the self-wrap to its own relay set', () async {
+          final result = await send(
+            selfWrapTargetRelays: const [
+              'wss://relay.divine.video',
+              'wss://nos.lol',
+            ],
+          );
+
+          expect(result.selfWrapPublished, isTrue);
+          // Asserted as the whole ordered list, not `captured.first` plus a
+          // membership check: the defect is a per-wrap destination, so the
+          // only assertion that can catch the self-wrap inheriting the
+          // recipient's relays — or losing its own — names both entries.
+          expect(captured, hasLength(2));
+          expect(captured, [
+            const ['wss://inbox.example.com'],
+            const ['wss://relay.divine.video', 'wss://nos.lol'],
+          ]);
+        });
+
+        test(
+          'publishes the self-wrap bare when no relay set is supplied',
+          () async {
+            // The `absent`/`failed` own-inbox outcome. Preserving the bare
+            // publish is what keeps an account with no advertised kind-10050
+            // on exactly its pre-#7328 behaviour.
+            final result = await send();
+
+            expect(result.selfWrapPublished, isTrue);
+            expect(captured, hasLength(2));
+            expect(captured.last, isNull);
+          },
+        );
+
+        test('treats an empty relay set as no relay set', () async {
+          // A kind-10050 that parsed to zero usable relays must not narrow the
+          // publish to nothing — `_sendCollect` skips the filter only when the
+          // list is null OR empty, but relying on that coincidence across two
+          // packages is how a silent total-loss regression gets in.
+          final result = await send(selfWrapTargetRelays: const []);
+
+          expect(result.selfWrapPublished, isTrue);
+          expect(captured, hasLength(2));
+          expect(captured.last, isNull);
+        });
+      });
     });
 
     group('sendRumor awaitRecipientOk (reaction OK-confirm path)', () {
@@ -723,6 +812,52 @@ void main() {
         },
       );
 
+      test('a hung connectivity probe cannot stall the send', () {
+        // The probe is a raw platform-channel round trip with no timeout, and
+        // `_isOfflineSafely`'s try/catch cannot help: a wedged channel is a
+        // hang, not a throw. It sits INSIDE the publish backstop, so it spends
+        // the cap that exists for a wedged signer (#7091).
+        //
+        // Fail open to ONLINE on timeout, matching the probe's existing
+        // contract that a flaky probe never blocks a send that might succeed.
+        final hungProbe = Completer<bool>();
+        addTearDown(() {
+          if (!hungProbe.isCompleted) hungProbe.complete(false);
+        });
+        final service = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: getPublicKey(_testPrivateKey),
+          nostrService: mockNostrClient,
+          isOffline: () => hungProbe.future,
+        );
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments[0] as Event),
+        );
+
+        NIP17SendResult? result;
+        fakeAsync((async) {
+          unawaited(
+            service
+                .sendRumor(
+                  rumorEvent: service.buildRumor(
+                    recipientPubkey: _recipientPubkey,
+                    content: 'probe hangs',
+                  ),
+                  recipientPubkey: _recipientPubkey,
+                )
+                .then((r) => result = r),
+          );
+          async.elapse(DmSendBudget.connectivityProbe * 4);
+        });
+
+        expect(
+          result,
+          isNotNull,
+          reason: 'a wedged probe must not hold the send open to the backstop',
+        );
+      });
+
       test(
         'device offline (probe) → hard failure BEFORE any publish; no '
         'OK-confirm attempt, no self-wrap (#6046)',
@@ -834,31 +969,7 @@ void main() {
         );
       });
 
-      test('routes the self marker to the provided targetRelays', () async {
-        List<String>? routedTo;
-        when(
-          () => mockNostrClient.publishEvent(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((inv) async {
-          routedTo = inv.namedArguments[#targetRelays] as List<String>?;
-          return PublishSuccess(event: inv.positionalArguments[0] as Event);
-        });
-
-        final ok = await service.publishSelfApplicationMarker(
-          content: '{"v":1,"read":{}}',
-          tags: const [
-            ['d', 'divine/dm-read/v1'],
-          ],
-          targetRelays: const ['wss://inbox.example.com'],
-        );
-
-        expect(ok, isTrue);
-        expect(routedTo, const ['wss://inbox.example.com']);
-      });
-
-      test('falls back to the default pool when no targetRelays', () async {
+      test('publishes through the default pool', () async {
         var bareCalls = 0;
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
           bareCalls++;
@@ -1690,6 +1801,111 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('buildGroupRumor (#8188)', () {
+      const peerB =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const peerC =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const peerA =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+      test('carries every recipient as a p tag', () {
+        final rumor = service.buildGroupRumor(
+          recipientPubkeys: const [peerC, peerA, peerB],
+          content: 'hi all',
+        );
+
+        expect(
+          rumor.tags.where((t) => t.first == 'p').map((t) => t[1]).toSet(),
+          {peerA, peerB, peerC},
+        );
+      });
+
+      test('orders p tags canonically, so the id ignores argument order', () {
+        // Two callers listing the same room in different orders must produce
+        // the SAME message identity — otherwise the id depends on an
+        // incidental argument order.
+        final one = service.buildGroupRumor(
+          recipientPubkeys: const [peerC, peerA, peerB],
+          content: 'hi all',
+          createdAt: 1700000000,
+        );
+        final two = service.buildGroupRumor(
+          recipientPubkeys: const [peerA, peerB, peerC],
+          content: 'hi all',
+          createdAt: 1700000000,
+        );
+
+        expect(
+          one.tags.where((t) => t.first == 'p').map((t) => t[1]).toList(),
+          [peerA, peerB, peerC],
+        );
+        expect(one.id, equals(two.id));
+      });
+
+      test(
+        'is ONE byte-identical rumor for the whole fan-out, unlike a '
+        'per-recipient buildRumor',
+        () {
+          const room = [peerA, peerB, peerC];
+
+          // What sendGroupMessage used to do: buildRumor once per recipient,
+          // which prepends the addressee and so rotates the p-tag order.
+          final perRecipient = [
+            for (final me in room)
+              service.buildRumor(
+                recipientPubkey: me,
+                content: 'hi all',
+                additionalTags: [
+                  for (final other in room)
+                    if (other != me) ['p', other],
+                ],
+                createdAt: 1700000000,
+              ),
+          ];
+          expect(
+            perRecipient.map((r) => r.id).toSet(),
+            hasLength(3),
+            reason:
+                'the old shape forked the id — this is the bug, pinned so '
+                'the contrast stays visible',
+          );
+
+          // What it does now: one rumor, wrapped N times (NIP-59 59.md:108).
+          final shared = service.buildGroupRumor(
+            recipientPubkeys: room,
+            content: 'hi all',
+            createdAt: 1700000000,
+          );
+          expect(
+            List.generate(room.length, (_) => shared.id).toSet(),
+            hasLength(1),
+          );
+        },
+      );
+
+      test('appends additionalTags after the p tags and keeps the kind', () {
+        final rumor = service.buildGroupRumor(
+          recipientPubkeys: const [peerB, peerA],
+          content: '',
+          eventKind: EventKind.fileMessage,
+          additionalTags: const [
+            ['e', 'parent'],
+            ['batch', 'token'],
+          ],
+        );
+
+        expect(rumor.kind, EventKind.fileMessage);
+        expect(rumor.tags.last, ['batch', 'token']);
+        expect(rumor.tags.map((t) => t.first).toList(), [
+          'p',
+          'p',
+          'e',
+          'batch',
+        ]);
+      });
     });
 
     group('publishSelfWrap', () {

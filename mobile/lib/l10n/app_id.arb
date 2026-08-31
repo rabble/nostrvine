@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "Analitik Kreator",
     "settingsSupportCenter": "Pusat Bantuan",
     "settingsNotifications": "Notifikasi",
-    "settingsContentPreferences": "Preferensi Konten",
-    "settingsModerationControls": "Kontrol Moderasi",
     "settingsBlueskyPublishing": "Publikasi Bluesky",
     "settingsBlueskyPublishingSubtitle": "Atur crossposting ke Bluesky",
     "settingsNostrSettings": "Pengaturan Nostr",
@@ -105,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Undangan",
+  "settingsShareDivine": "Bagikan Divine dengan teman-temanmu",
     "settingsSwitchAccount": "Ganti akun",
     "settingsAddAnotherAccount": "Tambah akun lain",
   "settingsAccountSwitchFailed": "Tidak dapat beralih akun. Coba lagi.",
@@ -159,6 +157,8 @@
     "contentPreferencesUseDeviceLanguage": "Pakai bahasa perangkat (bawaan)",
     "contentPreferencesAudioSharing": "Jadikan audioku bisa dipakai ulang",
     "contentPreferencesAudioSharingSubtitle": "Saat aktif, orang lain bisa memakai audio dari videomu",
+    "contentPreferencesMusicMode": "Mode musik",
+    "contentPreferencesMusicModeSubtitle": "Melewati pembersihan derau yang meredam alat musik. Lebih bagus untuk musik, lebih kasar untuk suara.",
     "contentPreferencesAccountLabels": "Label Akun",
     "contentPreferencesAccountLabelsEmpty": "Beri label sendiri pada kontenmu",
     "contentPreferencesAccountContentLabels": "Label Konten Akun",
@@ -199,23 +199,11 @@
             }
         }
     },
-    "profileShareFailed": "Gagal membagikan profil: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "profileEditProfile": "Ubah profil",
-    "profileCreatorAnalytics": "Analitik kreator",
-    "profileShareProfile": "Bagikan profil",
+    "profileShareFailed": "Gagal membagikan profil. Silakan coba lagi.",
     "profileCopyPublicKey": "Salin kunci publik (npub)",
     "profileGetEmbedCode": "Dapatkan kode sematan",
     "profilePublicKeyCopied": "Kunci publik disalin ke clipboard",
     "profileEmbedCodeCopied": "Kode sematan disalin ke clipboard",
-    "profileRefreshTooltip": "Segarkan",
-    "profileRefreshSemanticLabel": "Segarkan profil",
     "profileMoreTooltip": "Lainnya",
     "profileMoreSemanticLabel": "Opsi lainnya",
     "profileFollowingLabel": "Mengikuti",
@@ -300,10 +288,6 @@
     },
     "profileReportDisplayName": "Laporkan {displayName}",
     "profileAddToListDisplayName": "Tambahkan {displayName} ke daftar",
-    "profileUserBlockedTitle": "Pengguna Diblokir",
-    "profileUserBlockedContent": "Kamu tidak akan melihat konten dari pengguna ini di feed-mu.",
-    "profileUserBlockedUnblockHint": "Kamu bisa membuka blokir mereka kapan saja dari profilnya atau di Pengaturan > Keamanan.",
-    "profileCloseButton": "Tutup",
     "profileNoCollabsTitle": "Belum Ada Kolaborasi",
     "profileCollabsOwnEmpty": "Video yang kamu kolaborasikan akan muncul di sini",
     "profileCollabsOtherEmpty": "Video yang mereka kolaborasikan akan muncul di sini",
@@ -340,27 +324,13 @@
     "profileShowLess": "Tampilkan lebih sedikit",
     "profileCompleteYourProfile": "Lengkapi Profilmu",
     "profileCompleteSubtitle": "Tambahkan nama, bio, dan foto untuk memulai",
-    "profileSetUpButton": "Atur",
-    "profileVerifyingEmail": "Memverifikasi Email...",
-    "profileCheckEmailVerification": "Cek {email} untuk tautan verifikasi",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "Menunggu verifikasi email",
-    "profileVerificationFailed": "Verifikasi Gagal",
     "profilePleaseTryAgain": "Silakan coba lagi",
     "profileSecureYourAccount": "Amankan Akunmu",
     "profileSecureSubtitle": "Tambahkan email & kata sandi untuk memulihkan akunmu di perangkat mana pun",
     "profileRetryButton": "Coba Lagi",
-    "profileRegisterButton": "Daftar",
     "profileSessionExpired": "Sesi Kedaluwarsa",
     "profileSignInToRestore": "Masuk lagi untuk memulihkan akses penuh",
     "profileSignInButton": "Masuk",
-    "profileDismissTooltip": "Tutup",
     "profileLinkCopied": "Tautan profil disalin",
     "profileSetupEditProfileTitle": "Ubah Profil",
     "profileSetupBackLabel": "Kembali",
@@ -378,34 +348,26 @@
     "profileSetupClaimFailed": "Gagal mengklaim username. Silakan coba lagi.",
     "profileSetupPublishFailed": "Gagal mempublikasikan profil. Silakan coba lagi.",
     "profileSetupNoRelaysConnected": "Tidak dapat menjangkau jaringan. Periksa koneksimu dan coba lagi.",
-    "profileSetupRetryLabel": "Coba lagi",
     "profileSetupDisplayNameLabel": "Nama Tampilan",
     "profileSetupDisplayNameRequired": "Silakan masukkan nama tampilan",
     "profileSetupBioLabel": "Bio (Opsional)",
     "profileSetupPublicKeyLabel": "Kunci publik (npub)",
     "profileSetupUsernameLabel": "Username (Opsional)",
-    "profileSetupUsernameHelper": "Identitas unikmu di Divine",
-    "profileSetupProfileColorLabel": "Warna Profil (Opsional)",
+    "profileSetupUsernameHelper": "Gunakan huruf, angka, atau tanda hubung. Nama pengguna menjadi alamat divine.video. Gunakan nama tampilan untuk spasi atau simbol.",
     "profileSetupSaveButton": "Simpan",
     "profileSetupSavingButton": "Menyimpan...",
     "profileSetupImageUrlTitle": "Tambah URL gambar",
-    "profileSetupPictureUploaded": "Foto profil berhasil diunggah!",
     "profileSetupImageSelectionFailed": "Pemilihan gambar gagal. Silakan tempel URL gambar di bawah.",
-    "profileSetupCameraAccessFailed": "Akses kamera gagal: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Akses kamera mati. Nyalakan di Pengaturan untuk mengambil foto.",
+    "cameraPickErrorPermissionRestricted": "Akses kamera tidak diizinkan di perangkat ini.",
+    "cameraPickErrorBusy": "Pemilih sudah terbuka. Tutup lalu coba lagi.",
+    "cameraPickErrorGeneric": "Gagal membuka kamera. Coba lagi.",
     "profileSetupGotItButton": "Mengerti",
     "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar. Coba lagi nanti.",
     "profileSetupUploadNetworkError": "Kesalahan jaringan: Silakan cek koneksi internetmu dan coba lagi.",
     "profileSetupUploadAuthError": "Kesalahan autentikasi: Silakan keluar dan masuk kembali.",
     "profileSetupUploadFileTooLarge": "File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).",
     "profileSetupUploadServerError": "Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.",
-    "profileSetupUploadUnsupportedOnWeb": "Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.",
     "profileSetupBannerClearButton": "Hapus banner",
     "profileSetupBannerChangeColor": "Warna banner",
     "profileSetupBannerColorPickerTitle": "Ubah warna banner",
@@ -432,6 +394,7 @@
     "profileSetupCheckAgain": "Cek ulang",
     "profileSetupUsernameBurned": "Username ini tidak tersedia lagi",
     "profileSetupUsernameInvalidFormat": "Hanya huruf, angka, dan tanda hubung yang diperbolehkan",
+    "profileSetupUsernameInvalidHyphenPlacement": "Nama pengguna tidak boleh diawali atau diakhiri tanda hubung",
     "profileSetupUsernameInvalidLength": "Username harus 3-63 karakter",
     "profileSetupUsernameNetworkError": "Tidak bisa mengecek ketersediaan. Silakan coba lagi.",
     "profileSetupUsernameInvalidFormatGeneric": "Format username tidak valid",
@@ -450,12 +413,10 @@
     "profileSetupSupportRequestSent": "Permintaan dukungan terkirim! Kami akan segera menghubungi.",
     "profileSetupCouldntOpenEmail": "Tidak bisa membuka email. Kirim ke: names@divine.video",
     "profileSetupSendRequest": "Kirim permintaan",
-    "profileSetupPickColorTitle": "Pilih warna",
-    "profileSetupSelectButton": "Pilih",
     "profileSetupUseOwnNip05": "Pakai alamat NIP-05 milikmu sendiri",
     "profileSetupNip05AddressLabel": "Alamat NIP-05",
     "profileSetupProfilePicturePreview": "Pratinjau foto profil",
-    "nostrInfoIntroBuiltOn": "DiVine dibangun di atas Nostr,",
+    "nostrInfoIntroBuiltOn": "Divine dibangun di atas Nostr,",
     "nostrInfoIntroDescription": " protokol terbuka yang tahan sensor, yang memungkinkan orang berkomunikasi online tanpa bergantung pada satu perusahaan atau platform. ",
     "nostrInfoIntroIdentity": "Saat kamu mendaftar di Divine, kamu mendapat identitas Nostr baru.",
     "nostrInfoOwnership": "Nostr memungkinkan kamu memiliki konten, identitas, dan grafik sosialmu, yang bisa kamu pakai di banyak aplikasi. Hasilnya adalah lebih banyak pilihan, lebih sedikit kunci platform, dan internet sosial yang lebih sehat dan tangguh.",
@@ -469,7 +430,6 @@
     "nostrInfoUsernameDescription": " Nama yang mudah dibaca (seperti @name.divine.video) yang terhubung ke npub-mu. Ini memudahkan identitas Nostr-mu dikenali dan diverifikasi, mirip alamat email.",
     "nostrInfoLearnMoreAt": "Pelajari lebih lanjut di ",
     "nostrInfoGotIt": "Mengerti!",
-    "profileTabRefreshTooltip": "Segarkan",
     "videoGridRefreshLabel": "Mencari video lainnya",
     "videoGridOptionsTitle": "Opsi Video",
     "videoGridEditVideo": "Ubah Video",
@@ -477,14 +437,6 @@
     "videoGridDeleteVideo": "Hapus Video",
     "videoGridDeleteVideoSubtitle": "Hapus video ini dari Divine. Video ini mungkin masih muncul di klien Nostr lain.",
     "videoGridDeletingContent": "Menghapus konten...",
-    "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "Unggulan",
   "exploreTabClassics": "Klasik",
     "exploreTabNew": "Baru",
@@ -497,14 +449,6 @@
     "featuredTabLoadFailed": "Koleksi ini gagal dimuat.",
     "featuredTabRetry": "Coba lagi",
     "exploreNoVideosAvailable": "Tidak ada video tersedia",
-    "exploreErrorPrefix": "Kesalahan: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Temukan Daftar",
     "exploreAboutLists": "Tentang Daftar",
     "exploreAboutListsDescription": "Daftar membantumu mengorganisir dan mengkurasi konten Divine dengan dua cara:",
@@ -514,14 +458,7 @@
     "exploreVideoListsDescription": "Buat playlist video favoritmu untuk ditonton nanti",
     "exploreMyLists": "Daftarku",
     "exploreSubscribedLists": "Daftar yang Dilanggan",
-    "exploreErrorLoadingLists": "Gagal memuat daftar: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Gagal memuat daftar. Silakan coba lagi.",
     "exploreNewVideosCount": "{count, plural, other{{count} video baru}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -538,12 +475,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "Memuat video...",
     "videoPlayerPlayVideo": "Putar video",
     "videoPlayerMute": "Bisukan video",
     "videoPlayerUnmute": "Aktifkan suara video",
-    "videoPlayerEditVideo": "Ubah video",
-    "videoPlayerEditVideoTooltip": "Ubah video",
     "contentWarningLabel": "Peringatan Konten",
     "contentWarningNudity": "Ketelanjangan",
     "contentWarningSexualContent": "Konten Seksual",
@@ -594,15 +528,10 @@
     "communitySuggestActionLabel": "Klasifikasikan",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "Video tidak ditemukan",
-    "videoErrorNetwork": "Kesalahan jaringan",
-    "videoErrorTimeout": "Waktu pemuatan habis",
-    "videoErrorFormat": "Kesalahan format video\n(Coba lagi atau pakai browser lain)",
-    "videoErrorUnsupportedFormat": "Format video tidak didukung",
     "videoErrorPlayback": "Kesalahan pemutaran video",
     "videoErrorAgeRestricted": "Konten dengan pembatasan usia",
     "videoErrorUnavailable": "Video tidak tersedia",
     "videoErrorUnavailableBody": "Video ini belum tersedia saat ini.",
-    "videoErrorVerifyAge": "Verifikasi Usia",
     "videoErrorRetry": "Coba Lagi",
     "videoErrorContentRestricted": "Konten dibatasi",
     "videoErrorContentRestrictedBody": "Video ini dihapus karena melanggar aturan konten kami.",
@@ -611,7 +540,6 @@
     "videoErrorVerifyAgeButton": "Verifikasi usia",
     "videoErrorVerifyAgeFailed": "Tidak dapat memverifikasi usia kamu. Silakan coba lagi.",
     "videoErrorVerifyAgeSignerUnreachable": "Waktu verifikasi habis. Periksa koneksi kamu atau coba lagi sebentar lagi.",
-    "videoFollowButtonFollowing": "Mengikuti",
     "videoFollowButtonFollow": "Ikuti",
     "audioAttributionOriginalSound": "Suara asli",
     "audioAttributionUnavailableSound": "Suara tidak tersedia",
@@ -691,21 +619,11 @@
     "videoActionRepost": "Repost video",
     "videoActionViewComments": "Lihat komentar",
     "videoActionMoreOptions": "Opsi lainnya",
-    "videoActionHideSubtitles": "Sembunyikan subtitle",
-    "videoActionShowSubtitles": "Tampilkan subtitle",
     "videoEngagementLikersTitle": "Disukai oleh",
     "videoEngagementRepostersTitle": "Direpost oleh",
     "videoEngagementLikersEmpty": "Belum ada suka",
     "videoEngagementRepostersEmpty": "Belum ada repost",
     "videoEngagementLoadFailed": "Tidak dapat memuat daftar",
-    "videoDescriptionLoops": "{count} loop",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Bukan Divine",
     "metadataBadgeHumanMade": "Buatan Manusia",
     "metadataSoundsLabel": "Suara",
@@ -746,6 +664,27 @@
     "devOptionsDisableDeveloperMode": "Nonaktifkan Mode Pengembang",
     "devOptionsDisableDeveloperModeSubtitle": "Sembunyikan opsi pengembang dari pengaturan",
     "devOptionsDisableDeveloperModeToast": "Mode pengembang dinonaktifkan",
+    "devOptionsShorebirdTitle": "Patch Shorebird",
+    "devOptionsShorebirdPatchLabel": "Patch aktif",
+    "devOptionsShorebirdNoPatch": "Tidak ada patch terpasang",
+    "devOptionsShorebirdUnavailable": "Tidak tersedia di build ini",
+    "devOptionsShorebirdUnavailableSubtitle": "Patch hanya berfungsi di build yang dibuat dengan shorebird release.",
+    "devOptionsShorebirdLoading": "Membaca status patch…",
+    "devOptionsShorebirdNotChecked": "Track staging belum diperiksa.",
+    "devOptionsShorebirdCheck": "Periksa track staging",
+    "devOptionsShorebirdApply": "Terapkan patch staging",
+    "devOptionsShorebirdUseStable": "Kembali ke pembaruan stabil",
+    "devOptionsShorebirdChecking": "Memeriksa track staging…",
+    "devOptionsShorebirdUpdateAvailable": "Patch staging siap diterapkan.",
+    "devOptionsShorebirdUpToDate": "Tidak ada patch staging untuk rilis ini.",
+    "devOptionsShorebirdRestartRequired": "Sudah diunduh. Mulai ulang aplikasi untuk memuatnya.",
+    "devOptionsShorebirdRollbackRequired": "Rollback siap. Mulai ulang untuk kembali ke rilis dasar.",
+    "devOptionsShorebirdApplying": "Mengunduh dan memasang…",
+    "devOptionsShorebirdApplied": "Terpasang. Mulai ulang aplikasi untuk memuatnya.",
+    "devOptionsShorebirdUnchanged": "Tidak ada yang terpasang. Periksa track staging dan coba lagi.",
+    "devOptionsShorebirdSelectingStableTrack": "Memilih jalur stabil…",
+    "devOptionsShorebirdStableRestored": "Jalur stabil dipilih. Mulai ulang aplikasi untuk memeriksa patch stabil.",
+    "devOptionsShorebirdFailure": "Tidak berhasil. Periksa log untuk detailnya.",
     "devOptionsPageLoadTimes": "Waktu Muat Halaman",
     "devOptionsNoPageLoads": "Belum ada pemuatan halaman yang tercatat.\nNavigasi ke seluruh aplikasi untuk melihat data waktu.",
     "devOptionsPageLoadVisible": "Terlihat: {visibleMs}ms  |  Data: {dataMs}ms",
@@ -822,14 +761,6 @@
     "relaySettingsEventsSent": "Event Dikirim",
     "relaySettingsRequestsThisSession": "Permintaan Sesi Ini",
     "relaySettingsFailedRequests": "Permintaan Gagal",
-    "relaySettingsLastError": "Kesalahan Terakhir: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Memuat info relay...",
     "relaySettingsAboutRelay": "Tentang Relay",
     "relaySettingsSupportedNips": "NIP yang Didukung",
@@ -986,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query gagal: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Query gagal. Silakan coba lagi.",
     "relayDiagnosticConnectedToRelays": "Terhubung ke {count} relay!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1003,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Gagal terhubung ke relay mana pun",
-    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal. Silakan coba lagi.",
     "relayDiagnosticConnectedAuthenticated": "Terhubung & Terautentikasi",
     "relayDiagnosticConnectedOnly": "Terhubung",
     "relayDiagnosticNotConnected": "Tidak terhubung",
@@ -1042,11 +959,6 @@
     "notificationSettingsResetToDefaults": "Pengaturan direset ke bawaan",
     "notificationSettingsAbout": "Tentang Notifikasi",
     "notificationSettingsAboutDescription": "Notifikasi ditenagai oleh protokol Nostr. Pembaruan real-time bergantung pada koneksimu ke relay Nostr. Beberapa notifikasi mungkin tertunda.",
-    "safetySettingsTitle": "Keamanan & Privasi",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "PENGATURAN",
     "safetySettingsShowDivineHostedOnly": "Hanya tampilkan video yang di-host Divine",
     "safetySettingsShowDivineHostedOnlySubtitle": "Sembunyikan video yang disajikan dari host media lain",
     "safetySettingsModeration": "MODERASI",
@@ -1374,14 +1286,6 @@
     "authUnableToAccessKeys": "Tidak bisa mengakses kuncimu. Silakan coba lagi.",
     "authRegistrationFailed": "Pendaftaran gagal",
     "authRegistrationComplete": "Pendaftaran selesai. Silakan cek emailmu.",
-    "authVerificationFailedTitle": "Verifikasi Gagal",
-    "authClose": "Tutup",
-    "authAccountSecured": "Akun Aman!",
-    "authAccountLinkedToEmail": "Akunmu sekarang terhubung ke emailmu.",
-    "authVerifyYourEmail": "Verifikasi Emailmu",
-    "authClickLinkContinue": "Klik tautan di emailmu untuk menyelesaikan pendaftaran. Kamu bisa terus menggunakan aplikasi sementara itu.",
-    "authWaitingForVerificationEllipsis": "Menunggu verifikasi...",
-    "authContinueToApp": "Lanjut ke Aplikasi",
     "authFailedToSendResetEmail": "Gagal mengirim email reset.",
     "authSending": "Mengirim...",
     "authSignInButton": "Masuk",
@@ -1397,6 +1301,13 @@
     "authVerificationErrorPinLocked": "Terlalu banyak percobaan. Ketuk kirim ulang untuk mendapatkan kode baru.",
     "authVerificationErrorPinFailed": "Kami tidak bisa memverifikasi kode itu. Silakan coba lagi.",
     "authVerificationErrorPinUnavailable": "Input kode sedang tidak tersedia. Ketuk tautan di emailmu, atau kirim ulang untuk mendapatkan kode baru.",
+    "authInviteCodeErrorMalformed": "Masukkan kode undangan seperti ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Kode undangan itu sepertinya tidak valid.",
+    "authInviteCodeErrorAlreadyUsed": "Kode undangan itu sudah dipakai atau dicabut.",
+    "authInviteGateErrorCreatorFull": "Undangan kreator ini sudah habis",
+    "authInviteGateErrorUnavailable": "Kode undangan itu tidak tersedia. Gabung ke daftar tunggu dan kami akan mengirim undangan begitu ada tempat.",
+    "authInviteGateErrorCheckFailed": "Kami tidak bisa memeriksa kode itu. Coba lagi.",
+    "authInviteGateErrorUnknown": "Ada yang salah. Coba lagi dengan kode undanganmu.",
     "authInviteErrorAlreadyUsed": "Kode undangan itu sudah tidak tersedia. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorInvalid": "Kode undangan itu tidak bisa digunakan sekarang. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorTemporary": "Kami tidak bisa mengkonfirmasi undanganmu sekarang. Kembali ke kode undanganmu dan coba lagi, atau hubungi dukungan.",
@@ -1411,7 +1322,6 @@
     "shareSheetAddToList": "Tambah ke Daftar",
     "shareSheetCopy": "Salin",
     "shareSheetShareVia": "Bagikan via",
-    "shareSheetReport": "Laporkan",
     "shareSheetEventJson": "Event JSON",
     "shareSheetEventId": "ID Event",
     "shareSheetMoreActions": "Aksi lainnya",
@@ -1453,103 +1363,7 @@
     "watermarkDownloadStageDownloadingDesc": "Mengambil video dari jaringan...",
     "watermarkDownloadStageWatermarkingDesc": "Menerapkan watermark Divine...",
     "watermarkDownloadStageSavingDesc": "Menyimpan video ber-watermark ke camera roll-mu...",
-    "uploadProgressVideoUpload": "Unggah Video",
-    "uploadProgressPause": "Jeda",
-    "uploadProgressResume": "Lanjutkan",
-    "uploadProgressGoBack": "Kembali",
-    "uploadProgressRetryWithCount": "Coba Lagi ({count} tersisa)",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "Hapus",
-    "uploadProgressDaysAgo": "{count}h lalu",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "{count}j lalu",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "{count}m lalu",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "Baru saja",
-    "uploadProgressUploadingPercent": "Mengunggah {percent}%",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "Dijeda {percent}%",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "Bagikan Video",
-    "shareMenuReportAiContent": "Laporkan Konten AI",
-    "shareMenuReportAiContentSubtitle": "Laporan cepat dugaan konten yang dihasilkan AI",
-    "shareMenuReportingAiContent": "Melaporkan konten AI...",
-    "shareMenuFailedToReportContent": "Gagal melaporkan konten: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "Gagal melaporkan konten AI: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "Status Video",
-    "shareMenuViewAllLists": "Lihat semua daftar →",
-    "shareMenuShareWith": "Bagikan Dengan",
-    "shareMenuShareViaOtherApps": "Bagikan via aplikasi lain",
-    "shareMenuShareViaOtherAppsSubtitle": "Bagikan via aplikasi lain atau salin tautan",
-    "shareMenuSaveToGallery": "Simpan ke Galeri",
-    "shareMenuSaveOriginalSubtitle": "Simpan video asli ke camera roll",
-    "shareMenuSaveWithWatermark": "Simpan dengan Watermark",
-    "shareMenuSaveVideo": "Simpan Video",
-    "shareMenuDownloadWithWatermark": "Unduh dengan watermark Divine",
-    "shareMenuSaveVideoSubtitle": "Simpan video ke camera roll",
-    "shareMenuLists": "Daftar",
-    "shareMenuAddToList": "Tambah ke Daftar",
-    "shareMenuAddToListSubtitle": "Tambahkan ke daftar kurasi-mu",
-    "shareMenuCreateNewList": "Buat Daftar Baru",
-    "shareMenuCreateNewListSubtitle": "Mulai koleksi kurasi baru",
-    "shareMenuRemovedFromList": "Dihapus dari daftar",
-    "shareMenuFailedToRemoveFromList": "Gagal menghapus dari daftar",
     "shareMenuBookmarks": "Bookmark",
-    "shareMenuFollowSets": "Set Ikuti",
-    "shareMenuCreateFollowSet": "Buat Set Ikuti",
-    "shareMenuCreateFollowSetSubtitle": "Mulai koleksi baru dengan kreator ini",
-    "shareMenuAddToFollowSet": "Tambah ke Set Ikuti",
     "shareMenuFollowSetsAvailable": "{count} set ikuti tersedia",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1558,21 +1372,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "Ditambahkan ke bookmark!",
-    "shareMenuFailedToAddBookmark": "Gagal menambahkan bookmark",
-    "shareMenuCreatedListAndAddedVideo": "Daftar \"{name}\" dibuat dan video ditambahkan",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "Kelola Konten",
     "shareMenuEditVideo": "Ubah Video",
-    "shareMenuEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "shareMenuDeleteVideo": "Hapus Video",
-    "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1581,105 +1382,26 @@
             }
         }
     },
-    "shareMenuClose": "Tutup",
     "shareMenuDeleteConfirmation": "Ini akan menghapus video ini secara permanen dari Divine. Video ini mungkin masih muncul di klien Nostr pihak ketiga yang menggunakan relay lain.",
     "shareMenuCancel": "Batal",
     "shareMenuDelete": "Hapus",
-    "shareMenuDeletingContent": "Menghapus konten...",
-    "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "Nama Set Ikuti",
-    "shareMenuFollowSetNameHint": "contoh: Kreator Konten, Musisi, dll.",
-    "shareMenuDescriptionOptional": "Deskripsi (opsional)",
-    "shareMenuCreate": "Buat",
-    "shareMenuCreatedFollowSetAndAddedCreator": "Set ikuti \"{name}\" dibuat dan kreator ditambahkan",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "Selesai",
-    "shareMenuEditTitle": "Judul",
-    "shareMenuEditTitleHint": "Masukkan judul video",
-    "shareMenuEditDescription": "Deskripsi",
-    "shareMenuEditDescriptionHint": "Masukkan deskripsi video",
-    "shareMenuEditHashtags": "Hashtag",
-    "shareMenuEditHashtagsHint": "hashtag, dipisahkan, koma",
-    "shareMenuEditMetadataNote": "Catatan: Hanya metadata yang bisa diubah. Konten video tidak bisa diubah.",
-    "shareMenuDeleting": "Menghapus...",
     "shareMenuUpdate": "Perbarui",
     "shareMenuChangeCover": "Ubah Sampul",
-    "shareMenuCoverUploadingBackground": "Thumbnail sedang diunggah di latar belakang",
     "shareMenuVideoUpdated": "Video berhasil diperbarui",
     "shareMenuVideoUpdatedWithInviteFailures": "Video diperbarui, tetapi {count, plural, =1{1 undangan kolaborator tidak terkirim.} other{{count} undangan kolaborator tidak terkirim.}}",
-    "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Masuk lagi, lalu coba perbarui.",
+    "videoUpdateErrorNoPlayableVideo": "Video ini tidak punya sumber yang bisa diputar, jadi tidak bisa diedit.",
+    "videoUpdateErrorCouldNotSign": "Gagal menandatangani pembaruan. Coba lagi.",
+    "videoUpdateErrorPublishRejected": "Relay tidak menerima pembaruan. Coba lagi sebentar lagi.",
+    "videoUpdateErrorGeneric": "Gagal memperbarui video ini. Coba lagi.",
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
-    "shareMenuVideoDeletionRequested": "Video dihapus",
-    "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "Label konten",
-    "shareMenuAddContentLabels": "Tambah label konten",
-    "shareMenuClearAll": "Bersihkan semua",
-    "shareMenuCollaborators": "Kolaborator",
-    "shareMenuAddCollaborator": "Tambah kolaborator",
-    "shareMenuMutualFollowRequired": "Kamu perlu saling mengikuti {name} untuk menambahkannya sebagai kolaborator.",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "Memuat...",
-    "shareMenuInspiredBy": "Terinspirasi oleh",
-    "shareMenuAddInspirationCredit": "Tambah kredit inspirasi",
-    "shareMenuCreatorCannotBeReferenced": "Kreator ini tidak bisa dirujuk.",
-    "shareMenuUnknown": "Tidak Dikenal",
-    "shareMenuUseThisSound": "Pakai suara ini",
-    "shareMenuOriginalSound": "Suara asli",
+    "shareMenuDeleteCleanupInProgress": "Menghapus video…",
+    "shareMenuDeleteCleanupConfirmed": "Video dihapus.",
+    "shareMenuDeleteCleanupDelayed": "Video dihapus. Mungkin perlu waktu hingga video menghilang dari semua tempat.",
+    "shareMenuDeleteCleanupFailed": "Video dihapus, tetapi kami tidak dapat menghapus semua salinannya. Hubungi dukungan.",
     "authSessionExpired": "Sesimu sudah kedaluwarsa. Silakan masuk lagi.",
     "authSignInFailed": "Gagal masuk. Silakan coba lagi.",
-    "localeAppLanguage": "Bahasa Aplikasi",
-    "localeDeviceDefault": "Bawaan perangkat",
-    "localeSelectLanguage": "Pilih Bahasa",
     "webAuthNotSupportedSecureMode": "Autentikasi web tidak didukung dalam mode aman. Silakan pakai aplikasi seluler untuk manajemen kunci yang aman.",
-    "webAuthIntegrationFailed": "Integrasi autentikasi gagal: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Kesalahan tak terduga: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Silakan masukkan URI bunker",
     "webAuthConnectTitle": "Hubungkan ke Divine",
     "webAuthChooseMethod": "Pilih metode autentikasi Nostr pilihanmu",
@@ -1694,34 +1416,14 @@
     "webAuthNostrHelp": "Pasang ekstensi browser seperti Alby atau nos2x untuk pengalaman termudah, atau pakai nsec bunker untuk penandatanganan jarak jauh yang aman.",
     "soundsTitle": "Suara",
     "soundsSearchHint": "Cari suara...",
-    "soundsPreviewUnavailable": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
-    "soundsPreviewFailed": "Gagal memutar pratinjau: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "Gagal memutar pratinjau",
-    "soundsFeaturedSounds": "Suara Unggulan",
-    "soundsTrendingSounds": "Suara Trending",
-    "soundsAllSounds": "Semua Suara",
     "soundSyncStatusSyncing": "Menyinkronkan suaramu…",
     "soundSyncStatusSynced": "Suara sudah terbaru",
     "soundSyncStatusFailed": "Tidak bisa menyinkronkan suaramu. Kami akan coba lagi.",
     "soundSyncStatusLocked": "Tidak bisa membuka pustaka tersinkronmu di perangkat ini.",
     "soundsSearchResults": "Hasil Pencarian",
-    "soundsNoSoundsAvailable": "Tidak ada suara tersedia",
-    "soundsNoSoundsDescription": "Suara akan muncul di sini saat kreator membagikan audio",
     "soundsNoSoundsFound": "Tidak ada suara ditemukan",
     "soundsNoSoundsFoundDescription": "Coba istilah pencarian lain",
-    "soundsFailedToLoad": "Gagal memuat suara",
-    "soundsRetry": "Coba Lagi",
-    "soundsScreenLabel": "Layar suara",
     "profileTitle": "Profil",
-    "profileRefresh": "Segarkan",
-    "profileRefreshLabel": "Segarkan profil",
     "profileMoreOptions": "Opsi lainnya",
     "profileBlockedUser": "Memblokir {name}",
     "@profileBlockedUser": {
@@ -1747,14 +1449,6 @@
             }
         }
     },
-    "profileError": "Kesalahan: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "Semua",
     "notificationsTabLikes": "Suka",
     "notificationsTabComments": "Komentar",
@@ -1763,25 +1457,6 @@
     "notificationsFailedToLoad": "Gagal memuat notifikasi",
     "notificationsRetry": "Coba Lagi",
     "notificationsRefreshError": "Gagal menyegarkan — menampilkan yang tersedia",
-    "notificationsCheckingNew": "mengecek notifikasi baru",
-    "notificationsNoneYet": "Belum ada notifikasi",
-    "notificationsNoneForType": "Tidak ada notifikasi {type}",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "Saat orang berinteraksi dengan kontenmu, kamu akan melihatnya di sini",
-    "notificationsLoadingType": "Memuat notifikasi {type}...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "Kamu punya 1 undangan untuk dibagikan ke teman!",
     "notificationsInvitePlural": "Kamu punya {count} undangan untuk dibagikan ke teman!",
     "@notificationsInvitePlural": {
@@ -1791,9 +1466,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "Video tidak ditemukan",
     "notificationsVideoUnavailable": "Video tidak tersedia",
-    "notificationsFromNotification": "Dari Notifikasi",
     "feedFailedToLoadVideos": "Gagal memuat video",
     "feedRetry": "Coba Lagi",
     "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
@@ -1823,50 +1496,13 @@
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
     "feedClassicEmpty": "Belum ada klasik.\nCek lagi sebentar lagi.",
     "feedExploreVideos": "Jelajahi Video",
-    "feedExternalVideoSlow": "Video eksternal memuat lambat",
-    "feedSkip": "Lewati",
-    "uploadWaitingToUpload": "Menunggu unggah",
     "uploadUploadingVideo": "Mengunggah video",
-    "uploadProcessingVideo": "Memproses video",
-    "uploadProcessingComplete": "Pemrosesan selesai",
-    "uploadPublishedSuccessfully": "Berhasil dipublikasikan",
-    "uploadFailed": "Unggah gagal",
-    "uploadRetrying": "Mencoba unggah lagi",
-    "uploadPaused": "Unggahan dijeda",
-    "uploadPercentComplete": "{percent}% selesai",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "Videomu dalam antrean unggah",
-    "uploadUploadingMessage": "Mengunggah ke server...",
-    "uploadProcessingMessage": "Memproses video - ini mungkin butuh beberapa menit",
-    "uploadReadyToPublishMessage": "Video berhasil diproses dan siap dipublikasikan",
-    "uploadPublishedMessage": "Video dipublikasikan ke profilmu",
     "postPublishConfirmationTitle": "Dipublikasikan ke profilmu",
     "postPublishConfirmationView": "Lihat",
     "postPublishConfirmationShare": "Bagikan",
     "postPublishConfirmationThumbnailLabel": "Thumbnail video yang baru saja kamu publikasikan",
   "uploadPublishedCountMessage": "{count, plural, =1{Video dipublikasikan ke profilmu} other{{count} video dipublikasikan ke profilmu}}",
-    "uploadFailedMessage": "Unggah gagal - silakan coba lagi",
-    "uploadRetryingMessage": "Mencoba unggah lagi...",
-    "uploadPausedMessage": "Unggahan dijeda oleh pengguna",
-    "uploadRetryButton": "COBA LAGI",
-    "uploadRetryFailed": "Gagal mencoba unggah lagi: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "Cari pengguna",
     "userSearchNoResults": "Tidak ada pengguna ditemukan",
-    "userSearchFailed": "Pencarian gagal",
-    "userPickerSearchByName": "Cari berdasarkan nama",
     "userPickerFilterByNameHint": "Filter berdasarkan nama...",
     "userPickerSearchByNameHint": "Cari berdasarkan nama...",
     "userPickerClearSearchSemantics": "Hapus pencarian",
@@ -1905,27 +1541,13 @@
     "ageVerificationCreationQuestion": "Apakah kamu berusia 16 tahun atau lebih?",
     "ageVerificationNo": "Tidak",
     "ageVerificationYes": "Ya",
-    "shareLinkCopied": "Tautan disalin ke clipboard",
-    "shareFailedToCopy": "Gagal menyalin tautan",
-    "shareVideoSubject": "Lihat video ini di Divine",
-    "shareFailedToShare": "Gagal membagikan",
-    "shareVideoTitle": "Bagikan Video",
-    "shareToApps": "Bagikan ke Aplikasi",
-    "shareToAppsSubtitle": "Bagikan via pesan, aplikasi sosial",
-    "shareCopyWebLink": "Salin Tautan Web",
-    "shareCopyWebLinkSubtitle": "Salin tautan web yang bisa dibagikan",
-    "shareCopyNostrLink": "Salin Tautan Nostr",
-    "shareCopyNostrLinkSubtitle": "Salin tautan nevent untuk klien Nostr",
     "navHome": "Beranda",
     "navExplore": "Jelajahi",
     "navInbox": "Kotak Masuk",
     "navProfile": "Profil",
     "navMyProfile": "Profilku",
-    "navSearch": "Cari",
     "navNotifications": "Notifikasi",
-    "navSearchTooltip": "Cari",
     "navOpenCamera": "Buka kamera",
-    "navUnknown": "Tidak Dikenal",
     "navExploreClassics": "Klasik",
     "navExploreNewVideos": "Video Baru",
     "navExploreTrending": "Trending",
@@ -1975,27 +1597,15 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "reportTitle": "Laporkan Konten",
     "reportWhyReporting": "Kenapa kamu melaporkan konten ini?",
     "reportPolicyNotice": "Divine akan menindak laporan konten dalam 24 jam dengan menghapus konten dan mengeluarkan pengguna yang memberikan konten yang melanggar.",
-    "reportAdditionalDetails": "Detail tambahan (opsional)",
     "reportBlockUser": "Blokir pengguna ini",
     "reportCancel": "Batal",
     "reportSubmit": "Laporkan",
     "reportSelectReason": "Silakan pilih alasan untuk melaporkan konten ini",
     "reportOtherRequiresDetails": "Jelaskan masalahnya kalau memilih Lainnya",
     "reportDetailsRequired": "Jelaskan masalahnya",
+    "reportDetailsTextOnly": "Hanya teks — foto dan GIF tidak dapat dilampirkan di sini.",
     "reportReasonSpam": "Spam atau Konten Tidak Diinginkan",
     "reportReasonHarassment": "Pelecehan, Perundungan, atau Ancaman",
     "reportReasonViolence": "Konten Kekerasan atau Ekstremis",
@@ -2004,19 +1614,11 @@
     "reportReasonFalseInfo": "Informasi Salah",
     "reportReasonAiGenerated": "Konten Dihasilkan AI",
     "reportReasonOther": "Pelanggaran Kebijakan Lainnya",
-    "reportFailed": "Gagal melaporkan konten: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Gagal melaporkan konten. Silakan coba lagi.",
     "reportNotSent": "Laporanmu tidak terkirim. Periksa koneksimu dan coba lagi.",
     "reportReceivedTitle": "Laporan Diterima",
     "reportReceivedThankYou": "Terima kasih sudah membantu menjaga Divine tetap aman.",
     "reportReceivedReviewNotice": "Tim kami akan meninjau laporanmu dan mengambil tindakan yang sesuai. Kamu mungkin menerima pembaruan via pesan langsung.",
-    "reportLearnMore": "Pelajari Lebih Lanjut",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "Tutup",
     "listAddToList": "Tambah ke Daftar",
@@ -2051,7 +1653,7 @@
     "listNewPeopleList": "Daftar orang baru",
     "listCollaboratorsNone": "Tidak ada",
     "listAddCollaboratorTitle": "Tambah kolaborator",
-    "listCollaboratorSearchHint": "Cari di diVine...",
+    "listCollaboratorSearchHint": "Cari di Divine...",
     "listNameLabel": "Nama Daftar",
     "listDescriptionLabel": "Deskripsi (opsional)",
     "listPublicList": "Daftar Publik",
@@ -2114,7 +1716,7 @@
     "keyManagementKeycastEmailUnverified": "Verifikasi alamat emailmu sebelum menyalin kunci.",
     "keyManagementKeycastDenied": "Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.",
     "keyManagementKeycastNoKey": "Tidak ada kunci yang tercatat untuk akun ini.",
-    "keyManagementKeycastGenericFailure": "layanan login tidak dapat dihubungi",
+    "keyManagementKeycastGenericFailure": "Layanan login tidak dapat dihubungi. Silakan coba lagi.",
     "keyManagementRestrictedTitle": "Kuncimu dikelola oleh Divine",
     "keyManagementRestrictedBody": "Demi keamanan akunmu, pencadangan kunci dan impor kunci lain tidak tersedia di sini.",
     "keyManagementNeverShare": "Jangan pernah bagikan nsec-mu ke siapa pun!",
@@ -2124,23 +1726,9 @@
     "keyManagementConfirmImportBody": "Ini akan mengganti identitasmu saat ini dengan yang diimpor.\n\nKunci saat ini akan hilang kecuali kamu sudah mem-backup-nya.",
     "keyManagementImportConfirm": "Impor",
     "keyManagementImportSuccess": "Kunci berhasil diimpor!",
-    "keyManagementImportFailed": "Gagal mengimpor kunci: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Gagal mengimpor kunci. Silakan coba lagi.",
     "keyManagementExportSuccess": "Kunci privat disalin ke clipboard!\n\nSimpan di tempat yang aman.",
-    "keyManagementExportFailed": "Gagal mengekspor kunci: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Gagal mengekspor kunci. Silakan coba lagi.",
     "saveOriginalSavedToCameraRoll": "Disimpan ke Camera Roll",
     "saveOriginalShare": "Bagikan",
     "saveOriginalDone": "Selesai",
@@ -2178,14 +1766,7 @@
         }
     },
     "soundUnableToPreview": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
-    "soundPreviewFailed": "Gagal memutar pratinjau: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Gagal memutar pratinjau. Silakan coba lagi.",
     "soundViewSource": "Lihat sumber",
     "soundCloseTooltip": "Tutup",
     "exploreNotExploreRoute": "Bukan rute jelajah",
@@ -2206,17 +1787,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2321,14 +1891,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Gulat",
-    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan. Silakan coba lagi.",
     "blueskyFailedToUpdateCrosspost": "Gagal memperbarui pengaturan crosspost",
     "cameraAgeRestriction": "Kamu harus berusia 16 tahun atau lebih untuk membuat konten",
     "categoriesCouldNotLoadCategories": "Tidak dapat memuat kategori",
@@ -2337,15 +1900,7 @@
     "commonCancel": "Batal",
     "commonDelete": "Hapus",
     "commonRetry": "Coba lagi",
-    "commonNext": "Berikutnya",
-    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan. Silakan coba lagi.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2373,7 +1928,6 @@
             }
         }
     },
-    "featureRequestCancel": "Batal",
     "followersFailedToLoadList": "Gagal memuat daftar pengikut",
     "followingFailedToLoadList": "Gagal memuat daftar mengikuti",
     "inboxActionBlock": "Blokir {displayName}",
@@ -2428,8 +1982,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Kamu diundang untuk berkolaborasi di {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Kamu diundang untuk berkolaborasi pada sebuah video: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Kamu diundang untuk berkolaborasi di {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Kamu diundang untuk berkolaborasi pada sebuah video: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Undangan terkirim",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -2449,7 +2003,7 @@
     "inboxSupportRowSubtitle": "Bug, moderasi, urusan akun — kami mendengarkan.",
     "inboxSearchEmptyTitle": "Tidak ada hasil",
     "inboxSearchEmptySubtitle": "Coba nama atau kata lain.",
-    "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
+    "inboxRemoveConfirmBody": "Ini menghapus percakapanmu dengan {displayName} dari kotak masukmu. Jika dia mengirim pesan lagi, percakapan baru dimulai.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -2457,6 +2011,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "Ini menghapus percakapan grup dari kotak masukmu. Jika ada yang mengirim pesan lagi ke grup, percakapan baru dimulai.",
     "inboxRemoveConfirmConfirm": "Hapus",
     "inboxRemoveConfirmTitle": "Hapus percakapan?",
     "inboxRemovedConversation": "Percakapan dihapus",
@@ -2481,16 +2036,6 @@
         }
     },
     "invitesTitle": "Undang Teman",
-    "keyImportError": "Error: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "libraryAddClips": "Tambah",
-    "libraryClipSelectionTitle": "Klip",
     "libraryClipsDeletedCount": "{count, plural, =1{1 klip dihapus} other{{count} klip dihapus}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2528,15 +2073,6 @@
     "libraryCreateVideo": "Buat video ({count})",
     "libraryDeleteClipMessage": "Yakin ingin menghapus klip ini?",
     "libraryDeleteClipTitle": "Hapus klip",
-    "libraryDeleteClipsMessage": "Yakin ingin menghapus {count, plural, one{# klip terpilih} other{# klip terpilih}}?",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "Hapus klip",
     "libraryDeleteClipsWarning": "Tindakan ini tidak bisa dibatalkan. File video akan dihapus permanen dari perangkatmu.",
     "libraryDeleteConfirm": "Hapus",
     "libraryDeleteDraftMessage": "Yakin ingin menghapus \"{title}\"?",
@@ -2583,6 +2119,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Tidak bisa menyimpan ke {destination}",
     "libraryGalleryPermissionDenied": "Izin ditolak untuk {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2599,6 +2136,7 @@
     "libraryPreparingVideo": "Menyiapkan video...",
     "libraryRecordVideo": "Rekam video",
     "videoClipSemanticLabel": "Klip video, {duration} detik",
+    "videoClipArchivedSemanticLabel": "Diarsipkan. {label}",
     "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Dipilih, nomor {position}",
     "videoClipSemanticValueSelected": "Dipilih",
@@ -2606,15 +2144,6 @@
     "videoClipSemanticHintDisabled": "Dinonaktifkan",
     "videoClipSemanticHintSelect": "Ketuk untuk memilih, tekan lama untuk pratinjau",
     "videoClipSemanticHintDeselect": "Ketuk untuk membatalkan pilihan, tekan lama untuk pratinjau",
-    "librarySaveToCameraRollTooltip": "Simpan ke galeri kamera",
-    "librarySecondsRemaining": "Tersisa {seconds} dtk",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds} dtk",
     "libraryTabClips": "Klip",
     "libraryTabDrafts": "Draf",
@@ -2626,6 +2155,7 @@
     "dmSendBlockedMessage": "Kamu hanya bisa mengirim pesan ke akun resmi Divine",
     "dmSendBlockedRetiredMessage": "Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.",
     "dmRetiredThreadClosedTitle": "Percakapan ini sudah ditutup.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Pemberitahuan Divine Moderation ini tidak dapat dihapus.",
     "dmRetiredThreadClosedBody": "Kami memindahkan Divine Moderation ke akun baru. Akun ini tidak dibaca lagi.",
     "dmRetiredThreadOpenSupport": "Kirim pesan ke Divine Moderation",
     "dmSendFailedMessage": "Pesan gagal dikirim",
@@ -2636,8 +2166,6 @@
     "dmConversationLoadError": "Pesan tidak dapat dimuat",
     "dmMessageInputHint": "Tulis sesuatu…",
     "dmMessageSendLabel": "Kirim pesan",
-    "reportDialogCancel": "Batal",
-    "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",
     "routerInvalidHashtagRoute": "Rute hashtag tidak valid",
     "searchDiscoverSomethingInteresting": "Temukan sesuatu yang menarik",
@@ -2863,16 +2391,16 @@
     "cameraPermissionWebUnsupportedTitle": "Kamera belum didukung di web",
     "cameraPermissionWebUnsupportedDescription": "Pengambilan gambar dan perekaman kamera belum tersedia di versi web.",
     "cameraPermissionBackToFeed": "Kembali ke feed",
+    "cameraCouldNotStart": "Tidak bisa memulai kamera",
+    "cameraUnsupportedPlatform": "Kamera belum tersedia di platform ini.\nKamu tetap bisa menjelajah dan menonton video.",
     "cameraPermissionErrorTitle": "Kesalahan izin",
     "cameraPermissionErrorDescription": "Terjadi kesalahan saat memeriksa izin.",
     "cameraPermissionRetry": "Coba lagi",
     "cameraPermissionAllowAccessTitle": "Izinkan akses kamera & mikrofon",
     "cameraPermissionAllowAccessDescription": "Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.",
     "cameraPermissionGoToSettings": "Buka pengaturan",
-    "videoEditorAddClipFromLibrary": "Tambah klip dari Perpustakaan",
     "videoEditorAddElementSemanticLabel": "Tambah elemen",
     "videoEditorAddTitle": "Tambah",
-    "videoEditorAdjustVolumeTitle": "Atur volume",
     "videoEditorAudioAddAudio": "Tambah audio",
     "videoEditorAudioFailedToLoadTitle": "Gagal memuat suara",
     "videoEditorAudioCategoryDivine": "Divine",
@@ -2891,8 +2419,6 @@
     "videoEditorAudioUntitled": "Tanpa judul",
     "videoEditorAudioUntitledSound": "Suara tanpa judul",
     "videoEditorVolumeLongPressHint": "Bisukan atau aktifkan semua trek",
-    "videoEditorCannotSplitProcessing": "Tidak dapat membagi klip saat sedang diproses. Harap tunggu.",
-    "videoEditorClipDeleted": "Klip dihapus",
     "videoEditorClipSaveFailed": "Gagal menyimpan klip",
     "videoEditorClipSavedSuccess": "Klip disimpan ke perpustakaan",
     "videoEditorCameraLabel": "Kamera",
@@ -2908,8 +2434,6 @@
         }
     },
     "videoEditorConfirmColorSemanticLabel": "Konfirmasi warna",
-    "videoEditorCropSemanticLabel": "Pangkas",
-    "videoEditorDeleteClip": "Hapus klip",
     "videoEditorDeleteLabel": "Hapus",
     "videoEditorDeleteLayerDropZone": "Area lepas untuk menghapus lapisan",
     "videoEditorDeleteSelectedItemSemanticLabel": "Hapus item yang dipilih",
@@ -2951,7 +2475,6 @@
     "videoEditorHueSemanticLabel": "Rona",
     "videoEditorKeepEditingButton": "Lanjutkan mengedit",
     "videoEditorLevelSemanticLabel": "Level",
-    "videoEditorMuteAudioSemanticLabel": "Matikan suara",
     "videoEditorNoStickersAvailable": "Tidak ada stiker tersedia",
     "videoEditorNoStickersFound": "Stiker tidak ditemukan",
     "videoEditorOpenAudioSemanticLabel": "Buka editor audio",
@@ -3017,7 +2540,6 @@
     "videoEditorPickColorTitle": "Pilih warna",
     "videoEditorPlayPauseSemanticLabel": "Putar atau jeda video",
     "videoEditorPlaySemanticLabel": "Putar",
-    "videoEditorRecordedAudioLabel": "Audio yang direkam",
     "videoEditorVoiceOverLabel": "Sulih suara",
     "videoEditorVoiceOverTakeName": "Rekaman {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Rekam sulih suara",
@@ -3053,7 +2575,6 @@
     "videoEditorSaveSelectedClip": "Simpan klip yang dipilih",
     "videoEditorSelectFontSemanticLabel": "Pilih font",
     "videoEditorShowTimelineSemanticLabel": "Tampilkan timeline",
-    "videoEditorSplitClip": "Bagi klip",
     "videoEditorSplitLabel": "Bagi",
     "videoEditorSplitFailed": "Pembagian gagal. Silakan coba lagi.",
     "videoEditorSplitPlayheadOutsideClip": "Playhead harus berada di dalam klip yang dipilih untuk membagi.",
@@ -3154,27 +2675,12 @@
     "videoEditorTimelineTrimEndSemanticLabel": "Pangkas akhir",
     "videoEditorTimelineTrimStartSemanticLabel": "Pangkas awal",
     "videoEditorUndoSemanticLabel": "Batalkan",
-    "videoEditorUnmuteAudioSemanticLabel": "Aktifkan suara",
     "videoEditorVideoTimelineSemanticLabel": "Timeline video",
     "videoMetadataAddCollaboratorSemanticLabel": "Tambah kolaborator",
     "videoMetadataClosePostDetailsSemanticLabel": "Tutup detail postingan",
     "videoMetadataClassicDoneButton": "Selesai",
     "videoMetadataClosePreviewSemanticLabel": "Tutup pratinjau video",
-    "videoMetadataCollaboratorsCount": "{count}/{max} Kolaborator",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataCollaboratorsHelpMessage": "Kolaborator ditandai sebagai co-creator pada postingan ini. Kamu hanya dapat menambahkan orang yang saling kamu ikuti, dan mereka muncul dalam metadata postingan saat dipublikasikan.",
-    "videoMetadataCollaboratorsHelpTooltip": "Cara kerja kolaborator",
     "videoMetadataCollaboratorsLabel": "Kolaborator",
-    "videoMetadataContentWarningDoneButton": "Selesai",
     "videoMetadataContentWarningLabel": "Peringatan Konten",
     "videoMetadataContentWarningSelectAllThatApply": "Pilih semua yang berlaku untuk kontenmu",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "Kreator ini tidak dapat direferensikan.",
@@ -3186,7 +2692,6 @@
             }
         }
     },
-    "videoMetadataDeleteTagSemanticLabel": "Hapus",
     "videoMetadataDescriptionLabel": "Deskripsi",
     "videoMetadataDismissHelpDialogSemanticLabel": "Tutup dialog bantuan",
     "videoMetadataExpirationLabel": "Kedaluwarsa",
@@ -3194,19 +2699,8 @@
     "videoMetadataFormNotReadyHint": "Isi formulir untuk mengaktifkan",
     "videoMetadataGoToLibraryButton": "Pergi ke Perpustakaan",
     "videoMetadataGotItButton": "Mengerti!",
-    "videoMetadataInspiredByHelpMessage": "Gunakan ini untuk memberikan atribusi. Kredit terinspirasi berbeda dari kolaborator: ini mengakui pengaruh, tetapi tidak menandai seseorang sebagai co-creator.",
-    "videoMetadataInspiredByHelpTooltip": "Cara kerja kredit inspirasi",
     "videoMetadataInspiredByLabel": "Terinspirasi oleh",
-    "videoMetadataInspiredByNone": "Tidak ada",
     "videoMetadataLimitReachedWarning": "Batas 64KB tercapai. Hapus beberapa konten untuk melanjutkan.",
-    "videoMetadataMustMutuallyFollowSnackbar": "Kamu perlu saling mengikuti {name} untuk menambahkannya sebagai kolaborator.",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataMutualFollowersSearchText": "Pengikut saling mengikuti",
     "videoMetadataOpenPreviewSemanticLabel": "Buka layar pratinjau postingan",
     "videoMetadataPausePreviewSemanticLabel": "Jeda pratinjau",
@@ -3215,8 +2709,6 @@
     "videoMetadataPostDetailsTitle": "Detail postingan",
     "videoMetadataPostSemanticLabel": "Tombol posting",
     "videoMetadataPublishVideoHint": "Publikasikan video ke feed",
-    "videoMetadataRemoveCollaboratorSemanticLabel": "Hapus kolaborator",
-    "videoMetadataRemoveInspiredBySemanticLabel": "Hapus inspirasi",
     "videoMetadataRemoveSemanticLabel": "Hapus",
     "videoMetadataSaveForLaterButton": "Simpan untuk Nanti",
     "videoMetadataSaveForLaterSemanticLabel": "Tombol simpan untuk nanti",
@@ -3363,7 +2855,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "Relay tidak bisa dihubungi. Periksa koneksimu dan coba lagi.",
     "shareMenuDeletePartiallyConfirmed": "Terhapus. Tidak semua relay mengonfirmasi, jadi ini mungkin masih muncul di aplikasi lain.",
     "videoEditorAudioSegmentInstruction": "Pilih segmen audio untuk videomu",
-    "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang.",
     "fullscreenFeedRemovedMessage": "Video dihapus",
     "fullscreenFeedEmptyMessage": "Tidak ada lagi yang bisa diputar di sini",
     "invitesGenerateCardTitle": "{count, plural, other{{count} undangan siap dibuat}}",
@@ -3407,9 +2898,7 @@
         }
     },
     "notificationSystemUpdate": "Kamu punya pembaruan baru",
-    "notificationSomeoneLikedYourVideo": "Seseorang menyukai videomu",
     "peopleListsAddToList": "Tambahkan ke daftar",
-    "peopleListsAddToListSubtitle": "Masukkan kreator ini ke salah satu daftarmu",
     "peopleListsSheetTitle": "Tambahkan ke daftar",
     "peopleListsEmptyTitle": "Belum ada daftar",
     "peopleListsEmptySubtitle": "Buat daftar untuk mulai mengelompokkan orang.",
@@ -3485,6 +2974,13 @@
     "profileMyLibraryLabel": "Pustakaku",
     "profileMessageLabel": "Pesan",
     "profileDeletedAccountName": "Akun dihapus",
+    "inboxActionReportVanishedAccount": "Laporkan akun ini",
+    "inboxActionBlockVanishedAccount": "Blokir akun ini",
+    "inboxActionUnblockVanishedAccount": "Buka blokir akun ini",
+    "inboxReportedVanishedAccount": "Akun ini dilaporkan",
+    "inboxBlockedVanishedAccount": "Akun ini diblokir",
+    "inboxUnblockedVanishedAccount": "Blokir akun ini dibuka",
+    "inboxRemoveConfirmBodyVanishedAccount": "Ini menghapus percakapan dari kotak masukmu. Jika dia mengirim pesan lagi, percakapan baru dimulai.",
     "inboxConversationDeletedAccountSubtitle": "Akun ini telah dihapus",
     "profileUserFallback": "pengguna",
     "@profileUserFallback": {
@@ -3654,15 +3150,7 @@
     "nostrSettingsMoveAccountSubtitle": "Unduh arsipmu dan pindahkan postingan serta videomu ke relay atau server media lain.",
     "nostrSettingsRemoveKeys": "Hapus Kunci dari Perangkat",
     "nostrSettingsRemoveKeysSubtitle": "Hapus kunci privatmu hanya dari perangkat ini. Kontenmu tetap di relay, tapi kamu butuh backup nsec untuk masuk lagi.",
-    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus kunci dari perangkat ini. Coba lagi.",
-    "nostrSettingsFailedToRemoveKeys": "Gagal menghapus kunci: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus akun ini dari perangkat ini. Coba lagi.",
     "nostrSettingsDeleteAccount": "Hapus Akun dan Data",
     "nostrSettingsDeleteAccountSubtitle": "Mengirim permintaan penghapusan untuk kontenmu dan mengeluarkanmu dari akun di perangkat ini. Relay, klien, indeks pencarian, dan perangkat lain yang masih masuk mungkin menyimpan salinan.",
     "safetySettingsWhatYouSee": "YANG KAMU LIHAT",
@@ -3741,14 +3229,6 @@
     },
     "discoverListsTitle": "Jelajahi Daftar",
     "discoverListsFailedToLoad": "Gagal memuat daftar",
-    "discoverListsFailedToLoadWithError": "Gagal memuat daftar: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Mencari daftar publik...",
     "discoverListsRelayTimeout": "Relay tidak mengembalikan daftar tepat waktu. Coba lagi.",
     "discoverListsServiceUnavailable": "Layanan tidak tersedia.",
@@ -3808,14 +3288,6 @@
     "bugReportDiagnosticsNotice": "Info perangkat dan log akan disertakan otomatis.",
     "bugReportSuccessMessage": "Terima kasih! Laporanmu sudah kami terima dan akan kami pakai untuk membuat Divine lebih baik.",
     "bugReportSendFailed": "Gagal mengirim laporan bug. Coba lagi nanti.",
-    "bugReportFailedWithError": "Laporan bug gagal terkirim: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "Kirim Permintaan",
     "featureRequestSubjectHint": "Ringkasan singkat idemu",
     "featureRequestDescriptionRequiredLabel": "Apa yang kamu inginkan? *",
@@ -3826,14 +3298,6 @@
     "featureRequestWhenHint": "Jelaskan situasi di mana ini akan membantu",
     "featureRequestSuccessMessage": "Terima kasih! Permintaan fiturmu sudah kami terima dan akan kami tinjau.",
     "featureRequestSendFailed": "Gagal mengirim permintaan fitur. Coba lagi nanti.",
-    "featureRequestFailedWithError": "Permintaan fitur gagal terkirim: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "Mengikuti",
     "followingTitleForName": "Yang Diikuti {displayName}",
     "@followingTitleForName": {
@@ -3860,9 +3324,6 @@
     "followSortTitle": "Urutkan menurut",
     "followSortNewest": "Terbaru dulu",
     "followSortOldest": "Terlama dulu",
-    "reportMessageTitle": "Laporkan Pesan",
-    "reportMessageWhyReporting": "Kenapa kamu melaporkan pesan ini?",
-    "reportMessageSelectReason": "Silakan pilih alasan untuk melaporkan pesan ini",
     "newMessageTitle": "Pesan baru",
     "newMessageFindPeople": "Cari orang",
     "newMessageNoContacts": "Tidak ada kontak ditemukan.\nIkuti orang untuk melihat mereka di sini.",
@@ -3919,9 +3380,9 @@
   "blueskySetUpHandle": "Siapkan",
     "blueskyTemporarilyUnavailable": "Memposting ke Bluesky sementara tidak tersedia. Coba lagi.",
     "invitesNoneAvailable": "Tidak ada undangan tersedia saat ini",
-    "invitesShareWithPeople": "Bagikan diVine ke orang yang kamu kenal",
+    "invitesShareWithPeople": "Bagikan Divine ke orang yang kamu kenal",
     "invitesUsedInvites": "Undangan terpakai",
-    "invitesShareMessage": "Gabung dengan saya di diVine! Pakai kode undangan {code} untuk mulai:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Gabung dengan saya di Divine! Pakai kode undangan {code} untuk mulai:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3393,7 @@
     "invitesCopyInvite": "Salin undangan",
     "invitesCopied": "Undangan tersalin!",
     "invitesShareInvite": "Bagikan undangan",
-    "invitesShareSubject": "Gabung dengan saya di diVine",
+    "invitesShareSubject": "Gabung dengan saya di Divine",
     "invitesClaimed": "Sudah diklaim",
     "invitesCouldNotLoad": "Gagal memuat undangan",
     "invitesRetry": "Coba Lagi",
@@ -4000,6 +3461,12 @@
     "badgeDetailEditAction": "Ubah lencana",
     "badgeDetailShareAction": "Bagikan",
     "badgeDetailShareMessage": "Lihat lencana ini di Divine: {link}",
+    "badgeDetailRevokeAction": "Tarik lencana",
+    "badgeDetailRevokeTitle": "Tarik lencana ini?",
+    "badgeDetailRevokeBody": "Ini meminta relai menghapus pemberian yang kamu lakukan untuk orang ini. Relai boleh menolak, dan kalau lencananya sudah disematkan, lencana itu tetap di profilnya sampai dia melepasnya. Bagaimanapun, dia tidak diberi tahu.",
+    "badgeDetailRevokeSelfBody": "Ini meminta relai menghapus pemberian yang kamu buat untuk dirimu sendiri, dan melepas lencana dari profilmu. Kalau relai menolak penghapusan, tidak ada yang berubah.",
+    "badgeDetailRevokeConfirm": "Tarik",
+    "badgeDetailRevokeSuccess": "Lencana ditarik",
     "badgeDetailBlockClaimantsAction": "Blokir pengklaim lencana",
     "badgeDetailBlockClaimantsTitle": "Blokir pengklaim lencana",
     "badgeDetailBlockClaimantsLoadError": "Tidak bisa memuat pengklaim lencana ini",
@@ -4032,8 +3499,6 @@
     "authInfoBrowserExtensionTitle": "Ekstensi Peramban",
     "authInfoBrowserExtensionDescription": "Masuk dengan ekstensi peramban NIP-07 seperti Alby atau nos2x. Kunci Anda tetap di ekstensi — Divine tidak pernah melihatnya.",
     "soundsAlreadySavedToLibrary": "Sudah ada di Suara",
-    "soundsAvailabilityCommunity": "Komunitas",
-    "soundsAvailabilityPrivate": "Pribadi",
     "soundsRemoveSavedSound": "Hapus suara",
     "savedSoundSaveAction": "Simpan",
     "savedSoundPausePreviewAction": "Jeda pratinjau",
@@ -4050,11 +3515,8 @@
     "soundsSavedToLibrary": "Disimpan ke Suara",
     "videoEditorAudioCategoryFeatured": "Unggulan",
     "videoEditorAudioCategoryMySounds": "Suara Saya",
-    "videoEditorAudioFeaturedEmptySubtitle": "Kami akan menambahkan suara unggulan di sini setelah siap.",
-    "videoEditorAudioFeaturedEmptyTitle": "Suara unggulan segera hadir",
     "videoMetadataAudioReuseSubtitle": "Izinkan orang lain menyimpan dan menggunakan kembali audio video ini.",
     "publishAudioReuseDegradedWarning": "Videomu sudah tayang, tapi suaranya belum terbit. Edit videonya untuk membagikan suaranya.",
-    "videoMetadataAudioReuseTitle": "Publikasikan suara ini",
     "videoMetadataShareReplyToFeedTitle": "Bagikan juga ke feed saya",
     "videoMetadataShareReplyToFeedSubtitle": "Jika dimatikan, video ini hanya tetap di utas komentar.",
     "commentsRecordVideoButtonLabel": "Rekam komentar video",
@@ -4215,14 +3677,12 @@
     "videoEditorChromaKeyRemoveFailed": "Layar hijau tidak bisa dihapus. Klipmu tidak berubah.",
     "videoEditorChromaKeyApplying": "Menerapkan layar hijau…",
     "videoEditorChromaKeyPreviewUnavailable": "Perangkat ini tidak bisa menampilkan pratinjau langsung. Pengaturanmu tetap berlaku saat ekspor.",
-    "videoEditorOriginalAudioLabel": "Audio asli",
     "videoEditorClipVolumeLabel": "Klip {index}",
     "dmReactionAddCustomA11yLabel": "Tambahkan reaksi emoji kustom",
     "dmReelReplyComposerHint": "Kirim pesan ke {name}…",
     "dmReelReplyComposerHintSelf": "Balas diri sendiri…",
     "dmReelReplyComposerSemanticLabel": "Balas reel ini",
     "dmReelReplyViewChat": "Lihat obrolan",
-    "dmReelReplyViewChatA11yLabel": "Buka obrolan",
     "dmReelReplySentAnnouncement": "Balasan terkirim",
     "dmReelReactionSentAnnouncement": "Bereaksi {emoji}",
     "dmReelReplyFailed": "Tidak dapat mengirim",
@@ -4276,7 +3736,6 @@
     "reportReasonCsam": "Pelecehan seksual terhadap anak",
     "reportReasonCsamSubtitle": "Konten yang menggambarkan pelecehan seksual terhadap anak di bawah umur",
     "minorAccountReviewWelcomePageTitle": "Panduan keluarga",
-    "minorAccountReviewWelcomeCta": "Belum 16 tahun? Nggak apa-apa. Ini yang bisa kamu lakukan.",
     "minorAccountReviewWelcomeTitle": "Belum 16 tahun? Nggak apa-apa.",
     "minorAccountReviewWelcomeBody": "Kamu membuka halaman ini alih-alih asal memilih jawaban yang bikin kamu langsung masuk — itu berarti. Itu menunjukkan kejujuran, keberanian, dan kepedulian nyata pada orang-orang di sekitarmu.\n\nAturan untuk orang di bawah 16 tahun berbeda-beda tergantung tempat kamu tinggal. Di Divine, kami ingin keluarga membicarakannya bersama dan memutuskan seperti apa penggunaan media sosial yang sehat.",
     "minorAccountReviewModerationTitle": "Kami butuh satu langkah lagi",
@@ -4290,7 +3749,6 @@
     "minorAccountReviewChooseAgeBandTitle": "Pilih jalur yang cocok",
     "minorAccountReviewUnder13Cta": "Di bawah 13",
     "minorAccountReviewTeenCta": "Usia 13-15",
-    "minorAccountReviewFamilyResourcesTitle": "Berguna untuk keluarga",
     "minorAccountReviewFamilyResourcesBody": "Kunjungi panduan keluarga Divine untuk tips praktis, alat percakapan, dan materi yang membantu remaja memakai media sosial dengan lebih aman.",
     "minorAccountReviewFamilyResourcesCta": "Dapatkan panduan dan tips keluarga",
     "minorAccountReviewFooter": "Kalau usiamu 16 tahun atau lebih dan kamu sampai ke sini karena keliru, hubungi dukungan Divine supaya orang sungguhan bisa memeriksanya.",
@@ -4316,9 +3774,6 @@
     "minorAccountReviewOpenSupportCenter": "Buka pusat dukungan",
     "minorAccountReviewOpenModerationMessage": "Buka pesan moderasi",
     "minorAccountReviewOpenReviewPage": "Buka halaman peninjauan",
-    "minorAccountReviewMoveAccountTitle": "Kamu bisa membawa akunmu",
-    "minorAccountReviewMoveAccountBody": "Kamu tetap bisa memakai identitas Divine-mu di infrastruktur lain. Pindahkan akunmu atau unduh arsipmu.",
-    "minorAccountReviewMoveAccountCta": "Pindahkan akunmu",
     "minorAccountReviewCheckAgain": "Periksa lagi",
     "minorAccountReviewLogOut": "Keluar",
     "minorAccountReviewNextStepTitle": "Langkah berikutnya",
@@ -4427,7 +3882,6 @@
     "devOptionsMinorReviewUnder13Title": "Simulasikan kasus dukungan di bawah 13",
     "devOptionsMinorReviewUnder13Subtitle": "Akun dibatasi dengan petunjuk hanya lewat email orang tua",
     "devOptionsMinorReviewClearedToast": "Simulasi peninjauan akun anak di bawah umur dibersihkan",
-    "devOptionsMinorReviewTeenEnabledToast": "Simulasi kasus peninjauan 13-15 diaktifkan",
     "devOptionsMinorReviewUnder13EnabledToast": "Simulasi kasus dukungan di bawah 13 diaktifkan",
     "devOptionsProtectedMinorSimulationTitle": "Simulasi anak di bawah umur yang dilindungi",
     "devOptionsProtectedMinorCurrentStateLabel": "Status saat ini",
@@ -4452,7 +3906,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Nilai server: memuat",
   "devOptionsInviteAvailabilityServerEnabled": "Nilai server: aktif",
   "devOptionsInviteAvailabilityServerDisabled": "Nilai server: nonaktif",
-  "devOptionsInviteAvailabilityServerUnknown": "Nilai server: tidak diketahui (bawaan aktif)",
+  "devOptionsInviteAvailabilityServerUnknown": "Nilai server: tidak diketahui",
   "devOptionsInviteAvailabilityOverrideNone": "Penggantian: pakai nilai server",
   "devOptionsInviteAvailabilityOverrideEnabled": "Penggantian: paksa aktif",
   "devOptionsInviteAvailabilityOverrideDisabled": "Penggantian: paksa nonaktif",
@@ -4472,22 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Tergantung aturan di tempat tinggalmu, kamu mungkin bisa kembali dan mengajukan akun sendiri. Kalau saat itu usiamu 13 sampai 15, kamu butuh izin dari orang tua atau wali.",
     "minorAccountReviewParentConsentPauseNote": "Ini jeda sementara tim dukungan Divine meninjau videonya. Kalau disetujui, mereka akan memandu kamu menyiapkan akun baru.",
     "minorAccountReviewUnder13WhyTitle": "Ini alasannya",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "notificationSettingsSystem": "Sistem",
-    "notificationSettingsSystemSubtitle": "Pembaruan aplikasi dan pesan sistem",
-    "notificationSettingsPushNotificationsSection": "Notifikasi push",
-    "notificationSettingsPushNotifications": "Notifikasi push",
-    "notificationSettingsPushNotificationsSubtitle": "Terima notifikasi walau aplikasi tertutup",
-    "notificationSettingsSound": "Suara",
-    "notificationSettingsSoundSubtitle": "Mainkan suara untuk notifikasi",
-    "notificationSettingsVibration": "Getaran",
-    "notificationSettingsVibrationSubtitle": "Bergetar saat ada notifikasi",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4508,7 +3946,6 @@
     "videoEditorTransformFrameFailed": "Bingkai tidak dapat diubah. Coba lagi.",
     "videoEditorTransformRotateLabel": "Putar",
     "videoEditorTransformFlipLabel": "Balik",
-    "videoEditorTransformRatioLabel": "Rasio",
     "videoEditorTransformResetLabel": "Atur ulang",
     "videoEditorTransformApplySemanticLabel": "Terapkan transformasi",
     "videoEditorTransformCancelSemanticLabel": "Batalkan transformasi",
@@ -4542,6 +3979,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Hapus klip yang dipilih",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Hapus bingkai yang dipilih",
     "videoEditorReverseSelectedFramesSemanticLabel": "Balikkan bingkai yang dipilih",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplikat bingkai yang dipilih",
     "videoEditorStopMotionTooShortSnackbar": "Videomu harus minimal {seconds} detik — ambil beberapa bingkai lagi.",
     "videoEditorMergeProgressLabel": "Sebentar, kami sedang menggabungkan klipmu",
     "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi.",
@@ -4653,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "Belum dibaca, Percakapan dengan {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} dan {count, plural, other{{count} orang lainnya}}",
     "inboxConversationTileLongPressHint": "Tampilkan tindakan percakapan",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Tindakan daftar",
@@ -4799,6 +4238,8 @@
     "inboxRequestsMarkAllRead": "Tandai semua permintaan sudah dibaca",
     "inboxRequestsRemoveAll": "Hapus semua permintaan",
     "messageRequestDeclineAndRemoveButton": "Tolak dan hapus",
+    "messageRequestDeclinedSnackbar": "Permintaan {displayName} ditolak",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
     "messageRequestLoadFailed": "Permintaan ini gagal dimuat.",
     "messageRequestFollowersCount": "{count} Pengikut",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
@@ -4812,13 +4253,6 @@
     "@messageRequestWantsToMessageYou": {"placeholders": {"displayName": {"type": "String"}, "messageText": {"type": "String"}}},
     "deleteAccountAccountChanged": "Kamu beralih akun, jadi tidak ada yang dihapus. Buka lagi penghapusan untuk akun yang ingin kamu hapus.",
     "@deleteAccountAccountChanged": {"description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."},
-    "deleteAccountAccountChangedAfterDeletion": "Sebagian permintaan hapus sudah diterima, tapi pembersihan berhenti karena kamu berganti akun. Masuk lagi ke akun awal untuk menyelesaikannya.",
-    "deleteAccountBurnUsernameFailed": "Tidak bisa melepaskan username-mu. Akunmu tidak jadi dihapus. Coba lagi, atau hapus centang pada opsinya.",
-    "@deleteAccountBurnUsernameFailed": {"description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."},
-    "deleteAccountBurnUsernameReleased": "Username-mu {username} sudah dilepaskan permanen, tapi kami tidak bisa menyelesaikan penghapusan akunmu. Ketuk Hapus lagi untuk menyelesaikan.",
-    "@deleteAccountBurnUsernameReleased": {"description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
-    "deleteAccountBurnUsernameToggle": "Lepaskan juga {username} secara permanen",
-    "@deleteAccountBurnUsernameToggle": {"description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
     "deleteAccountConfirmDeletePrompt": "Untuk konfirmasi, ketik:",
     "@deleteAccountConfirmDeletePrompt": {"description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."},
     "deleteAccountConfirmUsernamePrompt": "Untuk konfirmasi, ketik username-mu:",
@@ -4826,11 +4260,19 @@
     "deleteAccountConfirmationHint": "Ketik DELETE",
     "deleteAccountConfirmationHintUsername": "Ketik username-mu",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
-    "deleteAccountContentDeletionFailed": "Gagal menghapus konten dari relay",
-    "deleteAccountRelayConfirmationFailed": "Kami tidak bisa memastikan penghapusan akun dengan relay mana pun. Periksa koneksimu dan coba lagi.",
     "deleteAccountDeleteAllContentButton": "Hapus Semua Konten",
+    "deleteAccountDeletionUnavailable": "Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
+    "accountDeletionRecoveryTitle": "Selesaikan penghapusan akunmu",
+    "accountDeletionRecoveryBody": "Kami tidak bisa menyelesaikan penghapusan akunmu. Username-mu masih dipesan untukmu dan masih bisa dikembalikan.",
+    "accountDeletionRestoreUsername": "Kembalikan username saya",
+    "accountDeletionFinishingBody": "Permintaan penghapusanmu masih diproses. Cek lagi sebelum kamu meninggalkan layar ini.",
+    "accountDeletionCancellingBody": "Kami sedang membatalkan penghapusanmu. Cek lagi sebelum kamu meninggalkan layar ini.",
+    "accountDeletionRecoveryFailed": "Kami belum bisa mengembalikan username-mu. Periksa koneksimu dan coba lagi.",
+    "accountDeletionUsernameRestored": "Username-mu sudah dikembalikan. Akunmu tidak jadi dihapus.",
+    "accountDeletionRecoveryStatusFailed": "Kami tidak bisa memeriksa status penghapusanmu. Periksa koneksimu dan coba lagi.",
     "deleteAccountFinalConfirmationTitle": "⚠️ Konfirmasi Terakhir",
     "deleteAccountKeyDeletionWarning": "Permintaan penghapusan terkirim, tapi kuncimu mungkin belum sepenuhnya terhapus dari perangkat ini. Buka Pengaturan → Kunci Nostr → Hapus Kunci untuk mencoba lagi.",
     "deleteAccountPreparingDeletion": "Menyiapkan penghapusan...",
@@ -4840,17 +4282,10 @@
     "deleteAccountRemoveKeysBody": "Ini menghapus login lokal untuk akun ini dari perangkat ini. Ini tidak akan menghapus akun Divine atau identitas Nostr-mu.\n\nDraf dan klipmu tetap tersimpan di perangkat ini untuk akun ini. Kalau ini akun lokal terakhirmu, kamu akan kembali ke layar login.",
     "deleteAccountRemoveKeysConfirm": "Hapus dari perangkat",
     "deleteAccountRemoveKeysTitle": "Hapus akun ini dari perangkat ini?",
-    "deleteAccountServerDeletionFailed": "Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.",
-    "deleteAccountServerDeletionRequiresReauth": "Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Masuk lagi untuk menyelesaikannya.",
+    "deleteAccountServerDeletionFailed": "Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Coba lagi sebentar lagi.",
     "deleteAccountSuccess": "Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.",
     "deleteAccountSuccessContentUnverified": "Penghapusan akun sudah diminta. Penghapusan beberapa postingan yang ada tidak bisa dikonfirmasi satu per satu.",
     "deleteAccountWarningBody": "Ini mengirim permintaan penghapusan untuk akun dan kontenmu, menghapus akun Divine-mu jika memungkinkan, dan mengeluarkanmu dari akun di perangkat ini. Beberapa relay, klien, dan indeks pencarian mungkin menyimpan salinan. Perangkat lain yang masih masuk tetap aktif sampai kamu menghapus kuncinya di sana.",
-    "exportProgressStageApplyingTextOverlay": "Menambahkan overlay teks...",
-    "exportProgressStageComplete": "Ekspor selesai!",
-    "exportProgressStageConcatenating": "Menggabungkan klip...",
-    "exportProgressStageError": "Ekspor gagal",
-    "exportProgressStageGeneratingThumbnail": "Membuat thumbnail...",
-    "exportProgressStageMixingAudio": "Menambahkan suara...",
     "findPeopleAnonymousUser": "Anonim",
     "findPeopleNoContacts": "Tidak ada kontak ditemukan.\nMulai ikuti orang untuk melihat mereka di sini.",
     "geoBlockedCityLabel": "Kota",
@@ -4882,25 +4317,19 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Suara: {soundName} oleh {creatorName}. Ketuk untuk melihat detail.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Gagal memuat suara: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Gagal memuat suara. Silakan coba lagi.",
     "soundDetailNotFoundMessage": "Suara ini tidak dapat ditemukan",
     "soundDetailNotFoundTitle": "Suara Tidak Ditemukan",
-    "videoFeedDescriptionSemanticLabel": "Deskripsi video",
     "videoFeedLoopCountLabel": "🔁 {count} loop",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "Jumlah loop video",
     "originalSoundUnavailableBody": "Audio dari video ini tidak tersedia secara terpisah.",
     "originalSoundByCreator": "Suara asli - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "Unggahan Tertunda ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Orang ini pernah memposting Vine asli yang ditemukan Divine di arsip. Ini bukan lencana verifikasi akun.",
     "profileBadgeCheckmarkTitle": "Centang profil",
-    "profileBadgeCheckmarkBody": "Divine memberikan centang ini kepada akun tim dan sejumlah kecil profil yang disetujui secara manual. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.",
-    "shareVideoInListsCount": "{count, plural, =1{Di 1 daftar} other{Di {count} daftar}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
+    "profileBadgeCheckmarkBody": "Divine memberikan centang ini kepada akun tim. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.",
     "unfollowConfirmButton": "Berhenti mengikuti",
     "videoClipSaveFailed": "Gagal menyimpan klip",
     "videoClipSaveTo": "Simpan ke {destination}",
@@ -4921,7 +4350,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "Kenapa kami tidak akan menyuruhmu sekadar klik kembali",
     "minorAccountReviewUnder13HonestyBody": "Banyak bagian internet dirancang untuk memberi imbalan kepada orang yang mengatakan apa pun asal bisa lolos gerbang. Kami rasa itu tidak bagus. Ya, kamu bisa kembali dan bilang usiamu lebih tua dari sebenarnya, tapi itu tidak jujur, dan kami tidak akan mengarahkanmu untuk berbohong demi mendapat apa yang kamu mau.",
-    "minorAccountReviewUnder13LegalTitle": "Kenapa jawabannya tetap tidak",
     "minorAccountReviewUnder13LegalBody": "Kami berusaha membantu anak muda memakai Divine dengan cara yang sehat dan positif untuk mereka dan orang-orang di sekitar mereka. Kami juga harus mengikuti hukum yang berbeda-beda di tiap tempat. Jadi, kalau kamu di bawah 13 tahun, jawabannya adalah kamu belum bisa punya akun sendiri hari ini.",
     "minorAccountReviewParentConsentHonestyTitle": "Kenapa kami meminta orang tua atau wali untuk terlibat",
     "minorAccountReviewParentConsentHonestyBody": "Divine harus mengikuti hukum terkait usia di seluruh dunia. Kami juga tahu bahwa sebagian besar gerbang usia teknis tidak sempurna. Alih-alih berpura-pura aturan tidak ada atau bahwa berbohong soal usia itu keren, kami ingin remaja dan keluarga membuat keputusan yang bijak tentang cara terbaik memakai Divine. Itulah kenapa, untuk usia 13-15 tahun, kami meminta orang tua untuk menjadi bagian dari proses pembuatan akun.",
@@ -5061,8 +4489,6 @@
   "authSignInOptionsHintCta": "Lihat semua opsi masuk",
     "videoEditorStopMotionFramesPerImageLabel": "Bingkai per gambar",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bingkai per gambar",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Tambah bingkai per gambar",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Kurangi bingkai per gambar",
     "videoEditorStopMotionFrameSemanticLabel": "Bingkai stop-motion {position} dari {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} bingkai}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
@@ -5196,6 +4622,11 @@
   "libraryCategoryMoveNewCategory": "Kategori baru",
   "libraryArchiveAction": "Arsipkan",
   "libraryUnarchiveAction": "Batalkan arsip",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Tetap di kategori ini?}}",
+  "libraryArchiveKeepCategoryAction": "Tetap di {name}",
+  "libraryArchiveKeepCategoryActionMixed": "Tetap di kategorinya",
+  "libraryArchiveRemoveCategoryAction": "Keluarkan dari {name}",
+  "libraryArchiveRemoveCategoryActionMixed": "Keluarkan dari kategorinya",
   "libraryMoveSelectedClipsTooltip": "Pindahkan klip terpilih",
   "libraryCategoryEmptyTitle": "Belum ada apa-apa di sini",
   "libraryCategoryEmptySubtitle": "Pilih beberapa klip dan pindahkan ke kategori ini.",
@@ -5243,12 +4674,19 @@
     "dbFailureResetAction": "atur ulang basis data lokal",
     "dbFailureConfirmTitle": "atur ulang basis data lokalmu?",
     "dbFailureConfirmBody": "Akunmu tetap ada. Draf dan klip yang tersimpan di perangkat ini akan dihapus — pesan dan feed kembali dari jaringan.",
-    "dbFailureResetConfirm": "atur ulang dan tutup",
+    "dbFailureResetConfirm": "atur ulang basis data lokal sekarang",
     "dbFailureCancel": "batal",
     "dbFailureResetFailed": "Itu tidak berhasil. Tutup Divine dan coba lagi.",
     "dbFailureResetDoneTitle": "basis data lokal telah diatur ulang",
     "dbFailureResetDoneBody": "Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru.",
   "authSignInOptionsInfo": "Tentang opsi masuk",
   "authShowPassword": "Tampilkan sandi",
-  "authHidePassword": "Sembunyikan sandi"
+  "authHidePassword": "Sembunyikan sandi",
+    "followUserSemanticLabel": "Ikuti pengguna",
+    "unfollowUserSemanticLabel": "Berhenti mengikuti pengguna",
+    "commentsLoadingSemanticLabel": "Memuat komentar",
+    "analyticsWindowAll": "Semua",
+    "followUserIndexedSemanticLabel": "Ikuti pengguna {index}",
+    "unfollowUserIndexedSemanticLabel": "Berhenti mengikuti pengguna {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / bulan"
 }

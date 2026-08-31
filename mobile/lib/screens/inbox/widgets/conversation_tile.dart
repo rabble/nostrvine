@@ -10,6 +10,7 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -66,24 +67,44 @@ class ConversationTile extends ConsumerWidget {
     );
 
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
 
     // The thread and its history stay — the messages are the viewer's own copy
     // and a NIP-62 vanish cannot retract them. Only the counterparty's identity
     // is replaced.
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
 
-    final displayName = isDeleted
-        ? context.l10n.profileDeletedAccountName
-        : displayNameOverride ??
-              moderationDisplayName(context, otherPubkey) ??
-              profileAsync.maybeWhen<String>(
-                data: (profile) =>
-                    profile?.bestDisplayName ??
-                    UserProfile.defaultDisplayNameFor(otherPubkey),
-                orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-              );
+    final peerName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      displayNameOverride: displayNameOverride,
+      profile: profileAsync.asData?.value,
+      isResolving: isResolving,
+    );
+    // A group is named for the room, not for whichever peer happens to sort
+    // first: `otherPubkey` above is an arbitrary member, and naming the row
+    // after them hides that anyone else is in it.
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: conversation.participantPubkeys,
+      currentUserPubkey: currentUserPubkey,
+      isGroup: conversation.isGroup,
+      peerName: peerName,
+      subject: conversation.subject,
+    );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final accessibilityName = isIdentityResolving
+        ? context.l10n.commonLoading
+        : displayName;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     final imageUrl = isDeleted
         ? null
@@ -99,12 +120,6 @@ class ConversationTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
-    final effectiveSubtitleOverride =
-        subtitleOverride ??
-        (isRetiredModerationAccount(otherPubkey)
-            ? context.l10n.dmRetiredThreadClosedTitle
-            : null);
-
     final openThread = onTap;
 
     return Semantics(
@@ -113,8 +128,8 @@ class ConversationTile extends ConsumerWidget {
       // preview; mirror it for assistive tech by prefixing the unread status
       // to the row label (same pattern as the notification rows).
       label: conversation.isRead
-          ? context.l10n.inboxConversationTileLabel(displayName)
-          : context.l10n.inboxConversationTileLabelUnread(displayName),
+          ? context.l10n.inboxConversationTileLabel(accessibilityName)
+          : context.l10n.inboxConversationTileLabelUnread(accessibilityName),
       // Only advertise the long-press affordance when there is one: the hint
       // is a promise to assistive tech, and rows built without a handler
       // (the pinned support row) have no action sheet to open.
@@ -149,18 +164,29 @@ class ConversationTile extends ConsumerWidget {
               // not, instead of drifting down with a centered column.
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: UserAvatar(
-                    imageUrl: imageUrl,
-                    name: displayName,
-                    placeholderSeed: otherPubkey,
-                    size: 40,
-                    // Bundled artwork for the moderation account, whose kind-0
-                    // picture does not survive the SVG parser.
-                    contentOverride: isModerationAccount(otherPubkey)
-                        ? const ModerationAvatar()
-                        : null,
+                IdentitySkeletonizer(
+                  isLoading: isIdentityResolving,
+                  excludeSemantics: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: UserAvatar(
+                      // A group has no single member's photo to show; the room
+                      // icon matches the room title beside it.
+                      imageUrl: conversation.isGroup ? null : imageUrl,
+                      name: visualDisplayName,
+                      placeholderSeed: otherPubkey,
+                      size: 40,
+                      // Bundled artwork for the moderation account, whose
+                      // kind-0 picture does not survive the SVG parser.
+                      contentOverride: conversation.isGroup
+                          ? DivineIcon(
+                              icon: DivineIconName.users,
+                              color: context.vineColors.primaryText,
+                            )
+                          : isModerationAccount(otherPubkey)
+                          ? const ModerationAvatar()
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -172,13 +198,17 @@ class ConversationTile extends ConsumerWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              displayName,
-                              style: VineTheme.titleMediumFont(
-                                color: context.vineColors.primaryText,
+                            child: IdentitySkeletonizer(
+                              isLoading: isIdentityResolving,
+                              excludeSemantics: true,
+                              child: DivineHeartText(
+                                visualDisplayName,
+                                style: VineTheme.titleMediumFont(
+                                  color: context.vineColors.primaryText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (relativeTime.isNotEmpty) ...[
@@ -196,7 +226,11 @@ class ConversationTile extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      if (effectiveSubtitleOverride case final subtitle?) ...[
+                      // The closed marker ranks under an explicit override,
+                      // unchanged from #6416: the one caller that can pass
+                      // both is the Blocked slice's synthesised row, where
+                      // "you blocked this account" is the more urgent claim.
+                      if (subtitleOverride case final subtitle?) ...[
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
@@ -206,6 +240,9 @@ class ConversationTile extends ConsumerWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      ] else if (isRetiredModerationAccount(otherPubkey)) ...[
+                        const SizedBox(height: 4),
+                        const ClosedThreadSubtitle(maxLines: 2),
                       ] else if (conversation.lastMessageContent != null) ...[
                         const SizedBox(height: 4),
                         _ConversationPreviewText(
@@ -244,10 +281,11 @@ _PreviewPayload _previewPayload(BuildContext context, String rawContent) {
   final content = StringUtils.sanitizeUtf16(rawContent);
 
   // The structured collaborator-invite card carries a deterministic
-  // plaintext fallback ("...Open diVine to review and accept.") so old
-  // clients can still see something. Inside diVine that copy is misleading
-  // — show a localized label instead (#3662, follows up on #3559 Phase 2).
-  if (content.endsWith(CollaboratorInviteService.invitePlaintextSuffix)) {
+  // plaintext fallback ("...Open Divine to review and accept.", and its
+  // pre-#7915 "diVine" spelling) so old clients can still see something.
+  // Inside Divine that copy is misleading — show a localized label
+  // instead (#3662, follows up on #3559 Phase 2).
+  if (CollaboratorInviteService.hasInvitePlaintextSuffix(content)) {
     return _PreviewPayload(
       text: context.l10n.inboxConversationCollabInvitePreview,
       isDivineVideoShare: false,
@@ -295,7 +333,7 @@ class _ConversationPreviewText extends StatelessWidget {
         ? VineTheme.labelLargeFont(color: context.vineColors.primaryText)
         : VineTheme.bodyMediumFont(color: context.vineColors.onSurfaceVariant);
     if (!payload.isDivineVideoShare) {
-      return Text(
+      return DivineHeartText(
         payload.text,
         style: style,
         maxLines: 2,

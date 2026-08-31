@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -24,6 +25,53 @@ class _MockDivineVideoPlayerController extends Mock
 
 class _RecordingAnalyticsService extends AnalyticsService {
   final events = <_TrackedAnalyticsEvent>[];
+  final impressions = <_RecordedImpression>[];
+  final playbackSessions = <_RecordedPlaybackSession>[];
+
+  @override
+  Future<String?> recordContentImpression({
+    required String contentId,
+    required ProductAnalyticsV2Surface surface,
+    required int position,
+    required int visibleMs,
+    String? recommendationId,
+  }) async {
+    impressions.add(
+      _RecordedImpression(
+        contentId: contentId,
+        surface: surface,
+        position: position,
+        visibleMs: visibleMs,
+      ),
+    );
+    return 'impression-id';
+  }
+
+  @override
+  Future<String?> recordPlaybackSession({
+    required String playbackSessionId,
+    required String contentId,
+    required ProductAnalyticsV2Surface surface,
+    required int durationMs,
+    required int watchedMs,
+    required int loopCount,
+    required bool completed,
+    required ProductAnalyticsV2PlaybackEndReason endReason,
+  }) async {
+    playbackSessions.add(
+      _RecordedPlaybackSession(
+        playbackSessionId: playbackSessionId,
+        contentId: contentId,
+        surface: surface,
+        durationMs: durationMs,
+        watchedMs: watchedMs,
+        loopCount: loopCount,
+        completed: completed,
+        endReason: endReason,
+      ),
+    );
+    return 'playback-id';
+  }
 
   @override
   Future<void> trackDetailedVideoViewWithUser(
@@ -159,6 +207,42 @@ class _SeenVideoRecord {
   Duration watchDuration;
 }
 
+class _RecordedImpression {
+  const _RecordedImpression({
+    required this.contentId,
+    required this.surface,
+    required this.position,
+    required this.visibleMs,
+  });
+
+  final String contentId;
+  final ProductAnalyticsV2Surface surface;
+  final int position;
+  final int visibleMs;
+}
+
+class _RecordedPlaybackSession {
+  const _RecordedPlaybackSession({
+    required this.playbackSessionId,
+    required this.contentId,
+    required this.surface,
+    required this.durationMs,
+    required this.watchedMs,
+    required this.loopCount,
+    required this.completed,
+    required this.endReason,
+  });
+
+  final String playbackSessionId;
+  final String contentId;
+  final ProductAnalyticsV2Surface surface;
+  final int durationMs;
+  final int watchedMs;
+  final int loopCount;
+  final bool completed;
+  final ProductAnalyticsV2PlaybackEndReason endReason;
+}
+
 void main() {
   group(DivineVideoMetricsTracker, () {
     late _MockAuthService authService;
@@ -196,6 +280,88 @@ void main() {
         contains('view_start'),
       );
 
+      await controller.close();
+    });
+
+    testWidgets('records one impression after one visible second', (
+      tester,
+    ) async {
+      final controller = _stubController(isPlaying: false);
+
+      await tester.pumpWidget(
+        _buildTracker(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          isActive: true,
+          clock: () => now,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(analyticsService.impressions, isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(analyticsService.impressions, hasLength(1));
+      expect(analyticsService.impressions.single.contentId, _video.id);
+      expect(
+        analyticsService.impressions.single.surface,
+        ProductAnalyticsV2Surface.feed,
+      );
+      expect(analyticsService.impressions.single.position, 0);
+      expect(analyticsService.impressions.single.visibleMs, 1000);
+      expect(analyticsService.events, isEmpty);
+
+      await controller.close();
+    });
+
+    testWidgets('records aggregate playback when navigation interrupts it', (
+      tester,
+    ) async {
+      final isActive = ValueNotifier(true);
+      final isFeedVisible = ValueNotifier(true);
+      final video = ValueNotifier(_video);
+      final controller = _stubController(
+        isPlaying: true,
+        duration: const Duration(seconds: 6),
+      );
+
+      await tester.pumpWidget(
+        _buildTrackerHarness(
+          authService: authService,
+          analyticsService: analyticsService,
+          seenVideosService: seenVideosService,
+          controller: controller.controller,
+          video: video,
+          isActive: isActive,
+          isFeedVisible: isFeedVisible,
+          clock: () => now,
+        ),
+      );
+      now = now.add(const Duration(milliseconds: 2500));
+
+      isFeedVisible.value = false;
+      await tester.pump();
+
+      expect(analyticsService.playbackSessions, hasLength(1));
+      final playback = analyticsService.playbackSessions.single;
+      expect(playback.contentId, _video.id);
+      expect(playback.surface, ProductAnalyticsV2Surface.feed);
+      expect(playback.durationMs, 6000);
+      expect(playback.watchedMs, 2500);
+      expect(playback.loopCount, 0);
+      expect(playback.completed, isFalse);
+      expect(
+        playback.endReason,
+        ProductAnalyticsV2PlaybackEndReason.navigation,
+      );
+      expect(playback.playbackSessionId, isNotEmpty);
+
+      isActive.dispose();
+      isFeedVisible.dispose();
+      video.dispose();
       await controller.close();
     });
 

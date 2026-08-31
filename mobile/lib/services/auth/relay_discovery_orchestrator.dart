@@ -91,6 +91,9 @@ class RelayDiscoveryOrchestrator {
   /// Always runs discovery (with 24h cache to avoid redundant indexer queries).
   /// Discovered relays are ADDED to the main client's existing connections,
   /// so user's manual relay edits are preserved (addRelay skips duplicates).
+  /// The relays Divine advertises in its kind-10050 inbox list are also added
+  /// when discovery succeeds, because the active session must read every relay
+  /// it promises to senders. They are not reported through [onUserRelays].
   ///
   /// When discovery returns empty or fails (e.g. imported account that
   /// never published a kind 10002 list), [IndexerRelayConfig.safeFallbackRelays]
@@ -133,6 +136,7 @@ class RelayDiscoveryOrchestrator {
         // Notify NostrService so it can add these relays to the current client
         final urls = result.relays.map((r) => r.url).toList();
         _userRelaysDiscoveredCallback()?.call(targetPubkey ?? npub, urls);
+        connectToDmInboxRelays(targetPubkey ?? npub);
       } else {
         _onUserRelays([]);
 
@@ -264,7 +268,7 @@ class RelayDiscoveryOrchestrator {
 
       await prefs.setBool(flagKey, true);
       Log.info(
-        '✅ Published bootstrap kind:10002 for $pubkeyHex to '
+        '✅ Published bootstrap kind:10002 for ${pubkeyForLogs(pubkeyHex)} to '
         '${targetRelays.length} relays',
         name: 'RelayDiscoveryOrchestrator',
         category: LogCategory.auth,
@@ -299,6 +303,16 @@ class RelayDiscoveryOrchestrator {
     _userRelaysDiscoveredCallback()?.call(
       targetPubkey,
       IndexerRelayConfig.safeFallbackRelays,
+    );
+  }
+
+  /// Adds the relays Divine advertises in its kind-10050 inbox list to the
+  /// active pool even when the user has a separate kind-10002 list. These are
+  /// automatic reachability connections, not the user's published relay list.
+  void connectToDmInboxRelays(String targetPubkey) {
+    _userRelaysDiscoveredCallback()?.call(
+      targetPubkey,
+      IndexerRelayConfig.dmInboxTaggedRelays,
     );
   }
 

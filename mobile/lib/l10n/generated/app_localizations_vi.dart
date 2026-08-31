@@ -123,12 +123,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsNotifications => 'Thông báo';
 
   @override
-  String get settingsContentPreferences => 'Tùy chọn nội dung';
-
-  @override
-  String get settingsModerationControls => 'Công cụ kiểm duyệt';
-
-  @override
   String get settingsBlueskyPublishing => 'Đăng lên Bluesky';
 
   @override
@@ -183,7 +177,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Lời mời';
+  String get settingsShareDivine => 'Chia sẻ Divine với bạn bè';
 
   @override
   String get settingsSwitchAccount => 'Chuyển tài khoản';
@@ -356,6 +350,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khi bật, người khác có thể sử dụng âm thanh từ video của bạn';
 
   @override
+  String get contentPreferencesMusicMode => 'Chế độ âm nhạc';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Tắt bộ lọc tiếng ồn vốn làm bẹp tiếng nhạc cụ. Hợp với âm nhạc, thô hơn với giọng nói.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Nhãn tài khoản';
 
   @override
@@ -439,18 +440,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Không thể chia sẻ hồ sơ: $error';
-  }
-
-  @override
-  String get profileEditProfile => 'Chỉnh sửa hồ sơ';
-
-  @override
-  String get profileCreatorAnalytics => 'Phân tích nhà sáng tạo';
-
-  @override
-  String get profileShareProfile => 'Chia sẻ hồ sơ';
+  String get profileShareFailed => 'Không thể chia sẻ hồ sơ. Vui lòng thử lại.';
 
   @override
   String get profileCopyPublicKey => 'Sao chép khóa công khai (npub)';
@@ -464,12 +454,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'Đã sao chép mã nhúng vào khay nhớ tạm';
-
-  @override
-  String get profileRefreshTooltip => 'Làm mới';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Làm mới hồ sơ';
 
   @override
   String get profileMoreTooltip => 'Thêm';
@@ -661,20 +645,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Đã chặn người dùng';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Bạn sẽ không thấy nội dung từ người dùng này trong bảng tin của mình.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Bạn có thể bỏ chặn họ bất cứ lúc nào từ hồ sơ của họ hoặc trong Cài đặt > An toàn.';
-
-  @override
-  String get profileCloseButton => 'Đóng';
-
-  @override
   String get profileNoCollabsTitle => 'Chưa có video cộng tác nào';
 
   @override
@@ -784,23 +754,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileCompleteSubtitle => 'Thêm tên, tiểu sử và ảnh để bắt đầu';
 
   @override
-  String get profileSetUpButton => 'Thiết lập';
-
-  @override
-  String get profileVerifyingEmail => 'Đang xác minh email...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Kiểm tra $email để lấy liên kết xác minh';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'Đang chờ xác minh email';
-
-  @override
-  String get profileVerificationFailed => 'Xác minh thất bại';
-
-  @override
   String get profilePleaseTryAgain => 'Vui lòng thử lại';
 
   @override
@@ -812,9 +765,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Thử lại';
-
-  @override
-  String get profileRegisterButton => 'Đăng ký';
 
   @override
   String get profileSessionExpired => 'Phiên đăng nhập đã hết hạn';
@@ -851,14 +801,33 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileDeletedAccountName => 'Tài khoản đã xóa';
 
   @override
+  String get inboxActionReportVanishedAccount => 'Báo cáo tài khoản này';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Chặn tài khoản này';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Bỏ chặn tài khoản này';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Đã báo cáo tài khoản này';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Đã chặn tài khoản này';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Đã bỏ chặn tài khoản này';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Thao tác này xóa cuộc trò chuyện khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Tài khoản này đã bị xóa';
 
   @override
   String get profileUserFallback => 'người dùng';
-
-  @override
-  String get profileDismissTooltip => 'Bỏ qua';
 
   @override
   String get profileLinkCopied => 'Đã sao chép liên kết hồ sơ';
@@ -918,9 +887,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không kết nối được với mạng. Kiểm tra kết nối của bạn rồi thử lại nhé.';
 
   @override
-  String get profileSetupRetryLabel => 'Thử lại';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Tên hiển thị';
 
   @override
@@ -940,10 +906,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileSetupUsernameHelper =>
-      'Danh tính duy nhất của bạn trên Divine';
-
-  @override
-  String get profileSetupProfileColorLabel => 'Màu hồ sơ (Không bắt buộc)';
+      'Dùng chữ cái, chữ số hoặc dấu gạch nối. Tên người dùng sẽ trở thành địa chỉ divine.video. Dùng tên hiển thị cho khoảng trắng hoặc ký hiệu.';
 
   @override
   String get profileSetupSaveButton => 'Lưu';
@@ -955,10 +918,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupImageUrlTitle => 'Thêm URL hình ảnh';
 
   @override
-  String get profileSetupPictureUploaded =>
-      'Đã tải ảnh đại diện lên thành công!';
-
-  @override
   String get profileSetupImageSelectionFailed =>
       'Không chọn được ảnh. Hãy dán URL hình ảnh vào bên dưới nhé.';
 
@@ -966,9 +925,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'hình ảnh';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Không truy cập được camera: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Quyền camera đang tắt. Bật trong Cài đặt để chụp ảnh.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Thiết bị này không cho phép truy cập camera.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Bộ chọn đang mở rồi. Đóng lại rồi thử lại.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Không mở được camera. Thử lại nhé.';
 
   @override
   String get profileSetupGotItButton => 'Đã hiểu';
@@ -992,10 +961,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Tải lên thất bại. Máy chủ của bọn mình đang tạm thời không khả dụng. Vui lòng thử lại sau ít phút.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Chưa thể tải ảnh đại diện lên trên web. Hãy dùng ứng dụng iOS hoặc Android, hoặc dán URL hình ảnh.';
 
   @override
   String get profileSetupBannerClearButton => 'Xóa ảnh bìa';
@@ -1079,6 +1044,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ được dùng chữ cái, số và dấu gạch ngang';
 
   @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Tên người dùng không thể bắt đầu hoặc kết thúc bằng dấu gạch nối';
+
+  @override
   String get profileSetupUsernameInvalidLength =>
       'Tên người dùng phải dài 3-63 ký tự';
 
@@ -1119,12 +1088,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileSetupSendRequest => 'Gửi yêu cầu';
-
-  @override
-  String get profileSetupPickColorTitle => 'Chọn một màu';
-
-  @override
-  String get profileSetupSelectButton => 'Chọn';
 
   @override
   String get profileSetupUseOwnNip05 => 'Dùng địa chỉ NIP-05 của riêng bạn';
@@ -1225,9 +1188,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nostrInfoGotIt => 'Đã hiểu!';
 
   @override
-  String get profileTabRefreshTooltip => 'Làm mới';
-
-  @override
   String get videoGridRefreshLabel => 'Đang tìm thêm video';
 
   @override
@@ -1248,11 +1208,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Đang xóa nội dung...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Không thể xóa nội dung: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Nổi bật';
@@ -1279,8 +1234,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Ứng dụng tích hợp';
 
   @override
-  String exploreFeaturedPaidPartnership(String sponsor) {
-    return 'In paid partnership with $sponsor';
+  String exploreFeaturedSponsoredBy(String sponsor) {
+    return 'Sponsored by $sponsor';
   }
 
   @override
@@ -1299,11 +1254,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get exploreNoVideosAvailable => 'Không có video nào';
-
-  @override
-  String exploreErrorPrefix(Object error) {
-    return 'Lỗi: $error';
-  }
 
   @override
   String get exploreDiscoverLists => 'Khám phá danh sách';
@@ -1336,9 +1286,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreSubscribedLists => 'Danh sách đã đăng ký';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Lỗi khi tải danh sách: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Lỗi khi tải danh sách. Vui lòng thử lại.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -1363,9 +1312,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Đang tải video...';
-
-  @override
   String get videoPlayerPlayVideo => 'Phát video';
 
   @override
@@ -1373,12 +1319,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Bật tiếng video';
-
-  @override
-  String get videoPlayerEditVideo => 'Chỉnh sửa video';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Chỉnh sửa video';
 
   @override
   String get videoPlayerTapHint =>
@@ -1593,19 +1533,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoErrorNotFound => 'Không tìm thấy video';
 
   @override
-  String get videoErrorNetwork => 'Lỗi mạng';
-
-  @override
-  String get videoErrorTimeout => 'Hết thời gian tải';
-
-  @override
-  String get videoErrorFormat =>
-      'Lỗi định dạng video\n(Thử lại hoặc dùng trình duyệt khác)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Định dạng video không được hỗ trợ';
-
-  @override
   String get videoErrorPlayback => 'Lỗi phát video';
 
   @override
@@ -1616,9 +1543,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => 'Video này hiện không khả dụng.';
-
-  @override
-  String get videoErrorVerifyAge => 'Xác minh tuổi';
 
   @override
   String get videoErrorRetry => 'Thử lại';
@@ -1684,9 +1608,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Đóng trình phát video';
-
-  @override
-  String get videoFollowButtonFollowing => 'Đang theo dõi';
 
   @override
   String get videoFollowButtonFollow => 'Theo dõi';
@@ -1873,12 +1794,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoActionMoreOptions => 'Tùy chọn khác';
 
   @override
-  String get videoActionHideSubtitles => 'Ẩn phụ đề';
-
-  @override
-  String get videoActionShowSubtitles => 'Hiện phụ đề';
-
-  @override
   String get videoEngagementLikersTitle => 'Người đã thích';
 
   @override
@@ -1914,11 +1829,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Không đăng được bình luận';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count loop';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2082,6 +1992,79 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã tắt chế độ nhà phát triển';
 
   @override
+  String get devOptionsShorebirdTitle => 'Bản vá Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Bản vá đang chạy';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Chưa cài bản vá';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Không có trong bản dựng này';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Bản vá chỉ hoạt động trong bản dựng được tạo bằng shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Đang đọc trạng thái bản vá…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'Chưa kiểm tra kênh thử nghiệm.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Kiểm tra kênh thử nghiệm';
+
+  @override
+  String get devOptionsShorebirdApply => 'Áp dụng bản vá thử nghiệm';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Quay lại cập nhật ổn định';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Đang kiểm tra kênh thử nghiệm…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Có bản vá thử nghiệm sẵn sàng áp dụng.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Không có bản vá thử nghiệm cho bản phát hành này.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Đã tải xuống. Khởi động lại ứng dụng để tải bản vá.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Đã sẵn sàng hoàn tác. Khởi động lại để trở về bản phát hành gốc.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Đang tải xuống và cài đặt…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Đã cài đặt. Khởi động lại ứng dụng để tải bản vá.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Không có gì được cài đặt. Hãy kiểm tra kênh thử nghiệm và thử lại.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Đang chọn kênh ổn định…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Đã chọn kênh ổn định. Khởi động lại ứng dụng để kiểm tra bản vá ổn định.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Không thành công. Hãy xem nhật ký để biết chi tiết.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Thời gian tải trang';
 
   @override
@@ -2210,11 +2193,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Yêu cầu thất bại';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Lỗi gần nhất: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Đang tải thông tin relay...';
@@ -2426,11 +2404,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Không xóa được tài khoản này: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Xóa tài khoản và dữ liệu';
 
   @override
@@ -2580,9 +2553,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Truy vấn thất bại: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Truy vấn thất bại. Vui lòng thử lại.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2594,9 +2566,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không kết nối được với relay nào';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Thử kết nối lại thất bại: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Thử kết nối lại thất bại. Vui lòng thử lại.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Đã kết nối & xác thực';
@@ -2663,36 +2634,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khi người bạn theo dõi đăng bài';
 
   @override
-  String get notificationSettingsSystem => 'Hệ thống';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Cập nhật ứng dụng và thông điệp hệ thống';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Thông báo đẩy';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Thông báo đẩy';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Nhận thông báo khi ứng dụng đã đóng';
-
-  @override
-  String get notificationSettingsSound => 'Âm thanh';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Phát âm thanh khi có thông báo';
-
-  @override
-  String get notificationSettingsVibration => 'Rung';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Rung khi có thông báo';
-
-  @override
   String get notificationSettingsActions => 'Thao tác';
 
   @override
@@ -2720,12 +2661,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Thông báo chạy trên giao thức Nostr. Cập nhật thời gian thực phụ thuộc vào kết nối của bạn tới các relay Nostr. Một số thông báo có thể đến chậm.';
-
-  @override
-  String get safetySettingsTitle => 'An toàn & Quyền riêng tư';
-
-  @override
-  String get safetySettingsLabel => 'CÀI ĐẶT';
 
   @override
   String get safetySettingsWhatYouSee => 'NHỮNG GÌ BẠN THẤY';
@@ -3489,30 +3424,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đăng ký hoàn tất. Vui lòng kiểm tra email của bạn.';
 
   @override
-  String get authVerificationFailedTitle => 'Xác minh thất bại';
-
-  @override
-  String get authClose => 'Đóng';
-
-  @override
-  String get authAccountSecured => 'Tài khoản đã được bảo mật!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Tài khoản của bạn giờ đã liên kết với email.';
-
-  @override
-  String get authVerifyYourEmail => 'Xác minh email của bạn';
-
-  @override
-  String get authClickLinkContinue =>
-      'Bấm vào liên kết trong email để hoàn tất đăng ký. Trong lúc chờ, bạn vẫn có thể tiếp tục dùng ứng dụng.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Đang chờ xác minh...';
-
-  @override
-  String get authContinueToApp => 'Tiếp tục vào ứng dụng';
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
 
   @override
   String get authFailedToSendResetEmail => 'Không gửi được email đặt lại.';
@@ -3570,6 +3483,32 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get authVerificationErrorPinUnavailable =>
       'Hiện không nhập mã được. Hãy bấm liên kết trong email, hoặc gửi lại để lấy mã mới.';
+
+  @override
+  String get authInviteCodeErrorMalformed => 'Nhập mã mời dạng ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'Mã mời đó có vẻ không hợp lệ.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Mã mời đó đã được dùng hoặc đã bị thu hồi.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Nhà sáng tạo này đã hết lời mời';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Mã mời đó không khả dụng. Hãy tham gia danh sách chờ, chúng tôi sẽ gửi lời mời khi còn chỗ.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Chúng tôi không kiểm tra được mã đó. Hãy thử lại.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Đã xảy ra lỗi. Hãy thử lại mã mời của bạn.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3637,9 +3576,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Chia sẻ qua';
-
-  @override
-  String get shareSheetReport => 'Báo cáo';
 
   @override
   String get shareSheetEventJson => 'JSON sự kiện';
@@ -3774,148 +3710,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đang lưu video đã gắn watermark vào thư viện ảnh của bạn...';
 
   @override
-  String get uploadProgressVideoUpload => 'Tải video lên';
-
-  @override
-  String get uploadProgressPause => 'Tạm dừng';
-
-  @override
-  String get uploadProgressResume => 'Tiếp tục';
-
-  @override
-  String get uploadProgressGoBack => 'Quay lại';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Thử lại (còn $count lần)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Xóa';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '$count ngày trước';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '$count giờ trước';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '$count phút trước';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Vừa xong';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Đang tải lên $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Đã tạm dừng $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'Chia sẻ video';
-
-  @override
-  String get shareMenuReportAiContent => 'Báo cáo nội dung AI';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Báo cáo nhanh nội dung nghi do AI tạo ra';
-
-  @override
-  String get shareMenuReportingAiContent => 'Đang báo cáo nội dung AI...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'Không báo cáo được nội dung: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'Không báo cáo được nội dung AI: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Trạng thái video';
-
-  @override
-  String get shareMenuViewAllLists => 'Xem tất cả danh sách →';
-
-  @override
-  String get shareMenuShareWith => 'Chia sẻ với';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Chia sẻ qua ứng dụng khác';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Chia sẻ qua ứng dụng khác hoặc sao chép liên kết';
-
-  @override
-  String get shareMenuSaveToGallery => 'Lưu vào thư viện ảnh';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle => 'Lưu video gốc vào thư viện ảnh';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Lưu kèm watermark';
-
-  @override
-  String get shareMenuSaveVideo => 'Lưu video';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'Tải xuống kèm watermark Divine';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Lưu video vào thư viện ảnh';
-
-  @override
-  String get shareMenuLists => 'Danh sách';
-
-  @override
-  String get shareMenuAddToList => 'Thêm vào danh sách';
-
-  @override
-  String get shareMenuAddToListSubtitle =>
-      'Thêm vào danh sách tuyển chọn của bạn';
-
-  @override
-  String get shareMenuCreateNewList => 'Tạo danh sách mới';
-
-  @override
-  String get shareMenuCreateNewListSubtitle =>
-      'Bắt đầu một bộ sưu tập tuyển chọn mới';
-
-  @override
-  String get shareMenuRemovedFromList => 'Đã xóa khỏi danh sách';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => 'Không xóa được khỏi danh sách';
-
-  @override
   String get shareMenuBookmarks => 'Dấu trang';
-
-  @override
-  String get shareMenuFollowSets => 'Danh sách người';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Tạo nhóm theo dõi';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Bắt đầu bộ sưu tập mới với nhà sáng tạo này';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Thêm vào nhóm theo dõi';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3924,10 +3719,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Thêm vào danh sách';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Đưa nhà sáng tạo này vào một danh sách của bạn';
 
   @override
   String get peopleListsSheetTitle => 'Thêm vào danh sách';
@@ -4072,38 +3863,15 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Đã thêm vào dấu trang!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'Không thêm được dấu trang';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Đã tạo danh sách \"$name\" và thêm video';
-  }
-
-  @override
-  String get shareMenuManageContent => 'Quản lý nội dung';
-
-  @override
   String get shareMenuEditVideo => 'Chỉnh sửa video';
-
-  @override
-  String get shareMenuEditVideoSubtitle => 'Cập nhật tiêu đề, mô tả và hashtag';
 
   @override
   String get shareMenuDeleteVideo => 'Xóa video';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Video nằm trong các danh sách này:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count video';
   }
-
-  @override
-  String get shareMenuClose => 'Đóng';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4114,14 +3882,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Xóa';
-
-  @override
-  String get shareMenuDeletingContent => 'Đang xóa nội dung...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Không xóa được nội dung: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4144,6 +3904,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Relay không chấp nhận yêu cầu xóa này. Thử lại sau ít phút.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Không kết nối được với relay. Kiểm tra kết nối của bạn rồi thử lại.';
 
@@ -4156,60 +3920,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không xóa được video này. Thử lại nhé.';
 
   @override
-  String get shareMenuFollowSetName => 'Tên nhóm theo dõi';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'VD: Nhà sáng tạo nội dung, Nhạc sĩ...';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Mô tả (không bắt buộc)';
-
-  @override
-  String get shareMenuCreate => 'Tạo';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Đã tạo nhóm theo dõi \"$name\" và thêm nhà sáng tạo';
-  }
-
-  @override
-  String get shareMenuDone => 'Xong';
-
-  @override
-  String get shareMenuEditTitle => 'Tiêu đề';
-
-  @override
-  String get shareMenuEditTitleHint => 'Nhập tiêu đề video';
-
-  @override
-  String get shareMenuEditDescription => 'Mô tả';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Nhập mô tả video';
-
-  @override
-  String get shareMenuEditHashtags => 'Hashtag';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'hashtag, cách nhau, bằng phẩy';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Lưu ý: Chỉ chỉnh sửa được siêu dữ liệu. Không thể thay đổi nội dung video.';
-
-  @override
-  String get shareMenuDeleting => 'Đang xóa...';
-
-  @override
   String get shareMenuUpdate => 'Cập nhật';
 
   @override
   String get shareMenuChangeCover => 'Đổi ảnh bìa';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Ảnh thu nhỏ đang được tải lên ngầm';
 
   @override
   String get shareMenuVideoUpdated => 'Đã cập nhật video thành công';
@@ -4226,62 +3940,44 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Không cập nhật được video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'Đăng nhập lại rồi thử lại.';
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Không xóa được video: $error';
-  }
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video này không có nguồn phát được nên không thể chỉnh sửa.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Không ký được bản cập nhật. Thử lại nhé.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay không chấp nhận bản cập nhật. Thử lại sau giây lát.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Không cập nhật được video này. Thử lại nhé.';
+
+  @override
+  String get shareMenuOriginalVideoUnavailable =>
+      'Couldn\'t load the original video. Try again in a moment.';
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Xóa video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Đã xóa video';
+  String get shareMenuDeleteCleanupInProgress => 'Đang xóa video…';
 
   @override
-  String get shareMenuContentLabels => 'Nhãn nội dung';
+  String get shareMenuDeleteCleanupConfirmed => 'Đã xóa video.';
 
   @override
-  String get shareMenuAddContentLabels => 'Thêm nhãn nội dung';
+  String get shareMenuDeleteCleanupDelayed =>
+      'Đã xóa video. Có thể mất một lúc để video biến mất ở mọi nơi.';
 
   @override
-  String get shareMenuClearAll => 'Xóa tất cả';
-
-  @override
-  String get shareMenuCollaborators => 'Cộng tác viên';
-
-  @override
-  String get shareMenuAddCollaborator => 'Mời cộng tác viên';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Bạn và $name cần theo dõi lẫn nhau để mời họ làm cộng tác viên.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Đang tải...';
-
-  @override
-  String get shareMenuInspiredBy => 'Lấy cảm hứng từ';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Thêm ghi nhận cảm hứng';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Không thể tham chiếu nhà sáng tạo này.';
-
-  @override
-  String get shareMenuUnknown => 'Không xác định';
-
-  @override
-  String get shareMenuUseThisSound => 'Dùng âm thanh này';
-
-  @override
-  String get shareMenuOriginalSound => 'Âm thanh gốc';
+  String get shareMenuDeleteCleanupFailed =>
+      'Đã xóa video nhưng chúng tôi không thể xóa mọi bản sao. Hãy liên hệ bộ phận hỗ trợ.';
 
   @override
   String get authSessionExpired =>
@@ -4295,27 +3991,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authSignInFailed => 'Đăng nhập thất bại. Vui lòng thử lại.';
 
   @override
-  String get localeAppLanguage => 'Ngôn ngữ ứng dụng';
-
-  @override
-  String get localeDeviceDefault => 'Mặc định của thiết bị';
-
-  @override
-  String get localeSelectLanguage => 'Chọn ngôn ngữ';
-
-  @override
   String get webAuthNotSupportedSecureMode =>
       'Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Tích hợp xác thực thất bại: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Lỗi bất ngờ: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Vui lòng nhập URI bunker';
@@ -4361,31 +4038,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsSearchHint => 'Tìm âm thanh...';
 
   @override
-  String get soundsPreviewUnavailable => 'Không nghe thử được - không có audio';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Không phát được bản nghe thử: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Âm thanh nổi bật';
-
-  @override
-  String get soundsTrendingSounds => 'Âm thanh thịnh hành';
-
-  @override
-  String get soundsAllSounds => 'Tất cả âm thanh';
-
-  @override
   String get soundsSearchResults => 'Kết quả tìm kiếm';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Không có âm thanh nào';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Âm thanh sẽ xuất hiện ở đây khi nhà sáng tạo chia sẻ audio';
 
   @override
   String get soundsNoSoundsFound => 'Không tìm thấy âm thanh nào';
@@ -4408,12 +4061,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Chạm Dùng âm thanh trên một video để lưu nó vào đây.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Riêng tư';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Cộng đồng';
 
   @override
   String get soundsRemoveSavedSound => 'Xóa âm thanh';
@@ -4461,22 +4108,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.';
 
   @override
-  String get soundsFailedToLoad => 'Không tải được âm thanh';
-
-  @override
-  String get soundsRetry => 'Thử lại';
-
-  @override
-  String get soundsScreenLabel => 'Màn hình âm thanh';
-
-  @override
   String get profileTitle => 'Hồ sơ';
-
-  @override
-  String get profileRefresh => 'Làm mới';
-
-  @override
-  String get profileRefreshLabel => 'Làm mới hồ sơ';
 
   @override
   String get profileMoreOptions => 'Tùy chọn khác';
@@ -4494,11 +4126,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return 'Đã bỏ theo dõi $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Lỗi: $error';
   }
 
   @override
@@ -4535,21 +4162,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không làm mới được — hiện những gì bạn đang có';
 
   @override
-  String get notificationsCheckingNew => 'đang kiểm tra thông báo mới';
-
-  @override
-  String get notificationsNoneYet => 'Chưa có thông báo nào';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Không có thông báo $type nào';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Khi mọi người tương tác với nội dung của bạn, bạn sẽ thấy ở đây';
-
-  @override
   String get notificationsUnreadPrefix => 'Thông báo chưa đọc';
 
   @override
@@ -4580,11 +4192,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Ảnh thu nhỏ video';
 
   @override
-  String notificationsLoadingType(String type) {
-    return 'Đang tải thông báo $type...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Bạn có 1 lời mời để chia sẻ với bạn bè!';
 
@@ -4594,13 +4201,33 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Không tìm thấy video';
+  String notificationsTabBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Badges ($count)',
+      zero: 'Badges',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsPendingBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count badges are waiting for you to accept them',
+      one: 'A badge is waiting for you to accept it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsBadgesEmpty =>
+      'No badges waiting. When someone awards you one, it lands here.';
 
   @override
   String get notificationsVideoUnavailable => 'Video không khả dụng';
-
-  @override
-  String get notificationsFromNotification => 'Từ thông báo';
 
   @override
   String get feedFailedToLoadVideos => 'Không tải được video';
@@ -4656,62 +4283,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get feedExploreVideos => 'Khám phá video';
 
   @override
-  String get feedExternalVideoSlow => 'Video bên ngoài đang tải chậm';
-
-  @override
-  String get feedSkip => 'Bỏ qua';
-
-  @override
   String get feedLoadingMore => 'Đang tải thêm video…';
 
   @override
   String get feedRefreshed => 'Đã làm mới bảng tin';
 
   @override
-  String get uploadWaitingToUpload => 'Đang chờ tải lên';
-
-  @override
   String get uploadUploadingVideo => 'Đang tải video lên';
-
-  @override
-  String get uploadProcessingVideo => 'Đang xử lý video';
-
-  @override
-  String get uploadProcessingComplete => 'Xử lý hoàn tất';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Đã đăng thành công';
-
-  @override
-  String get uploadFailed => 'Tải lên thất bại';
-
-  @override
-  String get uploadRetrying => 'Đang thử tải lên lại';
-
-  @override
-  String get uploadPaused => 'Đã tạm dừng tải lên';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return 'Hoàn thành $percent%';
-  }
-
-  @override
-  String get uploadQueuedMessage => 'Video của bạn đang trong hàng chờ tải lên';
-
-  @override
-  String get uploadUploadingMessage => 'Đang tải lên máy chủ...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Đang xử lý video - có thể mất vài phút';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Video đã xử lý xong và sẵn sàng đăng';
-
-  @override
-  String get uploadPublishedMessage => 'Video đã được đăng lên hồ sơ của bạn';
 
   @override
   String get postPublishConfirmationTitle => 'Đã được đăng lên hồ sơ của bạn';
@@ -4727,33 +4305,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Ảnh thu nhỏ của video bạn vừa đăng';
 
   @override
-  String get uploadFailedMessage => 'Tải lên thất bại - vui lòng thử lại';
-
-  @override
-  String get uploadRetryingMessage => 'Đang thử tải lên lại...';
-
-  @override
-  String get uploadPausedMessage => 'Người dùng đã tạm dừng tải lên';
-
-  @override
-  String get uploadRetryButton => 'THỬ LẠI';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Không thử tải lên lại được: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Tìm người dùng';
-
-  @override
   String get userSearchNoResults => 'Không tìm thấy người dùng nào';
-
-  @override
-  String get userSearchFailed => 'Tìm kiếm thất bại';
-
-  @override
-  String get userPickerSearchByName => 'Tìm theo tên';
 
   @override
   String get userPickerFilterByNameHint => 'Lọc theo tên...';
@@ -4843,41 +4395,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ageVerificationYes => 'Rồi';
 
   @override
-  String get shareLinkCopied => 'Đã sao chép liên kết vào khay nhớ tạm';
-
-  @override
-  String get shareFailedToCopy => 'Không sao chép được liên kết';
-
-  @override
-  String get shareVideoSubject => 'Xem video này trên Divine nè';
-
-  @override
-  String get shareFailedToShare => 'Không chia sẻ được';
-
-  @override
-  String get shareVideoTitle => 'Chia sẻ video';
-
-  @override
-  String get shareToApps => 'Chia sẻ tới ứng dụng';
-
-  @override
-  String get shareToAppsSubtitle =>
-      'Chia sẻ qua ứng dụng nhắn tin, mạng xã hội';
-
-  @override
-  String get shareCopyWebLink => 'Sao chép liên kết web';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Sao chép liên kết web có thể chia sẻ';
-
-  @override
-  String get shareCopyNostrLink => 'Sao chép liên kết Nostr';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Sao chép liên kết nevent cho ứng dụng Nostr';
-
-  @override
   String get navHome => 'Trang chủ';
 
   @override
@@ -4890,12 +4407,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navProfile => 'Hồ sơ';
 
   @override
-  String get navSearch => 'Tìm kiếm';
-
-  @override
-  String get navSearchTooltip => 'Tìm kiếm';
-
-  @override
   String get navMyProfile => 'Hồ sơ của tôi';
 
   @override
@@ -4903,9 +4414,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Mở camera';
-
-  @override
-  String get navUnknown => 'Không xác định';
 
   @override
   String get navExploreClassics => 'Kinh điển';
@@ -5030,6 +4538,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportExportLogsFailed => 'Không xuất được nhật ký';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'Đã lưu nhật ký vào $path';
   }
@@ -5049,22 +4565,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
-  }
-
-  @override
-  String get reportTitle => 'Báo cáo nội dung';
-
-  @override
   String get reportWhyReporting => 'Tại sao bạn báo cáo nội dung này?';
 
   @override
   String get reportPolicyNotice =>
       'Divine sẽ xử lý báo cáo nội dung trong vòng 24 giờ bằng cách gỡ nội dung và loại người dùng đăng nội dung vi phạm.';
-
-  @override
-  String get reportAdditionalDetails => 'Chi tiết bổ sung (không bắt buộc)';
 
   @override
   String get reportBlockUser => 'Chặn người dùng này';
@@ -5084,6 +4589,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'Vui lòng mô tả vấn đề';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'Chỉ văn bản — không thể đính kèm ảnh hoặc GIF ở đây.';
 
   @override
   String get reportReasonSpam => 'Spam hoặc nội dung không mong muốn';
@@ -5163,9 +4672,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Các vi phạm không có trong danh sách trên';
 
   @override
-  String reportFailed(Object error) {
-    return 'Không báo cáo được nội dung: $error';
-  }
+  String get reportFailed => 'Không báo cáo được nội dung. Vui lòng thử lại.';
 
   @override
   String get reportNotSent =>
@@ -5187,9 +4694,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'Nhắn tin cho đội kiểm duyệt';
-
-  @override
-  String get reportLearnMore => 'Tìm hiểu thêm';
 
   @override
   String get reportLearnMoreAt => 'Tìm hiểu thêm tại';
@@ -5422,7 +4926,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'không kết nối được với dịch vụ đăng nhập';
+      'Không kết nối được với dịch vụ đăng nhập. Vui lòng thử lại.';
 
   @override
   String get keyManagementRestrictedTitle => 'Khóa của bạn do Divine quản lý';
@@ -5452,18 +4956,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keyManagementImportSuccess => 'Đã nhập khóa thành công!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Không nhập được khóa: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Không nhập được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementExportSuccess =>
       'Đã sao chép khóa riêng tư vào khay nhớ tạm!\n\nHãy cất nó ở nơi an toàn.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Không xuất được khóa: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Không xuất được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Khóa công khai của bạn (npub)';
@@ -5585,9 +5087,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundUnableToPreview => 'Không nghe thử được - không có audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Không phát được bản nghe thử: $error';
-  }
+  String get soundPreviewFailed =>
+      'Không phát được bản nghe thử. Vui lòng thử lại.';
 
   @override
   String get soundViewSource => 'Xem nguồn';
@@ -5638,11 +5139,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Không mở được $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
   }
 
   @override
@@ -6069,8 +5565,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Thao tác này sẽ xóa cuộc trò chuyện của bạn với $displayName. Không thể hoàn tác.';
+    return 'Thao tác này xóa cuộc trò chuyện của bạn với $displayName khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
   }
+
+  @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Thao tác này xóa cuộc trò chuyện nhóm khỏi hộp thư đến. Nếu có ai nhắn tin vào nhóm lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
 
   @override
   String get inboxRemoveConfirmConfirm => 'Xóa';
@@ -6137,12 +5637,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Bạn được mời cộng tác vào $title: $url\n\nOpen diVine to review and accept.';
+    return 'Bạn được mời cộng tác vào $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Bạn được mời cộng tác vào một video: $url\n\nOpen diVine to review and accept.';
+    return 'Bạn được mời cộng tác vào một video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -6170,6 +5670,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dmRetiredThreadClosedTitle => 'Cuộc trò chuyện này đã đóng.';
+
+  @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Không thể xóa thông báo Divine Moderation này.';
 
   @override
   String get dmRetiredThreadClosedBody =>
@@ -6243,9 +5747,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dmReelReplyViewChat => 'Xem trò chuyện';
-
-  @override
-  String get dmReelReplyViewChatA11yLabel => 'Mở trò chuyện';
 
   @override
   String get dmReelReplySentAnnouncement => 'Đã gửi câu trả lời';
@@ -6325,14 +5826,18 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count người khác',
+    );
+    return '$name và $_temp0';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Hiện thao tác với cuộc trò chuyện';
-
-  @override
-  String get reportDialogCancel => 'Hủy';
-
-  @override
-  String get reportDialogReport => 'Báo cáo';
 
   @override
   String exploreVideoId(String id) {
@@ -6358,20 +5863,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Không cập nhật được đăng ký: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Không cập nhật được đăng ký. Vui lòng thử lại.';
 
   @override
   String get discoverListsTitle => 'Khám phá danh sách';
 
   @override
   String get discoverListsFailedToLoad => 'Không tải được danh sách';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Không tải được danh sách: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Đang khám phá danh sách công khai...';
@@ -6458,9 +5957,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get commonSomethingWentWrong => 'Có gì đó không ổn';
-
-  @override
-  String get commonNext => 'Tiếp';
 
   @override
   String get commonDelete => 'Xóa';
@@ -6563,9 +6059,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryTabClips => 'Clip';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Lưu vào thư viện ảnh';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Xóa clip đã chọn';
 
   @override
@@ -6618,20 +6111,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get librarySortVerticalFirst => 'Dọc trước';
 
   @override
-  String get libraryDeleteClipsTitle => 'Xóa clip';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clip đã chọn',
-      one: '# clip đã chọn',
-    );
-    return 'Bạn có chắc muốn xóa $_temp0 không?';
-  }
-
-  @override
   String get libraryDeleteClipsWarning =>
       'Không thể hoàn tác thao tác này. Các tệp video sẽ bị xóa vĩnh viễn khỏi thiết bị của bạn.';
 
@@ -6657,6 +6136,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
     return 'Đã lưu $successCount, thất bại $failureCount';
+  }
+
+  @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Không lưu được vào $destination';
   }
 
   @override
@@ -6762,20 +6246,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryDeleteClipMessage => 'Bạn có chắc muốn xóa clip này không?';
 
   @override
-  String get libraryClipSelectionTitle => 'Clip';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return 'còn ${seconds}s';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds giây';
   }
-
-  @override
-  String get libraryAddClips => 'Thêm';
 
   @override
   String get libraryRecordVideo => 'Quay video';
@@ -6783,6 +6256,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Clip video, $duration giây';
+  }
+
+  @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Đã lưu trữ. $label';
   }
 
   @override
@@ -7324,6 +6802,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Từ chối và xóa';
 
   @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Đã từ chối yêu cầu của $displayName';
+  }
+
+  @override
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';
 
   @override
@@ -7366,24 +6849,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn đã chuyển tài khoản nên không có gì bị xóa. Hãy mở lại mục xóa cho tài khoản bạn muốn gỡ.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Một số yêu cầu xóa đã được chấp nhận, nhưng việc dọn dẹp đã dừng vì bạn đổi tài khoản. Đăng nhập lại tài khoản ban đầu để hoàn tất.';
-
-  @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.';
-
-  @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Tên người dùng $username của bạn đã được nhả vĩnh viễn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Chạm Xóa lần nữa để hoàn tất.';
-  }
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Cũng từ bỏ vĩnh viễn $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Để xác nhận, gõ:';
 
   @override
@@ -7398,19 +6863,73 @@ class AppLocalizationsVi extends AppLocalizations {
       'Gõ tên người dùng của bạn';
 
   @override
-  String get deleteAccountContentDeletionFailed =>
-      'Không xóa được nội dung khỏi các relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.';
-
-  @override
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
+
+  @override
+  String get accountDeletionRecoveryTitle => 'Hoàn tất xóa tài khoản của bạn';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername =>
+      'Lấy lại tên người dùng của mình';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.';
+
+  @override
+  String get accountDeletionCancellingBody =>
+      'Chúng tôi đang hủy yêu cầu xóa của bạn. Kiểm tra lại trước khi rời màn hình này nhé.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'Tên người dùng của bạn đã được lấy lại. Tài khoản của bạn chưa bị xóa.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'Bọn mình không kiểm tra được trạng thái xóa của bạn. Kiểm tra kết nối và thử lại.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get deleteAccountDeletionUnavailable =>
+      'Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
       'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Xác nhận lần cuối';
@@ -7448,11 +6967,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Không xóa được tài khoản của bạn trên máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Đăng nhập lại để hoàn tất.';
+      'Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.';
 
   @override
   String get deleteAccountSuccess =>
@@ -7465,26 +6980,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Thao tác này gửi yêu cầu xóa cho tài khoản và nội dung của bạn, xóa tài khoản Divine của bạn khi có thể, và đăng xuất bạn trên thiết bị này. Một số relay, ứng dụng và chỉ mục tìm kiếm có thể vẫn giữ bản sao. Các thiết bị đã đăng nhập khác vẫn hoạt động cho đến khi bạn gỡ khóa ở đó.';
-
-  @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Đang thêm chữ lên video...';
-
-  @override
-  String get exportProgressStageComplete => 'Xuất xong!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Đang ghép các clip...';
-
-  @override
-  String get exportProgressStageError => 'Xuất thất bại';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Đang tạo ảnh thu nhỏ...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Đang thêm âm thanh...';
 
   @override
   String get findPeopleAnonymousUser => 'Ẩn danh';
@@ -7607,6 +7102,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Video đã tải lên nhưng không đăng được bài. Kiểm tra cài đặt relay rồi thử lại.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'Video đã tải lên nhưng âm thanh này không được phép dùng lại. Chọn âm thanh khác để đăng nhé.';
 
@@ -7681,9 +7183,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Không tải được âm thanh: $error';
-  }
+  String get soundDetailLoadError =>
+      'Không tải được âm thanh. Vui lòng thử lại.';
 
   @override
   String get soundDetailNotFoundMessage => 'Không tìm thấy âm thanh này';
@@ -7692,15 +7193,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Không tìm thấy âm thanh';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Mô tả video';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count loop';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Số loop của video';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7712,11 +7207,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String globalUploadPendingCount(int count) {
-    return 'Đang chờ tải lên ($count)';
-  }
-
-  @override
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
@@ -7724,22 +7214,18 @@ class AppLocalizationsVi extends AppLocalizations {
       'Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'Dấu tích hồ sơ';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Trong $count danh sách',
-      one: 'Trong 1 danh sách',
-    );
-    return '$_temp0';
-  }
+      'Divine trao dấu tích này cho các tài khoản của đội ngũ. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Bỏ theo dõi';
@@ -7837,11 +7323,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không gửi được báo cáo lỗi. Vui lòng thử lại sau.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Báo cáo lỗi không gửi được: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Gửi yêu cầu';
 
   @override
@@ -7874,11 +7355,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Không gửi được yêu cầu tính năng. Vui lòng thử lại sau.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Yêu cầu tính năng không gửi được: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Theo dõi lại';
@@ -7933,16 +7409,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get followSortOldest => 'Cũ nhất trước';
 
   @override
-  String get reportMessageTitle => 'Báo cáo tin nhắn';
-
-  @override
-  String get reportMessageWhyReporting => 'Tại sao bạn báo cáo tin nhắn này?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Vui lòng chọn lý do báo cáo tin nhắn này';
-
-  @override
   String get newMessageTitle => 'Tin nhắn mới';
 
   @override
@@ -7979,9 +7445,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Không lưu được cài đặt: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Không lưu được cài đặt. Vui lòng thử lại.';
 
   @override
   String get blossomValidServerUrl =>
@@ -8214,14 +7679,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cameraAgeRestriction => 'Bạn phải đủ 16 tuổi để tạo nội dung';
 
   @override
-  String get featureRequestCancel => 'Hủy';
-
-  @override
-  String keyImportError(String error) {
-    return 'Lỗi: $error';
-  }
-
-  @override
   String get keyImportInsecureBunkerRelay =>
       'Relay bunker phải dùng wss:// (ws:// chỉ được phép cho localhost)';
 
@@ -8429,10 +7886,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get notificationSystemUpdate => 'Bạn có cập nhật mới';
 
   @override
-  String get notificationSomeoneLikedYourVideo =>
-      'Có người đã thích video của bạn';
-
-  @override
   String get commentReplyToPrefix => 'Trả lời:';
 
   @override
@@ -8567,6 +8020,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Quay lại bảng tin';
+
+  @override
+  String get cameraCouldNotStart => 'Không khởi động được máy ảnh';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Máy ảnh chưa khả dụng trên nền tảng này.\nBạn vẫn có thể duyệt và xem video.';
 
   @override
   String get cameraPermissionErrorTitle => 'Lỗi quyền truy cập';
@@ -9109,40 +8569,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'Phát hoặc tạm dừng video';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Cắt';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Không thể tách clip khi đang xử lý. Vui lòng chờ.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Vị trí tách không hợp lệ. Cả hai clip phải dài ít nhất ${minDurationMs}ms.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Thêm clip từ Thư viện';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Lưu clip đã chọn';
 
   @override
-  String get videoEditorSplitClip => 'Tách clip';
-
-  @override
   String get videoEditorSaveClip => 'Lưu clip';
-
-  @override
-  String get videoEditorDeleteClip => 'Xóa clip';
 
   @override
   String get videoEditorClipSavedSuccess => 'Đã lưu clip vào thư viện';
 
   @override
   String get videoEditorClipSaveFailed => 'Không lưu được clip';
-
-  @override
-  String get videoEditorClipDeleted => 'Đã xóa clip';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Bộ chọn màu';
@@ -9173,12 +8614,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'Không tải được nhãn dán';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Điều chỉnh âm lượng';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Âm thanh đã ghi';
 
   @override
   String get videoEditorVoiceOverLabel => 'Lồng tiếng';
@@ -9240,12 +8675,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Tạm dừng';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Tắt tiếng';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Bật tiếng';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Điều chỉnh âm lượng';
@@ -9359,9 +8788,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thiết bị này không hiển thị được bản xem trước trực tiếp. Cài đặt của bạn vẫn được áp dụng khi xuất.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Âm thanh gốc';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Clip $index';
   }
@@ -9394,14 +8820,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count khung hình mỗi ảnh';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Tăng số khung hình mỗi ảnh';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Giảm số khung hình mỗi ảnh';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9506,9 +8924,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Lật';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Tỷ lệ';
 
   @override
   String get videoEditorTransformResetLabel => 'Đặt lại';
@@ -9667,14 +9082,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Âm thanh của tôi';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Âm thanh nổi bật sắp ra mắt';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Bọn mình sẽ thả âm thanh nổi bật vào đây khi sẵn sàng.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Công cụ mũi tên';
 
   @override
@@ -9741,10 +9148,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Nhấn giữ để sắp xếp lại';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Chạm để chỉnh sửa. Giữ và kéo để sắp xếp lại.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Dời sang trái';
@@ -9824,6 +9227,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get videoEditorReverseSelectedFramesSemanticLabel =>
       'Đảo ngược các khung hình đã chọn';
+
+  @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Nhân bản các khung hình đã chọn';
 
   @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
@@ -9916,9 +9323,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Thẻ';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Xóa';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Xóa thẻ $tag';
   }
@@ -9935,12 +9339,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chọn tất cả những gì áp dụng';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'Xong';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Xuất bản âm thanh này';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'Cho phép người khác lưu và dùng lại âm thanh của video này.';
 
@@ -9955,30 +9353,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'Mời cộng tác viên';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Cộng tác viên hoạt động thế nào';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max cộng tác viên';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Xóa cộng tác viên';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Cộng tác viên được mời làm đồng tác giả của bài đăng này. Bạn chỉ có thể mời người theo dõi lẫn nhau với bạn, và họ sẽ xuất hiện như cộng tác viên sau khi xác nhận.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText =>
       'Người theo dõi lẫn nhau';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Bạn và $name cần theo dõi lẫn nhau để mời họ làm cộng tác viên.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Thêm lấy cảm hứng từ';
@@ -9987,23 +9363,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoMetadataSetInspiredBySemanticLabel => 'Đặt lấy cảm hứng từ';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'Ghi nhận cảm hứng hoạt động thế nào';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Không có';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Dùng mục này để ghi nhận nguồn. Ghi nhận cảm hứng khác với cộng tác viên: nó thừa nhận ảnh hưởng, nhưng không gắn thẻ ai đó là đồng tác giả.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Không thể tham chiếu nhà sáng tạo này.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'Xóa lấy cảm hứng từ';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Chi tiết bài đăng';
@@ -10297,6 +9658,26 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Thu hồi huy hiệu';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Thu hồi huy hiệu này?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Thao tác này yêu cầu các relay bỏ lần trao mà bạn đã dành cho người này. Relay có thể từ chối, và nếu họ đã ghim huy hiệu thì nó vẫn nằm trên hồ sơ cho đến khi họ tự gỡ. Dù thế nào, họ cũng không được báo.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Thao tác này yêu cầu các relay bỏ lần trao mà bạn đã dành cho chính mình, và gỡ huy hiệu khỏi hồ sơ của bạn. Nếu relay từ chối xoá, sẽ không có gì thay đổi.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Thu hồi';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Đã thu hồi huy hiệu';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Chặn những người gắn huy hiệu';
 
   @override
@@ -10424,10 +9805,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Hướng dẫn gia đình';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Chưa đủ 16? Không sao. Đây là những gì bạn có thể làm.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'Chưa đủ 16? Không sao cả.';
 
   @override
@@ -10473,9 +9850,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13-15 tuổi';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Hữu ích cho gia đình';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10535,6 +9909,80 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hỗ trợ và tin nhắn kiểm duyệt của bạn vẫn khả dụng';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewResponseClockRunningTitle => 'Time to respond';
+
+  @override
+  String minorAccountReviewResponseClockRunningDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String minorAccountReviewResponseClockRunningHours(int hours, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockPausedTitle =>
+      'Response clock paused';
+
+  @override
+  String minorAccountReviewResponseClockPausedBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'The response clock is paused. About $_temp0 will remain when it restarts.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockExpiredTitle =>
+      'Response deadline passed';
+
+  @override
+  String get minorAccountReviewResponseClockExpiredBody =>
+      'The response deadline has passed. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableTitle =>
+      'Deadline unavailable';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableBody =>
+      'We can\'t show your response deadline right now. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => 'Mở Trung tâm hỗ trợ';
 
   @override
@@ -10543,17 +9991,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Mở trang xem xét';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Bạn có thể mang tài khoản của mình theo';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Bạn vẫn có thể dùng danh tính Divine của mình trên hạ tầng khác. Di chuyển tài khoản hoặc tải xuống kho lưu trữ của bạn.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Di chuyển tài khoản của bạn';
 
   @override
   String get minorAccountReviewCheckAgain => 'Kiểm tra lại';
@@ -10613,10 +10050,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'Phần lớn internet được thiết kế để thưởng cho những người nói bất cứ gì giúp họ qua được cổng. Bọn mình không thấy điều đó hay. Vâng, bạn có thể quay lại và nói mình lớn tuổi hơn thật, nhưng điều đó không trung thực, và bọn mình sẽ không hướng dẫn bạn nói dối để có được thứ mình muốn.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Tại sao câu trả lời vẫn là không';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -10849,12 +10282,47 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã xóa mô phỏng xem xét tài khoản vị thành niên';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Đã bật mô phỏng hồ sơ xem xét 13-15';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Đã bật mô phỏng hồ sơ hỗ trợ dưới 13';
+
+  @override
+  String get devOptionsMinorReviewResponseClockTitle => 'Response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunning => 'Running';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPaused => 'Paused';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpired => 'Expired';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicable =>
+      'Not applicable';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformed => 'Malformed payload';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunningToast =>
+      'Simulated running response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPausedToast =>
+      'Simulated paused response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpiredToast =>
+      'Simulated expired response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicableToast =>
+      'Simulated not-applicable response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformedToast =>
+      'Simulated malformed response clock';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
@@ -10943,7 +10411,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Giá trị máy chủ: không rõ (mặc định bật)';
+      'Giá trị máy chủ: không rõ';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
@@ -11085,9 +10553,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Bắt đầu quay khi bạn nhấn giữ, dừng khi bạn thả ra';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Không phát được bản nghe thử';
 
   @override
   String uploadPublishedCountMessage(int count) {
@@ -12055,6 +11520,35 @@ class AppLocalizationsVi extends AppLocalizations {
   String get libraryUnarchiveAction => 'Bỏ lưu trữ';
 
   @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Giữ trong các danh mục này?',
+      one: 'Giữ trong danh mục này?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'Giữ trong $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed =>
+      'Giữ trong danh mục của chúng';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Xóa khỏi $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Xóa khỏi danh mục của chúng';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Chuyển các clip đã chọn';
 
   @override
@@ -12259,7 +11753,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.';
 
   @override
-  String get dbFailureResetConfirm => 'đặt lại và đóng';
+  String get dbFailureResetConfirm => 'đặt lại cơ sở dữ liệu cục bộ ngay';
 
   @override
   String get dbFailureCancel => 'hủy';
@@ -12283,4 +11777,139 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Ẩn mật khẩu';
+
+  @override
+  String get followUserSemanticLabel => 'Theo dõi người dùng';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Bỏ theo dõi người dùng';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Đang tải bình luận';
+
+  @override
+  String get analyticsWindowAll => 'Tất cả';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Theo dõi người dùng $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Bỏ theo dõi người dùng $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / tháng';
+  }
+
+  @override
+  String get videoDetailHiddenBySettingsTitle => 'Hidden by your settings';
+
+  @override
+  String videoDetailHiddenByHostFilterBody(String host) {
+    return 'This one\'s hosted on $host, and you\'re set to only show Divine-hosted videos.';
+  }
+
+  @override
+  String get videoDetailHiddenByContentFilterBody =>
+      'Your content filters are hiding this one.';
+
+  @override
+  String get videoDetailHiddenByProvenanceFilterBody =>
+      'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.';
+
+  @override
+  String get videoDetailHiddenShowAnyway => 'Show it anyway';
+
+  @override
+  String get videoDetailHiddenOpenSettings => 'Change setting';
+
+  @override
+  String get safetySettingsShowVerifiedOnly =>
+      'Only show camera-verified videos';
+
+  @override
+  String get safetySettingsShowVerifiedOnlySubtitle =>
+      'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

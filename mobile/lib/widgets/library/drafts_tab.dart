@@ -238,8 +238,7 @@ class DraftsTab extends ConsumerWidget {
     if (!context.mounted) return;
 
     await context.push(
-      '${VideoEditorScreen.path}/${draft.id}',
-      extra: {'fromLibrary': true},
+      VideoEditorScreen.pathFor(draftId: draft.id, fromLibrary: true),
     );
 
     await ref

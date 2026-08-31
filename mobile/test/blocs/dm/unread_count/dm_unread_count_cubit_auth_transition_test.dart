@@ -152,112 +152,114 @@ void main() {
     _mountCount = 0;
   });
 
-  testWidgets(
-    'forwarding a fresh follow repository to the existing cubit makes a '
-    'followed-but-unreplied unread chat start counting, without remounting',
-    (tester) async {
-      final dmA = _buildDm();
-      final dmB = _buildDm();
-      addTearDown(() async {
-        await dmA.accepted.close();
-        await dmA.potential.close();
-        await dmB.accepted.close();
-        await dmB.potential.close();
-      });
-      final followStale = _buildFollow(followsAlice: false);
-      final followFresh = _buildFollow(followsAlice: true);
+  group(DmUnreadCountCubit, () {
+    testWidgets(
+      'forwarding a fresh follow repository to the existing cubit makes a '
+      'followed-but-unreplied unread chat start counting, without remounting',
+      (tester) async {
+        final dmA = _buildDm();
+        final dmB = _buildDm();
+        addTearDown(() async {
+          await dmA.accepted.close();
+          await dmA.potential.close();
+          await dmB.accepted.close();
+          await dmB.potential.close();
+        });
+        final followStale = _buildFollow(followsAlice: false);
+        final followFresh = _buildFollow(followsAlice: true);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            _dmSelector.overrideWith((ref) => dmA.dm),
-            _followSelector.overrideWith((ref) => followStale),
-          ],
-          child: const _BadgeProbe(),
-        ),
-      );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _dmSelector.overrideWith((ref) => dmA.dm),
+              _followSelector.overrideWith((ref) => followStale),
+            ],
+            child: const _BadgeProbe(),
+          ),
+        );
 
-      dmA.accepted.add(const []);
-      dmA.potential.add([_unreadFromAlice()]);
-      await tester.pump(const Duration(milliseconds: 20));
+        dmA.accepted.add(const []);
+        dmA.potential.add([_unreadFromAlice()]);
+        await tester.pump(const Duration(milliseconds: 20));
 
-      // Stale follow repo doesn't know the follow -> _alice is a request -> 0.
-      expect(find.text('count=0'), findsOneWidget);
-      expect(_mountCount, 1);
+        // Stale follow repo doesn't know the follow -> _alice is a request -> 0.
+        expect(find.text('count=0'), findsOneWidget);
+        expect(_mountCount, 1);
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(_BadgeProbe)),
-      );
-      container.read(_dmSelector.notifier).state = dmB.dm;
-      container.read(_followSelector.notifier).state = followFresh;
-      await tester.pump();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(_BadgeProbe)),
+        );
+        container.read(_dmSelector.notifier).state = dmB.dm;
+        container.read(_followSelector.notifier).state = followFresh;
+        await tester.pump();
 
-      dmB.accepted.add(const []);
-      dmB.potential.add([_unreadFromAlice()]);
-      await tester.pump(const Duration(milliseconds: 20));
+        dmB.accepted.add(const []);
+        dmB.potential.add([_unreadFromAlice()]);
+        await tester.pump(const Duration(milliseconds: 20));
 
-      // The sync widget forwarded the fresh repos to the SAME cubit, which
-      // re-subscribed: _alice is now followed -> counted. The probe did not
-      // remount (the BlocProvider identity stayed stable).
-      expect(find.text('count=1'), findsOneWidget);
-      expect(_mountCount, 1);
-    },
-  );
+        // The sync widget forwarded the fresh repos to the SAME cubit, which
+        // re-subscribed: _alice is now followed -> counted. The probe did not
+        // remount (the BlocProvider identity stayed stable).
+        expect(find.text('count=1'), findsOneWidget);
+        expect(_mountCount, 1);
+      },
+    );
 
-  testWidgets(
-    'a late emission from the previous repository does not overwrite the count',
-    (tester) async {
-      final dmA = _buildDm();
-      final dmB = _buildDm();
-      addTearDown(() async {
-        await dmA.accepted.close();
-        await dmA.potential.close();
-        await dmB.accepted.close();
-        await dmB.potential.close();
-      });
-      final follow = _buildFollow(followsAlice: false);
+    testWidgets(
+      'a late emission from the previous repository does not overwrite the count',
+      (tester) async {
+        final dmA = _buildDm();
+        final dmB = _buildDm();
+        addTearDown(() async {
+          await dmA.accepted.close();
+          await dmA.potential.close();
+          await dmB.accepted.close();
+          await dmB.potential.close();
+        });
+        final follow = _buildFollow(followsAlice: false);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            _dmSelector.overrideWith((ref) => dmA.dm),
-            _followSelector.overrideWith((ref) => follow),
-          ],
-          child: const _BadgeProbe(),
-        ),
-      );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _dmSelector.overrideWith((ref) => dmA.dm),
+              _followSelector.overrideWith((ref) => follow),
+            ],
+            child: const _BadgeProbe(),
+          ),
+        );
 
-      dmA.accepted.add(const []);
-      dmA.potential.add(const []);
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('count=0'), findsOneWidget);
+        dmA.accepted.add(const []);
+        dmA.potential.add(const []);
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(find.text('count=0'), findsOneWidget);
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(_BadgeProbe)),
-      );
-      container.read(_dmSelector.notifier).state = dmB.dm;
-      await tester.pump();
-      dmB.accepted.add(const []);
-      dmB.potential.add(const []);
-      await tester.pump(const Duration(milliseconds: 20));
-      expect(find.text('count=0'), findsOneWidget);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(_BadgeProbe)),
+        );
+        container.read(_dmSelector.notifier).state = dmB.dm;
+        await tester.pump();
+        dmB.accepted.add(const []);
+        dmB.potential.add(const []);
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(find.text('count=0'), findsOneWidget);
 
-      // Old repo emits 3 unread after the swap: must be ignored.
-      dmA.accepted.add([
-        DmConversation(
-          id: 'old1',
-          participantPubkeys: const [_me, _alice],
-          isGroup: false,
-          createdAt: 1700000000,
-          lastMessageTimestamp: 1700000000,
-          isRead: false,
-          currentUserHasSent: true,
-        ),
-      ]);
-      await tester.pump(const Duration(milliseconds: 20));
+        // Old repo emits 3 unread after the swap: must be ignored.
+        dmA.accepted.add([
+          DmConversation(
+            id: 'old1',
+            participantPubkeys: const [_me, _alice],
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000000,
+            isRead: false,
+            currentUserHasSent: true,
+          ),
+        ]);
+        await tester.pump(const Duration(milliseconds: 20));
 
-      expect(find.text('count=0'), findsOneWidget);
-      expect(find.text('count=1'), findsNothing);
-    },
-  );
+        expect(find.text('count=0'), findsOneWidget);
+        expect(find.text('count=1'), findsNothing);
+      },
+    );
+  });
 }

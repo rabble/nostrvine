@@ -8,8 +8,8 @@ import 'package:videos_repository/src/home_feed_result.dart';
 /// {@template in_memory_feed_cache}
 /// Volatile, session-scoped cache for feed results.
 ///
-/// Stores [HomeFeedResult] keyed by feed mode name (e.g. `"home"`,
-/// `"latest"`, `"popular"`), plus [AuthorFeedResult] keyed by author
+/// Stores [HomeFeedResult] keyed by feed mode name (e.g. `"latest"`,
+/// `"popular"`, `"classics"`), plus [AuthorFeedResult] keyed by author
 /// (e.g. `"author:<pubkeyHex>"`). The cache lives in memory only — it
 /// does not persist across app restarts.
 ///

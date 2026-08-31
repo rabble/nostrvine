@@ -6,7 +6,9 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-import 'package:db_client/db_client.dart';
+// `ProfileStats` here is the domain model from `models`, not the Drift
+// table class of the same name — the repository hides it the same way.
+import 'package:db_client/db_client.dart' hide ProfileStats;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
@@ -34,6 +36,7 @@ import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:videos_repository/videos_repository.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -149,7 +152,7 @@ void main() {
       mockBlocklist = _MockContentBlocklistRepository();
       // Default: nobody blocked. Reaction-filtering tests re-stub this.
       when(
-        () => mockBlocklist.feedHiddenPubkeys,
+        () => mockBlocklist.dmHiddenPubkeys,
       ).thenReturn(const <String>{});
       when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
 
@@ -181,11 +184,16 @@ void main() {
     Widget buildSubject({
       ConversationState? state,
       UserProfile? otherProfile,
+      ProfileStats? otherStats,
       bool otherProfileVanished = false,
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
       String counterparty = otherPubkey,
+      List<String>? counterparties,
       ConversationState? previousState,
+      Future<UserProfile?>? otherProfileFuture,
+      Future<bool>? otherProfileVanishedFuture,
+      bool isIdentityResolving = false,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -217,10 +225,25 @@ void main() {
           profileReadRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
             counterparty,
-          ).overrideWith((ref) async => otherProfile),
+          ).overrideWith(
+            (ref) => otherProfileFuture ?? Future.value(otherProfile),
+          ),
+          userProfileStatsReactiveProvider(
+            counterparty,
+          ).overrideWith((ref) => Stream.value(otherStats)),
           profileVanishedProvider(
             counterparty,
-          ).overrideWith((ref) => Stream.value(otherProfileVanished)),
+          ).overrideWith((ref) => otherProfileVanished),
+          profileVanishedSnapshotProvider(
+            counterparty,
+          ).overrideWith(
+            (ref) =>
+                otherProfileVanishedFuture ??
+                Future.value(otherProfileVanished),
+          ),
+          profileIdentityResolvingProvider(
+            counterparty,
+          ).overrideWithValue(isIdentityResolving),
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
           contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
@@ -240,7 +263,7 @@ void main() {
               child: BlocProvider<DmRestoreStatusCubit>.value(
                 value: mockRestoreStatusCubit,
                 child: ConversationView(
-                  participantPubkeys: [counterparty],
+                  participantPubkeys: counterparties ?? [counterparty],
                 ),
               ),
             ),
@@ -251,6 +274,66 @@ void main() {
           ? app
           : MockGoRouterProvider(goRouter: goRouter, child: app);
     }
+
+    // Same rule as the inbox action sheet, one screen in: Report and Block
+    // take one account, and on a group `otherPubkey` is whichever counterparty
+    // sorted first — so the sheet would name the thread and act on a stranger.
+    group('options sheet on a group thread', () {
+      const secondPeer =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      Future<void> openOptions(
+        WidgetTester tester, {
+        required List<String> counterparties,
+      }) async {
+        await tester.pumpWidget(
+          buildSubject(
+            counterparties: counterparties,
+            state: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          ),
+        );
+        await tester.pump();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('offers no Report or Block', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openOptions(
+          tester,
+          counterparties: const [otherPubkey, secondPeer],
+        );
+
+        expect(find.text(l10n.profileCopyPublicKey), findsNothing);
+        expect(
+          find.textContaining(l10n.profileBlockDisplayName('')),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(l10n.profileReportDisplayName('')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a 1:1 thread still offers both', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openOptions(tester, counterparties: const [otherPubkey]);
+
+        expect(
+          find.textContaining(l10n.profileBlockDisplayName('')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.profileReportDisplayName('')),
+          findsOneWidget,
+        );
+      });
+    });
 
     group('double-tap to like', () {
       DmMessage reactableMessage({required bool sent}) => DmMessage(
@@ -670,6 +753,86 @@ void main() {
         expect(find.byType(ConversationAppBar), findsOneWidget);
       });
 
+      testWidgets(
+        'waits for the peer identity before opening profile options',
+        (
+          tester,
+        ) async {
+          final profileCompleter = Completer<UserProfile?>();
+          await tester.pumpWidget(
+            buildSubject(
+              otherProfileFuture: profileCompleter.future,
+              isIdentityResolving: true,
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+          );
+          await tester.tap(
+            find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+          );
+          await tester.pump();
+
+          expect(find.byType(MoreSheetContent), findsNothing);
+
+          profileCompleter.complete(null);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.byType(MoreSheetContent), findsOneWidget);
+        },
+      );
+
+      testWidgets('opens profile options when identity lookups fail', (
+        tester,
+      ) async {
+        final profileCompleter = Completer<UserProfile?>();
+        final vanishedCompleter = Completer<bool>();
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfileFuture: profileCompleter.future,
+            otherProfileVanishedFuture: vanishedCompleter.future,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pump();
+        vanishedCompleter.completeError(StateError('vanish read failed'));
+        await tester.pump();
+        profileCompleter.completeError(StateError('profile read failed'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(MoreSheetContent), findsOneWidget);
+      });
+
+      testWidgets('opens known moderation options without awaiting a profile', (
+        tester,
+      ) async {
+        final profileCompleter = Completer<UserProfile?>();
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: kModerationPubkeyHex,
+            otherProfileFuture: profileCompleter.future,
+            isIdentityResolving: true,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(MoreSheetContent), findsOneWidget);
+      });
+
       testWidgets('renders $MessageInputBar', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pump();
@@ -934,13 +1097,21 @@ void main() {
         final profile = UserProfile(
           pubkey: otherPubkey,
           name: 'Jack',
-          rawData: const {'follower_count': 2100},
+          rawData: const {},
           createdAt: now,
           eventId:
               'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
         );
 
-        await tester.pumpWidget(buildSubject(otherProfile: profile));
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfile: profile,
+            otherStats: const ProfileStats(
+              pubkey: otherPubkey,
+              followers: 2100,
+            ),
+          ),
+        );
         await tester.pump();
         await tester.pump();
 
@@ -955,13 +1126,18 @@ void main() {
         );
       });
 
-      testWidgets('does not render a self-reported Vine follower count', (
+      // The line's count comes from the `profile_statistics` store, never from
+      // the profile object. Both keys below are shapes this screen's cache can
+      // never produce anyway — `follower_count` is written only by the
+      // people-search path, and `vine_followers` is a Kind 0 *tag* the getter
+      // reads out of *content* — so neither may reach the line (#8403).
+      testWidgets('ignores follower counts carried on the profile', (
         tester,
       ) async {
         final profile = UserProfile(
           pubkey: otherPubkey,
           name: 'Jack',
-          rawData: const {'vine_followers': 430},
+          rawData: const {'follower_count': 2100, 'vine_followers': 430},
           createdAt: now,
           eventId:
               'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
@@ -971,10 +1147,37 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // vine_followers is the account's own kind-0 claim; only an
-        // authoritative follower_count earns a spot on the line.
         expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(find.textContaining('2.1K'), findsNothing);
         expect(find.textContaining('430'), findsNothing);
+      });
+
+      // A zero is indistinguishable from a stats outage: funnelcake answers
+      // 200 with `{0, 0}` when the summary table is down.
+      testWidgets('omits a zero follower count', (tester) async {
+        final profile = UserProfile(
+          pubkey: otherPubkey,
+          name: 'Jack',
+          rawData: const {},
+          createdAt: now,
+          eventId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfile: profile,
+            otherStats: const ProfileStats(pubkey: otherPubkey, followers: 0),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(
+          find.textContaining(l10n.socialProofFollowerCount(0, '0')),
+          findsNothing,
+        );
       });
 
       testWidgets(
@@ -2515,8 +2718,9 @@ void main() {
         );
       }
 
-      // The flat feed-hide set the view now reads from the repository
-      // (`feedHiddenPubkeys`), which is itself the union of these buckets.
+      // The flat DM-hide set the view reads from the repository
+      // (`dmHiddenPubkeys`) — the viewer's own blocks and mutes only. A
+      // third party's list must not reach a DM surface (#7345).
       Set<String> hiddenReactors({
         Set<String> blocked = const {},
         Set<String> muted = const {},
@@ -2552,7 +2756,7 @@ void main() {
             createdAt: 1_700_000_003,
           ),
         ]);
-        when(() => mockBlocklist.feedHiddenPubkeys).thenReturn(
+        when(() => mockBlocklist.dmHiddenPubkeys).thenReturn(
           hiddenReactors(blocked: {blockedReactor}, muted: {mutedReactor}),
         );
 
@@ -2573,7 +2777,7 @@ void main() {
           reaction(id: 'r-blk', reactor: blockedReactor, emoji: '😂'),
         ]);
         when(
-          () => mockBlocklist.feedHiddenPubkeys,
+          () => mockBlocklist.dmHiddenPubkeys,
         ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
@@ -2597,7 +2801,7 @@ void main() {
           ),
         ]);
         when(
-          () => mockBlocklist.feedHiddenPubkeys,
+          () => mockBlocklist.dmHiddenPubkeys,
         ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
@@ -2622,7 +2826,7 @@ void main() {
         tester,
       ) async {
         var hidden = <String>{};
-        when(() => mockBlocklist.feedHiddenPubkeys).thenAnswer((_) => hidden);
+        when(() => mockBlocklist.dmHiddenPubkeys).thenAnswer((_) => hidden);
         primeReactions([
           reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
           reaction(

@@ -27,11 +27,12 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// (the frame-ops helpers return the source list unchanged) is skipped so it
 /// never records an empty history entry.
 ///
-/// Bails when the [ProImageEditorState] is gone — a tap can resolve after the
+/// Returns whether the edit was committed. Bails with `false` when the
+/// [ProImageEditorState] is gone — a tap can resolve after the
 /// editor route is popped, and force-unwrapping it there is a release-mode
 /// crash (#5799). Bailing before the bloc dispatch keeps the frame list and
 /// the editor history from diverging.
-void commitStopMotionFrames(
+bool commitStopMotionFrames(
   BuildContext context, {
   required String clipId,
   required List<StopMotionClipFrame> frames,
@@ -39,19 +40,17 @@ void commitStopMotionFrames(
   final bloc = context.read<ClipEditorBloc>();
   final overlayBloc = context.read<TimelineOverlayBloc>();
   final editor = VideoEditorScope.of(context).editor;
-  if (editor == null) return;
+  if (editor == null) return false;
 
   final state = bloc.state;
   final index = state.clips.indexWhere((clip) => clip.id == clipId);
-  if (index == -1) return;
+  if (index == -1) return false;
 
   final clip = state.clips[index];
-  if (identical(frames, clip.stopMotionFrames)) return;
+  if (identical(frames, clip.stopMotionFrames)) return false;
 
   final updated = StopMotionFrameOps.clipWithFrames(clip, frames);
-  final newClips = [
-    for (final c in state.clips) c.id == clipId ? updated : c,
-  ];
+  final newClips = [for (final c in state.clips) c.id == clipId ? updated : c];
   final rebasedMarkers = rebaseTimelineMarkersForClipState(
     oldClips: state.clips,
     newClips: newClips,
@@ -67,6 +66,7 @@ void commitStopMotionFrames(
     clips: newClips,
     timelineMarkers: rebasedMarkers,
   );
+  return true;
 }
 
 DivineVideoClip? _clip(BuildContext context, String clipId) {

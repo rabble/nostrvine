@@ -556,8 +556,9 @@ void main() {
 
         // Pop the fullscreen feed route to return to the explore grid.
         // The pooled feed uses a DivineAppBarIconButton with semanticLabel
-        // 'Go back'. Fall back to Navigator.pop if not found.
-        final backButton = find.bySemanticsLabel('Go back');
+        // the stable 'back_button' identifier rather than its localized
+        // label. Fall back to Navigator.pop if not found.
+        final backButton = find.bySemanticsIdentifier('back_button');
         if (backButton.evaluate().isNotEmpty) {
           await tester.tap(backButton.first);
         } else {
@@ -768,7 +769,7 @@ void main() {
 
             logPhase('Phase 3n complete -- Settings screen verified');
 
-            final backNav = find.bySemanticsLabel('Go back');
+            final backNav = find.bySemanticsIdentifier('back_button');
             if (backNav.evaluate().isNotEmpty) {
               await tester.tap(backNav.first);
               await tester.pump(const Duration(seconds: 1));

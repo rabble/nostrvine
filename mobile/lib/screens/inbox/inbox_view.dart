@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
@@ -29,6 +30,7 @@ import 'package:openvine/screens/inbox/message_requests/widgets/message_requests
 import 'package:openvine/screens/inbox/new_message_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
@@ -308,8 +310,9 @@ class _InboxTabPane extends StatelessWidget {
 void _pushConversation(
   BuildContext context,
   String conversationId,
-  List<String> participantPubkeys,
-) {
+  List<String> participantPubkeys, [
+  String? subject,
+]) {
   Log.info(
     '🚀 Pushing conversation: id=$conversationId',
     name: 'InboxView',
@@ -317,8 +320,48 @@ void _pushConversation(
   );
   context.push(
     ConversationPage.pathForId(conversationId),
-    extra: participantPubkeys,
+    extra: subject == null
+        ? participantPubkeys
+        : {'participantPubkeys': participantPubkeys, 'subject': subject},
   );
+}
+
+/// Hands `ConversationListBloc` the localized names it substitutes for peers
+/// whose own name must not be shown, so inbox search matches the string the
+/// row actually renders (#8204).
+///
+/// A widget of its own, mounted inside the Messages subtree, for two reasons.
+/// The bloc has no `context.l10n`, so the strings have to come from the UI —
+/// and `BlocProvider` is lazy, so reading the bloc anywhere higher would drag
+/// its creation earlier than the Messages tab being opened. Everything below
+/// the enclosing `BlocListener` is already a consumer, so nothing here changes
+/// when the bloc starts.
+///
+/// `didChangeDependencies` rather than `initState`: reading l10n registers a
+/// dependency on `Localizations`, so this fires again when the language
+/// changes. It can, without an app restart, via Settings -> General — and
+/// `BlocProvider.create:` runs once, so labels injected only at construction
+/// would leave search matching the previous language.
+class _PeerLabelSync extends StatefulWidget {
+  const _PeerLabelSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PeerLabelSync> createState() => _PeerLabelSyncState();
+}
+
+class _PeerLabelSyncState extends State<_PeerLabelSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<ConversationListBloc>().add(
+      ConversationListPeerLabelsChanged(dmPeerLabels(context)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// Content for the Messages tab: following bar + conversation list or
@@ -358,7 +401,9 @@ class _MessagesContent extends ConsumerWidget {
       },
       child: Stack(
         children: [
-          _MessagesScrollView(currentUserPubkey: currentPubkey),
+          _PeerLabelSync(
+            child: _MessagesScrollView(currentUserPubkey: currentPubkey),
+          ),
           // FAB positioned bottom-right
           PositionedDirectional(
             end: _kFabInset,
@@ -381,17 +426,20 @@ class _MessagesContent extends ConsumerWidget {
       return;
     }
 
+    // Read before opening the sheet: the picker needs it to exclude the
+    // viewer from its own candidate list (#8351), and with no signed-in
+    // pubkey there is nobody to message anyway.
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (currentPubkey == null) return;
+
     final selectedUser = await NewMessageSheet.show(
       context,
       profileRepository: profileRepo,
       followRepository: ref.read(followRepositoryProvider),
+      currentUserPubkey: currentPubkey,
     );
 
     if (selectedUser == null || !context.mounted) return;
-
-    final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (currentPubkey == null) return;
 
     final conversationId = DmRepository.computeConversationId([
       currentPubkey,
@@ -522,29 +570,6 @@ class _PinnedSupportRow extends StatelessWidget {
   }
 }
 
-/// Vertical padding [UnreadFilterChips] puts above and below its chip row.
-const double _kFilterChipsVerticalPadding = 8;
-
-/// Inner vertical padding of a [DivineButtonSize.tiny] chip. Fixed per size.
-const double _kTinyChipVerticalPadding = 6;
-
-/// Line box of a tiny chip's `titleSmallFont` label (14/20) — the only part of
-/// the chip's height that grows with the text scaler.
-const double _kTinyChipLineHeight = 20;
-
-/// Height [UnreadFilterChips] needs at the current text scale.
-///
-/// A pinned sliver declares its extent before its child is laid out, so this
-/// reproduces the child's height rather than measuring it. Under-declaring
-/// silently clips the label — a Row overflowing on its cross axis does not
-/// throw. Duplicating the arithmetic is safe only because a widget test pins
-/// it against the chips' real intrinsic height at two scales, so a moved
-/// `divine_ui` token fails there instead of on a phone.
-double _filterChipsExtent(BuildContext context) =>
-    _kFilterChipsVerticalPadding * 2 +
-    _kTinyChipVerticalPadding * 2 +
-    MediaQuery.textScalerOf(context).scale(_kTinyChipLineHeight);
-
 /// The whole Messages pane as a single scroll view.
 ///
 /// Every piece of chrome — following bar, search field, filter chips — used to
@@ -653,9 +678,10 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             child: _searchFocused
                 ? const SizedBox(width: double.infinity)
                 : FollowingBar(
+                    currentUserPubkey: widget.currentUserPubkey,
                     onUserTapped: (pubkey) {
                       Log.info(
-                        '👤 User tapped in following bar: $pubkey',
+                        '👤 User tapped in following bar: ${pubkeyForLogs(pubkey)}',
                         name: 'InboxView',
                         category: LogCategory.ui,
                       );
@@ -798,12 +824,10 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
       ),
-      SliverPersistentHeader(
-        pinned: true,
-        delegate: _FilterChipsHeaderDelegate(
+      PinnedHeaderSliver(
+        child: _FilterChipsHeader(
           selected: filter,
           hasBlocked: hasBlocked,
-          extent: _filterChipsExtent(context),
           onChanged: (value) => context.read<ConversationListBloc>().add(
             ConversationListFilterChanged(value),
           ),
@@ -975,7 +999,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         .where((pk) => pk != widget.currentUserPubkey)
         .toList();
 
-    _pushConversation(context, conversation.id, otherPubkeys);
+    _pushConversation(
+      context,
+      conversation.id,
+      otherPubkeys,
+      conversation.subject,
+    );
   }
 
   Future<void> _onConversationLongPressed(
@@ -989,35 +1018,107 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    // A known identity skips the lookup entirely: kind-0 for the moderation
-    // account resolves late, and the sheet would open labelled with the
-    // generated fallback name the row's own override exists to avoid.
-    String displayName;
-    if (displayNameOverride != null) {
-      displayName = displayNameOverride;
-    } else {
-      final profile = await ref.read(
-        fetchUserProfileProvider(otherPubkey).future,
+    // Match [ConversationTile]'s identity chain, so the row and the sheet it
+    // opens cannot name two different accounts (#7380, #8185). A known
+    // identity skips the lookup entirely: applying a vanish evicts the cached
+    // profile, moderation's kind-0 resolves late, and a retired moderation key
+    // has none at all — so the sheet would otherwise open labelled with the
+    // generated fallback the row's own name exists to avoid.
+    //
+    // The reactive provider intentionally renders false while its shared
+    // Drift stream is loading. An imperative read cannot use that placeholder:
+    // the sheet needs the durable answer before choosing a name.
+    bool isVanished;
+    try {
+      isVanished = await ref.read(
+        profileVanishedSnapshotProvider(otherPubkey).future,
       );
+    } catch (error, stackTrace) {
+      // The sheet contains safety actions. A transient local-database failure
+      // must not make Report and Block disappear with the whole gesture.
+      Log.warning(
+        'Could not read durable vanish state; opening conversation actions '
+        'with the live-account identity fallback',
+        name: 'InboxView',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      isVanished = false;
+    }
+    if (!context.mounted) return;
+
+    final String peerName;
+    final knownName = dmPeerNameWithoutProfile(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isVanished,
+      displayNameOverride: displayNameOverride,
+    );
+    if (knownName != null) {
+      peerName = knownName;
+    } else {
+      UserProfile? profile;
+      try {
+        profile = await ref.read(fetchUserProfileProvider(otherPubkey).future);
+      } catch (error, stackTrace) {
+        // A profile-cache failure must not suppress safety actions either.
+        Log.warning(
+          'Could not read the conversation peer profile; opening conversation '
+          'actions with the generated identity fallback',
+          name: 'InboxView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       if (!context.mounted) return;
-      displayName = profile?.bestDisplayName ?? 'user';
+      peerName = dmPeerDisplayName(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+        displayNameOverride: displayNameOverride,
+        profile: profile,
+      );
     }
 
     if (!context.mounted) return;
+
+    // The sheet has to name what the row names. `otherPubkey` is an arbitrary
+    // member of a group, so a group resolves to the room's own title instead.
+    final isGroup = conversation.isGroup;
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: conversation.participantPubkeys,
+      currentUserPubkey: widget.currentUserPubkey,
+      isGroup: isGroup,
+      peerName: peerName,
+      subject: conversation.subject,
+    );
 
     final muteCubit = context.read<ConversationMuteCubit>();
     final isMuted = muteCubit.state.isMuted(conversation.id);
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
-
+    final blockConfirmation = switch ((isBlocked, isVanished)) {
+      (true, true) => context.l10n.inboxUnblockedVanishedAccount,
+      (true, false) => context.l10n.inboxUnblockedUser(displayName),
+      (false, true) => context.l10n.inboxBlockedVanishedAccount,
+      (false, false) => context.l10n.inboxBlockedUser(displayName),
+    };
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
         context,
         displayName: displayName,
+        isVanished: isVanished,
         isMuted: isMuted,
         isBlocked: isBlocked,
+        // Covers the pinned support row AND an ordinary row, which is the
+        // same moderation thread whenever a filter or search drops the pin.
+        canRemove: !actionsCubit.isRemovalProtected(conversation),
+        isGroup: isGroup,
       );
 
       if (action == null || !context.mounted) return;
@@ -1048,7 +1149,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(displayName)
+                      ? isVanished
+                            ? context.l10n.inboxReportedVanishedAccount
+                            : context.l10n.inboxReportedUser(displayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1062,28 +1165,41 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             actionsCubit.blockUser(otherPubkey);
           }
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isBlocked
-                      ? context.l10n.inboxUnblockedUser(displayName)
-                      : context.l10n.inboxBlockedUser(displayName),
-                ),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(blockConfirmation)));
           }
 
         case ConversationAction.remove:
           if (!context.mounted) return;
-          final confirmed = await _confirmRemove(context, displayName);
+          final confirmed = await _confirmRemove(
+            context,
+            displayName,
+            isVanished: isVanished,
+            isGroup: isGroup,
+          );
           if (confirmed && context.mounted) {
-            final removed = await actionsCubit.removeConversation(
+            final messenger = ScaffoldMessenger.of(context);
+            final removedText = context.l10n.inboxRemovedConversation;
+            // Not an error: the repository protects a Divine Moderation
+            // thread. Only reachable if the action was offered anyway, since
+            // the sheet drops it for a protected peer (#8391).
+            final refusedText =
+                context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+            final outcome = await actionsCubit.removeConversation(
               conversation.id,
             );
-            if (context.mounted && removed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.l10n.inboxRemovedConversation)),
-              );
+            switch (outcome) {
+              case RemoveConversationOutcome.removed:
+                messenger.showSnackBar(
+                  SnackBar(content: Text(removedText)),
+                );
+              case RemoveConversationOutcome.refused:
+                messenger.showSnackBar(
+                  SnackBar(content: Text(refusedText)),
+                );
+              case RemoveConversationOutcome.failed:
+                break;
             }
           }
       }
@@ -1094,7 +1210,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     }
   }
 
-  Future<bool> _confirmRemove(BuildContext context, String displayName) async {
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName, {
+    required bool isVanished,
+    required bool isGroup,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1106,7 +1227,15 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
         content: Text(
-          context.l10n.inboxRemoveConfirmBody(displayName),
+          // The 1:1 body says "your conversation with {displayName}". A group
+          // title is the room's name, not a person, so that template would
+          // read as a conversation with the room — name nobody instead, the
+          // way the vanished body already does.
+          switch ((isGroup, isVanished)) {
+            (true, _) => context.l10n.inboxRemoveConfirmBodyGroup,
+            (false, true) => context.l10n.inboxRemoveConfirmBodyVanishedAccount,
+            (false, false) => context.l10n.inboxRemoveConfirmBody(displayName),
+          },
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),
@@ -1176,52 +1305,43 @@ class _FilteredEmptyContent extends StatelessWidget {
   }
 }
 
-/// Pinned header carrying [UnreadFilterChips].
+/// Pinned header carrying [InboxFilterChips].
 ///
 /// Pinned rather than scrolled away so the user can always drop back to All
 /// after narrowing to Unread without hunting for the chip. Opaque, because the
 /// conversation list scrolls underneath it.
-class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _FilterChipsHeaderDelegate({
+///
+/// Rendered through [PinnedHeaderSliver] rather than a
+/// [SliverPersistentHeaderDelegate] on purpose, the same way
+/// `sound_detail_screen.dart` does: a delegate has to declare its extent
+/// before its child is laid out, and a header that ends up shorter than that
+/// extent makes `layoutExtent` exceed `paintExtent`. The sliver then fails
+/// layout, every sliver after it keeps a null geometry, and paint reports it
+/// as "Null check operator used on a null value" against the enclosing
+/// [CustomScrollView] — a blank Messages pane. The chips' height comes from
+/// font metrics that snap to whole pixels, while any declared extent is
+/// arithmetic over `textScaler.scale(...)`, so the two diverged at eleven of
+/// iOS's twelve Dynamic Type sizes: six blanked the pane and five clipped the
+/// chips, leaving only the default correct (#7854). [PinnedHeaderSliver]
+/// measures the child, so there is nothing to keep in sync.
+class _FilterChipsHeader extends StatelessWidget {
+  const _FilterChipsHeader({
     required this.selected,
     required this.hasBlocked,
     required this.onChanged,
-    required this.extent,
   });
 
   final InboxFilter selected;
   final bool hasBlocked;
   final ValueChanged<InboxFilter> onChanged;
 
-  /// Height the chips need at the caller's text scale. Passed in rather than
-  /// read here: [SliverPersistentHeaderDelegate]'s extent getters take no
-  /// [BuildContext], so the MediaQuery lookup has to happen in the widget
-  /// that builds the delegate. Same shape as the `topInset` pattern in
-  /// `.claude/rules/ui_theming.md`.
-  final double extent;
-
   @override
-  double get minExtent => extent;
-
-  @override
-  double get maxExtent => extent;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
-    return ColoredBox(
-      color: context.vineColors.surfaceContainerHigh,
-      child: InboxFilterChips(
-        selected: selected,
-        hasBlocked: hasBlocked,
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_FilterChipsHeaderDelegate oldDelegate) =>
-      oldDelegate.selected != selected ||
-      oldDelegate.hasBlocked != hasBlocked ||
-      oldDelegate.onChanged != onChanged ||
-      oldDelegate.extent != extent;
+  Widget build(BuildContext context) => ColoredBox(
+    color: context.vineColors.surfaceContainerHigh,
+    child: InboxFilterChips(
+      selected: selected,
+      hasBlocked: hasBlocked,
+      onChanged: onChanged,
+    ),
+  );
 }

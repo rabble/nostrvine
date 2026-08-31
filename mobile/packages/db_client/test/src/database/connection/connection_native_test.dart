@@ -1325,6 +1325,30 @@ void main() {
       );
     });
 
+    test('fails closed when the keyless classification is locked', () async {
+      _createSqliteDatabase(dbPath, draftCount: 1);
+      final lockHolder = sqlite3.open(dbPath)..execute('BEGIN EXCLUSIVE;');
+      addTearDown(() {
+        lockHolder
+          ..execute('ROLLBACK;')
+          ..close();
+      });
+
+      await expectLater(
+        migratePlaintextToEncrypted(rawKeyHex: validKey, databasePath: dbPath),
+        throwsA(
+          isA<DatabaseClassificationException>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                DatabaseClassificationStage.readSchema,
+              )
+              .having((error) => error.resultCode, 'resultCode', 5),
+        ),
+      );
+      expect(File(dbPath).existsSync(), isTrue);
+    });
+
     test(
       'migrates a populated plaintext DB to encrypted raw-key storage',
       () async {

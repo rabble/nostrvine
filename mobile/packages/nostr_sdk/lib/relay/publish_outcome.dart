@@ -147,9 +147,10 @@ class PublishOutcome {
 ///    most [fanOutReportGrace], so a publish that times out mid-fan-out can
 ///    still tell an unreached target from a silent one.
 ///
-/// The settle window bounds the cost of one wedged relay: healthy relays
-/// answer in single-digit milliseconds, so waiting the full [timeout] for a
-/// silent sibling would stall every publish behind the slowest connection.
+/// The settle window bounds the cost of one wedged relay: waiting the full
+/// [timeout] for a silent sibling would stall every publish behind the
+/// slowest connection. See [PublishTracker.defaultSettleWindow] for the
+/// latency it is sized against.
 class PublishTracker {
   PublishTracker({
     required this.eventId,
@@ -166,10 +167,31 @@ class PublishTracker {
 
   /// Grace period granted to the remaining relays after the first answer.
   ///
-  /// Sized against measured relay behaviour: a healthy relay returns `OK`
-  /// within a few milliseconds, so this is orders of magnitude of headroom
-  /// while still capping a wedged relay far below the publish timeout. Revisit
-  /// once publish telemetry gives a real latency distribution.
+  /// #6583 sized this against "a few milliseconds" and asked to be revisited
+  /// once real publish telemetry existed. It now does. Measured against
+  /// production `relay.divine.video` on the shape that stresses this most --
+  /// kind-1059 gift wraps, which pay more pre-`OK` ClickHouse round trips than
+  /// any other kind on the relay's ingest path (#7442,
+  /// 2026-08-31, n=330 over three runs, one connection, sequential sends):
+  ///
+  ///     p50 245ms   p90 290ms   p95 310ms   p99 1044ms   max 15.9s
+  ///
+  /// A healthy answer is ~50x the figure this was sized against, so the
+  /// headroom is ~3x at p95 rather than orders of magnitude -- and the window
+  /// sits *below* the measured p99. A sibling answering in the tail is
+  /// therefore recorded in [PublishOutcome.noResponseFrom] even though it
+  /// accepted, which is a false negative this constant chooses to accept.
+  ///
+  /// Left at 1s deliberately: widening it slows every publish that has a
+  /// wedged relay in its fan-out, and the error is asymmetric -- a publish
+  /// still succeeds on [PublishOutcome.acceptedByAny], so a missed sibling
+  /// costs breadth reporting rather than delivery.
+  ///
+  /// Watch the tail rather than the median. Those runs saw ~0.6% of publishes
+  /// hit a relay-wide stall of 4-16s, long enough to miss even the 10s
+  /// `DmSendBudget.recipientOkConfirm`. No settle window of this order can
+  /// absorb that, and it is not specific to any kind: the auto-allowed
+  /// control kind was hit in the same windows.
   static const defaultSettleWindow = Duration(seconds: 1);
 
   /// How long [timeout] may overrun while waiting for the fan-out's report.

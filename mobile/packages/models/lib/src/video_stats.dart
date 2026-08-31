@@ -43,6 +43,7 @@ class VideoStats {
     this.embeddedLikes,
     this.embeddedComments,
     this.embeddedReposts,
+    this.eventTags = const [],
     this.rawTags = const {},
     this.contentWarningLabels = const [],
     this.textTrackRef,
@@ -225,15 +226,20 @@ class VideoStats {
     String? summaryFromTag;
     int? publishedAt;
     final rawTags = <String, String>{};
+    final eventTags = <List<String>>[];
     final contentWarningLabels = <String>[];
     final collaboratorPubkeys = <String>[];
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List<dynamic>;
       for (final tag in tags) {
-        if (tag is List && tag.length >= 2) {
-          final tagName = tag[0].toString();
-          final tagValue = tag[1].toString();
+        if (tag is List) {
+          final normalizedTag = tag.map((value) => value.toString()).toList();
+          if (normalizedTag.isEmpty) continue;
+          eventTags.add(normalizedTag);
+          if (normalizedTag.length < 2) continue;
+          final tagName = normalizedTag[0];
+          final tagValue = normalizedTag[1];
 
           // Store every tag in rawTags for downstream consumers
           rawTags[tagName] = tagValue;
@@ -423,6 +429,7 @@ class VideoStats {
       embeddedLikes: embeddedLikes,
       embeddedComments: embeddedComments,
       embeddedReposts: embeddedReposts,
+      eventTags: eventTags,
       rawTags: rawTags,
       categories: categories,
       contentWarningLabels: contentWarningLabels,
@@ -521,6 +528,12 @@ class VideoStats {
   /// Empty until the API includes a `categories` field in video responses.
   final List<String> categories;
 
+  /// Complete ordered Nostr tag array from the REST event payload.
+  ///
+  /// Unlike [rawTags], this preserves repeated tag names and every component
+  /// of structured tags so an addressable event can be republished safely.
+  final List<List<String>> eventTags;
+
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
@@ -585,6 +598,11 @@ class VideoStats {
         embeddedComments ?? int.tryParse(rawTags['comments'] ?? '');
     final originalReposts =
         embeddedReposts ?? int.tryParse(rawTags['reposts'] ?? '');
+    final hashtags = eventTags
+        .where((tag) => tag.length >= 2 && tag.first == 't')
+        .map((tag) => tag[1])
+        .where((tag) => tag.isNotEmpty)
+        .toList();
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -607,6 +625,7 @@ class VideoStats {
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       dimensions: dimensions,
+      fileSize: _fileSizeFromEventTags(eventTags),
       originalLikes: originalLikes,
       nostrLikeCount: reactions,
       originalComments: originalComments,
@@ -614,6 +633,9 @@ class VideoStats {
       nostrCommentCount: comments,
       nostrRepostCount: reposts,
       originalLoops: loops,
+      hashtags: hashtags,
+      altText: rawTags['alt'],
+      duration: int.tryParse(rawTags['duration'] ?? ''),
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
       categories: categories,
@@ -621,6 +643,7 @@ class VideoStats {
       collaboratorPubkeys: collaboratorPubkeys,
       moderationLabels: moderationLabels,
       proofSummary: proofSummary,
+      nostrEventTags: eventTags,
       rawTags: {
         ...rawTags,
         // Note: Do NOT inject engagement `loops` here — rawTags['loops']
@@ -644,6 +667,21 @@ class VideoStats {
 
   @override
   String toString() => 'VideoStats(id: $id, title: $title)';
+}
+
+int? _fileSizeFromEventTags(List<List<String>> eventTags) {
+  int? fileSize;
+  for (final tag in eventTags) {
+    if (tag.isEmpty) continue;
+    if (tag.first == 'size' && tag.length >= 2) {
+      fileSize = int.tryParse(tag[1]);
+    } else if (tag.first == 'imeta') {
+      parseImetaTag(tag, (key, value) {
+        if (key == 'size') fileSize ??= int.tryParse(value);
+      });
+    }
+  }
+  return fileSize;
 }
 
 List<String> _parseModerationLabels(dynamic value) {

@@ -1,6 +1,8 @@
 // ABOUTME: View for the message request preview screen.
 // ABOUTME: Shows sender profile info, message count, and accept/decline actions.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/config/profile_metrics.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
@@ -18,12 +21,14 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// View for the message request preview screen.
 ///
@@ -31,7 +36,9 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// a "View profile" button, message count text, and two action buttons:
 /// "View messages" (accept) and "Decline and remove".
 class RequestPreviewView extends ConsumerWidget {
-  const RequestPreviewView({super.key});
+  const RequestPreviewView({this.subject, super.key});
+
+  final String? subject;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,16 +106,82 @@ class RequestPreviewView extends ConsumerWidget {
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
     final profile = profileAsync.asData?.value;
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
 
-    final displayName =
-        moderationDisplayName(context, otherPubkey) ??
-        profile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(otherPubkey);
+    // Same treatment as [ConversationTile]. This screen also links straight
+    // through to [OtherProfileScreen], which already names a vanished account
+    // for the state — so without this the same tap sequence showed a generated
+    // handle and then "Deleted account" (#8185).
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
+
+    // Suppressing the profile object as well as the name matches
+    // [OtherProfileScreen], which nulls its own header profile on a vanish
+    // rather than pass a deleted account's avatar, handle and counts
+    // downstream.
+    final visibleProfile = isDeleted ? null : profile;
+
+    // Counts come from the profile-statistics store, not from the profile.
+    // `UserProfile.rawData` only carries `follower_count` / `video_count` on
+    // the people-search shape (`ProfileSearchResult.toUserProfile`), which is
+    // never written to the Drift cache this screen reads — so the REST-only
+    // getters are structurally null here and the Kind 0 `vine_*` fallback is
+    // dead too (the archive importer writes those as tags, not content).
+    // `_cacheProfileStatsFromResult` routes `social` / `stats` from
+    // `GET /api/users/{pubkey}` into `profile_statistics`, which is where the
+    // numbers actually live (#7486).
+    final stats = isDeleted
+        ? null
+        : ref
+              .watch(userProfileStatsReactiveProvider(otherPubkey))
+              .asData
+              ?.value;
+
+    final peerName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      profile: visibleProfile,
+      isResolving: isResolving,
+    );
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: [currentPubkey, ...participantPubkeys],
+      currentUserPubkey: currentPubkey,
+      isGroup: participantPubkeys.length > 1,
+      peerName: peerName,
+      subject: subject,
+    );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
 
     return Scaffold(
       backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
-        title: displayName,
+        title: isIdentityResolving ? null : displayName,
+        titleWidget: isIdentityResolving
+            ? Semantics(
+                label: context.l10n.commonLoading,
+                child: IdentitySkeletonizer(
+                  isLoading: true,
+                  excludeSemantics: true,
+                  child: Text(
+                    visualDisplayName,
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              )
+            : null,
         showBackButton: true,
         // Same one-entry-stack exposure as the unresolved states below:
         // `loading` is only the first frame of a cold deep-link entry, and
@@ -121,14 +194,23 @@ class RequestPreviewView extends ConsumerWidget {
             Expanded(
               child: _ProfileContent(
                 displayName: displayName,
-                profile: profile,
+                profile: visibleProfile,
+                stats: stats,
+                // A vanished account shows no counts and no shimmer waiting
+                // for counts that will never arrive.
+                statsPending: !isDeleted && stats == null,
                 otherPubkey: otherPubkey,
                 currentPubkey: currentPubkey,
                 messageCount: messageCount,
                 messages: messages,
+                isResolving: isIdentityResolving,
               ),
             ),
-            _ActionButtons(participantPubkeys: participantPubkeys),
+            _ActionButtons(
+              participantPubkeys: participantPubkeys,
+              displayName: displayName,
+              subject: subject,
+            ),
           ],
         ),
       ),
@@ -162,9 +244,11 @@ class _PreviewBackdrop extends StatelessWidget {
 /// conversation route, and the whole point of this branch is that there isn't
 /// one. Decline stays, because `declineRequest` keys off the conversation ID
 /// alone: a preview read that fails is no reason to make an unwanted request
-/// undismissable, leaving the inbox-wide "Remove all requests" as the only way
-/// out. The app bar falls back to the section title, since the loaded header's
-/// name would be a generated placeholder here.
+/// undismissable. Unlike the loaded state, this branch cannot check whether
+/// the peer is a Divine moderation identity — there is no counterparty to
+/// test, and the id is a hash of the participants — so the cubit answers that
+/// for it and refuses (#6971). The app bar falls back to the section title,
+/// since the loaded header's name would be a generated placeholder here.
 class _UnresolvedRequestScaffold extends StatelessWidget {
   const _UnresolvedRequestScaffold({required this.child});
 
@@ -230,25 +314,53 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.displayName,
     required this.profile,
+    required this.stats,
+    required this.statsPending,
     required this.otherPubkey,
     required this.currentPubkey,
     required this.messageCount,
     required this.messages,
+    required this.isResolving,
   });
 
   final String displayName;
   final UserProfile? profile;
+  final ProfileStats? stats;
+
+  /// Whether counts are still expected to arrive for this account.
+  ///
+  /// False for a vanished account, whose stats are suppressed outright rather
+  /// than awaited.
+  final bool statsPending;
   final String otherPubkey;
   final String currentPubkey;
   final int messageCount;
   final List<DmMessage> messages;
+  final bool isResolving;
 
   @override
   Widget build(BuildContext context) {
+    final visualDisplayName = displayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : displayName;
     final imageUrl = profile?.picture;
     final nip05 = profile?.shortDisplayNip05;
-    final followerCount = profile?.followerCount;
-    final videoCount = profile?.videoCount;
+    // A zero is not data on any of the three. Funnelcake collapses a stats
+    // failure into zeros behind an HTTP 200 — `get_social_stats` never
+    // surfaces an error, and `get_user_stats` maps both a miss and a failure
+    // to a default — so "never indexed", "genuinely zero" and "the summary
+    // table is down" are indistinguishable. The repository already withholds
+    // a zero follower/following count for that reason; videos get the same
+    // treatment here (#7486).
+    final followerCount = (stats?.followers ?? 0) > 0 ? stats!.followers : null;
+    final videoCount = (stats?.videoCount ?? 0) > 0 ? stats!.videoCount : null;
+
+    // The sender of a message request is never the viewer, so the owner
+    // exemption the profile header applies does not exist here — the floor
+    // always applies.
+    final loopCount = (stats?.totalViews ?? 0) >= profileLoopsVisibilityFloor
+        ? stats!.totalViews
+        : null;
 
     return ColoredBox(
       color: VineTheme.scrim15,
@@ -258,24 +370,35 @@ class _ProfileContent extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              UserAvatar(
-                imageUrl: imageUrl,
-                name: displayName,
-                placeholderSeed: otherPubkey,
-                size: 96,
-                contentOverride: isModerationAccount(otherPubkey)
-                    ? const ModerationAvatar()
-                    : null,
+              Semantics(
+                label: isResolving ? context.l10n.commonLoading : null,
+                child: IdentitySkeletonizer(
+                  isLoading: isResolving,
+                  excludeSemantics: true,
+                  child: UserAvatar(
+                    imageUrl: imageUrl,
+                    name: visualDisplayName,
+                    placeholderSeed: otherPubkey,
+                    size: 96,
+                    contentOverride: isModerationAccount(otherPubkey)
+                        ? const ModerationAvatar()
+                        : null,
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
-              Text(
-                displayName,
-                style: VineTheme.titleLargeFont(
-                  color: context.vineColors.primaryText,
+              IdentitySkeletonizer(
+                isLoading: isResolving,
+                excludeSemantics: true,
+                child: Text(
+                  visualDisplayName,
+                  style: VineTheme.titleLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               if (nip05 != null && nip05.isNotEmpty) ...[
                 const SizedBox(height: 4),
@@ -288,11 +411,16 @@ class _ProfileContent extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              if (followerCount != null || videoCount != null) ...[
+              if (statsPending ||
+                  followerCount != null ||
+                  videoCount != null ||
+                  loopCount != null) ...[
                 const SizedBox(height: 4),
                 _StatsLine(
                   followerCount: followerCount,
                   videoCount: videoCount,
+                  loopCount: loopCount,
+                  isLoading: statsPending,
                 ),
               ],
               const SizedBox(height: 16),
@@ -305,10 +433,13 @@ class _ProfileContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              _MessageCountDescription(
-                displayName: displayName,
-                messageCount: messageCount,
-              ),
+              if (isRetiredModerationAccount(otherPubkey))
+                const _ClosedNoticeDescription()
+              else
+                _MessageCountDescription(
+                  displayName: displayName,
+                  messageCount: messageCount,
+                ),
               _InvitePreview(
                 messages: messages,
                 senderDisplayName: displayName,
@@ -357,38 +488,194 @@ class _InvitePreview extends StatelessWidget {
   }
 }
 
-class _StatsLine extends StatelessWidget {
-  const _StatsLine({this.followerCount, this.videoCount});
+/// Followers · videos · loops for the account behind a message request.
+///
+/// Mirrors the profile header's loading vocabulary — a Skeletonizer shimmer
+/// while the counts are still arriving, bounded by [_skeletonTimeout] so a
+/// pubkey the stats store never answers for does not shimmer forever. Where
+/// the header then degrades each column to a `—`, this line hides instead:
+/// its counts are ICU plurals whose number and noun are one string, so there
+/// is no numeral to swap out without picking a plural form for a dash.
+class _StatsLine extends StatefulWidget {
+  const _StatsLine({
+    this.followerCount,
+    this.videoCount,
+    this.loopCount,
+    this.isLoading = false,
+  });
 
   final int? followerCount;
   final int? videoCount;
+  final int? loopCount;
+
+  /// Whether counts are still expected. Drives the shimmer, and the timeout
+  /// that eventually gives up on it.
+  final bool isLoading;
+
+  @override
+  State<_StatsLine> createState() => _StatsLineState();
+}
+
+class _StatsLineState extends State<_StatsLine> {
+  /// Matches the profile header's stats row, so the two surfaces give up on a
+  /// silent stats store at the same moment.
+  static const _skeletonTimeout = Duration(seconds: 7);
+
+  /// Painted behind the shimmer only. The number is never legible — it exists
+  /// to give the skeleton bar a realistic width.
+  static const _skeletonPlaceholderCount = 99;
+
+  Timer? _timer;
+  bool _timedOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isLoading) _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(_StatsLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLoading && !oldWidget.isLoading) {
+      _timedOut = false;
+      _startTimer();
+    } else if (!widget.isLoading && oldWidget.isLoading) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer(_skeletonTimeout, () {
+      if (mounted) setState(() => _timedOut = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final showSkeleton = widget.isLoading && !_timedOut;
+
     final parts = <String>[];
-    if (followerCount != null) {
-      parts.add(
-        StringUtils.compactPlural(
-          followerCount!,
-          context.l10n.messageRequestFollowersCount,
-        ),
-      );
-    }
-    if (videoCount != null) {
-      parts.add(
-        StringUtils.compactPlural(
-          videoCount!,
-          context.l10n.messageRequestVideosCount,
-        ),
-      );
+    if (showSkeleton) {
+      // Two placeholder parts set the shimmer's width. Followers and videos
+      // are the pair every account can have; loops are floored, so promising
+      // a third bar would usually shimmer into nothing.
+      parts
+        ..add(
+          StringUtils.compactPlural(
+            _skeletonPlaceholderCount,
+            l10n.messageRequestFollowersCount,
+          ),
+        )
+        ..add(
+          StringUtils.compactPlural(
+            _skeletonPlaceholderCount,
+            l10n.messageRequestVideosCount,
+          ),
+        );
+    } else {
+      final followerCount = widget.followerCount;
+      final videoCount = widget.videoCount;
+      final loopCount = widget.loopCount;
+      if (followerCount != null) {
+        parts.add(
+          StringUtils.compactPlural(
+            followerCount,
+            l10n.messageRequestFollowersCount,
+          ),
+        );
+      }
+      if (videoCount != null) {
+        parts.add(
+          StringUtils.compactPlural(
+            videoCount,
+            l10n.messageRequestVideosCount,
+          ),
+        );
+      }
+      if (loopCount != null) {
+        // `videoFeedLoopCountLine` declares its display string before its
+        // plural selector, the reverse of the two keys above, so it cannot be
+        // handed to `compactPlural` directly. Reused rather than duplicated
+        // into a new key because it already carries this wording in all 22
+        // locales.
+        parts.add(
+          StringUtils.compactPlural(
+            loopCount,
+            (value, display) => l10n.videoFeedLoopCountLine(display, value),
+          ),
+        );
+      }
     }
 
-    return Text(
-      parts.join(' \u2022 '),
-      style: VineTheme.bodySmallFont(
-        color: context.vineColors.onSurfaceVariant,
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Skeletonizer(
+      enabled: showSkeleton,
+      effect: vineSkeletonEffectOf(context),
+      child: ExcludeSemantics(
+        excluding: showSkeleton,
+        child: Text(
+          parts.join(' \u2022 '),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ),
-      textAlign: TextAlign.center,
+    );
+  }
+}
+
+/// Replaces the overture on a retired moderation notice, whose key nobody is
+/// behind. "Wants to message you" is wrong twice over there: the account was
+/// retired, and an enforcement notice is not a social approach.
+///
+/// Reuses the two ARB keys `_ClosedThreadNotice` renders in
+/// `conversation_view.dart`, which the request row also already shows, so the
+/// three surfaces a user crosses in one tap sequence cannot drift onto
+/// different wording (#6971).
+///
+/// Deliberately copy only. The thread behind "View messages" carries the
+/// redirect to the live support account, and this screen has been kept light
+/// on controls since #8090 pulled one back out of it.
+class _ClosedNoticeDescription extends StatelessWidget {
+  const _ClosedNoticeDescription();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        spacing: 8,
+        children: [
+          Text(
+            l10n.dmRetiredThreadClosedTitle,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.dmRetiredThreadClosedBody,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -443,9 +730,15 @@ class _ActionBar extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.participantPubkeys});
+  const _ActionButtons({
+    required this.participantPubkeys,
+    required this.displayName,
+    this.subject,
+  });
 
   final List<String> participantPubkeys;
+  final String displayName;
+  final String? subject;
 
   @override
   Widget build(BuildContext context) {
@@ -459,11 +752,21 @@ class _ActionButtons extends StatelessWidget {
             context.pushReplacementNamed(
               ConversationPage.routeName,
               pathParameters: {'id': conversationId},
-              extra: participantPubkeys,
+              extra: subject == null
+                  ? participantPubkeys
+                  : {
+                      'participantPubkeys': participantPubkeys,
+                      'subject': subject,
+                    },
             );
           },
         ),
-        const _DeclineAndRemoveButton(),
+        // An enforcement notice is not a request to decline. Removing it is
+        // permanent and it is the user's only copy of why they were actioned,
+        // so the action is not offered (#6971). The cubit refuses it too, for
+        // the unresolved states below that cannot name the peer.
+        if (!participantPubkeys.any(isModerationAccount))
+          _DeclineAndRemoveButton(displayName: displayName),
       ],
     );
   }
@@ -471,8 +774,17 @@ class _ActionButtons extends StatelessWidget {
 
 /// The one action that survives an unresolved counterparty: `declineRequest`
 /// takes the conversation ID, not the participants.
+///
+/// Not rendered at all once the peer resolves to a Divine moderation identity
+/// — see [_ActionButtons]. It stays here because this branch has no peer to
+/// test, so the refusal comes back from the cubit instead.
+///
+/// [displayName] is null on the unresolved-counterparty states, where there is
+/// no name to put in the confirmation snackbar; the decline still runs.
 class _DeclineAndRemoveButton extends StatelessWidget {
-  const _DeclineAndRemoveButton();
+  const _DeclineAndRemoveButton({this.displayName});
+
+  final String? displayName;
 
   @override
   Widget build(BuildContext context) {
@@ -481,12 +793,43 @@ class _DeclineAndRemoveButton extends StatelessWidget {
     return _SecondaryActionButton(
       label: context.l10n.messageRequestDeclineAndRemoveButton,
       onTap: () async {
-        await context.read<MessageRequestActionsCubit>().declineRequest(
-          conversationId,
-        );
+        final cubit = context.read<MessageRequestActionsCubit>();
+        if (cubit.state.status == MessageRequestActionsStatus.processing) {
+          return;
+        }
+        final messenger = ScaffoldMessenger.of(context);
+        final errorText = context.l10n.commonSomethingWentWrong;
+        final name = displayName;
+        // A resolved counterparty names them in the confirmation; the
+        // unresolved states have no name, so fall back to the name-free
+        // "Removed conversation" rather than staying silent (#7881 review).
+        final successText = name == null
+            ? context.l10n.inboxRemovedConversation
+            : context.l10n.messageRequestDeclinedSnackbar(name);
+        // Not an error: the row is a Divine moderation notice the cubit
+        // protects. Only the unresolved states can reach it, since the action
+        // bar drops this button once the peer resolves (#6971).
+        final refusedText =
+            context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+        final outcome = await cubit.declineRequest(conversationId);
+        switch (outcome) {
+          case DeclineRequestOutcome.failed:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(errorText, error: true),
+            );
+            return;
+          case DeclineRequestOutcome.refused:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(refusedText),
+            );
+            return;
+          case DeclineRequestOutcome.removed:
+            break;
+        }
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
         if (context.mounted) context.safePop(fallback: InboxPage.path);
+        messenger.showSnackBar(DivineSnackbarContainer.snackBar(successText));
       },
     );
   }

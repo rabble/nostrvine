@@ -59,6 +59,8 @@ class MessageRequestsPage extends ConsumerWidget {
             // read" / "remove all" sweep a conversation the user is not
             // looking at.
             supportRowPubkey: kModerationPubkeyHex,
+            moderationAccount: isModerationAccount,
+            retiredModerationAccount: isRetiredModerationAccount,
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(

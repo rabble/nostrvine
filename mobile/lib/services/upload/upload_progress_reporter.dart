@@ -10,10 +10,34 @@ import 'package:flutter/foundation.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_config.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
-import 'package:openvine/services/upload_manager.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Upload performance metrics
+class UploadMetrics {
+  const UploadMetrics({
+    required this.uploadId,
+    required this.startTime,
+    required this.retryCount,
+    required this.fileSizeMB,
+    required this.wasSuccessful,
+    this.endTime,
+    this.uploadDuration,
+    this.throughputMBps,
+    this.errorCategory,
+  });
+  final String uploadId;
+  final DateTime startTime;
+  final DateTime? endTime;
+  final Duration? uploadDuration;
+  final int retryCount;
+  final double fileSizeMB;
+  final double? throughputMBps;
+  final String? errorCategory;
+  final bool wasSuccessful;
+}
 
 /// Get platform name for logging (web-safe).
 ///

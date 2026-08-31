@@ -7,7 +7,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
+import 'package:nostr_sdk/utils/nostr_timestamp.dart';
 
 /// Test implementation of NostrService that doesn't connect to real relays
 class TestNostrService implements NostrClient {
@@ -145,6 +145,7 @@ class TestNostrService implements NostrClient {
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     final subId =
         subscriptionId ?? 'test_sub_${DateTime.now().millisecondsSinceEpoch}';

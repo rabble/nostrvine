@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:meta/meta.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/outgoing_dm_retry_service_reportable_sites.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -131,12 +132,29 @@ class OutgoingDmRetryService {
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
-  /// Extra margin over [DmBatchSendBudget.messagePublishTimeout] for the work a
-  /// send does OUTSIDE that backstop — chiefly recipient kind-10050 inbox
-  /// resolution, which runs before the publish is wrapped and is not itself
-  /// bounded end-to-end. It is a margin, not a guarantee; bounding those
-  /// segments is tracked separately.
-  static const Duration _inboxResolutionMargin = Duration(seconds: 30);
+  /// What a send can cost OUTSIDE [DmBatchSendBudget.messagePublishTimeout].
+  ///
+  /// Chiefly recipient kind-10050 inbox resolution, which runs before the
+  /// publish is wrapped. This used to be a flat 30s estimate documented as
+  /// "a margin, not a guarantee", because nothing bounded that resolution:
+  /// on device it took 51s on a real send while the capped publish took 10ms
+  /// (#7091). It is now derived from the bound actually enforced there, so it
+  /// cannot drift from it — the #6586 failure mode.
+  static final Duration _inboxResolutionMargin =
+      DmSendBudget.inboxResolution + _nonCancellationCushion;
+
+  /// Room beyond the two bounds for a send that has already been abandoned.
+  ///
+  /// `Future.timeout` does not cancel, so a send the backstop gave up on keeps
+  /// running past the cap. This guard has to outlive the IN-FLIGHT send, not
+  /// merely the cap, which is why deriving it from the bounds alone would be
+  /// too tight.
+  ///
+  /// Sized to hold the total at the 160s it has shipped at: bounding the
+  /// segments made the derivation honest, and re-deriving it downward at the
+  /// same time would ship an unmeasured change to how soon the sweep re-drives
+  /// a live send. That is a separate decision, on its own evidence.
+  static const Duration _nonCancellationCushion = Duration(seconds: 23);
 
   /// Minimum age of a still-`pending` row before the interrupted-send arm
   /// may re-drive it. Must exceed the worst-case legitimately-in-flight
@@ -151,6 +169,11 @@ class OutgoingDmRetryService {
   /// chain it bounds, and `Future.timeout` does not cancel — so the abandoned
   /// send keeps running past the cap and this guard has to outlive the
   /// IN-FLIGHT send, not merely the cap.
+  ///
+  /// Both halves are now derived: the backstop covers the whole capped chain
+  /// including the three pre-wrap steps that used to sit in its headroom, and
+  /// [_inboxResolutionMargin] covers resolution at the bound now enforced on
+  /// it. The guard is a guarantee rather than an estimate (#7091).
   static final Duration _interruptedMinAge =
       DmBatchSendBudget.messagePublishTimeout + _inboxResolutionMargin;
 
@@ -190,6 +213,11 @@ class OutgoingDmRetryService {
   /// mid-pass — invisible to that pass's own counters — still arms the
   /// follow-up timer instead of stranding until the next external trigger.
   bool _nudgedDuringSweep = false;
+
+  /// Per-rumor attempt count and last-attempt time for the message-deletion
+  /// pass. Session-scoped: entries are pruned each sweep as rows settle.
+  final Map<String, int> _deletionAttempts = {};
+  final Map<String, DateTime> _deletionLastAttempt = {};
 
   bool get isInitialized => _isInitialized;
 
@@ -233,7 +261,7 @@ class OutgoingDmRetryService {
     });
 
     Log.info(
-      'initialized for $_userPubkey',
+      'initialized for ${pubkeyForLogs(_userPubkey)}',
       name: 'OutgoingDmRetryService',
       category: LogCategory.system,
     );
@@ -576,6 +604,8 @@ class OutgoingDmRetryService {
         }
       }
 
+      final deletions = await _sweepMessageDeletions();
+
       Log.info(
         'sweep complete: '
         'self-wrap-recovered=$processedSelfWrap '
@@ -589,7 +619,11 @@ class OutgoingDmRetryService {
         'interrupted-exhausted=$exhaustedInterrupted '
         'skipped-backoff=$skippedBackoff '
         'skipped-interrupted-too-young=$skippedInterruptedTooYoung '
-        'aborted-not-ready=$abortedNotReady',
+        'aborted-not-ready=$abortedNotReady '
+        'deletions(sent=${deletions.sent} blocked=${deletions.blocked} '
+        'unconfirmed=${deletions.unconfirmed} '
+        'skipped-backoff=${deletions.skippedBackoff} '
+        'skipped-exhausted=${deletions.skippedExhausted})',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,
       );
@@ -606,7 +640,9 @@ class OutgoingDmRetryService {
             failedFullSend > 0 ||
             failedInterrupted > 0 ||
             skippedBackoff > 0 ||
-            skippedInterruptedTooYoung > 0,
+            skippedInterruptedTooYoung > 0 ||
+            deletions.unconfirmed > 0 ||
+            deletions.skippedBackoff > 0,
       );
     } on Object catch (e, stackTrace) {
       sweepThrew = true;
@@ -657,6 +693,101 @@ class OutgoingDmRetryService {
         _armFollowUpIfIdle();
       }
     }
+  }
+
+  /// One pass over the delete-for-everyone requests that no relay has
+  /// confirmed, re-driving each through [DmRepository.retryMessageDeletion].
+  ///
+  /// Attempt and backoff bookkeeping is in memory rather than on the row: a
+  /// `direct_messages` row carries no retry columns, and the sweep only needs
+  /// to avoid hammering within a session — the pending status itself is what
+  /// survives a restart. `DmReactionRetryService` tracks its own deletions
+  /// the same way.
+  Future<
+    ({
+      int sent,
+      int blocked,
+      int unconfirmed,
+      int skippedBackoff,
+      int skippedExhausted,
+    })
+  >
+  _sweepMessageDeletions() async {
+    final targets = await _dmRepository.retryableMessageDeletions();
+    _deletionAttempts.removeWhere(
+      (id, _) => !targets.any((t) => t.rumorId == id),
+    );
+    _deletionLastAttempt.removeWhere(
+      (id, _) => !targets.any((t) => t.rumorId == id),
+    );
+
+    var sent = 0;
+    var blocked = 0;
+    var unconfirmed = 0;
+    var skippedBackoff = 0;
+    var skippedExhausted = 0;
+
+    for (final target in targets) {
+      final attempts = _deletionAttempts[target.rumorId] ?? 0;
+      if (attempts >= _retryConfig.maxRetries) {
+        skippedExhausted++;
+        continue;
+      }
+      final lastAttempt = _deletionLastAttempt[target.rumorId];
+      if (lastAttempt != null &&
+          _now().difference(lastAttempt) < _retryConfig.backoffFor(attempts)) {
+        skippedBackoff++;
+        continue;
+      }
+
+      _deletionAttempts[target.rumorId] = attempts + 1;
+      _deletionLastAttempt[target.rumorId] = _now();
+
+      final DmMessageDeletionOutcome outcome;
+      try {
+        outcome = await _dmRepository.retryMessageDeletion(
+          rumorId: target.rumorId,
+        );
+      } on Object catch (e, stackTrace) {
+        unconfirmed++;
+        Log.error(
+          'retryMessageDeletion threw for ${target.rumorId}: $e',
+          name: 'OutgoingDmRetryService',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        unawaited(
+          _crashReporting.recordError(
+            e,
+            stackTrace,
+            reason: OutgoingDmRetryServiceReportableSites.perRowUnexpectedThrow,
+          ),
+        );
+        continue;
+      }
+
+      switch (outcome) {
+        case DmMessageDeletionOutcome.sent:
+          sent++;
+        case DmMessageDeletionOutcome.blocked:
+          blocked++;
+        case DmMessageDeletionOutcome.unconfirmed:
+          unconfirmed++;
+        case DmMessageDeletionOutcome.unavailable:
+          // Nothing was attempted, so refund the budget this row just spent
+          // rather than exhausting it on a state the sweep cannot influence.
+          _deletionAttempts[target.rumorId] = attempts;
+      }
+    }
+
+    return (
+      sent: sent,
+      blocked: blocked,
+      unconfirmed: unconfirmed,
+      skippedBackoff: skippedBackoff,
+      skippedExhausted: skippedExhausted,
+    );
   }
 
   /// Runs the injected connectivity probe, defaulting to online on any error

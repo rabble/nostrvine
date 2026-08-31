@@ -4,10 +4,10 @@ import 'package:openvine/models/invite_availability.dart';
 
 void main() {
   group(InviteAvailabilityState, () {
-    test('defaults to enabled before the server value resolves', () {
+    test('defaults to disabled before the server value resolves', () {
       const state = InviteAvailabilityState();
       expect(state.hasResolved, isFalse);
-      expect(state.isEnabled, isTrue);
+      expect(state.isEnabled, isFalse);
     });
 
     test('enables invites for invite_code_required', () {
@@ -26,9 +26,14 @@ void main() {
       expect(state.isEnabled, isFalse);
     });
 
-    test('defaults unknown or missing server values to enabled', () {
+    test('defaults unknown or missing server values to disabled', () {
       const unknown = InviteAvailabilityState(hasResolved: true);
-      expect(unknown.isEnabled, isTrue);
+      expect(unknown.isEnabled, isFalse);
+    });
+
+    test('defaults resolved config to open when server mode is missing', () {
+      const state = InviteAvailabilityState(hasResolved: true);
+      expect(state.resolvedConfig.mode, OnboardingMode.open);
     });
 
     test('force enabled wins over a disabled server value', () {

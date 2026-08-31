@@ -7,6 +7,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
 import 'package:openvine/providers/app_providers.dart';
@@ -23,6 +24,8 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
     required this.isActive,
     required this.child,
     this.isFeedVisible = true,
+    this.visibilityRatio = 1,
+    this.position = 0,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     @visibleForTesting DateTime Function()? clock,
@@ -42,6 +45,13 @@ class DivineVideoMetricsTracker extends ConsumerStatefulWidget {
   /// a viewing session: scrolling away ends it, a cover only interrupts it.
   /// Defaults to true for hosts that have no cover concept.
   final bool isFeedVisible;
+
+  /// Fraction of the video tile currently visible. Full-screen feed callers
+  /// use the default; other hosts can supply their measured ratio.
+  final double visibilityRatio;
+
+  /// Zero-based position in the current feed.
+  final int position;
 
   final Widget child;
   final ViewTrafficSource trafficSource;
@@ -67,6 +77,8 @@ class _DivineVideoMetricsTrackerState
   /// never reached playback starts no session and reports nothing.
   bool _hasStartedPlayback = false;
   bool _hasRecordedImpression = false;
+  bool _hasRecordedProductImpression = false;
+  Timer? _productImpressionTimer;
 
   /// Mount time, kept for the seen-impression's elapsed-since-active gate.
   DateTime? _mountedAt;
@@ -80,6 +92,9 @@ class _DivineVideoMetricsTrackerState
   /// switch) flushes one segment without ending the session — nothing
   /// accumulated after the interruption is lost.
   Duration _watchTotal = Duration.zero;
+  Duration _productWatchRecorded = Duration.zero;
+  int _productLoopsRecorded = 0;
+  String? _productPlaybackSessionId;
 
   /// Whole seconds already reported across this session's end segments.
   /// The wire format is whole seconds, so the remainder has to carry across
@@ -132,11 +147,17 @@ class _DivineVideoMetricsTrackerState
     final becameActive = !wasTracking && _isTracking;
 
     if (videoChanged) {
-      _flushSegment(oldWidget.video);
+      _flushSegment(
+        oldWidget.video,
+        productEndReason: ProductAnalyticsV2PlaybackEndReason.navigation,
+      );
       _resetTracking();
     } else if (becameInactive) {
       // Either way the visible segment ends, so report the delta so far.
-      _flushSegment(widget.video);
+      _flushSegment(
+        widget.video,
+        productEndReason: ProductAnalyticsV2PlaybackEndReason.navigation,
+      );
       if (!widget.isActive) {
         // Scrolled away. The session is over; scrolling back is a fresh
         // watch and must count its own view (#7231).
@@ -156,9 +177,14 @@ class _DivineVideoMetricsTrackerState
     if (_isTracking && (videoChanged || becameActive || controllerChanged)) {
       _startTracking();
     }
+    if (oldWidget.visibilityRatio != widget.visibilityRatio ||
+        oldWidget.position != widget.position) {
+      _updateProductImpressionTimer();
+    }
   }
 
   void _startTracking() {
+    _updateProductImpressionTimer();
     final controller = widget.controller;
     if (controller == null) return;
 
@@ -194,17 +220,27 @@ class _DivineVideoMetricsTrackerState
     if (!widget.isActive) return;
 
     final now = widget._clock();
+    final position = state.position;
+    final duration = state.duration;
+    if (duration > Duration.zero) _lastKnownDuration = duration;
+
     if (state.isPlaying && !_isPlaying) {
       _isPlaying = true;
       _playIntervalStartedAt = now;
       _onPlaybackStarted();
+      _productPlaybackSessionId ??= const Uuid().v4();
     } else if (!state.isPlaying && _isPlaying) {
       _closePlayInterval(now);
+      _recordProductPlayback(
+        widget.video,
+        duration > Duration.zero ? duration : _lastKnownDuration,
+        switch (state.status) {
+          PlaybackStatus.completed => ProductAnalyticsV2PlaybackEndReason.ended,
+          PlaybackStatus.error => ProductAnalyticsV2PlaybackEndReason.error,
+          _ => ProductAnalyticsV2PlaybackEndReason.paused,
+        },
+      );
     }
-
-    final position = state.position;
-    final duration = state.duration;
-    if (duration > Duration.zero) _lastKnownDuration = duration;
 
     // Count completed loops via position wrap-around. Only meaningful once a
     // session has started; a stale pre-session position must not fabricate
@@ -266,7 +302,10 @@ class _DivineVideoMetricsTrackerState
   /// Non-terminal by construction: a segment with no new playback emits
   /// nothing, so flush triggers (cover, video change, dispose) can all run
   /// without double-counting.
-  void _flushSegment(VideoEvent video) {
+  void _flushSegment(
+    VideoEvent video, {
+    required ProductAnalyticsV2PlaybackEndReason productEndReason,
+  }) {
     _closePlayInterval(widget._clock());
 
     Duration? totalDuration = _lastKnownDuration;
@@ -279,6 +318,7 @@ class _DivineVideoMetricsTrackerState
     }
 
     _recordSeen(video, totalDuration);
+    _recordProductPlayback(video, totalDuration, productEndReason);
 
     if (!_hasStartedPlayback) return;
 
@@ -323,6 +363,89 @@ class _DivineVideoMetricsTrackerState
 
     _watchSecondsReported = cumulativeSeconds;
     _loopsFlushed = cumulativeLoops;
+  }
+
+  void _recordProductPlayback(
+    VideoEvent video,
+    Duration? totalDuration,
+    ProductAnalyticsV2PlaybackEndReason endReason,
+  ) {
+    final playbackSessionId = _productPlaybackSessionId;
+    if (playbackSessionId == null) return;
+
+    final watched = _watchTotal - _productWatchRecorded;
+    final cumulativeLoops = _cumulativeLoops(totalDuration).floor();
+    final loops = cumulativeLoops - _productLoopsRecorded;
+    if (watched <= Duration.zero && loops <= 0) return;
+
+    final durationMs = totalDuration?.inMilliseconds ?? 0;
+    final completed =
+        loops > 0 || (durationMs > 0 && watched.inMilliseconds >= durationMs);
+    unawaited(
+      _analyticsService
+          .recordPlaybackSession(
+            playbackSessionId: playbackSessionId,
+            contentId: video.id,
+            surface: _productSurface(widget.trafficSource),
+            durationMs: durationMs,
+            watchedMs: watched.inMilliseconds,
+            loopCount: loops < 0 ? 0 : loops,
+            completed: completed,
+            endReason: endReason,
+          )
+          .catchError((Object error) {
+            Log.warning(
+              'Failed to record private playback analytics: $error',
+              name: 'DivineVideoMetricsTracker',
+              category: LogCategory.video,
+            );
+            return null;
+          }),
+    );
+
+    _productWatchRecorded = _watchTotal;
+    _productLoopsRecorded = cumulativeLoops;
+    _productPlaybackSessionId = null;
+  }
+
+  void _updateProductImpressionTimer() {
+    final qualifies = _isTracking && widget.visibilityRatio >= 0.5;
+    if (_hasRecordedProductImpression || !qualifies) {
+      _productImpressionTimer?.cancel();
+      _productImpressionTimer = null;
+      return;
+    }
+    if (_productImpressionTimer != null) return;
+
+    final contentId = widget.video.id;
+    _productImpressionTimer = Timer(const Duration(seconds: 1), () {
+      _productImpressionTimer = null;
+      if (!mounted ||
+          _hasRecordedProductImpression ||
+          !_isTracking ||
+          widget.visibilityRatio < 0.5 ||
+          widget.video.id != contentId) {
+        return;
+      }
+      _hasRecordedProductImpression = true;
+      unawaited(
+        _analyticsService
+            .recordContentImpression(
+              contentId: contentId,
+              surface: _productSurface(widget.trafficSource),
+              position: widget.position < 0 ? 0 : widget.position,
+              visibleMs: 1000,
+            )
+            .catchError((Object error) {
+              Log.warning(
+                'Failed to record private content impression: $error',
+                name: 'DivineVideoMetricsTracker',
+                category: LogCategory.video,
+              );
+              return null;
+            }),
+      );
+    });
   }
 
   /// Loops for the whole session so far: counted wrap-arounds, or the
@@ -374,6 +497,9 @@ class _DivineVideoMetricsTrackerState
   void _resetTracking() {
     _resetViewSession();
     _hasRecordedImpression = false;
+    _hasRecordedProductImpression = false;
+    _productImpressionTimer?.cancel();
+    _productImpressionTimer = null;
   }
 
   /// Clears the viewing session without re-arming the seen impression, which
@@ -385,6 +511,9 @@ class _DivineVideoMetricsTrackerState
     _playIntervalStartedAt = null;
     _isPlaying = false;
     _watchTotal = Duration.zero;
+    _productWatchRecorded = Duration.zero;
+    _productLoopsRecorded = 0;
+    _productPlaybackSessionId = null;
     _watchSecondsReported = 0;
     _wrapsTotal = 0;
     _loopsFlushed = 0;
@@ -396,7 +525,11 @@ class _DivineVideoMetricsTrackerState
 
   @override
   void dispose() {
-    _flushSegment(widget.video);
+    _productImpressionTimer?.cancel();
+    _flushSegment(
+      widget.video,
+      productEndReason: ProductAnalyticsV2PlaybackEndReason.navigation,
+    );
     unawaited(_stateSubscription?.cancel());
     _analyticsServiceSubscription?.close();
     super.dispose();
@@ -404,4 +537,19 @@ class _DivineVideoMetricsTrackerState
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+ProductAnalyticsV2Surface _productSurface(ViewTrafficSource source) {
+  return switch (source) {
+    ViewTrafficSource.home => ProductAnalyticsV2Surface.feed,
+    ViewTrafficSource.profile => ProductAnalyticsV2Surface.profile,
+    ViewTrafficSource.search => ProductAnalyticsV2Surface.searchResults,
+    ViewTrafficSource.discoveryNew ||
+    ViewTrafficSource.discoveryClassic ||
+    ViewTrafficSource.discoveryForYou ||
+    ViewTrafficSource.discoveryPopular ||
+    ViewTrafficSource.discoveryFeatured => ProductAnalyticsV2Surface.discovery,
+    ViewTrafficSource.share ||
+    ViewTrafficSource.unknown => ProductAnalyticsV2Surface.unknown,
+  };
 }

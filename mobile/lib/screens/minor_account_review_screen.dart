@@ -79,9 +79,7 @@ class MinorAccountReviewScreen extends ConsumerWidget {
                   name: 'MinorAccountReviewScreen',
                   category: LogCategory.ui,
                 );
-                return _ErrorView(
-                  onRetry: () => refreshMinorAccountState(ref),
-                );
+                return _ErrorView(onRetry: () => refreshMinorAccountState(ref));
               },
             ),
           ),
@@ -246,6 +244,9 @@ class _LoadedView extends ConsumerWidget {
     final caseId = reviewCase?.id;
     final primaryAction = _primaryAction(reviewCase, l10n);
     final infoCard = _infoCardForCase(reviewCase, supportEmail, l10n);
+    final responseClockCard = reviewCase == null
+        ? null
+        : _ResponseClockCard(deadline: reviewCase.responseDeadline);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -302,6 +303,12 @@ class _LoadedView extends ConsumerWidget {
           l10n.minorAccountReviewRestrictionSupport,
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
+        ?responseClockCard,
+        _InfoCard(
+          title: l10n.minorAccountReviewContentTitle,
+          body: l10n.minorAccountReviewContentBody,
+        ),
+        const SizedBox(height: 24),
         _InfoCard(title: infoCard.title, body: infoCard.body),
         const SizedBox(height: 24),
         _InfoCard(
@@ -328,6 +335,13 @@ class _LoadedView extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
+        _InfoCard(
+          title: l10n.minorAccountReviewAppealTitle,
+          body: reviewCase?.isUnder13Path == true
+              ? l10n.minorAccountReviewAppealUnder13Body
+              : l10n.minorAccountReviewAppealTeenBody,
+        ),
+        const SizedBox(height: 12),
         DivineButton(
           label: l10n.minorAccountReviewOpenSupportCenter,
           leadingIcon: DivineIconName.headphones,
@@ -350,22 +364,6 @@ class _LoadedView extends ConsumerWidget {
           type: DivineButtonType.ghost,
           expanded: true,
           onPressed: () => refreshMinorAccountState(ref),
-        ),
-        const SizedBox(height: 24),
-        _InfoCard(
-          title: l10n.minorAccountReviewMoveAccountTitle,
-          body: l10n.minorAccountReviewMoveAccountBody,
-        ),
-        const SizedBox(height: 12),
-        DivineButton(
-          label: l10n.minorAccountReviewMoveAccountCta,
-          type: DivineButtonType.secondary,
-          expanded: true,
-          onPressed: () => _openExternalPage(
-            context,
-            AppConstants.accountPortabilityUrl,
-            'divine.video/exit',
-          ),
         ),
         const SizedBox(height: 24),
         TextButton(
@@ -443,11 +441,13 @@ class _LoadedView extends ConsumerWidget {
       return null;
     }
 
+    // No primary action for a case with nothing left for the user to do.
+    // Support Center is already offered unconditionally below, directly under
+    // the reconsideration card (#8239); returning it here as well rendered the
+    // same button twice — as primary above the card and again beneath it — in
+    // `openReported`, `cleared`, `deniedClosed` and `unknown`.
     if (!reviewCase.needsUserAction) {
-      return _MinorReviewPrimaryAction(
-        label: l10n.minorAccountReviewOpenSupportCenter,
-        onPressed: _openSupportCenter,
-      );
+      return null;
     }
 
     return _MinorReviewPrimaryAction(
@@ -456,10 +456,6 @@ class _LoadedView extends ConsumerWidget {
           : l10n.minorAccountReviewContinue,
       onPressed: (context) => _continueToNextStep(context, reviewCase),
     );
-  }
-
-  static void _openSupportCenter(BuildContext context) {
-    context.push(SupportCenterScreen.path);
   }
 
   void _continueToNextStep(BuildContext context, MinorReviewCase reviewCase) {
@@ -587,6 +583,71 @@ class _RestrictionLine extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ResponseClockCard extends StatelessWidget {
+  const _ResponseClockCard({required this.deadline});
+
+  final MinorReviewResponseDeadline deadline;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final copy = switch (deadline.clock) {
+      MinorReviewResponseClock.running => _runningCopy(context, l10n),
+      MinorReviewResponseClock.paused => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockPausedTitle,
+        body: l10n.minorAccountReviewResponseClockPausedBody(
+          deadline.remainingDaysWhenPaused!.floor(),
+        ),
+      ),
+      MinorReviewResponseClock.expired => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockExpiredTitle,
+        body: l10n.minorAccountReviewResponseClockExpiredBody,
+      ),
+      MinorReviewResponseClock.notApplicable => null,
+      MinorReviewResponseClock.unavailable => _ClockCopy(
+        title: l10n.minorAccountReviewResponseClockUnavailableTitle,
+        body: l10n.minorAccountReviewResponseClockUnavailableBody,
+      ),
+    };
+
+    // A not-applicable clock has no copy, so the card contributes no height
+    // at all — including the gap that would otherwise separate it from the
+    // content card below.
+    if (copy == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: _InfoCard(title: copy.title, body: copy.body),
+    );
+  }
+
+  _ClockCopy _runningCopy(BuildContext context, AppLocalizations l10n) {
+    final remaining = deadline.remaining!;
+    final date = MaterialLocalizations.of(
+      context,
+    ).formatMediumDate(deadline.deadlineAt!.toLocal());
+    final body = remaining < const Duration(hours: 48)
+        ? l10n.minorAccountReviewResponseClockRunningHours(
+            remaining.inHours,
+            date,
+          )
+        : l10n.minorAccountReviewResponseClockRunningDays(
+            remaining.inDays,
+            date,
+          );
+    return _ClockCopy(
+      title: l10n.minorAccountReviewResponseClockRunningTitle,
+      body: body,
+    );
+  }
+}
+
+class _ClockCopy {
+  const _ClockCopy({required this.title, required this.body});
+
+  final String title;
+  final String body;
 }
 
 class _InfoCard extends StatelessWidget {

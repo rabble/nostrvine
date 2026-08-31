@@ -15,12 +15,14 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -30,7 +32,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
-
 import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockCameraService extends Mock implements CameraService {}
@@ -93,9 +94,14 @@ class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
 /// `toggle(enable: false)`) so the best-effort teardown path can be
 /// exercised. Enabling stays a no-op so a recording can still start.
 class _ThrowingWakelockDisablePlatform extends WakelockPlusPlatformInterface {
+  int disableCalls = 0;
+
   @override
   Future<void> toggle({required bool enable}) async {
-    if (!enable) throw Exception('wakelock disable failed');
+    if (!enable) {
+      disableCalls++;
+      throw Exception('wakelock disable failed');
+    }
   }
 
   @override
@@ -1040,23 +1046,27 @@ void main() {
     });
 
     group('VideoRecorderFocusPointSet', () {
-      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+      test(
         'emits focusPoint then resets to zero after the auto-hide timer',
-        setUp: () {
-          when(
-            () => cameraService.setFocusPoint(any()),
-          ).thenAnswer((_) async => true);
+        () {
+          fakeAsync((async) {
+            when(
+              () => cameraService.setFocusPoint(any()),
+            ).thenAnswer((_) async => true);
+
+            final bloc = buildBloc();
+            bloc.add(const VideoRecorderFocusPointSet(Offset(0.5, 0.5)));
+            async.flushMicrotasks();
+            expect(bloc.state.focusPoint, const Offset(0.5, 0.5));
+
+            async.elapse(const Duration(milliseconds: 800));
+            async.flushMicrotasks();
+            expect(bloc.state.focusPoint, Offset.zero);
+
+            unawaited(bloc.close());
+            async.flushMicrotasks();
+          });
         },
-        build: buildBloc,
-        act: (bloc) async {
-          bloc.add(const VideoRecorderFocusPointSet(Offset(0.5, 0.5)));
-          // The auto-hide timer is 800ms — give it room to fire.
-          await Future<void>.delayed(const Duration(milliseconds: 900));
-        },
-        expect: () => const [
-          VideoRecorderBlocState(focusPoint: Offset(0.5, 0.5)),
-          VideoRecorderBlocState(),
-        ],
       );
     });
 
@@ -2225,6 +2235,7 @@ void main() {
             videoQuality: any(named: 'videoQuality'),
             initialLens: any(named: 'initialLens'),
             enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+            preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2283,6 +2294,7 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
             ),
           ).thenThrow(Exception('camera boom')),
           build: buildTraced,
@@ -2290,6 +2302,7 @@ void main() {
           verify: (_) {
             expect(monitor.traces.single.attributes['outcome'], 'error');
           },
+          errors: () => [isA<Exception>()],
         );
       });
 
@@ -2303,6 +2316,28 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: true,
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'asks for unprocessed capture when Music mode is on',
+        setUp: () {
+          when(
+            () => prefs.getBool(MusicModePreferenceService.prefsKey),
+          ).thenReturn(true);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verify(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: true,
             ),
           ).called(1);
         },
@@ -2313,7 +2348,9 @@ void main() {
         'failed camera return must not leave the recorder permanently locked',
         setUp: () {
           when(() => cameraService.isInitialized).thenReturn(false);
-          when(() => cameraService.initializationError).thenReturn('boom');
+          when(
+            () => cameraService.initializationError,
+          ).thenReturn(CameraInitializationError.failed);
         },
         build: () => buildBloc()
           ..emit(
@@ -2322,7 +2359,7 @@ void main() {
         act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
         verify: (bloc) {
           // Confirm we actually hit the init-failure return path…
-          expect(bloc.state.initializationErrorMessage, isNotNull);
+          expect(bloc.state.initializationError, isNotNull);
           // …and the lock was still cleared up front.
           expect(bloc.state.recordingLockedForNavigation, isFalse);
         },
@@ -2515,6 +2552,23 @@ void main() {
         await bloc.close();
         verify(() => cameraService.dispose()).called(1);
       });
+
+      test(
+        'disables wakelock without letting a failure abort cleanup',
+        () async {
+          final platform = _ThrowingWakelockDisablePlatform();
+          wakelockPlusPlatformInstance = platform;
+          addTearDown(() {
+            wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+          });
+          final bloc = buildBloc();
+
+          await expectLater(bloc.close(), completes);
+
+          expect(platform.disableCalls, 1);
+          verify(() => cameraService.dispose()).called(1);
+        },
+      );
     });
 
     group('stop-motion', () {
@@ -2657,6 +2711,7 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
             ),
           ).thenAnswer((_) async {});
           when(

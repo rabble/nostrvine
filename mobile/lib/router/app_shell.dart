@@ -1,32 +1,22 @@
 // ABOUTME: AppShell widget providing bottom navigation and dynamic header
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
-import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/navigation/back_navigation_executor.dart';
+import 'package:openvine/router/navigation/back_navigation_policy.dart';
+import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
-import 'package:openvine/screens/explore/explore_tab_labels.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/router/shell/shell_chrome.dart';
+import 'package:openvine/router/shell/shell_title_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/widgets/environment_indicator.dart';
-import 'package:openvine/widgets/environment_indicator_line.dart';
-import 'package:openvine/widgets/vine_bottom_nav.dart';
-import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Duration of the cross-fade applied when switching between bottom-nav tabs.
@@ -115,13 +105,25 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       if (!obscured) {
         final overlayVisibility = ref.read(overlayVisibilityProvider.notifier);
         if (clearOverlayOwners) {
-          // Popping the route directly above the shell proves no overlay owner
-          // remains. Force-clear because a `go()`-style back can skip an
-          // overlay route's own completion callback (#6239).
-          overlayVisibility.clearOverlays();
+          // Force-clear the page owners because a `go()`-style back can skip a
+          // pushed route's own completion callback (#6239): go_router completes
+          // an `ImperativeRouteMatch` only on the pop path, so the
+          // `pushWithVideoPause` completer never fires and its token strands.
+          //
+          // Page owners only. A popped route above the shell does *not* prove
+          // no overlay owner remains: a pause-aware sheet with
+          // `useRootNavigator: false` lives on a branch navigator, so the shell
+          // stays the top root route while that sheet is on screen. Clearing
+          // sheet owners here destroyed that live hold and resumed playback
+          // behind the visible sheet. A sheet token is released by its own
+          // route's dismiss callback and cannot strand the way a `go()`-removed
+          // page token does, so it never needed clearing here.
+          overlayVisibility.clearPageOpen();
         } else if (ModalRoute.of(context)?.isCurrent ?? false) {
-          // A freshly mounted shell can still sit below a live page owner.
-          // Clear only when navigation proves the shell is the top route.
+          // `didPush` runs when this shell route is newly installed, before a
+          // branch-navigator sheet belonging to this shell can exist. Clear
+          // stale owners only when the fresh shell is also the top root route;
+          // otherwise it may still sit below a live page owner.
           overlayVisibility.clearOverlays();
         }
       }
@@ -142,166 +144,35 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   void didPopNext() =>
       _setShellObscured(obscured: false, clearOverlayOwners: true);
 
-  String _titleFor(BuildContext context, WidgetRef ref, RouteContext? ctx) {
-    final l10n = context.l10n;
-    switch (ctx?.type) {
-      case RouteType.home:
-        return l10n.navHome;
-      case RouteType.explore:
-        // When in feed mode (watching a video), show the tab name
-        if (ctx?.videoIndex != null) {
-          final tabName = ref.watch(exploreTabNameProvider);
-          return labelForExploreTabName(l10n, tabName, shellTitle: true);
-        }
-        return l10n.navExplore;
-      case RouteType.categoryGallery:
-        return l10n.navExplore;
-      case RouteType.notifications:
-        return l10n.navNotifications;
-      case RouteType.inbox:
-        return l10n.navInbox;
-      case RouteType.profile:
-        final npub = ctx?.npub ?? '';
-        if (npub == 'me') {
-          return l10n.navMyProfile;
-        }
-        // Get user profile to show their display name
-        final userIdHex = npubToHexOrNull(npub);
-        if (userIdHex != null) {
-          final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
-          final displayName = profileAsync.value?.displayName;
-          if (displayName != null && !displayName.startsWith('npub1')) {
-            return displayName;
-          }
-        }
-        return l10n.navProfile;
-      default:
-        return '';
-    }
+  String? _currentUserNpub() {
+    final hex = ref.read(authServiceProvider).currentPublicKeyHex;
+    return hex == null ? null : NostrKeyUtils.encodePubKey(hex);
   }
 
-  /// Maps tab index to RouteType
-  RouteType _routeTypeForTab(int index) {
-    return switch (index) {
-      0 => RouteType.home,
-      1 => RouteType.explore,
-      2 => RouteType.notifications,
-      3 => RouteType.profile,
-      _ => RouteType.home,
-    };
-  }
-
-  /// Maps RouteType to tab index
-  /// Returns null if not a main tab route
-  int? _tabIndexFromRouteType(RouteType type) {
-    return switch (type) {
-      RouteType.home => 0,
-      RouteType.explore => 1,
-      RouteType.notifications || RouteType.inbox => 2,
-      RouteType.profile => 3,
-      // Not a main tab route
-      _ => null,
-    };
-  }
-
-  /// Navigates to the given tab at its last known position.
-  void _navigateToTab(BuildContext context, WidgetRef ref, int tabIndex) {
-    final routeType = _routeTypeForTab(tabIndex);
-    final lastIndex = ref
-        .read(lastTabPositionProvider.notifier)
-        .getPosition(routeType);
-
-    switch (tabIndex) {
-      case 0:
-        context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-      case 1:
-        if (lastIndex != null) {
-          context.go(ExploreScreen.pathForIndex(lastIndex));
-        } else {
-          context.go(ExploreScreen.path);
-        }
-      case 2:
-        context.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
-      case 3:
-        final authService = ref.read(authServiceProvider);
-        final currentUserHex = authService.currentPublicKeyHex;
-        if (currentUserHex != null) {
-          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
-          context.go(ProfileScreenRouter.pathForNpub(npub));
-        }
-    }
-  }
-
-  /// Whether the shell app bar should show a back button for [ctx].
-  bool _showBackButton(RouteContext? ctx) {
-    if (ctx == null) return false;
-    final isExploreVideo =
-        ctx.type == RouteType.explore && ctx.videoIndex != null;
-    // Notifications base state is index 0, not null.
-    final isNotificationVideo =
-        ctx.type == RouteType.notifications &&
-        ctx.videoIndex != null &&
-        ctx.videoIndex != 0;
-    final isOtherUserProfile =
-        ctx.type == RouteType.profile &&
-        !routeIdentifiesUser(
-          ctx.npub,
-          ref.read(authServiceProvider).currentPublicKeyHex,
-        );
-    final isProfileVideo =
-        ctx.type == RouteType.profile && ctx.videoIndex != null;
-
-    return isExploreVideo ||
-        isNotificationVideo ||
-        isOtherUserProfile ||
-        isProfileVideo;
-  }
-
-  /// Builds the header title - tappable for Explore and Hashtag routes to navigate back
-  Widget _buildTappableTitle(
-    BuildContext context,
-    WidgetRef ref,
-    String title,
-    RouteContext? ctx,
-  ) {
-    final routeType = ctx?.type;
-
-    // Check if title should be tappable (Explore-related routes)
-    final isTappable = routeType == RouteType.explore;
-
-    final titleWidget = Text(
-      title,
-      // Use Pacifico font for 'Divine' branding, Bricolage Grotesque for other titles
-      style: title == 'Divine'
-          ? GoogleFonts.pacifico(
-              textStyle: const TextStyle(fontSize: 24, letterSpacing: 0.2),
-            )
-          : VineTheme.titleLargeFont(color: context.vineColors.primaryText),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+  /// Runs the shared back policy for the app-bar back button.
+  void _handleAppBarBack() {
+    Log.info(
+      '👆 User tapped back button',
+      name: 'Navigation',
+      category: LogCategory.ui,
     );
-
-    if (!isTappable) {
-      return titleWidget;
-    }
-
-    return GestureDetector(
-      onTap: () {
-        Log.info(
-          '👆 User tapped header title: $title',
-          name: 'Navigation',
-          category: LogCategory.ui,
-        );
-        // Pop any pushed routes first (like CuratedListFeedScreen)
-        // Only pop if there are actually pushed routes
-        final navigator = Navigator.of(context);
-        if (navigator.canPop()) {
-          navigator.popUntil((route) => route.isFirst);
-        }
-        // Navigate to main explore view
-        context.go(ExploreScreen.path);
-      },
-      child: titleWidget,
+    final router = GoRouter.of(context);
+    final tabHistory = ref.read(tabHistoryProvider.notifier);
+    final previousTab = tabHistory.getPreviousTab();
+    executeBackAction(
+      resolveBackAction(
+        context: ref.read(pageContextProvider).asData?.value,
+        canPop: router.canPop(),
+        previousTab: previousTab,
+        lastIndexForPreviousTab: previousTab == null
+            ? null
+            : ref
+                  .read(lastTabPositionProvider.notifier)
+                  .recordedPosition(routeTypeForTab(previousTab)),
+        currentUserNpub: previousTab == 3 ? _currentUserNpub() : null,
+      ),
+      router: router,
+      tabHistory: tabHistory,
     );
   }
 
@@ -319,32 +190,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       final notifier = ref.read(activeBranchIndexProvider.notifier);
       if (notifier.state != activeIndex) notifier.state = activeIndex;
     });
-
-    // Transitional scaffold: records relay connection events for analytics.
-    // TODO(#4338): remove when relay management moves to a dedicated cubit/service.
-    ref.watch(relayStatisticsBridgeProvider);
-
-    // Transitional scaffold: refreshes feeds when the relay set changes.
-    // TODO(#4338): remove when feed refresh is driven by a relay event stream in a cubit.
-    ref.watch(relaySetChangeBridgeProvider);
-
-    ref.watch(relayListDirtyPublishBridgeProvider);
-
-    // Initialize Zendesk identity sync to keep user identity in sync with auth
-    ref.watch(zendeskIdentitySyncProvider);
-
-    // Mirrors the authenticated pubkey into Firebase Analytics + Crashlytics.
-    ref.watch(analyticsIdentitySyncProvider);
-
-    // Transitional scaffold: syncs notification preferences on auth change.
-    // TODO(#4338): remove when NotificationPreferencesCubit owns this lifecycle.
-    ref.watch(notificationPreferencesDirtySyncBridgeProvider);
-    ref.watch(pushNotificationSyncProvider);
-
-    // Transitional scaffold: syncs block/mute list after login.
-    // TODO(#4338): remove when BlocklistCubit owns post-login sync.
-    ref.watch(blocklistSyncBridgeProvider);
-    ref.watch(blockedFollowReconcilerProvider);
 
     // The shell chrome (app bar) mirrors the *active tab's* route. While a
     // full-screen route is pushed above the whole shell (camera, editor,
@@ -366,154 +211,40 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     _lastTabRouteContext = chrome.nextCache;
     final chromeCtx = chrome.context;
 
-    final title = _titleFor(context, ref, chromeCtx);
-
-    // Own profile grid renders its own scrollable header (avatar + stats), so
-    // AppShell suppresses its app bar for it — like home / inbox / explore grid.
-    final isOwnProfileGrid =
-        chromeCtx != null &&
-        chromeCtx.type == RouteType.profile &&
-        chromeCtx.videoIndex == null && // Video mode uses the app bar
-        routeIdentifiesUser(
-          chromeCtx.npub,
-          ref.read(authServiceProvider).currentPublicKeyHex,
-        );
-
-    // Inbox manages its own header (segmented toggle replaces app bar)
-    final isInbox =
-        chromeCtx != null &&
-        (chromeCtx.type == RouteType.inbox ||
-            chromeCtx.type == RouteType.conversation);
-
-    // Explore grid mode manages its own header (search bar + tabs).
-    final bool isExploreGrid;
-    if (chromeCtx?.type == RouteType.explore) {
-      isExploreGrid = chromeCtx!.videoIndex == null;
-    } else {
-      isExploreGrid = currentIndex == 1;
-    }
-
-    final showBackButton = _showBackButton(chromeCtx);
-
-    return Scaffold(
-      // Don't resize the shell body for the keyboard when a modal route is on
-      // top (e.g. the share sheet's message composer). The modal handles its
-      // own keyboard avoidance; letting the shell also shrink re-lays-out the
-      // full-screen feed video + overlay every keyboard frame, which is very
-      // laggy on older devices (Galaxy S10, reported on #5758). While the feed
-      // is the topmost route the default resize behaviour is preserved so its
-      // own bottom composers still lift above the keyboard.
-      resizeToAvoidBottomInset: shellRoute?.isCurrent ?? true,
-      // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
-      // instead of the standard AppBar, for full-screen video UX.
-      // Inbox uses its own segmented toggle header.
-      // Explore grid manages its own header (search bar + tabs).
-      // Own profile grid renders its own scrollable header.
-      appBar: currentIndex == 0 || isInbox || isExploreGrid || isOwnProfileGrid
+    final profilePubkeyHex = shellTitleProfilePubkeyHex(chromeCtx);
+    final title = resolveShellTitle(
+      l10n: context.l10n,
+      context: chromeCtx,
+      exploreTabName:
+          chromeCtx?.type == RouteType.explore && chromeCtx?.videoIndex != null
+          ? ref.watch(exploreTabNameProvider)
+          : null,
+      profileDisplayName: profilePubkeyHex == null
           ? null
-          : DiVineAppBar(
-              titleWidget: _buildTappableTitle(context, ref, title, chromeCtx),
-              titleSuffix: const EnvironmentBadge(),
-              showBackButton: showBackButton,
-              onBackPressed: showBackButton
-                  ? () {
-                      Log.info(
-                        '👆 User tapped back button',
-                        name: 'Navigation',
-                        category: LogCategory.ui,
-                      );
+          : ref
+                .watch(fetchUserProfileProvider(profilePubkeyHex))
+                .value
+                ?.displayName,
+    );
 
-                      // First, try to pop if there's something on the navigation stack
-                      // This handles pushed routes (e.g., list → profile → back to list)
-                      if (context.canPop()) {
-                        Log.info(
-                          '👈 Popping navigation stack',
-                          name: 'Navigation',
-                          category: LogCategory.ui,
-                        );
-                        context.pop();
-                        return;
-                      }
+    final showBackButton = shellShowsBackButton(
+      context: chromeCtx,
+      currentUserHex: ref.read(authServiceProvider).currentPublicKeyHex,
+    );
 
-                      // Get current route context
-                      final ctx = ref.read(pageContextProvider).asData?.value;
-                      if (ctx == null) return;
-
-                      // For routes with videoIndex (feed mode), go to grid mode first
-                      // This handles page-internal navigation before tab switching
-                      // For explore/profile: any videoIndex (including 0) should go to grid (null)
-                      // For notifications: videoIndex > 0 should go to index 0
-
-                      if (ctx.videoIndex != null) {
-                        switch (ctx.type) {
-                          case RouteType.explore:
-                            // For Explore, grid mode is null
-                            return context.go(ExploreScreen.path);
-                          // For Profile, grid mode is null
-                          case RouteType.profile:
-                            return context.go(
-                              ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
-                            );
-                          // For Notifications, index 0 is the base state
-                          case RouteType.notifications when ctx.videoIndex != 0:
-                            return context.go(
-                              NotificationsPage.pathForIndex(0),
-                            );
-                          default:
-                            break;
-                        }
-                      }
-
-                      // Check tab history for navigation
-                      final tabHistory = ref.read(tabHistoryProvider.notifier);
-                      final previousTab = tabHistory.getPreviousTab();
-
-                      // If there's a previous tab in history, navigate to it
-                      if (previousTab != null) {
-                        // Remove current tab from history before navigating
-                        tabHistory.navigateBack();
-
-                        _navigateToTab(context, ref, previousTab);
-                        return;
-                      }
-
-                      // No previous tab - check if we're on a non-home tab
-                      // If so, go to home first before exiting
-                      final currentTab = _tabIndexFromRouteType(ctx.type);
-                      if (currentTab != null && currentTab != 0) {
-                        // Go to home first
-                        return context.go(VideoFeedPage.pathForIndex(0));
-                      }
-
-                      // Already at home with no history - let system handle exit
-                    }
-                  : null,
-            ),
-      // Keep the branch container in the same slot regardless of tab so
-      // switching to/from home never reparents it (which would relayout all
-      // four kept-alive branches). The UpdateBanner only shows on home.
-      body: Column(
-        children: [
-          Expanded(child: child),
-          if (currentIndex == 0) const UpdateBanner(),
-        ],
+    return ShellChrome(
+      currentIndex: currentIndex,
+      title: title,
+      routeContext: chromeCtx,
+      suppressAppBar: shellSuppressesAppBar(
+        context: chromeCtx,
+        currentIndex: currentIndex,
+        currentUserHex: ref.read(authServiceProvider).currentPublicKeyHex,
       ),
-      // Bottom nav visible for all shell routes (search, tabs, etc.).
-      // PointerInterceptor ensures the bottom nav receives taps on web
-      // even when HTML platform views (video elements) overlap the area.
-      //
-      // The nav itself lives in [VineBottomNav] so home / explore /
-      // inbox / profile-router all render the same shared widget.
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const EnvironmentIndicatorLine(),
-          PointerInterceptor(
-            intercepting: kIsWeb,
-            child: VineBottomNav(currentIndex: currentIndex),
-          ),
-        ],
-      ),
+      showBackButton: showBackButton,
+      resizeToAvoidBottomInset: shellRoute?.isCurrent ?? true,
+      onBackPressed: _handleAppBarBack,
+      child: child,
     );
   }
 }

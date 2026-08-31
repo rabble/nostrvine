@@ -6,64 +6,55 @@
 # noun, shipping "1 videos". Most entries below are intentionally PERMANENT —
 # units, percentages, ordinals, ratios and counts detached from their noun must
 # NEVER be pluralized. The trailing '# reason' says which. Issue: #3633.
-analyticsDiagnosticsHydratedBulk  # detached: colon form, dev diagnostic
-analyticsDiagnosticsHydratedViews  # detached: colon form, dev diagnostic
-analyticsDiagnosticsMissingViews  # detached: colon form, dev diagnostic
-analyticsDiagnosticsTotalVideos  # detached: colon form, dev diagnostic
-analyticsDiagnosticsWithViews  # detached: colon form, dev diagnostic
-analyticsFollowersCount  # detached: "Followers: {count}" — noun precedes the count
-analyticsFollowingCount  # detached: "Following: {count}" — noun precedes the count
-authWaitingForConnection  # unit: "{seconds}s" symbol
-bugReportImagesCount  # ratio: "{count} of {max}"
-contentPreferencesDoneCount  # detached: parenthetical "Done ({count} selected)"
-deleteAccountProgressEvents  # ratio: "{current} / {total}"
-devOptionsClipRecoveryOrphanFiles  # detached: colon form
-exploreVideoCounter  # ratio: "Video {current}/{total}"
-globalUploadPendingCount  # orphan: no call site, #3630
-inboxMessageRequestsSemanticLabel  # detached: "{requestCount} pending" has no noun
-inspiredByAttributionMultipleSemanticLabel  # detached: "+{n}" overflow badge
-libraryClipsSavePartialResult  # detached: "{n} saved, {n} failed" has no noun
-libraryCreateVideo  # detached: parenthetical "Create Video ({count})"
-libraryDraftCopyTitle  # ordinal: "(copy {number})"
-metadataMoreReposters  # detached: "+{count} more" has no noun
-peopleListsAddButtonWithCount  # detached: "Add {count}" has no noun
-profileBadgeMoreRecipients  # detached: "+{count} more" has no noun
-profileVideoThumbnailLabel  # ordinal: position in a grid
-relayDiagnosticConnectedRatio  # ratio: "{connected}/{total}"
-relayDiagnosticEndpointSummary  # ratio: "{ok}/{total} OK"
-rgbColorSemanticLabel  # not a count: RGB channel values
-settingsStorageBrokenClipsFound  # detached: colon form
-timeDaysAgo  # unit: "{count}d" symbol
-timeHoursAgo  # unit: "{count}h" symbol
-timeMinutesAgo  # unit: "{count}m" symbol
-timeShortDays  # unit: "{count}d" symbol
-timeShortHours  # unit: "{count}h" symbol
-timeShortMinutes  # unit: "{count}m" symbol
-timeShortMonths  # unit: "{count}mo" symbol
-timeShortWeeks  # unit: "{count}w" symbol
-timeShortYears  # unit: "{count}y" symbol
-uploadPercentComplete  # orphan: no call site, #3630
-uploadProgressDaysAgo  # orphan: no call site, #3630
-uploadProgressHoursAgo  # orphan: no call site, #3630
-uploadProgressMinutesAgo  # orphan: no call site, #3630
-uploadProgressPausedPercent  # orphan: no call site, #3630
-uploadProgressRetryWithCount  # orphan: no call site, #3630
-uploadProgressUploadingPercent  # orphan: no call site, #3630
-videoClipSemanticValueSelectedAtPosition  # ordinal: pick order
-videoCollaboratorWithMore  # detached: "+{count}" overflow badge
-videoCollaboratorWithPendingSuffix  # detached: parenthetical "({pending} pending)"
-videoEditorClipVolumeLabel  # ordinal: "Clip {index}"
-videoEditorSaturationBrightnessValue  # percentage
-videoEditorSplitPositionInvalid  # unit: "{minDurationMs}ms" symbol
-videoEditorStopMotionFrameSemanticLabel  # ordinal: "frame {position} of {total}"
-videoEditorStopMotionTooShortSnackbar  # unit: "{seconds}s" symbol
-videoEditorTimelineClipSelectedSemanticLabel  # ordinal: "Clip {index} of {total}"
-videoEditorTimelineClipSemanticLabel  # ordinal: "Clip {index} of {total}"
-videoEditorTimelineClipUnselectedSemanticLabel  # ordinal: "Clip {index} of {total}"
-videoEditorTimelineDraggingClipSemanticLabel  # ordinal: "Dragging clip {index}"
-videoEditorTimelinePositionFormat  # unit: "{minutes}m {seconds}s" symbols
-videoEditorTimelineVolumePreview  # percentage
-videoEditorTransitionCurveOptionSemanticLabel  # ordinal: "Easing curve {number}"
-videoEditorVoiceOverTakeName  # ordinal: "Recording {number}"
-videoInspiredByAttributionMultiple  # detached: "+{n}" overflow badge
-videoMetadataCollaboratorsCount  # orphan: no call site, #3630
+analyticsDiagnosticsHydratedBulk # detached: colon form, dev diagnostic
+analyticsDiagnosticsHydratedViews # detached: colon form, dev diagnostic
+analyticsDiagnosticsMissingViews # detached: colon form, dev diagnostic
+analyticsDiagnosticsTotalVideos # detached: colon form, dev diagnostic
+analyticsDiagnosticsWithViews # detached: colon form, dev diagnostic
+analyticsFollowersCount # detached: "Followers: {count}" — noun precedes the count
+analyticsFollowingCount # detached: "Following: {count}" — noun precedes the count
+authWaitingForConnection # unit: "{seconds}s" symbol
+bugReportImagesCount # ratio: "{count} of {max}"
+contentPreferencesDoneCount # detached: parenthetical "Done ({count} selected)"
+deleteAccountProgressEvents # ratio: "{current} / {total}"
+devOptionsClipRecoveryOrphanFiles # detached: colon form
+exploreVideoCounter # ratio: "Video {current}/{total}"
+inboxMessageRequestsSemanticLabel # detached: "{requestCount} pending" has no noun
+inspiredByAttributionMultipleSemanticLabel # detached: "+{n}" overflow badge
+libraryClipsSavePartialResult # detached: "{n} saved, {n} failed" has no noun
+libraryCreateVideo # detached: parenthetical "Create Video ({count})"
+libraryDraftCopyTitle # ordinal: "(copy {number})"
+metadataMoreReposters # detached: "+{count} more" has no noun
+peopleListsAddButtonWithCount # detached: "Add {count}" has no noun
+profileBadgeMoreRecipients # detached: "+{count} more" has no noun
+profileVideoThumbnailLabel # ordinal: position in a grid
+relayDiagnosticConnectedRatio # ratio: "{connected}/{total}"
+relayDiagnosticEndpointSummary # ratio: "{ok}/{total} OK"
+rgbColorSemanticLabel # not a count: RGB channel values
+settingsStorageBrokenClipsFound # detached: colon form
+timeDaysAgo # unit: "{count}d" symbol
+timeHoursAgo # unit: "{count}h" symbol
+timeMinutesAgo # unit: "{count}m" symbol
+timeShortDays # unit: "{count}d" symbol
+timeShortHours # unit: "{count}h" symbol
+timeShortMinutes # unit: "{count}m" symbol
+timeShortMonths # unit: "{count}mo" symbol
+timeShortWeeks # unit: "{count}w" symbol
+timeShortYears # unit: "{count}y" symbol
+videoClipSemanticValueSelectedAtPosition # ordinal: pick order
+videoCollaboratorWithMore # detached: "+{count}" overflow badge
+videoCollaboratorWithPendingSuffix # detached: parenthetical "({pending} pending)"
+videoEditorClipVolumeLabel # ordinal: "Clip {index}"
+videoEditorSaturationBrightnessValue # percentage
+videoEditorSplitPositionInvalid # unit: "{minDurationMs}ms" symbol
+videoEditorStopMotionFrameSemanticLabel # ordinal: "frame {position} of {total}"
+videoEditorStopMotionTooShortSnackbar # unit: "{seconds}s" symbol
+videoEditorTimelineClipSelectedSemanticLabel # ordinal: "Clip {index} of {total}"
+videoEditorTimelineClipSemanticLabel # ordinal: "Clip {index} of {total}"
+videoEditorTimelineClipUnselectedSemanticLabel # ordinal: "Clip {index} of {total}"
+videoEditorTimelineDraggingClipSemanticLabel # ordinal: "Dragging clip {index}"
+videoEditorTimelinePositionFormat # unit: "{minutes}m {seconds}s" symbols
+videoEditorTimelineVolumePreview # percentage
+videoEditorTransitionCurveOptionSemanticLabel # ordinal: "Easing curve {number}"
+videoEditorVoiceOverTakeName # ordinal: "Recording {number}"
+videoInspiredByAttributionMultiple # detached: "+{n}" overflow badge

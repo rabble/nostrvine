@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Skeleton loader for comments loading state
@@ -14,7 +15,7 @@ class CommentsSkeletonLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'comments_loading_indicator',
-      label: 'Loading comments',
+      label: context.l10n.commentsLoadingSemanticLabel,
       child: Skeletonizer(
         effect: vineSkeletonEffectOf(context),
         child: ListView.builder(

@@ -2,6 +2,7 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/router/providers/router_location_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -56,6 +57,7 @@ enum RouteType {
   generalSettings, // General app behavior and integration settings
   storageManagement, // Storage screen (clear caches, audit clip library)
   monetizationLinksSettings, // Creator monetization link settings
+  accountStatus, // Account enforcement status (s-t-s#200)
   appLanguage, // App language picker (UI locale override)
   appearanceSettings, // Appearance picker (system/light/dark)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
@@ -151,7 +153,8 @@ bool _isKnownRouteShape(List<String> segments) {
     case 'settings':
       return length == 1 ||
           (length == 2 &&
-              segments[1] == RoutePaths.monetizationLinksSettingsSubpath);
+              (segments[1] == RoutePaths.monetizationLinksSettingsSubpath ||
+                  segments[1] == RoutePaths.accountStatusSubpath));
     case 'apps':
       return length == 1 || length == 2;
     case 'following':
@@ -383,6 +386,10 @@ RouteContext? _parseRoute(String path, {required bool knownOnly}) {
       return const RouteContext(type: RouteType.subtitleEdit);
 
     case 'settings':
+      if (segments.length > 1 &&
+          segments[1] == RoutePaths.accountStatusSubpath) {
+        return const RouteContext(type: RouteType.accountStatus);
+      }
       if (segments.length > 1 &&
           segments[1] == RoutePaths.monetizationLinksSettingsSubpath) {
         return const RouteContext(type: RouteType.monetizationLinksSettings);
@@ -741,6 +748,9 @@ String buildRoute(RouteContext context) {
     case RouteType.legal:
       return RoutePaths.legal;
 
+    case RouteType.accountStatus:
+      return RoutePaths.accountStatus;
+
     case RouteType.nostrSettings:
       return RoutePaths.nostrSettings;
 
@@ -861,7 +871,7 @@ final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
   await for (final loc in locations) {
     final ctx = parseRoute(loc);
     Log.info(
-      'CTX derive: type=${ctx.type} npub=${ctx.npub} index=${ctx.videoIndex}',
+      'CTX derive: type=${ctx.type} npub=${pubkeyForLogs(ctx.npub)} index=${ctx.videoIndex}',
       name: 'Route',
       category: LogCategory.system,
     );

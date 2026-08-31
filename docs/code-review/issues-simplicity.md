@@ -9,43 +9,42 @@ Issues related to duplication, oversized files, unused code, and unnecessary com
 
 Note: Newer features like `features/feature_flags/` demonstrate clean
 co-location, and the BLoC migration has produced focused classes. These issues
-cover legacy complexity and newer growth pressure: 58 non-generated Dart files
+cover legacy complexity and newer growth pressure: 67 non-generated Dart files
 under `mobile/lib` are currently over 800 lines, led by
-`video_event_service.dart` at 6,619 lines.
+`video_event_service.dart` at 6,582 lines.
 
 ---
 
-### Oversized files (58 files over 800 lines)
+### Oversized files (67 files over 800 lines)
 **Problem**: Oversized files remain a visible maintainability backlog. The
 broad file-size ratchet for #4339 is intentionally advisory rather than a
-blocking CI failure. The refreshed advisory baseline in
-`mobile/scripts/baseline/file_sizes.txt` now records the current 58-file
-inventory so future warnings mean a PR added or grew an oversized file after
-this snapshot.
+blocking CI failure. It compares the working tree directly with `origin/main`
+so warnings identify oversized files added or grown by the current branch
+without relying on a committed snapshot that can become stale.
 
 **Evidence**: Current largest files over 800 lines, excluding generated/l10n:
-`video_event_service.dart` (6,619), `auth_service.dart` (4,769),
-`video_editor_canvas.dart` (3,343), `main.dart` (3,075),
-`video_event_publisher.dart` (2,316), `upload_manager.dart` (2,310),
-`video_recorder_bloc.dart` (2,295), `clip_editor_bloc.dart` (1,854),
-`curated_list_service.dart` (1,834), `video_editor_provider.dart` (1,566),
-`creator_analytics_screen.dart` (1,498), `feed_videos.dart` (1,412),
-`video_editor_render_service.dart` (1,405), `sound_detail_screen.dart`
-(1,386), and `profile_editor_bloc.dart` (1,383).
+`video_event_service.dart` (6,582), `auth_service.dart` (4,674),
+`main.dart` (3,368), `video_editor_canvas.dart` (3,062),
+`og_beta_testers.dart` (2,989), `video_event_publisher.dart` (2,320),
+`upload_manager.dart` (2,317), `video_recorder_bloc.dart` (2,311),
+`clip_editor_bloc.dart` (2,059), `curated_list_service.dart` (1,763),
+`creator_analytics_screen.dart` (1,763), `video_editor_provider.dart` (1,594),
+`video_editor_render_service.dart` (1,539), `feed_videos.dart` (1,477), and
+`sound_detail_screen.dart` (1,390).
 
 Focused, already-shrunk wins are no longer in the inventory:
 `app_providers.dart` and `app_router.dart` are no longer oversized, and
-`video_feed_page.dart` is below the 800-line threshold. To refresh these
-figures, run `UPDATE_BASELINE=1 bash mobile/scripts/check_file_size_ceiling.sh`
-from the repo root, then re-derive this evidence list from
-`mobile/scripts/baseline/file_sizes.txt`. The largest current growth cluster is
-video editor/recorder code: canvas, recorder bloc, clip editor bloc, editor
-provider, render service, timeline strip, timeline widget, and editor scaffold.
+`video_feed_page.dart` is below the 800-line threshold. Re-derive these figures
+from a fresh `origin/main` checkout when updating this audit. The largest
+current growth cluster is video editor/recorder code: canvas, recorder bloc,
+clip editor bloc, editor provider, render service, timeline strip, timeline
+widget, and editor scaffold.
 
 **Impact**: High. These files are hard to test, review, and modify; they create
 merge-conflict pressure when multiple engineers touch the same surface; and
 large UI/BLoC/service files make architectural boundaries harder to see. The
-advisory baseline keeps that pressure visible without blocking unrelated PRs.
+branch-to-main advisory keeps that pressure visible without blocking unrelated
+PRs.
 
 **Effort**: High. Each oversized file requires a domain-specific decomposition
 strategy. Priority targets are the video-editor cluster
@@ -71,7 +70,7 @@ existing production timing ratchet staying hard-gated.
 ### `main.dart` is an oversized entry point with 7+ responsibilities
 **Problem**: `main.dart` bundles startup orchestration, service initialization, deep link handling, provider wiring, logging configuration, and UI widgets into a single file. Each concern is tightly coupled to the rest, making the startup sequence hard to understand, test, or modify independently.
 
-**Evidence**: `mobile/lib/main.dart` is currently 3,075 lines with 138 imports
+**Evidence**: `mobile/lib/main.dart` is currently 3,368 lines with 153 imports
 and contains:
 1. **Firebase background message handler** (~50 lines): top-level isolate function for push notifications
 2. **Startup coordinator setup** (~250 lines): phased initialization with timing instrumentation

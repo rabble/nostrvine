@@ -404,6 +404,7 @@ class _DivineIconButtonContent extends StatelessWidget {
         : inkBox;
 
     return Semantics(
+      container: true,
       label: semanticLabel,
       identifier: semanticIdentifier,
       value: semanticValue,

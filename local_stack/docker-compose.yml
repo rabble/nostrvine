@@ -298,6 +298,10 @@ services:
   # ---------------------------------------------------------------------------
   invite:
     image: ghcr.io/divinevideo/divine-invite-darshan:e2e
+    # The published image is amd64-only. Select it explicitly on Apple Silicon
+    # so Docker can run it through emulation instead of rejecting its OCI index.
+    # Override this when using a locally built native image.
+    platform: ${INVITE_PLATFORM:-linux/amd64}
     ports:
       - "43004:7676"
     healthcheck:

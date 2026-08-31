@@ -63,8 +63,8 @@ void main() {
     }) {
       final authInterceptor = interceptor ?? _MockMediaAuthInterceptor();
       when(
-        () => authInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
-      ).thenReturn(false);
+        authInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenAnswer((_) async => false);
       return tester.pumpWidget(
         ProviderScope(
           overrides: [

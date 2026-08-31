@@ -2,8 +2,10 @@
 // ABOUTME: opens can fetch only new events via a `since:` filter.
 //
 // Stores per user pubkey in SharedPreferences:
-//   - newestSyncedAt: highest `created_at` successfully processed
-//   - oldestSyncedAt: lowest `created_at` successfully processed
+//   - newestSyncedAt: highest rumor `created_at` successfully processed
+//   - newestWireSyncedAt: highest ON-THE-WIRE `created_at` processed, which
+//     is the stamp relays actually filter `since:` against
+//   - oldestSyncedAt: lowest rumor `created_at` successfully processed
 //   - historyDrainComplete: whether the one-time full-history drain is done
 //   - historyDrainCursor: the drain's resumable pagination boundary
 //
@@ -21,11 +23,13 @@ class DmSyncState {
   final SharedPreferences _prefs;
 
   static const _newestPrefix = 'dm.newestSyncedAt.';
+  static const _newestWirePrefix = 'dm.newestWireSyncedAt.';
   static const _oldestPrefix = 'dm.oldestSyncedAt.';
   static const _drainCompletePrefix = 'dm.historyDrainComplete.';
   static const _drainCursorPrefix = 'dm.historyDrainCursor.';
   static const _drainVersionPrefix = 'dm.historyDrainVersion.';
   static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
+  static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -43,7 +47,30 @@ class DmSyncState {
   /// unsticks installs whose earlier drain completed before the user's own
   /// historical messages were recovered — which had stranded established chats
   /// under "Message requests".
-  static const int currentDrainVersion = 3;
+  ///
+  /// Bumped to 4 for #8209: the drain read an empty page as exhaustion
+  /// whenever a relay was merely *connected*, so a fan-out nobody took, a
+  /// `CLOSED` refusal, or a page only some relays answered latched completion
+  /// with history still on the relay. Fixing the guard alone helps nobody who
+  /// already latched — those installs return before issuing a query, and there
+  /// is no user-facing re-sync. The forced pass costs every install one extra
+  /// drain; the gift wraps are still there to recover (funnelcake retains kind
+  /// 1059 indefinitely), and the drain is unawaited background work that
+  /// resumes from its persisted cursor, so the cost is bounded and one-time.
+  ///
+  /// Bumped to 5 for #8362: #8217 and #8361 fixed #8209's two mechanisms
+  /// forward, but neither recovers a gift wrap an install already lost. The
+  /// `since:` fix only re-exposes a band as wide as the newest wrap's own
+  /// backdate, and that floor only rises, so anything missed longer ago stays
+  /// outside every future window. The history drain is the one path that
+  /// reaches below the live window, and an established install has already
+  /// latched [historyDrainComplete].
+  ///
+  /// This bump is only useful together with the cursor seeding fixed in
+  /// [upgradeDrainVersionIfNeeded]: on its own it re-reads history below
+  /// [oldestSyncedAt], recovers nothing, and re-latches completion off the
+  /// resulting empty page — spending the recovery pass it exists to provide.
+  static const int currentDrainVersion = 5;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
   /// `created_at` before callers should stop treating it as an honest send
@@ -62,6 +89,13 @@ class DmSyncState {
   /// tolerated skew cannot push the cursor past now. It also avoids silently
   /// dropping messages from devices with a badly drifted clock.
   static const int maxFutureSkewSeconds = 86400;
+
+  /// Version of the group-conversation recovery pass (#8407).
+  ///
+  /// Bump only to force the pass to re-run for every account — e.g. when the
+  /// attestation rule is widened and rooms it previously skipped become
+  /// recoverable. The pass is additive and idempotent, so a re-run is safe.
+  static const int currentGroupRecoveryVersion = 1;
 
   /// Lower bound for a plausible Nostr `created_at` (2020-01-01T00:00:00Z).
   ///
@@ -83,6 +117,45 @@ class DmSyncState {
   /// successfully processed for [pubkey], or `null` if nothing has been
   /// processed yet.
   int? oldestSyncedAt(String pubkey) => _prefs.getInt('$_oldestPrefix$pubkey');
+
+  /// Returns the newest on-the-wire `created_at` we have processed for
+  /// [pubkey], or `null` if nothing has been processed under this key yet.
+  ///
+  /// "On the wire" means the `created_at` of the event the relay actually
+  /// stored and indexes: the outer kind-1059 gift wrap for NIP-17, and the
+  /// event's own stamp for an unwrapped NIP-04 kind 4. That is the only clock
+  /// a `since:` filter is evaluated in, which is why the live subscription
+  /// derives its boundary from this and not from [newestSyncedAt].
+  ///
+  /// [newestSyncedAt] tracks the inner NIP-59 rumor instead, because that is
+  /// the honest send time the UI orders by. The two clocks are not
+  /// interchangeable: NIP-17 derives the outer wrap stamp from publication
+  /// time with a random 0..2 day backdate, independently of the rumor stamp.
+  /// Deriving `since:` from the rumor clock can therefore spend part of the
+  /// intended 2-day overlap before the window even opens, and any wrap whose
+  /// backdate exceeds what is left is dropped by the relay and never requested
+  /// again. See #8209.
+  int? newestWireSyncedAt(String pubkey) =>
+      _prefs.getInt('$_newestWirePrefix$pubkey');
+
+  /// Records that an event carrying wire timestamp [createdAt] has been
+  /// successfully processed for [pubkey], advancing [newestWireSyncedAt]
+  /// monotonically upward.
+  ///
+  /// Clamped to now for the same reason [recordSeen] is. The outer wrap is
+  /// signed, but only by a throwaway NIP-59 ephemeral key, so the signature
+  /// proves who chose the stamp and not that the stamp is honest — a wrap
+  /// stamped in the future would otherwise push `since:` past every event a
+  /// relay could return and blackhole the inbox exactly as an unbounded rumor
+  /// timestamp once did.
+  Future<void> recordWireSeen(String pubkey, {required int createdAt}) async {
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final capped = createdAt.clamp(minPlausibleCreatedAt, nowSec);
+    final newest = newestWireSyncedAt(pubkey);
+    if (newest == null || capped > newest) {
+      await _prefs.setInt('$_newestWirePrefix$pubkey', capped);
+    }
+  }
 
   /// Records that a DM with the given [createdAt] unix seconds has been
   /// successfully processed for [pubkey]. Advances `newestSyncedAt`
@@ -138,6 +211,12 @@ class DmSyncState {
       repaired = true;
     }
 
+    final newestWire = newestWireSyncedAt(pubkey);
+    if (newestWire != null && newestWire > nowSec) {
+      await _prefs.setInt('$_newestWirePrefix$pubkey', nowSec);
+      repaired = true;
+    }
+
     final oldest = oldestSyncedAt(pubkey);
     if (oldest != null && (oldest < minPlausibleCreatedAt || oldest > nowSec)) {
       await _prefs.setInt(
@@ -149,8 +228,7 @@ class DmSyncState {
 
     if (!repaired) return;
 
-    await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
+    await _armRedrainFromNow(pubkey, nowSec);
   }
 
   /// Whether the one-time full-history drain has completed for [pubkey].
@@ -185,18 +263,43 @@ class DmSyncState {
 
   /// Forces a one-time re-drain for [pubkey] when its persisted
   /// [drainVersion] is below [currentDrainVersion], by clearing the
-  /// completion flag and resume cursor, then stamping the current version.
+  /// completion flag and seeding the resume cursor at now, then stamping the
+  /// current version.
   ///
   /// This is the recovery path for installs stranded by an older drain that
   /// marked [historyDrainComplete] without fully recovering history (#5202).
   /// A no-op for fresh installs (nothing to clear) and for installs already
   /// at the current version. Idempotent: after the bump the version matches,
   /// so it does not loop on every inbox open.
+  ///
+  /// The cursor is **seeded at now, not removed** — for the same reason
+  /// [repairPoisonedBoundaries] seeds it. `DmRepository` resolves the drain's
+  /// `until:` as `historyDrainCursor ?? oldestSyncedAt ?? now` and pages
+  /// strictly downward from it, and [markHistoryDrainComplete] has already
+  /// removed the cursor on any install this method can help. Removing it
+  /// therefore seeds from [oldestSyncedAt] — the floor of the account's whole
+  /// history — so the pass re-reads only history the install already has.
+  ///
+  /// That was survivable for the earlier bumps because their missing history
+  /// sat *below* [oldestSyncedAt]: a prematurely latched drain has more
+  /// history underneath it. #8209's `since:` residue is the first class where
+  /// the loss sits *above* the seed, near the live window's own floor, so
+  /// removing the cursor would spend the one-shot recovery pass on a window
+  /// that cannot contain it. Seeding at now covers both. See #8362.
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
     if (drainVersion(pubkey) >= currentDrainVersion) return;
-    await _prefs.remove('$_drainCompletePrefix$pubkey');
-    await _prefs.remove('$_drainCursorPrefix$pubkey');
+    if (historyDrainComplete(pubkey)) {
+      await _armRedrainFromNow(
+        pubkey,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+    }
     await setDrainVersion(pubkey, currentDrainVersion);
+  }
+
+  Future<void> _armRedrainFromNow(String pubkey, int nowSec) async {
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
   }
 
   /// The outer gift-wrap `created_at` (unix seconds) the history drain has
@@ -237,31 +340,45 @@ class DmSyncState {
     await _prefs.setBool('$_dmRelayListPublishedPrefix$pubkey', true);
   }
 
+  /// The group-conversation recovery logic version last run for [pubkey], or
+  /// `0` if it has never run (#8407).
+  int groupRecoveryVersion(String pubkey) =>
+      _prefs.getInt('$_groupRecoveryVersionPrefix$pubkey') ?? 0;
+
+  /// Records that [pubkey] has been through group-recovery [version].
+  Future<void> setGroupRecoveryVersion(String pubkey, int version) async {
+    await _prefs.setInt('$_groupRecoveryVersionPrefix$pubkey', version);
+  }
+
   /// Removes all sync state for [pubkey]. Called on account switch.
   Future<void> clear(String pubkey) async {
     await _prefs.remove('$_newestPrefix$pubkey');
+    await _prefs.remove('$_newestWirePrefix$pubkey');
     await _prefs.remove('$_oldestPrefix$pubkey');
     await _prefs.remove('$_drainCompletePrefix$pubkey');
     await _prefs.remove('$_drainCursorPrefix$pubkey');
     await _prefs.remove('$_drainVersionPrefix$pubkey');
     await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
+    await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
   ///
-  /// Called during database cleanup to ensure the next login triggers a
-  /// full re-sync from relays instead of using stale `since:` cursors.
+  /// Called only after the entire database is recreated, when every account's
+  /// local rows and therefore every persisted sync boundary are stale.
   Future<void> clearAll() async {
     final keysToRemove = _prefs
         .getKeys()
         .where(
           (key) =>
               key.startsWith(_newestPrefix) ||
+              key.startsWith(_newestWirePrefix) ||
               key.startsWith(_oldestPrefix) ||
               key.startsWith(_drainCompletePrefix) ||
               key.startsWith(_drainCursorPrefix) ||
               key.startsWith(_drainVersionPrefix) ||
-              key.startsWith(_dmRelayListPublishedPrefix),
+              key.startsWith(_dmRelayListPublishedPrefix) ||
+              key.startsWith(_groupRecoveryVersionPrefix),
         )
         .toList();
     for (final key in keysToRemove) {

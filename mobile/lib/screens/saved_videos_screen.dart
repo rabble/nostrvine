@@ -42,7 +42,7 @@ class SavedVideosScreen extends ConsumerWidget {
         // bookmarks (see rules/state_management.md).
         key: ValueKey((videosRepository, currentUserPubkey)),
         create: (_) => ProfileSavedVideosBloc(
-          bookmarkService: ref.read(bookmarkServiceProvider.future),
+          bookmarksRepository: ref.read(bookmarksRepositoryProvider.future),
           videosRepository: videosRepository,
           currentUserPubkey: currentUserPubkey,
           removedVideoIds: videosRepository.removedVideoIds,

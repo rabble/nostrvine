@@ -31,6 +31,19 @@ local fixes needed by Divine.
   returns explicit Flutter errors instead of leaving callers waiting forever.
 - `android/src/test/kotlin/co/bubotech/app_device_integrity/AppDeviceIntegrityPluginTest.kt`
   covers nonce generation, lifecycle detach safety, and argument validation.
+- `ios/Classes/AppDeviceIntegrity.swift` scopes App Attest state to the
+  publishing account, reuses each account's rate-limited key, resumes one
+  generated-but-unattested key before replacing it, and serializes concurrent
+  provisioning behind a 30-second watchdog.
+- The iOS challenge binds the media proof hash to the publishing pubkey. Cached
+  credentials answer later challenges with assertions, and invalid restored
+  key identifiers re-provision once without clearing a newer replacement.
+- The iOS assertion callback has a 15-second native watchdog above Dart's
+  10-second attestation budget. Each `generateAssertion` leg releases its
+  pending completion at that deadline when Apple's callback never returns,
+  without shortening Dart's existing success window. Provisioning, retry, and
+  recursive re-provisioning have their own deadlines, so the complete native
+  flow is not capped at 15 seconds.
 
 ## Removal Condition
 

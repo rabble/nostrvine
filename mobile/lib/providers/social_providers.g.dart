@@ -249,7 +249,7 @@ final class DmReactionRetryServiceProvider
 }
 
 String _$dmReactionRetryServiceHash() =>
-    r'85a3937752ef569dce502ec14bff303e2b84e46c';
+    r'281cbb241736d787dffdca43af2c6a402bc30488';
 
 /// Auto-sweep service for the durable `pending_view_events` queue.
 
@@ -354,18 +354,10 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'036ae0aac74a5bcb7613c56f074fbbe020b20002';
-
-/// Analytics service with opt-out support.
-///
-/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
+String _$productEventQueueHash() => r'8c22586a5a80dc049f1ff4726288fd754bfcaaf8';
 
 @ProviderFor(analyticsService)
 final analyticsServiceProvider = AnalyticsServiceProvider._();
-
-/// Analytics service with opt-out support.
-///
-/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -375,9 +367,6 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support.
-  ///
-  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -411,7 +400,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'd86ad0633e379e991437845121e14ac3820c96ce';
+String _$analyticsServiceHash() => r'd6a3557f076970d357d94e47baa85545ffd556dc';
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -517,7 +506,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'49c37c22a23ecd1ba90b4a51b782abebf40fb1dd';
+    r'0c8954ff051734798a78c463aa2b6c1a311f94d8';
 
 /// Clip library service for persisting individual video clips
 
@@ -626,7 +615,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'e8e50ff2792bd29d52150b469309b275800ecfb0';
+    r'c9a969827288ca3b1517947b61f85849b61f9b21';
 
 /// Hashtag service depends on Video event service and cache service
 

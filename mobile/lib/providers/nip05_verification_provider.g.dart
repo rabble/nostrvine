@@ -165,7 +165,7 @@ final class Nip05VerificationProvider
   }
 }
 
-String _$nip05VerificationHash() => r'fdd40ea0ffdab1324c0114909a431e3f0e7abcd4';
+String _$nip05VerificationHash() => r'93e2b80af173c9aef9b7c58beb6e518eebba984c';
 
 /// Provider that returns the NIP-05 verification status for a pubkey.
 ///

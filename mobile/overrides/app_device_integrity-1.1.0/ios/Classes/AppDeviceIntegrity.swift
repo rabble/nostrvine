@@ -82,9 +82,23 @@ final class AppDeviceIntegrity {
     /// — turning a single native hang into an account-wide publish stall.
     private static let provisioningTimeout: DispatchTimeInterval = .seconds(30)
 
+    /// Native backstop for a generateAssertion callback that never returns.
+    ///
+    /// Dart gives the complete attestation call 10 seconds, so this deadline
+    /// deliberately sits above that budget. It releases the pending assertion
+    /// completion after Dart has already degraded the publish to no attestation
+    /// without rejecting assertions inside Dart's success window. The deadline
+    /// applies to each generateAssertion leg, not the complete native flow.
+    private static let assertionTimeout: DispatchTimeInterval = .seconds(15)
+
     /// - Parameter keyScope: identifies whose key this is. An empty scope would
     ///   silently collapse every account back onto one shared key, so it is
     ///   rejected rather than defaulted.
+    /// - Parameter challengeString: minted client-side at publish time, never
+    ///   issued by a server. The current format is
+    ///   `"<proofHash>:<pubkeyHex>"`; its UTF-8 bytes are hashed with SHA-256
+    ///   before reaching Apple. The verifier contract and legacy cutover are
+    ///   documented in `mobile/docs/NOSTR_VIDEO_EVENTS.md`.
     init?(challengeString: String, keyScope: String) {
         self.inputString = challengeString
         self.keyScope = keyScope
@@ -167,7 +181,36 @@ final class AppDeviceIntegrity {
         keyID: String,
         completion: @escaping (String?, DCError.Code?) -> Void
     ) {
+        // Whichever side wins the race takes and clears the completion. Apple's
+        // callback and the queued watchdog therefore retain only this shared
+        // box after settlement, not the FlutterResult chain behind completion.
+        let assertionLock = NSLock()
+        var pendingCompletion: ((String?, DCError.Code?) -> Void)? = completion
+
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + Self.assertionTimeout
+        ) {
+            assertionLock.lock()
+            guard let completion = pendingCompletion else {
+                assertionLock.unlock()
+                return
+            }
+            pendingCompletion = nil
+            assertionLock.unlock()
+
+            print("App Attest assertion generation timed out")
+            completion(nil, nil)
+        }
+
         attestService.generateAssertion(keyID, clientDataHash: challengeHash) { assertion, error in
+            assertionLock.lock()
+            guard let completion = pendingCompletion else {
+                assertionLock.unlock()
+                return
+            }
+            pendingCompletion = nil
+            assertionLock.unlock()
+
             if let error = error {
                 print("Assertion error: \(error.localizedDescription)")
                 completion(nil, (error as? DCError)?.code)

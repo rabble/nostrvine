@@ -1,6 +1,6 @@
 // ABOUTME: Tests for NIP17SendResult including the per-wrap status
 // ABOUTME: that surfaces partial delivery (recipient delivered but
-// ABOUTME: self-wrap dropped); future retry handling tracked in #3909.
+// ABOUTME: self-wrap dropped) and its durable recovery queue handle.
 
 import 'package:models/models.dart';
 import 'package:test/test.dart';
@@ -50,6 +50,18 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.selfWrapPublished, isFalse);
+      });
+
+      test('carries a surviving queue handle for partial recovery', () {
+        final result = NIP17SendResult.success(
+          rumorEventId: rumorEventId,
+          messageEventId: messageEventId,
+          recipientPubkey: recipientPubkey,
+          selfWrapPublished: false,
+          queuedRumorId: 'queue-handle',
+        );
+
+        expect(result.queuedRumorId, equals('queue-handle'));
       });
     });
 
@@ -117,8 +129,7 @@ void main() {
         expect(result.queuedRumorId, isNull);
       });
 
-      test('success and blocked never carry a queuedRumorId: success '
-          'consumes the row and the send gate returns before the enqueue', () {
+      test('full success and blocked never carry a queuedRumorId', () {
         final success = NIP17SendResult.success(
           rumorEventId: rumorEventId,
           messageEventId: messageEventId,

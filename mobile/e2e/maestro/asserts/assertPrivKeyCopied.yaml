@@ -1,3 +1,3 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 - assertVisible: Private key copied to the clipboard!

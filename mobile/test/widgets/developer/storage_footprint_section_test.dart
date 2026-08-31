@@ -53,80 +53,85 @@ void main() {
     ),
   );
 
-  testWidgets('measuring lists every root with its biggest entries', (
-    tester,
-  ) async {
-    when(service.measureFootprint).thenAnswer((_) async => footprint);
-    final cubit = StorageCubit(service: service);
-    addTearDown(cubit.close);
+  group(StorageFootprintView, () {
+    testWidgets('measuring lists every root with its biggest entries', (
+      tester,
+    ) async {
+      when(service.measureFootprint).thenAnswer((_) async => footprint);
+      final cubit = StorageCubit(service: service);
+      addTearDown(cubit.close);
 
-    await tester.pumpWidget(wrap(cubit));
-    await tester.tap(
-      find.widgetWithText(
-        DivineButton,
-        l10n.devOptionsStorageFootprintMeasure,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap(cubit));
+      await tester.tap(
+        find.widgetWithText(
+          DivineButton,
+          l10n.devOptionsStorageFootprintMeasure,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(
-      find.text(l10n.devOptionsStorageFootprintTotal('3.0 MB')),
-      findsOneWidget,
-    );
-    expect(find.text('Documents — 3.0 MB'), findsOneWidget);
-    expect(find.text('divine_1712.mp4'), findsOneWidget);
-    expect(find.text('transition_seams/'), findsOneWidget);
-  });
+      expect(
+        find.text(l10n.devOptionsStorageFootprintTotal('3.0 MB')),
+        findsOneWidget,
+      );
+      expect(find.text('Documents — 3.0 MB'), findsOneWidget);
+      expect(find.text('divine_1712.mp4'), findsOneWidget);
+      expect(find.text('transition_seams/'), findsOneWidget);
+    });
 
-  testWidgets('a failed walk says so instead of showing a stale total', (
-    tester,
-  ) async {
-    when(service.measureFootprint).thenThrow(Exception('boom'));
-    final cubit = StorageCubit(service: service);
-    addTearDown(cubit.close);
+    testWidgets('a failed walk says so instead of showing a stale total', (
+      tester,
+    ) async {
+      when(service.measureFootprint).thenThrow(Exception('boom'));
+      final cubit = StorageCubit(service: service);
+      addTearDown(cubit.close);
 
-    await tester.pumpWidget(wrap(cubit));
-    await tester.tap(
-      find.widgetWithText(
-        DivineButton,
-        l10n.devOptionsStorageFootprintMeasure,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap(cubit));
+      await tester.tap(
+        find.widgetWithText(
+          DivineButton,
+          l10n.devOptionsStorageFootprintMeasure,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text(l10n.devOptionsStorageFootprintFailure), findsOneWidget);
-    expect(find.text(l10n.shareSheetCopy), findsNothing);
-  });
+      expect(find.text(l10n.devOptionsStorageFootprintFailure), findsOneWidget);
+      expect(find.text(l10n.shareSheetCopy), findsNothing);
+    });
 
-  testWidgets('copy does not claim success when the clipboard refuses it', (
-    tester,
-  ) async {
-    when(service.measureFootprint).thenAnswer((_) async => footprint);
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-          switch (call.method) {
-            case 'Clipboard.setData':
-              return null;
-            case 'Clipboard.getData':
-              return null;
-          }
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null),
-    );
-    final cubit = StorageCubit(service: service);
-    addTearDown(cubit.close);
+    testWidgets('copy does not claim success when the clipboard refuses it', (
+      tester,
+    ) async {
+      when(service.measureFootprint).thenAnswer((_) async => footprint);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            switch (call.method) {
+              case 'Clipboard.setData':
+                return null;
+              case 'Clipboard.getData':
+                return null;
+            }
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      final cubit = StorageCubit(service: service);
+      addTearDown(cubit.close);
 
-    await tester.pumpWidget(wrap(cubit));
-    await tester.tap(
-      find.widgetWithText(DivineButton, l10n.devOptionsStorageFootprintMeasure),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(DivineButton, l10n.shareSheetCopy));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap(cubit));
+      await tester.tap(
+        find.widgetWithText(
+          DivineButton,
+          l10n.devOptionsStorageFootprintMeasure,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.shareSheetCopy));
+      await tester.pumpAndSettle();
 
-    expect(find.text(l10n.devOptionsStorageFootprintCopied), findsNothing);
+      expect(find.text(l10n.devOptionsStorageFootprintCopied), findsNothing);
+    });
   });
 }

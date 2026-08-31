@@ -84,13 +84,14 @@ class _PooledVideoErrorOverlayState
       return;
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
-      if (!playbackStatusCubit.consumeAgeRestrictedAutoRetryIfEligible(
+      if (!await playbackStatusCubit.consumeAgeRestrictedAutoRetryIfEligible(
         widget.video.id,
         isAgeRestricted: showVerifyAge,
         hasVerifyAction: widget.onVerifyAge != null,
+        isConsumerActive: () => mounted,
       )) {
         return;
       }

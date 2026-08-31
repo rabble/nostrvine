@@ -404,9 +404,9 @@ String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
@@ -418,8 +418,8 @@ String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
 /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
 /// this provider cannot publish by accident. Everything that signs must keep
 /// using [profileRepository] — today that is
-/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-/// action and `profileSaveRetryService`.
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+/// `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
 /// relay-backed [profileRepository].
@@ -431,9 +431,9 @@ final profileReadRepositoryProvider = ProfileReadRepositoryProvider._();
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
@@ -445,8 +445,8 @@ final profileReadRepositoryProvider = ProfileReadRepositoryProvider._();
 /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
 /// this provider cannot publish by accident. Everything that signs must keep
 /// using [profileRepository] — today that is
-/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-/// action and `profileSaveRetryService`.
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+/// `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
 /// relay-backed [profileRepository].
@@ -458,9 +458,9 @@ final class ProfileReadRepositoryProvider
   /// available) rather than the full `nostrReady` relay-connect settle.
   ///
   /// Everything reachable through [ProfileReader] is signer-free: it either
-  /// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-  /// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-  /// relay-ready client, so gating these reads behind `nostrReady` is what left
+  /// reads Drift directly or performs a network read without signing. Fresh
+  /// profile reads may fall back to relays, but none requires relay readiness.
+  /// Gating these reads behind `nostrReady` left
   /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
   /// window at cold start (#5863), and what replaced the signed-in user's own
   /// name and avatar with a generated placeholder for that same window (#6423).
@@ -472,8 +472,8 @@ final class ProfileReadRepositoryProvider
   /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
   /// this provider cannot publish by accident. Everything that signs must keep
   /// using [profileRepository] — today that is
-  /// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-  /// action and `profileSaveRetryService`.
+  /// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+  /// `profileSaveRetryService`.
   ///
   /// It does NOT warm the Kind-0 cache — that side effect belongs to the
   /// relay-backed [profileRepository].
@@ -765,49 +765,73 @@ final class NotifySubscriptionsRepositoryProvider
 String _$notifySubscriptionsRepositoryHash() =>
     r'54ed8c30c8819f524052ba4abaccb01dfaeaacce';
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
-@ProviderFor(bookmarkService)
-final bookmarkServiceProvider = BookmarkServiceProvider._();
+@ProviderFor(bookmarksRepository)
+final bookmarksRepositoryProvider = BookmarksRepositoryProvider._();
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
-final class BookmarkServiceProvider
+final class BookmarksRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<BookmarkService>,
-          BookmarkService,
-          FutureOr<BookmarkService>
+          AsyncValue<BookmarksRepository>,
+          BookmarksRepository,
+          FutureOr<BookmarksRepository>
         >
-    with $FutureModifier<BookmarkService>, $FutureProvider<BookmarkService> {
-  /// Bookmark service for NIP-51 bookmarks
-  BookmarkServiceProvider._()
+    with
+        $FutureModifier<BookmarksRepository>,
+        $FutureProvider<BookmarksRepository> {
+  /// Bookmark service for NIP-51 bookmarks.
+  ///
+  /// Deliberately left as an autoDispose `Future` provider by the #6969
+  /// package extraction, so that move stayed behaviour-preserving. Both
+  /// consumers read it with `ref.read(...future)`, which leaves no listener, so
+  /// every read tears the element down and builds a fresh instance — dropping
+  /// its in-memory snapshot and its serialization queue. That is #7596, and it
+  /// is fixed next, not here.
+  BookmarksRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'bookmarkServiceProvider',
+        name: r'bookmarksRepositoryProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$bookmarkServiceHash();
+  String debugGetCreateSourceHash() => _$bookmarksRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<BookmarkService> $createElement(
+  $FutureProviderElement<BookmarksRepository> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<BookmarkService> create(Ref ref) {
-    return bookmarkService(ref);
+  FutureOr<BookmarksRepository> create(Ref ref) {
+    return bookmarksRepository(ref);
   }
 }
 
-String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
+String _$bookmarksRepositoryHash() =>
+    r'99bea35c4a70f1f2bfdfe51e10c1af14b702b71c';
 
 /// Provider for NIP-17 DM repository.
 ///
@@ -821,8 +845,9 @@ String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -848,8 +873,9 @@ final dmReactionsRepositoryProvider = DmReactionsRepositoryProvider._();
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -880,8 +906,9 @@ final class DmReactionsRepositoryProvider
   ///
   /// Cold-start cost is bounded by two existing mechanisms that landed with
   /// the original lazy-inbox work (#2766):
-  /// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-  ///   limits the relay backlog to recent events on every open after the first.
+  /// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+  ///   [DmRepository.startListening] limits the relay backlog to recent events
+  ///   on every open after the first.
   /// - Decryption is offloaded to a background isolate via
   ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///
@@ -1041,7 +1068,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'cae15093229ab33a95b5f2eade1016306eca26d5';
+String _$dmRepositoryHash() => r'1c02998545a7ab7e291ac128f2a6024f2a17aa41';
 
 /// Provider for CommentsRepository instance
 ///

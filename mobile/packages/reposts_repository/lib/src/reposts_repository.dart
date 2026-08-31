@@ -567,6 +567,21 @@ class RepostsRepository {
         _cacheRepostCount(addressableId, previousCount);
       }
       _emitRepostedIds();
+      if (e is SocialPublishException) {
+        Log.error(
+          'Unrepost deletion was not accepted',
+          name: 'RepostsRepository',
+          category: LogCategory.relay,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        Error.throwWithStackTrace(
+          const UnrepostFailedException(
+            'Failed to publish unrepost deletion',
+          ),
+          stackTrace,
+        );
+      }
       rethrow;
     }
   }
@@ -597,7 +612,22 @@ class RepostsRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(record.repostEventId);
+    final Event? deletionEvent;
+    try {
+      deletionEvent = await _nostrClient.deleteEvent(record.repostEventId);
+    } on SocialPublishException catch (error, stackTrace) {
+      Log.error(
+        'Queued unrepost deletion was not accepted',
+        name: 'RepostsRepository',
+        category: LogCategory.relay,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      Error.throwWithStackTrace(
+        const UnrepostFailedException('Failed to publish unrepost deletion'),
+        stackTrace,
+      );
+    }
 
     if (deletionEvent == null) {
       throw const UnrepostFailedException(

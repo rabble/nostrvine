@@ -11,9 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart'
     show SessionExpiredException;
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
-import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
@@ -37,8 +39,8 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
-import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -48,8 +50,8 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/utils/user_identifier_line_resolver.dart';
-import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -73,7 +75,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     unawaited(_loadAppVersion());
-    unawaited(context.read<InviteStatusCubit?>()?.load());
     _accountCubit = SettingsAccountCubit(
       authService: ref.read(authServiceProvider),
       draftStorageService: ref.read(draftStorageServiceProvider),
@@ -173,7 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Object error,
   ) async {
     Log.warning(
-      'Account switch to ${account.pubkeyHex} has no usable session '
+      'Account switch to ${pubkeyForLogs(account.pubkeyHex)} has no usable session '
       '($error) — offering re-authentication',
       name: 'SettingsScreen',
       category: LogCategory.auth,
@@ -328,6 +329,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
+    final accountEnforced = ref.watch(isAccountEnforcedProvider);
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
     final accountSwitchingEnabled = ref.watch(
@@ -378,6 +380,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       subtitle: context.l10n.settingsSessionExpiredSubtitle,
                       onTap: _handleSessionExpired,
                       iconColor: VineTheme.accentOrange,
+                    ),
+                  if (accountEnforced)
+                    DivineListTile(
+                      icon: DivineIconName.userFocus,
+                      title: context.l10n.accountStatusTitle,
+                      subtitle:
+                          context.l10n.accountStatusTileSubtitleRestricted,
+                      iconColor: VineTheme.accentOrange,
+                      onTap: () => context.push(AccountStatusScreen.path),
                     ),
                 ],
 
@@ -522,75 +533,7 @@ class _AccountHeader extends StatelessWidget {
             spacing: 16,
             children: [
               _AccountHeaderProfile(pubkey: pubkey),
-              SignupInvitesAvailabilityBuilder(
-                builder: (context, availability) {
-                  if (!availability.isEnabled) {
-                    return const SizedBox.shrink();
-                  }
-                  return BlocBuilder<InviteStatusCubit, InviteStatusState>(
-                    builder: (context, inviteState) {
-                      if (!inviteState.hasInviteActivity) {
-                        return const SizedBox.shrink();
-                      }
-                      return Semantics(
-                        button: true,
-                        label: context.l10n.settingsInvites,
-                        child: InkWell(
-                          onTap: () => context.push(InvitesScreen.path),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.vineColors.surfaceContainer,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: context.vineColors.outlineMuted,
-                                width: 2,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 8,
-                              children: [
-                                DivineIcon(
-                                  icon: DivineIconName.shareNetwork,
-                                  color: context.vineColors.accentPositive,
-                                ),
-                                Text(
-                                  context.l10n.settingsInvites,
-                                  style: VineTheme.titleMediumFont(
-                                    color: context.vineColors.accentPositive,
-                                  ),
-                                ),
-                                if (inviteState.hasAvailableInvites)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: VineTheme.vineGreen,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${inviteState.availableInviteCount}',
-                                      style: VineTheme.labelSmallFont(
-                                        color: VineTheme.onPrimary,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+              const _ShareDivineButton(),
               if (accountSwitchingEnabled)
                 Semantics(
                   button: true,
@@ -640,6 +583,61 @@ class _AccountHeader extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ShareDivineButton extends StatelessWidget {
+  const _ShareDivineButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.settingsShareDivine;
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: () => showShareSheet(
+          context,
+          ShareParams(text: AppConstants.downloadUrl),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.vineColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.vineColors.outlineMuted,
+                width: 2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                DivineIcon(
+                  icon: DivineIconName.shareNetwork,
+                  color: context.vineColors.accentPositive,
+                ),
+                // A sentence-length label, unlike the single word this slot
+                // used to hold: it has to wrap rather than overflow the pill
+                // on a narrow phone or at a large text scale.
+                Flexible(
+                  child: Text(
+                    label,
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.accentPositive,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

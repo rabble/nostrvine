@@ -87,7 +87,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
             BlossomSaveFailureKey.mustUseHttps =>
               context.l10n.blossomServerUrlMustUseHttps,
             BlossomSaveFailureKey.genericFailure ||
-            null => context.l10n.blossomFailedToSaveSettings(''),
+            null => context.l10n.blossomFailedToSaveSettings,
           };
           messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(message, error: true),

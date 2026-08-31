@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:badge_repository/badge_repository.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -20,11 +21,12 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/hive_box_names.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/bookmark_signer_adapter.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -37,11 +39,11 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/pending_action_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -205,6 +207,44 @@ FollowRepository followRepository(Ref ref) {
   return repository;
 }
 
+/// Retries a contact-list broadcast withheld by an inconclusive read.
+///
+/// [FollowRepository] refuses to replace a kind 3 it could not read, because
+/// doing so publishes an empty `content` over the user's relay list (#8265).
+/// The follow is kept locally, so something has to flush it: the next follow
+/// or unfollow rebroadcasts the whole list anyway, and this covers the user
+/// who followed once while relays were unhealthy and has not followed since.
+///
+/// Both signals it listens to mean "we might be healthy again" — the session
+/// becoming ready, and the app returning to the foreground. Mirrors
+/// `relayListDirtyPublishBridgeProvider`, which retries the withheld
+/// kind:10002 publish the same way.
+final contactListDirtyBroadcastBridgeProvider = Provider<void>((ref) {
+  Future<void> retryIfPending() async {
+    final readiness = ref.read(nostrSessionProvider);
+    if (!readiness.isReadyForActiveClient) return;
+    final pubkey = readiness.pubkey;
+    if (pubkey == null || pubkey.isEmpty) return;
+
+    final repository = ref.read(followRepositoryProvider);
+    if (await repository.retryPendingContactListBroadcast()) {
+      Log.info(
+        'Flushed a withheld kind 3 contact-list broadcast',
+        name: 'ContactListDirtyBroadcastBridge',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  ref.listen<NostrSessionReadiness>(
+    nostrSessionProvider,
+    (_, _) => unawaited(retryIfPending()),
+  );
+  ref.listen<bool>(appForegroundProvider, (previous, next) {
+    if (next && previous != true) unawaited(retryIfPending());
+  });
+});
+
 /// Provider for [CuratedListRepository] instance.
 ///
 /// Creates a repository that exposes subscribed curated lists via a
@@ -311,9 +351,9 @@ ProfileRepository? profileRepository(Ref ref) {
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
@@ -325,8 +365,8 @@ ProfileRepository? profileRepository(Ref ref) {
 /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
 /// this provider cannot publish by accident. Everything that signs must keep
 /// using [profileRepository] — today that is
-/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-/// action and `profileSaveRetryService`.
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+/// `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
 /// relay-backed [profileRepository].
@@ -400,6 +440,12 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
   // needs them — a relay Kind 0 can resurrect an evicted account regardless of
   // whether this instance warms the cache.
   unawaited(repo.loadVanishedPubkeys());
+  // Prime the vanish source before DM surfaces mount, so the synchronous
+  // derived value does not sample it during its initial AsyncLoading state.
+  // This one line is what orders the vanish signal ahead of
+  // profileIdentityResolvingProvider; nothing in the graph couples them.
+  // Pinned by test/providers/repository_providers_test.dart.
+  ref.listen(vanishedProfilePubkeysProvider, (_, _) {});
 
   if (warmCache) {
     // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -528,16 +574,23 @@ NotifySubscriptionsRepository notifySubscriptionsRepository(Ref ref) {
   return repository;
 }
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 @riverpod
-Future<BookmarkService> bookmarkService(Ref ref) async {
+Future<BookmarksRepository> bookmarksRepository(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
 
-  return BookmarkService(
-    nostrService: nostrService,
-    authService: authService,
+  return BookmarksRepository(
+    nostrClient: nostrService,
+    signer: BookmarkSignerAdapter(authService),
     prefs: prefs,
   );
 }
@@ -558,8 +611,9 @@ Future<BookmarkService> bookmarkService(Ref ref) async {
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -645,15 +699,8 @@ DmRepository dmRepository(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
 
-  // #4974 RC3: gate self-publishing the user's kind-10050 behind the feature
-  // flag (default OFF until the backend relay accepts the kind), and advertise
-  // the environment's stable DM relay (same source as the kind-10002
-  // bootstrap), not the volatile connected-relay getter. Read, not watch, so a
-  // flag flip doesn't churn the live DM subscription — the provider body
-  // re-runs (and re-reads the flag) on each auth change.
-  final publishDmRelayListEnabled = ref.read(
-    isFeatureEnabledProvider(FeatureFlag.publishDmRelayList),
-  );
+  // Advertise the environment's stable DM relay (same source as the
+  // kind-10002 bootstrap), not the volatile connected-relay getter. #4974.
   final dmInboxRelayUrl = ref.read(currentEnvironmentProvider).relayUrl;
 
   final repository = DmRepository(
@@ -666,8 +713,14 @@ DmRepository dmRepository(Ref ref) {
     removedConversationsDao: db.removedConversationsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
-    publishDmRelayListEnabled: publishDmRelayListEnabled,
+    // The single chokepoint for "this thread may not be deleted". Both the
+    // message-request cubit and the inbox long-press reach removal through
+    // this repository, so putting the policy here is what stops a caller
+    // inheriting nothing (#8391). Current AND retired keys, matching #8302.
+    removalPolicy: isModerationAccount,
     dmInboxRelayUrl: dmInboxRelayUrl,
+    dmInboxTaggedRelays: IndexerRelayConfig.dmInboxTaggedRelays,
+    dmInboxDiscoveryRelays: IndexerRelayConfig.dmInboxDiscoveryRelays,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(
@@ -680,6 +733,17 @@ DmRepository dmRepository(Ref ref) {
   );
 
   ref.onDispose(repository.stopListening);
+
+  // Hand the reactions repository this repository's kind-10050 resolver so a
+  // gift-wrapped reaction routes to the recipient's advertised DM inbox rather
+  // than the default pool (#7321). Injected downward because the dependency
+  // edge already runs this way — this provider watches
+  // `dmReactionsRepositoryProvider` above, so reading it back from there would
+  // close a Riverpod cycle.
+  //
+  // The reaction retry provider also watches this provider explicitly, making
+  // this wiring complete before its fire-immediately sweep can run.
+  reactionsRepository.setDmInboxRelayResolver(repository.resolveDmInboxRelays);
 
   // Set credentials and open the gift-wrap subscription as soon as the
   // signer is ready. The subscription is auth-session-scoped (not inbox-
@@ -703,7 +767,8 @@ DmRepository dmRepository(Ref ref) {
         messageService: messageService,
       );
       // Open the gift-wrap subscription for the whole authenticated
-      // session. Bounded by `since: newestSyncedAt - 2d` and isolate
+      // session. Bounded by
+      // `since: (newestWireSyncedAt ?? newestSyncedAt) - 2d` and isolate
       // decrypt so cold start stays cheap regardless of lifetime DM count.
       unawaited(repository.startListening());
       // Self-advertise the user's NIP-17 kind-10050 DM inbox relay list once

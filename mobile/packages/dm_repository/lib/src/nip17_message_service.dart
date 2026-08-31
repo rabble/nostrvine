@@ -15,6 +15,7 @@ import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_batch_wrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
@@ -428,6 +429,7 @@ class NIP17MessageService {
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
+  /// - [createdAt]: Optional canonical event timestamp
   Event buildRumor({
     required String recipientPubkey,
     required String content,
@@ -440,14 +442,54 @@ class NIP17MessageService {
       ...additionalTags,
     ];
 
-    // [createdAt] lets a group fan-out stamp every per-recipient rumor with
-    // one shared batch timestamp, so all sibling rows sort together on the
-    // sender-side timeline. (The batch identity used for dedup/grouping is a
-    // separate durable id — see `OutgoingDms.sendBatchId`.)
     return Event(
       _senderPublicKey,
       eventKind,
       rumorTags,
+      content,
+      createdAt: createdAt,
+    );
+  }
+
+  /// Build the ONE unsigned NIP-17 rumor a group send wraps for every
+  /// recipient.
+  ///
+  /// **Invariant: one byte-identical rumor per group send.** NIP-59 states it
+  /// outright — "If a `rumor` is intended for more than one party […] a single
+  /// `rumor` may be wrapped and addressed for each recipient individually"
+  /// (`59.md:108`) — and NIP-17 assumes it: "The set of `pubkey` + `p` tags
+  /// defines a chat room" (`17.md:17`), a set, unordered.
+  ///
+  /// [buildRumor] prepends `['p', recipientPubkey]`, so calling it once per
+  /// recipient produced N rumors carrying the same p-tag SET rotated into a
+  /// different ORDER. A NIP-01 id hashes the tags *array*, so the rotation
+  /// alone forked the id — and a retraction, which can name only one, then
+  /// reached only one participant (#8188).
+  ///
+  /// Recipients are sorted so the id does not depend on the caller's argument
+  /// order. The receiving recipient is included, as `17.md:118-132` shows;
+  /// the sender is not (matching Amethyst — the convention is split across
+  /// clients and both are tolerated, since every client keys a room on the
+  /// participant set).
+  ///
+  /// Callers must not vary any tag element per recipient. A per-recipient
+  /// relay hint inside a `p` tag would re-fork the id even with canonical
+  /// ordering; NIP-17 puts hints on the gift wrap's own `p` tag instead.
+  Event buildGroupRumor({
+    required List<String> recipientPubkeys,
+    required String content,
+    int eventKind = EventKind.privateDirectMessage,
+    List<List<String>> additionalTags = const [],
+    int? createdAt,
+  }) {
+    final ordered = [...recipientPubkeys]..sort();
+    return Event(
+      _senderPublicKey,
+      eventKind,
+      <List<String>>[
+        for (final pubkey in ordered) ['p', pubkey],
+        ...additionalTags,
+      ],
       content,
       createdAt: createdAt,
     );
@@ -485,6 +527,15 @@ class NIP17MessageService {
   /// retry the recipient publish, double-delivering. A future revision
   /// (PR #3910) will surface the self-wrap outcome separately so the
   /// repository can mark each wrap status independently.
+  ///
+  /// [targetRelays] routes the RECIPIENT's wrap; [selfWrapTargetRelays] routes
+  /// the sender's own copy, and the two are deliberately separate because they
+  /// address different people. `null` on either keeps that wrap on the default
+  /// pool. The self-copy's destination is the sender's own kind-10050 DM inbox
+  /// unioned with the pool — a bare pool publish never reached the inbox relays
+  /// the sender advertises to everyone else, so their own replies were missing
+  /// from any client reading that inbox (#7328). `DmRepository` resolves the
+  /// union; see `DmRepository._selfWrapTargetRelays`.
   ///
   /// [selfWrapOnSoftUnconfirmed] controls whether the self-addressed wrap is
   /// still published when the recipient publish ends soft-unconfirmed (frame
@@ -528,6 +579,7 @@ class NIP17MessageService {
     required Event rumorEvent,
     required String recipientPubkey,
     List<String>? targetRelays,
+    List<String>? selfWrapTargetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
     Duration? recipientWrapBuildTimeout = DmBatchSendBudget.recipientWrapBuild,
@@ -541,7 +593,25 @@ class NIP17MessageService {
       // file — is covered at one seam. The injected policy decides which
       // recipients are refused. Checked before any wrap build or publish, so a
       // blocked send leaks no metadata to relays and performs no signing work.
-      final policyDecision = await _sendPolicy(recipientPubkey);
+      // Bounded: the resolver behind this has its own Dio connect/receive
+      // bound, but nothing here enforced it, so a wedged resolver spent the
+      // publish backstop instead (#7091). Fail CLOSED to temporarily-blocked:
+      // this is a safety gate, and a retryable refusal is the safe reading of
+      // "we could not determine whether this recipient is permitted".
+      DmSendPolicyDecision policyDecision;
+      try {
+        policyDecision = await _sendPolicy(
+          recipientPubkey,
+        ).timeout(DmSendBudget.sendPolicyCheck);
+      } on TimeoutException {
+        Log.warning(
+          'NIP-17 send policy check exceeded '
+          '${DmSendBudget.sendPolicyCheck.inSeconds}s; treating as '
+          'temporarily blocked',
+          category: LogCategory.system,
+        );
+        policyDecision = DmSendPolicyDecision.temporarilyBlocked;
+      }
       if (policyDecision != DmSendPolicyDecision.allowed) {
         Log.info(
           'NIP-17 send blocked by policy for recipient',
@@ -584,14 +654,34 @@ class NIP17MessageService {
       // Create a minimal Nostr instance for GiftWrapUtil.
       // Uses the injected signer (works with local or remote signing). The
       // signer stays the source of truth for the seal pubkey (it MUST match
-      // the signing key, NIP-59); Keycast caches getPublicKey locally, so
-      // this refresh is not an RPC round-trip.
+      // the signing key, NIP-59). Every signer the app injects answers this
+      // from a field — the send path receives a `NostrIdentity`, and NIP-46's
+      // returns `info.userPubkey`. `KeycastRpc.getPublicKey` IS an uncached
+      // RPC, but it sits behind that identity rather than on this path.
       final nostr = Nostr(
         _signer,
         [], // Empty filters - not using for subscriptions
         _dummyRelayGenerator, // Dummy relay generator - not using relays
       );
-      await nostr.refreshPublicKey();
+      // Bounded: every signer the app injects answers getPublicKey from a
+      // field (the send path receives a NostrIdentity), so this cannot fail a
+      // refresh a shipped signer would have completed. It ran inside the
+      // publish backstop with no bound of its own (#7091).
+      try {
+        await nostr.refreshPublicKey().timeout(
+          DmSendBudget.signerPubkeyRefresh,
+        );
+      } on TimeoutException {
+        Log.warning(
+          'Signer pubkey refresh exceeded '
+          '${DmSendBudget.signerPubkeyRefresh.inSeconds}s',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Signer did not answer in time',
+          retryablePending: true,
+        );
+      }
 
       Log.debug(
         'Wrapping kind ${rumorEvent.kind} rumor event',
@@ -642,7 +732,7 @@ class NIP17MessageService {
 
       Log.debug(
         'Created recipient gift wrap with ephemeral key: '
-        '${giftWrapEvent.pubkey}',
+        '${pubkeyForLogs(giftWrapEvent.pubkey)}',
         category: LogCategory.system,
       );
 
@@ -683,7 +773,25 @@ class NIP17MessageService {
         // Kind-aware noun for logs and error strings: this path serves both
         // reaction (kind 7) and message (kind 14/15) sends, and a log that
         // says "reaction" for a text message misdirects field debugging.
-        final isReaction = rumorEvent.kind == EventKind.reaction;
+        // A wrapped kind-5 is a DELETION of something, and which noun it takes
+        // depends on what it deletes — a reaction removal and a message
+        // delete-for-everyone both arrive here as kind 5. NIP-09's `k` tag
+        // names the deleted kind, and both builders set it
+        // (`DmReactionsRepository._durablyDeleteReaction` writes 7,
+        // `DmRepository._driveDeleteForEveryone` writes the row's message
+        // kind), so read it rather than guessing. Without this a reaction
+        // removal logs as "message" and sends field debugging to the wrong
+        // send path.
+        final deletesReaction =
+            rumorEvent.kind == EventKind.eventDeletion &&
+            rumorEvent.tags.any(
+              (tag) =>
+                  tag.length >= 2 &&
+                  tag[0] == 'k' &&
+                  tag[1] == '${EventKind.reaction}',
+            );
+        final isReaction =
+            rumorEvent.kind == EventKind.reaction || deletesReaction;
         final rumorNoun = isReaction ? 'reaction' : 'message';
         final rumorNounCapitalized = isReaction ? 'Reaction' : 'Message';
 
@@ -707,6 +815,7 @@ class NIP17MessageService {
               rumorEvent: rumorEvent,
               wrapBuildTimeout: selfWrapBound,
               prebuiltSelfWrap: prebuiltSelfWrap,
+              targetRelays: selfWrapTargetRelays,
             );
 
         if (outcome.confirmed) {
@@ -743,7 +852,8 @@ class NIP17MessageService {
         }
         Log.warning(
           'NIP-17 $rumorNoun recipient publish unconfirmed '
-          '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
+          '(rumor=${rumorEvent.id}, '
+          'recipient=${pubkeyForLogs(recipientPubkey)}, '
           '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
           category: LogCategory.system,
         );
@@ -765,7 +875,8 @@ class NIP17MessageService {
       if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(
-          '$errorMsg (rumor=${rumorEvent.id}, recipient=$recipientPubkey)',
+          '$errorMsg (rumor=${rumorEvent.id}, '
+          'recipient=${pubkeyForLogs(recipientPubkey)})',
           category: LogCategory.system,
         );
         return const NIP17SendResult.failure(errorMsg);
@@ -784,6 +895,7 @@ class NIP17MessageService {
         rumorEvent: rumorEvent,
         wrapBuildTimeout: selfWrapBound,
         prebuiltSelfWrap: prebuiltSelfWrap,
+        targetRelays: selfWrapTargetRelays,
       );
 
       Log.info(
@@ -800,7 +912,8 @@ class NIP17MessageService {
     } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to send NIP-17 message '
-        '(rumor=${rumorEvent.id}, recipient=$recipientPubkey): $e',
+        '(rumor=${rumorEvent.id}, '
+        'recipient=${pubkeyForLogs(recipientPubkey)}): $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
@@ -849,7 +962,17 @@ class NIP17MessageService {
   /// a flaky probe never blocks a send that might otherwise succeed.
   Future<bool> _isOfflineSafely() async {
     try {
-      return await _isOffline();
+      // Bounded as well as guarded: `connectivity_plus`' checkConnectivity is
+      // a platform-channel round trip, and a wedged channel is a hang, not a
+      // throw — which is why the catch below could never cover it (#7091).
+      return await _isOffline().timeout(DmSendBudget.connectivityProbe);
+    } on TimeoutException {
+      Log.warning(
+        'Offline probe exceeded ${DmSendBudget.connectivityProbe.inSeconds}s; '
+        'assuming online',
+        category: LogCategory.system,
+      );
+      return false;
     } on Object catch (e) {
       Log.warning(
         'Offline probe failed; assuming online: $e',
@@ -878,7 +1001,10 @@ class NIP17MessageService {
   /// [NIP17SendResult.failure] when the self-wrap could not be built
   /// or did not reach a relay.
   @useResult
-  Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
+  Future<NIP17SendResult> publishSelfWrap({
+    required Event rumorEvent,
+    List<String>? targetRelays,
+  }) async {
     try {
       // Same fail-fast as sendRumor: a frame buffered to a stale-`connected`
       // socket while offline would count as PublishSuccess and mark the
@@ -905,6 +1031,7 @@ class NIP17MessageService {
         nostr: nostr,
         rumorEvent: rumorEvent,
         wrapBuildTimeout: DmSendBudget.selfWrapUncappedBuild,
+        targetRelays: targetRelays,
       );
       if (!published) {
         return const NIP17SendResult.failure('Self-wrap publish failed');
@@ -943,6 +1070,7 @@ class NIP17MessageService {
     required Event rumorEvent,
     required Duration? wrapBuildTimeout,
     Event? prebuiltSelfWrap,
+    List<String>? targetRelays,
   }) async {
     try {
       // Bounded: letting these 2 remote round trips run unbounded is what
@@ -990,22 +1118,44 @@ class NIP17MessageService {
       // cap and misclassify a recipient-confirmed send as retryable-pending.
       // try/on rather than onTimeout: the future's reified type can be a
       // PublishResult subtype, which an onTimeout closure cannot satisfy.
+      // Naming relays here is what carries the self-copy to the sender's own
+      // kind-10050 DM inbox; `null` keeps the historic plain-pool publish.
+      // #7328.
+      final destination = (targetRelays != null && targetRelays.isNotEmpty)
+          ? targetRelays
+          : null;
       PublishResult published;
       try {
-        published = await _nostrService
-            .publishEvent(selfWrapEvent)
-            .timeout(_selfWrapPublishTimeout);
+        published =
+            await (destination == null
+                    ? _nostrService.publishEvent(selfWrapEvent)
+                    : _nostrService.publishEvent(
+                        selfWrapEvent,
+                        targetRelays: destination,
+                      ))
+                .timeout(_selfWrapPublishTimeout);
       } on TimeoutException {
         published = const PublishFailed();
       }
+      // Name the destination on both outcomes. Reporting only a bare
+      // success/failure is what let a self-copy that never reached the
+      // sender's advertised inbox read as delivered (#7328), and support
+      // cannot tell those apart from the event id alone.
+      final destinationForLog = destination?.join(', ') ?? 'default pool';
       if (published is! PublishSuccess) {
         Log.warning(
           'Self-wrap publish failed — the sender will not see this '
-          'message on other devices or after a reinstall.',
+          'message on other devices or after a reinstall '
+          '(event=${selfWrapEvent.id}, relays=$destinationForLog)',
           category: LogCategory.system,
         );
         return false;
       }
+      Log.info(
+        'Self-wrap published (event=${selfWrapEvent.id}, '
+        'relays=$destinationForLog)',
+        category: LogCategory.system,
+      );
       return true;
     } on Object catch (e) {
       Log.error(
@@ -1018,9 +1168,8 @@ class NIP17MessageService {
   }
 
   /// Build a kind-[eventKind] rumor with [content] + [tags] and publish it as
-  /// a **self-addressed** NIP-59 gift wrap (never to a counterparty) to
-  /// [targetRelays] — the user's own DM inbox relays, or the default pool when
-  /// `null`/empty. Returns `true` when the wrap reached at least one relay.
+  /// a **self-addressed** NIP-59 gift wrap (never to a counterparty) to the
+  /// default pool. Returns `true` when the wrap reached at least one relay.
   ///
   /// Used for the DM read-state cursor marker (#4977): a kind-30078
   /// application-data rumor whose `content` is the read map. The gift-wrap seal
@@ -1032,7 +1181,6 @@ class NIP17MessageService {
     required String content,
     required List<List<String>> tags,
     int eventKind = EventKind.appSpecificData,
-    List<String>? targetRelays,
   }) async {
     try {
       final nostr = Nostr(_signer, [], _dummyRelayGenerator);
@@ -1044,12 +1192,7 @@ class NIP17MessageService {
         receiverPublicKey: _senderPublicKey,
       ).timeout(DmSendBudget.selfWrapUncappedBuild, onTimeout: () => null);
       if (selfWrapEvent == null) return false;
-      final published = (targetRelays != null && targetRelays.isNotEmpty)
-          ? await _nostrService.publishEvent(
-              selfWrapEvent,
-              targetRelays: targetRelays,
-            )
-          : await _nostrService.publishEvent(selfWrapEvent);
+      final published = await _nostrService.publishEvent(selfWrapEvent);
       return published is PublishSuccess;
     } on Object catch (e, stackTrace) {
       Log.error(
@@ -1075,6 +1218,7 @@ class NIP17MessageService {
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
     List<String>? targetRelays,
+    List<String>? selfWrapTargetRelays,
     bool awaitRecipientOk = false,
     bool selfWrapOnSoftUnconfirmed = true,
   }) async {
@@ -1088,6 +1232,7 @@ class NIP17MessageService {
       rumorEvent: rumor,
       recipientPubkey: recipientPubkey,
       targetRelays: targetRelays,
+      selfWrapTargetRelays: selfWrapTargetRelays,
       awaitRecipientOk: awaitRecipientOk,
       selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
       // No caller of this method owns an outgoing_dms row, so a bounded

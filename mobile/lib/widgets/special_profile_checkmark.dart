@@ -18,8 +18,7 @@ import 'package:openvine/l10n/l10n.dart';
 bool shouldShowSpecialProfileCheckmark(String? pubkeyHex) {
   if (pubkeyHex == null) return false;
   final pubkey = pubkeyHex.toLowerCase();
-  return kDivineTeamPubkeys.contains(pubkey) ||
-      kLegacyProfileCheckmarkPubkeys.contains(pubkey);
+  return kDivineTeamPubkeys.contains(pubkey);
 }
 
 class SpecialProfileCheckmark extends StatelessWidget {

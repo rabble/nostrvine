@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/router/auth_entry_redirect.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
 
@@ -61,6 +62,35 @@ void main() {
           1,
           reason: 'redirect off /welcome releases the splash',
         );
+
+        controller.dispose();
+        location.dispose();
+        unawaited(auth.close());
+      });
+    });
+
+    test('authenticated can recheck a non-routing startup gate', () {
+      fakeAsync((async) {
+        final auth = StreamController<AuthState>.broadcast();
+        final location = ValueNotifier<String>('/home');
+        var deletionLookupPending = true;
+        var releases = 0;
+
+        final controller = StartupSplashReleaseController(
+          authStateStream: auth.stream,
+          currentAuthState: () => AuthState.authenticated,
+          locationListenable: location,
+          currentLocation: () => location.value,
+          authenticatedRedirectPending: (_) => deletionLookupPending,
+          timeout: timeout,
+          release: () => releases++,
+        );
+
+        expect(releases, 0, reason: 'unresolved lookup holds the splash');
+
+        deletionLookupPending = false;
+        controller.reevaluate();
+        expect(releases, 1, reason: 'settled lookup releases the splash');
 
         controller.dispose();
         location.dispose();
@@ -246,6 +276,49 @@ void main() {
           // No lingering timer to fire later.
           async.elapse(timeout * 2);
           expect(releases, 1);
+
+          controller.dispose();
+          location.dispose();
+          unawaited(auth.close());
+        });
+      },
+    );
+
+    test(
+      'anonymous login recovery releases without waiting for the timeout',
+      () {
+        fakeAsync((async) {
+          final auth = StreamController<AuthState>.broadcast();
+          final location = ValueNotifier<String>(
+            '/welcome/login-options?email=existing%40example.com',
+          );
+          var state = AuthState.checking;
+          var releases = 0;
+
+          final controller = StartupSplashReleaseController(
+            authStateStream: auth.stream,
+            currentAuthState: () => state,
+            locationListenable: location,
+            currentLocation: () => location.value,
+            authenticatedRedirectPending: (currentLocation) =>
+                authenticatedRedirectsFromAuthEntry(
+                  currentLocation,
+                  hasExpiredOAuthSession: false,
+                  isAnonymous: true,
+                ),
+            timeout: timeout,
+            release: () => releases++,
+          );
+
+          state = AuthState.authenticated;
+          auth.add(AuthState.authenticated);
+          async.flushMicrotasks();
+
+          expect(
+            releases,
+            1,
+            reason: 'the router leaves anonymous recovery on login options',
+          );
 
           controller.dispose();
           location.dispose();

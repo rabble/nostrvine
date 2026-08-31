@@ -47,7 +47,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // handlers stay per-rumor isolated; `sendStatus` is last-writer-wins,
     // which only drives the bubble-less toasts (blocked / partial).
     on<ConversationMessageSent>(_onMessageSent, transformer: concurrent());
-    on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
+    // `droppable()` here dropped a delete for message B whenever a delete
+    // for message A was still in flight: bloc_concurrency's droppable
+    // discards on subscription state alone and never inspects the payload,
+    // so the rumor id was irrelevant. The handler awaits a signer round trip
+    // (measured 215-493ms against Keycast) plus a relay publish that can
+    // first await `retryDisconnectedRelays()`, so deleting a short burst of
+    // messages retracted only the first — silently, since no path here
+    // emits. `sequential()` queues them instead; a same-rumor repeat is
+    // idempotent because `deleteMessageForEveryone` returns early on an
+    // already soft-deleted row. Head-of-line blocking is the accepted cost
+    // and is why this is not `concurrent()`: concurrent handlers would race
+    // that same-rumor guard and publish two kind-5s for one message.
+    on<ConversationMessageDeleted>(
+      _onMessageDeleted,
+      transformer: sequential(),
+    );
     on<ConversationSelfWrapRecoveryRequested>(
       _onSelfWrapRecoveryRequested,
       transformer: sequential(),
@@ -181,8 +196,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         addError(e, stackTrace);
         return;
       }
-      // Anything else (e.g. signer `StateError('Failed to sign kind 5
-      // deletion event')`) is an invariant violation — matrix-YES.
+      // Anything else (e.g. the uninitialized-repository `StateError`) is
+      // an invariant violation — matrix-YES. Signing no longer throws here:
+      // the wrap is built and published on the repository's retry-backed
+      // drive, so a signer failure leaves a pending row instead.
       addError(
         Reportable(
           e,
@@ -231,8 +248,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // reach relays. The sender's other devices will not see this
       // message on relay-only restore. Surface as a distinct status so
       // the UI can offer a self-wrap-only retry without re-delivering
-      // to the recipient. [lastPartialSend.rumorIds] carries the
-      // per-recipient rumor ids whose self-wrap publish failed, so
+      // to the recipient. [lastPartialSend.rumorIds] carries the durable queue
+      // handles whose self-wrap publish failed, so
       // retrying republishes only those self-wraps via
       // [recoverSelfWrap].
       final partialRumorIds = <String>[];
@@ -259,7 +276,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
-          partialRumorIds.add(result.rumorEventId!);
+          partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
         }
       } else {
         final results = await _dmRepository.sendGroupMessage(
@@ -287,18 +304,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             results.first.error ?? 'Failed to send group message',
           );
         }
-        // For groups, "self-wrap" is per-recipient. We collect the rumor
-        // ids of the successful per-recipient sends whose self-wrap
-        // failed — only those rumors need a recovery republish.
+        // For groups, "self-wrap" is per-recipient. Recovery needs each
+        // surviving durable queue handle, not the shared wire rumor id.
         for (final result in results) {
           if (result.success && result.selfWrapPublished == false) {
-            partialRumorIds.add(result.rumorEventId!);
+            partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
           }
         }
       }
       if (partialRumorIds.isNotEmpty) {
         // Union with any outstanding partial: two concurrent sends that
-        // both end sentPartial must accumulate their rumor ids — the
+        // both end sentPartial must accumulate their queue handles — the
         // second overwrite silently orphaned the first send's self-wrap
         // recovery set. Stale ids (already recovered by the sweep) are
         // dropped by the recovery handler's ArgumentError-skip.

@@ -1116,6 +1116,55 @@ void main() {
             verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
           });
 
+          group('watchVanishedPubkeys', () {
+            test('mirrors the durable table', () async {
+              when(
+                () => mockVanishedDao.watchAllPubkeys(),
+              ).thenAnswer((_) => Stream.value([testPubkey]));
+
+              expect(
+                await repoWithVanishDao.watchVanishedPubkeys().first,
+                equals({testPubkey}),
+              );
+            });
+
+            test(
+              'follows later writes, so a consumer cannot go stale',
+              () async {
+                final controller = StreamController<List<String>>();
+                addTearDown(controller.close);
+                when(
+                  () => mockVanishedDao.watchAllPubkeys(),
+                ).thenAnswer((_) => controller.stream);
+
+                // Subscribe before writing, then await: awaiting first would
+                // deadlock, since nothing has been added yet.
+                final settled = expectLater(
+                  repoWithVanishDao.watchVanishedPubkeys(),
+                  emitsInOrder([
+                    <String>{},
+                    {testPubkey},
+                  ]),
+                );
+
+                controller
+                  ..add([])
+                  ..add([testPubkey]);
+
+                await settled;
+              },
+            );
+
+            test('emits an empty set when no dao is wired', () async {
+              // Matches isVanished in the same configuration: a caller gets a
+              // usable answer rather than an error.
+              expect(
+                await profileRepository.watchVanishedPubkeys().first,
+                isEmpty,
+              );
+            });
+          });
+
           test('loadVanishedPubkeys hydrates the in-memory set', () async {
             when(
               () => mockVanishedDao.getAllPubkeys(),
@@ -1273,6 +1322,11 @@ void main() {
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
+              // REST social counts are cached alongside the other stats so
+              // the profile header can render them without waiting on any
+              // relay work (#8197).
+              followerCount: 12,
+              followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,
@@ -1308,6 +1362,103 @@ void main() {
               videoCount: any(named: 'videoCount'),
               totalLikes: any(named: 'totalLikes'),
               totalViews: 13,
+            ),
+          ).called(1);
+        });
+
+        test('does not cache an ambiguous 0/0 social response', () async {
+          // `/api/users/{pubkey}/social` answers 200 for every pubkey and
+          // funnelcake turns ClickHouse failures into `{0, 0}`, so a zero
+          // body cannot be told apart from "never indexed" or "the summary
+          // table is down". Writing it would overwrite a good baseline
+          // with zeros (#8259 review).
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 0,
+                'following_count': 0,
+              }),
+              stats: ProfileStatsData.fromJson(const {'video_count': 3}),
+            ),
+          );
+
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+          // The other stats are still cached; the counts are withheld,
+          // i.e. passed as null (the default), so the DAO leaves whatever
+          // baseline is already on the row untouched.
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              videoCount: 3,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+            ),
+          ).called(1);
+        });
+
+        test('does not cache an ambiguous zero video count', () async {
+          // `get_user_stats` maps both a miss and a ClickHouse failure to a
+          // default, so funnelcake answers 200 with `video_count: 0` when the
+          // summary table is down — the same ambiguity the social counts
+          // already withhold. Writing it would overwrite a good baseline
+          // with a zero (#8403).
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 1976,
+                'following_count': 12,
+              }),
+              stats: ProfileStatsData.fromJson(const {'video_count': 0}),
+            ),
+          );
+
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+          // The social counts are real and cached; the zero video count is
+          // withheld, so the DAO keeps whatever baseline the row already has.
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              followerCount: 1976,
+              followingCount: 12,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+            ),
+          ).called(1);
+        });
+
+        test('caches mixed social responses per field', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 1976,
+                'following_count': 0,
+              }),
+            ),
+          );
+
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              followerCount: 1976,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+              videoCount: any(named: 'videoCount'),
             ),
           ).called(1);
         });
@@ -5412,75 +5563,6 @@ void main() {
       });
     });
 
-    group('getUsernameByPubkey', () {
-      const pubkey =
-          '156dd13a1f8a488037fa1b43ad934a5e58644a1d6e1ad6697a02c2e93b8b013b';
-
-      test('returns name and canonical when found', () async {
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) => Future.value(
-            Response(
-              '{"ok":true,"found":true,"name":"Alice","canonical":"alice"}',
-              200,
-            ),
-          ),
-        );
-        final result = await profileRepository.getUsernameByPubkey(
-          pubkeyHex: pubkey,
-        );
-        expect(result?.name, equals('Alice'));
-        expect(result?.canonical, equals('alice'));
-        // Pin the by-pubkey URL contract.
-        final captured =
-            verify(() => mockHttpClient.get(captureAny())).captured.single
-                as Uri;
-        expect(
-          captured.toString(),
-          equals('$_testNameServer/api/username/by-pubkey/$pubkey'),
-        );
-      });
-
-      test('returns null when not found', () async {
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) => Future.value(Response('{"ok":true,"found":false}', 200)),
-        );
-        final result = await profileRepository.getUsernameByPubkey(
-          pubkeyHex: pubkey,
-        );
-        expect(result, isNull);
-      });
-
-      test('returns null on network exception', () async {
-        when(() => mockHttpClient.get(any())).thenThrow(Exception('socket'));
-        final result = await profileRepository.getUsernameByPubkey(
-          pubkeyHex: pubkey,
-        );
-        expect(result, isNull);
-      });
-
-      test('returns null on non-200 response', () async {
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer((_) => Future.value(Response('error', 500)));
-        final result = await profileRepository.getUsernameByPubkey(
-          pubkeyHex: pubkey,
-        );
-        expect(result, isNull);
-      });
-
-      test('returns null on a non-object 200 body', () async {
-        // Valid JSON but not an object: `as Map` throws a TypeError (an Error,
-        // not an Exception), so the catch must be `on Object`.
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer((_) => Future.value(Response('123', 200)));
-        final result = await profileRepository.getUsernameByPubkey(
-          pubkeyHex: pubkey,
-        );
-        expect(result, isNull);
-      });
-    });
-
     group('lookupUsernameByPubkey', () {
       const pubkey =
           '156dd13a1f8a488037fa1b43ad934a5e58644a1d6e1ad6697a02c2e93b8b013b';
@@ -5728,34 +5810,31 @@ void main() {
       // timeout does, on a fully keyed account. Nothing between here and the
       // signer catches, and this method's own handler is `on Exception`, so
       // without local containment the throw left claimUsername entirely.
-      test(
-        'returns UsernameClaimError when the signer throws',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenThrow(StateError('no signer'));
+      test('returns UsernameClaimError when the signer throws', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenThrow(StateError('no signer'));
 
-          final usernameClaimResult = await profileRepository.claimUsername(
-            username: 'username',
-          );
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
 
-          expect(
-            usernameClaimResult,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Signing failed',
-            ),
-          );
+        expect(
+          usernameClaimResult,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Signing failed',
+          ),
+        );
 
-          // The request never left the device, so no name was claimed.
-          verifyNever(() => mockHttpClient.post(any()));
-        },
-      );
+        // The request never left the device, so no name was claimed.
+        verifyNever(() => mockHttpClient.post(any()));
+      });
 
       test(
         'sends lowercase username in payload for mixed-case input',
@@ -5798,10 +5877,10 @@ void main() {
 
           expect(
             result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Usernames must be 3–63 characters',
+            isA<UsernameClaimInvalidFormat>().having(
+              (e) => e.failure,
+              'failure',
+              DivineUsernameValidationFailure.invalidLength,
             ),
           );
           verifyNever(
@@ -5952,9 +6031,7 @@ void main() {
       }) {
         when(
           () => mockHttpClient.get(
-            Uri.parse(
-              '$_testNameServer/api/username/check/$username',
-            ),
+            Uri.parse('$_testNameServer/api/username/check/$username'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6066,9 +6143,9 @@ void main() {
         expect(
           result,
           isA<UsernameInvalidFormat>().having(
-            (e) => e.reason,
-            'reason',
-            'Usernames must be 3–63 characters',
+            (e) => e.failure,
+            'failure',
+            DivineUsernameValidationFailure.invalidLength,
           ),
         );
         verifyNever(
@@ -6243,17 +6320,14 @@ void main() {
         },
       );
 
-      test('returns $UsernameInvalidFormat with fallback message '
-          'when code is invalid_format but no reason', () async {
+      test('returns $UsernameInvalidFormat without a client failure '
+          'when the server rejects the format', () async {
         stubNameServerCheck('bad', available: false, code: 'invalid_format');
         final result = await profileRepository.checkUsernameAvailability(
           username: 'bad',
         );
         expect(result, isA<UsernameInvalidFormat>());
-        expect(
-          (result as UsernameInvalidFormat).reason,
-          equals('Invalid username format'),
-        );
+        expect((result as UsernameInvalidFormat).failure, isNull);
       });
 
       test('returns $UsernameTaken when code field is missing', () async {
@@ -6353,9 +6427,7 @@ void main() {
         fakeAsync((async) {
           when(
             () => mockHttpClient.get(
-              Uri.parse(
-                '$_testNameServer/api/username/check/testuser',
-              ),
+              Uri.parse('$_testNameServer/api/username/check/testuser'),
             ),
           ).thenAnswer((_) async {
             // Simulates an unresponsive name server: never resolves within
@@ -6804,6 +6876,48 @@ void main() {
         expect(result[testPubkey2]?.displayName, equals('Allowed Cached'));
         verifyNever(() => mockNostrClient.fetchProfile(any()));
       });
+
+      test(
+        'returns uncached blocked profiles when the block filter is bypassed',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys([testPubkey]),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getBulkProfiles([testPubkey]),
+          ).thenAnswer(
+            (_) async => BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileFound(
+                  profile: UserProfileData.fromJson(testPubkey, const {
+                    'display_name': 'Blocked API User',
+                  }),
+                ),
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: (pubkey) => pubkey == testPubkey,
+          );
+
+          final result = await repoWithBlockFilter.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+            ignoreBlockFilter: true,
+          );
+
+          expect(result[testPubkey]?.displayName, equals('Blocked API User'));
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
 
       test('fetches uncached from Funnelcake API', () async {
         when(

@@ -98,6 +98,9 @@ void main() {
       () => dao.getStillPendingForOwner(any()),
     ).thenAnswer((_) async => const <OutgoingDm>[]);
     when(() => dao.incrementRetry(any())).thenAnswer((_) async => true);
+    when(
+      () => dmRepository.retryableMessageDeletions(),
+    ).thenAnswer((_) async => const <DmMessageDeletionRetryTarget>[]);
   });
 
   tearDown(() async {
@@ -896,6 +899,162 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('message-deletion sweep', () {
+      DmMessageDeletionRetryTarget target(String rumorId) =>
+          DmMessageDeletionRetryTarget(
+            rumorId: rumorId,
+            conversationId: 'conv_1',
+            createdAt: 1700000000,
+          );
+
+      void stubPending(List<String> rumorIds) {
+        when(() => dmRepository.retryableMessageDeletions()).thenAnswer(
+          (_) async => rumorIds.map(target).toList(),
+        );
+      }
+
+      test('re-drives an unconfirmed deletion', () async {
+        stubPending(['del1']);
+        when(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenAnswer((_) async => DmMessageDeletionOutcome.sent);
+
+        await buildService().sweep();
+
+        verify(
+          () => dmRepository.retryMessageDeletion(rumorId: 'del1'),
+        ).called(1);
+      });
+
+      test('holds a re-attempt back until the backoff elapses', () async {
+        final now = DateTime.utc(2026, 5, 10, 12);
+        stubPending(['del1']);
+        when(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenAnswer((_) async => DmMessageDeletionOutcome.unconfirmed);
+        final service = buildService(now: () => now);
+
+        await service.sweep();
+        // Same clock: the first attempt's backoff has not elapsed.
+        await service.sweep();
+
+        verify(
+          () => dmRepository.retryMessageDeletion(rumorId: 'del1'),
+        ).called(1);
+      });
+
+      test('stops re-driving once the attempt budget is spent', () async {
+        var clock = DateTime.utc(2026, 5, 10, 12);
+        stubPending(['del1']);
+        when(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenAnswer((_) async => DmMessageDeletionOutcome.unconfirmed);
+        final service = buildService(
+          retryConfig: const OutgoingDmRetryConfig(maxRetries: 2),
+          now: () => clock,
+        );
+
+        // Advance well past every backoff so only the budget can stop it.
+        for (var i = 0; i < 5; i++) {
+          clock = clock.add(const Duration(hours: 1));
+          await service.sweep();
+        }
+
+        verify(
+          () => dmRepository.retryMessageDeletion(rumorId: 'del1'),
+        ).called(2);
+      });
+
+      test('does not spend budget on a row it could not attempt', () async {
+        var clock = DateTime.utc(2026, 5, 10, 12);
+        stubPending(['del1']);
+        // `unavailable` means nothing was sent — a row whose stored rumor is
+        // missing must not silently consume the budget a real send needs.
+        when(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenAnswer((_) async => DmMessageDeletionOutcome.unavailable);
+        final service = buildService(
+          retryConfig: const OutgoingDmRetryConfig(maxRetries: 2),
+          now: () => clock,
+        );
+
+        for (var i = 0; i < 4; i++) {
+          clock = clock.add(const Duration(hours: 1));
+          await service.sweep();
+        }
+
+        verify(
+          () => dmRepository.retryMessageDeletion(rumorId: 'del1'),
+        ).called(4);
+      });
+
+      test(
+        'forgets a settled deletion instead of leaking its budget',
+        () async {
+          var clock = DateTime.utc(2026, 5, 10, 12);
+          stubPending(['del1']);
+          when(
+            () => dmRepository.retryMessageDeletion(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer((_) async => DmMessageDeletionOutcome.unconfirmed);
+          final service = buildService(
+            retryConfig: const OutgoingDmRetryConfig(maxRetries: 1),
+            now: () => clock,
+          );
+
+          await service.sweep();
+          // Row settles and leaves the worklist...
+          stubPending([]);
+          clock = clock.add(const Duration(hours: 1));
+          await service.sweep();
+          // ...then the same id comes back as a NEW deletion of a re-sent
+          // message. Stale attempt state would make it exhausted on arrival.
+          stubPending(['del1']);
+          clock = clock.add(const Duration(hours: 1));
+          await service.sweep();
+
+          verify(
+            () => dmRepository.retryMessageDeletion(rumorId: 'del1'),
+          ).called(2);
+        },
+      );
+
+      test('a throwing retry does not abort the pass', () async {
+        stubPending(['del1']);
+        when(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        ).thenThrow(StateError('boom'));
+
+        await expectLater(buildService().sweep(), completes);
+      });
+
+      test('skips the whole pass while offline', () async {
+        stubPending(['del1']);
+        when(
+          () => dao.getStillPendingForOwner(any()),
+        ).thenAnswer((_) async => const <OutgoingDm>[]);
+
+        await buildService(isOffline: () async => true).sweep();
+
+        verifyNever(
+          () => dmRepository.retryMessageDeletion(
+            rumorId: any(named: 'rumorId'),
+          ),
+        );
+      });
     });
 
     group('error handling', () {

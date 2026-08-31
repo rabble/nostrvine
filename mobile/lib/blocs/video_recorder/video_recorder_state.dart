@@ -54,10 +54,7 @@ class VideoRecorderBlocState extends Equatable {
     ],
     this.isVideoStabilizationSupported = false,
     this.timerDuration = TimerDuration.off,
-    // TODO(#4787): Replace with a status enum + l10n key per
-    // `state_management.md` once the UI migration (PR2/PR3) is in.
-    // Kept as-is for PR1 to preserve verbatim provider behavior.
-    this.initializationErrorMessage,
+    this.initializationError,
     this.showLastClipOverlay = false,
     this.showGridLines = false,
     this.isStartingRecording = false,
@@ -156,8 +153,11 @@ class VideoRecorderBlocState extends Equatable {
   /// Current recording state.
   final VideoRecorderState recordingState;
 
-  /// Custom error message when camera initialization fails.
-  final String? initializationErrorMessage;
+  /// Why camera initialization failed, or null if it has not.
+  ///
+  /// A reason code, not a message — the UI localizes it. See
+  /// [CameraInitializationError].
+  final CameraInitializationError? initializationError;
 
   /// Whether to show a semi-transparent overlay of the last recorded clip
   /// on the camera preview (ghost frame).
@@ -261,11 +261,6 @@ class VideoRecorderBlocState extends Equatable {
   /// Whether in error state.
   bool get isError => recordingState == VideoRecorderState.error;
 
-  /// Error message if in error state or initialization failed.
-  String? get errorMessage =>
-      initializationErrorMessage ??
-      (isError ? 'Recording error occurred' : null);
-
   /// Creates a copy of this state with updated values.
   VideoRecorderBlocState copyWith({
     VideoRecorderMode? recorderMode,
@@ -290,7 +285,7 @@ class VideoRecorderBlocState extends Equatable {
     List<DivineVideoStabilizationMode>? availableVideoStabilizationModes,
     bool? isVideoStabilizationSupported,
     TimerDuration? timerDuration,
-    String? initializationErrorMessage,
+    CameraInitializationError? initializationError,
     bool? showLastClipOverlay,
     bool? showGridLines,
     bool? isStartingRecording,
@@ -335,8 +330,7 @@ class VideoRecorderBlocState extends Equatable {
       isVideoStabilizationSupported:
           isVideoStabilizationSupported ?? this.isVideoStabilizationSupported,
       timerDuration: timerDuration ?? this.timerDuration,
-      initializationErrorMessage:
-          initializationErrorMessage ?? this.initializationErrorMessage,
+      initializationError: initializationError ?? this.initializationError,
       showLastClipOverlay: showLastClipOverlay ?? this.showLastClipOverlay,
       showGridLines: showGridLines ?? this.showGridLines,
       isStartingRecording: isStartingRecording ?? this.isStartingRecording,
@@ -382,7 +376,7 @@ class VideoRecorderBlocState extends Equatable {
     availableVideoStabilizationModes,
     isVideoStabilizationSupported,
     timerDuration,
-    initializationErrorMessage,
+    initializationError,
     showLastClipOverlay,
     showGridLines,
     isStartingRecording,

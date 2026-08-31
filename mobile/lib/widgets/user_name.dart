@@ -2,9 +2,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
+import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 
 class UserName extends ConsumerWidget {
@@ -160,6 +163,17 @@ class UserName extends ConsumerWidget {
             (service) => service.isOgViner(effectivePubkey),
           ),
         );
+    final showCheckmark =
+        showProfileBadges && shouldShowSpecialProfileCheckmark(effectivePubkey);
+    // The beta chit yields to both the checkmark and the OG Viner chit, so a
+    // name never carries two of them. The Viner rosters are disjoint by
+    // construction; many team accounts also appear on the beta roster, so the
+    // checkmark still has to be checked here.
+    final isOgBetaTester =
+        showProfileBadges &&
+        !isOgViner &&
+        !showCheckmark &&
+        isOgBetaTesterPubkey(effectivePubkey);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -172,17 +186,22 @@ class UserName extends ConsumerWidget {
                   style: textStyle,
                   maxLines: maxLines ?? 1,
                 )
-              : Text(
+              : DivineHeartText(
                   displayName,
                   style: textStyle,
                   maxLines: maxLines ?? 1,
                   overflow: overflow ?? TextOverflow.ellipsis,
                 ),
         ),
-        if (showProfileBadges &&
-            shouldShowSpecialProfileCheckmark(effectivePubkey))
-          const SpecialProfileCheckmark(),
+        if (showCheckmark) const SpecialProfileCheckmark(),
         if (isOgViner) const OgVinerBadge(),
+        if (isOgBetaTester)
+          OgBetaBadge(
+            onTap: () => showProfileBadgeExplanationSheet(
+              context,
+              ProfileBadgeExplanationType.ogBetaTester,
+            ),
+          ),
       ],
     );
   }

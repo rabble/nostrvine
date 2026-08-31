@@ -50,7 +50,7 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
   Widget build(BuildContext context) {
     final isVanished =
         !widget.isOwnProfile &&
-        (ref.watch(profileVanishedProvider(widget.userIdHex)).value ?? false);
+        ref.watch(profileVanishedProvider(widget.userIdHex));
 
     // Resolve effective profile (same logic as ProfileHeaderWidget).
     final UserProfile? effectiveProfile;

@@ -8,6 +8,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -34,177 +35,287 @@ void main() {
     }
   });
 
-  testWidgets('${NostrAppSandboxScreen.path} route works', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'current_user_pubkey_hex': 'f' * 64,
-      'following_list_${'f' * 64}': '["npub1followed"]',
+  group('sandbox routes', () {
+    testWidgets('${NostrAppSandboxScreen.path} route works', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'current_user_pubkey_hex': 'f' * 64,
+        'following_list_${'f' * 64}': '["npub1followed"]',
+      });
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final mockAuth = createMockAuthService();
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+      when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuth.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(
+            mockSharedPreferences: sharedPreferences,
+            mockAuthService: mockAuth,
+          ),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(
+        NostrAppSandboxScreen.pathForAppId('primal-app'),
+        extra: _sandboxApp(),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        NostrAppSandboxScreen.pathForAppId('primal-app'),
+      );
     });
-    final sharedPreferences = await SharedPreferences.getInstance();
-    final mockAuth = createMockAuthService();
-    when(() => mockAuth.isAuthenticated).thenReturn(true);
-    when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
-    when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
-    when(
-      () => mockAuth.authStateStream,
-    ).thenAnswer((_) => const Stream<AuthState>.empty());
 
-    final container = ProviderContainer(
-      overrides: [
-        ...getStandardTestOverrides(
-          mockSharedPreferences: sharedPreferences,
-          mockAuthService: mockAuth,
-        ),
-        currentMinorAccountReviewStatusProvider.overrideWith(
-          (ref) async => MinorAccountReviewStatus.active(),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-    await container.read(currentMinorAccountReviewStatusProvider.future);
+    testWidgets(
+      'resolves the sandbox route from the directory when extra is absent',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'current_user_pubkey_hex': 'f' * 64,
+          'following_list_${'f' * 64}': '["npub1followed"]',
+        });
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final mockAuth = createMockAuthService();
+        final mockDirectoryService = _MockNostrAppDirectoryService();
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+        when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+        when(
+          () => mockAuth.authStateStream,
+        ).thenAnswer((_) => const Stream<AuthState>.empty());
+        when(
+          mockDirectoryService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_sandboxApp()]);
 
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: container.read(goRouterProvider),
-        ),
-      ),
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockSharedPreferences: sharedPreferences,
+              mockAuthService: mockAuth,
+            ),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (ref) async => MinorAccountReviewStatus.active(),
+            ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (ref) async => null,
+            ),
+            nostrAppDirectoryServiceProvider.overrideWithValue(
+              mockDirectoryService,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+
+        final router = container.read(goRouterProvider);
+        router.go(NostrAppSandboxScreen.pathForAppId('primal-app'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Sandbox unavailable'), findsNothing);
+        expect(find.text('Primal'), findsOneWidget);
+      },
     );
 
-    final router = container.read(goRouterProvider);
-    router.go(
-      NostrAppSandboxScreen.pathForAppId('primal-app'),
-      extra: _sandboxApp(),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    testWidgets(
+      'shows integration unavailable messaging when the app cannot be resolved',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'current_user_pubkey_hex': 'f' * 64,
+          'following_list_${'f' * 64}': '["npub1followed"]',
+        });
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final mockAuth = createMockAuthService();
+        final mockDirectoryService = _MockNostrAppDirectoryService();
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+        when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+        when(
+          () => mockAuth.authStateStream,
+        ).thenAnswer((_) => const Stream<AuthState>.empty());
+        when(
+          mockDirectoryService.fetchApprovedApps,
+        ).thenAnswer((_) async => const []);
 
-    expect(
-      router.routeInformationProvider.value.uri.toString(),
-      NostrAppSandboxScreen.pathForAppId('primal-app'),
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockSharedPreferences: sharedPreferences,
+              mockAuthService: mockAuth,
+            ),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (ref) async => MinorAccountReviewStatus.active(),
+            ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (ref) async => null,
+            ),
+            nostrAppDirectoryServiceProvider.overrideWithValue(
+              mockDirectoryService,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+
+        final router = container.read(goRouterProvider);
+        router.go(NostrAppSandboxScreen.pathForAppId('missing-app'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.appsSandboxUnavailableTitle), findsOneWidget);
+        expect(find.text(l10n.appsSandboxUnavailableBody), findsOneWidget);
+      },
     );
+
+    testWidgets(
+      'resolves the web-sandbox route from the directory when extra is absent',
+      (tester) async {
+        // The route has no in-app caller, so `extra` is always null: a pasted
+        // URL or a browser refresh is the only way in (#3335).
+        await _pumpRouterAt(
+          tester,
+          WebIframeSandboxScreen.pathForAppId('primal-app'),
+          approvedApps: [_sandboxApp()],
+        );
+
+        expect(find.byType(WebIframeSandboxScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'web-sandbox route shows integration unavailable when unresolvable',
+      (tester) async {
+        await _pumpRouterAt(
+          tester,
+          WebIframeSandboxScreen.pathForAppId('missing-app'),
+          approvedApps: const [],
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.byType(WebIframeSandboxScreen), findsNothing);
+        expect(find.text(l10n.appsSandboxUnavailableTitle), findsOneWidget);
+      },
+    );
+
+    testWidgets('web-sandbox route resolves by slug as well as id', (
+      tester,
+    ) async {
+      await _pumpRouterAt(
+        tester,
+        WebIframeSandboxScreen.pathForAppId('primal'),
+        approvedApps: [_sandboxApp()],
+      );
+
+      expect(find.byType(WebIframeSandboxScreen), findsOneWidget);
+    });
   });
+}
 
-  testWidgets(
-    'resolves the sandbox route from the directory when extra is absent',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'current_user_pubkey_hex': 'f' * 64,
-        'following_list_${'f' * 64}': '["npub1followed"]',
-      });
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final mockAuth = createMockAuthService();
-      final mockDirectoryService = _MockNostrAppDirectoryService();
-      when(() => mockAuth.isAuthenticated).thenReturn(true);
-      when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
-      when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
-      when(
-        () => mockAuth.authStateStream,
-      ).thenAnswer((_) => const Stream<AuthState>.empty());
-      when(
-        mockDirectoryService.fetchApprovedApps,
-      ).thenAnswer((_) async => [_sandboxApp()]);
+/// Pumps the real router at [location] with the app directory stubbed to
+/// [approvedApps], then settles the resolver's async fetch.
+Future<void> _pumpRouterAt(
+  WidgetTester tester,
+  String location, {
+  required List<NostrAppDirectoryEntry> approvedApps,
+}) async {
+  SharedPreferences.setMockInitialValues({
+    'current_user_pubkey_hex': 'f' * 64,
+    'following_list_${'f' * 64}': '["npub1followed"]',
+  });
+  final sharedPreferences = await SharedPreferences.getInstance();
+  final mockAuth = createMockAuthService();
+  final mockDirectoryService = _MockNostrAppDirectoryService();
+  when(() => mockAuth.isAuthenticated).thenReturn(true);
+  when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+  when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+  when(
+    () => mockAuth.authStateStream,
+  ).thenAnswer((_) => const Stream<AuthState>.empty());
+  when(
+    mockDirectoryService.fetchApprovedApps,
+  ).thenAnswer((_) async => approvedApps);
 
-      final container = ProviderContainer(
-        overrides: [
-          ...getStandardTestOverrides(
-            mockSharedPreferences: sharedPreferences,
-            mockAuthService: mockAuth,
-          ),
-          currentMinorAccountReviewStatusProvider.overrideWith(
-            (ref) async => MinorAccountReviewStatus.active(),
-          ),
-          nostrAppDirectoryServiceProvider.overrideWithValue(
-            mockDirectoryService,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      await container.read(currentMinorAccountReviewStatusProvider.future);
+  final container = ProviderContainer(
+    overrides: [
+      ...getStandardTestOverrides(
+        mockSharedPreferences: sharedPreferences,
+        mockAuthService: mockAuth,
+      ),
+      currentMinorAccountReviewStatusProvider.overrideWith(
+        (ref) async => MinorAccountReviewStatus.active(),
+      ),
+      currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
+      nostrAppDirectoryServiceProvider.overrideWithValue(mockDirectoryService),
+    ],
+  );
+  addTearDown(container.dispose);
+  await container.read(currentMinorAccountReviewStatusProvider.future);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(NostrAppSandboxScreen.pathForAppId('primal-app'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Sandbox unavailable'), findsNothing);
-      expect(find.text('Primal'), findsOneWidget);
-    },
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: container.read(goRouterProvider),
+      ),
+    ),
   );
 
-  testWidgets(
-    'shows integration unavailable messaging when the app cannot be resolved',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'current_user_pubkey_hex': 'f' * 64,
-        'following_list_${'f' * 64}': '["npub1followed"]',
-      });
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final mockAuth = createMockAuthService();
-      final mockDirectoryService = _MockNostrAppDirectoryService();
-      when(() => mockAuth.isAuthenticated).thenReturn(true);
-      when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
-      when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
-      when(
-        () => mockAuth.authStateStream,
-      ).thenAnswer((_) => const Stream<AuthState>.empty());
-      when(
-        mockDirectoryService.fetchApprovedApps,
-      ).thenAnswer((_) async => const []);
-
-      final container = ProviderContainer(
-        overrides: [
-          ...getStandardTestOverrides(
-            mockSharedPreferences: sharedPreferences,
-            mockAuthService: mockAuth,
-          ),
-          currentMinorAccountReviewStatusProvider.overrideWith(
-            (ref) async => MinorAccountReviewStatus.active(),
-          ),
-          nostrAppDirectoryServiceProvider.overrideWithValue(
-            mockDirectoryService,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      await container.read(currentMinorAccountReviewStatusProvider.future);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(NostrAppSandboxScreen.pathForAppId('missing-app'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.appsSandboxUnavailableTitle), findsOneWidget);
-      expect(find.text(l10n.appsSandboxUnavailableBody), findsOneWidget);
-    },
-  );
+  container.read(goRouterProvider).go(location);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 class _FakeWebViewPlatform extends WebViewPlatform {

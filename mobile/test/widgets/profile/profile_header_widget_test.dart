@@ -21,6 +21,8 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/config/profile_metrics.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -29,8 +31,10 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -38,9 +42,12 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/secure_account_prompt_dismissal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -320,6 +327,8 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
+    final enL10n = lookupAppLocalizations(const Locale('en'));
+
     Widget buildTestWidget({
       required String userIdHex,
       required bool isOwnProfile,
@@ -329,6 +338,8 @@ void main() {
       ProfileStats? profileStats,
       bool profileIsLoading = false,
       bool isAnonymous = false,
+      bool isAccountEnforced = false,
+      VoidCallback? onEnforcementRead,
       bool hasExpiredSession = false,
       bool isRpcUpgradeInProgress = false,
       bool tryRefreshResult = false,
@@ -347,8 +358,10 @@ void main() {
       ThemeData? theme,
       bool disableAnimations = false,
       TextScaler? textScaler,
+      Locale locale = const Locale('en'),
       bool renderHeader = true,
       MockAuthService? authService,
+      bool isVanished = false,
     }) {
       // Pass authService when the test needs the same instance across pumps —
       // e.g. to read tryRefreshCallCount after the header has been unmounted.
@@ -443,6 +456,7 @@ void main() {
             mockNip05VerificationService: createMockNip05VerificationService(),
             mockFollowRepository: mockFollowRepository,
           ),
+          profileVanishedProvider(userIdHex).overrideWith((ref) => isVanished),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future
@@ -454,6 +468,10 @@ void main() {
                 : const Stream<ProfileStats?>.empty(),
           ),
           authServiceProvider.overrideWithValue(effectiveAuthService),
+          isAccountEnforcedProvider.overrideWith((ref) {
+            onEnforcementRead?.call();
+            return isAccountEnforced;
+          }),
           badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -468,6 +486,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           theme: theme,
           home: Builder(
             builder: (context) => MediaQuery(
@@ -594,6 +613,110 @@ void main() {
       expect(find.text(l10n.ogVinerBadgeLabel), findsWidgets);
       expect(find.text(l10n.profileBadgeOgVinerBody), findsOneWidget);
       expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('opens OG Beta Tester explainer from profile header target', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final rosterPubkey = ogBetaTesterPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: rosterPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: rosterPubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.byTooltip(l10n.ogBetaTesterBadgeLabel);
+      expect(button, findsOneWidget);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+      // The header is the 48dp-compliant affordance; the inline chit takes a
+      // documented exception, so the floor has to hold here.
+      final buttonSize = tester.getSize(button);
+      expect(buttonSize.width, greaterThanOrEqualTo(48));
+      expect(buttonSize.height, greaterThanOrEqualTo(48));
+
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.profileBadgeOgBetaTesterBody), findsOneWidget);
+      expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: pubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: pubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
+
+    testWidgets('hides the OG Beta Tester chit behind the team checkmark', (
+      tester,
+    ) async {
+      // Many team accounts also appear on the beta roster, so this is the
+      // default state rather than an edge case. Without the guard the header
+      // renders two explainer buttons side by side.
+      final dualPubkey = kDivineTeamPubkeys.firstWhere(isOgBetaTesterPubkey);
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: dualPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Team Member',
+            pubkey: dualPubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsOneWidget);
+      expect(find.byType(OgBetaBadge), findsNothing);
+    });
+
+    testWidgets('hides the OG Beta Tester chit on a vanished account', (
+      tester,
+    ) async {
+      final rosterPubkey = ogBetaTesterPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: rosterPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: rosterPubkey,
+          ),
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A vanished account renders profileDeletedAccountName; a chit beside
+      // that is incoherent, and the compiled-in roster cannot drop someone
+      // who vanishes after release.
+      expect(find.byType(OgBetaBadge), findsNothing);
     });
 
     testWidgets('opens checkmark explainer from profile header target', (
@@ -1743,7 +1866,7 @@ void main() {
     });
 
     testWidgets(
-      'shows Complete your profile label for own profile without custom name',
+      'shows Complete Your Profile label for own profile without custom name',
       (tester) async {
         final profileWithDefaultName = createTestProfile();
 
@@ -1756,7 +1879,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Complete your profile'), findsOneWidget);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
       },
     );
 
@@ -1775,7 +1898,7 @@ void main() {
 
       // Action label is replaced with SizedBox.shrink() during the loading
       // window so the prompt doesn't flicker between states (#4183 review).
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label when profile has custom name', (
@@ -1792,7 +1915,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label for other profiles', (tester) async {
@@ -1807,7 +1930,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('renders PeopleListMembershipIndicator for other users', (
@@ -2036,6 +2159,36 @@ void main() {
     });
 
     group('Action Label', () {
+      testWidgets('keeps localized label inside a narrow scaled viewport', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        const locale = Locale('it');
+        final l10n = lookupAppLocalizations(locale);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(displayName: 'Test User'),
+            isAnonymous: true,
+            textScaler: const TextScaler.linear(2),
+            locale: locale,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final label = find.text(l10n.profileSecureYourAccount);
+        final labelRect = tester.getRect(label);
+        expect(labelRect.left, greaterThanOrEqualTo(0));
+        expect(
+          labelRect.right,
+          lessThanOrEqualTo(tester.view.physicalSize.width),
+        );
+      });
+
       testWidgets('shows Secure label when anonymous with custom name', (
         tester,
       ) async {
@@ -2051,7 +2204,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsOneWidget);
+        expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
         // 1 action — badge shows "1"
         expect(find.text('1'), findsOneWidget);
       });
@@ -2072,7 +2225,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Secure takes precedence
-          expect(find.text('Secure your account'), findsOneWidget);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
           // 2 actions — red badge with "2"
           expect(find.text('2'), findsOneWidget);
         },
@@ -2092,8 +2245,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
-        expect(find.text('Complete your profile'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
       });
 
       testWidgets('hides label for other profiles even when anonymous', (
@@ -2111,7 +2264,94 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+      });
+
+      testWidgets('shows a persistent restriction before setup actions', (
+        tester,
+      ) async {
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+            isAnonymous: true,
+            isAccountEnforced: true,
+            goRouter: mockGoRouter,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
+        expect(find.text('2'), findsNothing);
+        expect(find.text('3'), findsOneWidget);
+
+        await tester.tap(find.text(enL10n.profileAccountRestricted));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.push(RoutePaths.accountStatus)).called(1);
+        expect(find.byType(ProfileActionsSheetContent), findsNothing);
+      });
+
+      testWidgets('healthy own profile has no restriction action', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+      });
+
+      testWidgets('secure-account dismissal does not hide a restriction', (
+        tester,
+      ) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(
+          SecureAccountPromptDismissalStore.keyFor(testUserHex),
+          true,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+            isAnonymous: true,
+            isAccountEnforced: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
+      });
+
+      testWidgets('never shows the restriction action on another profile', (
+        tester,
+      ) async {
+        var enforcementReads = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            profile: createTestProfile(displayName: 'Test User'),
+            isAccountEnforced: true,
+            onEnforcementRead: () => enforcementReads++,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+        expect(enforcementReads, 0);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {
@@ -2128,13 +2368,85 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on the action label
-        await tester.tap(find.text('Secure your account'));
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
         await tester.pumpAndSettle();
 
-        // The bottom sheet should show the first action
-        expect(find.text('Secure Your Account'), findsOneWidget);
-        expect(find.text('Add Email & Password'), findsOneWidget);
-        expect(find.text('Maybe Later'), findsOneWidget);
+        // The pill and the sheet title share one ARB key, so scope the
+        // title to the sheet rather than counting matches.
+        expect(
+          find.descendant(
+            of: find.byType(ProfileActionsSheetContent),
+            matching: find.text(enL10n.profileSecureYourAccount),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(enL10n.profileSecurePrimaryButton), findsOneWidget);
+        expect(find.text(enL10n.profileMaybeLaterLabel), findsOneWidget);
+      });
+
+      testWidgets('Maybe Later permanently hides the secure-account action', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        Widget buildHeader() => buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+          isAnonymous: true,
+          sharedPreferences: prefs,
+        );
+
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+      });
+
+      testWidgets('Maybe Later leaves the complete-profile action pending', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            // Default name and no picture/bio/NIP-05, so both actions pend.
+            profile: createTestProfile(),
+            isAnonymous: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('2'), findsOneWidget);
+
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
+        await tester.pumpAndSettle();
+
+        // Dismiss secure-account, then the complete-profile prompt behind it.
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
+        expect(find.text('1'), findsOneWidget);
       });
     });
 
@@ -2335,9 +2647,8 @@ void main() {
           await tester.pumpAndSettle();
 
           // Anonymous users see the action label pill, not session expired
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text('Secure your account'), findsOneWidget);
-          expect(find.text(l10n.profileSessionExpired), findsNothing);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
+          expect(find.text(enL10n.profileSessionExpired), findsNothing);
         },
       );
 

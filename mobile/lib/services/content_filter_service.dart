@@ -62,13 +62,24 @@ class ContentFilterService extends ChangeNotifier {
   };
 
   /// Categories age-gated to [ContentFilterPreference.hide] until the viewer is
-  /// age-verified. PR #5303 locked these labels behind age verification; do not
-  /// add a "self-labeled content warns instead of hides" bypass without
-  /// confirming the category policy first. The `warn` defaults for alcohol,
-  /// tobacco, profanity, and gambling only take effect once the viewer is
-  /// age-verified. See #5062 for the reported visibility symptom.
+  /// age-verified. The narrow creator-only exception is defined separately in
+  /// [creatorSelfLabelWarningCategories]; adult content remains behind the age
+  /// gate. See #5303 for the gate and #5062/#8063 for creator visibility.
   static const Set<ContentLabel> ageRestrictedCategories = {
     ...adultCategories,
+    ContentLabel.alcohol,
+    ContentLabel.tobacco,
+    ContentLabel.profanity,
+    ContentLabel.gambling,
+  };
+
+  /// Creator-applied labels that remain visible to the creator behind a
+  /// warning even when age verification would otherwise hide them.
+  ///
+  /// Adult and always-filtered categories deliberately stay hidden. This
+  /// narrow carve-out covers the non-adult labels creators can apply during
+  /// publishing without weakening the protected-media policy from #5303.
+  static const Set<ContentLabel> creatorSelfLabelWarningCategories = {
     ContentLabel.alcohol,
     ContentLabel.tobacco,
     ContentLabel.profanity,
@@ -193,6 +204,20 @@ class ContentFilterService extends ChangeNotifier {
       return ContentFilterPreference.hide;
     }
     return _preferences[label] ?? _defaultFor(label);
+  }
+
+  /// Resolves a creator-applied label for the current viewer.
+  ContentFilterPreference getCreatorSelfLabelPreference(
+    ContentLabel label, {
+    required bool isOwner,
+  }) {
+    final preference = getPreference(label);
+    if (isOwner &&
+        preference == ContentFilterPreference.hide &&
+        creatorSelfLabelWarningCategories.contains(label)) {
+      return ContentFilterPreference.warn;
+    }
+    return preference;
   }
 
   /// Set the preference for a specific content label.

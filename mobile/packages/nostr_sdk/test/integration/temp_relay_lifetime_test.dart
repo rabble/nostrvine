@@ -127,110 +127,114 @@ void main() {
     return signed!;
   }
 
-  test(
-    'closes the temp relays a publish opened once they go idle',
-    () async {
-      final targets = [for (var i = 0; i < 5; i++) await startRelay()];
-      final urls = [for (final relay in targets) relay.url];
-      final pool = buildPool();
-      final event = await signedGiftWrap(pool);
+  group('sweepIdleTempRelays', () {
+    test(
+      'closes the temp relays a publish opened once they go idle',
+      () async {
+        final targets = [for (var i = 0; i < 5; i++) await startRelay()];
+        final urls = [for (final relay in targets) relay.url];
+        final pool = buildPool();
+        final event = await signedGiftWrap(pool);
 
-      await pool.sendEventAwaitOk(
-        ['EVENT', event.toJson()],
-        eventId: event.id,
-        tempRelays: urls,
-        targetRelays: urls,
-        timeout: const Duration(seconds: 2),
-      );
-
-      // Every address got a socket — that is the behaviour #6585 bounds, not
-      // removes: NIP-17 requires publishing to the recipient's own relays.
-      expect(
-        targets.every((relay) => relay.openSockets > 0),
-        isTrue,
-        reason: 'publish should reach every target',
-      );
-      expect(pool.tempRelayUrls, hasLength(5));
-
-      pool.sweepIdleTempRelays();
-      await _waitUntil(
-        () => targets.every((relay) => relay.openSockets == 0),
-        describe: () =>
-            'idle temp relays still open: '
-            '${targets.where((r) => r.openSockets > 0).map((r) => r.url)}',
-      );
-
-      for (final relay in targets) {
-        expect(
-          relay.openSockets,
-          isZero,
-          reason: 'idle temp relay ${relay.url} should have been closed',
+        await pool.sendEventAwaitOk(
+          ['EVENT', event.toJson()],
+          eventId: event.id,
+          tempRelays: urls,
+          targetRelays: urls,
+          timeout: const Duration(seconds: 2),
         );
-      }
-      expect(pool.tempRelayUrls, isEmpty);
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
 
-  test(
-    'leaves a temp relay alone while it is still serving a subscription',
-    () async {
-      final target = await startRelay();
-      final pool = buildPool();
+        // Every address got a socket — that is the behaviour #6585 bounds, not
+        // removes: NIP-17 requires publishing to the recipient's own relays.
+        expect(
+          targets.every((relay) => relay.openSockets > 0),
+          isTrue,
+          reason: 'publish should reach every target',
+        );
+        expect(pool.tempRelayUrls, hasLength(5));
 
-      pool.subscribe(
-        [
-          Filter(kinds: [1], limit: 1).toJson(),
-        ],
-        (_) {},
-        tempRelays: [target.url],
-        id: 'sub-under-sweep',
-      );
-      await _waitUntil(
-        () => target.openSockets > 0,
-        describe: () => 'subscribe never opened a socket on ${target.url}',
-      );
+        pool.sweepIdleTempRelays();
+        await _waitUntil(
+          () => targets.every((relay) => relay.openSockets == 0),
+          describe: () =>
+              'idle temp relays still open: '
+              '${targets.where((r) => r.openSockets > 0).map((r) => r.url)}',
+        );
 
-      // No settling wait afterwards: `removeTempRelay` drops the map key
-      // before it disconnects, so a wrongly swept relay is already missing
-      // from `tempRelayUrls` by the time the sweep returns.
-      pool.sweepIdleTempRelays();
+        for (final relay in targets) {
+          expect(
+            relay.openSockets,
+            isZero,
+            reason: 'idle temp relay ${relay.url} should have been closed',
+          );
+        }
+        expect(pool.tempRelayUrls, isEmpty);
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
 
-      expect(
-        pool.tempRelayUrls,
-        contains(target.subscribeKey),
-        reason: 'a relay carrying a live subscription must not be swept',
-      );
-      expect(target.openSockets, greaterThan(0));
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+    test(
+      'leaves a temp relay alone while it is still serving a subscription',
+      () async {
+        final target = await startRelay();
+        final pool = buildPool();
 
-  test(
-    'removeAll closes temp relays and stops the sweep',
-    () async {
-      final target = await startRelay();
-      final pool = buildPool();
-      final event = await signedGiftWrap(pool);
+        pool.subscribe(
+          [
+            Filter(kinds: [1], limit: 1).toJson(),
+          ],
+          (_) {},
+          tempRelays: [target.url],
+          id: 'sub-under-sweep',
+        );
+        await _waitUntil(
+          () => target.openSockets > 0,
+          describe: () => 'subscribe never opened a socket on ${target.url}',
+        );
 
-      await pool.sendEventAwaitOk(
-        ['EVENT', event.toJson()],
-        eventId: event.id,
-        tempRelays: [target.url],
-        targetRelays: [target.url],
-        timeout: const Duration(seconds: 2),
-      );
-      expect(pool.tempRelayUrls, hasLength(1));
+        // No settling wait afterwards: `removeTempRelay` drops the map key
+        // before it disconnects, so a wrongly swept relay is already missing
+        // from `tempRelayUrls` by the time the sweep returns.
+        pool.sweepIdleTempRelays();
 
-      pool.removeAll();
-      await _waitUntil(
-        () => target.openSockets == 0,
-        describe: () => 'removeAll left ${target.url} open',
-      );
+        expect(
+          pool.tempRelayUrls,
+          contains(target.subscribeKey),
+          reason: 'a relay carrying a live subscription must not be swept',
+        );
+        expect(target.openSockets, greaterThan(0));
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
+  });
 
-      expect(pool.tempRelayUrls, isEmpty);
-      expect(target.openSockets, isZero);
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+  group('removeAll', () {
+    test(
+      'removeAll closes temp relays and stops the sweep',
+      () async {
+        final target = await startRelay();
+        final pool = buildPool();
+        final event = await signedGiftWrap(pool);
+
+        await pool.sendEventAwaitOk(
+          ['EVENT', event.toJson()],
+          eventId: event.id,
+          tempRelays: [target.url],
+          targetRelays: [target.url],
+          timeout: const Duration(seconds: 2),
+        );
+        expect(pool.tempRelayUrls, hasLength(1));
+
+        pool.removeAll();
+        await _waitUntil(
+          () => target.openSockets == 0,
+          describe: () => 'removeAll left ${target.url} open',
+        );
+
+        expect(pool.tempRelayUrls, isEmpty);
+        expect(target.openSockets, isZero);
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
+  });
 }

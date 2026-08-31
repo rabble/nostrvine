@@ -26,6 +26,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
@@ -33,6 +34,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -369,9 +371,14 @@ class VideoRecorderBloc
         videoQuality: event.videoQuality,
         initialLens: initialLens,
         enableAutoLensSwitch: true,
+        // Read at init because the audio-session mode is chosen once per
+        // capture session; flipping the setting applies to the next open.
+        preferUnprocessedAudio:
+            prefs.getBool(MusicModePreferenceService.prefsKey) ?? false,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       initError = e;
+      addError(e, stackTrace);
     } finally {
       trace
         ..putAttribute('lens', initialLens.name)
@@ -392,23 +399,21 @@ class VideoRecorderBloc
         category: LogCategory.video,
       );
       emit(
-        state.copyWith(
-          initializationErrorMessage:
-              'Camera initialization failed: $initError',
-        ),
+        state.copyWith(initializationError: CameraInitializationError.failed),
       );
       return;
     }
 
     if (!_cameraService.isInitialized) {
       final error =
-          _cameraService.initializationError ?? 'Camera initialization failed';
+          _cameraService.initializationError ??
+          CameraInitializationError.failed;
       Log.warning(
         '⚠️ Camera failed to initialize: $error',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
-      emit(state.copyWith(initializationErrorMessage: error));
+      emit(state.copyWith(initializationError: error));
       return;
     }
 
@@ -1203,7 +1208,21 @@ class VideoRecorderBloc
     } finally {
       try {
         await File(workCopyPath).delete();
-      } catch (_) {}
+      } catch (e) {
+        // Swallowed, but not silent: this runs in a finally, so throwing would
+        // replace the enrichment result with a cleanup error. The copy lives
+        // beside the recording in the documents directory, which no sweeper
+        // covers — the media cache budget is temp-only, storage management
+        // clears only the seam dir, and clip recovery deliberately skips
+        // `.work.mp4`. A leak is therefore permanent and full clip size, and
+        // this method created the file itself, so a failure is unexpected
+        // rather than routine.
+        Log.warning(
+          'Work copy cleanup failed for $workCopyPath: $e',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+      }
     }
   }
 
@@ -2289,9 +2308,7 @@ class VideoRecorderBloc
         category: LogCategory.system,
       );
     }
-    try {
-      await WakelockPlus.disable();
-    } catch (_) {}
+    await _disableWakelockSafely();
     try {
       await _cameraService.dispose();
     } catch (e) {

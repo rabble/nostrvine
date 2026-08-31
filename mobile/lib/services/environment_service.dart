@@ -1,4 +1,4 @@
-// ABOUTME: Manages app environment (poc/staging/test/production) with persistence
+// ABOUTME: Manages app environment (poc/staging/production/local) with persistence
 // ABOUTME: Handles developer mode unlock and environment switching
 
 import 'package:flutter/foundation.dart';

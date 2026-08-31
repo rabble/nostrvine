@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/followers/follower_visibility.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -113,7 +114,7 @@ class OthersFollowersBloc
         },
         onError: (error, stackTrace) {
           Log.error(
-            'Failed to load followers list for ${event.targetPubkey}: $error',
+            'Failed to load followers list for ${pubkeyForLogs(event.targetPubkey)}: $error',
             name: 'OthersFollowersBloc',
             category: LogCategory.system,
           );
@@ -126,7 +127,7 @@ class OthersFollowersBloc
       );
     } catch (e, stackTrace) {
       Log.error(
-        'Unexpected error loading followers list for ${event.targetPubkey}: $e',
+        'Unexpected error loading followers list for ${pubkeyForLogs(event.targetPubkey)}: $e',
         name: 'OthersFollowersBloc',
         category: LogCategory.system,
       );
@@ -163,7 +164,7 @@ class OthersFollowersBloc
         ),
       );
       Log.debug(
-        'Optimistically added follower: ${event.followerPubkey}',
+        'Optimistically added follower: ${pubkeyForLogs(event.followerPubkey)}',
         name: 'OthersFollowersBloc',
         category: LogCategory.system,
       );
@@ -199,7 +200,7 @@ class OthersFollowersBloc
         ),
       );
       Log.debug(
-        'Optimistically removed follower: ${event.followerPubkey}',
+        'Optimistically removed follower: ${pubkeyForLogs(event.followerPubkey)}',
         name: 'OthersFollowersBloc',
         category: LogCategory.system,
       );

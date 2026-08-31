@@ -85,6 +85,20 @@ enum CipherMigrationOutcome {
   unreadable,
 }
 
+enum DatabaseClassificationStage { openDatabase, readSchema }
+
+class DatabaseClassificationException implements Exception {
+  const DatabaseClassificationException({
+    required this.stage,
+    required this.resultCode,
+    required this.extendedResultCode,
+  });
+
+  final DatabaseClassificationStage stage;
+  final int resultCode;
+  final int extendedResultCode;
+}
+
 /// Native plaintext→encrypted migration does not apply on web. Never reached
 /// at runtime (guarded by `kIsWeb` in the app).
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({

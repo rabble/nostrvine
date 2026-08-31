@@ -23,6 +23,7 @@ DivineVideoClip _createTestClip() => DivineVideoClip(
 
 DivineVideoDraft _draft({
   Map<String, dynamic> editorStateHistory = const {},
+  Map<String, dynamic> editorEditingParameters = const {},
   AudioEvent? selectedSound,
 }) => DivineVideoDraft(
   id: 'draft_1',
@@ -36,6 +37,7 @@ DivineVideoDraft _draft({
   publishStatus: PublishStatus.draft,
   publishAttempts: 0,
   editorStateHistory: editorStateHistory,
+  editorEditingParameters: editorEditingParameters,
   selectedSound: selectedSound,
 );
 
@@ -94,6 +96,66 @@ void main() {
 
       expect(draft.localAudioFilePaths, {path});
     });
+
+    test('collects local audio held only in completed-editor parameters', () {
+      const path = '/docs/draft_audio_imports/draft_1/completed.m4a';
+      final draft = _draft(
+        editorEditingParameters: {
+          'meta': {
+            VideoEditorConstants.audioStateHistoryKey: [
+              _localImport('local_import_completed', path).toJson(),
+            ],
+          },
+        },
+      );
+
+      expect(draft.localAudioFilePaths, {path});
+    });
+
+    test('deduplicates completed-editor audio against history', () {
+      const path = '/docs/draft_audio_imports/draft_1/shared.m4a';
+      final track = _localImport('local_import_shared', path);
+      final draft = _draft(
+        editorStateHistory: _historyWithAudio([track]),
+        editorEditingParameters: {
+          'meta': {
+            VideoEditorConstants.audioStateHistoryKey: [track.toJson()],
+          },
+        },
+      );
+
+      expect(draft.localAudioFilePaths, {path});
+    });
+
+    test('ignores malformed completed-editor parameter shapes', () {
+      final draft = _draft(
+        editorEditingParameters: const {
+          'meta': {
+            VideoEditorConstants.audioStateHistoryKey: [
+              'not-a-map',
+              <String, dynamic>{},
+            ],
+          },
+        },
+      );
+
+      expect(draft.localAudioFilePaths, isEmpty);
+    });
+
+    test(
+      'keeps history paths when completed-editor parameters are malformed',
+      () {
+        const path = '/docs/voice_over_recordings/history.m4a';
+        final draft = _draft(
+          editorStateHistory: _historyWithAudio([
+            _localImport('local_import_history', path),
+          ]),
+          editorEditingParameters: const {'meta': 'not-a-map'},
+        );
+
+        expect(draft.localAudioFilePaths, {path});
+      },
+    );
 
     test('ignores non-local audio (bundled, network, original sound)', () {
       final draft = _draft(

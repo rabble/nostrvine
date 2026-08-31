@@ -24,6 +24,31 @@ class IndexerRelayConfig {
     'wss://relay.nos.social',
   ];
 
+  /// Additional relays named in the user's NIP-17 kind-10050 DM inbox list,
+  /// on top of divine's own relay, so DM writes retain redundancy.
+  static const List<String> dmInboxTaggedRelays = [
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+  ];
+
+  /// Relays the user's NIP-17 kind-10050 DM inbox list is published to, on
+  /// top of divine's own relay, so a third-party sender can find it.
+  ///
+  /// NIP-17 §Relays: clients "SHOULD spread them to as many relays as
+  /// viable". Viable is measured, not assumed — [dmInboxDiscoveryRelays]
+  /// includes the two DM-capable fallback relays plus purplepag.es, the indexer
+  /// outbox-model clients query for a user's lists. `user.kindpag.es` and
+  /// `relay.nos.social` are intentionally not used as discovery-only targets
+  /// because they reject kind 10050 in the current relay measurements.
+  ///
+  /// Publishing here is best-effort and never gates the publish; see
+  /// `DmRepository.ensureDmRelayListPublished`. Adding an entry means having
+  /// checked it accepts kind 10050.
+  static const List<String> dmInboxDiscoveryRelays = [
+    ...dmInboxTaggedRelays,
+    'wss://purplepag.es',
+  ];
+
   /// Safe fallback relay set for users without a discoverable NIP-65 relay
   /// list (kind 10002).
   ///
@@ -144,7 +169,7 @@ class RelayDiscoveryService {
   /// indexer relays for a clean, self-contained query.
   Future<RelayDiscoveryResult> discoverRelays(String npub) async {
     Log.info(
-      '🔍 Starting relay discovery for $npub',
+      '🔍 Starting relay discovery for ${pubkeyForLogs(npub)}',
       name: 'RelayDiscoveryService',
       category: LogCategory.auth,
     );
@@ -153,7 +178,7 @@ class RelayDiscoveryService {
     final cached = await _getCachedRelays(npub);
     if (cached != null && cached.isNotEmpty) {
       Log.info(
-        '✅ Found ${cached.length} cached relays for $npub',
+        '✅ Found ${cached.length} cached relays for ${pubkeyForLogs(npub)}',
         name: 'RelayDiscoveryService',
         category: LogCategory.auth,
       );
@@ -190,7 +215,7 @@ class RelayDiscoveryService {
 
       // No relay list found on any indexer
       Log.warning(
-        '⚠️ No relay list found for $npub on any indexer',
+        '⚠️ No relay list found for ${pubkeyForLogs(npub)} on any indexer',
         name: 'RelayDiscoveryService',
         category: LogCategory.auth,
       );
@@ -366,12 +391,20 @@ class RelayDiscoveryService {
     } finally {
       try {
         await relay.disconnect();
-      } catch (_) {}
+      } catch (_) {
+        // Intentional no-op: best-effort teardown of the throwaway indexer
+        // connection. The relay list has already been returned or logged
+        // above; a failing disconnect must not mask that result.
+      }
       // Its own guard: a throw from disconnect must not skip the dispose,
       // which is what releases the socket's stream subscriptions.
       try {
         relay.dispose();
-      } catch (_) {}
+      } catch (_) {
+        // Intentional no-op: this is the last statement that touches the
+        // relay, so there is nothing left to protect and no caller above
+        // that could act on a dispose failure.
+      }
     }
   }
 

@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for DeveloperOptionsScreen layout and debug simulations.
 // ABOUTME: Covers settings-menu width and the protected-minor override toggles (#5721).
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/services/environment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 import '../helpers/invite_availability_harness.dart';
 import '../helpers/scroll.dart';
@@ -28,6 +31,7 @@ Future<InviteAvailabilityCubit> pumpScreen(
   WidgetTester tester,
   SharedPreferences prefs, {
   InviteAvailabilityCubit? availabilityCubit,
+  ShorebirdUpdater Function()? shorebirdUpdaterFactory,
 }) async {
   final cubit = availabilityCubit ?? seededInviteAvailabilityCubit();
   if (availabilityCubit == null) {
@@ -42,7 +46,9 @@ Future<InviteAvailabilityCubit> pumpScreen(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
-          home: const DeveloperOptionsScreen(),
+          home: DeveloperOptionsScreen(
+            shorebirdUpdaterFactory: shorebirdUpdaterFactory,
+          ),
         ),
         cubit: cubit,
       ),
@@ -50,6 +56,29 @@ Future<InviteAvailabilityCubit> pumpScreen(
   );
   await tester.pumpAndSettle();
   return cubit;
+}
+
+class _AvailableShorebirdUpdater implements ShorebirdUpdater {
+  final firstRead = Completer<void>();
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<UpdateStatus> checkForUpdate({UpdateTrack? track}) async =>
+      UpdateStatus.upToDate;
+
+  @override
+  Future<Patch?> readCurrentPatch() async {
+    if (!firstRead.isCompleted) firstRead.complete();
+    return const Patch(number: 7);
+  }
+
+  @override
+  Future<Patch?> readNextPatch() async => const Patch(number: 7);
+
+  @override
+  Future<void> update({UpdateTrack? track}) async {}
 }
 
 Future<void> tapTile(WidgetTester tester, String title) async {
@@ -64,24 +93,49 @@ Future<void> tapTile(WidgetTester tester, String title) async {
 }
 
 void main() {
-  testWidgets(
-    'DeveloperOptionsScreen constrains menu content width on wide screens',
-    (
+  group('renders', () {
+    testWidgets(
+      'renders the available Shorebird section through screen wiring',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        var factoryCalls = 0;
+        final updater = _AvailableShorebirdUpdater();
+        await pumpScreen(
+          tester,
+          await mockPrefs(),
+          shorebirdUpdaterFactory: () {
+            factoryCalls++;
+            return updater;
+          },
+        );
+
+        expect(factoryCalls, 1);
+        expect(find.text(l10n.devOptionsShorebirdTitle), findsOneWidget);
+        await tester.runAsync(() => updater.firstRead.future);
+        await tester.pumpAndSettle();
+        expect(find.text('7'), findsOneWidget);
+        expect(find.text(l10n.devOptionsShorebirdNotChecked), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'DeveloperOptionsScreen constrains menu content width on wide screens',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpScreen(tester, await mockPrefs());
+
+        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+        expect(listViewWidth, moreOrLessEquals(600));
+      },
+    );
+  });
+
+  group('interactions', () {
+    testWidgets('disabling developer mode turns off the flag and pops back', (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(900, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpScreen(tester, await mockPrefs());
-
-      final listViewWidth = tester.getSize(find.byType(ListView).first).width;
-      expect(listViewWidth, moreOrLessEquals(600));
-    },
-  );
-
-  testWidgets(
-    'disabling developer mode turns off the flag and pops back',
-    (tester) async {
       final prefs = await mockPrefs();
       final envService = EnvironmentService();
       await envService.initialize(sharedPreferences: prefs);
@@ -143,8 +197,8 @@ void main() {
       // Returned to the previous screen; the dev options entry is gone.
       expect(find.byType(DeveloperOptionsScreen), findsNothing);
       expect(find.text('open-developer-options'), findsOneWidget);
-    },
-  );
+    });
+  });
 
   group('protected-minor simulation (#5721)', () {
     late bool previousHitTestWarningShouldBeFatal;

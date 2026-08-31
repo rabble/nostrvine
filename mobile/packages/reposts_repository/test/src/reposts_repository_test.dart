@@ -1084,6 +1084,35 @@ void main() {
       });
 
       test(
+        'translates typed relay failures to UnrepostFailedException',
+        () async {
+          final failedEvent = createMockEvent(
+            id: 'deletion_event_id',
+            kind: 5,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+          when(() => mockNostrClient.deleteEvent(any())).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: failedEvent,
+              ),
+            ),
+          );
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await expectLater(
+            repository.unrepostVideo(testAddressableId),
+            throwsA(isA<UnrepostFailedException>()),
+          );
+        },
+      );
+
+      test(
         'ticks watchRepostedAddressableIds before deleteEvent completes',
         () async {
           // Seed a record by reposting first.
@@ -2965,6 +2994,38 @@ void main() {
           throwsA(isA<UnrepostFailedException>()),
         );
       });
+
+      test(
+        'translates typed relay failures to UnrepostFailedException',
+        () async {
+          final failedEvent = createMockEvent(
+            id: 'deletion_event_id',
+            kind: 5,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+          when(() => mockNostrClient.deleteEvent(any())).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: failedEvent,
+              ),
+            ),
+          );
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await expectLater(
+            repository.executeUnrepostAction(testAddressableId),
+            throwsA(isA<UnrepostFailedException>()),
+          );
+        },
+      );
 
       test('falls back to local storage when not in cache', () async {
         final record = RepostRecord(

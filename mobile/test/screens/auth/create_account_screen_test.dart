@@ -18,10 +18,12 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -39,6 +41,18 @@ class _MockPendingVerificationService extends Mock
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
+
+class _RecordingRegistrationAnalyticsService extends AnalyticsService {
+  final entryPoints = <ProductAnalyticsV2RegistrationEntryPoint>[];
+
+  @override
+  Future<String?> recordRegistrationStarted({
+    required ProductAnalyticsV2RegistrationEntryPoint entryPoint,
+  }) async {
+    entryPoints.add(entryPoint);
+    return 'registration-id';
+  }
+}
 
 class _SeededInviteGateBloc extends InviteGateBloc {
   _SeededInviteGateBloc({
@@ -73,10 +87,18 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  Widget createTestWidget({InviteAccessGrant? inviteAccessGrant}) {
+  Widget createTestWidget({
+    InviteAccessGrant? inviteAccessGrant,
+    AnalyticsService? analyticsService,
+  }) {
     return ProviderScope(
       overrides: [
-        ...getStandardTestOverrides(mockAuthService: mockAuthService),
+        ...getStandardTestOverrides(
+          mockAuthService: mockAuthService,
+          analyticsService:
+              analyticsService ??
+              AnalyticsService(disableNostrPublishing: true),
+        ),
         oauthClientProvider.overrideWithValue(mockOAuth),
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
@@ -103,6 +125,27 @@ void main() {
   }
 
   group(CreateAccountScreen, () {
+    testWidgets('records invite registration entry once', (tester) async {
+      final analytics = _RecordingRegistrationAnalyticsService();
+      final grant = InviteAccessGrant(
+        code: 'invite-code',
+        validatedAt: DateTime(2026, 8, 20),
+        creatorSlug: 'creator',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          inviteAccessGrant: grant,
+          analyticsService: analytics,
+        ),
+      );
+      await tester.pump();
+
+      expect(analytics.entryPoints, [
+        ProductAnalyticsV2RegistrationEntryPoint.invite,
+      ]);
+    });
+
     group('renders', () {
       testWidgets('displays title', (tester) async {
         await tester.pumpWidget(createTestWidget());
@@ -328,6 +371,9 @@ void main() {
                   overrides: [
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
+                      analyticsService: AnalyticsService(
+                        disableNostrPublishing: true,
+                      ),
                     ),
                     oauthClientProvider.overrideWithValue(mockOAuth),
                     pendingVerificationServiceProvider.overrideWithValue(
@@ -422,6 +468,9 @@ void main() {
                   overrides: [
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
+                      analyticsService: AnalyticsService(
+                        disableNostrPublishing: true,
+                      ),
                     ),
                     oauthClientProvider.overrideWithValue(mockOAuth),
                     pendingVerificationServiceProvider.overrideWithValue(

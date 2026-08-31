@@ -224,7 +224,8 @@ String _$relayStatisticsStreamHash() =>
 /// periodically syncs per-relay SDK counters (events received, queries sent,
 /// errors) so each relay displays its own real statistics.
 ///
-/// Must be watched at app level to activate the bridge.
+/// Activated by `AppShellSideEffects` — the 3s counter timer is recurring
+/// work a signed-out user should not pay for.
 
 @ProviderFor(relayStatisticsBridge)
 final relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
@@ -236,7 +237,8 @@ final relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
 /// periodically syncs per-relay SDK counters (events received, queries sent,
 /// errors) so each relay displays its own real statistics.
 ///
-/// Must be watched at app level to activate the bridge.
+/// Activated by `AppShellSideEffects` — the 3s counter timer is recurring
+/// work a signed-out user should not pay for.
 
 final class RelayStatisticsBridgeProvider
     extends $FunctionalProvider<void, void, void>
@@ -248,7 +250,8 @@ final class RelayStatisticsBridgeProvider
   /// periodically syncs per-relay SDK counters (events received, queries sent,
   /// errors) so each relay displays its own real statistics.
   ///
-  /// Must be watched at app level to activate the bridge.
+  /// Activated by `AppShellSideEffects` — the 3s counter timer is recurring
+  /// work a signed-out user should not pay for.
   RelayStatisticsBridgeProvider._()
     : super(
         from: null,

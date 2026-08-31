@@ -17,6 +17,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 
 class _MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
@@ -27,6 +28,9 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockDivineHostFilterService extends Mock
     implements DivineHostFilterService {}
+
+class _MockVideoProvenanceFilterService extends Mock
+    implements VideoProvenanceFilterService {}
 
 class _MockModerationLabelService extends Mock
     implements ModerationLabelService {}
@@ -42,6 +46,7 @@ void main() {
     late _MockContentFilterService filterService;
     late _MockVideoEventService videoEventService;
     late _MockDivineHostFilterService divineHostFilterService;
+    late _MockVideoProvenanceFilterService provenanceFilterService;
     late _MockModerationLabelService moderationLabelService;
     late _MockFollowRepository followRepository;
     late _MockContentBlocklistRepository blocklistRepository;
@@ -52,6 +57,8 @@ void main() {
       filterService = _MockContentFilterService();
       videoEventService = _MockVideoEventService();
       divineHostFilterService = _MockDivineHostFilterService();
+      provenanceFilterService = _MockVideoProvenanceFilterService();
+      when(() => provenanceFilterService.showVerifiedOnly).thenReturn(false);
       moderationLabelService = _MockModerationLabelService();
       followRepository = _MockFollowRepository();
       blocklistRepository = _MockContentBlocklistRepository();
@@ -119,6 +126,7 @@ void main() {
           contentFilterService: filterService,
           videoEventService: videoEventService,
           divineHostFilterService: divineHostFilterService,
+          provenanceFilterService: provenanceFilterService,
           moderationLabelService: moderationLabelService,
           followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,

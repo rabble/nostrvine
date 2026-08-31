@@ -324,22 +324,15 @@ void main() {
     });
 
     group(GallerySaveResultError, () {
-      test('supports value equality', () {
+      test('supports value equality regardless of cause', () {
         expect(
-          const GallerySaveResultError('error message'),
-          equals(const GallerySaveResultError('error message')),
+          const GallerySaveResultError(),
+          equals(const GallerySaveResultError()),
         );
       });
 
-      test('different messages are not equal', () {
-        expect(
-          const GallerySaveResultError('error 1'),
-          isNot(equals(const GallerySaveResultError('error 2'))),
-        );
-      });
-
-      test('props contains message', () {
-        expect(const GallerySaveResultError('error').props, ['error']);
+      test('props are empty', () {
+        expect(const GallerySaveResultError().props, isEmpty);
       });
     });
   });
@@ -415,6 +408,30 @@ void main() {
       expect(LibraryClipTypeFilter.stopMotion.matches(videoClip), isFalse);
       expect(LibraryClipTypeFilter.video.matches(videoClip), isTrue);
       expect(LibraryClipTypeFilter.video.matches(stopMotionClip), isFalse);
+    });
+  });
+
+  group(ClipLibraryCategoryFilter, () {
+    final archivedAndFiled = DivineVideoClip(
+      id: 'archived-and-filed',
+      video: EditorVideo.file('/path/to/archived.mp4'),
+      duration: const Duration(seconds: 4),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+      categoryId: 'cat-travel',
+      archivedAt: DateTime(2026, 3, 6),
+    );
+
+    test('shows an archived clip that stayed filed under the category', () {
+      expect(
+        const ClipLibraryCategoryFilter('cat-travel').admits(archivedAndFiled),
+        isTrue,
+      );
+    });
+
+    test('All still hides that clip, which is what archiving is for', () {
+      expect(const ClipLibraryAllFilter().admits(archivedAndFiled), isFalse);
     });
   });
 }

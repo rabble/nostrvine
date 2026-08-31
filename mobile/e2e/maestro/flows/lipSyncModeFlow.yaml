@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Lip-sync journey: create an account, open the recorder on lip-sync, drive its
 #control rail, prove the shutter is gated on picking a sound and then records

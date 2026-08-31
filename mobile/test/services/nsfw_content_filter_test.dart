@@ -63,13 +63,22 @@ void main() {
     late ModerationLabelService moderationLabelService;
 
     Future<void> seedModerationLabels(List<List<String>> tags) async {
-      when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-        (_) async => [
-          _FakeLabelEvent(
-            pubkey: moderationLabelService.divineModerationPubkeyHex,
-            tags: tags,
-          ),
-        ],
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          events: <Event>[
+            _FakeLabelEvent(
+              pubkey: moderationLabelService.divineModerationPubkeyHex,
+              tags: tags,
+            ),
+          ],
+          timedOut: false,
+          noRelays: false,
+        ),
       );
 
       await moderationLabelService.subscribeToLabeler(
@@ -99,6 +108,41 @@ void main() {
     });
 
     group('with default preferences', () {
+      test('keeps owner profanity behind a warning during cache restore', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+          viewerPubkey: () => _testPubkey.toUpperCase(),
+        );
+        final resolver = createNsfwWarnLabels(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+          viewerPubkey: () => _testPubkey.toUpperCase(),
+        );
+        final cached = VideoEvent.fromJson(
+          _createVideo(contentWarningLabels: ['profanity']).toJson(),
+        );
+
+        expect(filter(cached), isFalse);
+        expect(resolver(cached), ['profanity']);
+      });
+
+      test('still hides owner adult and always-filtered self-labels', () {
+        for (final label in ['nudity', 'violence']) {
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+            viewerPubkey: () => _testPubkey,
+          );
+
+          expect(
+            filter(_createVideo(contentWarningLabels: [label])),
+            isTrue,
+            reason: '$label must not use the narrow creator carve-out',
+          );
+        }
+      });
+
       test('returns false for video without content labels or hashtags', () {
         final filter = createNsfwFilter(
           contentFilterService,

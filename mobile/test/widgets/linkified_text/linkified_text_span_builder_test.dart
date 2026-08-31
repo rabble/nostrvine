@@ -377,9 +377,18 @@ void main() {
   });
 }
 
-extension on List<TextSpan> {
-  List<TextSpan> get tappableSpans =>
-      where((span) => span.recognizer is TapGestureRecognizer).toList();
+extension on List<InlineSpan> {
+  List<TextSpan> get tappableSpans => whereType<TextSpan>()
+      .where((span) => span.recognizer is TapGestureRecognizer)
+      .toList();
+}
+
+/// The builder emits `InlineSpan` so a green heart can arrive as a
+/// `WidgetSpan`; these keep the text-span assertions below readable.
+extension on InlineSpan {
+  String? get text => (this as TextSpan).text;
+
+  GestureRecognizer? get recognizer => (this as TextSpan).recognizer;
 }
 
 extension on TextSpan {

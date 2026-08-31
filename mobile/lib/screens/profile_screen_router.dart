@@ -206,7 +206,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.profileShareFailed(e),
+            context.l10n.profileShareFailed,
             error: true,
           ),
         );

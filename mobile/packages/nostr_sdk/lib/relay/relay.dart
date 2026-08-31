@@ -309,6 +309,13 @@ abstract class Relay {
   /// forgotten. Returns whether [id] named a pending query.
   bool discardQuery(String id) => _queries.remove(id) != null;
 
+  /// Drops a live subscription without sending `CLOSE`.
+  ///
+  /// Used when the relay itself closed the subscription (a `CLOSED` frame), so
+  /// echoing a `CLOSE` back would name a subscription the relay has already
+  /// forgotten. Returns whether [id] named a live subscription.
+  bool discardSubscription(String id) => _subscriptions.remove(id) != null;
+
   bool checkQuery(String id) {
     return _queries[id] != null;
   }

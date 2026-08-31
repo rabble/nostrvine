@@ -16,10 +16,14 @@ import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
@@ -34,6 +38,12 @@ class _MockBackgroundPublishBloc
     implements BackgroundPublishBloc {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
+
+class _MockContentDeletionService extends Mock
+    implements ContentDeletionService {}
+
+class _MockEnforcementRepository extends Mock
+    implements CreatorDeleteEnforcementRepository {}
 
 class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
     implements ProfileFeedCubit {}
@@ -113,10 +123,12 @@ void main() {
       bool isLoading = false,
       List<PendingCollaboratorInviteGroup> pendingInviteGroups = const [],
       Locale? locale,
+      List<dynamic> additionalOverrides = const [],
     }) {
       final profileFeedCubit = _stubbedProfileFeedCubit();
       return testProviderScope(
         additionalOverrides: [
+          ...additionalOverrides,
           collaboratorInviteRecoveryRepositoryProvider.overrideWithValue(
             mockDmRepository,
           ),
@@ -538,6 +550,89 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text(l10n.shareMenuDeleteConfirmation), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'delete stays disabled with a spinner while work is pending',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final deletionService = _MockContentDeletionService();
+          final enforcementRepository = _MockEnforcementRepository();
+          final relayCompleter = Completer<DeleteResult>();
+          when(
+            () => deletionService.quickDelete(
+              video: videos.first,
+              reason: DeleteReason.personalChoice,
+            ),
+          ).thenAnswer((_) => relayCompleter.future);
+
+          await tester.pumpWidget(
+            buildSubject(
+              userIdHex: _ownPubkey,
+              videos: videos,
+              additionalOverrides: [
+                contentDeletionServiceProvider.overrideWith(
+                  (ref) async => deletionService,
+                ),
+                creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                  enforcementRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.longPress(find.bySemanticsLabel('Video thumbnail 1'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.videoGridDeleteVideo));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.shareMenuDelete));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          final editTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridEditVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          expect(editTile.enabled, isFalse);
+          final deleteTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridDeleteVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          expect(deleteTile.enabled, isFalse);
+
+          relayCompleter.complete(
+            DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+          );
+          await tester.pumpAndSettle();
+
+          final recoveredEditTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridEditVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          final recoveredDeleteTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridDeleteVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          expect(recoveredEditTile.enabled, isTrue);
+          expect(recoveredDeleteTile.enabled, isTrue);
+
+          verify(
+            () => deletionService.quickDelete(
+              video: videos.first,
+              reason: DeleteReason.personalChoice,
+            ),
+          ).called(1);
         },
       );
 

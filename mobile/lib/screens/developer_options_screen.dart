@@ -22,11 +22,14 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
+import 'package:openvine/widgets/developer_options/shorebird_patch_section.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
@@ -122,7 +125,10 @@ class DeveloperOptionsScreen extends ConsumerStatefulWidget {
   /// Path for this route.
   static const String path = RoutePaths.developerOptions;
 
-  const DeveloperOptionsScreen({super.key});
+  const DeveloperOptionsScreen({this.shorebirdUpdaterFactory, super.key});
+
+  @visibleForTesting
+  final ShorebirdUpdater Function()? shorebirdUpdaterFactory;
 
   @override
   ConsumerState<DeveloperOptionsScreen> createState() =>
@@ -142,7 +148,6 @@ class _DeveloperOptionsScreenState
     const environments = [
       EnvironmentConfig.production,
       EnvironmentConfig(environment: AppEnvironment.staging),
-      EnvironmentConfig(environment: AppEnvironment.test),
       EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 
@@ -197,7 +202,15 @@ class _DeveloperOptionsScreenState
                 );
               }),
 
-              // Divider between environments and page load times
+              // Divider between environments and Shorebird patches
+              Divider(color: context.vineColors.outline, height: 32),
+
+              ShorebirdPatchSection(
+                preferences: ref.watch(sharedPreferencesProvider),
+                updaterFactory: widget.shorebirdUpdaterFactory,
+              ),
+
+              // Divider between Shorebird patches and page load times
               Divider(color: context.vineColors.outline, height: 32),
 
               // Page Load Times section header
@@ -426,7 +439,16 @@ class _DeveloperOptionsScreenState
                       color: context.vineColors.secondaryText,
                     ),
                   ),
-                  onTap: _simulateTeenMinorReview,
+                  onTap: () => _simulateTeenMinorReview(
+                    deadline: MinorReviewResponseDeadline(
+                      clock: MinorReviewResponseClock.running,
+                      serverNow: DateTime.utc(2026, 8, 26, 14, 30),
+                      deadlineAt: DateTime.utc(2026, 9, 10, 14, 30),
+                    ),
+                    toast: context
+                        .l10n
+                        .devOptionsMinorReviewResponseClockRunningToast,
+                  ),
                 ),
                 ListTile(
                   title: Text(
@@ -442,6 +464,79 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   onTap: _simulateUnder13MinorReview,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Text(
+                    context.l10n.devOptionsMinorReviewResponseClockTitle,
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.secondaryText,
+                    ),
+                  ),
+                ),
+                ...[
+                  (
+                    context.l10n.devOptionsMinorReviewResponseClockRunning,
+                    MinorReviewResponseDeadline(
+                      clock: MinorReviewResponseClock.running,
+                      serverNow: DateTime.utc(2026, 8, 26, 14, 30),
+                      deadlineAt: DateTime.utc(2026, 9, 10, 14, 30),
+                    ),
+                    context.l10n.devOptionsMinorReviewResponseClockRunningToast,
+                  ),
+                  (
+                    context.l10n.devOptionsMinorReviewResponseClockPaused,
+                    MinorReviewResponseDeadline(
+                      clock: MinorReviewResponseClock.paused,
+                      pausedAt: DateTime.utc(2026, 8, 26, 14, 30),
+                      remainingDaysWhenPaused: 7.5,
+                    ),
+                    context.l10n.devOptionsMinorReviewResponseClockPausedToast,
+                  ),
+                  (
+                    context.l10n.devOptionsMinorReviewResponseClockExpired,
+                    MinorReviewResponseDeadline(
+                      clock: MinorReviewResponseClock.expired,
+                      serverNow: DateTime.utc(2026, 9, 11, 14, 30),
+                      deadlineAt: DateTime.utc(2026, 9, 10, 14, 30),
+                    ),
+                    context.l10n.devOptionsMinorReviewResponseClockExpiredToast,
+                  ),
+                  (
+                    context
+                        .l10n
+                        .devOptionsMinorReviewResponseClockNotApplicable,
+                    const MinorReviewResponseDeadline(
+                      clock: MinorReviewResponseClock.notApplicable,
+                    ),
+                    context
+                        .l10n
+                        .devOptionsMinorReviewResponseClockNotApplicableToast,
+                  ),
+                  (
+                    context.l10n.devOptionsMinorReviewResponseClockMalformed,
+                    MinorReviewResponseDeadline.fromJson({
+                      'clock': 'running',
+                      'serverNow': '2026-08-26T14:30:00.000Z',
+                      'deadlineAt': null,
+                    }),
+                    context
+                        .l10n
+                        .devOptionsMinorReviewResponseClockMalformedToast,
+                  ),
+                ].map(
+                  (option) => ListTile(
+                    title: Text(
+                      option.$1,
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
+                    onTap: () => _simulateTeenMinorReview(
+                      deadline: option.$2,
+                      toast: option.$3,
+                    ),
+                  ),
                 ),
                 // Protected-minor (13-15) simulation (#5721): flips the
                 // debug-only ProtectedMinorOverrideService so QA can exercise
@@ -888,7 +983,10 @@ class _DeveloperOptionsScreenState
     setState(() {});
   }
 
-  Future<void> _simulateTeenMinorReview() async {
+  Future<void> _simulateTeenMinorReview({
+    required MinorReviewResponseDeadline deadline,
+    required String toast,
+  }) async {
     final l10n = context.l10n;
     final authService = ref.read(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex;
@@ -908,6 +1006,7 @@ class _DeveloperOptionsScreenState
           body: l10n.minorAccountReviewDefaultBody,
         ),
         supportEmail: AppConstants.supportEmail,
+        responseDeadline: deadline,
         moderationConversationPubkey: moderationPubkey,
         moderationConversationId: currentPubkey == null
             ? null
@@ -925,7 +1024,7 @@ class _DeveloperOptionsScreenState
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
-        context.l10n.devOptionsMinorReviewTeenEnabledToast,
+        toast,
       ),
     );
     setState(() {});

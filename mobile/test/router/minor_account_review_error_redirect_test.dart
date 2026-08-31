@@ -81,6 +81,9 @@ void main() {
             currentMinorAccountReviewStatusProvider.overrideWith(
               (ref) async => throw StateError('review status unavailable'),
             ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (ref) async => null,
+            ),
           ],
         );
         registerContainerTearDown(tester, container);
@@ -115,6 +118,9 @@ void main() {
             currentMinorAccountReviewStatusProvider.overrideWith(
               (ref) async => throw StateError('review status unavailable'),
             ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (ref) async => null,
+            ),
           ],
         );
         registerContainerTearDown(tester, container);
@@ -146,6 +152,9 @@ void main() {
             nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
             currentMinorAccountReviewStatusProvider.overrideWith(
               (ref) async => throw StateError('review status unavailable'),
+            ),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (ref) async => null,
             ),
           ],
         );

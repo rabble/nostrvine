@@ -356,30 +356,106 @@ void main() {
           ]);
           await future.timeout(const Duration(seconds: 1));
           final proof = await proofFuture;
-          expect(proof.attemptId, 'attempt-1:tx-1');
+          expect(
+            proof.attemptId,
+            startsWith('store-divine.supporter.monthly:'),
+          );
         },
       );
 
       test(
         'restored delivery after restore uses the restore context',
         () async {
-          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          when(() => store.restorePurchases()).thenAnswer((_) async {
+            streamController.add([
+              _purchase(
+                'divine.supporter.monthly',
+                status: PurchaseStatus.restored,
+              ),
+            ]);
+          });
           final proofFuture = validator.purchaseProofChanges.first;
           await validator.restorePurchases(
             capturedPubkey: 'captured-pubkey',
             attemptId: 'restore-1',
           );
+          final proof = await proofFuture.timeout(
+            const Duration(seconds: 1),
+          );
+          expect(
+            proof.attemptId,
+            startsWith('store-divine.supporter.monthly:'),
+          );
+          expect(proof.capturedPubkey, 'captured-pubkey');
+        },
+      );
+
+      test(
+        'repeated delivery without a transaction id uses a stable proof key',
+        () async {
+          when(() => store.restorePurchases()).thenAnswer((_) async {});
+
+          await validator.restorePurchases(attemptId: 'restore-1');
+          final firstProof = validator.purchaseProofChanges.first;
           streamController.add([
             _purchase(
               'divine.supporter.monthly',
               status: PurchaseStatus.restored,
             ),
           ]);
-          final proof = await proofFuture.timeout(
-            const Duration(seconds: 1),
+          final firstAttemptId = (await firstProof).attemptId;
+
+          await validator.restorePurchases(attemptId: 'restore-2');
+          final secondProof = validator.purchaseProofChanges.first;
+          streamController.add([
+            _purchase(
+              'divine.supporter.monthly',
+              status: PurchaseStatus.restored,
+            ),
+          ]);
+
+          expect(firstAttemptId, (await secondProof).attemptId);
+        },
+      );
+
+      test(
+        'silent restore does not emit interactive lifecycle state',
+        () async {
+          when(() => store.restorePurchases()).thenAnswer((_) async {
+            streamController.add([
+              _purchase(
+                'divine.supporter.monthly',
+                status: PurchaseStatus.restored,
+              ),
+            ]);
+          });
+          final lifecycle = <EntitlementLifecycle>[];
+          validator.lifecycleChanges.listen(lifecycle.add);
+
+          final proofFuture = validator.purchaseProofChanges.first;
+          await validator.restorePurchases(silent: true);
+          final proof = await proofFuture;
+
+          expect(proof.silent, isTrue);
+          expect(lifecycle, isEmpty);
+        },
+      );
+
+      test(
+        'silent restore context does not affect later store errors',
+        () async {
+          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          await validator.restorePurchases(silent: true);
+          final errorFuture = expectLater(
+            validator.entitlementChanges,
+            emitsError(isA<PurchaseFailedException>()),
           );
-          expect(proof.attemptId, 'restore-1');
-          expect(proof.capturedPubkey, 'captured-pubkey');
+
+          streamController.add([
+            _purchase('divine.supporter.monthly', status: PurchaseStatus.error),
+          ]);
+
+          await errorFuture;
         },
       );
 

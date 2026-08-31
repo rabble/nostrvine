@@ -61,39 +61,41 @@ Widget _host() => ProviderScope(
 );
 
 void main() {
-  testWidgets(
-    'ClassicVinesTab does not throw when disposed mid-refresh (#6157)',
-    (tester) async {
-      availabilityGate = Completer<bool>();
-      funnelcakeBuildCount = 0;
+  group(ClassicVinesTab, () {
+    testWidgets(
+      'ClassicVinesTab does not throw when disposed mid-refresh (#6157)',
+      (tester) async {
+        availabilityGate = Completer<bool>();
+        funnelcakeBuildCount = 0;
 
-      await tester.pumpWidget(_host());
-      // Resolve providers, render the unavailable state, then run the post-frame
-      // autoRefresh -> _refreshClassics -> funnelcake refresh() -> await the
-      // (now gated, pending) funnelcake future.
-      for (var i = 0; i < 6; i++) {
+        await tester.pumpWidget(_host());
+        // Resolve providers, render the unavailable state, then run the post-frame
+        // autoRefresh -> _refreshClassics -> funnelcake refresh() -> await the
+        // (now gated, pending) funnelcake future.
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        // The refresh must actually be in flight: _refreshClassics invalidated
+        // funnelcake, triggering a second (pending) build.
+        expect(
+          funnelcakeBuildCount,
+          greaterThanOrEqualTo(2),
+          reason: '_refreshClassics should have re-invalidated funnelcake',
+        );
+
+        // Dispose the tree while _refreshClassics is suspended on the future.
+        await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+
+        // Completing the future resumes _refreshClassics after the widget is gone.
+        // Without the mounted guard, ref.invalidate throws an unhandled StateError
+        // that flutter_test surfaces as a test failure; with it, the refresh bails.
+        availabilityGate.complete(false);
         await tester.pump(const Duration(milliseconds: 10));
-      }
+        await tester.pump(const Duration(milliseconds: 10));
 
-      // The refresh must actually be in flight: _refreshClassics invalidated
-      // funnelcake, triggering a second (pending) build.
-      expect(
-        funnelcakeBuildCount,
-        greaterThanOrEqualTo(2),
-        reason: '_refreshClassics should have re-invalidated funnelcake',
-      );
-
-      // Dispose the tree while _refreshClassics is suspended on the future.
-      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-
-      // Completing the future resumes _refreshClassics after the widget is gone.
-      // Without the mounted guard, ref.invalidate throws an unhandled StateError
-      // that flutter_test surfaces as a test failure; with it, the refresh bails.
-      availabilityGate.complete(false);
-      await tester.pump(const Duration(milliseconds: 10));
-      await tester.pump(const Duration(milliseconds: 10));
-
-      expect(tester.takeException(), isNull);
-    },
-  );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

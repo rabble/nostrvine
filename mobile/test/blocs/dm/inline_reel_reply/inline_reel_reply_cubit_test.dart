@@ -283,6 +283,34 @@ void main() {
     );
 
     blocTest<InlineReelReplyCubit, InlineReelReplyState>(
+      'retryable-pending reply is optimistically sent, not failed',
+      build: () {
+        when(
+          () => repo.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.failure(
+            'Recipient DM inbox unreadable; published to the fallback pool',
+            retryablePending: true,
+            queuedRumorId: 'queued-rumor-id',
+          ),
+        );
+        return InlineReelReplyCubit(
+          dmRepository: repo,
+          replyContext: oneToOne(),
+        );
+      },
+      act: (cubit) => cubit.submit('hi'),
+      expect: () => const [
+        InlineReelReplyState(status: InlineReelReplyStatus.sending),
+        InlineReelReplyState(status: InlineReelReplyStatus.success),
+      ],
+    );
+
+    blocTest<InlineReelReplyCubit, InlineReelReplyState>(
       'StateError from send is Reportable',
       build: () {
         when(
@@ -363,9 +391,7 @@ void main() {
         cubit.acknowledge();
       },
       skip: 2,
-      expect: () => const [
-        InlineReelReplyState(),
-      ],
+      expect: () => const [InlineReelReplyState()],
     );
 
     blocTest<InlineReelReplyCubit, InlineReelReplyState>(
@@ -558,8 +584,8 @@ void main() {
     // alongside the sweep's replay of the original row. Retry must re-drive
     // that row instead of sending again.
     group('retry', () {
-      /// Stubs a 1:1 send that parks [queuedRumorId]. `null` models a send
-      /// that left no row — a policy block, or an unwired queue DAO.
+      /// Stubs a hard-failed 1:1 send that parks [queuedRumorId]. `null` models
+      /// a failure that left no row, such as an unwired queue DAO.
       void stubSendParks(String? queuedRumorId) {
         when(
           () => repo.sendMessage(
@@ -570,7 +596,6 @@ void main() {
         ).thenAnswer(
           (_) async => NIP17SendResult.failure(
             'no relay responded',
-            retryablePending: true,
             queuedRumorId: queuedRumorId,
           ),
         );
@@ -683,10 +708,8 @@ void main() {
           await cubit.retry(queuedRumorIds: captured, content: 'hi');
 
           verify(
-            () => repo.recoverFullSend(
-              rumorId: 'row-1',
-              resetRetryBudget: true,
-            ),
+            () =>
+                repo.recoverFullSend(rumorId: 'row-1', resetRetryBudget: true),
           ).called(1);
           // Two submits, both deliberate. A third would be the duplicate.
           verifySendMessageCalled(2);

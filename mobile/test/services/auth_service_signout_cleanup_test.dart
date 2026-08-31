@@ -102,6 +102,7 @@ void main() {
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
       );
+      addTearDown(authService.dispose);
 
       // Setup mock behaviors
       when(

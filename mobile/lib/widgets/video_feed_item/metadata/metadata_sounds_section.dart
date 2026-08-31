@@ -259,7 +259,7 @@ class _SoundListItem extends ConsumerWidget {
     final String publisherName;
 
     if (audio.isBundled) {
-      publisherName = audio.source ?? 'diVine';
+      publisherName = audio.source ?? 'Divine';
     } else {
       final publisherProfile = ref
           .watch(userProfileReactiveProvider(audio.pubkey))

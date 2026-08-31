@@ -9,7 +9,10 @@ import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_s
 
 void main() {
   group(ProfileActionsSheetContent, () {
-    Widget buildApp({required List<ProfileActionType> actions}) {
+    Widget buildApp({
+      required List<ProfileActionType> actions,
+      void Function(ProfileActionType action)? onMaybeLater,
+    }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -22,7 +25,10 @@ void main() {
                     context: context,
                     scrollable: false,
                     showHeaderDivider: false,
-                    body: ProfileActionsSheetContent(actions: actions),
+                    body: ProfileActionsSheetContent(
+                      actions: actions,
+                      onMaybeLater: onMaybeLater,
+                    ),
                   );
                 },
                 child: const Text('Open'),
@@ -55,8 +61,12 @@ void main() {
       testWidgets('Maybe Later dismisses sheet when only action', (
         tester,
       ) async {
+        final dismissed = <ProfileActionType>[];
         await tester.pumpWidget(
-          buildApp(actions: [ProfileActionType.secureAccount]),
+          buildApp(
+            actions: [ProfileActionType.secureAccount],
+            onMaybeLater: dismissed.add,
+          ),
         );
         await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
@@ -66,6 +76,7 @@ void main() {
 
         // Sheet should be dismissed
         expect(find.text('Secure Your Account'), findsNothing);
+        expect(dismissed, [ProfileActionType.secureAccount]);
       });
     });
 

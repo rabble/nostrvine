@@ -75,68 +75,6 @@ void main() {
       }
     });
 
-    testWidgets('Share Profile button should be tappable when it exists', (
-      tester,
-    ) async {
-      const currentUserPubkey =
-          'currentuser11111111111111111111111111111111111111111111111111111111';
-      final currentUserNpub = NostrKeyUtils.encodePubKey(currentUserPubkey);
-
-      final c = ProviderContainer();
-      addTearDown(c.dispose);
-
-      await tester.pumpWidget(shell(c));
-
-      c
-          .read(goRouterProvider)
-          .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final shareButton = find.text('Share Profile');
-
-      if (shareButton.evaluate().isNotEmpty) {
-        // Just verify the button can be tapped without error
-        await tester.tap(shareButton);
-        await tester.pump();
-
-        // If we got here without exception, the tap worked
-        expect(true, isTrue, reason: 'Share button tap should not throw');
-      }
-    });
-
-    testWidgets('Edit Profile button should be tappable when it exists', (
-      tester,
-    ) async {
-      const currentUserPubkey =
-          'currentuser11111111111111111111111111111111111111111111111111111111';
-      final currentUserNpub = NostrKeyUtils.encodePubKey(currentUserPubkey);
-
-      final c = ProviderContainer();
-      addTearDown(c.dispose);
-
-      await tester.pumpWidget(shell(c));
-
-      c
-          .read(goRouterProvider)
-          .go(ProfileScreenRouter.pathForIndex(currentUserNpub, 0));
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final editButton = find.text('Edit Profile');
-
-      if (editButton.evaluate().isNotEmpty) {
-        // Just verify the button can be tapped without error
-        await tester.tap(editButton);
-        await tester.pump();
-
-        // If we got here without exception, the tap worked
-        expect(true, isTrue, reason: 'Edit button tap should not throw');
-      }
-    });
-
     testWidgets('Buttons should not appear when viewing other users profile', (
       tester,
     ) async {

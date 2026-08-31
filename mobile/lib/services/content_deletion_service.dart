@@ -30,6 +30,10 @@ enum DeleteFailureKind {
   /// persisted locally so the user can retry.
   relayRejected,
 
+  /// Every responding relay rejected deletion because the account is
+  /// explicitly suspended or banned.
+  accountRestricted,
+
   /// No relay accepted or rejected the delete event before the publish
   /// timeout. The delete is NOT persisted locally so the user can retry.
   relayNoResponse,
@@ -279,7 +283,12 @@ class ContentDeletionService {
         );
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
-          publishOutcome.rejectedBy.isNotEmpty
+          isAccountRestrictedOutcome(
+                publishOutcome,
+                trustedRelayUrl: _nostrService.defaultRelayUrl,
+              )
+              ? DeleteFailureKind.accountRestricted
+              : publishOutcome.rejectedBy.isNotEmpty
               ? DeleteFailureKind.relayRejected
               : DeleteFailureKind.relayNoResponse,
         );
@@ -371,6 +380,8 @@ class ContentDeletionService {
         return 'Failed to create delete event';
       case DeleteFailureKind.relayRejected:
         return 'Relay rejected deletion';
+      case DeleteFailureKind.accountRestricted:
+        return 'Account is restricted from publishing deletion';
       case DeleteFailureKind.relayNoResponse:
         return 'Relay did not confirm deletion';
       case DeleteFailureKind.unknown:

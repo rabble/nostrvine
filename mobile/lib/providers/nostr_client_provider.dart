@@ -598,7 +598,7 @@ class NostrService extends _$NostrService {
             (newPubkey == null && activeClientPubkey != null))) {
       _invalidateClientGeneration();
       Log.info(
-        '[NostrService] Public key changed from $_lastPubkey to $newPubkey, '
+        '[NostrService] Public key changed from ${pubkeyForLogs(_lastPubkey)} to ${pubkeyForLogs(newPubkey)}, '
         'recreating NostrClient',
         name: 'NostrService',
         category: LogCategory.system,

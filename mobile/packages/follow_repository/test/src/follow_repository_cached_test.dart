@@ -9,10 +9,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 import '../../../cache_sync/test/fake_cache_dao.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  _MockNostrClient() {
+    // Self-registered so the stub below works in every file that builds this
+    // mock, whether or not that file has its own `setUpAll`. Idempotent.
+    registerFallbackValue(Duration.zero);
+    // The pre-broadcast read of our own kind 3 goes through
+    // `queryEventsDetailed` so it can tell a relay's "I hold nothing" apart
+    // from an answer nobody gave (#8265). Default to a *settled* empty answer
+    // — the relay replied and holds nothing — which is the state every test
+    // here was written in, and which still broadcasts. Tests about the
+    // inconclusive read override this with `timedOut` or `noRelays`.
+    when(
+      () => queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => (events: <Event>[], timedOut: false, noRelays: false),
+    );
+  }
+}
+
+class _RecordingCacheDao extends FakeCacheDao {
+  Duration? lastTtl;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    lastTtl = ttl;
+    await super.write(key: key, payload: payload, ttl: ttl);
+  }
+}
 
 /// Subclass that overrides the data-source methods wrapped by the cached
 /// watchers, so tests can drive deterministic input without standing up a
@@ -109,17 +145,32 @@ class _TestableFollowRepository extends FollowRepository {
 }
 
 void main() {
-  late FakeCacheDao dao;
+  late _RecordingCacheDao dao;
   late _MockNostrClient mockNostrClient;
 
   setUp(() async {
-    dao = FakeCacheDao();
+    dao = _RecordingCacheDao();
     await CacheSync.init(dao: dao);
     mockNostrClient = _MockNostrClient();
     when(() => mockNostrClient.publicKey).thenReturn('current-user');
   });
 
   group('FollowRepository.watchMyFollowersCached', () {
+    test('writes the cache with the profile-list TTL', () async {
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowersResult: const ['a'],
+        myFollowerCountResult: 1,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+      );
+
+      await repo.watchMyFollowersCached().drain<void>();
+
+      expect(dao.lastTtl, const Duration(seconds: 30));
+    });
+
     test('emits live result when cache is empty', () async {
       final repo = _TestableFollowRepository(
         nostrClient: mockNostrClient,
@@ -246,6 +297,22 @@ void main() {
   });
 
   group('FollowRepository.watchMyFollowingCached', () {
+    test('writes the cache with the profile-list TTL', () async {
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: ['network'],
+          count: 1,
+        ),
+      );
+
+      await repo.watchMyFollowingCached().drain<void>();
+
+      expect(dao.lastTtl, const Duration(seconds: 30));
+    });
+
     test('emits live result from a fresh getOthersFollowing fetch, '
         'NOT from the watchMyFollowing BehaviorSubject replay', () async {
       final repo = _TestableFollowRepository(

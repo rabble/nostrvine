@@ -26,17 +26,16 @@ enum InstallSource {
 abstract class DownloadUrls {
   /// Google Play Store listing.
   static const playStore =
-      'https://play.google.com/store/apps/details?id=com.divinevideo.app';
+      'https://play.google.com/store/apps/details?id=co.openvine.app';
 
   /// Apple App Store listing.
-  static const appStore =
-      'https://apps.apple.com/app/divine-human-video/id6740425428';
+  static const appStore = 'https://apps.apple.com/app/id6747959501';
 
-  /// TestFlight link.
-  static const testFlight = 'https://testflight.apple.com/join/divine';
+  /// Store listing for users running a TestFlight build.
+  static const String testFlight = appStore;
 
   /// Zapstore listing.
-  static const zapstore = 'https://zapstore.dev/app/com.divinevideo.app';
+  static const zapstore = 'https://zapstore.dev/apps/co.openvine.app';
 
   /// GitHub releases page.
   static const github =

@@ -39,10 +39,6 @@ class InviteStatusState extends Equatable {
   /// Whether the user has remaining invite capacity.
   bool get hasAvailableInvites => availableInviteCount > 0;
 
-  /// Whether the user has any invite activity (codes or remaining capacity).
-  bool get hasInviteActivity =>
-      hasAvailableInvites || (inviteStatus?.codes.isNotEmpty ?? false);
-
   /// Number of invites the user still has to share.
   ///
   /// Not what they can still *generate* — see [InviteStatus.mintableCount] for

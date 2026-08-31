@@ -17,6 +17,14 @@ part 'nostr_events_dao.g.dart';
 /// re-fetching from relays.
 const Duration defaultEventCacheExpiry = Duration(days: 1);
 
+/// `expire_at` for rows that must survive [NostrEventsDao.deleteExpiredEvents].
+///
+/// NULL cannot express this: the sweep deletes `expire_at IS NULL` rows as well
+/// as past-dated ones, so NULL means *already expired*, not *never expires*.
+/// Anything that must outlive a cold start needs a real timestamp far enough
+/// out that it never arrives in practice (#8316).
+const int neverExpiresAtUnix = 4102444800; // 2100-01-01T00:00:00Z
+
 @DriftAccessor(tables: [NostrEvents, VideoMetrics])
 class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     with _$NostrEventsDaoMixin {
@@ -46,25 +54,50 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// For video events (kind 34236 or 16), also upserts video metrics to the
   /// video_metrics table for fast sorted queries.
   Future<void> upsertEvent(Event event, {int? expireAt}) async {
-    final effectiveExpireAt = expireAt ?? _defaultExpireAt();
+    await _upsertEvent(
+      event,
+      expireAt: expireAt ?? _defaultExpireAt(),
+      transactionActive: false,
+    );
+  }
 
+  Future<void> _upsertEvent(
+    Event event, {
+    required int expireAt,
+    required bool transactionActive,
+  }) async {
     // Handle replaceable events (kind 0, 3, 10000-19999)
     if (EventKind.isReplaceable(event.kind)) {
-      await _upsertReplaceableEvent(event, expireAt: effectiveExpireAt);
+      if (transactionActive) {
+        await _upsertReplaceableEvent(event, expireAt: expireAt);
+      } else {
+        await transaction(
+          () => _upsertReplaceableEvent(event, expireAt: expireAt),
+        );
+      }
       return;
     }
 
     // Handle parameterized replaceable events (kind 30000-39999)
     if (EventKind.isParameterizedReplaceable(event.kind)) {
-      await _upsertParameterizedReplaceableEvent(
-        event,
-        expireAt: effectiveExpireAt,
-      );
+      if (transactionActive) {
+        await _upsertParameterizedReplaceableEvent(
+          event,
+          expireAt: expireAt,
+        );
+      } else {
+        await transaction(
+          () => _upsertParameterizedReplaceableEvent(
+            event,
+            expireAt: expireAt,
+          ),
+        );
+      }
       return;
     }
 
     // Regular event: simple insert or replace by ID
-    await _insertEvent(event, expireAt: effectiveExpireAt);
+    await _insertEvent(event, expireAt: expireAt);
 
     // Also upsert video metrics for video events (kind 34236 only)
     // Note: Kind 16 reposts reference videos but don't contain video metadata
@@ -117,27 +150,37 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     Event event, {
     required int expireAt,
   }) async {
-    // Check if a newer event already exists for this pubkey+kind
-    final existingRows = await customSelect(
-      'SELECT id, created_at FROM event WHERE pubkey = ? AND kind = ? LIMIT 1',
+    // Compare against the newest stored version. MAX over all versions (rather
+    // than an arbitrary first row) keeps the newest even when raw ingestion via
+    // cacheEventsBatch left multiple versions behind — event_router sends
+    // every non-parameterized kind there, so several rows per (pubkey, kind)
+    // is the normal case rather than the exception. An aggregate without
+    // GROUP BY always yields exactly one row (NULL when no version exists).
+    final existingRow = await customSelect(
+      'SELECT MAX(created_at) AS max_created_at FROM event '
+      'WHERE pubkey = ? AND kind = ?',
       variables: [
         Variable.withString(event.pubkey),
         Variable.withInt(event.kind),
       ],
       readsFrom: {nostrEvents},
-    ).get();
+    ).getSingle();
 
-    if (existingRows.isNotEmpty) {
-      final existingCreatedAt = existingRows.first.read<int>('created_at');
-      if (event.createdAt <= existingCreatedAt) {
+    final maxCreatedAt = existingRow.read<int?>('max_created_at');
+    if (maxCreatedAt != null) {
+      if (event.createdAt <= maxCreatedAt) {
         // Existing event is newer or same age, don't replace
         return;
       }
-      // Delete the old event before inserting the new one
-      final existingId = existingRows.first.read<String>('id');
+      // Delete every superseded version before inserting the new one. Deleting
+      // a single arbitrary row left the rest behind, so the count never fell
+      // and the table grew without bound.
       await customUpdate(
-        'DELETE FROM event WHERE id = ?',
-        variables: [Variable.withString(existingId)],
+        'DELETE FROM event WHERE pubkey = ? AND kind = ?',
+        variables: [
+          Variable.withString(event.pubkey),
+          Variable.withInt(event.kind),
+        ],
         updates: {nostrEvents},
         updateKind: UpdateKind.delete,
       );
@@ -220,7 +263,11 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     await transaction(() async {
       // Batch upsert all events with replaceable logic
       for (final event in eventsSnapshot) {
-        await upsertEvent(event, expireAt: effectiveExpireAt);
+        await _upsertEvent(
+          event,
+          expireAt: effectiveExpireAt,
+          transactionActive: true,
+        );
       }
     });
   }

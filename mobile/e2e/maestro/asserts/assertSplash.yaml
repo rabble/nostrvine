@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 - waitForAnimationToEnd # Divine logo may take some time to load
 - assertVisible:

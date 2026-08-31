@@ -10,6 +10,7 @@ void main() {
       test('returns both actions when anonymous without profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
+          isAccountEnforced: false,
           isAnonymous: true,
           hasAnyProfileInfo: false,
         );
@@ -22,6 +23,7 @@ void main() {
       test('returns only secureAccount when anonymous with profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
+          isAccountEnforced: false,
           isAnonymous: true,
           hasAnyProfileInfo: true,
         );
@@ -34,6 +36,7 @@ void main() {
         () {
           final actions = ProfileActionType.pending(
             isOwnProfile: true,
+            isAccountEnforced: false,
             isAnonymous: false,
             hasAnyProfileInfo: false,
           );
@@ -45,6 +48,7 @@ void main() {
       test('returns empty when not anonymous and has profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
+          isAccountEnforced: false,
           isAnonymous: false,
           hasAnyProfileInfo: true,
         );
@@ -55,11 +59,30 @@ void main() {
       test('returns empty for other profiles', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: false,
+          isAccountEnforced: true,
           isAnonymous: true,
           hasAnyProfileInfo: false,
         );
 
         expect(actions, isEmpty);
+      });
+
+      test('a confirmed restriction is ordered before setup actions', () {
+        final actions = ProfileActionType.pending(
+          isOwnProfile: true,
+          isAccountEnforced: true,
+          isAnonymous: true,
+          hasAnyProfileInfo: false,
+        );
+
+        expect(
+          actions,
+          equals([
+            ProfileActionType.accountRestricted,
+            ProfileActionType.secureAccount,
+            ProfileActionType.completeProfile,
+          ]),
+        );
       });
     });
   });

@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:ui' show Tristate;
 
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,23 +15,35 @@ import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
-import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
-class _MockBookmarkService extends Mock implements BookmarkService {}
+class _MockBookmarksRepository extends Mock implements BookmarksRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
+
+class _MockContentDeletionService extends Mock
+    implements ContentDeletionService {}
+
+class _MockEnforcementRepository extends Mock
+    implements CreatorDeleteEnforcementRepository {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -80,7 +93,7 @@ VideoEvent _testVideo({
 
 void main() {
   late VideoEvent testVideo;
-  late _MockBookmarkService mockBookmarkService;
+  late _MockBookmarksRepository mockBookmarksRepository;
   late _MockVideoSharingService mockVideoSharingService;
   late _MockProfileRepository mockProfileRepository;
   late _MockVideoClipImportService mockVideoClipImportService;
@@ -102,7 +115,7 @@ void main() {
 
     testVideo = _testVideo();
 
-    mockBookmarkService = _MockBookmarkService();
+    mockBookmarksRepository = _MockBookmarksRepository();
     mockVideoSharingService = _MockVideoSharingService();
     mockVideoClipImportService = _MockVideoClipImportService();
     _FakeCuratedListsState.fakeLists = [];
@@ -114,16 +127,16 @@ void main() {
       ),
     ).thenAnswer((_) async => VideoClipImportSuccess(_FakeDivineVideoClip()));
     when(
-      () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+      () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
     ).thenReturn(false);
     when(
-      () => mockBookmarkService.hasUnreadablePrivateItems,
+      () => mockBookmarksRepository.hasUnreadablePrivateItems,
     ).thenReturn(false);
     when(
-      () => mockBookmarkService.syncGlobalBookmarks(),
+      () => mockBookmarksRepository.syncGlobalBookmarks(),
     ).thenAnswer((_) async => true);
     when(
-      () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+      () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
     ).thenAnswer(
       (_) async => const BookmarkToggleResult(
         succeeded: true,
@@ -146,15 +159,30 @@ void main() {
       bool debugToolsEnabled = true,
       VideoEvent? video,
       MockAuthService? mockAuthService,
+      ContentDeletionService? contentDeletionService,
+      CreatorDeleteEnforcementRepository? enforcementRepository,
+      VideoEventService? videoEventService,
     }) => testProviderScope(
       mockAuthService: mockAuthService,
       additionalOverrides: [
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
         profileReadRepositoryProvider.overrideWithValue(mockProfileRepository),
-        bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
+        bookmarksRepositoryProvider.overrideWith(
+          (ref) => mockBookmarksRepository,
+        ),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
         ),
+        if (contentDeletionService != null)
+          contentDeletionServiceProvider.overrideWith(
+            (ref) async => contentDeletionService,
+          ),
+        if (enforcementRepository != null)
+          creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+            enforcementRepository,
+          ),
+        if (videoEventService != null)
+          videoEventServiceProvider.overrideWithValue(videoEventService),
         videoClipImportServiceProvider.overrideWithValue(
           mockVideoClipImportService,
         ),
@@ -220,9 +248,9 @@ void main() {
 
         expect(find.text(l10n.shareSheetSave), findsOneWidget);
         expect(find.text(l10n.shareSheetRemoveFromSaved), findsNothing);
-        verify(() => mockBookmarkService.syncGlobalBookmarks()).called(1);
+        verify(() => mockBookmarksRepository.syncGlobalBookmarks()).called(1);
         verify(
-          () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
+          () => mockBookmarksRepository.isVideoBookmarkedGlobally(testVideo.id),
         ).called(1);
       },
     );
@@ -232,10 +260,10 @@ void main() {
       'finds the video',
       (tester) async {
         when(
-          () => mockBookmarkService.syncGlobalBookmarks(),
+          () => mockBookmarksRepository.syncGlobalBookmarks(),
         ).thenAnswer((_) async => true);
         when(
-          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
         ).thenReturn(true);
         final l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -255,10 +283,10 @@ void main() {
         // Believing the cache here is the #7072 mislabel, so the row must not
         // claim a saved state it could not confirm.
         when(
-          () => mockBookmarkService.syncGlobalBookmarks(),
+          () => mockBookmarksRepository.syncGlobalBookmarks(),
         ).thenAnswer((_) async => false);
         when(
-          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
         ).thenReturn(true);
         final l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -320,11 +348,10 @@ void main() {
     testWidgets(
       'More actions row prompts for a clip title and confirms saved title for owned videos',
       (tester) async {
-        final authService = createMockAuthService();
-        when(() => authService.isAuthenticated).thenReturn(true);
-        when(
-          () => authService.currentPublicKeyHex,
-        ).thenReturn(testVideo.pubkey);
+        final authService = createMockAuthService(
+          authState: AuthState.authenticated,
+          currentPublicKeyHex: testVideo.pubkey,
+        );
 
         await tester.pumpWidget(buildSubject(mockAuthService: authService));
         await tester.tap(find.byType(ShareActionButton));
@@ -358,9 +385,10 @@ void main() {
     testWidgets('More actions row shows owner edit and delete actions', (
       tester,
     ) async {
-      final authService = createMockAuthService();
-      when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
+      final authService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testVideo.pubkey,
+      );
 
       await tester.pumpWidget(buildSubject(mockAuthService: authService));
       await tester.tap(find.byType(ShareActionButton));
@@ -368,6 +396,55 @@ void main() {
 
       expect(find.text('Edit Video'), findsOneWidget);
       expect(find.text('Delete Video'), findsOneWidget);
+    });
+
+    testWidgets('More actions row disables Edit during relay deletion', (
+      tester,
+    ) async {
+      final authService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testVideo.pubkey,
+      );
+      final deletionService = _MockContentDeletionService();
+      final enforcementRepository = _MockEnforcementRepository();
+      final videoEventService = _MockVideoEventService();
+      final relayCompleter = Completer<DeleteResult>();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      when(
+        () => deletionService.quickDelete(
+          video: testVideo,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => relayCompleter.future);
+
+      await tester.pumpWidget(
+        buildSubject(
+          mockAuthService: authService,
+          contentDeletionService: deletionService,
+          enforcementRepository: enforcementRepository,
+          videoEventService: videoEventService,
+        ),
+      );
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDeleteVideo));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDelete));
+      await tester.pump();
+
+      final editGesture = find.ancestor(
+        of: find.text(l10n.shareMenuEditVideo),
+        matching: find.byType(GestureDetector),
+      );
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNull);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      relayCompleter.complete(
+        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNotNull);
     });
 
     testWidgets('More actions row hides owner actions for non-owned videos', (
@@ -412,10 +489,10 @@ void main() {
 
     testWidgets('tapping Save shows success snackbar', (tester) async {
       when(
-        () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
       ).thenReturn(false);
       when(
-        () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
       ).thenAnswer(
         (_) async => const BookmarkToggleResult(
           succeeded: true,
@@ -427,7 +504,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
-      clearInteractions(mockBookmarkService);
+      clearInteractions(mockBookmarksRepository);
 
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
@@ -435,10 +512,11 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
       verify(
-        () => mockBookmarkService.isVideoBookmarkedGlobally(testVideo.id),
+        () => mockBookmarksRepository.isVideoBookmarkedGlobally(testVideo.id),
       ).called(1);
       verify(
-        () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
+        () =>
+            mockBookmarksRepository.toggleVideoInGlobalBookmarks(testVideo.id),
       ).called(1);
     });
 
@@ -452,10 +530,10 @@ void main() {
         // handler finishes before the first rebuild.
         final gate = Completer<BookmarkToggleResult>();
         when(
-          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
         ).thenReturn(false);
         when(
-          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
         ).thenAnswer((_) => gate.future);
 
         await tester.pumpWidget(buildSubject());
@@ -494,17 +572,19 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text(l10n.shareAddedToBookmarks), findsOneWidget);
         verify(
-          () => mockBookmarkService.toggleVideoInGlobalBookmarks(testVideo.id),
+          () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(
+            testVideo.id,
+          ),
         ).called(1);
       },
     );
 
     testWidgets('tapping Save shows failure snackbar on error', (tester) async {
       when(
-        () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
       ).thenReturn(false);
       when(
-        () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
       ).thenAnswer(
         (_) async => const BookmarkToggleResult(
           succeeded: false,
@@ -527,10 +607,10 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
       ).thenReturn(false);
       when(
-        () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+        () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
       ).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildSubject());
@@ -555,10 +635,10 @@ void main() {
         tester,
       ) async {
         when(
-          () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
         ).thenReturn(false);
         when(
-          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
         ).thenAnswer(
           (_) async => BookmarkToggleResult(
             succeeded: false,
@@ -693,7 +773,9 @@ void main() {
           profileReadRepositoryProvider.overrideWithValue(
             mockProfileRepository,
           ),
-          bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
+          bookmarksRepositoryProvider.overrideWith(
+            (ref) => mockBookmarksRepository,
+          ),
           videoSharingServiceProvider.overrideWith(
             (ref) => mockVideoSharingService,
           ),

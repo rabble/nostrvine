@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
+import '../../helpers/badge_fixtures.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
@@ -22,12 +23,12 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUpAll(() {
-      registerFallbackValue(_awardViewData(isAccepted: false));
+      registerFallbackValue(badgeAwardFixture(isAccepted: false));
     });
 
     setUp(() {
       repository = _MockBadgeRepository();
-      awardedBadge = _awardViewData(isAccepted: false);
+      awardedBadge = badgeAwardFixture(isAccepted: false);
       issuedBadge = _issuedViewData(recipientAccepted: true);
       createdBadge = _createdViewData();
     });
@@ -73,7 +74,7 @@ void main() {
       // which parses back as '' rather than null.
       when(repository.loadDashboard).thenAnswer(
         (_) async => BadgeDashboardData(
-          awarded: [_awardViewData(isAccepted: false, description: '')],
+          awarded: [badgeAwardFixture(isAccepted: false, description: '')],
           issued: [issuedBadge],
           created: [createdBadge],
         ),
@@ -137,7 +138,7 @@ void main() {
       expect(find.text(l10n.badgesRecipientAcceptedStatus), findsOneWidget);
       // Recipients render as people, not as raw keys.
       expect(find.byType(UserProfileTile), findsOneWidget);
-      expect(find.text(_pubkey(3)), findsNothing);
+      expect(find.text(badgeTestPubkey(3)), findsNothing);
     });
 
     testWidgets('created tab shows its own empty state', (tester) async {
@@ -190,7 +191,7 @@ void main() {
     testWidgets('an accepted award can be rejected, not only removed', (
       tester,
     ) async {
-      final accepted = _awardViewData(isAccepted: true);
+      final accepted = badgeAwardFixture(isAccepted: true);
       when(repository.loadDashboard).thenAnswer(
         (_) async => BadgeDashboardData(
           awarded: [accepted],
@@ -300,47 +301,12 @@ void main() {
   });
 }
 
-BadgeAwardViewData _awardViewData({
-  required bool isAccepted,
-  String description = 'Awarded for showing up with a good eye.',
-}) {
-  final issuerPubkey = _pubkey(2);
-  final definitionCoordinate = '30009:$issuerPubkey:daily-diviner';
-  return BadgeAwardViewData(
-    award: Nip58BadgeAward(
-      event: _event(
-        id: _eventId(1),
-        pubkey: issuerPubkey,
-        kind: EventKind.badgeAward,
-        tags: [
-          ['a', definitionCoordinate],
-          ['p', _pubkey(1)],
-        ],
-      ),
-      definitionCoordinate: definitionCoordinate,
-      recipientPubkeys: [_pubkey(1)],
-    ),
-    definition: Nip58BadgeDefinition(
-      event: _event(
-        id: _eventId(2),
-        pubkey: issuerPubkey,
-        kind: EventKind.badgeDefinition,
-      ),
-      coordinate: definitionCoordinate,
-      dTag: 'daily-diviner',
-      name: 'Diviner of the Day',
-      description: description,
-    ),
-    isAccepted: isAccepted,
-  );
-}
-
 CreatedBadgeViewData _createdViewData() {
-  final issuerPubkey = _pubkey(1);
+  final issuerPubkey = badgeTestPubkey(1);
   return CreatedBadgeViewData(
     definition: Nip58BadgeDefinition(
-      event: _event(
-        id: _eventId(5),
+      event: badgeTestEvent(
+        id: badgeTestEventId(5),
         pubkey: issuerPubkey,
         kind: EventKind.badgeDefinition,
       ),
@@ -354,15 +320,15 @@ CreatedBadgeViewData _createdViewData() {
 }
 
 IssuedBadgeViewData _issuedViewData({required bool recipientAccepted}) {
-  final issuerPubkey = _pubkey(1);
-  final recipientPubkey = _pubkey(3);
+  final issuerPubkey = badgeTestPubkey(1);
+  final recipientPubkey = badgeTestPubkey(3);
   final definitionCoordinate = '30009:$issuerPubkey:weekly-diviner';
   return IssuedBadgeViewData(
     coordinate: definitionCoordinate,
     latestAwardedAt: 1000,
     definition: Nip58BadgeDefinition(
-      event: _event(
-        id: _eventId(4),
+      event: badgeTestEvent(
+        id: badgeTestEventId(4),
         pubkey: issuerPubkey,
         kind: EventKind.badgeDefinition,
       ),
@@ -378,26 +344,3 @@ IssuedBadgeViewData _issuedViewData({required bool recipientAccepted}) {
     ],
   );
 }
-
-Event _event({
-  required String id,
-  required String pubkey,
-  int kind = 1,
-  List<List<String>> tags = const [],
-  int createdAt = 1000,
-  String content = '',
-}) {
-  return Event.fromJson({
-    'id': id,
-    'pubkey': pubkey,
-    'created_at': createdAt,
-    'kind': kind,
-    'tags': tags,
-    'content': content,
-    'sig': '',
-  });
-}
-
-String _eventId(int seed) => seed.toRadixString(16).padLeft(64, '0');
-
-String _pubkey(int seed) => (seed + 100).toRadixString(16).padLeft(64, '0');

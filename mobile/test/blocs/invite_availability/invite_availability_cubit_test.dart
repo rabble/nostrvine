@@ -67,7 +67,7 @@ void main() {
     );
 
     blocTest<InviteAvailabilityCubit, InviteAvailabilityState>(
-      'defaults to enabled when configuration is unavailable',
+      'defaults to disabled when configuration is unavailable',
       setUp: () {
         when(
           () => client.getClientConfig(),
@@ -78,7 +78,7 @@ void main() {
       expect: () => [
         isA<InviteAvailabilityState>()
             .having((s) => s.hasResolved, 'hasResolved', isTrue)
-            .having((s) => s.isEnabled, 'isEnabled', isTrue)
+            .having((s) => s.isEnabled, 'isEnabled', isFalse)
             .having((s) => s.serverMode, 'serverMode', isNull),
       ],
     );

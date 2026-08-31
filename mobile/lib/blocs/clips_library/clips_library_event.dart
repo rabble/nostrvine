@@ -275,6 +275,8 @@ final class ClipsLibraryClipsArchiveChanged extends ClipsLibraryEvent {
   const ClipsLibraryClipsArchiveChanged({
     required this.clipIds,
     required this.archived,
+    this.clearCategory = false,
+    this.restoreCategoryIds = const {},
   });
 
   /// Clips to archive or unarchive.
@@ -283,6 +285,25 @@ final class ClipsLibraryClipsArchiveChanged extends ClipsLibraryEvent {
   /// True to archive, false to bring the clips back.
   final bool archived;
 
+  /// Whether archiving also takes the clips out of their category. An
+  /// archived clip stays visible under its category, so the user is asked
+  /// which of the two they meant; this carries the answer.
+  ///
+  /// Ignored when [archived] is false — unarchiving never unfiles.
+  final bool clearCategory;
+
+  /// Category to file each clip back into while unarchiving, keyed by clip
+  /// id. Set by the undo of an archive that unfiled the clips, so the undo
+  /// restores both halves of what it reverses.
+  ///
+  /// Ignored when [archived] is true.
+  final Map<String, String> restoreCategoryIds;
+
   @override
-  List<Object?> get props => [clipIds, archived];
+  List<Object?> get props => [
+    clipIds,
+    archived,
+    clearCategory,
+    restoreCategoryIds,
+  ];
 }

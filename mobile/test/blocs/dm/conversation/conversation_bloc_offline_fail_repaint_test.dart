@@ -70,111 +70,113 @@ void main() {
     await db.close();
   });
 
-  // Sanity: the raw DAO stream IS reactive across the transition. This
-  // isolates the failure to the bloc/state layer if the bloc test fails.
-  test(
-    'raw OutgoingDmsDao stream re-emits the failed row (DB layer is reactive)',
-    () async {
-      final seen = <DmDeliveryStatusProbe>[];
-      final sub = dao
-          .watchForConversation(
-            conversationId: conversationId,
-            ownerPubkey: ownerPubkey,
-          )
-          .listen((rows) {
-            final matches = rows.where((r) => r.id == rumorId).toList();
-            seen.add(
-              DmDeliveryStatusProbe(
-                matches.isEmpty ? null : matches.first.recipientWrapStatus,
-              ),
-            );
-          });
+  group(ConversationBloc, () {
+    // Sanity: the raw DAO stream IS reactive across the transition. This
+    // isolates the failure to the bloc/state layer if the bloc test fails.
+    test(
+      'raw OutgoingDmsDao stream re-emits the failed row (DB layer is reactive)',
+      () async {
+        final seen = <DmDeliveryStatusProbe>[];
+        final sub = dao
+            .watchForConversation(
+              conversationId: conversationId,
+              ownerPubkey: ownerPubkey,
+            )
+            .listen((rows) {
+              final matches = rows.where((r) => r.id == rumorId).toList();
+              seen.add(
+                DmDeliveryStatusProbe(
+                  matches.isEmpty ? null : matches.first.recipientWrapStatus,
+                ),
+              );
+            });
 
-      await dao.enqueue(pendingRow());
-      await pumpEventQueue();
+        await dao.enqueue(pendingRow());
+        await pumpEventQueue();
 
-      await dao.markRecipientWrapStatus(
-        id: rumorId,
-        status: OutgoingWrapStatus.failed,
-        lastError: 'device offline',
-      );
-      await dao.markSelfWrapStatus(
-        id: rumorId,
-        status: OutgoingWrapStatus.failed,
-        lastError: 'device offline',
-      );
-      await pumpEventQueue();
-      await sub.cancel();
+        await dao.markRecipientWrapStatus(
+          id: rumorId,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'device offline',
+        );
+        await dao.markSelfWrapStatus(
+          id: rumorId,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'device offline',
+        );
+        await pumpEventQueue();
+        await sub.cancel();
 
-      expect(
-        seen.any((p) => p.status == OutgoingWrapStatus.failed),
-        isTrue,
-        reason: 'DAO watch stream must emit the failed row',
-      );
-    },
-  );
+        expect(
+          seen.any((p) => p.status == OutgoingWrapStatus.failed),
+          isTrue,
+          reason: 'DAO watch stream must emit the failed row',
+        );
+      },
+    );
 
-  test(
-    'ConversationBloc live-repaints when the open conversation row goes '
-    'pending -> failed (offline hard-fail)',
-    () async {
-      final bloc = ConversationBloc(
-        dmRepository: repo,
-        conversationId: conversationId,
-      );
-      addTearDown(bloc.close);
+    test(
+      'ConversationBloc live-repaints when the open conversation row goes '
+      'pending -> failed (offline hard-fail)',
+      () async {
+        final bloc = ConversationBloc(
+          dmRepository: repo,
+          conversationId: conversationId,
+        );
+        addTearDown(bloc.close);
 
-      // Row is enqueued (pending) before the conversation opens, mirroring
-      // sendMessage enqueueing before the signer round-trip.
-      await dao.enqueue(pendingRow());
+        // Row is enqueued (pending) before the conversation opens, mirroring
+        // sendMessage enqueueing before the signer round-trip.
+        await dao.enqueue(pendingRow());
 
-      bloc.add(const ConversationStarted());
+        bloc.add(const ConversationStarted());
 
-      // Wait until the pending bubble is projected into state.
-      await bloc.stream
-          .firstWhere(
-            (s) =>
-                s.status == ConversationStatus.loaded &&
-                s.statusFor(rumorId) == DmDeliveryStatus.pending,
-          )
-          .timeout(const Duration(seconds: 5));
-      expect(bloc.state.statusFor(rumorId), DmDeliveryStatus.pending);
+        // Wait until the pending bubble is projected into state.
+        await bloc.stream
+            .firstWhere(
+              (s) =>
+                  s.status == ConversationStatus.loaded &&
+                  s.statusFor(rumorId) == DmDeliveryStatus.pending,
+            )
+            .timeout(const Duration(seconds: 5));
+        expect(bloc.state.statusFor(rumorId), DmDeliveryStatus.pending);
 
-      // The offline classifier hard-fails: DmRepository marks BOTH wraps
-      // failed on the durable row (this is _finalizeAfterRecipientFailure).
-      await dao.markRecipientWrapStatus(
-        id: rumorId,
-        status: OutgoingWrapStatus.failed,
-        lastError: 'device offline',
-      );
-      await dao.markSelfWrapStatus(
-        id: rumorId,
-        status: OutgoingWrapStatus.failed,
-        lastError: 'device offline',
-      );
+        // The offline classifier hard-fails: DmRepository marks BOTH wraps
+        // failed on the durable row (this is _finalizeAfterRecipientFailure).
+        await dao.markRecipientWrapStatus(
+          id: rumorId,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'device offline',
+        );
+        await dao.markSelfWrapStatus(
+          id: rumorId,
+          status: OutgoingWrapStatus.failed,
+          lastError: 'device offline',
+        );
 
-      // The live, open conversation MUST repaint the red "Not delivered":
-      // statusFor(rumorId) must flip to failed without a fresh read.
-      final repainted = await bloc.stream
-          .firstWhere(
-            (s) => s.statusFor(rumorId) == DmDeliveryStatus.failed,
-          )
-          .then((_) => true)
-          .timeout(const Duration(seconds: 3), onTimeout: () => false);
+        // The live, open conversation MUST repaint the red "Not delivered":
+        // statusFor(rumorId) must flip to failed without a fresh read.
+        final repainted = await bloc.stream
+            .firstWhere(
+              (s) => s.statusFor(rumorId) == DmDeliveryStatus.failed,
+            )
+            .then((_) => true)
+            .timeout(const Duration(seconds: 3), onTimeout: () => false);
 
-      expect(
-        repainted,
-        isTrue,
-        reason:
-            'Bloc never re-emitted with statusFor(rumorId)==failed. The '
-            'watch tick carrying the failed row produced a ConversationState '
-            'that compares equal to the pending one (OutgoingDm.== is id-only, '
-            'so Equatable treats [pending row] == [failed row]), and Bloc.emit '
-            'suppressed it. The red bubble only appears on a fresh read.',
-      );
-      expect(bloc.state.statusFor(rumorId), DmDeliveryStatus.failed);
-    },
-  );
+        expect(
+          repainted,
+          isTrue,
+          reason:
+              'Bloc never re-emitted with statusFor(rumorId)==failed. The '
+              'watch tick carrying the failed row produced a ConversationState '
+              'that compares equal to the pending one (OutgoingDm.== is id-only, '
+              'so Equatable treats [pending row] == [failed row]), and Bloc.emit '
+              'suppressed it. The red bubble only appears on a fresh read.',
+        );
+        expect(bloc.state.statusFor(rumorId), DmDeliveryStatus.failed);
+      },
+    );
+  });
 }
 
 /// Tiny wrapper so the sanity-check list is readable in failure output.

@@ -12,8 +12,8 @@ OnboardingMode parseOnboardingMode(String? rawValue) {
     case 'invite_code_required':
       return OnboardingMode.inviteCodeRequired;
     default:
-      // Missing or unknown values keep signup invites enabled.
-      return OnboardingMode.inviteCodeRequired;
+      // Missing or unknown values must not block account creation.
+      return OnboardingMode.open;
   }
 }
 

@@ -64,14 +64,14 @@ class SoundWaveformLoaded extends SoundWaveformState {
   List<Object?> get props => [];
 }
 
-/// Error extracting waveform.
+/// Waveform extraction failed.
+///
+/// Carries no message: nothing renders one (the audio progress bar collapses
+/// this and [SoundWaveformLoading] onto the same placeholder), and
+/// `state_management.md` forbids error strings in state. The underlying
+/// exception reaches diagnostics through `addError` in the bloc.
 class SoundWaveformError extends SoundWaveformState {
-  const SoundWaveformError(this.message);
-
-  final String message;
-
-  @override
-  List<Object?> get props => [message];
+  const SoundWaveformError();
 }
 
 /// Element-wise equality for nullable [Float32List] values.

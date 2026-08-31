@@ -198,7 +198,7 @@ class PubkeyOnlyNostrIdentity extends NostrIdentity {
   /// caller skipped that gate, and the log below is what closes it.
   Null _noSigner(String operation) {
     Log.warning(
-      'No signer: cannot $operation for pubkey $pubkey — this identity has a '
+      'No signer: cannot $operation for pubkey ${pubkeyForLogs(pubkey)} — this identity has a '
       'public key but no signing capability. Gate on '
       'AuthService.canPublishNostrWritesNow.',
       name: 'PubkeyOnlyNostrIdentity',

@@ -11,6 +11,7 @@ import 'package:openvine/blocs/bug_report/bug_report_state.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/bug_report_log_summary.dart';
 import 'package:openvine/services/bug_report_service.dart';
@@ -32,7 +33,7 @@ class BugReportScreen extends StatefulWidget {
   });
 
   static const routeName = 'support-report-bug';
-  static const path = '/support-center/report-bug';
+  static const String path = RoutePaths.supportReportBug;
 
   final BugReportService bugReportService;
   final String? currentScreen;

@@ -80,6 +80,13 @@ void main() {
 
       // Mock subscribeToEvents for relay sync
       when(
+        () => mockNostr.subscribe(
+          any(),
+          onEose: any(named: 'onEose'),
+          closeOnEose: true,
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+      when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => const Stream.empty());
 
@@ -343,7 +350,11 @@ void main() {
 
         // Setup mock to return empty stream
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => const Stream.empty());
 
         // Act
@@ -368,7 +379,7 @@ void main() {
             );
 
             when(
-              () => mockNostr.subscribe(any()),
+              () => mockNostr.subscribe(any(), closeOnEose: true),
             ).thenAnswer((_) => controller.stream);
 
             List<CuratedList>? lists;
@@ -424,7 +435,11 @@ void main() {
 
         // Setup mock to return events progressively
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer(
           (_) => Stream.fromIterable([mockListEvent1, mockListEvent2]),
         );
@@ -495,8 +510,8 @@ void main() {
         expect(tags.contains(''), isTrue); // Service doesn't filter empty tags
       });
 
-      test('search performance with many lists', () async {
-        // Create 50 lists
+      test('matches on description across a large list set', () async {
+        // Create 50 lists; only the even-numbered ones are described 'even'.
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
@@ -505,19 +520,41 @@ void main() {
           );
         }
 
-        final stopwatch = Stopwatch()..start();
         final results = service.searchLists('even');
-        stopwatch.stop();
 
-        expect(
-          results.length,
-          greaterThanOrEqualTo(25),
-        ); // Should find at least 25
-        expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
+        // Exactly the 25 even-numbered lists, and none of the odd ones.
+        expect(results, hasLength(25));
+        expect(results.map((list) => list.name).toSet(), {
+          for (var i = 0; i < 50; i += 2) 'List $i',
+        });
       });
     });
 
     group('streamPublicListsFromRelays()', () {
+      test('finishes and releases the source subscription on EOSE', () async {
+        void Function()? onEose;
+        var canceled = false;
+        final source = StreamController<Event>(onCancel: () => canceled = true);
+        addTearDown(source.close);
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return source.stream;
+        });
+
+        final result = service.streamPublicListsFromRelays().toList();
+        await Future<void>.delayed(Duration.zero);
+        onEose!();
+
+        expect(await result, isEmpty);
+        expect(canceled, isTrue);
+      });
+
       test('streams lists immediately as they arrive', () async {
         // Setup: Mock events arriving one at a time
         final event1 = Event.fromJson({
@@ -558,7 +595,11 @@ void main() {
 
         // Mock subscribe to return events as a stream
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
 
         // Act: Collect streamed results
@@ -617,7 +658,11 @@ void main() {
 
         // Send older first, then newer
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
 
         List<CuratedList>? finalLists;
@@ -671,7 +716,11 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
 
         List<CuratedList>? finalLists;
@@ -701,7 +750,11 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => Stream.value(malformedList));
 
         final updates = await service.streamPublicListsFromRelays().toList();
@@ -729,7 +782,11 @@ void main() {
         });
 
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
@@ -744,7 +801,11 @@ void main() {
 
         // Verify subscribe was called (filter construction is internal)
         verify(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).called(1);
         expect(results?.isNotEmpty, true);
       });

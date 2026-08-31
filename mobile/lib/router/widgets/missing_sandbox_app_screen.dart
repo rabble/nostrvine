@@ -3,8 +3,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 
 class MissingSandboxAppScreen extends StatelessWidget {
   const MissingSandboxAppScreen({super.key});
@@ -15,7 +16,10 @@ class MissingSandboxAppScreen extends StatelessWidget {
       appBar: DiVineAppBar(
         title: context.l10n.appsSandboxUnavailableTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        // Reachable by direct URL, where the matched stack has a single
+        // entry and a raw pop throws GoError (#6112).
+        onBackPressed: () =>
+            context.safePop(fallback: AppsDirectoryScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Center(

@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:openvine/database/sqlcipher_runtime.dart';
+import 'package:openvine/services/database_recovery_store.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Secure-storage key for the at-rest DB cipher key. Versioned so a future
@@ -34,10 +35,13 @@ class DatabaseEncryptionBootstrap {
     Future<bool> Function(String rawKeyHex)? salvageDatabase,
     Future<bool> Function(String rawKeyHex)? encryptedKeyMatches,
     Future<void> Function(Object error, StackTrace stack)? recordRecovery,
+    Future<void> Function(DatabaseRecoveryOutcome outcome)?
+    persistRecoveryOutcome,
     Future<bool> Function()? hasPendingCorruptionRecovery,
     Future<void> Function()? clearPendingCorruptionRecovery,
   }) : _secureStorage = secureStorage,
        _recordRecovery = recordRecovery,
+       _persistRecoveryOutcome = persistRecoveryOutcome,
        _hasPendingCorruptionRecovery =
            hasPendingCorruptionRecovery ?? (() async => false),
        _clearPendingCorruptionRecovery =
@@ -99,6 +103,11 @@ class DatabaseEncryptionBootstrap {
   /// tests that don't assert on it.
   final Future<void> Function(Object error, StackTrace stack)? _recordRecovery;
 
+  /// Persists the completed outcome so a later support report can identify it
+  /// after startup logs have rolled out of the in-memory window.
+  final Future<void> Function(DatabaseRecoveryOutcome outcome)?
+  _persistRecoveryOutcome;
+
   /// Invoked after the key-loss recreate wipes the Drift DB, so callers can
   /// clear local state that lives OUTSIDE the database (e.g. the DM sync
   /// cursors / `historyDrainComplete` flag in SharedPreferences). Without this
@@ -128,6 +137,9 @@ class DatabaseEncryptionBootstrap {
   ///   corrupt. Distinct from the deferral above: that one hands back a `null`
   ///   key for a database that genuinely is readable plaintext, this one has no
   ///   readable database to hand a key for.
+  /// * [DatabaseClassificationException] when a transient SQLite failure left
+  ///   the existing file format unknown. Startup fails closed and preserves
+  ///   both the database and cipher key for a later retry.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -193,6 +205,7 @@ class DatabaseEncryptionBootstrap {
             name: _logName,
           );
           await _reportRecovery('salvaged local-only data into a fresh DB');
+          await _persistOutcome(DatabaseRecoveryOutcome.salvaged);
           await _runPostDatabaseReset(_onDatabaseReset);
           return (key, true);
         }
@@ -301,6 +314,11 @@ class DatabaseEncryptionBootstrap {
     );
     await _deleteDatabase();
     await _reportRecovery('backed up + recreated ($reason)');
+    await _persistOutcome(switch (reason) {
+      'missing' => DatabaseRecoveryOutcome.recreatedMissingKey,
+      'key loss' => DatabaseRecoveryOutcome.recreatedKeyLoss,
+      _ => DatabaseRecoveryOutcome.recreatedCorrupt,
+    });
     await _runPostDatabaseReset(_onDatabaseReset);
     return key;
   }
@@ -315,6 +333,17 @@ class DatabaseEncryptionBootstrap {
       );
     } on Object catch (e) {
       Log.warning('Recovery reporting failed (non-fatal): $e', name: _logName);
+    }
+  }
+
+  Future<void> _persistOutcome(DatabaseRecoveryOutcome outcome) async {
+    try {
+      await _persistRecoveryOutcome?.call(outcome);
+    } on Object catch (error) {
+      Log.warning(
+        'Recovery outcome persistence failed (non-fatal): $error',
+        name: _logName,
+      );
     }
   }
 }
@@ -441,6 +470,7 @@ const _sqliteNotADb = 26;
 /// unusable.
 bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   if (error is DatabaseCipherUnavailableError) return false;
+  if (error is DatabaseClassificationException) return false;
   // The database is fine; only the keystore holding its key was unreachable.
   // Repairing would delete that key and strand a recoverable database.
   if (error is DatabaseCipherStorageUnavailableException) return false;
@@ -478,10 +508,23 @@ Future<void> resetEncryptedDatabaseCache({
   bool deleteCipherKey = true,
   Future<void> Function()? deleteDatabase,
   Future<void> Function()? onDatabaseReset,
+  DatabaseRecoveryOutcome? recoveryOutcome,
+  Future<void> Function(DatabaseRecoveryOutcome outcome)?
+  persistRecoveryOutcome,
 }) async {
   await (deleteDatabase ?? backUpAndRemoveSharedDatabase)();
   if (deleteCipherKey) {
     await secureStorage.delete(key: dbCipherKeyStorageKey);
+  }
+  if (recoveryOutcome != null) {
+    try {
+      await persistRecoveryOutcome?.call(recoveryOutcome);
+    } on Object catch (error) {
+      Log.warning(
+        'Manual recovery outcome persistence failed (non-fatal): $error',
+        name: DatabaseEncryptionBootstrap._logName,
+      );
+    }
   }
   await _runPostDatabaseReset(onDatabaseReset);
 }
@@ -496,11 +539,15 @@ Future<void> resetUnreadablePlaintextDatabaseCache({
   required FlutterSecureStorage secureStorage,
   @visibleForTesting Future<void> Function()? deleteDatabase,
   Future<void> Function()? onDatabaseReset,
+  Future<void> Function(DatabaseRecoveryOutcome outcome)?
+  persistRecoveryOutcome,
 }) => resetEncryptedDatabaseCache(
   secureStorage: secureStorage,
   deleteCipherKey: false,
   deleteDatabase: deleteDatabase ?? deleteSharedDatabase,
   onDatabaseReset: onDatabaseReset,
+  recoveryOutcome: DatabaseRecoveryOutcome.recreatedUnreadable,
+  persistRecoveryOutcome: persistRecoveryOutcome,
 );
 
 Future<void> _runPostDatabaseReset(

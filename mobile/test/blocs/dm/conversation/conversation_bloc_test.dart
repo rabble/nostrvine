@@ -73,6 +73,9 @@ void main() {
       '3333333333333333333333333333333333333333333333333333333333333333';
   const messageId =
       '4444444444444444444444444444444444444444444444444444444444444444';
+  // A second, distinct rumor id — #7322's concurrent-delete regression.
+  const otherMessageId =
+      '7777777777777777777777777777777777777777777777777777777777777777';
   const giftWrapId =
       '5555555555555555555555555555555555555555555555555555555555555555';
   const sentEventId =
@@ -867,17 +870,14 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, sentPartial with only the failing rumor id] '
+          'emits [sending, sentPartial with the partial queue handle] '
           'when one per-recipient sendGroupMessage has self-wrap unpublished',
           setUp: () {
-            // Each per-recipient send produces its own rumor id.
-            // recipient1 fully delivers, recipient2 partial — only the
-            // partial one should land in lastPartialSend.rumorIds, so
-            // the recovery path republishes only that self-wrap.
-            const rumorIdRecipient1 =
+            // Both recipients share one wire rumor, but partial self-wrap
+            // recovery must retain the affected recipient's queue handle.
+            const sharedRumorId =
                 '7777777777777777777777777777777777777777777777777777777777777777';
-            const rumorIdRecipient2 =
-                '8888888888888888888888888888888888888888888888888888888888888888';
+            const partialQueueId = '$sharedRumorId:$recipientPubkey2';
             when(
               () => mockDmRepository.sendGroupMessage(
                 recipientPubkeys: [recipientPubkey, recipientPubkey2],
@@ -886,15 +886,16 @@ void main() {
             ).thenAnswer(
               (_) async => [
                 NIP17SendResult.success(
-                  rumorEventId: rumorIdRecipient1,
-                  messageEventId: rumorIdRecipient1,
+                  rumorEventId: sharedRumorId,
+                  messageEventId: 'wrap-1',
                   recipientPubkey: recipientPubkey,
                 ),
                 NIP17SendResult.success(
-                  rumorEventId: rumorIdRecipient2,
-                  messageEventId: rumorIdRecipient2,
+                  rumorEventId: sharedRumorId,
+                  messageEventId: 'wrap-2',
                   recipientPubkey: recipientPubkey2,
                   selfWrapPublished: false,
+                  queuedRumorId: partialQueueId,
                 ),
               ],
             );
@@ -924,7 +925,7 @@ void main() {
                   equals(
                     const PartialSend(
                       rumorIds: [
-                        '8888888888888888888888888888888888888888888888888888888888888888',
+                        '7777777777777777777777777777777777777777777777777777777777777777:$recipientPubkey2',
                       ],
                     ),
                   ),
@@ -1678,6 +1679,9 @@ void main() {
     });
 
     group('ConversationMessageDeleted', () {
+      late Completer<void> firstDeleteStarted;
+      late Completer<void> releaseFirstDelete;
+
       blocTest<ConversationBloc, ConversationState>(
         'calls deleteMessageForEveryone on the repository',
         setUp: () {
@@ -1711,11 +1715,11 @@ void main() {
 
       blocTest<ConversationBloc, ConversationState>(
         'wraps non-`ArgumentError` throws in Reportable — matrix-YES, '
-        'invariant (e.g. signer `StateError`)',
+        'invariant (e.g. an uninitialized repository `StateError`)',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
-          ).thenThrow(StateError('Failed to sign kind 5 deletion event'));
+          ).thenThrow(StateError('DmRepository not initialized'));
         },
         build: buildBloc,
         act: (bloc) =>
@@ -1751,6 +1755,50 @@ void main() {
         verify: (_) {
           verify(
             () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).called(1);
+        },
+      );
+
+      // Regression for #7322. The handler was registered with `droppable()`,
+      // which discards on subscription state alone and never inspects the
+      // payload — so a delete for a DIFFERENT message dispatched while the
+      // first was still awaiting its signer round trip never reached the
+      // repository at all: no kind 5, no local soft-delete, and (since no
+      // path here emits) no feedback. Reproduced on a physical iPhone:
+      // three deletes for three distinct rumor ids produced exactly one
+      // handler entry.
+      blocTest<ConversationBloc, ConversationState>(
+        'deleting a second message while the first is still in flight still '
+        'reaches the repository for both',
+        setUp: () {
+          firstDeleteStarted = Completer<void>();
+          releaseFirstDelete = Completer<void>();
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {
+            firstDeleteStarted.complete();
+            await releaseFirstDelete.future;
+          });
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(otherMessageId),
+          ).thenAnswer((_) async {});
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await firstDeleteStarted.future;
+          bloc.add(const ConversationMessageDeleted(rumorId: otherMessageId));
+          // Let the second event enter the transformer while the first handler
+          // is still suspended, then allow the sequential queue to advance.
+          await Future<void>.delayed(Duration.zero);
+          releaseFirstDelete.complete();
+        },
+        verify: (_) {
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).called(1);
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(otherMessageId),
           ).called(1);
         },
       );

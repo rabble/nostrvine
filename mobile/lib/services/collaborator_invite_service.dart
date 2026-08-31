@@ -10,16 +10,26 @@ import 'package:openvine/l10n/l10n.dart';
 class CollaboratorInviteResult extends Equatable {
   const CollaboratorInviteResult({
     required this.success,
+    this.retryablePending = false,
     this.messageEventId,
     this.error,
   });
 
   final bool success;
+
+  /// The invite has a durable queue row and will be retried in the background.
+  /// This is neither confirmed delivery nor a user-actionable hard failure.
+  final bool retryablePending;
   final String? messageEventId;
   final String? error;
 
   @override
-  List<Object?> get props => [success, messageEventId, error];
+  List<Object?> get props => [
+    success,
+    retryablePending,
+    messageEventId,
+    error,
+  ];
 }
 
 class CollaboratorInviteBatchResult extends Equatable {
@@ -27,7 +37,10 @@ class CollaboratorInviteBatchResult extends Equatable {
 
   final Map<String, CollaboratorInviteResult> results;
 
-  bool get hasFailures => results.values.any((result) => !result.success);
+  /// Whether any invite hard-failed. Retryable pending rows are still active.
+  bool get hasFailures => results.values.any(
+    (result) => !result.success && !result.retryablePending,
+  );
 
   @override
   List<Object?> get props => [results];
@@ -55,21 +68,39 @@ class CollaboratorInviteService {
   /// non-Divine clients always see a tappable preview.
   /// In-app deep-link routing from this d-tag URL on cold start
   /// depends on the route-ref resolver landing in #3932; until that
-  /// merges, the path inside diVine for recipients is the structured
+  /// merges, the path inside Divine for recipients is the structured
   /// `CollaboratorInviteCard` produced from the invite tags by
   /// `CollaboratorInviteParser`, not URL deep-linking.
   static const String defaultVideoLinkBase = 'https://divine.video/video';
 
   /// Suffix that uniquely identifies the plaintext fallback body of an
-  /// **English-locale** collaborator invite DM — kept in sync with the
+  /// **English-locale** collaborator invite DM, kept in sync with the
   /// English ARB value of `collaboratorInviteDmBody` /
-  /// `collaboratorInviteDmBodyUntitled`. The conversation view uses
-  /// this to suppress legacy NIP-04 invite duplicates that cannot be
-  /// turned into actionable cards (#3559); newer locale-translated
-  /// invites surface inside diVine via the structured-tag parser path
+  /// `collaboratorInviteDmBodyUntitled`. The conversation view uses this to
+  /// suppress legacy NIP-04 invite duplicates that cannot be turned into
+  /// actionable cards (#3559); newer locale-translated invites surface
+  /// inside Divine via the structured-tag parser path
   /// (`CollaboratorInviteParser`) and don't depend on this suffix.
   static const String invitePlaintextSuffix =
-      'Open diVine to review and accept.';
+      'Open Divine to review and accept.';
+
+  /// Wire text this suffix used to have, still present in published events.
+  ///
+  /// Nostr events are immutable, so correcting the brand casing in the ARB
+  /// did not rewrite the invites already sitting on relays. Matching only
+  /// the current spelling would un-suppress every one of them, so
+  /// [hasInvitePlaintextSuffix] checks the historical spellings too. Add to
+  /// this list rather than editing [invitePlaintextSuffix] whenever that
+  /// copy changes again.
+  static const List<String> legacyInvitePlaintextSuffixes = [
+    'Open diVine to review and accept.',
+  ];
+
+  /// Whether [content] is a plaintext invite fallback in any spelling we
+  /// have ever published.
+  static bool hasInvitePlaintextSuffix(String content) =>
+      content.endsWith(invitePlaintextSuffix) ||
+      legacyInvitePlaintextSuffixes.any(content.endsWith);
 
   Future<CollaboratorInviteResult> sendInvite({
     required String collaboratorPubkey,
@@ -94,14 +125,15 @@ class CollaboratorInviteService {
       additionalTags: tags,
       // Structured invites cannot be represented in NIP-04; the legacy
       // fallback would publish a duplicate plaintext message that reads
-      // "Open diVine to review and accept" inside diVine itself (#3559).
+      // "Open Divine to review and accept" inside Divine itself (#3559).
       skipNip04Fallback: true,
     );
 
     return CollaboratorInviteResult(
       success: result.success,
+      retryablePending: result.retryablePending,
       messageEventId: result.messageEventId,
-      error: result.error,
+      error: result.retryablePending ? null : result.error,
     );
   }
 

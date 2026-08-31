@@ -28,7 +28,7 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('abc')),
       expect: () => [
         const InviteGateState(
-          inviteCodeError: 'Enter an invite code like ABCD-EFGH.',
+          inviteCodeError: InviteCodeError.malformed,
         ),
       ],
     );
@@ -125,7 +125,7 @@ void main() {
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
-          inviteCodeError: 'That invite code has already been used or revoked.',
+          inviteCodeError: InviteCodeError.alreadyUsed,
         ),
       ],
     );
@@ -149,7 +149,7 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('lele-pons')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
-        const InviteGateState(generalError: "This creator's invites are full"),
+        const InviteGateState(generalError: InviteGateError.creatorFull),
       ],
     );
 
@@ -171,7 +171,7 @@ void main() {
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
-          inviteCodeError: 'That invite code does not look valid.',
+          inviteCodeError: InviteCodeError.notFound,
         ),
       ],
     );
@@ -187,8 +187,78 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
-        const InviteGateState(generalError: 'Invite service unavailable'),
+        // The exception's `message` can be arbitrary text lifted from the
+        // server's response body, so it is classified rather than shown.
+        const InviteGateState(generalError: InviteGateError.checkFailed),
       ],
+      errors: () => [isA<InviteApiException>()],
+    );
+
+    blocTest<InviteGateBloc, InviteGateState>(
+      'maps thrown already-used failures to the invite code field',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('USED-0003'),
+        ).thenThrow(
+          const InviteApiException(
+            'Invite unavailable',
+            code: InviteApiErrorCode.inviteAlreadyUsed,
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('used0003')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(inviteCodeError: InviteCodeError.alreadyUsed),
+      ],
+      errors: () => [isA<InviteApiException>()],
+    );
+
+    for (final errorCode in [
+      InviteApiErrorCode.inviteNotFound,
+      InviteApiErrorCode.inviteInvalidFormat,
+    ]) {
+      blocTest<InviteGateBloc, InviteGateState>(
+        'maps thrown $errorCode failures to the invite code field',
+        setUp: () {
+          when(
+            () => mockInviteApiClient.validateCode('NOPE-0003'),
+          ).thenThrow(
+            InviteApiException('Invite unavailable', code: errorCode),
+          );
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const InviteGateCodeSubmitted('nope0003')),
+        expect: () => [
+          const InviteGateState(isValidatingCode: true),
+          const InviteGateState(inviteCodeError: InviteCodeError.notFound),
+        ],
+        errors: () => [isA<InviteApiException>()],
+      );
+    }
+
+    blocTest<InviteGateBloc, InviteGateState>(
+      'keeps thrown revoked failures in the general error block',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('NOPE-0003'),
+        ).thenThrow(
+          const InviteApiException(
+            'Invite unavailable',
+            code: InviteApiErrorCode.inviteRevoked,
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('nope0003')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(
+          generalError: InviteGateError.inviteUnavailable,
+        ),
+      ],
+      errors: () => [isA<InviteApiException>()],
     );
 
     test(

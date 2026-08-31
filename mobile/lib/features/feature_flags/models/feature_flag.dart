@@ -39,13 +39,6 @@ enum FeatureFlag {
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
   ),
-  publishDmRelayList(
-    'Publish DM Relay List',
-    'Self-advertise your NIP-17 kind-10050 DM inbox relays on login so '
-        'compliant senders deliver where divine reads. Keep off until the '
-        'backend relay accepts kind-10050.',
-    audience: FeatureFlagAudience.internal,
-  ),
   feedTuning(
     'Feed Tuning Swipes',
     'Swipe left/right on the fullscreen feed to send "less/more like this" '
@@ -80,6 +73,18 @@ enum FeatureFlag {
     'Client Seen-Video Filtering',
     'Demote recently-seen videos in home feeds and drop them from '
         'classics/discovery. Kill-switch for the Aug 2026 campaign load.',
+  ),
+  postPublishConfirmationExperiment(
+    'Post-Publish Confirmation Test',
+    'Enable the 50/50 View and Share confirmation test after publishing. '
+        'Turn off to use the normal control behavior.',
+    audience: FeatureFlagAudience.internal,
+  ),
+  postPublishConfirmationTreatment(
+    'Post-Publish Confirmation Treatment',
+    'Show the View and Share confirmation to its assigned group. Turn off '
+        'while checking that both identical groups measure the same.',
+    audience: FeatureFlagAudience.internal,
   );
 
   const FeatureFlag(

@@ -51,35 +51,37 @@ void main() {
     return container;
   }
 
-  test('restricted while the protected-minor check is unresolved', () {
-    // Fail closed: a suppressed/cold-start check on a never-seen Keycast
-    // account must hide the key-export/import affordances. This is where the
-    // fail-OPEN isProtectedMinorProvider would (wrongly) return false.
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () => Completer<ProtectedMinorStatus>().future,
-    );
+  group('isKeyManagementRestrictedProvider', () {
+    test('restricted while the protected-minor check is unresolved', () {
+      // Fail closed: a suppressed/cold-start check on a never-seen Keycast
+      // account must hide the key-export/import affordances. This is where the
+      // fail-OPEN isProtectedMinorProvider would (wrongly) return false.
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () => Completer<ProtectedMinorStatus>().future,
+      );
 
-    expect(container.read(isKeyManagementRestrictedProvider), isTrue);
-  });
+      expect(container.read(isKeyManagementRestrictedProvider), isTrue);
+    });
 
-  test('restricted for a trusted protected-minor verdict', () async {
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.protected(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
+    test('restricted for a trusted protected-minor verdict', () async {
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.protected(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
 
-    expect(container.read(isKeyManagementRestrictedProvider), isTrue);
-  });
+      expect(container.read(isKeyManagementRestrictedProvider), isTrue);
+    });
 
-  test('unrestricted only for a trusted not-protected verdict', () async {
-    final container = containerWith(
-      authState: AuthState.authenticated,
-      status: () async => ProtectedMinorStatus.notProtected(),
-    );
-    await container.read(protectedMinorStatusProvider.future);
+    test('unrestricted only for a trusted not-protected verdict', () async {
+      final container = containerWith(
+        authState: AuthState.authenticated,
+        status: () async => ProtectedMinorStatus.notProtected(),
+      );
+      await container.read(protectedMinorStatusProvider.future);
 
-    expect(container.read(isKeyManagementRestrictedProvider), isFalse);
+      expect(container.read(isKeyManagementRestrictedProvider), isFalse);
+    });
   });
 }

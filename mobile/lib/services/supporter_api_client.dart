@@ -29,11 +29,7 @@ enum SupporterApiFailureKind {
 /// Exception raised by the supporter Worker API client.
 class SupporterApiException implements Exception {
   /// Creates a typed supporter API failure.
-  const SupporterApiException(
-    this.kind,
-    this.message, {
-    this.statusCode,
-  });
+  const SupporterApiException(this.kind, this.message, {this.statusCode});
 
   /// The stable category used by repository and Cubit state mapping.
   final SupporterApiFailureKind kind;
@@ -182,9 +178,12 @@ class SupporterPurchaseClaim {
   };
 }
 
-/// Provides a NIP-98 Authorization header for an exact request.
+/// A NIP-98 Authorization header and the pubkey that signed it.
+typedef SupporterAuthHeader = ({String authorizationHeader, String pubkey});
+
+/// Provides NIP-98 authentication for an exact request.
 typedef SupporterAuthHeaderProvider =
-    Future<String?> Function({
+    Future<SupporterAuthHeader?> Function({
       required String url,
       required HttpMethod method,
       String? payload,
@@ -209,22 +208,35 @@ class SupporterApiClient {
   final Duration _timeout;
 
   /// Fetches canonical private state for the authenticated Divine account.
-  Future<SupporterAccountSnapshot> fetchMe() async {
-    final response = await _send(HttpMethod.get, '/v1/me');
+  Future<SupporterAccountSnapshot> fetchMe({
+    required String expectedPubkey,
+  }) async {
+    final response = await _send(
+      HttpMethod.get,
+      '/v1/me',
+      expectedPubkey: expectedPubkey,
+    );
     return _decodeSnapshot(response);
   }
 
   /// Claims a store purchase for the pubkey represented by the NIP-98 signer.
   Future<SupporterAccountSnapshot> claimPurchase(
-    SupporterPurchaseClaim claim,
-  ) async {
+    SupporterPurchaseClaim claim, {
+    required String expectedPubkey,
+  }) async {
     final body = jsonEncode(claim.toJson());
-    final response = await _send(HttpMethod.post, '/v1/purchases/claim', body);
+    final response = await _send(
+      HttpMethod.post,
+      '/v1/purchases/claim',
+      body: body,
+      expectedPubkey: expectedPubkey,
+    );
     return _decodeSnapshot(response);
   }
 
   /// Updates recognition preferences without changing payment state.
   Future<SupporterAccountSnapshot> updateRecognition({
+    required String expectedPubkey,
     required bool haloVisible,
     required bool discoveryVisible,
     required bool foundingHistoryVisible,
@@ -237,7 +249,8 @@ class SupporterApiClient {
     final response = await _send(
       HttpMethod.patch,
       '/v1/me/recognition',
-      body,
+      body: body,
+      expectedPubkey: expectedPubkey,
     );
     return _decodeSnapshot(response);
   }
@@ -247,16 +260,18 @@ class SupporterApiClient {
 
   Future<http.Response> _send(
     HttpMethod method,
-    String path, [
+    String path, {
     String? body,
-  ]) async {
+    String? expectedPubkey,
+  }) async {
     final uri = _baseUri.resolve(path.substring(1));
     final auth = await _authHeaderProvider(
       url: uri.toString(),
       method: method,
       payload: body,
     );
-    if (auth == null) {
+    if (auth == null ||
+        (expectedPubkey != null && auth.pubkey != expectedPubkey)) {
       throw const SupporterApiException(
         SupporterApiFailureKind.unauthorized,
         'Sign in to manage supporter status.',
@@ -265,18 +280,14 @@ class SupporterApiClient {
 
     final headers = <String, String>{
       'Accept': 'application/json',
-      'Authorization': auth,
+      'Authorization': auth.authorizationHeader,
     };
     if (body != null) headers['Content-Type'] = 'application/json';
 
     try {
       final response = await (switch (method) {
         HttpMethod.get => _httpClient.get(uri, headers: headers),
-        HttpMethod.post => _httpClient.post(
-          uri,
-          headers: headers,
-          body: body,
-        ),
+        HttpMethod.post => _httpClient.post(uri, headers: headers, body: body),
         HttpMethod.patch => _httpClient.patch(
           uri,
           headers: headers,
@@ -321,10 +332,20 @@ class SupporterApiClient {
   }
 
   SupporterApiException _exceptionForStatus(int statusCode, String body) {
-    final kind = switch (statusCode) {
-      401 || 403 => SupporterApiFailureKind.unauthorized,
-      409 => SupporterApiFailureKind.ownershipConflict,
-      408 || 429 || >= 500 => SupporterApiFailureKind.unavailable,
+    String? errorCode;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final error = decoded['error'];
+        if (error is Map<String, dynamic>) errorCode = error['code'] as String?;
+      }
+    } on FormatException {
+      // Error classification still falls back to the HTTP status.
+    }
+    final kind = switch ((statusCode, errorCode)) {
+      (_, 'ownership_conflict') => SupporterApiFailureKind.ownershipConflict,
+      (401 || 403, _) => SupporterApiFailureKind.unauthorized,
+      (408 || 409 || 429 || >= 500, _) => SupporterApiFailureKind.unavailable,
       _ => SupporterApiFailureKind.requestFailed,
     };
     final message = switch (kind) {

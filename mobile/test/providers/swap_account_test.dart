@@ -1,7 +1,10 @@
 // ABOUTME: Tests swapAccount orchestration — build, sign in, swap; roll back
 // ABOUTME: (dispose the new container, leave the old) when sign-in fails.
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,11 +17,14 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/notifications_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
@@ -26,6 +32,11 @@ import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockPushNotificationSessionCoordinator extends Mock
+    implements PushNotificationSessionCoordinator {}
+
+class _MockDmRepository extends Mock implements DmRepository {}
 
 bool _isDisposed(ProviderContainer c) {
   try {
@@ -83,6 +94,7 @@ void main() {
       sharedPreferences: prefs,
       switchController: controller,
       appVersion: 'test',
+      documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
       ],
@@ -437,9 +449,29 @@ void main() {
     );
   });
 
-  testWidgets('signs in a fresh container and swaps it in', (tester) async {
-    final initial = await pumpHost(tester);
+  testWidgets('deregisters outgoing push after target swap succeeds', (
+    tester,
+  ) async {
     ProviderContainer? signedInto;
+    final events = <String>[];
+    final cleanupCompleter = Completer<void>();
+    final pushCoordinator = _MockPushNotificationSessionCoordinator();
+    when(
+      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+    ).thenAnswer((
+      _,
+    ) async {
+      expect(controller.currentContainer, same(signedInto));
+      events.add('deregister outgoing');
+      await cleanupCompleter.future;
+    });
+    final initial = await pumpHost(
+      tester,
+      accountOverrides: [
+        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+      ],
+    );
+    initial.read(pushNotificationSyncProvider);
 
     await swapAccount(
       deviceScope: deviceScope,
@@ -448,6 +480,7 @@ void main() {
       account: account,
       signIn: (container, acct) async {
         signedInto = container;
+        events.add('sign in target');
         expect(acct, equals(account));
       },
     );
@@ -456,13 +489,169 @@ void main() {
     // Signed into a freshly-built container, not the initial one.
     expect(signedInto, isNotNull);
     expect(signedInto, isNot(same(initial)));
-    // The new container is live; the old one was disposed by the swap.
+    // The target is live, but the old container still owns the signer needed by
+    // the outgoing cleanup and cannot be disposed until that work settles.
     expect(_isDisposed(signedInto!), isFalse);
+    expect(_isDisposed(initial), isFalse);
+    expect(events, ['sign in target', 'deregister outgoing']);
+
+    cleanupCompleter.complete();
+    await tester.pump();
+
     expect(_isDisposed(initial), isTrue);
   });
 
-  testWidgets('rolls back when sign-in fails', (tester) async {
-    final initial = await pumpHost(tester);
+  group('account swap failure boundaries', () {
+    testWidgets('keeps the target account live when push cleanup fails', (
+      tester,
+    ) async {
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) async => throw Exception('relay unavailable'));
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+      ProviderContainer? signedInto;
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, _) async => signedInto = container,
+      );
+      await tester.pump();
+
+      expect(controller.currentContainer, same(signedInto));
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isTrue);
+      expect(currentAuthService.calls, equals(['archive']));
+    });
+
+    testWidgets('bounds push cleanup before disposing the outgoing account', (
+      tester,
+    ) async {
+      final cleanupCompleter = Completer<void>();
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) => cleanupCompleter.future);
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async {},
+      );
+      await tester.pump();
+
+      expect(_isDisposed(initial), isFalse);
+
+      await tester.pump(const Duration(seconds: 15));
+
+      expect(_isDisposed(initial), isTrue);
+    });
+
+    testWidgets('keeps outgoing push registration when target swap fails', (
+      tester,
+    ) async {
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) async {});
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+      ProviderContainer? attempted;
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (container, _) async {
+            attempted = container;
+            await tester.pumpWidget(const SizedBox());
+          },
+        ),
+        throwsStateError,
+      );
+
+      expect(attempted, isNotNull);
+      expect(_isDisposed(attempted!), isTrue);
+      expect(currentAuthService.calls, equals(['archive', 'restore']));
+      verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
+    });
+
+    testWidgets('keeps the target account live when legacy claiming fails', (
+      tester,
+    ) async {
+      final targetAuthService = _MockAuthService();
+      when(
+        targetAuthService.claimLegacyRowsForCurrentUser,
+      ).thenThrow(Exception('database unavailable'));
+      deviceScope = DeviceScope(
+        database: database,
+        sharedPreferences: deviceScope.sharedPreferences,
+        switchController: controller,
+        appVersion: 'test',
+        documentsPath: '/documents',
+        accountOverrides: [
+          secureKeyStorageProvider.overrideWithValue(keyStorage),
+          authServiceProvider.overrideWithValue(targetAuthService),
+        ],
+      );
+      final initial = await pumpHost(tester);
+      ProviderContainer? signedInto;
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, _) async => signedInto = container,
+      );
+      await tester.pump();
+
+      expect(controller.currentContainer, same(signedInto));
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isTrue);
+      expect(currentAuthService.calls, equals(['archive']));
+    });
+  });
+
+  testWidgets('keeps outgoing push registration when target sign-in fails', (
+    tester,
+  ) async {
+    final pushCoordinator = _MockPushNotificationSessionCoordinator();
+    when(
+      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+    ).thenAnswer((_) async {});
+    final initial = await pumpHost(
+      tester,
+      accountOverrides: [
+        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+      ],
+    );
+    initial.read(pushNotificationSyncProvider);
     ProviderContainer? attempted;
     keyStorage.primary = _FakeSecureKeyContainer(
       npub: 'npub_previous',
@@ -495,6 +684,7 @@ void main() {
     // its container does not undo that — the leaving account's own keys have
     // to go back, or it reads the wrong signer at the next launch.
     expect(currentAuthService.calls, equals(['archive', 'restore']));
+    verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
   });
 
   testWidgets('archives the leaving account before signing the new one in', (
@@ -514,6 +704,81 @@ void main() {
     // Signing the incoming account in overwrites the shared signer slots, so
     // the leaving account's credentials must already be in its own archive.
     expect(currentAuthService.calls, equals(['archive', 'signIn']));
+  });
+
+  group('DM lifecycle', () {
+    testWidgets('quiesces outgoing DM persistence before target sign-in', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {});
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => events.add('sign in target'),
+      );
+      await tester.pump();
+
+      expect(events, ['stop outgoing DMs', 'sign in target']);
+      verify(dmRepository.stopListening).called(1);
+      verifyNever(dmRepository.startListening);
+    });
+
+    testWidgets('resumes outgoing DMs when target sign-in fails', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {
+        events.add('resume outgoing DMs');
+      });
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async {
+            events.add('sign in target');
+            throw Exception('signer unavailable');
+          },
+        ),
+        throwsException,
+      );
+      await tester.pump();
+
+      expect(events, [
+        'stop outgoing DMs',
+        'sign in target',
+        'resume outgoing DMs',
+      ]);
+      expect(_isDisposed(initial), isFalse);
+    });
   });
 
   testWidgets('aborts before building anything when the archive fails', (
@@ -570,6 +835,114 @@ void main() {
     // The signer restore is ordered ahead of the throwing primary restore, so
     // it still ran.
     expect(currentAuthService.calls, equals(['archive', 'restore']));
+  });
+
+  // The leaving account's DM repository keeps draining relay history into the
+  // DeviceScope-shared database, and the identity-change cleanup that wipes
+  // that database runs from the INCOMING container — where
+  // dmListeningStopProvider finds no repository and returns early. No writer
+  // for an account may be live while that account's data is wiped, so the swap
+  // has to quiesce the leaving container before signing the target in.
+  // dm_repository's own suite covers what stopListening then stops. See #7318.
+  group('outgoing DM ingest (#7318)', () {
+    late _MockDmRepository dmRepository;
+    late List<String> events;
+
+    setUp(() {
+      dmRepository = _MockDmRepository();
+      events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop dm ingest');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {
+        events.add('resume dm ingest');
+      });
+    });
+
+    Future<ProviderContainer> pumpLeavingHost(WidgetTester tester) async {
+      final leaving = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      // dmListeningStopProvider gates on ref.exists, so the repository has to
+      // have been built in this container — as it is in production, where the
+      // inbox mounts it.
+      leaving.read(dmRepositoryProvider);
+      return leaving;
+    }
+
+    testWidgets(
+      'stops the leaving account ingest before signing the target in',
+      (
+        tester,
+      ) async {
+        await pumpLeavingHost(tester);
+
+        await swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          // Stands in for AuthService._setupUserSession, whose
+          // clearUserSpecificData wipes the shared DM tables.
+          signIn: (_, _) async => events.add('sign in target'),
+        );
+        await tester.pump();
+
+        expect(events, equals(['stop dm ingest', 'sign in target']));
+      },
+    );
+
+    testWidgets('gives the ingest back when the target sign-in fails', (
+      tester,
+    ) async {
+      await pumpLeavingHost(tester);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async => throw _FakeSignInException(),
+        ),
+        throwsA(isA<_FakeSignInException>()),
+      );
+      await tester.pump();
+
+      // The leaving container stays live on a rollback, so stopping its ingest
+      // must not cost the still-signed-in user their DMs.
+      expect(events, equals(['stop dm ingest', 'resume dm ingest']));
+    });
+
+    testWidgets('gives the ingest back even when the key restore throws', (
+      tester,
+    ) async {
+      await pumpLeavingHost(tester);
+      keyStorage.primary = _FakeSecureKeyContainer(
+        npub: 'npub_previous',
+        publicKeyHex: leavingHex,
+      );
+      keyStorage.restoreError = Exception('primary restore failed');
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async => throw _FakeSignInException(),
+        ),
+        throwsA(isA<_FakeSignInException>()),
+      );
+      await tester.pump();
+
+      // A rollback that cannot restore the keys still owes the user the DMs it
+      // took away, so the resume cannot sit behind a restore that throws.
+      expect(events, equals(['stop dm ingest', 'resume dm ingest']));
+    });
   });
 }
 

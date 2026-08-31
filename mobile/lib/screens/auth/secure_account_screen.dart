@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/routes/router_guards.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
@@ -35,6 +38,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _hasConflict = false;
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
@@ -44,6 +48,20 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     if (mounted) {
       setState(() => _generalError = message);
     }
+  }
+
+  void _onConflictSignIn() {
+    // Push (not go) so a failed sign-in pops back here, where the
+    // "Contact support" fallback is still available.
+    context.push(
+      WelcomeScreen.loginOptionsPathWithRecovery(
+        email: _emailController.text.trim(),
+      ),
+    );
+  }
+
+  void _onConflictContactSupport() {
+    context.push(SupportCenterScreen.path);
   }
 
   @override
@@ -87,6 +105,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       _passwordError = null;
       _confirmPasswordError = null;
       _generalError = null;
+      _hasConflict = false;
     });
 
     final l10n = context.l10n;
@@ -141,6 +160,27 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
+      // CONFLICT means the key or the entered email already has an account
+      // (the common case is a registered key the app forgot after falling back
+      // to anonymous). Show recovery choices in place instead of dead-ending on
+      // the raw server text: sign in for the recoverable case, contact support
+      // for the ones we can't resolve in-app (duplicate or credential-less
+      // accounts).
+      if (result.errorCode == 'CONFLICT') {
+        if (!mounted) return;
+        setState(() {
+          _hasConflict = true;
+          _generalError = context.l10n.authSecureAccountAlreadyRegistered;
+        });
+        // Announce the new recovery state so a screen-reader user knows
+        // registration hit a recoverable conflict.
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          context.l10n.authSecureAccountAlreadyRegistered,
+          Directionality.of(context),
+        );
+        return;
+      }
       _setGeneralError(
         result.errorDescription ?? context.l10n.authRegistrationFailed,
       );
@@ -181,7 +221,16 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       confirmPasswordError: _confirmPasswordError,
       enabled: !_isLoading,
       onEmailChanged: (_) {
-        if (_emailError != null) setState(() => _emailError = null);
+        if (_emailError == null && !_hasConflict) return;
+        setState(() {
+          _emailError = null;
+          // Editing the email clears the conflict so a different address can
+          // be retried in place (the email-already-registered case).
+          if (_hasConflict) {
+            _hasConflict = false;
+            _generalError = null;
+          }
+        });
       },
       onPasswordChanged: (_) {
         if (_passwordError != null || _confirmPasswordError != null) {
@@ -196,7 +245,12 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           setState(() => _confirmPasswordError = null);
         }
       },
-      errorWidget: _generalError != null
+      // The conflict message rides at the top (above the fields) so it stays
+      // in view alongside the recovery choices; transient errors stay inline.
+      headerWidget: _hasConflict && _generalError != null
+          ? AuthErrorBox(message: _generalError!)
+          : null,
+      errorWidget: !_hasConflict && _generalError != null
           ? AuthErrorBox(message: _generalError!)
           : null,
       primaryButton: DivineButton(
@@ -205,6 +259,46 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         isLoading: _isLoading,
         onPressed: _handleSubmit,
       ),
+      secondaryButton: _hasConflict
+          ? _ConflictActions(
+              onSignIn: _onConflictSignIn,
+              onContactSupport: _onConflictContactSupport,
+            )
+          : null,
+    );
+  }
+}
+
+/// The sign-in and contact-support recovery actions shown below the retry
+/// button when Secure account hits an already-registered conflict.
+class _ConflictActions extends StatelessWidget {
+  const _ConflictActions({
+    required this.onSignIn,
+    required this.onContactSupport,
+  });
+
+  final VoidCallback onSignIn;
+  final VoidCallback onContactSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 12,
+      children: [
+        DivineButton(
+          expanded: true,
+          type: .secondary,
+          label: context.l10n.authSignInButton,
+          onPressed: onSignIn,
+        ),
+        DivineButton(
+          expanded: true,
+          type: .link,
+          label: context.l10n.authContactSupport,
+          onPressed: onContactSupport,
+        ),
+      ],
     );
   }
 }

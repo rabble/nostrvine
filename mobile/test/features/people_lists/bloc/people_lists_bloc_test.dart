@@ -1371,6 +1371,90 @@ void main() {
           equals([_memberAlice, _memberBob]),
         );
       });
+
+      test('a reconciled add noop keeps the relay member', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerALists([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyAddRequested(listId: 'l1', pubkey: _memberBob),
+        );
+        await _flush();
+
+        // Reconciliation discovers that another client already added Bob.
+        ownerAListsController.add([
+          _buildList(
+            id: 'l1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ]);
+        await _flush();
+
+        publish.complete(const PeopleListPublishResult.noop());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.ready));
+        expect(
+          bloc.state.lists.single.pubkeys,
+          equals([_memberAlice, _memberBob]),
+        );
+        expect(bloc.state.pendingMutations, isEmpty);
+      });
+
+      test('a reconciled remove noop keeps the relay removal', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerALists([
+          _buildList(
+            id: 'l1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ]);
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyRemoveRequested(
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        );
+        await _flush();
+
+        // Reconciliation discovers that another client already removed Alice.
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberBob]),
+        ]);
+        await _flush();
+
+        publish.complete(const PeopleListPublishResult.noop());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.ready));
+        expect(bloc.state.lists.single.pubkeys, equals([_memberBob]));
+        expect(bloc.state.pendingMutations, isEmpty);
+      });
     });
 
     // #6504: rollbacks are computed from a snapshot captured before the

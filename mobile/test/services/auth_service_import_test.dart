@@ -135,6 +135,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, equals('Incorrect password'));
+        expect(result.failureReason, AuthFailureReason.incorrectPassword);
         expect(authService.isAuthenticated, isFalse);
       });
     });

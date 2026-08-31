@@ -182,11 +182,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNothing);
+      expect(find.text(l10n.reportDetailsTextOnly), findsNothing);
 
       await tester.tap(find.text(l10n.reportReasonOther));
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);
+      expect(find.text(l10n.reportDetailsTextOnly), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text(l10n.reportDetailsTextOnly)).dy,
+        lessThan(tester.getTopLeft(find.byType(TextField)).dy),
+        reason: 'The text-only disclosure must be read before the field',
+      );
+
+      final detailsField = tester.widget<TextField>(find.byType(TextField));
+      expect(detailsField.keyboardType, TextInputType.multiline);
+      expect(detailsField.textInputAction, TextInputAction.newline);
+      expect(detailsField.textCapitalization, TextCapitalization.sentences);
     });
 
     testWidgets(
@@ -494,7 +506,10 @@ void main() {
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),
-      ).thenAnswer((_) async => ReportResult.failure('Server error'));
+      ).thenAnswer(
+        (_) async =>
+            ReportResult.failure('moderation-api says: quota exceeded'),
+      );
 
       await setLargeSurface(tester);
       await openReportDialog(tester);
@@ -505,8 +520,12 @@ void main() {
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Failed to report content'), findsOneWidget);
+      expect(find.text(l10n.reportFailed), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
+      // #3589: the moderation service's own prose is arbitrary
+      // server-controlled text and must not reach Divine's error surface.
+      expect(find.textContaining('moderation-api'), findsNothing);
+      expect(find.textContaining('quota exceeded'), findsNothing);
     });
 
     testWidgets('exception during report shows inline error', (tester) async {
@@ -531,8 +550,10 @@ void main() {
       await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Failed to report content'), findsOneWidget);
+      expect(find.text(l10n.reportFailed), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
+      expect(find.textContaining('Network error'), findsNothing);
+      expect(find.textContaining('Exception'), findsNothing);
     });
 
     testWidgets(
@@ -559,7 +580,7 @@ void main() {
         await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Failed to report content'), findsOneWidget);
+        expect(find.text(l10n.reportFailed), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
       },
     );
@@ -596,7 +617,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final errorRect = tester.getRect(
-          find.textContaining('Failed to report content'),
+          find.text(l10n.reportFailed),
         );
         expect(
           errorRect.bottom,

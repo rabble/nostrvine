@@ -19,30 +19,32 @@ void main() {
     return boxes.isEmpty ? 0 : boxes.single.color.a;
   }
 
-  testWidgets('is invisible until a capture happens', (tester) async {
-    await tester.pumpWidget(build(0));
+  group(VideoRecorderShutterFlash, () {
+    testWidgets('is invisible until a capture happens', (tester) async {
+      await tester.pumpWidget(build(0));
 
-    expect(flashAlpha(tester), 0);
-  });
+      expect(flashAlpha(tester), 0);
+    });
 
-  testWidgets('blinks when the capture count increases, then fades out', (
-    tester,
-  ) async {
-    await tester.pumpWidget(build(0));
-    await tester.pumpWidget(build(1));
-    await tester.pump();
+    testWidgets('blinks when the capture count increases, then fades out', (
+      tester,
+    ) async {
+      await tester.pumpWidget(build(0));
+      await tester.pumpWidget(build(1));
+      await tester.pump();
 
-    expect(flashAlpha(tester), greaterThan(0.5));
+      expect(flashAlpha(tester), greaterThan(0.5));
 
-    await tester.pumpAndSettle();
-    expect(flashAlpha(tester), 0);
-  });
+      await tester.pumpAndSettle();
+      expect(flashAlpha(tester), 0);
+    });
 
-  testWidgets('does not blink when the count stays the same', (tester) async {
-    await tester.pumpWidget(build(2));
-    await tester.pumpWidget(build(2));
-    await tester.pump();
+    testWidgets('does not blink when the count stays the same', (tester) async {
+      await tester.pumpWidget(build(2));
+      await tester.pumpWidget(build(2));
+      await tester.pump();
 
-    expect(flashAlpha(tester), 0);
+      expect(flashAlpha(tester), 0);
+    });
   });
 }

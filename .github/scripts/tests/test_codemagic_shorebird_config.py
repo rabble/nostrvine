@@ -11,8 +11,12 @@ MOBILE_CI_PATH = (
     Path(__file__).resolve().parents[3] / ".github" / "workflows" / "mobile_ci.yaml"
 )
 WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
+COORDINATOR_PROBE_WORKFLOW_PATH = WORKFLOWS_PATH / "coordinator_route_probe.yml"
 SHOREBIRD_DOC_PATH = (
     Path(__file__).resolve().parents[3] / "mobile" / "docs" / "SHOREBIRD_CODE_PUSH.md"
+)
+SHOREBIRD_CONFIG_PATH = (
+    Path(__file__).resolve().parents[3] / "mobile" / "shorebird.yaml"
 )
 PROVENANCE_STORE_PATH = (
     Path(__file__).resolve().parents[3]
@@ -40,8 +44,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
     def setUp(self) -> None:
         self.contents = CODEMAGIC_PATH.read_text()
         self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
+        self.coordinator_probe_workflow_contents = (
+            COORDINATOR_PROBE_WORKFLOW_PATH.read_text()
+        )
         self.mise_contents = MISE_PATH.read_text()
         self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
+        self.shorebird_config_contents = SHOREBIRD_CONFIG_PATH.read_text()
         self.provenance_store_contents = PROVENANCE_STORE_PATH.read_text()
         self.patch_source_contents = PATCH_SOURCE_PATH.read_text()
         self.caption_generator_gradle_contents = CAPTION_GENERATOR_GRADLE_PATH.read_text()
@@ -88,6 +96,39 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("FF_DIVINE_SUPPORTERS", self.contents)
         self.assertIn("defines[name] = ENV.fetch(name, '')", self.contents)
 
+    def test_store_gate_probes_only_the_selected_environment(self) -> None:
+        self.assertRegex(
+            self.contents,
+            r'(?s)&check_coordinator_route.*?DEFAULT_ENV="\$\{\{ inputs\.DEFAULT_ENV \}\}"'
+            r"\s+\\\n\s+\./scripts/check_coordinator_route_serving\.sh",
+        )
+        for workflow in ("ios-build", "android-build"):
+            self.assertIn(
+                "- *check_coordinator_route",
+                self._workflow_block(workflow),
+            )
+
+    def test_scheduled_probe_maintains_one_incident_issue(self) -> None:
+        workflow = self.coordinator_probe_workflow_contents
+        self.assertIn("issues: write", workflow)
+        self.assertIn("group: coordinator-route-probe", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn(
+            "github.ref_name == github.event.repository.default_branch",
+            workflow,
+        )
+        self.assertIn("coordinator-route-probe-incident", workflow)
+        self.assertIn("state: 'all'", workflow)
+        self.assertIn("state: 'open'", workflow)
+        self.assertIn("state: 'closed'", workflow)
+        self.assertEqual(1, workflow.count("github.rest.issues.create({"))
+
+    def test_runtime_track_selection_disables_native_auto_update(self) -> None:
+        self.assertRegex(
+            self.shorebird_config_contents,
+            r"(?m)^auto_update:\s*false\s*$",
+        )
+
     def test_shorebird_required_defines_reject_empty_values(self) -> None:
         self.assertIn(
             "required_names.reject { |name| ENV.key?(name) && !ENV.fetch(name).empty? }",
@@ -124,7 +165,10 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertEqual(2, self.contents.count("shorebird_release_preflight.rb"))
         self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
-        self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
+        commands = self._shorebird_release_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
 
     def test_ios_release_rejects_closed_app_store_version_before_shorebird(self) -> None:
         workflow = self._workflow_block("ios-build")
@@ -184,8 +228,25 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             "shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",
             self.contents,
         )
-        self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", self.contents)
         self.assertNotIn("--track=stable", self.contents)
+        # Per command, not whole-file: the release commands also carry these
+        # flags, so a substring search over the file passes even when a patch
+        # command is missing one. Shipping only --private-key-path is what
+        # made every patch build die with "Both public and private keys must
+        # be provided."
+        commands = self._shorebird_patch_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
+            self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", command)
+
+    def test_patch_workflows_materialize_both_signing_keys(self) -> None:
+        # A key path on the command line is inert unless some step wrote the
+        # file it names.
+        for workflow in ("ios-patch", "android-patch"):
+            block = self._workflow_block(workflow)
+            self.assertIn("*write_shorebird_public_key", block)
+            self.assertIn("*write_shorebird_private_key", block)
 
     def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)
@@ -338,6 +399,74 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         for workflow in ("ios-build", "android-build", "ios-patch", "android-patch"):
             self.assertIn("- $HOME/.shorebird", self._workflow_block(workflow))
 
+    def test_android_shorebird_builds_precache_android_engine_artifacts(self) -> None:
+        # Shorebird's bundled Flutter precaches only host artifacts, and
+        # shorebird_install rm -rf's ~/.shorebird on any pin change, so every
+        # Shorebird Android build has to precache. Without it the Gradle build
+        # dies on a missing flutter.jar (#7987).
+        # Scoped to the definition, not the whole file: a whole-file search
+        # passes on any occurrence anywhere, which is how the missing patch-key
+        # wiring survived until #7936.
+        definition = self._definition_block(
+            "precache_shorebird_android_artifacts"
+        )
+
+        # The revision is parsed from the CLI rather than hardcoded, so it
+        # cannot drift from EXPECTED_SHOREBIRD_REVISION.
+        self.assertIn("FLUTTER_REVISION=$(shorebird --version", definition)
+        self.assertNotRegex(
+            definition,
+            r"FLUTTER_REVISION=[\"']?[0-9a-f]{40}",
+            "the Flutter revision must be derived, never a second hardcoded pin",
+        )
+
+        # The parsed revision has to reach a real executable path, and that
+        # executable is what must run precache. Asserting the invocation is the
+        # point: replacing this line with a no-op is the mutation that has to
+        # turn this test red.
+        self.assertIn(
+            'SHOREBIRD_FLUTTER="$HOME/.shorebird/bin/cache/flutter/'
+            '$FLUTTER_REVISION/bin/flutter"',
+            definition,
+        )
+        self.assertIn('"$SHOREBIRD_FLUTTER" precache --android', definition)
+
+        # A missing revision or binary must fail loudly, or Gradle reports the
+        # original confusing "flutter.jar not found" instead.
+        self.assertIn('if [ -z "$FLUTTER_REVISION" ]; then', definition)
+        self.assertIn('if [ ! -x "$SHOREBIRD_FLUTTER" ]; then', definition)
+        self.assertEqual(2, definition.count("exit 1"))
+
+        # Ordering both ways: the CLI has to exist before its Flutter can be
+        # precached, and the precache has to happen before the build that needs
+        # the artifacts.
+        for workflow_name, build_step in (
+            ("android-build", "- *build_aab"),
+            ("android-patch", "- *patch_android"),
+        ):
+            workflow = self._workflow_block(workflow_name)
+            install_at = workflow.index("- *shorebird_install")
+            precache_at = workflow.index(
+                "- *precache_shorebird_android_artifacts"
+            )
+            self.assertLess(
+                install_at,
+                precache_at,
+                f"{workflow_name} must install Shorebird before precaching it",
+            )
+            self.assertLess(
+                precache_at,
+                workflow.index(build_step),
+                f"{workflow_name} must precache before {build_step}",
+            )
+
+        # The e2e workflow builds with Codemagic's own Flutter, not
+        # Shorebird's, so it neither needs nor should pay for the download.
+        self.assertNotIn(
+            "- *precache_shorebird_android_artifacts",
+            self._workflow_block("e2e-smoke-android"),
+        )
+
     def test_shorebird_install_runs_before_ios_dependency_resolution(self) -> None:
         for workflow_name in ("ios-build", "ios-patch"):
             workflow = self._workflow_block(workflow_name)
@@ -380,6 +509,15 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("`shorebird_code_push` is a runtime dependency", self.shorebird_doc_contents)
         self.assertIn("Crashlytics", self.shorebird_doc_contents)
 
+    def _definition_block(self, anchor_name: str) -> str:
+        start = self.contents.index(f"    - &{anchor_name}\n")
+        next_definition = re.search(
+            r"^    - &", self.contents[start + 1 :], re.MULTILINE
+        )
+        if next_definition is None:
+            return self.contents[start:]
+        return self.contents[start : start + 1 + next_definition.start()]
+
     def _workflow_block(self, workflow_name: str) -> str:
         start = self.contents.index(f"  {workflow_name}:")
         next_workflow = re.search(r"^  [a-z0-9-]+:", self.contents[start + 1 :], re.MULTILINE)
@@ -387,11 +525,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             return self.contents[start:]
         return self.contents[start : start + 1 + next_workflow.start()]
 
-    def _shorebird_patch_commands(self) -> list[str]:
+    def _shorebird_commands(self, subcommand: str) -> list[str]:
         commands = []
         lines = self.contents.splitlines()
+        command_pattern = re.compile(rf"^\s+shorebird {re.escape(subcommand)} ")
         for index, line in enumerate(lines):
-            if "shorebird patch " not in line:
+            if command_pattern.match(line) is None:
                 continue
             command_lines = [line]
             cursor = index
@@ -400,6 +539,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
                 command_lines.append(lines[cursor])
             commands.append("\n".join(command_lines))
         return commands
+
+    def _shorebird_patch_commands(self) -> list[str]:
+        return self._shorebird_commands("patch")
+
+    def _shorebird_release_commands(self) -> list[str]:
+        return self._shorebird_commands("release")
 
 
 if __name__ == "__main__":

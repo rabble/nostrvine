@@ -143,6 +143,45 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('does not render bunker service exception text on failure', (
+      tester,
+    ) async {
+      const connectUrl =
+          'nostrconnect://abc123?relay=wss://relay.example.com&secret=xyz';
+      const bunkerUrl =
+          'bunker://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+          '?relay=wss://relay.example.com';
+      const serviceError =
+          'Bunker connection failed: SocketException(secret details)';
+      when(() => mockAuthService.nostrConnectUrl).thenReturn(connectUrl);
+      when(
+        () => mockAuthService.nostrConnectState,
+      ).thenReturn(NostrConnectState.listening);
+      when(
+        () => mockAuthService.waitForNostrConnectResponse(),
+      ).thenAnswer((_) => Completer<AuthResult>().future);
+      when(() => mockAuthService.cancelNostrConnect()).thenReturn(null);
+      when(
+        () => mockAuthService.connectWithBunker(bunkerUrl),
+      ).thenAnswer((_) async => AuthResult.failure(serviceError));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.ensureVisible(find.text(l10n.authAddBunker));
+      await tester.tap(find.text(l10n.authAddBunker));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.enterText(find.byType(TextField), bunkerUrl);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(l10n.authFailedToConnect), findsOneWidget);
+      expect(find.text(serviceError), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('connected state stays skeletonized with an inert action bar', (
       tester,
     ) async {

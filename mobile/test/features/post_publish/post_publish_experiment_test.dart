@@ -207,5 +207,124 @@ void main() {
         equals('view_share'),
       );
     });
+
+    test(
+      'records the first-party exposure only for an assigned user',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final experimentWithExposure = PostPublishExperiment(
+          analytics: analytics,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+
+        await experimentWithExposure.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.control,
+          isExperimentExposure: true,
+        );
+        await experimentWithExposure.screenShown(
+          publishId: 'reply-1',
+          destination: 'video_reply',
+          variant: PostPublishVariant.control,
+        );
+
+        expect(exposures, [PostPublishVariant.control]);
+      },
+    );
+
+    test(
+      'disabled experiment stays in control and records no exposure',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final disabledExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isEnabled: () => false,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+        final variant = disabledExperiment.variantForUser(treatmentUser);
+
+        await disabledExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: variant,
+          isExperimentExposure: true,
+        );
+
+        expect(variant, PostPublishVariant.control);
+        expect(disabledExperiment.completed({'publish-1'}), isNull);
+        expect(exposures, isEmpty);
+        expect(analytics.events.single.parameters['variant'], 'control');
+      },
+    );
+
+    test(
+      'A/A mode records assignments but gives both groups control',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final aaExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isTreatmentEnabled: () => false,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+        final variant = aaExperiment.variantForUser(treatmentUser);
+
+        await aaExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: variant,
+          isExperimentExposure: true,
+        );
+
+        expect(variant, PostPublishVariant.viewShare);
+        expect(exposures, [PostPublishVariant.viewShare]);
+        expect(aaExperiment.completed({'publish-1'}), isNull);
+        expect(analytics.events.single.parameters['variant'], 'view_share');
+      },
+    );
+
+    test(
+      'turning the experiment off drops a confirmation already assigned',
+      () async {
+        var enabled = true;
+        final killSwitchExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isEnabled: () => enabled,
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+
+        await killSwitchExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: killSwitchExperiment.variantForUser(treatmentUser),
+        );
+        enabled = false;
+
+        expect(killSwitchExperiment.completed({'publish-1'}), isNull);
+      },
+    );
+
+    test(
+      'an exposure recording failure does not affect the publish flow',
+      () async {
+        final experimentWithFailure = PostPublishExperiment(
+          analytics: analytics,
+          recordExposure: (_) => Future<void>.error(StateError('offline')),
+        );
+
+        await expectLater(
+          experimentWithFailure.screenShown(
+            publishId: 'publish-1',
+            destination: 'profile',
+            variant: PostPublishVariant.viewShare,
+            isExperimentExposure: true,
+          ),
+          completes,
+        );
+        expect(analytics.events.single.name, 'post_publish_screen_shown');
+      },
+    );
   });
 }

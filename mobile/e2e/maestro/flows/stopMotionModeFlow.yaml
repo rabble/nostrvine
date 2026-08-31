@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Stop-motion journey: create an account, open the recorder on stop-motion,
 #drive its control rail, shoot two stills, undo them again, and sign the device

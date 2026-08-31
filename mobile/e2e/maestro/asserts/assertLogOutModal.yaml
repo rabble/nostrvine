@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 - assertVisible: Log Out?
 - assertVisible: Are you sure you want to log out? Your keys will be saved and you can log back in later.

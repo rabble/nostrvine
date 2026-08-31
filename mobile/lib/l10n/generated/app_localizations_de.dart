@@ -156,12 +156,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsNotifications => 'Benachrichtigungen';
 
   @override
-  String get settingsContentPreferences => 'Inhaltseinstellungen';
-
-  @override
-  String get settingsModerationControls => 'Moderationseinstellungen';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky-Veröffentlichung';
 
   @override
@@ -216,7 +210,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Einladungen';
+  String get settingsShareDivine => 'Teile Divine mit deinen Freunden';
 
   @override
   String get settingsSwitchAccount => 'Konto wechseln';
@@ -388,6 +382,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn aktiviert, können andere Audio aus deinen Videos verwenden';
 
   @override
+  String get contentPreferencesMusicMode => 'Musikmodus';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Schaltet die Rauschunterdrückung ab, die Instrumente plattmacht. Besser für Musik, rauer für Stimmen.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Konto-Labels';
 
   @override
@@ -471,18 +472,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profil konnte nicht geteilt werden: $error';
-  }
-
-  @override
-  String get profileEditProfile => 'Profil bearbeiten';
-
-  @override
-  String get profileCreatorAnalytics => 'Creator-Analytics';
-
-  @override
-  String get profileShareProfile => 'Profil teilen';
+  String get profileShareFailed =>
+      'Profil konnte nicht geteilt werden. Bitte versuch es nochmal.';
 
   @override
   String get profileCopyPublicKey => 'Public Key (npub) kopieren';
@@ -497,12 +488,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileEmbedCodeCopied =>
       'Embed-Code in die Zwischenablage kopiert';
-
-  @override
-  String get profileRefreshTooltip => 'Aktualisieren';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Profil aktualisieren';
 
   @override
   String get profileMoreTooltip => 'Mehr';
@@ -695,20 +680,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Nutzer blockiert';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Du siehst keine Inhalte von diesem Nutzer mehr in deinen Feeds.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Du kannst ihn jederzeit über sein Profil oder unter Einstellungen > Sicherheit entsperren.';
-
-  @override
-  String get profileCloseButton => 'Schließen';
-
-  @override
   String get profileNoCollabsTitle => 'Noch keine Collabs';
 
   @override
@@ -820,23 +791,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Füge Name, Bio und Bild hinzu, um loszulegen';
 
   @override
-  String get profileSetUpButton => 'Einrichten';
-
-  @override
-  String get profileVerifyingEmail => 'E-Mail wird verifiziert...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Prüfe $email auf den Verifizierungslink';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'Warten auf E-Mail-Verifizierung';
-
-  @override
-  String get profileVerificationFailed => 'Verifizierung fehlgeschlagen';
-
-  @override
   String get profilePleaseTryAgain => 'Bitte versuch es nochmal';
 
   @override
@@ -848,9 +802,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Erneut versuchen';
-
-  @override
-  String get profileRegisterButton => 'Registrieren';
 
   @override
   String get profileSessionExpired => 'Sitzung abgelaufen';
@@ -887,14 +838,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileDeletedAccountName => 'Gelöschtes Konto';
 
   @override
+  String get inboxActionReportVanishedAccount => 'Dieses Konto melden';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Dieses Konto blockieren';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Dieses Konto entblocken';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Dieses Konto wurde gemeldet';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Dieses Konto wurde blockiert';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Dieses Konto wurde entblockt';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Dadurch wird die Unterhaltung aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Dieses Konto wurde gelöscht';
 
   @override
   String get profileUserFallback => 'Nutzer';
-
-  @override
-  String get profileDismissTooltip => 'Schließen';
 
   @override
   String get profileLinkCopied => 'Profil-Link kopiert';
@@ -955,9 +925,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Netzwerk nicht erreichbar. Überprüfe deine Verbindung und versuch es nochmal.';
 
   @override
-  String get profileSetupRetryLabel => 'Wiederholen';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Anzeigename';
 
   @override
@@ -978,10 +945,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSetupUsernameHelper =>
-      'Deine einzigartige Identität auf Divine';
-
-  @override
-  String get profileSetupProfileColorLabel => 'Profilfarbe (optional)';
+      'Verwende Buchstaben, Zahlen oder Bindestriche. Dein Benutzername wird zu einer divine.video-Adresse. Leerzeichen und Symbole kannst du im Anzeigenamen verwenden.';
 
   @override
   String get profileSetupSaveButton => 'Speichern';
@@ -993,10 +957,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupImageUrlTitle => 'Bild-URL hinzufügen';
 
   @override
-  String get profileSetupPictureUploaded =>
-      'Profilbild erfolgreich hochgeladen!';
-
-  @override
   String get profileSetupImageSelectionFailed =>
       'Bildauswahl fehlgeschlagen. Bitte füg stattdessen eine Bild-URL unten ein.';
 
@@ -1004,9 +964,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'Bilder';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kamerazugriff fehlgeschlagen: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Der Kamerazugriff ist aus. Schalte ihn in den Einstellungen ein, um ein Foto zu machen.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Der Kamerazugriff ist auf diesem Gerät nicht erlaubt.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Die Auswahl ist schon offen. Schließ sie und versuch es nochmal.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Die Kamera konnte nicht geöffnet werden. Versuch es nochmal.';
 
   @override
   String get profileSetupGotItButton => 'Verstanden';
@@ -1030,10 +1001,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Bild konnte nicht hochgeladen werden. Unsere Server sind vorübergehend nicht verfügbar. Bitte versuche es gleich noch einmal.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Das Hochladen eines Profilbilds ist im Web noch nicht verfügbar. Nutze die iOS- oder Android-App oder füge eine Bild-URL ein.';
 
   @override
   String get profileSetupBannerClearButton => 'Banner entfernen';
@@ -1118,6 +1085,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur Buchstaben, Zahlen und Bindestriche sind erlaubt';
 
   @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Der Benutzername darf nicht mit einem Bindestrich beginnen oder enden';
+
+  @override
   String get profileSetupUsernameInvalidLength =>
       'Benutzername muss 3-63 Zeichen lang sein';
 
@@ -1159,12 +1130,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSetupSendRequest => 'Anfrage senden';
-
-  @override
-  String get profileSetupPickColorTitle => 'Farbe wählen';
-
-  @override
-  String get profileSetupSelectButton => 'Auswählen';
 
   @override
   String get profileSetupUseOwnNip05 => 'Eigene NIP-05-Adresse verwenden';
@@ -1217,7 +1182,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Profilbild-Vorschau';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine basiert auf Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine basiert auf Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -1265,9 +1230,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get nostrInfoGotIt => 'Verstanden!';
 
   @override
-  String get profileTabRefreshTooltip => 'Aktualisieren';
-
-  @override
   String get videoGridRefreshLabel => 'Suche nach weiteren Videos';
 
   @override
@@ -1289,11 +1251,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Inhalt wird gelöscht...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Inhalt konnte nicht gelöscht werden: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Empfohlen';
@@ -1320,8 +1277,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Integrierte Apps';
 
   @override
-  String exploreFeaturedPaidPartnership(String sponsor) {
-    return 'In paid partnership with $sponsor';
+  String exploreFeaturedSponsoredBy(String sponsor) {
+    return 'Sponsored by $sponsor';
   }
 
   @override
@@ -1342,11 +1299,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exploreNoVideosAvailable => 'Keine Videos verfügbar';
-
-  @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fehler: $error';
-  }
 
   @override
   String get exploreDiscoverLists => 'Listen entdecken';
@@ -1379,9 +1331,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreSubscribedLists => 'Abonnierte Listen';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fehler beim Laden der Listen: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fehler beim Laden der Listen. Bitte versuch es nochmal.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -1406,9 +1357,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Video wird geladen...';
-
-  @override
   String get videoPlayerPlayVideo => 'Video abspielen';
 
   @override
@@ -1416,12 +1364,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Video-Ton einschalten';
-
-  @override
-  String get videoPlayerEditVideo => 'Video bearbeiten';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Video bearbeiten';
 
   @override
   String get videoPlayerTapHint =>
@@ -1641,19 +1583,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoErrorNotFound => 'Video nicht gefunden';
 
   @override
-  String get videoErrorNetwork => 'Netzwerkfehler';
-
-  @override
-  String get videoErrorTimeout => 'Zeitüberschreitung beim Laden';
-
-  @override
-  String get videoErrorFormat =>
-      'Videoformat-Fehler\n(Versuch es nochmal oder mit einem anderen Browser)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Nicht unterstütztes Videoformat';
-
-  @override
   String get videoErrorPlayback => 'Video-Wiedergabefehler';
 
   @override
@@ -1665,9 +1594,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoErrorUnavailableBody =>
       'Dieses Video ist gerade nicht verfügbar.';
-
-  @override
-  String get videoErrorVerifyAge => 'Alter verifizieren';
 
   @override
   String get videoErrorRetry => 'Erneut versuchen';
@@ -1734,9 +1660,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Videoplayer schließen';
-
-  @override
-  String get videoFollowButtonFollowing => 'Gefolgt';
 
   @override
   String get videoFollowButtonFollow => 'Folgen';
@@ -1928,12 +1851,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionMoreOptions => 'Weitere Optionen';
 
   @override
-  String get videoActionHideSubtitles => 'Untertitel ausblenden';
-
-  @override
-  String get videoActionShowSubtitles => 'Untertitel anzeigen';
-
-  @override
   String get videoEngagementLikersTitle => 'Geliket von';
 
   @override
@@ -1970,11 +1887,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Kommentar konnte nicht gepostet werden';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count Loops';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2131,6 +2043,82 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entwicklermodus deaktiviert';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird-Patches';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Aktiver Patch';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Kein Patch installiert';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'In diesem Build nicht verfügbar';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patches funktionieren nur in einem mit shorebird release erstellten Build.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Patch-Status wird gelesen…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Staging-Track noch nicht geprüft.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Staging-Track prüfen';
+
+  @override
+  String get devOptionsShorebirdApply => 'Staging-Patch anwenden';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Zu stabilen Updates zurückkehren';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Staging-Track wird geprüft…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Ein Staging-Patch kann angewendet werden.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Kein Staging-Patch für diese Version.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Heruntergeladen. App neu starten, um ihn zu laden.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Ein Rollback ist bereit. Neu starten, um zur Basisversion zurückzukehren.';
+
+  @override
+  String get devOptionsShorebirdApplying =>
+      'Wird heruntergeladen und installiert…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Installiert. App neu starten, um ihn zu laden.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nichts wurde installiert. Staging-Track prüfen und erneut versuchen.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Stabiler Kanal wird ausgewählt…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stabiler Kanal ausgewählt. Starte die App neu, um nach einem stabilen Patch zu suchen.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Das hat nicht funktioniert. Details stehen in den Logs.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Seiten-Ladezeiten';
 
   @override
@@ -2261,11 +2249,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Fehlgeschlagene Anfragen';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Letzter Fehler: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Relay-Infos werden geladen...';
@@ -2478,12 +2461,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Schlüssel konnten nicht von diesem Gerät entfernt werden. Versuch es nochmal.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Schlüssel konnten nicht entfernt werden: $error';
-  }
+      'Dieses Konto konnte nicht von diesem Gerät entfernt werden. Versuch es nochmal.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Konto und Daten löschen';
@@ -2635,9 +2613,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Abfrage fehlgeschlagen: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Abfrage fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2649,9 +2626,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verbindung zu Relays fehlgeschlagen';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Verbindungsversuch fehlgeschlagen: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Verbindungsversuch fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -2719,38 +2695,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn jemand, den du beobachtest, postet';
 
   @override
-  String get notificationSettingsSystem => 'System';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'App-Updates und Systemmeldungen';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push-Benachrichtigungen';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Push-Benachrichtigungen';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Benachrichtigungen erhalten, wenn die App geschlossen ist';
-
-  @override
-  String get notificationSettingsSound => 'Ton';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Ton bei Benachrichtigungen abspielen';
-
-  @override
-  String get notificationSettingsVibration => 'Vibration';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Bei Benachrichtigungen vibrieren';
-
-  @override
   String get notificationSettingsActions => 'Aktionen';
 
   @override
@@ -2778,12 +2722,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Benachrichtigungen werden über das Nostr-Protokoll bereitgestellt. Echtzeit-Updates hängen von deiner Verbindung zu den Nostr-Relays ab. Manche Benachrichtigungen können verzögert sein.';
-
-  @override
-  String get safetySettingsTitle => 'Sicherheit & Datenschutz';
-
-  @override
-  String get safetySettingsLabel => 'EINSTELLUNGEN';
 
   @override
   String get safetySettingsWhatYouSee => 'WAS DU SIEHST';
@@ -3558,30 +3496,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Registrierung abgeschlossen. Bitte prüf deine E-Mails.';
 
   @override
-  String get authVerificationFailedTitle => 'Verifizierung fehlgeschlagen';
-
-  @override
-  String get authClose => 'Schließen';
-
-  @override
-  String get authAccountSecured => 'Konto abgesichert!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Dein Konto ist jetzt mit deiner E-Mail verknüpft.';
-
-  @override
-  String get authVerifyYourEmail => 'E-Mail verifizieren';
-
-  @override
-  String get authClickLinkContinue =>
-      'Klick auf den Link in deiner E-Mail, um die Registrierung abzuschließen. Du kannst die App in der Zwischenzeit weiter nutzen.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Warte auf Verifizierung...';
-
-  @override
-  String get authContinueToApp => 'Weiter zur App';
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
 
   @override
   String get authFailedToSendResetEmail =>
@@ -3640,6 +3556,34 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get authVerificationErrorPinUnavailable =>
       'Die Code-Eingabe ist gerade nicht verfügbar. Tippe auf den Link in deiner E-Mail oder sende erneut, um einen neuen zu bekommen.';
+
+  @override
+  String get authInviteCodeErrorMalformed =>
+      'Gib einen Einladungscode wie ABCD-EFGH ein.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Dieser Einladungscode sieht nicht gültig aus.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Dieser Einladungscode wurde bereits verwendet oder widerrufen.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Die Einladungen dieses Creators sind aufgebraucht';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Dieser Einladungscode ist nicht verfügbar. Trag dich in die Warteliste ein und wir schicken dir eine Einladung, sobald wieder Platz ist.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Wir konnten diesen Code nicht prüfen. Versuch es noch mal.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Etwas ist schiefgelaufen. Versuch es noch mal mit deinem Einladungscode.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3707,9 +3651,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Teilen via';
-
-  @override
-  String get shareSheetReport => 'Melden';
 
   @override
   String get shareSheetEventJson => 'Event-JSON';
@@ -3846,151 +3787,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Video mit Wasserzeichen wird in deinen Aufnahmen gespeichert...';
 
   @override
-  String get uploadProgressVideoUpload => 'Video-Upload';
-
-  @override
-  String get uploadProgressPause => 'Pausieren';
-
-  @override
-  String get uploadProgressResume => 'Fortsetzen';
-
-  @override
-  String get uploadProgressGoBack => 'Zurück';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Erneut versuchen (noch $count)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Löschen';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return 'vor ${count}T';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return 'vor ${count}Std';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return 'vor ${count}Min';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Gerade eben';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Lädt hoch $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Pausiert bei $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'Video teilen';
-
-  @override
-  String get shareMenuReportAiContent => 'KI-Inhalt melden';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Schnell vermuteten KI-generierten Inhalt melden';
-
-  @override
-  String get shareMenuReportingAiContent => 'KI-Inhalt wird gemeldet...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'Inhalt konnte nicht gemeldet werden: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'KI-Inhalt konnte nicht gemeldet werden: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Video-Status';
-
-  @override
-  String get shareMenuViewAllLists => 'Alle Listen anzeigen →';
-
-  @override
-  String get shareMenuShareWith => 'Teilen mit';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Über andere Apps teilen';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Über andere Apps teilen oder Link kopieren';
-
-  @override
-  String get shareMenuSaveToGallery => 'In Galerie speichern';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle =>
-      'Original-Video in Aufnahmen speichern';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Mit Wasserzeichen speichern';
-
-  @override
-  String get shareMenuSaveVideo => 'Video speichern';
-
-  @override
-  String get shareMenuDownloadWithWatermark =>
-      'Mit Divine-Wasserzeichen herunterladen';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Video in Aufnahmen speichern';
-
-  @override
-  String get shareMenuLists => 'Listen';
-
-  @override
-  String get shareMenuAddToList => 'Zur Liste hinzufügen';
-
-  @override
-  String get shareMenuAddToListSubtitle =>
-      'Zu deinen kuratierten Listen hinzufügen';
-
-  @override
-  String get shareMenuCreateNewList => 'Neue Liste erstellen';
-
-  @override
-  String get shareMenuCreateNewListSubtitle =>
-      'Eine neue kuratierte Sammlung starten';
-
-  @override
-  String get shareMenuRemovedFromList => 'Aus Liste entfernt';
-
-  @override
-  String get shareMenuFailedToRemoveFromList =>
-      'Entfernen aus Liste fehlgeschlagen';
-
-  @override
   String get shareMenuBookmarks => 'Lesezeichen';
-
-  @override
-  String get shareMenuFollowSets => 'Follow-Sets';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Follow-Set erstellen';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Neue Sammlung mit diesem Creator starten';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Zu Follow-Set hinzufügen';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3999,10 +3796,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Zur Liste hinzufügen';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Füge diesen Creator einer deiner Listen hinzu';
 
   @override
   String get peopleListsSheetTitle => 'Zur Liste hinzufügen';
@@ -4152,40 +3945,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Zu Lesezeichen hinzugefügt!';
-
-  @override
-  String get shareMenuFailedToAddBookmark =>
-      'Lesezeichen konnte nicht hinzugefügt werden';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Liste \"$name\" erstellt und Video hinzugefügt';
-  }
-
-  @override
-  String get shareMenuManageContent => 'Inhalt verwalten';
-
-  @override
   String get shareMenuEditVideo => 'Video bearbeiten';
-
-  @override
-  String get shareMenuEditVideoSubtitle =>
-      'Titel, Beschreibung und Hashtags aktualisieren';
 
   @override
   String get shareMenuDeleteVideo => 'Video löschen';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Video ist in diesen Listen:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count Videos';
   }
-
-  @override
-  String get shareMenuClose => 'Schließen';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4196,14 +3964,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Löschen';
-
-  @override
-  String get shareMenuDeletingContent => 'Inhalt wird gelöscht...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Inhalt konnte nicht gelöscht werden: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4226,6 +3986,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Relay hat diese Löschanfrage nicht angenommen. Versuch es gleich noch einmal.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Das Relay war nicht erreichbar. Prüfe deine Verbindung und versuch es erneut.';
 
@@ -4238,59 +4002,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.';
 
   @override
-  String get shareMenuFollowSetName => 'Follow-Set-Name';
-
-  @override
-  String get shareMenuFollowSetNameHint => 'z.B. Content-Creator, Musiker usw.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Beschreibung (optional)';
-
-  @override
-  String get shareMenuCreate => 'Erstellen';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Follow-Set \"$name\" erstellt und Creator hinzugefügt';
-  }
-
-  @override
-  String get shareMenuDone => 'Fertig';
-
-  @override
-  String get shareMenuEditTitle => 'Titel';
-
-  @override
-  String get shareMenuEditTitleHint => 'Videotitel eingeben';
-
-  @override
-  String get shareMenuEditDescription => 'Beschreibung';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Videobeschreibung eingeben';
-
-  @override
-  String get shareMenuEditHashtags => 'Hashtags';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'komma, getrennte, hashtags';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Hinweis: Nur Metadaten können bearbeitet werden. Video-Inhalte können nicht geändert werden.';
-
-  @override
-  String get shareMenuDeleting => 'Wird gelöscht...';
-
-  @override
   String get shareMenuUpdate => 'Aktualisieren';
 
   @override
   String get shareMenuChangeCover => 'Cover ändern';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Vorschaubild wird im Hintergrund hochgeladen';
 
   @override
   String get shareMenuVideoUpdated => 'Video erfolgreich aktualisiert';
@@ -4307,62 +4022,45 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Video konnte nicht aktualisiert werden: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Melde dich neu an und versuch es dann nochmal.';
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video konnte nicht gelöscht werden: $error';
-  }
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Dieses Video hat keine abspielbare Quelle und kann nicht bearbeitet werden.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Die Änderung konnte nicht signiert werden. Versuch es nochmal.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Das Relay hat die Änderung nicht angenommen. Versuch es gleich nochmal.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Dieses Video konnte nicht aktualisiert werden. Versuch es nochmal.';
+
+  @override
+  String get shareMenuOriginalVideoUnavailable =>
+      'Couldn\'t load the original video. Try again in a moment.';
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Video löschen?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video gelöscht';
+  String get shareMenuDeleteCleanupInProgress => 'Video wird entfernt…';
 
   @override
-  String get shareMenuContentLabels => 'Inhalts-Labels';
+  String get shareMenuDeleteCleanupConfirmed => 'Video gelöscht.';
 
   @override
-  String get shareMenuAddContentLabels => 'Inhalts-Labels hinzufügen';
+  String get shareMenuDeleteCleanupDelayed =>
+      'Video gelöscht. Es kann etwas dauern, bis es überall verschwindet.';
 
   @override
-  String get shareMenuClearAll => 'Alles löschen';
-
-  @override
-  String get shareMenuCollaborators => 'Mitwirkende';
-
-  @override
-  String get shareMenuAddCollaborator => 'Mitwirkenden hinzufügen';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Du musst $name gegenseitig folgen, um sie/ihn als Mitwirkenden hinzuzufügen.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Wird geladen...';
-
-  @override
-  String get shareMenuInspiredBy => 'Inspiriert von';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Inspirationsangabe hinzufügen';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Dieser Creator kann nicht referenziert werden.';
-
-  @override
-  String get shareMenuUnknown => 'Unbekannt';
-
-  @override
-  String get shareMenuUseThisSound => 'Diesen Sound verwenden';
-
-  @override
-  String get shareMenuOriginalSound => 'Originalton';
+  String get shareMenuDeleteCleanupFailed =>
+      'Video gelöscht, aber wir konnten nicht jede Kopie entfernen. Kontaktiere bitte den Support.';
 
   @override
   String get authSessionExpired =>
@@ -4377,27 +4075,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Anmeldung fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
-  String get localeAppLanguage => 'App-Sprache';
-
-  @override
-  String get localeDeviceDefault => 'Gerätestandard';
-
-  @override
-  String get localeSelectLanguage => 'Sprache wählen';
-
-  @override
   String get webAuthNotSupportedSecureMode =>
       'Web-Authentifizierung wird im sicheren Modus nicht unterstützt. Bitte nutze die mobile App für sichere Schlüsselverwaltung.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Authentifizierungs-Integration fehlgeschlagen: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Unerwarteter Fehler: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Bitte gib eine Bunker-URI ein';
@@ -4444,32 +4123,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get soundsSearchHint => 'Sounds suchen...';
 
   @override
-  String get soundsPreviewUnavailable =>
-      'Vorschau nicht möglich — kein Audio verfügbar';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Vorschau-Wiedergabe fehlgeschlagen: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Empfohlene Sounds';
-
-  @override
-  String get soundsTrendingSounds => 'Angesagte Sounds';
-
-  @override
-  String get soundsAllSounds => 'Alle Sounds';
-
-  @override
   String get soundsSearchResults => 'Suchergebnisse';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Keine Sounds verfügbar';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Sounds erscheinen hier, wenn Creator Audio teilen';
 
   @override
   String get soundsNoSoundsFound => 'Keine Sounds gefunden';
@@ -4493,12 +4147,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Tippe in einem Video auf Sound verwenden, um ihn hier zu speichern.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Privat';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Community';
 
   @override
   String get soundsRemoveSavedSound => 'Sound entfernen';
@@ -4548,22 +4196,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Deine synchronisierte Bibliothek lässt sich auf diesem Gerät nicht entsperren.';
 
   @override
-  String get soundsFailedToLoad => 'Sounds konnten nicht geladen werden';
-
-  @override
-  String get soundsRetry => 'Erneut versuchen';
-
-  @override
-  String get soundsScreenLabel => 'Sounds-Screen';
-
-  @override
   String get profileTitle => 'Profil';
-
-  @override
-  String get profileRefresh => 'Aktualisieren';
-
-  @override
-  String get profileRefreshLabel => 'Profil aktualisieren';
 
   @override
   String get profileMoreOptions => 'Weitere Optionen';
@@ -4581,11 +4214,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return '$name entfolgt';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Fehler: $error';
   }
 
   @override
@@ -4623,21 +4251,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktualisierung fehlgeschlagen – Vorhandenes wird angezeigt';
 
   @override
-  String get notificationsCheckingNew => 'Suche nach neuen Benachrichtigungen';
-
-  @override
-  String get notificationsNoneYet => 'Noch keine Benachrichtigungen';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Keine $type-Benachrichtigungen';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Wenn Leute mit deinen Inhalten interagieren, siehst du es hier';
-
-  @override
   String get notificationsUnreadPrefix => 'Ungelesene Benachrichtigung';
 
   @override
@@ -4668,11 +4281,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Videovorschaubild';
 
   @override
-  String notificationsLoadingType(String type) {
-    return '$type-Benachrichtigungen werden geladen...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Du hast 1 Einladung, die du mit einem Freund teilen kannst!';
 
@@ -4682,13 +4290,33 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Video nicht gefunden';
+  String notificationsTabBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Badges ($count)',
+      zero: 'Badges',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsPendingBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count badges are waiting for you to accept them',
+      one: 'A badge is waiting for you to accept it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsBadgesEmpty =>
+      'No badges waiting. When someone awards you one, it lands here.';
 
   @override
   String get notificationsVideoUnavailable => 'Video nicht verfügbar';
-
-  @override
-  String get notificationsFromNotification => 'Aus Benachrichtigung';
 
   @override
   String get feedFailedToLoadVideos => 'Videos konnten nicht geladen werden';
@@ -4745,63 +4373,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get feedExploreVideos => 'Videos entdecken';
 
   @override
-  String get feedExternalVideoSlow => 'Externes Video lädt langsam';
-
-  @override
-  String get feedSkip => 'Überspringen';
-
-  @override
   String get feedLoadingMore => 'Weitere Videos werden geladen …';
 
   @override
   String get feedRefreshed => 'Feed aktualisiert';
 
   @override
-  String get uploadWaitingToUpload => 'Warten auf Upload';
-
-  @override
   String get uploadUploadingVideo => 'Video wird hochgeladen';
-
-  @override
-  String get uploadProcessingVideo => 'Video wird verarbeitet';
-
-  @override
-  String get uploadProcessingComplete => 'Verarbeitung abgeschlossen';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Erfolgreich veröffentlicht';
-
-  @override
-  String get uploadFailed => 'Upload fehlgeschlagen';
-
-  @override
-  String get uploadRetrying => 'Upload wird erneut versucht';
-
-  @override
-  String get uploadPaused => 'Upload pausiert';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% abgeschlossen';
-  }
-
-  @override
-  String get uploadQueuedMessage =>
-      'Dein Video steht in der Upload-Warteschlange';
-
-  @override
-  String get uploadUploadingMessage => 'Wird zum Server hochgeladen...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Video wird verarbeitet — das kann ein paar Minuten dauern';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Video erfolgreich verarbeitet und bereit zur Veröffentlichung';
-
-  @override
-  String get uploadPublishedMessage => 'Video in deinem Profil veröffentlicht';
 
   @override
   String get postPublishConfirmationTitle => 'In deinem Profil veröffentlicht';
@@ -4817,34 +4395,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Vorschaubild des Videos, das du gerade veröffentlicht hast';
 
   @override
-  String get uploadFailedMessage =>
-      'Upload fehlgeschlagen — bitte versuch es nochmal';
-
-  @override
-  String get uploadRetryingMessage => 'Upload wird erneut versucht...';
-
-  @override
-  String get uploadPausedMessage => 'Upload vom Nutzer pausiert';
-
-  @override
-  String get uploadRetryButton => 'ERNEUT VERSUCHEN';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Upload-Wiederholung fehlgeschlagen: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Nach Nutzern suchen';
-
-  @override
   String get userSearchNoResults => 'Keine Nutzer gefunden';
-
-  @override
-  String get userSearchFailed => 'Suche fehlgeschlagen';
-
-  @override
-  String get userPickerSearchByName => 'Nach Namen suchen';
 
   @override
   String get userPickerFilterByNameHint => 'Nach Namen filtern...';
@@ -4934,40 +4485,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ageVerificationYes => 'Ja';
 
   @override
-  String get shareLinkCopied => 'Link in die Zwischenablage kopiert';
-
-  @override
-  String get shareFailedToCopy => 'Link konnte nicht kopiert werden';
-
-  @override
-  String get shareVideoSubject => 'Schau dir dieses Video auf Divine an';
-
-  @override
-  String get shareFailedToShare => 'Teilen fehlgeschlagen';
-
-  @override
-  String get shareVideoTitle => 'Video teilen';
-
-  @override
-  String get shareToApps => 'An Apps teilen';
-
-  @override
-  String get shareToAppsSubtitle => 'Über Messaging- und Social-Apps teilen';
-
-  @override
-  String get shareCopyWebLink => 'Web-Link kopieren';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Teilbaren Web-Link kopieren';
-
-  @override
-  String get shareCopyNostrLink => 'Nostr-Link kopieren';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'nevent-Link für Nostr-Clients kopieren';
-
-  @override
   String get navHome => 'Start';
 
   @override
@@ -4980,12 +4497,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Suche';
-
-  @override
-  String get navSearchTooltip => 'Suchen';
-
-  @override
   String get navMyProfile => 'Mein Profil';
 
   @override
@@ -4993,9 +4504,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Kamera öffnen';
-
-  @override
-  String get navUnknown => 'Unbekannt';
 
   @override
   String get navExploreClassics => 'Klassiker';
@@ -5121,6 +4629,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get supportExportLogsFailed => 'Logs konnten nicht exportiert werden';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'Logs gespeichert unter $path';
   }
@@ -5141,22 +4657,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fehler beim Öffnen von $pageName: $error';
-  }
-
-  @override
-  String get reportTitle => 'Inhalt melden';
-
-  @override
   String get reportWhyReporting => 'Warum meldest du diesen Inhalt?';
 
   @override
   String get reportPolicyNotice =>
       'Divine reagiert innerhalb von 24 Stunden auf Inhaltsmeldungen, indem der Inhalt entfernt und der Nutzer, der den problematischen Inhalt bereitgestellt hat, ausgeschlossen wird.';
-
-  @override
-  String get reportAdditionalDetails => 'Weitere Details (optional)';
 
   @override
   String get reportBlockUser => 'Diesen Nutzer blockieren';
@@ -5177,6 +4682,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'Bitte beschreib das Problem';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'Nur Text – Fotos und GIFs können hier nicht angehängt werden.';
 
   @override
   String get reportReasonSpam => 'Spam oder unerwünschte Inhalte';
@@ -5256,9 +4765,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verstöße, die oben nicht aufgeführt sind';
 
   @override
-  String reportFailed(Object error) {
-    return 'Inhalt konnte nicht gemeldet werden: $error';
-  }
+  String get reportFailed =>
+      'Inhalt konnte nicht gemeldet werden. Bitte versuch es nochmal.';
 
   @override
   String get reportNotSent =>
@@ -5281,9 +4789,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'Moderationsteam anschreiben';
-
-  @override
-  String get reportLearnMore => 'Mehr erfahren';
 
   @override
   String get reportLearnMoreAt => 'Mehr erfahren unter';
@@ -5348,7 +4853,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Mitarbeiter hinzufügen';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine durchsuchen...';
+  String get listCollaboratorSearchHint => 'Divine durchsuchen...';
 
   @override
   String get listNameLabel => 'Listenname';
@@ -5516,7 +5021,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'der Login-Dienst war nicht erreichbar';
+      'Der Login-Dienst war nicht erreichbar. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5547,18 +5052,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get keyManagementImportSuccess => 'Schlüssel erfolgreich importiert!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Schlüssel konnte nicht importiert werden: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Schlüssel konnte nicht importiert werden. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementExportSuccess =>
       'Private Key in die Zwischenablage kopiert!\n\nBewahre ihn sicher auf.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Schlüssel konnte nicht exportiert werden: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Schlüssel konnte nicht exportiert werden. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Dein Public Key (npub)';
@@ -5684,9 +5187,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Vorschau nicht möglich — kein Audio verfügbar';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Vorschau-Wiedergabe fehlgeschlagen: $error';
-  }
+  String get soundPreviewFailed =>
+      'Vorschau-Wiedergabe fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String get soundViewSource => 'Quelle ansehen';
@@ -5738,11 +5240,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName konnte nicht geöffnet werden';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fehler beim Öffnen von $pageName: $error';
   }
 
   @override
@@ -6174,8 +5671,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Dadurch wird deine Unterhaltung mit $displayName gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.';
+    return 'Dadurch wird deine Unterhaltung mit $displayName aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.';
   }
+
+  @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Dadurch wird die Gruppenunterhaltung aus deinem Posteingang entfernt. Wenn jemand wieder in die Gruppe schreibt, beginnt eine neue Unterhaltung.';
 
   @override
   String get inboxRemoveConfirmConfirm => 'Entfernen';
@@ -6244,12 +5745,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Du wurdest eingeladen, an $title mitzuarbeiten: $url\n\nÖffne diVine, um sie zu prüfen und anzunehmen.';
+    return 'Du wurdest eingeladen, an $title mitzuarbeiten: $url\n\nÖffne Divine, um sie zu prüfen und anzunehmen.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nÖffne diVine, um sie zu prüfen und anzunehmen.';
+    return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nÖffne Divine, um sie zu prüfen und anzunehmen.';
   }
 
   @override
@@ -6278,6 +5779,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dmRetiredThreadClosedTitle =>
       'Diese Unterhaltung ist geschlossen.';
+
+  @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Dieser Hinweis von Divine Moderation kann nicht entfernt werden.';
 
   @override
   String get dmRetiredThreadClosedBody =>
@@ -6356,9 +5861,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmReelReplyViewChat => 'Chat ansehen';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Chat öffnen';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Antwort gesendet';
 
   @override
@@ -6435,14 +5937,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weitere Personen',
+      one: '$count weitere Person',
+    );
+    return '$name und $_temp0';
+  }
+
+  @override
   String get inboxConversationTileLongPressHint =>
       'Unterhaltungsaktionen anzeigen';
-
-  @override
-  String get reportDialogCancel => 'Abbrechen';
-
-  @override
-  String get reportDialogReport => 'Melden';
 
   @override
   String exploreVideoId(String id) {
@@ -6468,20 +5975,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abo konnte nicht aktualisiert werden: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abo konnte nicht aktualisiert werden. Bitte versuch es nochmal.';
 
   @override
   String get discoverListsTitle => 'Listen entdecken';
 
   @override
   String get discoverListsFailedToLoad => 'Listen konnten nicht geladen werden';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Listen konnten nicht geladen werden: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Öffentliche Listen werden entdeckt...';
@@ -6568,9 +6069,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commonSomethingWentWrong => 'Etwas ist schiefgelaufen';
-
-  @override
-  String get commonNext => 'Weiter';
 
   @override
   String get commonDelete => 'Löschen';
@@ -6672,9 +6170,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryTabClips => 'Clips';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'In der Fotomediathek speichern';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Ausgewählte Clips löschen';
 
   @override
@@ -6728,20 +6223,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get librarySortVerticalFirst => 'Vertikal zuerst';
 
   @override
-  String get libraryDeleteClipsTitle => 'Clips löschen';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# ausgewählte Clips',
-      one: '# ausgewählten Clip',
-    );
-    return 'Möchtest du wirklich $_temp0 löschen?';
-  }
-
-  @override
   String get libraryDeleteClipsWarning =>
       'Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.';
 
@@ -6767,6 +6248,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
     return '$successCount gespeichert, $failureCount fehlgeschlagen';
+  }
+
+  @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Speichern in $destination fehlgeschlagen';
   }
 
   @override
@@ -6874,20 +6360,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryDeleteClipMessage => 'Diesen Clip wirklich löschen?';
 
   @override
-  String get libraryClipSelectionTitle => 'Clips';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return 'Noch ${seconds}s';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds Sek';
   }
-
-  @override
-  String get libraryAddClips => 'Hinzufügen';
 
   @override
   String get libraryRecordVideo => 'Video aufnehmen';
@@ -6895,6 +6370,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Videoclip, $duration Sekunden';
+  }
+
+  @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Archiviert. $label';
   }
 
   @override
@@ -7441,6 +6921,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Ablehnen und entfernen';
 
   @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Anfrage von $displayName abgelehnt';
+  }
+
+  @override
   String get messageRequestLoadFailed =>
       'Diese Anfrage konnte nicht geladen werden.';
 
@@ -7484,24 +6969,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du hast das Konto gewechselt, also wurde nichts gelöscht. Öffne das Löschen erneut für das Konto, das du entfernen willst.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Einige Löschanfragen wurden angenommen, aber die Bereinigung wurde gestoppt, weil du das Konto gewechselt hast. Melde dich wieder im ursprünglichen Konto an, um sie abzuschließen.';
-
-  @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Dein Benutzername konnte nicht freigegeben werden. Dein Konto wurde nicht gelöscht. Versuch es erneut oder deaktiviere die Option.';
-
-  @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Dein Benutzername $username wurde endgültig freigegeben, aber wir konnten das Löschen deines Kontos nicht abschließen. Tippe erneut auf Löschen, um es abzuschließen.';
-  }
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$username auch endgültig aufgeben';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt =>
       'Gib zur Bestätigung Folgendes ein:';
 
@@ -7516,19 +6983,72 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteAccountConfirmationHintUsername => 'Benutzername eingeben';
 
   @override
-  String get deleteAccountContentDeletionFailed =>
-      'Inhalte konnten nicht von den Relays gelöscht werden';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Wir konnten die Kontolöschung mit keinem Relay bestätigen. Prüfe deine Verbindung und versuch es erneut.';
-
-  @override
   String get deleteAccountDeleteAllContentButton => 'Alle Inhalte löschen';
+
+  @override
+  String get accountDeletionRecoveryTitle => 'Kontolöschung abschließen';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'Wir konnten das Löschen deines Kontos nicht abschließen. Dein Benutzername ist für dich reserviert und kann noch zurückgeholt werden.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername => 'Benutzernamen zurückholen';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'Deine Löschanfrage wird noch bearbeitet. Schau nochmal nach, bevor du diesen Bildschirm verlässt.';
+
+  @override
+  String get accountDeletionCancellingBody =>
+      'Wir brechen deine Löschung gerade ab. Schau nochmal nach, bevor du diesen Bildschirm verlässt.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'Wir konnten deinen Benutzernamen noch nicht zurückholen. Prüfe deine Verbindung und versuch es erneut.';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'Dein Benutzername ist zurück. Dein Konto wurde nicht gelöscht.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'Wir konnten den Status deiner Löschung nicht prüfen. Prüfe deine Verbindung und versuch es erneut.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get deleteAccountDeletionUnavailable =>
+      'Die Kontolöschung ist gerade nicht verfügbar. Es wurde nichts gelöscht.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
       'Wir konnten das Löschen deines Kontos nicht abschließen. Versuch es erneut.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Letzte Bestätigung';
@@ -7566,11 +7086,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Dein Konto konnte nicht vom Server gelöscht werden. Bitte prüfe deine Verbindung und versuch es erneut.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Melde dich erneut an, um das abzuschließen.';
+      'Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Versuch es später noch mal.';
 
   @override
   String get deleteAccountSuccess =>
@@ -7583,27 +7099,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Das sendet Löschanfragen für dein Konto und deine Inhalte, löscht dein Divine-Konto wenn möglich und meldet dich auf diesem Gerät ab. Einige Relays, Clients und Suchindizes behalten möglicherweise Kopien. Andere angemeldete Geräte bleiben aktiv, bis du dort die Schlüssel entfernst.';
-
-  @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Text-Overlay wird hinzugefügt …';
-
-  @override
-  String get exportProgressStageComplete => 'Export abgeschlossen!';
-
-  @override
-  String get exportProgressStageConcatenating =>
-      'Clips werden zusammengefügt …';
-
-  @override
-  String get exportProgressStageError => 'Export fehlgeschlagen';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Vorschaubild wird erstellt …';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Ton wird hinzugefügt …';
 
   @override
   String get findPeopleAnonymousUser => 'Anonym';
@@ -7729,6 +7224,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.';
 
@@ -7804,9 +7306,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Sound konnte nicht geladen werden: $error';
-  }
+  String get soundDetailLoadError =>
+      'Sound konnte nicht geladen werden. Bitte versuch es nochmal.';
 
   @override
   String get soundDetailNotFoundMessage =>
@@ -7816,15 +7317,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Sound nicht gefunden';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Videobeschreibung';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count Loops';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Anzahl der Video-Loops';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7836,11 +7331,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String globalUploadPendingCount(int count) {
-    return 'Ausstehende Uploads ($count)';
-  }
-
-  @override
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
@@ -7848,22 +7338,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'Profil-Häkchen';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'In $count Listen',
-      one: 'In 1 Liste',
-    );
-    return '$_temp0';
-  }
+      'Divine vergibt dieses Häkchen an Team-Konten. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
 
   @override
   String get unfollowConfirmButton => 'Nicht mehr folgen';
@@ -7964,11 +7450,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bug-Bericht konnte nicht gesendet werden. Versuch es später nochmal.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Bug-Bericht konnte nicht gesendet werden: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Anfrage senden';
 
   @override
@@ -8002,11 +7483,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Feature-Wunsch konnte nicht gesendet werden. Versuch es später nochmal.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Feature-Wunsch konnte nicht gesendet werden: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Zurückfolgen';
@@ -8061,16 +7537,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get followSortOldest => 'Älteste zuerst';
 
   @override
-  String get reportMessageTitle => 'Nachricht melden';
-
-  @override
-  String get reportMessageWhyReporting => 'Warum meldest du diese Nachricht?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Bitte wähl einen Grund für die Meldung dieser Nachricht';
-
-  @override
   String get newMessageTitle => 'Neue Nachricht';
 
   @override
@@ -8107,9 +7573,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get classicVinersTitle => 'OG Viner';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Einstellungen konnten nicht gespeichert werden: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Einstellungen konnten nicht gespeichert werden. Bitte versuch es nochmal.';
 
   @override
   String get blossomValidServerUrl =>
@@ -8252,14 +7717,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invitesNoneAvailable => 'Gerade keine Einladungen verfügbar';
 
   @override
-  String get invitesShareWithPeople => 'Teil diVine mit Leuten, die du kennst';
+  String get invitesShareWithPeople => 'Teil Divine mit Leuten, die du kennst';
 
   @override
   String get invitesUsedInvites => 'Eingelöste Einladungen';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Komm zu mir auf diVine! Nutz den Einladungscode $code, um loszulegen:\nhttps://divine.video/invite/$code';
+    return 'Komm zu mir auf Divine! Nutz den Einladungscode $code, um loszulegen:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8272,7 +7737,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invitesShareInvite => 'Einladung teilen';
 
   @override
-  String get invitesShareSubject => 'Komm zu mir auf diVine';
+  String get invitesShareSubject => 'Komm zu mir auf Divine';
 
   @override
   String get invitesClaimed => 'Eingelöst';
@@ -8344,14 +7809,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Du musst mindestens 16 Jahre alt sein, um Inhalte zu erstellen';
-
-  @override
-  String get featureRequestCancel => 'Abbrechen';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fehler: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>
@@ -8561,10 +8018,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationSystemUpdate => 'Du hast eine neue Aktualisierung';
 
   @override
-  String get notificationSomeoneLikedYourVideo =>
-      'Jemand hat dein Video geliked';
-
-  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override
@@ -8706,6 +8159,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Zurück zum Feed';
+
+  @override
+  String get cameraCouldNotStart => 'Kamera konnte nicht gestartet werden';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Die Kamera ist auf dieser Plattform noch nicht verfügbar.\nDu kannst trotzdem Videos ansehen.';
 
   @override
   String get cameraPermissionErrorTitle => 'Berechtigungsfehler';
@@ -9254,31 +8714,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Video abspielen oder pausieren';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Zuschneiden';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Clip kann während der Verarbeitung nicht geteilt werden. Bitte warte.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Ungültige Teilungsposition. Beide Clips müssen mindestens $minDurationMs ms lang sein.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Clip aus Mediathek hinzufügen';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Ausgewählten Clip speichern';
 
   @override
-  String get videoEditorSplitClip => 'Clip teilen';
-
-  @override
   String get videoEditorSaveClip => 'Clip speichern';
-
-  @override
-  String get videoEditorDeleteClip => 'Clip löschen';
 
   @override
   String get videoEditorClipSavedSuccess => 'Clip in Mediathek gespeichert';
@@ -9286,9 +8730,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorClipSaveFailed =>
       'Clip konnte nicht gespeichert werden';
-
-  @override
-  String get videoEditorClipDeleted => 'Clip gelöscht';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Farbwähler';
@@ -9320,12 +8761,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorFailedLoadStickers =>
       'Sticker konnten nicht geladen werden';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Lautstärke anpassen';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Aufgenommener Ton';
 
   @override
   String get videoEditorVoiceOverLabel => 'Voiceover';
@@ -9389,12 +8824,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Pausieren';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Ton stummschalten';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Ton wieder einschalten';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Lautstärke anpassen';
@@ -9510,9 +8939,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Gerät kann die Live-Vorschau nicht zeigen. Deine Einstellungen wirken beim Export trotzdem.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Originalton';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Clip $index';
   }
@@ -9545,14 +8971,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count Frames pro Bild';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Frames pro Bild erhöhen';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Frames pro Bild verringern';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9659,9 +9077,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Spiegeln';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Format';
 
   @override
   String get videoEditorTransformResetLabel => 'Zurücksetzen';
@@ -9824,14 +9239,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Meine Sounds';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Vorgestellte Sounds folgen bald';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Wir veröffentlichen vorgestellte Sounds hier, sobald sie bereit sind.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pfeil-Werkzeug';
 
   @override
@@ -9899,10 +9306,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Lange drücken zum Neuordnen';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Nach links verschieben';
@@ -9983,6 +9386,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorReverseSelectedFramesSemanticLabel =>
       'Ausgewählte Frames umkehren';
+
+  @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Ausgewählte Frames duplizieren';
 
   @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
@@ -10076,9 +9483,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Tags';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Löschen';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Tag $tag löschen';
   }
@@ -10093,12 +9497,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
       'Wähle alles aus, was auf deinen Inhalt zutrifft';
-
-  @override
-  String get videoMetadataContentWarningDoneButton => 'Fertig';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Diesen Sound veröffentlichen';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
@@ -10116,29 +9514,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Mitwirkende hinzufügen';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'So funktionieren Mitwirkende';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max Mitwirkende';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Mitwirkende entfernen';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Mitwirkende werden in diesem Beitrag als Co-Creator markiert. Du kannst nur Personen hinzufügen, denen ihr gegenseitig folgt. Sie erscheinen beim Veröffentlichen in den Metadaten des Beitrags.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Gemeinsame Follower';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Du musst $name gegenseitig folgen, um die Person als Mitwirkende hinzuzufügen.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Inspiriert von';
@@ -10148,23 +9524,8 @@ class AppLocalizationsDe extends AppLocalizations {
       '\"Inspiriert von\" festlegen';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'So funktionieren Inspirations-Credits';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Niemandem';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Nutze dies für eine Quellenangabe. \"Inspiriert von\" unterscheidet sich von Mitwirkenden: Es würdigt den Einfluss, markiert aber niemanden als Co-Creator.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Dieser Creator kann nicht referenziert werden.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      '\"Inspiriert von\" entfernen';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Beitragsdetails';
@@ -10461,6 +9822,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Badge zurücknehmen';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Dieses Badge zurücknehmen?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Damit bitten wir die Relays, die Auszeichnung für diese Person zu entfernen. Relays können das ablehnen, und wer das Badge schon angepinnt hat, behält es im Profil, bis er es selbst entfernt. Eine Benachrichtigung gibt es so oder so nicht.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Damit bitten wir die Relays, die Auszeichnung an dich selbst zu entfernen, und nehmen das Badge von deinem Profil. Lehnen die Relays die Löschung ab, ändert sich nichts.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Zurücknehmen';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Badge zurückgenommen';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Badge-Träger blockieren';
 
   @override
@@ -10586,10 +9967,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Familien-Guide';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Noch nicht 16? Kein Problem. Das kannst du tun.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'Noch nicht 16? Kein Problem.';
 
   @override
@@ -10634,9 +10011,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13 bis 15 Jahre';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Hilfreich für Familien';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10697,6 +10071,80 @@ class AppLocalizationsDe extends AppLocalizations {
       'Support und deine Moderationsnachricht bleiben verfügbar';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewResponseClockRunningTitle => 'Time to respond';
+
+  @override
+  String minorAccountReviewResponseClockRunningDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String minorAccountReviewResponseClockRunningHours(int hours, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockPausedTitle =>
+      'Response clock paused';
+
+  @override
+  String minorAccountReviewResponseClockPausedBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'The response clock is paused. About $_temp0 will remain when it restarts.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockExpiredTitle =>
+      'Response deadline passed';
+
+  @override
+  String get minorAccountReviewResponseClockExpiredBody =>
+      'The response deadline has passed. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableTitle =>
+      'Deadline unavailable';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableBody =>
+      'We can\'t show your response deadline right now. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => 'Support-Center öffnen';
 
   @override
@@ -10705,17 +10153,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Prüfseite öffnen';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Du kannst dein Konto mitnehmen';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Du kannst deine Divine-Identität weiterhin auf anderer Infrastruktur nutzen. Zieh dein Konto um oder lade dein Archiv herunter.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Konto umziehen';
 
   @override
   String get minorAccountReviewCheckAgain => 'Erneut prüfen';
@@ -10775,10 +10212,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'Ein großer Teil des Internets ist so aufgebaut, dass Leute belohnt werden, wenn sie einfach das sagen, was sie durch die Tür bringt. Das finden wir nicht gut. Ja, du könntest zurückgehen und angeben, dass du älter bist, als du bist, aber das wäre nicht ehrlich, und wir werden dir nicht beibringen, zu lügen, um zu bekommen, was du willst.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Warum die Antwort trotzdem nein ist';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11014,12 +10447,47 @@ class AppLocalizationsDe extends AppLocalizations {
       'Simulation der Minderjährigen-Kontoprüfung zurückgesetzt';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Simulierter Prüffall 13–15 aktiviert';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Simulierter Support-Fall unter 13 aktiviert';
+
+  @override
+  String get devOptionsMinorReviewResponseClockTitle => 'Response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunning => 'Running';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPaused => 'Paused';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpired => 'Expired';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicable =>
+      'Not applicable';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformed => 'Malformed payload';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunningToast =>
+      'Simulated running response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPausedToast =>
+      'Simulated paused response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpiredToast =>
+      'Simulated expired response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicableToast =>
+      'Simulated not-applicable response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformedToast =>
+      'Simulated malformed response clock';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
@@ -11109,7 +10577,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Serverwert: unbekannt (standardmäßig aktiviert)';
+      'Serverwert: unbekannt';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
@@ -11257,9 +10725,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Die Aufnahme beginnt, wenn du gedrückt hältst, und stoppt, wenn du loslässt';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Vorschau-Wiedergabe fehlgeschlagen';
 
   @override
   String uploadPublishedCountMessage(int count) {
@@ -12248,6 +11713,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryUnarchiveAction => 'Aus Archiv holen';
 
   @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In diesen Kategorien behalten?',
+      one: 'In dieser Kategorie behalten?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'In $name behalten';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed =>
+      'In den Kategorien behalten';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Aus $name entfernen';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Aus den Kategorien entfernen';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Ausgewählte Clips verschieben';
 
   @override
@@ -12460,7 +11954,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dein Konto bleibt. Auf diesem Gerät gespeicherte Entwürfe und Clips werden gelöscht — Nachrichten und Feeds kommen aus dem Netzwerk zurück.';
 
   @override
-  String get dbFailureResetConfirm => 'Zurücksetzen und schließen';
+  String get dbFailureResetConfirm => 'Lokale Datenbank jetzt zurücksetzen';
 
   @override
   String get dbFailureCancel => 'Abbrechen';
@@ -12484,4 +11978,139 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Passwort ausblenden';
+
+  @override
+  String get followUserSemanticLabel => 'Nutzer folgen';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Nutzer nicht mehr folgen';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Kommentare werden geladen';
+
+  @override
+  String get analyticsWindowAll => 'Alle';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Nutzer folgen $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Nutzer nicht mehr folgen $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / Monat';
+  }
+
+  @override
+  String get videoDetailHiddenBySettingsTitle => 'Hidden by your settings';
+
+  @override
+  String videoDetailHiddenByHostFilterBody(String host) {
+    return 'This one\'s hosted on $host, and you\'re set to only show Divine-hosted videos.';
+  }
+
+  @override
+  String get videoDetailHiddenByContentFilterBody =>
+      'Your content filters are hiding this one.';
+
+  @override
+  String get videoDetailHiddenByProvenanceFilterBody =>
+      'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.';
+
+  @override
+  String get videoDetailHiddenShowAnyway => 'Show it anyway';
+
+  @override
+  String get videoDetailHiddenOpenSettings => 'Change setting';
+
+  @override
+  String get safetySettingsShowVerifiedOnly =>
+      'Only show camera-verified videos';
+
+  @override
+  String get safetySettingsShowVerifiedOnlySubtitle =>
+      'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

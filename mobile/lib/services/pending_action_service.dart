@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:rxdart/rxdart.dart';
@@ -413,6 +414,19 @@ class PendingActionService extends ChangeNotifier {
         name: 'PendingActionService',
         category: LogCategory.system,
       );
+    } on TerminalSocialActionException catch (e) {
+      await _dao.updateStatus(
+        action.id,
+        PendingActionStatus.failed,
+        lastError: e.toString(),
+        retryCount: action.retryCount,
+      );
+      Log.warning(
+        'Pending action rejected by terminal account policy: '
+        '${action.type} on ${action.targetId}',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+      );
     } catch (e) {
       // Mark as failed or pending for retry
       final newRetryCount = action.retryCount + 1;
@@ -436,6 +450,7 @@ class PendingActionService extends ChangeNotifier {
   }
 
   bool _isRetriableError(dynamic error) {
+    if (error is TerminalSocialActionException) return false;
     final errorStr = error.toString().toLowerCase();
 
     // Network errors are retriable

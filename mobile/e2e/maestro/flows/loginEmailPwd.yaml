@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 # Credentials are NOT committed. Supply them at run time. If full-suite CI is
 # restored, it should read them from the `maestro_e2e_credentials` Codemagic
 # group:

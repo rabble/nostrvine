@@ -94,7 +94,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.webAuthIntegrationFailed('$e')),
+              content: Text(context.l10n.commonSomethingWentWrong),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -123,9 +123,14 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         }
       }
     } catch (e) {
+      Log.error(
+        'Web auth failed: $e',
+        name: 'WebAuthScreen',
+        category: LogCategory.ui,
+      );
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.webAuthUnexpectedError('$e');
+          _errorMessage = context.l10n.commonSomethingWentWrong;
         });
       }
     } finally {
@@ -165,9 +170,14 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         }
       }
     } catch (e) {
+      Log.error(
+        'Web auth failed: $e',
+        name: 'WebAuthScreen',
+        category: LogCategory.ui,
+      );
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.webAuthUnexpectedError('$e');
+          _errorMessage = context.l10n.commonSomethingWentWrong;
         });
       }
     } finally {

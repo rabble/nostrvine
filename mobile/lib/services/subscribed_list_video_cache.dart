@@ -282,7 +282,7 @@ class SubscribedListVideoCache extends ChangeNotifier {
 
     if (filters.isEmpty) return;
 
-    final eventStream = _nostrService.subscribe(filters);
+    final eventStream = _nostrService.subscribe(filters, closeOnEose: true);
     final seenIds = <String>{};
 
     // Use 3 second timeout for relay fetches (faster initial load)
@@ -315,6 +315,16 @@ class SubscribedListVideoCache extends ChangeNotifier {
     } on TimeoutException {
       Log.info(
         'Relay fetch timeout - processed ${seenIds.length} events',
+        name: 'SubscribedListVideoCache',
+        category: LogCategory.video,
+      );
+    } on RelaySubscriptionRefusedException catch (e) {
+      // Every relay refused the REQ. Keep whatever arrived before that; the
+      // caller runs from an unawaited microtask, so rethrowing here would
+      // reach the zone as an uncaught async error.
+      Log.warning(
+        'Relay refused list video fetch (${e.reason}) - '
+        'processed ${seenIds.length} events',
         name: 'SubscribedListVideoCache',
         category: LogCategory.video,
       );

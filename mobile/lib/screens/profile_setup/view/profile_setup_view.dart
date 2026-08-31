@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_setup/widgets/widgets.dart';
@@ -78,7 +81,11 @@ class _ProfileSetupScreenViewState
                 _isLeavingProfileSetup || !profileEditorState.hasUnsavedChanges,
             onPopInvokedWithResult: (didPop, result) {
               if (!didPop && profileEditorState.hasUnsavedChanges) {
-                _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+                _confirmLeaveWithUnsavedChanges(
+                  context,
+                  state: profileEditorState,
+                  pubkey: pubkey,
+                );
               }
             },
             child: Scaffold(
@@ -248,7 +255,7 @@ class _ProfileSetupScreenViewState
     required String? pubkey,
   }) {
     if (state.hasUnsavedChanges) {
-      _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+      _confirmLeaveWithUnsavedChanges(context, state: state, pubkey: pubkey);
       return;
     }
     _leaveProfileSetup(context);
@@ -256,17 +263,21 @@ class _ProfileSetupScreenViewState
 
   void _confirmLeaveWithUnsavedChanges(
     BuildContext context, {
+    required ProfileEditorState state,
     required String? pubkey,
   }) {
+    final canSave = pubkey != null && state.isSaveReady;
     VineBottomSheetPrompt.show<void>(
       context: context,
       sticker: .alert,
       title: context.l10n.profileSetupUnsavedChangesTitle,
       subtitle: context.l10n.profileSetupUnsavedChangesSubtitle,
-      primaryButtonText: context.l10n.profileSetupUnsavedChangesSaveButton,
+      primaryButtonText: canSave
+          ? context.l10n.profileSetupUnsavedChangesSaveButton
+          : null,
       secondaryButtonText: context.l10n.profileSetupUnsavedChangesDiscardButton,
       tertiaryButtonText: context.l10n.profileSetupUnsavedChangesKeepButton,
-      onPrimaryPressed: pubkey == null
+      onPrimaryPressed: !canSave
           ? null
           : () {
               context.pop();
@@ -309,6 +320,18 @@ class _ProfileSetupScreenViewState
 
   void _leaveProfileSetup(BuildContext context) {
     if (!_isLeavingProfileSetup && mounted) {
+      if (widget.isNewUser) {
+        unawaited(
+          ref
+              .read(analyticsServiceProvider)
+              .recordOnboardingStep(
+                flow: ProductAnalyticsV2OnboardingFlow.accountSetup,
+                step: ProductAnalyticsV2OnboardingStep.identity,
+                result: ProductAnalyticsV2OnboardingResult.skipped,
+                reason: ProductAnalyticsV2OnboardingReason.dismissed,
+              ),
+        );
+      }
       setState(() => _isLeavingProfileSetup = true);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {

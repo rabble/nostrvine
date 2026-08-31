@@ -92,10 +92,6 @@ void main() {
         find.text(FeatureFlag.communityContentWarnings.displayName),
         findsNothing,
       );
-      expect(
-        find.text(FeatureFlag.publishDmRelayList.displayName),
-        findsNothing,
-      );
       expect(find.text(FeatureFlag.feedTuning.displayName), findsNothing);
     });
 
@@ -116,10 +112,6 @@ void main() {
       );
       expect(
         find.text(FeatureFlag.communityContentWarnings.displayName),
-        findsOneWidget,
-      );
-      expect(
-        find.text(FeatureFlag.publishDmRelayList.displayName),
         findsOneWidget,
       );
       expect(find.text(FeatureFlag.feedTuning.displayName), findsOneWidget);

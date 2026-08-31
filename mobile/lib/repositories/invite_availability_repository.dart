@@ -53,7 +53,7 @@ class InviteAvailabilityRepository {
       );
     } on Object catch (error) {
       Log.warning(
-        'Invite client config unavailable; defaulting signup invites on: $error',
+        'Invite client config unavailable; defaulting signup invites off: $error',
         name: 'InviteAvailabilityRepository',
         category: LogCategory.auth,
       );

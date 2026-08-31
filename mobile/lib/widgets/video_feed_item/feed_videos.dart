@@ -19,7 +19,6 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -45,11 +44,13 @@ import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/player_gesture_surface.dart';
 import 'package:openvine/widgets/video_feed_item/player_tap_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
+import 'package:openvine/widgets/video_feed_item/video_interactions_restriction_listener.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 
 class FeedVideos extends ConsumerStatefulWidget {
@@ -221,23 +222,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     _feedKey.currentState?.resumeCurrentPlayback();
   }
 
-  /// Pauses the current video if a community warning has newly gated it.
-  ///
-  /// Called when the community-label service notifies (a prefetch crossed the
-  /// threshold). The imperative resume in [_revealContentWarning] has no
-  /// symmetric pause in the package's gate-sync: `_syncCurrentAutoPlayGate`
-  /// early-returns because both its old/new predicates read the same live
-  /// service, so an already-playing item keeps playing behind the overlay
-  /// (#5720 M1). Pausing when the gate is closed is idempotent.
-  void _pauseCurrentIfCommunityWarned() {
-    final feedState = _feedKey.currentState;
-    if (feedState == null) return;
-    final index = feedState.currentIndex;
-    if (index < 0 || index >= widget.videos.length) return;
-    if (_canAutoPlayVideo(widget.videos[index])) return;
-    feedState.pauseCurrentPlayback();
-  }
-
   /// Animates the underlying feed to [index].
   ///
   /// Used by parent screens that hold a [GlobalKey<FeedVideosState>] to
@@ -343,21 +327,13 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
-    // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
-    // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
-    // community warning just crossed the threshold. The service only
-    // notifies for non-empty results, so this fires rarely.
+    // Rebuild when a community-label prefetch resolves, and when the
+    // kill-switch flips, so InfiniteVideoFeed re-syncs the autoplay gate from
+    // didUpdateWidget. The package captures the gate answer per rebuild
+    // (#6899), so both directions follow from these watches: a newly crossed
+    // warning pauses the current video, and a warning that lapses resumes it.
     ref.watch(communityContentLabelServiceProvider);
-    // Watch the kill-switch too: flipping it re-evaluates the autoplay gate
-    // (via InfiniteVideoFeed.didUpdateWidget) so cached community warnings
-    // stop/start gating without a restart.
     ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
-    // Pause an already-playing current video whose community warning just
-    // crossed the threshold. The package's gate-sync can't catch this because
-    // both its old/new predicates read the same live service (#5720 M1).
-    ref.listen(communityContentLabelServiceProvider, (_, _) {
-      _pauseCurrentIfCommunityWarned();
-    });
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
     // can claim the device's scarce hardware decoders/encoder. Selected so the
@@ -538,6 +514,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             controller: controller,
             isActive: isActive,
             isFeedVisible: isFeedActive,
+            position: index,
             trafficSource: widget.trafficSource,
             sourceDetail: widget.sourceDetail,
             child: _Overlay(
@@ -1010,12 +987,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   )
                   ..add(const VideoInteractionsSubscriptionRequested())
                   ..add(const VideoInteractionsFetchRequested()),
-            child: Builder(
-              builder: (context) {
-                return Semantics(
-                  button: true,
-                  label: context.l10n.videoPlayerPlayVideo,
-                  hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
+            child: VideoInteractionsRestrictionListener(
+              child: Builder(
+                builder: (context) {
                   // The chrome layers are SIBLINGS above the gesture surface,
                   // never descendants of it. As descendants, any press held
                   // past `kLongPressTimeout` anywhere on the action rail was
@@ -1025,7 +999,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   // out under the viewer's finger. Keeping them siblings lets
                   // an opaque button win the hit test outright, so the peek
                   // never sees that pointer.
-                  child: Stack(
+                  //
+                  // The player's label and hint live on the gesture surface
+                  // below, not on a wrapper here: a node with no tap action
+                  // cannot name the one a screen reader activates.
+                  return Stack(
                     children: [
                       // The raw [Listener] owns immersive mode's release: it
                       // counts the pointers over the item and exits once the
@@ -1058,39 +1036,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
                               _handleImmersivePointerEnd(event.pointer),
                           onPointerCancel: (event) =>
                               _handleImmersivePointerEnd(event.pointer),
-                          child: GestureDetector(
-                            behavior: .translucent,
-                            onTap: interactiveReady ? _handlePlayerTap : null,
-                            onDoubleTapDown: interactiveReady
-                                ? (details) => _handleDoubleTapLike(
-                                    context,
-                                    details,
-                                    isOwnVideo: isOwnVideo,
-                                  )
-                                : null,
-                            child: GestureDetector(
-                              behavior: .translucent,
-                              // Press and hold to peek at the unobstructed
-                              // frame. Deliberately not gated on
-                              // [interactiveReady] the way tap and double-tap
-                              // are: those mutate the player or publish a
-                              // like, while this only hides chrome, which is
-                              // just as valid over a still-loading frame.
-                              //
-                              // Excluded from semantics, and kept on its own
-                              // detector so the tap action above still is
-                              // published. A `GestureDetector` publishes
-                              // `SemanticsAction.longPress` for ANY long-press
-                              // callback, `onLongPressStart` included — and
-                              // firing that action delivers no pointer events,
-                              // so the release path below would never run and
-                              // a screen-reader user would be left with every
-                              // control hidden and pointer-blocked until the
-                              // item was disposed.
-                              excludeFromSemantics: true,
-                              onLongPressStart: (_) => _enterImmersive(),
-                              child: const SizedBox.expand(),
+                          child: PlayerGestureSurface(
+                            interactiveReady: interactiveReady,
+                            isOwnVideo: isOwnVideo,
+                            onTap: _handlePlayerTap,
+                            onDoubleTapDown: (details) => _handleDoubleTapLike(
+                              context,
+                              details,
+                              isOwnVideo: isOwnVideo,
                             ),
+                            onLongPressStart: _enterImmersive,
                           ),
                         ),
                       ),
@@ -1138,9 +1093,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                       ),
                     ],
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         );

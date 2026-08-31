@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -62,6 +63,7 @@ void main() {
   Widget createTestWidget({
     bool hasAccessGrant = false,
     InviteApiClient? inviteApiClient,
+    String initialLocation = WelcomeScreen.createAccountPath,
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -104,7 +106,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
             routerConfig: GoRouter(
-              initialLocation: WelcomeScreen.createAccountPath,
+              initialLocation: initialLocation,
               routes: [
                 GoRoute(
                   path: WelcomeScreen.path,
@@ -113,13 +115,32 @@ void main() {
                   routes: [
                     GoRoute(
                       path: 'invite',
-                      builder: (context, state) =>
-                          const Scaffold(body: Text('Invite Gate')),
+                      builder: (context, state) => Scaffold(
+                        body: Column(
+                          children: [
+                            const Text('Invite Gate'),
+                            if (state.uri.queryParameters['code']
+                                case final code?)
+                              Text('Code: $code'),
+                            if (state.uri.queryParameters['error']
+                                case final error?)
+                              Text('Error: $error'),
+                            if (state.uri.queryParameters['sourceSlug']
+                                case final sourceSlug?)
+                              Text('Source: $sourceSlug'),
+                          ],
+                        ),
+                      ),
                     ),
                     GoRoute(
                       path: 'create-account',
                       builder: (context, state) =>
-                          const InviteProtectedCreateAccountScreen(),
+                          InviteProtectedCreateAccountScreen(
+                            initialCode: state.uri.queryParameters['code'],
+                            initialError: state.uri.queryParameters['error'],
+                            initialSourceSlug:
+                                state.uri.queryParameters['sourceSlug'],
+                          ),
                     ),
                   ],
                 ),
@@ -148,6 +169,31 @@ void main() {
       expect(find.text('Invite Gate'), findsOneWidget);
     });
 
+    testWidgets('preserves a deep-linked code when invites become required', (
+      tester,
+    ) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.inviteCodeRequired,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialLocation:
+              '${WelcomeScreen.createAccountPath}?code=AB12-EF34'
+              '&error=Invite%20problem&sourceSlug=creator',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invite Gate'), findsOneWidget);
+      expect(find.text('Code: AB12-EF34'), findsOneWidget);
+      expect(find.text('Error: Invite problem'), findsOneWidget);
+      expect(find.text('Source: creator'), findsOneWidget);
+    });
+
     testWidgets('allows create-account when server onboarding mode is open', (
       tester,
     ) async {
@@ -160,6 +206,20 @@ void main() {
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
+    });
+
+    testWidgets('allows create-account while client config is unresolved', (
+      tester,
+    ) async {
+      final pendingConfig = Completer<InviteClientConfig>();
+      when(
+        () => mockInviteApiClient.getClientConfig(),
+      ).thenAnswer((_) => pendingConfig.future);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
       expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
     });

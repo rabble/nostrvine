@@ -47,7 +47,7 @@ class NotificationCommentQuote extends ConsumerStatefulWidget {
 
 class _NotificationCommentQuoteState
     extends ConsumerState<NotificationCommentQuote> {
-  List<TextSpan> _currentBodySpans = const [];
+  List<InlineSpan> _currentBodySpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +117,7 @@ class _NotificationCommentQuoteState
     LinkifiedTextNavigation.navigateToSearch(context, username);
   }
 
-  void _replaceCurrentBodySpans(List<TextSpan> spans) {
+  void _replaceCurrentBodySpans(List<InlineSpan> spans) {
     final previousSpans = _currentBodySpans;
     _currentBodySpans = spans;
     LinkifiedTextSupport.disposeSpans(previousSpans);

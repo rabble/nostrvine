@@ -25,6 +25,7 @@ class MockUploadManager implements UploadManager {
     int? videoHeight,
     Duration? videoDuration,
     NativeProofData? nativeProof,
+    String? proofManifestJson,
     Duration? thumbnailTimestamp,
   }) {
     final upload = PendingUpload.create(
@@ -37,9 +38,9 @@ class MockUploadManager implements UploadManager {
       videoWidth: videoWidth,
       videoHeight: videoHeight,
       videoDuration: videoDuration,
-      proofManifestJson: nativeProof != null
-          ? json.encode(nativeProof.toJson())
-          : null,
+      proofManifestJson:
+          proofManifestJson ??
+          (nativeProof != null ? json.encode(nativeProof.toJson()) : null),
       thumbnailTimestamp: thumbnailTimestamp,
     );
 

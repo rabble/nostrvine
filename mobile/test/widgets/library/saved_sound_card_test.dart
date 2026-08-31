@@ -81,47 +81,70 @@ double _waveformProgress(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('shows rich source, private, and catalog context', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app(_richSound()));
-
-    expect(find.byType(VineCachedImage), findsOneWidget);
-    expect(find.text('Morning inspiration'), findsOneWidget);
-    expect(find.text('A tiny bird visits'), findsOneWidget);
-    expect(find.text('By Alice'), findsOneWidget);
-    expect(find.text('Filmed outside before breakfast.'), findsOneWidget);
-    expect(find.text('Listen to that little bird.'), findsOneWidget);
-    expect(find.byKey(const Key('saved_sound_waveform')), findsOneWidget);
-    expect(find.text('#ideas'), findsOneWidget);
-    expect(find.text('#funny'), findsOneWidget);
-    expect(find.text('field recording'), findsOneWidget);
-    expect(find.text('birds'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('opens details when the card body is tapped', (tester) async {
-    var tapped = false;
-    await tester.pumpWidget(_app(_richSound(), onTap: () => tapped = true));
-
-    await tester.tap(find.text('Morning inspiration'));
-
-    expect(tapped, isTrue);
-  });
-
-  testWidgets(
-    'music-only sound has a quiet fallback without transcript error',
-    (
+  group(SavedSoundCard, () {
+    testWidgets('shows rich source, private, and catalog context', (
       tester,
     ) async {
+      await tester.pumpWidget(_app(_richSound()));
+
+      expect(find.byType(VineCachedImage), findsOneWidget);
+      expect(find.text('Morning inspiration'), findsOneWidget);
+      expect(find.text('A tiny bird visits'), findsOneWidget);
+      expect(find.text('By Alice'), findsOneWidget);
+      expect(find.text('Filmed outside before breakfast.'), findsOneWidget);
+      expect(find.text('Listen to that little bird.'), findsOneWidget);
+      expect(find.byKey(const Key('saved_sound_waveform')), findsOneWidget);
+      expect(find.text('#ideas'), findsOneWidget);
+      expect(find.text('#funny'), findsOneWidget);
+      expect(find.text('field recording'), findsOneWidget);
+      expect(find.text('birds'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('opens details when the card body is tapped', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(_app(_richSound(), onTap: () => tapped = true));
+
+      await tester.tap(find.text('Morning inspiration'));
+
+      expect(tapped, isTrue);
+    });
+
+    testWidgets(
+      'music-only sound has a quiet fallback without transcript error',
+      (tester) async {
+        final sound = SavedSound(
+          audio: AudioEvent(
+            id: 'music',
+            pubkey: 'creator',
+            createdAt: 1,
+            title: 'Instrumental loop',
+          ),
+          personalHashtags: const [],
+          catalogTags: const [],
+          waveformSamples: const [],
+        );
+
+        await tester.pumpWidget(_app(sound));
+
+        expect(find.text('Instrumental loop'), findsOneWidget);
+        expect(
+          find.byKey(const Key('saved_sound_thumbnail_fallback')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('saved_sound_transcript')), findsNothing);
+        expect(find.byKey(const Key('saved_sound_waveform')), findsNothing);
+        expect(
+          find.textContaining('transcript', findRichText: true),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('falls back to localized generic title shape', (tester) async {
       final sound = SavedSound(
-        audio: AudioEvent(
-          id: 'music',
-          pubkey: 'creator',
-          createdAt: 1,
-          title: 'Instrumental loop',
-        ),
+        audio: AudioEvent(id: 'empty', pubkey: 'creator', createdAt: 1),
         personalHashtags: const [],
         catalogTags: const [],
         waveformSamples: const [],
@@ -129,178 +152,155 @@ void main() {
 
       await tester.pumpWidget(_app(sound));
 
-      expect(find.text('Instrumental loop'), findsOneWidget);
+      expect(find.text('Saved sound'), findsOneWidget);
+    });
+
+    testWidgets('semantic label includes display title and duration', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(_app(_richSound()));
+
       expect(
-        find.byKey(const Key('saved_sound_thumbnail_fallback')),
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'Morning inspiration, 0:06',
+        ),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('saved_sound_transcript')), findsNothing);
-      expect(find.byKey(const Key('saved_sound_waveform')), findsNothing);
-      expect(
-        find.textContaining('transcript', findRichText: true),
-        findsNothing,
-      );
-    },
-  );
 
-  testWidgets('falls back to localized generic title shape', (tester) async {
-    final sound = SavedSound(
-      audio: AudioEvent(id: 'empty', pubkey: 'creator', createdAt: 1),
-      personalHashtags: const [],
-      catalogTags: const [],
-      waveformSamples: const [],
-    );
-
-    await tester.pumpWidget(_app(sound));
-
-    expect(find.text('Saved sound'), findsOneWidget);
-  });
-
-  testWidgets('semantic label includes display title and duration', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    await tester.pumpWidget(_app(_richSound()));
-
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Semantics &&
-            widget.properties.label == 'Morning inspiration, 0:06',
-      ),
-      findsOneWidget,
-    );
-
-    semantics.dispose();
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('preview edit and remove callbacks stay distinct', (
-    tester,
-  ) async {
-    var previews = 0;
-    var edits = 0;
-    var removes = 0;
-    await tester.pumpWidget(
-      _app(
-        _richSound(),
-        onPreview: () => previews++,
-        onEdit: () => edits++,
-        onRemove: () => removes++,
-      ),
-    );
-
-    await tester.tap(find.byKey(const Key('saved_sound_preview')));
-    await tester.tap(find.byKey(const Key('saved_sound_edit')));
-    await tester.tap(find.byKey(const Key('saved_sound_remove')));
-
-    expect((previews, edits, removes), (1, 1, 1));
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('preview button turns into pause while the sound plays', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app(_richSound()));
-    expect(_previewIcon(tester), DivineIconName.play);
-
-    await tester.pumpWidget(_app(_richSound(), isPlaying: true));
-    expect(_previewIcon(tester), DivineIconName.pause);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('waveform fills as the preview position advances', (
-    tester,
-  ) async {
-    final position = StreamController<double>();
-    addTearDown(position.close);
-
-    await tester.pumpWidget(_app(_richSound()));
-    expect(_waveformProgress(tester), 0);
-
-    await tester.pumpWidget(
-      _app(_richSound(), isPlaying: true, progress: position.stream),
-    );
-    position.add(0.42);
-    await tester.pumpAndSettle();
-
-    expect(_waveformProgress(tester), 0.42);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('waveform keeps its fill when remounted while paused', (
-    tester,
-  ) async {
-    final position = StreamController<double>.broadcast();
-    addTearDown(position.close);
-
-    await tester.pumpWidget(
-      _app(_richSound(), progress: position.stream, progressValue: 0.42),
-    );
-
-    // No new position events while paused — only the seeded value.
-    expect(_waveformProgress(tester), 0.42);
-
-    // Remount the same paused preview (list rebuild / scroll recycle).
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpWidget(
-      _app(_richSound(), progress: position.stream, progressValue: 0.42),
-    );
-    expect(_waveformProgress(tester), 0.42);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('preview button labels resume while paused mid-preview', (
-    tester,
-  ) async {
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    final position = StreamController<double>.broadcast();
-    addTearDown(position.close);
-
-    await tester.pumpWidget(_app(_richSound(), progress: position.stream));
-
-    expect(
-      tester
-          .widget<DivineIconButton>(
-            find.byKey(const Key('saved_sound_preview')),
-          )
-          .semanticLabel,
-      l10n.savedSoundResumePreviewAction,
-    );
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  for (final (name, theme) in [
-    ('dark', VineTheme.theme),
-    ('light', VineTheme.lightTheme),
-  ]) {
-    testWidgets('card text stays legible on the $name theme', (tester) async {
-      await tester.pumpWidget(_app(_richSound(), theme: theme));
-
-      final cardFill = find
-          .descendant(
-            of: find.byType(SavedSoundCard),
-            matching: find.byType(DecoratedBox),
-          )
-          .first;
-      final decoration =
-          tester.widget<DecoratedBox>(cardFill).decoration as BoxDecoration;
-
-      for (final label in [
-        'Morning inspiration',
-        'A tiny bird visits',
-        'Filmed outside before breakfast.',
-        'Listen to that little bird.',
-      ]) {
-        final color = tester.widget<Text>(find.text(label)).style!.color!;
-        expect(
-          contrastRatio(color, decoration.color!),
-          greaterThanOrEqualTo(4.5),
-          reason: '"$label" is unreadable on the card fill',
-        );
-      }
-
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     });
-  }
+
+    testWidgets('preview edit and remove callbacks stay distinct', (
+      tester,
+    ) async {
+      var previews = 0;
+      var edits = 0;
+      var removes = 0;
+      await tester.pumpWidget(
+        _app(
+          _richSound(),
+          onPreview: () => previews++,
+          onEdit: () => edits++,
+          onRemove: () => removes++,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('saved_sound_preview')));
+      await tester.tap(find.byKey(const Key('saved_sound_edit')));
+      await tester.tap(find.byKey(const Key('saved_sound_remove')));
+
+      expect((previews, edits, removes), (1, 1, 1));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('preview button turns into pause while the sound plays', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_app(_richSound()));
+      expect(_previewIcon(tester), DivineIconName.play);
+
+      await tester.pumpWidget(_app(_richSound(), isPlaying: true));
+      expect(_previewIcon(tester), DivineIconName.pause);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('waveform fills as the preview position advances', (
+      tester,
+    ) async {
+      final position = StreamController<double>();
+      addTearDown(position.close);
+
+      await tester.pumpWidget(_app(_richSound()));
+      expect(_waveformProgress(tester), 0);
+
+      await tester.pumpWidget(
+        _app(_richSound(), isPlaying: true, progress: position.stream),
+      );
+      position.add(0.42);
+      await tester.pumpAndSettle();
+
+      expect(_waveformProgress(tester), 0.42);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('waveform keeps its fill when remounted while paused', (
+      tester,
+    ) async {
+      final position = StreamController<double>.broadcast();
+      addTearDown(position.close);
+
+      await tester.pumpWidget(
+        _app(_richSound(), progress: position.stream, progressValue: 0.42),
+      );
+
+      // No new position events while paused — only the seeded value.
+      expect(_waveformProgress(tester), 0.42);
+
+      // Remount the same paused preview (list rebuild / scroll recycle).
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        _app(_richSound(), progress: position.stream, progressValue: 0.42),
+      );
+      expect(_waveformProgress(tester), 0.42);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('preview button labels resume while paused mid-preview', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final position = StreamController<double>.broadcast();
+      addTearDown(position.close);
+
+      await tester.pumpWidget(_app(_richSound(), progress: position.stream));
+
+      expect(
+        tester
+            .widget<DivineIconButton>(
+              find.byKey(const Key('saved_sound_preview')),
+            )
+            .semanticLabel,
+        l10n.savedSoundResumePreviewAction,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    for (final (name, theme) in [
+      ('dark', VineTheme.theme),
+      ('light', VineTheme.lightTheme),
+    ]) {
+      testWidgets('card text stays legible on the $name theme', (tester) async {
+        await tester.pumpWidget(_app(_richSound(), theme: theme));
+
+        final cardFill = find
+            .descendant(
+              of: find.byType(SavedSoundCard),
+              matching: find.byType(DecoratedBox),
+            )
+            .first;
+        final decoration =
+            tester.widget<DecoratedBox>(cardFill).decoration as BoxDecoration;
+
+        for (final label in [
+          'Morning inspiration',
+          'A tiny bird visits',
+          'Filmed outside before breakfast.',
+          'Listen to that little bird.',
+        ]) {
+          final color = tester.widget<Text>(find.text(label)).style!.color!;
+          expect(
+            contrastRatio(color, decoration.color!),
+            greaterThanOrEqualTo(4.5),
+            reason: '"$label" is unreadable on the card fill',
+          );
+        }
+
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+  });
 }

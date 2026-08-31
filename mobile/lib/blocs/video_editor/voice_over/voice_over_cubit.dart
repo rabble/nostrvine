@@ -10,6 +10,7 @@ import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
+import 'package:openvine/utils/draft_audio_path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
@@ -372,6 +373,6 @@ class VoiceOverCubit extends Cubit<VoiceOverState>
 
   static Future<Directory> _defaultStorageDirectory() async {
     final documents = await getApplicationDocumentsDirectory();
-    return Directory(p.join(documents.path, 'voice_over_recordings'));
+    return Directory(p.join(documents.path, voiceOverRecordingsDirName));
   }
 }

@@ -847,6 +847,23 @@ void main() {
       });
     });
 
+    group('dispose', () {
+      testWidgets('stops listening to a caller-owned controller', (
+        tester,
+      ) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(buildTestWidget(controller: controller));
+
+        // The caller keeps the controller; only the field leaves the tree.
+        await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+        controller.text = 'typed after the field was disposed';
+
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     testWidgets('renders a prefix affix inside the field', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

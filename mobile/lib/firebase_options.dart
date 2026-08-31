@@ -3,7 +3,7 @@
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kDebugMode, kIsWeb;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -22,9 +22,9 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return android;
+        return kDebugMode ? androidStaging : android;
       case TargetPlatform.iOS:
-        return ios;
+        return kDebugMode ? iosStaging : ios;
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
@@ -58,6 +58,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'openvine-co.firebasestorage.app',
   );
 
+  static const FirebaseOptions androidStaging = FirebaseOptions(
+    apiKey: 'AIzaSyBUMlaHAMKqeS62WG7w4PeqBPRLMDIZCdo',
+    appId: '1:972941478875:android:56ca239b8c04ca6044b5fe',
+    messagingSenderId: '972941478875',
+    projectId: 'openvine-co',
+    storageBucket: 'openvine-co.firebasestorage.app',
+  );
+
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyChiPGndRdZwsMoLqnel2WSocROmoKLdB4',
     appId: '1:972941478875:ios:f61272b3cf485df244b5fe',
@@ -65,6 +73,15 @@ class DefaultFirebaseOptions {
     projectId: 'openvine-co',
     storageBucket: 'openvine-co.firebasestorage.app',
     iosBundleId: 'co.openvine.app',
+  );
+
+  static const FirebaseOptions iosStaging = FirebaseOptions(
+    apiKey: 'AIzaSyChiPGndRdZwsMoLqnel2WSocROmoKLdB4',
+    appId: '1:972941478875:ios:2e044bbc68923a1844b5fe',
+    messagingSenderId: '972941478875',
+    projectId: 'openvine-co',
+    storageBucket: 'openvine-co.firebasestorage.app',
+    iosBundleId: 'co.openvine.app.staging',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

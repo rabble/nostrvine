@@ -74,6 +74,10 @@ class FakeWebSocketChannel implements WebSocketChannel {
   void simulateMessage(dynamic message) => _streamController.add(message);
 
   List<dynamic> get sentMessages => _sink.messages;
+
+  /// Whether the sink was closed — i.e. whether the socket this channel
+  /// stands for was actually shut down rather than left open.
+  bool get isClosed => _sink.closed;
 }
 
 class FakeWebSocketChannelFactory implements WebSocketChannelFactory {

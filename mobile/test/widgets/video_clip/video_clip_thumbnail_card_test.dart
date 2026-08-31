@@ -45,6 +45,7 @@ void main() {
       DivineVideoClip? clip,
       int selectionIndex = -1,
       bool disabled = false,
+      bool showArchivedBadge = false,
       VoidCallback? onTap,
     }) {
       return MaterialApp(
@@ -56,6 +57,7 @@ void main() {
             clip: clip ?? createClip(),
             selectionIndex: selectionIndex,
             disabled: disabled,
+            showArchivedBadge: showArchivedBadge,
             onTap: onTap ?? () {},
           ),
         ),
@@ -116,6 +118,45 @@ void main() {
 
         // A stop-motion recording reads as an image: no seconds badge.
         expect(find.text('3.00'), findsNothing);
+      });
+
+      testWidgets('archived badge only when the card is told to mark it', (
+        tester,
+      ) async {
+        Finder archivedBadge() => find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.stackSimple,
+        );
+
+        await tester.pumpWidget(buildWidget());
+        expect(archivedBadge(), findsNothing);
+
+        await tester.pumpWidget(buildWidget(showArchivedBadge: true));
+        expect(archivedBadge(), findsOneWidget);
+      });
+
+      testWidgets('archived and stop-motion badges sit side by side', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            clip: createClip(stopMotion: true, stopMotionFrameCount: 4),
+            showArchivedBadge: true,
+          ),
+        );
+
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.imagesSquare,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.stackSimple,
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
       });
 
       testWidgets('no stop-motion badge for a normal video clip', (
@@ -207,6 +248,24 @@ void main() {
         final semanticsData = semantics.getSemanticsData();
         expect(semanticsData.hasAction(SemanticsAction.tap), isTrue);
         expect(find.bySemanticsLabel('5.00'), findsNothing);
+      });
+
+      testWidgets('announces that a badged clip is archived', (tester) async {
+        await tester.pumpWidget(buildWidget(showArchivedBadge: true));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final semantics = tester.getSemantics(
+          find.byType(VideoClipThumbnailCard),
+        );
+
+        expect(
+          semantics.label,
+          equals(
+            l10n.videoClipArchivedSemanticLabel(
+              l10n.videoClipSemanticLabel('5.00'),
+            ),
+          ),
+        );
       });
 
       testWidgets('announces the selection position when selected', (

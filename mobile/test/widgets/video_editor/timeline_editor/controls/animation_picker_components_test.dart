@@ -31,8 +31,20 @@ void main() {
       );
     }
 
+    // Scoped to the chip rather than `find.byType(DecoratedBox).first`, which
+    // asserts on a tree shape this test does not control: anything the ambient
+    // route wraps around the app — a Cupertino page transition's
+    // `_CupertinoEdgeShadowDecoration`, for one — sorts ahead of the chip and
+    // fails the cast. The chip owns exactly one DecoratedBox, so name it.
     BoxDecoration decorationOf(WidgetTester tester) =>
-        tester.widget<DecoratedBox>(find.byType(DecoratedBox).first).decoration
+        tester
+                .widget<DecoratedBox>(
+                  find.descendant(
+                    of: find.byType(AnimationPickerChip),
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .decoration
             as BoxDecoration;
 
     testWidgets('marks the selected chip with a readable border in light '

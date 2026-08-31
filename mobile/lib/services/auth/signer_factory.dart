@@ -13,7 +13,6 @@ import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip07_service.dart';
 import 'package:openvine/services/nip07_signer_adapter.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Crash-reporting port for the signer core.
@@ -176,7 +175,7 @@ class SignerFactory {
         authSource == AuthenticationSource.divineOAuth) {
       Log.warning(
         '_buildIdentity: using pubkey-only Divine OAuth identity with no '
-        'signing capability. pubkey=$pubkey',
+        'signing capability. pubkey=${pubkeyForLogs(pubkey)}',
         name: 'SignerFactory',
         category: LogCategory.auth,
       );
@@ -237,7 +236,7 @@ class SignerFactory {
       Log.info(
         'Signing kind $kind via ${identity.runtimeType} '
         '(authSource=${authSource.name}, '
-        'eventPubkey=${event.pubkey})',
+        'eventPubkey=${pubkeyForLogs(event.pubkey)})',
         name: 'SignerFactory',
         category: LogCategory.auth,
       );
@@ -280,9 +279,9 @@ class SignerFactory {
           !await _verifyRemoteSignature(signedEvent)) {
         Log.error(
           'Event signature validation FAILED! '
-          'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
+          'kind=$kind, eventPubkey=${pubkeyForLogs(signedEvent.pubkey)}, '
           'authSource=${authSource.name}, '
-          'identityPubkey=${identity.pubkey}',
+          'identityPubkey=${pubkeyForLogs(identity.pubkey)}',
           name: 'SignerFactory',
           category: LogCategory.auth,
         );

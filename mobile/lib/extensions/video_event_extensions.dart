@@ -3,24 +3,12 @@
 // ABOUTME: detection (dart:io) that don't belong in the pure data model.
 
 import 'package:flutter/foundation.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-/// Get quality string based on bandwidth tracker recommendation (3-tier)
-String _getBandwidthBasedQuality() {
-  final tracker = bandwidthTracker;
-  switch (tracker.recommendedQuality) {
-    case VideoQuality.high:
-      return 'high';
-    case VideoQuality.medium:
-      return 'medium';
-    case VideoQuality.low:
-      return 'low';
-  }
-}
 
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
@@ -256,6 +244,20 @@ extension VideoEventAppExtensions on VideoEvent {
     return url;
   }
 
+  /// Ordered network sources to attempt in a preview player, best rendition
+  /// first.
+  ///
+  /// This is the feed's ladder, not a second one: [resolvePlaybackSources]
+  /// expands the platform pick into its canonical alternatives and withholds
+  /// the bare Divine blob, which answers a Range request with a cached
+  /// `NoSuchKey` body dressed up as a 206 (divine-blossom#198). Hand the result
+  /// to [setSourceWithFallbacks] — the HLS entry is a master playlist the
+  /// native player takes directly.
+  List<String> get previewPlaybackSources => resolvePlaybackSources(
+    this,
+    urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+  );
+
   /// HLS URL selected by bandwidth tracker quality.
   String? _hlsForBandwidth() {
     final hlsQuality = switch (bandwidthTracker.recommendedQuality) {
@@ -274,48 +276,6 @@ extension VideoEventAppExtensions on VideoEvent {
     // HLS can't be single-file cached; progressive formats can
     if (isFromDivineServer && videoFormatPreference.isHlsFormat) return null;
     return getOptimalVideoUrlForPlatform() ?? videoUrl;
-  }
-
-  /// Get fallback URL when the primary playback URL fails.
-  ///
-  /// For Divine MP4 quality variants, falls back to HLS (bandwidth-selected).
-  /// HLS is the proven reliable format and avoids the same-URL retry loop.
-  /// Returns null for non-Divine videos or when no fallback is available.
-  String? getFallbackUrl() {
-    if (!isFromDivineServer) return null;
-    return _hlsForBandwidth();
-  }
-
-  /// Get HLS fallback URL for Android codec errors.
-  ///
-  /// Called when original video fails with a codec error on Android.
-  /// HLS transcoding provides H.264 Baseline Profile which is universally
-  /// supported, unlike High Profile which some devices can't decode.
-  ///
-  /// Uses 3-tier bandwidth quality: high (720p HLS), medium (720p HLS),
-  /// low (480p HLS).
-  ///
-  /// Returns null if:
-  /// - Not on Android
-  /// - Video is not from Divine servers (no HLS available)
-  String? getHlsFallbackUrl() {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
-
-    final quality = _getBandwidthBasedQuality();
-    // Map 3-tier quality to HLS stream quality
-    // 'medium' maps to 'high' HLS since 720p is already the "medium" tier
-    final hlsQuality = quality == 'low' ? 'low' : 'high';
-    final hls = getHlsUrl(quality: hlsQuality);
-
-    if (hls != null) {
-      Log.debug(
-        '📱 Android: HLS fallback available ($quality -> $hlsQuality HLS): $hls',
-        name: 'VideoEventExtensions',
-        category: LogCategory.video,
-      );
-    }
-
-    return hls;
   }
 
   // ---------------------------------------------------------------------------

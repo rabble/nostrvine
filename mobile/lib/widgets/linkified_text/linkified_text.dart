@@ -41,7 +41,7 @@ class LinkifiedText extends ConsumerStatefulWidget {
 }
 
 class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
-  List<TextSpan> _currentSpans = const [];
+  List<InlineSpan> _currentSpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -211,10 +211,15 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
     );
   }
 
-  bool _hasClickableOrStylableToken(List<TextSpan> spans, TextStyle style) =>
-      spans.any((span) => span.recognizer != null || span.style != style);
+  /// A non-[TextSpan] — today a brand-green heart — cannot be painted by the
+  /// plain `Text` fast path, so its presence alone forces the rich path.
+  bool _hasClickableOrStylableToken(List<InlineSpan> spans, TextStyle style) =>
+      spans.any(
+        (span) =>
+            span is! TextSpan || span.recognizer != null || span.style != style,
+      );
 
-  void _replaceCurrentSpans(List<TextSpan> spans) {
+  void _replaceCurrentSpans(List<InlineSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
     LinkifiedTextSupport.disposeSpans(previousSpans);

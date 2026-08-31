@@ -23,6 +23,7 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,6 +111,7 @@ void main() {
     late _MockContentFilterService mockContentFilterService;
     late _MockVideoEventService mockVideoEventService;
     late DivineHostFilterService divineHostFilterService;
+    late VideoProvenanceFilterService provenanceFilterService;
     const blockedPubkey =
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     const labelerPubkey =
@@ -127,6 +129,7 @@ void main() {
       mockContentFilterService = _MockContentFilterService();
       mockVideoEventService = _MockVideoEventService();
       divineHostFilterService = DivineHostFilterService(prefs);
+      provenanceFilterService = VideoProvenanceFilterService(prefs);
 
       when(
         () => mockModerationLabelService.ensureLoaded(),
@@ -195,9 +198,20 @@ void main() {
           divineHostFilterServiceProvider.overrideWithValue(
             divineHostFilterService,
           ),
+          videoProvenanceFilterServiceProvider.overrideWithValue(
+            provenanceFilterService,
+          ),
           isProtectedMinorProvider.overrideWithValue(isProtectedMinor),
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(profiles[pubkey]),
+          ),
+          blockedUserProfileProvider.overrideWith(
+            (ref, pubkey) => Stream.value(profiles[pubkey]),
+          ),
+          blockedUserProfilesProvider.overrideWith(
+            (ref, pubkeys) async => {
+              for (final pubkey in pubkeys) pubkey: ?profiles[pubkey],
+            },
           ),
         ],
       );
@@ -252,6 +266,37 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(npub), findsOneWidget);
+    });
+
+    testWidgets('blocked users show their real name and nip05', (
+      tester,
+    ) async {
+      await mockBlocklistRepository.blockUser(blockedPubkey);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          profiles: {
+            blockedPubkey: UserProfile(
+              pubkey: blockedPubkey,
+              displayName: 'Loud Neighbour',
+              nip05: '_@loud.divine.video',
+              rawData: const {},
+              createdAt: DateTime.utc(2026),
+              eventId: 'blocked-profile-event',
+            ),
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Loud Neighbour'), 200);
+
+      expect(find.text('Loud Neighbour'), findsOneWidget);
+      expect(find.text('@loud'), findsOneWidget);
+      expect(
+        find.text(UserProfile.defaultDisplayNameFor(blockedPubkey)),
+        findsNothing,
+      );
     });
 
     testWidgets(

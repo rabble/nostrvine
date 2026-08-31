@@ -12,6 +12,10 @@ class Subscription {
   /// relays for this subscription.
   void Function()? onEose;
 
+  /// Callback invoked when every relay serving this subscription has ended
+  /// its REQ with a `CLOSED` frame.
+  void Function(String reason)? onClosed;
+
   /// [filters] parsed once at construction.
   ///
   /// [matchesEvent] runs on every inbound frame, and `Filter.fromJson` copies
@@ -24,9 +28,14 @@ class Subscription {
   /// Subscription ID
   String get id => _id;
 
-  Subscription(this.filters, this.onEvent, {String? id, this.onEose})
-    : _id = id ?? StringUtil.rndNameStr(16),
-      _parsedFilters = [for (final filter in filters) Filter.fromJson(filter)];
+  Subscription(
+    this.filters,
+    this.onEvent, {
+    String? id,
+    this.onEose,
+    this.onClosed,
+  }) : _id = id ?? StringUtil.rndNameStr(16),
+       _parsedFilters = [for (final filter in filters) Filter.fromJson(filter)];
 
   /// Whether [event] satisfies at least one filter in this subscription.
   ///

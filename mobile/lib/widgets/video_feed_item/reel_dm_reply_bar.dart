@@ -503,9 +503,13 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     );
   }
 
-  String get _composerHint => _ctx.isOwnMessage
-      ? context.l10n.dmReelReplyComposerHintSelf
-      : context.l10n.dmReelReplyComposerHint(_ctx.hintName);
+  String get _composerHint {
+    if (_ctx.isOwnMessage) return context.l10n.dmReelReplyComposerHintSelf;
+    if (_ctx.hintName.isEmpty) {
+      return context.l10n.dmReelReplyComposerSemanticLabel;
+    }
+    return context.l10n.dmReelReplyComposerHint(_ctx.hintName);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -805,7 +809,10 @@ class _ReactionEmojiButtonState extends State<_ReactionEmojiButton>
           child: Center(
             child: ScaleTransition(
               scale: _scale,
-              child: Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+              child: DivineHeartText(
+                widget.emoji,
+                style: const TextStyle(fontSize: 28),
+              ),
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/utils/draft_audio_path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -72,7 +73,7 @@ class LocalAudioImportService {
 
   static Future<Directory> _defaultStorageRoot() async {
     final docs = await getApplicationDocumentsDirectory();
-    return Directory(p.join(docs.path, 'draft_audio_imports'));
+    return Directory(p.join(docs.path, draftAudioImportsDirName));
   }
 
   static Future<Duration?> _defaultDurationResolver(File file) async {

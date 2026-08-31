@@ -6,11 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
+import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
@@ -32,9 +36,179 @@ class _NotReadyNostrSession extends NostrSession {
       const NostrSessionReadiness.identityKnown(pubkey: 'user-pubkey');
 }
 
+class _MockDeletionRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
+/// The `AsyncLoading` that retains the pre-auth `AsyncData(null)` — the state
+/// `currentAccountDeletionAttemptProvider` enters on its first refetch after
+/// auth settles. Built through a container so it uses only public Riverpod API
+/// (`AsyncValue.copyWithPrevious` is an internal member).
+Future<AsyncValue<AccountDeletionAttempt?>> _retainedNullRefetch() async {
+  var authenticated = false;
+  final lookup = FutureProvider<AccountDeletionAttempt?>((ref) {
+    if (!authenticated) return null;
+    return Completer<AccountDeletionAttempt?>().future;
+  });
+  final container = ProviderContainer();
+  addTearDown(container.dispose);
+  await container.read(lookup.future);
+  authenticated = true;
+  container.invalidate(lookup);
+  return container.read(lookup);
+}
+
+Future<AsyncValue<AccountDeletionAttempt?>> _retainedRecoveryError() async {
+  var shouldFail = false;
+  final lookup = FutureProvider<AccountDeletionAttempt?>((ref) async {
+    if (shouldFail) throw StateError('signer unavailable');
+    return const AccountDeletionAttempt(
+      id: 'attempt-id',
+      status: AccountDeletionAttemptStatus.recoverable,
+    );
+  }, retry: (_, _) => null);
+  final container = ProviderContainer();
+  addTearDown(container.dispose);
+  await container.read(lookup.future);
+  shouldFail = true;
+  container.invalidate(lookup);
+  await expectLater(container.read(lookup.future), throwsStateError);
+  return container.read(lookup);
+}
+
 void main() {
+  group('Account deletion recovery gate', () {
+    test('stays inactive while the attempt is loading', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncLoading<AccountDeletionAttempt?>(),
+        ),
+        isFalse,
+      );
+    });
+
+    test('fails open when the coordinator lookup errors', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          AsyncError<AccountDeletionAttempt?>(
+            StateError('coordinator unavailable'),
+            StackTrace.empty,
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('retains a confirmed recovery gate when a refresh errors', () async {
+      expect(
+        accountDeletionRecoveryGateActive(await _retainedRecoveryError()),
+        isTrue,
+      );
+    });
+
+    test('stays inactive when a ready lookup finds no attempt', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'reports any in-flight lookup as pending, retained value included',
+      () async {
+        expect(
+          accountDeletionRecoveryLookupPending(
+            const AsyncLoading<AccountDeletionAttempt?>(),
+          ),
+          isTrue,
+        );
+        // The first post-auth refetch retains the pre-auth AsyncData(null), so
+        // it is isLoading while hasValue is true. It must still count as
+        // pending, or the splash releases against the stale null before the
+        // real attempt is known (#8058).
+        expect(
+          accountDeletionRecoveryLookupPending(await _retainedNullRefetch()),
+          isTrue,
+        );
+        expect(
+          accountDeletionRecoveryLookupPending(
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isFalse,
+        );
+        expect(
+          accountDeletionRecoveryLookupPending(
+            AsyncError<AccountDeletionAttempt?>(
+              StateError('coordinator unavailable'),
+              StackTrace.empty,
+            ),
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'settles only a terminal lookup for an authenticated session',
+      () async {
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.checking,
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isFalse,
+        );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            const AsyncLoading<AccountDeletionAttempt?>(),
+          ),
+          isFalse,
+        );
+        // The post-auth refetch that retains the pre-auth null must not settle,
+        // or the splash releases against the stale null and a recovery user
+        // briefly sees the feed (#8058: stay fail-closed until the lookup
+        // resolves).
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            await _retainedNullRefetch(),
+          ),
+          isFalse,
+        );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isTrue,
+        );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            AsyncError<AccountDeletionAttempt?>(
+              StateError('signer unavailable'),
+              StackTrace.empty,
+            ),
+          ),
+          isTrue,
+        );
+      },
+    );
+  });
+
   group('Minor account review router gating', () {
     late MockAuthService mockAuthService;
+
+    List<dynamic> routerOverrides({
+      AccountDeletionAttempt? deletionAttempt,
+    }) => [
+      ...getStandardTestOverrides(mockAuthService: mockAuthService),
+      currentAccountDeletionAttemptProvider.overrideWith(
+        (_) async => deletionAttempt,
+      ),
+    ];
 
     setUp(() {
       resetNavigationState();
@@ -42,6 +216,9 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn('user-pubkey');
+      when(
+        () => mockAuthService.signerReadiness,
+      ).thenReturn(SignerReadiness.ready);
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
@@ -51,6 +228,7 @@ void main() {
       WidgetTester tester,
       ProviderContainer container, {
       bool activateRouteNormalizer = false,
+      bool settle = true,
     }) async {
       if (activateRouteNormalizer) {
         container.read(routeNormalizationProvider);
@@ -65,7 +243,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        await tester.pump();
+      }
     }
 
     void registerContainerTearDown(
@@ -109,7 +291,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -130,10 +312,82 @@ void main() {
       );
     });
 
+    testWidgets(
+      'interrupted deletion takes precedence over normal app routes',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...routerOverrides(
+              deletionAttempt: const AccountDeletionAttempt(
+                id: 'attempt-id',
+                status: AccountDeletionAttemptStatus.recoverable,
+                username: 'alice',
+              ),
+            ),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (_) async => MinorAccountReviewStatus.active(),
+            ),
+            accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+              _MockDeletionRepository(),
+            ),
+          ],
+        );
+        registerContainerTearDown(tester, container);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await container.read(currentAccountDeletionAttemptProvider.future);
+        await pumpRouter(tester, container, settle: false);
+
+        final router = container.read(goRouterProvider);
+        router.go(VideoFeedPage.pathForIndex(0));
+        await tester.pump();
+
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          AccountDeletionRecoveryScreen.path,
+        );
+      },
+    );
+
+    testWidgets('terminal deletion failure still allows support', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...routerOverrides(
+            deletionAttempt: const AccountDeletionAttempt(
+              id: 'attempt-id',
+              status: AccountDeletionAttemptStatus.terminalFailure,
+            ),
+          ),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (_) async => MinorAccountReviewStatus.active(),
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            _MockDeletionRepository(),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await container.read(currentAccountDeletionAttemptProvider.future);
+      await pumpRouter(tester, container, settle: false);
+
+      final router = container.read(goRouterProvider);
+      router.go(SupportCenterScreen.path);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        SupportCenterScreen.path,
+      );
+    });
+
     testWidgets('allows parent contact route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -159,7 +413,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -189,7 +443,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -216,7 +470,7 @@ void main() {
     testWidgets('allows support center route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           bugReportServiceProvider.overrideWith((ref) => BugReportService()),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
@@ -243,7 +497,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -273,7 +527,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -307,7 +561,7 @@ void main() {
       final allowedConversationId = ConversationPage.pathForId('mod-conv-123');
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
@@ -333,7 +587,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
@@ -361,7 +615,7 @@ void main() {
       final completer = Completer<MinorAccountReviewStatus>();
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) => completer.future,
@@ -398,7 +652,7 @@ void main() {
         final pendingRefetch = Completer<MinorAccountReviewStatus>();
         final container = ProviderContainer(
           overrides: [
-            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            ...routerOverrides(),
             bugReportServiceProvider.overrideWith((ref) => BugReportService()),
             nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
             currentMinorAccountReviewStatusProvider.overrideWith((ref) {
@@ -451,63 +705,62 @@ void main() {
       },
     );
 
-    testWidgets(
-      'keeps restricted routing during a background refetch',
-      (tester) async {
-        var loadCount = 0;
-        final pendingRefetch = Completer<MinorAccountReviewStatus>();
-        final container = ProviderContainer(
-          overrides: [
-            ...getStandardTestOverrides(mockAuthService: mockAuthService),
-            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
-            currentMinorAccountReviewStatusProvider.overrideWith((ref) {
-              loadCount++;
-              return loadCount == 1
-                  ? Future<MinorAccountReviewStatus>.value(restrictedStatus())
-                  : pendingRefetch.future;
-            }),
-          ],
-        );
-        registerContainerTearDown(tester, container);
-        await container.read(currentMinorAccountReviewStatusProvider.future);
-        await pumpRouter(tester, container);
+    testWidgets('keeps restricted routing during a background refetch', (
+      tester,
+    ) async {
+      var loadCount = 0;
+      final pendingRefetch = Completer<MinorAccountReviewStatus>();
+      final container = ProviderContainer(
+        overrides: [
+          ...routerOverrides(),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith((ref) {
+            loadCount++;
+            return loadCount == 1
+                ? Future<MinorAccountReviewStatus>.value(restrictedStatus())
+                : pendingRefetch.future;
+          }),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
 
-        final router = container.read(goRouterProvider);
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          MinorAccountReviewScreen.path,
-        );
+      final router = container.read(goRouterProvider);
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
 
-        container.invalidate(currentMinorAccountReviewStatusProvider);
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          MinorAccountReviewScreen.path,
-        );
-        expect(
-          container.read(currentMinorAccountReviewStatusProvider).isLoading,
-          isTrue,
-        );
-        expect(
-          container.read(currentMinorAccountReviewStatusProvider).hasValue,
-          isTrue,
-        );
+      container.invalidate(currentMinorAccountReviewStatusProvider);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
+      expect(
+        container.read(currentMinorAccountReviewStatusProvider).isLoading,
+        isTrue,
+      );
+      expect(
+        container.read(currentMinorAccountReviewStatusProvider).hasValue,
+        isTrue,
+      );
 
-        router.go(MinorAccountReviewScreen.path);
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          MinorAccountReviewScreen.path,
-        );
+      router.go(MinorAccountReviewScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
 
-        router.go(VideoFeedPage.pathForIndex(0));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          MinorAccountReviewScreen.path,
-        );
-      },
-    );
+      router.go(VideoFeedPage.pathForIndex(0));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
+    });
 
     test(
       'returns authenticated users from welcome review loading to home when active',

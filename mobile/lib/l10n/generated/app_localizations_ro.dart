@@ -159,12 +159,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsNotifications => 'Notificări';
 
   @override
-  String get settingsContentPreferences => 'Preferințe de conținut';
-
-  @override
-  String get settingsModerationControls => 'Controale de moderare';
-
-  @override
   String get settingsBlueskyPublishing => 'Publicare pe Bluesky';
 
   @override
@@ -226,7 +220,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Invitații';
+  String get settingsShareDivine => 'Distribuie Divine prietenilor tăi';
 
   @override
   String get settingsSwitchAccount => 'Schimbă contul';
@@ -406,6 +400,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când e activat, alții pot folosi audio din videoclipurile tale';
 
   @override
+  String get contentPreferencesMusicMode => 'Mod muzică';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Dezactivează reducerea zgomotului care turtește instrumentele. Mai bine pentru muzică, mai aspru pentru voci.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Etichete de cont';
 
   @override
@@ -490,18 +491,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Nu am putut partaja profilul: $error';
-  }
-
-  @override
-  String get profileEditProfile => 'Editează profilul';
-
-  @override
-  String get profileCreatorAnalytics => 'Statistici creator';
-
-  @override
-  String get profileShareProfile => 'Partajează profilul';
+  String get profileShareFailed =>
+      'Nu am putut partaja profilul. Încearcă din nou.';
 
   @override
   String get profileCopyPublicKey => 'Copiază cheia publică (npub)';
@@ -514,12 +505,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'Codul de încorporare a fost copiat';
-
-  @override
-  String get profileRefreshTooltip => 'Reîncarcă';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Reîncarcă profilul';
 
   @override
   String get profileMoreTooltip => 'Mai multe';
@@ -722,20 +707,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Utilizator blocat';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Nu vei mai vedea conținut de la acest utilizator în feedurile tale.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Îl poți debloca oricând din profilul lui sau din Setări > Siguranță.';
-
-  @override
-  String get profileCloseButton => 'Închide';
-
-  @override
   String get profileNoCollabsTitle => 'Încă nicio colaborare';
 
   @override
@@ -850,24 +821,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă numele, bio și poza ca să începi';
 
   @override
-  String get profileSetUpButton => 'Configurează';
-
-  @override
-  String get profileVerifyingEmail => 'Se verifică emailul...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Verifică $email pentru linkul de confirmare';
-  }
-
-  @override
-  String get profileWaitingForVerification =>
-      'Se așteaptă verificarea emailului';
-
-  @override
-  String get profileVerificationFailed => 'Verificare eșuată';
-
-  @override
   String get profilePleaseTryAgain => 'Încearcă din nou';
 
   @override
@@ -879,9 +832,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Reîncearcă';
-
-  @override
-  String get profileRegisterButton => 'Înscrie-te';
 
   @override
   String get profileSessionExpired => 'Sesiune expirată';
@@ -918,14 +868,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileDeletedAccountName => 'Cont șters';
 
   @override
+  String get inboxActionReportVanishedAccount => 'Raportează acest cont';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Blochează acest cont';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Deblochează acest cont';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Acest cont a fost raportat';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Acest cont a fost blocat';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Acest cont a fost deblocat';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Astfel, conversația este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Acest cont a fost șters';
 
   @override
   String get profileUserFallback => 'utilizator';
-
-  @override
-  String get profileDismissTooltip => 'Respinge';
 
   @override
   String get profileLinkCopied => 'Linkul profilului a fost copiat';
@@ -985,9 +954,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut accesa rețeaua. Verifică conexiunea și încearcă din nou.';
 
   @override
-  String get profileSetupRetryLabel => 'Încearcă din nou';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Nume afișat';
 
   @override
@@ -1006,10 +972,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Nume de utilizator (opțional)';
 
   @override
-  String get profileSetupUsernameHelper => 'Identitatea ta unică pe Divine';
-
-  @override
-  String get profileSetupProfileColorLabel => 'Culoarea profilului (opțional)';
+  String get profileSetupUsernameHelper =>
+      'Folosește litere, cifre sau cratime. Numele tău devine o adresă divine.video. Folosește numele afișat pentru spații sau simboluri.';
 
   @override
   String get profileSetupSaveButton => 'Salvează';
@@ -1021,10 +985,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupImageUrlTitle => 'Adaugă URL de imagine';
 
   @override
-  String get profileSetupPictureUploaded =>
-      'Poză de profil încărcată cu succes!';
-
-  @override
   String get profileSetupImageSelectionFailed =>
       'Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.';
 
@@ -1032,9 +992,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imagini';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Accesul la cameră a eșuat: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Accesul la cameră este dezactivat. Activează-l din Setări ca să faci o poză.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Accesul la cameră nu este permis pe acest dispozitiv.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Selectorul este deja deschis. Închide-l și încearcă din nou.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'N-am putut deschide camera. Încearcă din nou.';
 
   @override
   String get profileSetupGotItButton => 'Am înțeles';
@@ -1058,10 +1029,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.';
 
   @override
   String get profileSetupBannerClearButton => 'Șterge bannerul';
@@ -1144,6 +1111,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sunt permise doar litere, cifre și cratime';
 
   @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Numele nu poate începe sau termina cu o cratimă';
+
+  @override
   String get profileSetupUsernameInvalidLength =>
       'Numele trebuie să aibă 3-63 de caractere';
 
@@ -1185,12 +1156,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileSetupSendRequest => 'Trimite cererea';
-
-  @override
-  String get profileSetupPickColorTitle => 'Alege o culoare';
-
-  @override
-  String get profileSetupSelectButton => 'Selectează';
 
   @override
   String get profileSetupUseOwnNip05 => 'Folosește propria ta adresă NIP-05';
@@ -1244,7 +1209,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Previzualizare poză de profil';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine e construit pe Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine e construit pe Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -1292,9 +1257,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get nostrInfoGotIt => 'Am înțeles!';
 
   @override
-  String get profileTabRefreshTooltip => 'Reîncarcă';
-
-  @override
   String get videoGridRefreshLabel => 'Se caută mai multe videoclipuri';
 
   @override
@@ -1316,11 +1278,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Se șterge conținutul...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Recomandate';
@@ -1347,8 +1304,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Aplicații integrate';
 
   @override
-  String exploreFeaturedPaidPartnership(String sponsor) {
-    return 'In paid partnership with $sponsor';
+  String exploreFeaturedSponsoredBy(String sponsor) {
+    return 'Sponsored by $sponsor';
   }
 
   @override
@@ -1367,11 +1324,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get exploreNoVideosAvailable => 'Niciun videoclip disponibil';
-
-  @override
-  String exploreErrorPrefix(Object error) {
-    return 'Eroare: $error';
-  }
 
   @override
   String get exploreDiscoverLists => 'Descoperă liste';
@@ -1404,9 +1356,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreSubscribedLists => 'Liste la care ești abonat';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Eroare la încărcarea listelor: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Eroare la încărcarea listelor. Încearcă din nou.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -1431,9 +1382,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Se încarcă videoclipul...';
-
-  @override
   String get videoPlayerPlayVideo => 'Redă videoclipul';
 
   @override
@@ -1441,12 +1389,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Activează sunetul videoclipului';
-
-  @override
-  String get videoPlayerEditVideo => 'Editează videoclipul';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Editează videoclipul';
 
   @override
   String get videoPlayerTapHint =>
@@ -1664,19 +1606,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoErrorNotFound => 'Videoclipul n-a fost găsit';
 
   @override
-  String get videoErrorNetwork => 'Eroare de rețea';
-
-  @override
-  String get videoErrorTimeout => 'Timpul de încărcare a expirat';
-
-  @override
-  String get videoErrorFormat =>
-      'Eroare de format video\n(Încearcă din nou sau folosește alt browser)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Format video nesuportat';
-
-  @override
   String get videoErrorPlayback => 'Eroare de redare video';
 
   @override
@@ -1688,9 +1617,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoErrorUnavailableBody =>
       'Acest videoclip nu este disponibil acum.';
-
-  @override
-  String get videoErrorVerifyAge => 'Verifică vârsta';
 
   @override
   String get videoErrorRetry => 'Reîncearcă';
@@ -1758,9 +1684,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Închide playerul video';
-
-  @override
-  String get videoFollowButtonFollowing => 'Urmărit';
 
   @override
   String get videoFollowButtonFollow => 'Urmărește';
@@ -1950,12 +1873,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionMoreOptions => 'Mai multe opțiuni';
 
   @override
-  String get videoActionHideSubtitles => 'Ascunde subtitrările';
-
-  @override
-  String get videoActionShowSubtitles => 'Arată subtitrările';
-
-  @override
   String get videoEngagementLikersTitle => 'Apreciat de';
 
   @override
@@ -1993,11 +1910,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Nu am putut publica comentariul';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count bucle';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2155,6 +2067,81 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modul dezvoltator a fost dezactivat';
 
   @override
+  String get devOptionsShorebirdTitle => 'Patch-uri Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Patch activ';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Niciun patch instalat';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'Indisponibil în această versiune';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patch-urile funcționează doar într-o versiune creată cu shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Se citește starea patch-ului…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Canalul de testare nu a fost verificat încă.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Verifică canalul de testare';
+
+  @override
+  String get devOptionsShorebirdApply => 'Aplică patch-ul de testare';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Revino la actualizările stabile';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Se verifică canalul de testare…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Un patch de testare este gata de aplicat.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Niciun patch de testare pentru această versiune.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Descărcat. Repornește aplicația pentru a-l încărca.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'O revenire este pregătită. Repornește pentru a reveni la versiunea de bază.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Se descarcă și se instalează…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Instalat. Repornește aplicația pentru a-l încărca.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nu s-a instalat nimic. Verifică canalul de testare și încearcă din nou.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Se selectează canalul stabil…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Canal stabil selectat. Repornește aplicația pentru a verifica dacă există un patch stabil.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Nu a funcționat. Verifică jurnalele pentru detalii.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Timpi de încărcare a paginilor';
 
   @override
@@ -2285,11 +2272,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Cereri eșuate';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Ultima eroare: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo =>
@@ -2515,12 +2497,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Eliminarea cheilor a eșuat: $error';
-  }
+      'N-am putut elimina acest cont de pe acest dispozitiv. Încearcă din nou.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Șterge contul și datele';
@@ -2693,9 +2670,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Interogarea a eșuat: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Interogarea a eșuat. Încearcă din nou.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2714,9 +2690,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'N-am putut conecta la niciun relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Reîncercarea conexiunii a eșuat: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Reîncercarea conexiunii a eșuat. Încearcă din nou.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -2785,35 +2760,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva pe care îl urmărești postează';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Actualizări ale aplicației și mesaje de sistem';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Notificări push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Notificări push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Primește notificări și când aplicația e închisă';
-
-  @override
-  String get notificationSettingsSound => 'Sunet';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'Redă sunet la notificări';
-
-  @override
-  String get notificationSettingsVibration => 'Vibrații';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Vibrează la notificări';
-
-  @override
   String get notificationSettingsActions => 'Acțiuni';
 
   @override
@@ -2841,12 +2787,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Notificările sunt alimentate de protocolul Nostr. Actualizările în timp real depind de conexiunea ta la relay-urile Nostr. Unele notificări pot avea întârzieri.';
-
-  @override
-  String get safetySettingsTitle => 'Siguranță și confidențialitate';
-
-  @override
-  String get safetySettingsLabel => 'SETĂRI';
 
   @override
   String get safetySettingsWhatYouSee => 'CE VEZI';
@@ -3618,30 +3558,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înscriere finalizată. Verifică-ți emailul.';
 
   @override
-  String get authVerificationFailedTitle => 'Verificare eșuată';
-
-  @override
-  String get authClose => 'Închide';
-
-  @override
-  String get authAccountSecured => 'Cont securizat!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Contul tău e acum legat de emailul tău.';
-
-  @override
-  String get authVerifyYourEmail => 'Verifică-ți emailul';
-
-  @override
-  String get authClickLinkContinue =>
-      'Apasă linkul din email ca să finalizezi înregistrarea. Poți continua să folosești aplicația între timp.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Se așteaptă verificarea...';
-
-  @override
-  String get authContinueToApp => 'Continuă în aplicație';
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
 
   @override
   String get authFailedToSendResetEmail =>
@@ -3700,6 +3618,33 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get authVerificationErrorPinUnavailable =>
       'Introducerea codului nu e disponibilă acum. Apasă linkul din email sau retrimite pentru a primi unul nou.';
+
+  @override
+  String get authInviteCodeErrorMalformed =>
+      'Introdu un cod de invitație de forma ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'Codul de invitație nu pare valid.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Codul de invitație a fost deja folosit sau revocat.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Invitațiile acestui creator s-au epuizat';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Codul de invitație nu este disponibil. Înscrie-te pe lista de așteptare și îți trimitem o invitație când se eliberează un loc.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Nu am putut verifica acest cod. Încearcă din nou.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Ceva nu a mers bine. Încearcă din nou codul de invitație.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3767,9 +3712,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Partajează prin';
-
-  @override
-  String get shareSheetReport => 'Raportează';
 
   @override
   String get shareSheetEventJson => 'JSON eveniment';
@@ -3904,147 +3846,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se salvează videoclipul cu filigran în galeria ta...';
 
   @override
-  String get uploadProgressVideoUpload => 'Încărcare videoclip';
-
-  @override
-  String get uploadProgressPause => 'Pauză';
-
-  @override
-  String get uploadProgressResume => 'Reia';
-
-  @override
-  String get uploadProgressGoBack => 'Înapoi';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Reîncearcă ($count rămase)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Șterge';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return 'acum ${count}z';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return 'acum ${count}h';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return 'acum ${count}m';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Chiar acum';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Se încarcă $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Pauză la $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'Partajează videoclipul';
-
-  @override
-  String get shareMenuReportAiContent => 'Raportează conținut AI';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Raportează rapid conținut suspect de a fi generat de AI';
-
-  @override
-  String get shareMenuReportingAiContent => 'Se raportează conținutul AI...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'N-am putut raporta conținutul: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'N-am putut raporta conținutul AI: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Stare videoclip';
-
-  @override
-  String get shareMenuViewAllLists => 'Vezi toate listele →';
-
-  @override
-  String get shareMenuShareWith => 'Partajează cu';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Partajează prin alte aplicații';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Partajează prin alte aplicații sau copiază linkul';
-
-  @override
-  String get shareMenuSaveToGallery => 'Salvează în galerie';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle =>
-      'Salvează videoclipul original în galerie';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Salvează cu filigran';
-
-  @override
-  String get shareMenuSaveVideo => 'Salvează videoclipul';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'Descarcă cu filigran Divine';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Salvează videoclipul în galerie';
-
-  @override
-  String get shareMenuLists => 'Liste';
-
-  @override
-  String get shareMenuAddToList => 'Adaugă la listă';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'Adaugă la listele tale curate';
-
-  @override
-  String get shareMenuCreateNewList => 'Creează o listă nouă';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => 'Începe o nouă colecție curată';
-
-  @override
-  String get shareMenuRemovedFromList => 'Eliminat din listă';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => 'N-am putut elimina din listă';
-
-  @override
   String get shareMenuBookmarks => 'Semne de carte';
-
-  @override
-  String get shareMenuFollowSets => 'Seturi de urmărire';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Creează un set de urmărire';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Începe o colecție nouă cu acest creator';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Adaugă la setul de urmărire';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -4060,10 +3862,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Adaugă la listă';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Pune acest creator în una dintre listele tale';
 
   @override
   String get peopleListsSheetTitle => 'Adaugă la listă';
@@ -4213,32 +4011,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Adăugat la semnele de carte!';
-
-  @override
-  String get shareMenuFailedToAddBookmark =>
-      'N-am putut adăuga semnul de carte';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Lista \"$name\" creată și videoclipul adăugat';
-  }
-
-  @override
-  String get shareMenuManageContent => 'Gestionează conținutul';
-
-  @override
   String get shareMenuEditVideo => 'Editează videoclipul';
 
   @override
-  String get shareMenuEditVideoSubtitle =>
-      'Actualizează titlul, descrierea și hashtagurile';
-
-  @override
   String get shareMenuDeleteVideo => 'Șterge videoclipul';
-
-  @override
-  String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
 
   @override
   String shareMenuVideoCount(int count) {
@@ -4253,9 +4029,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get shareMenuClose => 'Închide';
-
-  @override
   String get shareMenuDeleteConfirmation =>
       'Asta va șterge definitiv acest videoclip din Divine. Poate apărea în continuare în clienți Nostr terți care folosesc alte relay-uri.';
 
@@ -4264,14 +4037,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Șterge';
-
-  @override
-  String get shareMenuDeletingContent => 'Se șterge conținutul...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4294,6 +4059,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Releul nu a acceptat această cerere de ștergere. Încearcă din nou în scurt timp.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Nu am putut contacta releul. Verifică conexiunea și încearcă din nou.';
 
@@ -4306,60 +4075,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut șterge acest videoclip. Încearcă din nou.';
 
   @override
-  String get shareMenuFollowSetName => 'Numele setului de urmărire';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'ex. Creatori de conținut, Muzicieni etc.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Descriere (opțional)';
-
-  @override
-  String get shareMenuCreate => 'Creează';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Set de urmărire \"$name\" creat și creatorul adăugat';
-  }
-
-  @override
-  String get shareMenuDone => 'Gata';
-
-  @override
-  String get shareMenuEditTitle => 'Titlu';
-
-  @override
-  String get shareMenuEditTitleHint => 'Introdu titlul videoclipului';
-
-  @override
-  String get shareMenuEditDescription => 'Descriere';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Introdu descrierea videoclipului';
-
-  @override
-  String get shareMenuEditHashtags => 'Hashtaguri';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'hashtaguri, separate, prin virgulă';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Notă: Doar metadatele pot fi editate. Conținutul video nu poate fi schimbat.';
-
-  @override
-  String get shareMenuDeleting => 'Se șterge...';
-
-  @override
   String get shareMenuUpdate => 'Actualizează';
 
   @override
   String get shareMenuChangeCover => 'Schimbă coperta';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Miniatura se încarcă în fundal';
 
   @override
   String get shareMenuVideoUpdated => 'Videoclip actualizat cu succes';
@@ -4376,62 +4095,45 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'N-am putut actualiza videoclipul: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Conectează-te din nou, apoi încearcă iar.';
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'N-am putut șterge videoclipul: $error';
-  }
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Acest videoclip nu are o sursă redabilă, așa că nu poate fi editat.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'N-am putut semna modificarea. Încearcă din nou.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Releul nu a acceptat modificarea. Încearcă din nou în scurt timp.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'N-am putut actualiza acest videoclip. Încearcă din nou.';
+
+  @override
+  String get shareMenuOriginalVideoUnavailable =>
+      'Couldn\'t load the original video. Try again in a moment.';
 
   @override
   String get shareMenuDeleteVideoQuestion => 'Ștergi videoclipul?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Videoclip șters';
+  String get shareMenuDeleteCleanupInProgress => 'Se elimină videoclipul…';
 
   @override
-  String get shareMenuContentLabels => 'Etichete de conținut';
+  String get shareMenuDeleteCleanupConfirmed => 'Videoclip șters.';
 
   @override
-  String get shareMenuAddContentLabels => 'Adaugă etichete de conținut';
+  String get shareMenuDeleteCleanupDelayed =>
+      'Videoclip eliminat. Poate dura puțin până dispare de peste tot.';
 
   @override
-  String get shareMenuClearAll => 'Șterge tot';
-
-  @override
-  String get shareMenuCollaborators => 'Colaboratori';
-
-  @override
-  String get shareMenuAddCollaborator => 'Adaugă colaborator';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Trebuie să te urmărești reciproc cu $name ca să-l adaugi drept colaborator.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Se încarcă...';
-
-  @override
-  String get shareMenuInspiredBy => 'Inspirat de';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Adaugă credit pentru inspirație';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Acest creator nu poate fi referit.';
-
-  @override
-  String get shareMenuUnknown => 'Necunoscut';
-
-  @override
-  String get shareMenuUseThisSound => 'Folosește acest sunet';
-
-  @override
-  String get shareMenuOriginalSound => 'Sunet original';
+  String get shareMenuDeleteCleanupFailed =>
+      'Videoclip eliminat, dar nu am putut șterge fiecare copie. Contactează asistența.';
 
   @override
   String get authSessionExpired =>
@@ -4445,27 +4147,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authSignInFailed => 'N-am putut autentifica. Încearcă din nou.';
 
   @override
-  String get localeAppLanguage => 'Limba aplicației';
-
-  @override
-  String get localeDeviceDefault => 'Implicit dispozitiv';
-
-  @override
-  String get localeSelectLanguage => 'Alege limba';
-
-  @override
   String get webAuthNotSupportedSecureMode =>
       'Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrarea de autentificare a eșuat: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Eroare neașteptată: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Introdu un URI bunker';
@@ -4513,32 +4196,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsSearchHint => 'Caută sunete...';
 
   @override
-  String get soundsPreviewUnavailable =>
-      'Nu pot previzualiza sunetul - niciun audio disponibil';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'N-am putut reda previzualizarea: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Sunete recomandate';
-
-  @override
-  String get soundsTrendingSounds => 'Sunete în trend';
-
-  @override
-  String get soundsAllSounds => 'Toate sunetele';
-
-  @override
   String get soundsSearchResults => 'Rezultatele căutării';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Niciun sunet disponibil';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Sunetele vor apărea aici când creatorii distribuie audio';
 
   @override
   String get soundsNoSoundsFound => 'Niciun sunet găsit';
@@ -4561,12 +4219,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Atinge Folosește sunetul pe un videoclip pentru a-l salva aici.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Privat';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Comunitate';
 
   @override
   String get soundsRemoveSavedSound => 'Elimină sunetul';
@@ -4616,22 +4268,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu putem debloca biblioteca ta sincronizată pe acest dispozitiv.';
 
   @override
-  String get soundsFailedToLoad => 'N-am putut încărca sunetele';
-
-  @override
-  String get soundsRetry => 'Reîncearcă';
-
-  @override
-  String get soundsScreenLabel => 'Ecranul sunetelor';
-
-  @override
   String get profileTitle => 'Profil';
-
-  @override
-  String get profileRefresh => 'Reîncarcă';
-
-  @override
-  String get profileRefreshLabel => 'Reîncarcă profilul';
 
   @override
   String get profileMoreOptions => 'Mai multe opțiuni';
@@ -4649,11 +4286,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return 'Nu-l mai urmărești pe $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Eroare: $error';
   }
 
   @override
@@ -4690,21 +4322,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Actualizare eșuată — se afișează ce există';
 
   @override
-  String get notificationsCheckingNew => 'se verifică notificări noi';
-
-  @override
-  String get notificationsNoneYet => 'Încă nicio notificare';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Nicio notificare de tip $type';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Când oamenii interacționează cu conținutul tău, vei vedea asta aici';
-
-  @override
   String get notificationsUnreadPrefix => 'Notificare necitită';
 
   @override
@@ -4736,11 +4353,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Miniatură video';
 
   @override
-  String notificationsLoadingType(String type) {
-    return 'Se încarcă notificările de tip $type...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Ai 1 invitație de împărțit cu un prieten!';
 
@@ -4757,13 +4369,33 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Videoclipul n-a fost găsit';
+  String notificationsTabBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Badges ($count)',
+      zero: 'Badges',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsPendingBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count badges are waiting for you to accept them',
+      one: 'A badge is waiting for you to accept it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsBadgesEmpty =>
+      'No badges waiting. When someone awards you one, it lands here.';
 
   @override
   String get notificationsVideoUnavailable => 'Videoclip indisponibil';
-
-  @override
-  String get notificationsFromNotification => 'Din notificare';
 
   @override
   String get feedFailedToLoadVideos => 'N-am putut încărca videoclipurile';
@@ -4819,63 +4451,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get feedExploreVideos => 'Explorează videoclipuri';
 
   @override
-  String get feedExternalVideoSlow => 'Videoclipul extern se încarcă încet';
-
-  @override
-  String get feedSkip => 'Sari peste';
-
-  @override
   String get feedLoadingMore => 'Se încarcă mai multe videoclipuri…';
 
   @override
   String get feedRefreshed => 'Feedul a fost reîncărcat';
 
   @override
-  String get uploadWaitingToUpload => 'Se așteaptă încărcarea';
-
-  @override
   String get uploadUploadingVideo => 'Se încarcă videoclipul';
-
-  @override
-  String get uploadProcessingVideo => 'Se procesează videoclipul';
-
-  @override
-  String get uploadProcessingComplete => 'Procesare finalizată';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Publicat cu succes';
-
-  @override
-  String get uploadFailed => 'Încărcare eșuată';
-
-  @override
-  String get uploadRetrying => 'Se reîncearcă încărcarea';
-
-  @override
-  String get uploadPaused => 'Încărcare în pauză';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% finalizat';
-  }
-
-  @override
-  String get uploadQueuedMessage =>
-      'Videoclipul tău e în așteptare pentru încărcare';
-
-  @override
-  String get uploadUploadingMessage => 'Se încarcă pe server...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Se procesează videoclipul - poate dura câteva minute';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Videoclip procesat cu succes și gata de publicare';
-
-  @override
-  String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
 
   @override
   String get postPublishConfirmationTitle => 'Publicat pe profilul tău';
@@ -4891,33 +4473,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Miniatura videoclipului pe care tocmai l-ai publicat';
 
   @override
-  String get uploadFailedMessage => 'Încărcarea a eșuat - încearcă din nou';
-
-  @override
-  String get uploadRetryingMessage => 'Se reîncearcă încărcarea...';
-
-  @override
-  String get uploadPausedMessage => 'Încărcare oprită de utilizator';
-
-  @override
-  String get uploadRetryButton => 'REÎNCEARCĂ';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'N-am putut reîncerca încărcarea: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Caută utilizatori';
-
-  @override
   String get userSearchNoResults => 'Niciun utilizator găsit';
-
-  @override
-  String get userSearchFailed => 'Căutarea a eșuat';
-
-  @override
-  String get userPickerSearchByName => 'Caută după nume';
 
   @override
   String get userPickerFilterByNameHint => 'Filtrează după nume...';
@@ -5007,41 +4563,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ageVerificationYes => 'Da';
 
   @override
-  String get shareLinkCopied => 'Link copiat în clipboard';
-
-  @override
-  String get shareFailedToCopy => 'N-am putut copia linkul';
-
-  @override
-  String get shareVideoSubject => 'Vezi acest videoclip pe Divine';
-
-  @override
-  String get shareFailedToShare => 'N-am putut partaja';
-
-  @override
-  String get shareVideoTitle => 'Partajează videoclipul';
-
-  @override
-  String get shareToApps => 'Partajează în aplicații';
-
-  @override
-  String get shareToAppsSubtitle =>
-      'Partajează prin aplicații de mesagerie sau sociale';
-
-  @override
-  String get shareCopyWebLink => 'Copiază linkul web';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Copiază un link web de partajat';
-
-  @override
-  String get shareCopyNostrLink => 'Copiază linkul Nostr';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Copiază linkul nevent pentru clienții Nostr';
-
-  @override
   String get navHome => 'Acasă';
 
   @override
@@ -5054,12 +4575,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Caută';
-
-  @override
-  String get navSearchTooltip => 'Caută';
-
-  @override
   String get navMyProfile => 'Profilul meu';
 
   @override
@@ -5067,9 +4582,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Deschide camera';
-
-  @override
-  String get navUnknown => 'Necunoscut';
 
   @override
   String get navExploreClassics => 'Clasice';
@@ -5196,6 +4708,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get supportExportLogsFailed => 'N-am putut exporta jurnalele';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'Jurnale salvate în $path';
   }
@@ -5216,22 +4736,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
-  }
-
-  @override
-  String get reportTitle => 'Raportează conținut';
-
-  @override
   String get reportWhyReporting => 'De ce raportezi acest conținut?';
 
   @override
   String get reportPolicyNotice =>
       'Divine va acționa asupra rapoartelor de conținut în 24 de ore eliminând conținutul și excluțând utilizatorul care a furnizat conținutul ofensator.';
-
-  @override
-  String get reportAdditionalDetails => 'Detalii suplimentare (opțional)';
 
   @override
   String get reportBlockUser => 'Blochează acest utilizator';
@@ -5252,6 +4761,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'Descrie problema';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'Doar text — fotografiile și GIF-urile nu pot fi atașate aici.';
 
   @override
   String get reportReasonSpam => 'Spam sau conținut nedorit';
@@ -5329,9 +4842,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încălcări care nu sunt listate mai sus';
 
   @override
-  String reportFailed(Object error) {
-    return 'N-am putut raporta conținutul: $error';
-  }
+  String get reportFailed => 'N-am putut raporta conținutul. Încearcă din nou.';
 
   @override
   String get reportNotSent =>
@@ -5354,9 +4865,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'Scrie echipei de moderare';
-
-  @override
-  String get reportLearnMore => 'Află mai multe';
 
   @override
   String get reportLearnMoreAt => 'Află mai multe la';
@@ -5429,7 +4937,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Adaugă un colaborator';
 
   @override
-  String get listCollaboratorSearchHint => 'Caută în diVine...';
+  String get listCollaboratorSearchHint => 'Caută în Divine...';
 
   @override
   String get listNameLabel => 'Numele listei';
@@ -5594,7 +5102,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'serviciul de autentificare nu a putut fi contactat';
+      'Serviciul de autentificare nu a putut fi contactat. Încearcă din nou.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5625,18 +5133,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keyManagementImportSuccess => 'Cheie importată cu succes!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'N-am putut importa cheia: $error';
-  }
+  String get keyManagementImportFailed =>
+      'N-am putut importa cheia. Încearcă din nou.';
 
   @override
   String get keyManagementExportSuccess =>
       'Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'N-am putut exporta cheia: $error';
-  }
+  String get keyManagementExportFailed =>
+      'N-am putut exporta cheia. Încearcă din nou.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Cheia ta publică (npub)';
@@ -5768,9 +5274,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu pot previzualiza sunetul - niciun audio disponibil';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'N-am putut reda previzualizarea: $error';
-  }
+  String get soundPreviewFailed =>
+      'N-am putut reda previzualizarea. Încearcă din nou.';
 
   @override
   String get soundViewSource => 'Vezi sursa';
@@ -5822,11 +5327,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'N-am putut deschide $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
   }
 
   @override
@@ -6255,8 +5755,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Astfel, conversația ta cu $displayName va fi ștearsă. Această acțiune nu poate fi anulată.';
+    return 'Astfel, conversația ta cu $displayName este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.';
   }
+
+  @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Astfel, conversația de grup este eliminată din inbox. Dacă cineva scrie din nou în grup, începe o conversație nouă.';
 
   @override
   String get inboxRemoveConfirmConfirm => 'Elimină';
@@ -6323,12 +5827,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Ai fost invitat(ă) să colaborezi la $title: $url\n\nOpen diVine to review and accept.';
+    return 'Ai fost invitat(ă) să colaborezi la $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen diVine to review and accept.';
+    return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -6357,6 +5861,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmRetiredThreadClosedTitle => 'Această conversație este închisă.';
+
+  @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Această notificare de la Divine Moderation nu poate fi eliminată.';
 
   @override
   String get dmRetiredThreadClosedBody =>
@@ -6433,9 +5941,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmReelReplyViewChat => 'Vezi conversația';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Deschide conversația';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Răspuns trimis';
 
   @override
@@ -6508,18 +6013,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Necitite, Conversație cu $displayName';
+    return 'Necitită, conversație cu $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'încă $count de persoane',
+      few: 'încă $count persoane',
+      one: 'încă $count persoană',
+    );
+    return '$name și $_temp0';
   }
 
   @override
   String get inboxConversationTileLongPressHint =>
       'Arată acțiunile pentru conversație';
-
-  @override
-  String get reportDialogCancel => 'Anulează';
-
-  @override
-  String get reportDialogReport => 'Raportează';
 
   @override
   String exploreVideoId(String id) {
@@ -6545,20 +6056,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Nu s-a putut actualiza abonamentul: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Nu s-a putut actualiza abonamentul. Încearcă din nou.';
 
   @override
   String get discoverListsTitle => 'Descoperă liste';
 
   @override
   String get discoverListsFailedToLoad => 'N-am putut încărca listele';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'N-am putut încărca listele: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Se descoperă liste publice...';
@@ -6644,9 +6149,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commonSomethingWentWrong => 'Ceva nu a mers bine';
-
-  @override
-  String get commonNext => 'Următorul';
 
   @override
   String get commonDelete => 'Șterge';
@@ -6750,9 +6252,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryTabClips => 'Clipuri';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Salvează în galerie';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
 
   @override
@@ -6809,20 +6308,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticalele mai întâi';
 
   @override
-  String get libraryDeleteClipsTitle => 'Șterge clipurile';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clipuri selectate',
-      one: '# clip selectat',
-    );
-    return 'Ștergi $_temp0?';
-  }
-
-  @override
   String get libraryDeleteClipsWarning =>
       'Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.';
 
@@ -6848,6 +6333,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
     return '$successCount salvate, $failureCount eșuate';
+  }
+
+  @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Nu s-a putut salva în $destination';
   }
 
   @override
@@ -6952,20 +6442,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDeleteClipMessage => 'Ștergi acest clip?';
 
   @override
-  String get libraryClipSelectionTitle => 'Clipuri';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return 'Au rămas ${seconds}s';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds s';
   }
-
-  @override
-  String get libraryAddClips => 'Adaugă';
 
   @override
   String get libraryRecordVideo => 'Înregistrează un video';
@@ -6973,6 +6452,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'Clip video, $duration secunde';
+  }
+
+  @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Arhivat. $label';
   }
 
   @override
@@ -7522,6 +7006,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
 
   @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Cererea lui $displayName a fost refuzată';
+  }
+
+  @override
   String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';
 
   @override
@@ -7565,24 +7054,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Unele cereri de ștergere au fost acceptate, dar curățarea s-a oprit fiindcă ai schimbat contul. Autentifică-te din nou în contul inițial ca să finalizezi.';
-
-  @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
-
-  @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Numele tău de utilizator $username a fost eliberat definitiv, dar nu am putut finaliza ștergerea contului. Apasă Șterge din nou pentru a finaliza.';
-  }
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Renunță definitiv și la $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Pentru a confirma, scrie:';
 
   @override
@@ -7597,19 +7068,73 @@ class AppLocalizationsRo extends AppLocalizations {
       'Scrie numele tău de utilizator';
 
   @override
-  String get deleteAccountContentDeletionFailed =>
-      'Nu am putut șterge conținutul de pe relay-uri';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Nu am putut confirma ștergerea contului cu niciun releu. Verifică conexiunea și încearcă din nou.';
-
-  @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
+
+  @override
+  String get accountDeletionRecoveryTitle => 'Finalizează ștergerea contului';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'Nu am putut finaliza ștergerea contului tău. Numele tău de utilizator îți este rezervat și încă poate fi recuperat.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername =>
+      'Recuperează-mi numele de utilizator';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'Cererea ta de ștergere este încă în curs. Verifică din nou înainte să părăsești acest ecran.';
+
+  @override
+  String get accountDeletionCancellingBody =>
+      'Anulăm ștergerea ta. Verifică din nou înainte să părăsești acest ecran.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'Nu am putut încă recupera numele tău de utilizator. Verifică conexiunea și încearcă din nou.';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'Numele tău de utilizator a fost recuperat. Contul tău nu a fost șters.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'Nu am putut verifica starea ștergerii. Verifică conexiunea și încearcă din nou.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get deleteAccountDeletionUnavailable =>
+      'Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
       'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';
@@ -7647,11 +7172,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Conectează-te din nou pentru a finaliza.';
+      'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Încearcă din nou în scurt timp.';
 
   @override
   String get deleteAccountSuccess =>
@@ -7664,26 +7185,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.';
-
-  @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Se adaugă suprapunerea de text...';
-
-  @override
-  String get exportProgressStageComplete => 'Export finalizat!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Se combină clipurile...';
-
-  @override
-  String get exportProgressStageError => 'Exportul a eșuat';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Se generează miniatura...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Se adaugă sunetul...';
 
   @override
   String get findPeopleAnonymousUser => 'Anonim';
@@ -7808,6 +7309,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'Videoclipul s-a încărcat, dar sunetul lui nu este permis pentru reutilizare. Alege alt sunet ca să postezi.';
 
@@ -7882,9 +7390,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Nu am putut încărca sunetul: $error';
-  }
+  String get soundDetailLoadError =>
+      'Nu am putut încărca sunetul. Încearcă din nou.';
 
   @override
   String get soundDetailNotFoundMessage => 'Acest sunet nu a putut fi găsit';
@@ -7893,16 +7400,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Sunet negăsit';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Descrierea videoclipului';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count bucle';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel =>
-      'Numărul de bucle ale videoclipului';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7914,11 +7414,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String globalUploadPendingCount(int count) {
-    return 'Încărcări în așteptare ($count)';
-  }
-
-  @override
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
@@ -7926,23 +7421,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'Bifa de profil';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine dă bifa asta conturilor echipei și unui număr mic de profiluri aprobate manual. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'În $count de liste',
-      few: 'În $count liste',
-      one: 'În 1 listă',
-    );
-    return '$_temp0';
-  }
+      'Divine dă bifa asta conturilor echipei. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Nu mai urmări';
@@ -8043,11 +7533,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Trimiterea raportului de bug a eșuat. Încearcă din nou mai târziu.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Trimiterea raportului de bug a eșuat: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Trimite cererea';
 
   @override
@@ -8079,11 +7564,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Trimiterea cererii de funcție a eșuat. Încearcă din nou mai târziu.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Trimiterea cererii de funcție a eșuat: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Urmărește înapoi';
@@ -8138,16 +7618,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get followSortOldest => 'Cei mai vechi primii';
 
   @override
-  String get reportMessageTitle => 'Raportează mesajul';
-
-  @override
-  String get reportMessageWhyReporting => 'De ce raportezi acest mesaj?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Selectează un motiv pentru raportarea acestui mesaj';
-
-  @override
   String get newMessageTitle => 'Mesaj nou';
 
   @override
@@ -8185,9 +7655,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Nu s-au putut salva setările: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Nu s-au putut salva setările. Încearcă din nou.';
 
   @override
   String get blossomValidServerUrl =>
@@ -8333,14 +7802,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Partajează diVine cu oameni pe care îi cunoști';
+      'Partajează Divine cu oameni pe care îi cunoști';
 
   @override
   String get invitesUsedInvites => 'Invitații folosite';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Vino cu mine pe diVine! Folosește codul de invitație $code ca să începi:\nhttps://divine.video/invite/$code';
+    return 'Vino cu mine pe Divine! Folosește codul de invitație $code ca să începi:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8353,7 +7822,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get invitesShareInvite => 'Partajează invitația';
 
   @override
-  String get invitesShareSubject => 'Vino cu mine pe diVine';
+  String get invitesShareSubject => 'Vino cu mine pe Divine';
 
   @override
   String get invitesClaimed => 'Revendicată';
@@ -8427,14 +7896,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
-
-  @override
-  String get featureRequestCancel => 'Anulează';
-
-  @override
-  String keyImportError(String error) {
-    return 'Eroare: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>
@@ -8645,10 +8106,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationSystemUpdate => 'Ai o actualizare nouă';
 
   @override
-  String get notificationSomeoneLikedYourVideo =>
-      'Cineva a apreciat videoclipul tău';
-
-  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override
@@ -8785,6 +8242,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Înapoi la feed';
+
+  @override
+  String get cameraCouldNotStart => 'Nu s-a putut porni camera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Camera nu este încă disponibilă pe această platformă.\nPoți totuși să explorezi și să vizionezi videoclipuri.';
 
   @override
   String get cameraPermissionErrorTitle => 'Eroare de permisiuni';
@@ -9340,40 +8804,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Redă sau pune pe pauză videoclipul';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Decupează';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Clipul nu poate fi împărțit în timp ce este procesat. Te rugăm să aștepți.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Poziție de împărțire invalidă. Ambele clipuri trebuie să aibă cel puțin $minDurationMs ms.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Adaugă clip din bibliotecă';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Salvează clipul selectat';
 
   @override
-  String get videoEditorSplitClip => 'Împarte clipul';
-
-  @override
   String get videoEditorSaveClip => 'Salvează clipul';
-
-  @override
-  String get videoEditorDeleteClip => 'Șterge clipul';
 
   @override
   String get videoEditorClipSavedSuccess => 'Clip salvat în bibliotecă';
 
   @override
   String get videoEditorClipSaveFailed => 'Nu s-a putut salva clipul';
-
-  @override
-  String get videoEditorClipDeleted => 'Clip șters';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Selector de culoare';
@@ -9405,12 +8850,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorFailedLoadStickers =>
       'Nu s-au putut încărca stickerele';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Ajustează volumul';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Audio înregistrat';
 
   @override
   String get videoEditorVoiceOverLabel => 'Voce off';
@@ -9476,12 +8915,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Pauză';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Dezactivează sunetul';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Activează sunetul';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Reglare volum';
@@ -9597,9 +9030,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Acest dispozitiv nu poate afișa previzualizarea live. Setările tale se aplică oricum la export.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Audio original';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Clip $index';
   }
@@ -9632,14 +9062,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count cadre pe imagine';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Mărește cadrele pe imagine';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Micșorează cadrele pe imagine';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9745,9 +9167,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Întoarce';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Proporție';
 
   @override
   String get videoEditorTransformResetLabel => 'Resetează';
@@ -9911,14 +9330,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Sunetele mele';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Sunete recomandate în curând';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Vom adăuga sunete recomandate aici imediat ce sunt gata.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Instrument săgeată';
 
   @override
@@ -9986,10 +9397,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Apăsare lungă pentru reordonare';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Atinge pentru editare. Ține apăsat și trage pentru reordonare.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Mută la stânga';
@@ -10071,6 +9478,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorReverseSelectedFramesSemanticLabel =>
       'Inversează cadrele selectate';
+
+  @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplichează cadrele selectate';
 
   @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
@@ -10165,9 +9576,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Etichete';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Șterge';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Șterge eticheta $tag';
   }
@@ -10184,12 +9592,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectează tot ce se aplică conținutului tău';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'Gata';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Publică acest sunet';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'Permite altora să salveze și să reutilizeze audio-ul acestui videoclip.';
 
@@ -10204,29 +9606,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'Adaugă colaborator';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Cum funcționează colaboratorii';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max colaboratori';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Elimină colaborator';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Colaboratorii sunt etichetați ca și co-creatori ai acestei postări. Poți adăuga doar persoane pe care le urmăriți reciproc, iar ele apar în metadatele postării când este publicată.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Urmăritori reciproci';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Trebuie să vă urmăriți reciproc cu $name pentru a-l adăuga ca și colaborator.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Inspirat de';
@@ -10235,23 +9615,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataSetInspiredBySemanticLabel => 'Setează inspirat de';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'Cum funcționează creditele de inspirație';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Niciunul';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Folosește asta pentru a oferi atribuire. Creditul inspirat de este diferit de colaboratori: recunoaște influența, dar nu etichetează pe cineva ca și co-creator.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Nu se poate face referire la acest creator.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'Elimină inspirat de';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Detalii postare';
@@ -10550,6 +9915,26 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Retrage insigna';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Retragi această insignă?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Asta cere releelor să renunțe la acordarea făcută acestei persoane. Releele pot refuza, iar dacă a fixat deja insigna, ea rămâne pe profil până o scoate singură. Oricum ar fi, nu primește nicio notificare.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Asta cere releelor să renunțe la acordarea pe care ți-ai făcut-o și scoate insigna de pe profilul tău. Dacă releele refuză ștergerea, nu se schimbă nimic.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Retrage';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Insignă retrasă';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Blochează cine poartă insigna';
 
   @override
@@ -10680,10 +10065,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Ghid pentru familii';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Încă nu ai 16 ani? E în regulă. Uite ce poți face.';
-
-  @override
   String get minorAccountReviewWelcomeTitle =>
       'Încă nu ai 16 ani? E în regulă.';
 
@@ -10728,9 +10109,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13-15 ani';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Util pentru familii';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10791,6 +10169,80 @@ class AppLocalizationsRo extends AppLocalizations {
       'Asistența și mesajul de la moderare rămân disponibile';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewResponseClockRunningTitle => 'Time to respond';
+
+  @override
+  String minorAccountReviewResponseClockRunningDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String minorAccountReviewResponseClockRunningHours(int hours, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockPausedTitle =>
+      'Response clock paused';
+
+  @override
+  String minorAccountReviewResponseClockPausedBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'The response clock is paused. About $_temp0 will remain when it restarts.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockExpiredTitle =>
+      'Response deadline passed';
+
+  @override
+  String get minorAccountReviewResponseClockExpiredBody =>
+      'The response deadline has passed. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableTitle =>
+      'Deadline unavailable';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableBody =>
+      'We can\'t show your response deadline right now. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter =>
       'Deschide centrul de asistență';
 
@@ -10801,17 +10253,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get minorAccountReviewOpenReviewPage =>
       'Deschide pagina de verificare';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Îți poți lua contul cu tine';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Îți poți folosi în continuare identitatea Divine pe altă infrastructură. Mută-ți contul sau descarcă-ți arhiva.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Mută-ți contul';
 
   @override
   String get minorAccountReviewCheckAgain => 'Verifică din nou';
@@ -10871,9 +10312,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'O mare parte din internet este construită ca să răsplătească oamenii pentru că spun orice îi trece de poartă. Noi nu credem că e grozav așa. Da, ai putea da înapoi și spune că ești mai mare decât ești, dar asta nu ar fi cinstit, iar noi n-o să te învățăm să minți ca să obții ce vrei.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle => 'De ce răspunsul rămâne nu';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11112,12 +10550,47 @@ class AppLocalizationsRo extends AppLocalizations {
       'Simularea verificării contului de minor a fost ștearsă';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'Cazul simulat de verificare 13-15 a fost activat';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'Cazul simulat de asistență sub 13 ani a fost activat';
+
+  @override
+  String get devOptionsMinorReviewResponseClockTitle => 'Response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunning => 'Running';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPaused => 'Paused';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpired => 'Expired';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicable =>
+      'Not applicable';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformed => 'Malformed payload';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunningToast =>
+      'Simulated running response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPausedToast =>
+      'Simulated paused response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpiredToast =>
+      'Simulated expired response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicableToast =>
+      'Simulated not-applicable response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformedToast =>
+      'Simulated malformed response clock';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle =>
@@ -11205,7 +10678,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Valoare server: necunoscută (implicit activat)';
+      'Valoare server: necunoscută';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
@@ -11354,9 +10827,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Înregistrarea începe când ții apăsat și se oprește când eliberezi';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'N-am putut reda previzualizarea';
 
   @override
   String uploadPublishedCountMessage(int count) {
@@ -12347,6 +11817,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryUnarchiveAction => 'Dezarhivează';
 
   @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Păstrezi în aceste categorii?',
+      one: 'Păstrezi în această categorie?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'Păstrează în $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed =>
+      'Păstrează în categoriile lor';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Scoate din $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Scoate din categoriile lor';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'Mută clipurile selectate';
 
   @override
@@ -12560,7 +12059,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Contul tău rămâne. Ciornele și clipurile salvate pe acest dispozitiv sunt șterse — mesajele și fluxurile revin din rețea.';
 
   @override
-  String get dbFailureResetConfirm => 'resetează și închide';
+  String get dbFailureResetConfirm => 'resetează acum baza de date locală';
 
   @override
   String get dbFailureCancel => 'anulează';
@@ -12584,4 +12083,139 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Ascundeți parola';
+
+  @override
+  String get followUserSemanticLabel => 'Urmărește utilizatorul';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Nu mai urmări utilizatorul';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Se încarcă comentariile';
+
+  @override
+  String get analyticsWindowAll => 'Tot';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Urmărește utilizatorul $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Nu mai urmări utilizatorul $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / lună';
+  }
+
+  @override
+  String get videoDetailHiddenBySettingsTitle => 'Hidden by your settings';
+
+  @override
+  String videoDetailHiddenByHostFilterBody(String host) {
+    return 'This one\'s hosted on $host, and you\'re set to only show Divine-hosted videos.';
+  }
+
+  @override
+  String get videoDetailHiddenByContentFilterBody =>
+      'Your content filters are hiding this one.';
+
+  @override
+  String get videoDetailHiddenByProvenanceFilterBody =>
+      'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.';
+
+  @override
+  String get videoDetailHiddenShowAnyway => 'Show it anyway';
+
+  @override
+  String get videoDetailHiddenOpenSettings => 'Change setting';
+
+  @override
+  String get safetySettingsShowVerifiedOnly =>
+      'Only show camera-verified videos';
+
+  @override
+  String get safetySettingsShowVerifiedOnlySubtitle =>
+      'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

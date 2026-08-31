@@ -125,6 +125,7 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = true,
     bool enableAutoLensSwitch = true,
+    bool preferUnprocessedAudio = false,
   }) async {
     final result = await methodChannel.invokeMapMethod<dynamic, dynamic>(
       'initializeCamera',
@@ -134,6 +135,7 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
         'enableScreenFlash': enableScreenFlash,
         'mirrorFrontCameraOutput': mirrorFrontCameraOutput,
         'enableAutoLensSwitch': enableAutoLensSwitch,
+        'preferUnprocessedAudio': preferUnprocessedAudio,
       },
     );
     if (result == null) {

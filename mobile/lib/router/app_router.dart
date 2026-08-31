@@ -11,15 +11,18 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/navigator_keys.dart';
+import 'package:openvine/router/product_analytics_navigation_observer.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/router_refresh_listenable.dart';
+import 'package:openvine/router/routes/account_deletion_recovery_routes.dart';
 import 'package:openvine/router/routes/apps_routes.dart';
 import 'package:openvine/router/routes/auth_routes.dart';
 import 'package:openvine/router/routes/library_routes.dart';
@@ -32,6 +35,7 @@ import 'package:openvine/router/routes/settings_routes.dart';
 import 'package:openvine/router/routes/shell.dart';
 import 'package:openvine/router/routes/video_routes.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
+import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
@@ -122,6 +126,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     }
     refreshListenable.refresh();
   });
+  ref.listen(currentAccountDeletionAttemptProvider, (previous, next) {
+    final before = accountDeletionRecoveryGateActive(previous);
+    final after = accountDeletionRecoveryGateActive(next);
+    if (before != after) refreshListenable.refresh();
+  });
   ref.onDispose(refreshListenable.dispose);
 
   final router = GoRouter(
@@ -151,6 +160,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ...shellRoutes(),
       ...searchRoutes(),
       ...messagingRoutes(),
+      ...accountDeletionRecoveryRoutes(),
       ...minorAccountReviewRoutes(),
       ...listsRoutes(ref),
       ...authRoutes(ref),
@@ -170,6 +180,9 @@ List<NavigatorObserver> _buildRouterObservers(Ref ref) {
   final observers = <NavigatorObserver>[
     routeObserver,
     PageLoadObserver(analytics: ref.read(screenAnalyticsServiceProvider)),
+    ProductAnalyticsNavigationObserver(
+      analytics: () => ref.read(analyticsServiceProvider),
+    ),
   ];
 
   return observers;

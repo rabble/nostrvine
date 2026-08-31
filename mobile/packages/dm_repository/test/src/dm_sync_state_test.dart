@@ -226,18 +226,88 @@ void main() {
       });
 
       test(
-        'upgradeDrainVersionIfNeeded clears a stale completion flag + cursor '
-        'and stamps the current version when below it',
+        'upgradeDrainVersionIfNeeded clears a stale completion flag, seeds the '
+        'cursor at now, and stamps the current version when below it',
         () async {
-          // Simulate an install stranded by an older, buggy drain.
+          final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Simulate an established install stranded by an older, buggy drain.
+          await state.recordSeen(pkA, createdAt: before - 3600);
           await state.markHistoryDrainComplete(pkA);
           await state.setHistoryDrainCursor(pkA, 1234);
           expect(state.historyDrainComplete(pkA), isTrue);
 
           await state.upgradeDrainVersionIfNeeded(pkA);
+          final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
           expect(state.historyDrainComplete(pkA), isFalse);
-          expect(state.historyDrainCursor(pkA), isNull);
+          // Seeded at now, NOT removed. Removing it would let the drain fall
+          // back to oldestSyncedAt and re-read only history the install
+          // already has, which is the whole defect in #8362.
+          expect(
+            state.historyDrainCursor(pkA),
+            inInclusiveRange(before, after),
+          );
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test(
+        'the seeded cursor is above a realistic oldestSyncedAt, so the forced '
+        'pass covers the recent window a bare clear would skip — #8362',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Established install: months of history, drain long since latched.
+          await state.recordSeen(pkA, createdAt: nowSec - 90 * 86400);
+          await state.recordSeen(pkA, createdAt: nowSec - 3600);
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion - 1);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          final cursor = state.historyDrainCursor(pkA);
+          expect(cursor, isNotNull);
+          expect(
+            cursor,
+            greaterThan(state.oldestSyncedAt(pkA)!),
+            reason: 'a cursor at oldestSyncedAt cannot reach the stranded band',
+          );
+          // The band #8361 re-exposes sits just under the two-day overlap.
+          expect(cursor, greaterThan(nowSec - 2 * 86400));
+        },
+      );
+
+      test(
+        're-arms a completed pre-guard drain with no recorded messages',
+        () async {
+          final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, 0);
+
+          expect(state.newestSyncedAt(pkA), isNull);
+          expect(state.oldestSyncedAt(pkA), isNull);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(
+            state.historyDrainCursor(pkA),
+            inInclusiveRange(before, after),
+          );
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test(
+        'preserves an in-progress drain cursor while stamping its version',
+        () async {
+          await state.setHistoryDrainCursor(pkA, 1234);
+          await state.setDrainVersion(pkA, 0);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCursor(pkA), 1234);
           expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
         },
       );
@@ -271,6 +341,10 @@ void main() {
             reason: 'drain version must advance past the pre-#5304 value (2)',
           );
 
+          await state.recordSeen(
+            pkA,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 3600,
+          );
           await state.setDrainVersion(pkA, 2);
           await state.markHistoryDrainComplete(pkA);
 
@@ -466,6 +540,131 @@ void main() {
           expect(state.oldestSyncedAt(pkA), isNull);
         },
       );
+    });
+
+    group('newestWireSyncedAt (#8209)', () {
+      const year2100 = 4102444800;
+      int nowSec() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      test('defaults to null when nothing has been processed', () {
+        expect(state.newestWireSyncedAt(pkA), isNull);
+      });
+
+      test('recordWireSeen persists the wire stamp', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+
+        expect(state.newestWireSyncedAt(pkA), equals(tsMid));
+      });
+
+      test(
+        'recordWireSeen advances monotonically — an older wire stamp does '
+        'not roll the boundary back',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: tsNewer);
+          await state.recordWireSeen(pkA, createdAt: tsMid);
+
+          expect(state.newestWireSyncedAt(pkA), equals(tsNewer));
+        },
+      );
+
+      test(
+        'the wire boundary is independent of the rumor boundary, so a '
+        'backdated wrap cannot advance `since:` past its own stamp',
+        () async {
+          // One NIP-17 message: the rumor carries the honest send time, the
+          // outer wrap is backdated ~1 day per NIP-17. Recording only the
+          // rumor clock is what left `since:` a day ahead of the stamp the
+          // relay filters. See #8209.
+          const rumorAt = tsNewest;
+          const wireAt = tsNewest - 86400;
+
+          await state.recordSeen(pkA, createdAt: rumorAt);
+          await state.recordWireSeen(pkA, createdAt: wireAt);
+
+          expect(state.newestSyncedAt(pkA), equals(rumorAt));
+          expect(state.newestWireSyncedAt(pkA), equals(wireAt));
+        },
+      );
+
+      test('recordWireSeen is scoped per pubkey', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+
+        expect(state.newestWireSyncedAt(pkB), isNull);
+      });
+
+      test(
+        'recordWireSeen clamps a future wire stamp to now — an ephemeral '
+        'key signs its own stamp, so the signature does not make it honest',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: year2100);
+
+          final stored = state.newestWireSyncedAt(pkA);
+          expect(stored, isNotNull);
+          expect(stored, lessThan(year2100));
+          expect(stored, closeTo(nowSec(), 5));
+        },
+      );
+
+      test(
+        'recordWireSeen floors an implausibly old wire stamp',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: 1);
+
+          expect(
+            state.newestWireSyncedAt(pkA),
+            equals(DmSyncState.minPlausibleCreatedAt),
+          );
+        },
+      );
+
+      test(
+        'repairPoisonedBoundaries heals a wire boundary poisoned by a build '
+        'without the clamp, and re-arms the drain',
+        () async {
+          await prefs.setInt('dm.newestWireSyncedAt.$pkA', year2100);
+          await state.markHistoryDrainComplete(pkA);
+          expect(state.historyDrainComplete(pkA), isTrue);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestWireSyncedAt(pkA), closeTo(nowSec(), 5));
+          expect(state.historyDrainComplete(pkA), isFalse);
+        },
+      );
+
+      test(
+        'repairPoisonedBoundaries leaves a healthy wire boundary alone',
+        () async {
+          final honest = nowSec() - 3600;
+          await state.recordWireSeen(pkA, createdAt: honest);
+          await state.markHistoryDrainComplete(pkA);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestWireSyncedAt(pkA), equals(honest));
+          expect(state.historyDrainComplete(pkA), isTrue);
+        },
+      );
+
+      test('clear removes the wire boundary for that pubkey only', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+        await state.recordWireSeen(pkB, createdAt: tsNewer);
+
+        await state.clear(pkA);
+
+        expect(state.newestWireSyncedAt(pkA), isNull);
+        expect(state.newestWireSyncedAt(pkB), equals(tsNewer));
+      });
+
+      test('clearAll removes the wire boundary for every pubkey', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+        await state.recordWireSeen(pkB, createdAt: tsNewer);
+
+        await state.clearAll();
+
+        expect(state.newestWireSyncedAt(pkA), isNull);
+        expect(state.newestWireSyncedAt(pkB), isNull);
+      });
     });
   });
 }

@@ -35,7 +35,8 @@ class InboxFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     // Deliberately no MediaQuery.withNoTextScaling: these are controls to read
     // and tap, not fixed overlay badges. The pinned header hosting this row
-    // declares a text-scale-aware extent so the row has room to grow into.
+    // measures it rather than declaring an extent, so the row is free to grow
+    // with the text scale (#7854).
     // Horizontally scrollable because the chips size to their intrinsic
     // width: `DivineButton`'s internal `Flexible` sits inside its own
     // MainAxisSize.min Row, so it can never yield width to a sibling, and a

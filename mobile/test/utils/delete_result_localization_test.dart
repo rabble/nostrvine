@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
@@ -137,6 +138,66 @@ void main() {
           ),
         ),
         isEmpty,
+      );
+    });
+  });
+
+  group('localizedOwnerVideoDeleteSuccessMessage', () {
+    testWidgets('maps every cleanup outcome to user-facing copy', (
+      tester,
+    ) async {
+      final context = await pumpContext(tester);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      expect(
+        localizedOwnerVideoDeleteSuccessMessage(
+          context,
+          const OwnerVideoOperationState(
+            deleteStatus: OwnerVideoDeleteStatus.success,
+            cleanupStatus: OwnerVideoCleanupStatus.confirmed,
+          ),
+        ),
+        l10n.shareMenuDeleteCleanupConfirmed,
+      );
+      expect(
+        localizedOwnerVideoDeleteSuccessMessage(
+          context,
+          const OwnerVideoOperationState(
+            deleteStatus: OwnerVideoDeleteStatus.success,
+            cleanupStatus: OwnerVideoCleanupStatus.delayed,
+          ),
+        ),
+        l10n.shareMenuDeleteCleanupDelayed,
+      );
+      expect(
+        localizedOwnerVideoDeleteSuccessMessage(
+          context,
+          const OwnerVideoOperationState(
+            deleteStatus: OwnerVideoDeleteStatus.success,
+            cleanupStatus: OwnerVideoCleanupStatus.failed,
+          ),
+        ),
+        l10n.shareMenuDeleteCleanupFailed,
+      );
+      expect(
+        localizedOwnerVideoDeleteSuccessMessage(
+          context,
+          const OwnerVideoOperationState(
+            deleteStatus: OwnerVideoDeleteStatus.success,
+            cleanupStatus: OwnerVideoCleanupStatus.unavailable,
+          ),
+        ),
+        l10n.shareMenuDeleteCleanupConfirmed,
+      );
+      expect(
+        localizedOwnerVideoDeleteSuccessMessage(
+          context,
+          const OwnerVideoOperationState(
+            deleteStatus: OwnerVideoDeleteStatus.success,
+            cleanupStatus: OwnerVideoCleanupStatus.inProgress,
+          ),
+        ),
+        l10n.shareMenuDeleteCleanupInProgress,
       );
     });
   });

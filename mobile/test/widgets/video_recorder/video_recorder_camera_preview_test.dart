@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
@@ -67,6 +68,58 @@ void main() {
 
       // Should show placeholder widget
       expect(find.byType(VideoRecorderCameraPlaceholder), findsOneWidget);
+    });
+
+    // Before #3591 this slot rendered
+    // `'Camera initialization failed: $e'` — the raw PlatformException
+    // toString(), untranslated, full-screen, and on Android carrying the
+    // native stack trace that PlatformException interpolates from `details`.
+    // These pin that the placeholder now shows localized copy chosen by the
+    // reason code, and that the two reasons do not share a message.
+    testWidgets('renders localized copy for a failed camera init', (
+      tester,
+    ) async {
+      when(() => recorderBloc.state).thenReturn(
+        const VideoRecorderBlocState(
+          initializationError: CameraInitializationError.failed,
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.cameraCouldNotStart), findsOneWidget);
+      expect(find.textContaining('PlatformException'), findsNothing);
+      expect(find.textContaining('initialization failed'), findsNothing);
+    });
+
+    testWidgets('renders different copy for an unsupported platform', (
+      tester,
+    ) async {
+      when(() => recorderBloc.state).thenReturn(
+        const VideoRecorderBlocState(
+          initializationError: CameraInitializationError.unsupportedPlatform,
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.cameraUnsupportedPlatform), findsOneWidget);
+      expect(find.text(l10n.cameraCouldNotStart), findsNothing);
+    });
+
+    testWidgets('shows no message at all while init is merely pending', (
+      tester,
+    ) async {
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
+
+      await tester.pumpWidget(buildSubject());
+
+      final placeholder = tester.widget<VideoRecorderCameraPlaceholder>(
+        find.byType(VideoRecorderCameraPlaceholder),
+      );
+      expect(placeholder.errorMessage, isNull);
     });
 
     testWidgets('applies no blur filter when not switching cameras', (

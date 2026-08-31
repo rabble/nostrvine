@@ -18,7 +18,6 @@
 library;
 
 import 'dart:async';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -27,10 +26,9 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/author_video_buckets.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -48,6 +46,8 @@ import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_block_policy.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
+import 'package:openvine/services/video_source_visibility_policy.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -284,9 +284,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  VideoProvenanceFilterService? _provenanceFilterService;
   FeedAspectRatioPreferenceService? _feedAspectRatioPreferenceService;
   BrokenVideoTracker? _brokenVideoTracker;
+  late String? Function() _currentUserPubkey = () => _nostrService.publicKey;
   final SubscriptionManager _subscriptionManager;
+
+  /// Supplies the authenticated pubkey independently of signer readiness.
+  void setCurrentUserPubkeyProvider(String? Function() provider) {
+    _currentUserPubkey = provider;
+  }
 
   // Side-channel observers that fire for every video that flows through the
   // service after filtering — both REST-loaded batches via [filterVideoList]
@@ -448,7 +455,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (ids.isEmpty) return;
 
     Log.info(
-      'sweepAuthor: emitting ${ids.length} removal(s) for pubkey=$pubkey',
+      'sweepAuthor: emitting ${ids.length} removal(s) for pubkey=${pubkeyForLogs(pubkey)}',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -507,6 +514,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the capture-verified-only filter service.
+  void setProvenanceFilterService(VideoProvenanceFilterService service) {
+    _provenanceFilterService = service;
+  }
+
   /// Set the feed aspect-ratio preference service.
   void setFeedAspectRatioPreferenceService(
     FeedAspectRatioPreferenceService service,
@@ -535,12 +547,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool get shouldFilterNonDivineVideos =>
       _divineHostFilterService?.showDivineHostedOnly ?? false;
 
+  bool get _shouldFilterUnverifiedVideos =>
+      _provenanceFilterService?.showVerifiedOnly ?? false;
+
   /// Returns true when shared feed policy hides this video.
   bool shouldHideVideo(VideoEvent video) {
     if (VideoBlockPolicy.isHiddenByBlocklist(video, _blocklistRepository)) {
       return true;
     }
-    if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {
+    if (VideoSourceVisibilityPolicy.isHiddenBySourcePreferences(
+      video,
+      divineHostedOnly: shouldFilterNonDivineVideos,
+      verifiedOnly: _shouldFilterUnverifiedVideos,
+    )) {
       return true;
     }
     return false;
@@ -661,9 +680,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return (ContentFilterPreference.show, <String>[]);
     }
 
-    // Get the most restrictive preference for matched labels
-    final preference = contentFilterService.getPreferenceForLabels(labels);
-    return (preference, labels);
+    final decision = resolveEffectiveContentFilterDecision(
+      sources: (creator: labels, trusted: const <String>[]),
+      moderationLabels: const <String>[],
+      contentFilterService: contentFilterService,
+      isOwner: contentOwnerMatches(event.pubkey, _currentUserPubkey()),
+    );
+    return (
+      decision.preference,
+      decision.preference == ContentFilterPreference.warn
+          ? decision.warnLabels
+          : labels,
+    );
   }
 
   /// Filter a list of [VideoEvent]s based on the user's content filter
@@ -692,59 +720,25 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return baseVideos;
     }
 
-    final result = baseVideos
-        .map((video) {
-          final labels = resolveEffectiveContentLabels(
-            video,
-            moderationLabelService: _moderationLabelService,
-          );
-          if (labels.isEmpty) {
-            return video.warnLabels.isEmpty
-                ? video
-                : video.copyWith(warnLabels: const []);
-          }
-
-          final pref = service.getPreferenceForLabels(labels);
-          if (pref == ContentFilterPreference.warn) {
-            final matchedWarnLabels = labels.where((value) {
-              final label = ContentLabel.fromValue(value);
-              return label != null &&
-                  service.getPreference(label) == ContentFilterPreference.warn;
-            }).toList();
-            return video.copyWith(warnLabels: matchedWarnLabels);
-          }
-
-          return pref == ContentFilterPreference.show &&
-                  video.warnLabels.isNotEmpty
-              ? video.copyWith(warnLabels: const [])
-              : video;
-        })
-        .where((video) {
-          // Hide check considers effective warning labels plus moderation labels.
-          final selfLabels = resolveEffectiveContentLabels(
-            video,
-            moderationLabelService: _moderationLabelService,
-          );
-          final modLabels = video.moderationLabels;
-          if (selfLabels.isEmpty && modLabels.isEmpty) return true;
-
-          // Check self-labels
-          if (selfLabels.isNotEmpty) {
-            final pref = service.getPreferenceForLabels(selfLabels);
-            if (pref == ContentFilterPreference.hide) return false;
-          }
-
-          // Check moderation labels (hide-only — never warn).
-          // getPreferenceForLabels ignores unrecognized labels, so a video
-          // tagged only with unknown labels never force-hides.
-          if (modLabels.isNotEmpty) {
-            final pref = service.getPreferenceForLabels(modLabels);
-            if (pref == ContentFilterPreference.hide) return false;
-          }
-
-          return true;
-        })
-        .toList();
+    final result = <VideoEvent>[];
+    for (final video in baseVideos) {
+      final sources = resolveEffectiveContentLabelSources(
+        video,
+        moderationLabelService: _moderationLabelService,
+      );
+      final decision = resolveEffectiveContentFilterDecision(
+        sources: sources,
+        moderationLabels: video.moderationLabels,
+        contentFilterService: service,
+        isOwner: contentOwnerMatches(video.pubkey, _currentUserPubkey()),
+      );
+      if (decision.preference == ContentFilterPreference.hide) continue;
+      result.add(
+        _listEquals(video.warnLabels, decision.warnLabels)
+            ? video
+            : video.copyWith(warnLabels: decision.warnLabels),
+      );
+    }
 
     _notifyVideoObservers(result);
     return result;
@@ -981,7 +975,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   List<VideoEvent> getVideosByAuthor(String pubkey) {
     final result = <VideoEvent>[];
     Log.debug(
-      '🔍 Searching for videos by author $pubkey across ${_eventLists.length} subscription types',
+      '🔍 Searching for videos by author ${pubkeyForLogs(pubkey)} across ${_eventLists.length} subscription types',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -1007,7 +1001,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       result.addAll(matchingVideos);
     }
     Log.debug(
-      '✅ Total videos found for $pubkey: ${result.length}',
+      '✅ Total videos found for ${pubkeyForLogs(pubkey)}: ${result.length}',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -1088,7 +1082,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       onBucketRemoved: (authorPubkey, removed) {
         removedCount += removed;
         Log.debug(
-          'Removed video $logIdentity from author bucket $authorPubkey',
+          'Removed video $logIdentity from author bucket ${pubkeyForLogs(authorPubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -1897,7 +1891,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       Log.info(
-        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${authors!.first})" : ""}',
+        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${pubkeyForLogs(authors!.first)})" : ""}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -2011,7 +2005,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       if (authors != null &&
           authors.contains(AppConstants.classicVinesPubkey)) {
         Log.debug(
-          '🌟 Subscribing to Classic Vines account (${AppConstants.classicVinesPubkey})',
+          '🌟 Subscribing to Classic Vines account (${pubkeyForLogs(AppConstants.classicVinesPubkey)})',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2366,33 +2360,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           return;
         }
 
-        // 🎯 CACHE DEBUG: Log cached event details
-        if (cachedEvents.isNotEmpty &&
-            subscriptionType == SubscriptionType.discovery) {
-          final loopCounts = <int>[];
-          for (final event in cachedEvents) {
-            try {
-              final videoEvent = VideoEvent.fromNostrEvent(event);
-              loopCounts.add(videoEvent.originalLoops ?? 0);
-            } catch (_) {}
-          }
-          loopCounts.sort((a, b) => b.compareTo(a)); // Sort descending
-          final maxLoops = loopCounts.isNotEmpty ? loopCounts.first : 0;
-          final minLoops = loopCounts.isNotEmpty ? loopCounts.last : 0;
-          Log.info(
-            '🎯 CACHE DEBUG: Loaded ${cachedEvents.length} cached discovery videos, loop range: $maxLoops - $minLoops',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          if (loopCounts.length >= 5) {
-            Log.info(
-              '🎯 CACHE DEBUG: Top 5 cached loop counts: ${loopCounts.take(5).join(", ")}',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
-        }
-
         // Process cached events immediately (same flow as relay events, minus
         // the write-back — they were just read out of the store).
         for (final event in cachedEvents) {
@@ -2410,9 +2377,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           completeFeedLoadTrace('cache', eventTotal: cachedEvents.length);
         }
 
-        // 🎯 RELAY DEBUG: Track loop counts from relay
-        final relayLoopCounts = <int>[];
-
         final eventStream = _nostrService.subscribe(
           filters,
           onEose: () {
@@ -2427,26 +2391,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               name: 'VideoEventService',
               category: LogCategory.video,
             );
-
-            // 🎯 RELAY DEBUG: Summarize relay loop counts at EOSE
-            if (subscriptionType == SubscriptionType.discovery &&
-                relayLoopCounts.isNotEmpty) {
-              relayLoopCounts.sort((a, b) => b.compareTo(a)); // Sort descending
-              final maxLoops = relayLoopCounts.first;
-              final minLoops = relayLoopCounts.last;
-              Log.info(
-                '🎯 RELAY DEBUG: Relay returned ${relayLoopCounts.length} videos, loop range: $maxLoops - $minLoops',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              if (relayLoopCounts.length >= 5) {
-                Log.info(
-                  '🎯 RELAY DEBUG: Top 5 relay loop counts: ${relayLoopCounts.take(5).join(", ")}',
-                  name: 'VideoEventService',
-                  category: LogCategory.video,
-                );
-              }
-            }
 
             // Extra logging for hashtag subscriptions
             if (subscriptionType == SubscriptionType.hashtag) {
@@ -2543,7 +2487,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
             if (subscriptionType == SubscriptionType.homeFeed) {
               Log.info(
-                '🏠📥 HOME FEED EVENT #$eventCount RECEIVED: kind=${event.kind}, author=${event.pubkey}',
+                '🏠📥 HOME FEED EVENT #$eventCount RECEIVED: kind=${event.kind}, author=${pubkeyForLogs(event.pubkey)}',
                 name: 'VideoEventService',
                 category: LogCategory.video,
               );
@@ -2555,14 +2499,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
                 name: 'VideoEventService',
                 category: LogCategory.video,
               );
-            }
-
-            // 🎯 RELAY DEBUG: Track loop counts for discovery subscriptions
-            if (subscriptionType == SubscriptionType.discovery) {
-              try {
-                final videoEvent = VideoEvent.fromNostrEvent(event);
-                relayLoopCounts.add(videoEvent.originalLoops ?? 0);
-              } catch (_) {}
             }
 
             // Normal priority: the live feed is on screen, so these rows
@@ -2849,7 +2785,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
                 .cacheProfile(profile)
                 .then((_) {
                   Log.verbose(
-                    '✅ Cached profile event for ${event.pubkey} from video subscription',
+                    '✅ Cached profile event for ${pubkeyForLogs(event.pubkey)} from video subscription',
                     name: 'VideoEventService',
                     category: LogCategory.video,
                   );
@@ -2901,7 +2837,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked content from ${event.pubkey}',
+          'Filtering blocked content from ${pubkeyForLogs(event.pubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2970,29 +2906,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           // For newer versions, _handleReplaceableVideoEvent already removed the old event
 
           // Check hashtag filter if active
-          if (_activeHashtagFilters[subscriptionType] != null &&
-              _activeHashtagFilters[subscriptionType]!.isNotEmpty) {
-            // Check if video has any of the required hashtags (case-insensitive)
-            final requiredHashtagsLower =
-                _activeHashtagFilters[subscriptionType]!
-                    .map((tag) => tag.toLowerCase())
-                    .toList();
-            final videoHashtagsLower = videoEvent.hashtags
-                .map((tag) => tag.toLowerCase())
-                .toList();
-
-            final hasRequiredHashtag = requiredHashtagsLower.any(
-              videoHashtagsLower.contains,
+          if (!_passesHashtagFilter(videoEvent, subscriptionType)) {
+            Log.warning(
+              '⏩ Skipping video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+              name: 'VideoEventService',
+              category: LogCategory.video,
             );
-
-            if (!hasRequiredHashtag) {
-              Log.warning(
-                '⏩ Skipping video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              return;
-            }
+            return;
           }
 
           // Check group filter if active
@@ -3052,7 +2972,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             category: LogCategory.video,
           );
           Log.verbose(
-            '  - Pubkey: ${event.pubkey}',
+            '  - Pubkey: ${pubkeyForLogs(event.pubkey)}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );
@@ -3112,7 +3032,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       Log.debug(
-        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${event.pubkey}, id=${event.id}',
+        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${pubkeyForLogs(event.pubkey)}, id=${event.id}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3154,7 +3074,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked historical content from ${event.pubkey}',
+          'Filtering blocked historical content from ${pubkeyForLogs(event.pubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -3207,19 +3127,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           // For newer versions, _handleReplaceableVideoEvent already removed the old event
 
           // Check hashtag filter if active
-          if (_activeHashtagFilters[subscriptionType] != null &&
-              _activeHashtagFilters[subscriptionType]!.isNotEmpty) {
-            final hasRequiredHashtag = _activeHashtagFilters[subscriptionType]!
-                .any(videoEvent.hashtags.contains);
-
-            if (!hasRequiredHashtag) {
-              Log.warning(
-                '⏩ Skipping historical video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              return;
-            }
+          if (!_passesHashtagFilter(videoEvent, subscriptionType)) {
+            Log.warning(
+              '⏩ Skipping historical video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+            return;
           }
 
           // Check group filter if active
@@ -3282,7 +3196,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (video == null) return;
 
     // Check hashtag filter
-    if (!_passesHashtagFilter(video, subscriptionType)) return;
+    if (!_passesHashtagFilter(video, subscriptionType)) {
+      Log.debug(
+        '⏩ Skipping repost without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
+    }
 
     _addVideoToSubscription(
       video,
@@ -3291,7 +3212,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
-  /// Check if video passes the active hashtag filter for subscription type
+  /// Whether [video] carries one of the hashtags [subscriptionType] filters on.
+  ///
+  /// The comparison is case-insensitive on both sides. `subscribeToVideoFeed`
+  /// lowercases the tag before putting it in the relay REQ (NIP-24) but stores
+  /// the caller's original casing in [_activeHashtagFilters], so a
+  /// case-sensitive compare here rejects every event the relay returns for a
+  /// capitalised hashtag.
   bool _passesHashtagFilter(
     VideoEvent video,
     SubscriptionType subscriptionType,
@@ -3299,15 +3226,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     final filter = _activeHashtagFilters[subscriptionType];
     if (filter == null || filter.isEmpty) return true;
 
-    final passes = filter.any(video.hashtags.contains);
-    if (!passes) {
-      Log.debug(
-        '⏩ Skipping repost without required hashtags: $filter',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-    }
-    return passes;
+    final videoHashtags = video.hashtags
+        .map((tag) => tag.toLowerCase())
+        .toSet();
+    return filter.any((tag) => videoHashtags.contains(tag.toLowerCase()));
   }
 
   /// Handle subscription error
@@ -3359,7 +3281,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Subscribe to specific user's video events
   Future<void> subscribeToUserVideos(String pubkey, {int limit = 50}) async {
     Log.info(
-      'SVC subscribeToUser: hex=$pubkey',
+      'SVC subscribeToUser: hex=${pubkeyForLogs(pubkey)}',
       name: 'Service',
       category: LogCategory.video,
     );
@@ -3390,7 +3312,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     final authorVideoCount = _authorBuckets.videosFor(pubkey).length;
     if (authorVideoCount > 0) {
       Log.info(
-        'SVC subscribeToUser: backfilled $authorVideoCount existing videos for $pubkey',
+        'SVC subscribeToUser: backfilled $authorVideoCount existing videos for ${pubkeyForLogs(pubkey)}',
         name: 'Service',
         category: LogCategory.video,
       );
@@ -3417,7 +3339,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     if (!isActiveAuthor) {
       Log.debug(
-        'Skipping stale profile unsubscribe for $pubkey',
+        'Skipping stale profile unsubscribe for ${pubkeyForLogs(pubkey)}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3444,7 +3366,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     Log.info(
-      'Querying historical videos for user=$pubkey until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
+      'Querying historical videos for user=${pubkeyForLogs(pubkey)} until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -3482,7 +3404,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Set timeout for receiving events
       final timeoutTimer = Timer(const Duration(seconds: 5), () {
         Log.info(
-          'Historical query timeout for user=$pubkey - received $receivedCount events',
+          'Historical query timeout for user=${pubkeyForLogs(pubkey)} - received $receivedCount events',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -3502,7 +3424,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.info(
-              'Historical query stream completed for user=$pubkey - received $receivedCount events',
+              'Historical query stream completed for user=${pubkeyForLogs(pubkey)} - received $receivedCount events',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -3513,7 +3435,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.error(
-              'Historical query stream error for user=$pubkey: $error',
+              'Historical query stream error for user=${pubkeyForLogs(pubkey)}: $error',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -3527,7 +3449,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       await streamSubscription.cancel();
 
       Log.info(
-        'Historical user videos query completed - received $receivedCount events for user=$pubkey',
+        'Historical user videos query completed - received $receivedCount events for user=${pubkeyForLogs(pubkey)}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3536,7 +3458,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       notifyListeners();
     } catch (e) {
       Log.error(
-        'Failed to query historical user videos for user=$pubkey: $e',
+        'Failed to query historical user videos for user=${pubkeyForLogs(pubkey)}: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -4408,7 +4330,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           }
           // Since we're filtering by d tag at the relay level, this should be our video
           Log.info(
-            'Found video event for vine ID $vineId: ${event.id}...',
+            'Found video event for vine ID $vineId: ${event.id}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );
@@ -4908,7 +4830,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (_blocklistRepository?.shouldFilterFromFeeds(videoEvent.pubkey) ==
         true) {
       Log.verbose(
-        'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
+        'Filtering blocked content from ${pubkeyForLogs(videoEvent.pubkey)} in $subscriptionType',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -5186,7 +5108,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       await _profileRepository.fetchFreshProfile(pubkey: pubkey);
     } catch (e) {
       Log.warning(
-        'Failed to fetch profile for $pubkey: $e',
+        'Failed to fetch profile for ${pubkeyForLogs(pubkey)}: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -6303,6 +6225,23 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _handleNewVideoEvent(event, type);
   }
 
+  /// Handle a nostr event through the pagination path for testing
+  /// (exposes _handleHistoricalVideoEvent, the `loadMoreEvents` handler).
+  @visibleForTesting
+  void handleHistoricalEventForTesting(Event event, SubscriptionType type) {
+    _handleHistoricalVideoEvent(event, type);
+  }
+
+  /// Seed the active hashtag filter for [type] the way `subscribeToVideoFeed`
+  /// does, so tests can exercise filtering without opening a subscription.
+  @visibleForTesting
+  void setActiveHashtagFilterForTesting(
+    SubscriptionType type,
+    List<String> hashtags,
+  ) {
+    _activeHashtagFilters[type] = hashtags;
+  }
+
   /// Flush the pending like-count batch without waiting for the debounce timer.
   @visibleForTesting
   Future<void> flushPendingLikeCountBatchForTesting() {
@@ -6499,7 +6438,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             category: LogCategory.video,
           );
           Log.warning(
-            '      - pubkey: ${event.pubkey}',
+            '      - pubkey: ${pubkeyForLogs(event.pubkey)}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );

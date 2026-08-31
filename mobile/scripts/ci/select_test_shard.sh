@@ -14,9 +14,11 @@
 # builders, flutter_test_config.dart — is left in place, because the tests that
 # remain still import it.
 #
-# Assignment is round-robin over the lexicographically sorted file list: it is
-# deterministic, needs no stored baseline that could drift, and (because sorted
-# order groups by directory) spreads each directory's cost across all shards.
+# Assignment hashes each relative path into a bucket. Unlike assigning by the
+# path's position in a sorted list, this keeps every existing file in the same
+# shard when another test is added, removed, or renamed. File counts are only a
+# rough proxy for runtime cost, so the small loss of round-robin count balance
+# is preferable to unrelated pull requests reshuffling merged-isolate peers.
 #
 # This DELETES files. It refuses to run outside CI without --force.
 
@@ -78,7 +80,8 @@ cd "$PROJECT_ROOT"
 
 all_tests_file="$(mktemp)"
 golden_tests_file="$(mktemp)"
-trap 'rm -f "$all_tests_file" "$golden_tests_file"' EXIT
+shard_assignments_file="$(mktemp)"
+trap 'rm -f "$all_tests_file" "$golden_tests_file" "$shard_assignments_file"' EXIT
 
 # test/goldens/ belongs to the dedicated `goldens` job, not to any shard.
 # Image goldens cannot survive this job: `very_good test --optimization`
@@ -104,9 +107,24 @@ fi
 
 kept=0
 removed=0
-i=0
-while IFS= read -r file; do
-  if [ $((i % TOTAL)) -eq "$INDEX" ]; then
+LC_ALL=C awk -v total="$TOTAL" '
+  BEGIN { alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./-" }
+  {
+    bucket = 0
+    for (i = 1; i <= length($0); i++) {
+      value = index(alphabet, substr($0, i, 1))
+      if (value == 0) {
+        print "Unsupported character in test path: " $0 > "/dev/stderr"
+        exit 2
+      }
+      bucket = (bucket * 33 + value) % total
+    }
+    print bucket, $0
+  }
+' "$all_tests_file" > "$shard_assignments_file"
+
+while read -r bucket file; do
+  if [ "$bucket" -eq "$INDEX" ]; then
     kept=$((kept + 1))
   else
     removed=$((removed + 1))
@@ -114,8 +132,7 @@ while IFS= read -r file; do
       rm -f "$file"
     fi
   fi
-  i=$((i + 1))
-done < "$all_tests_file"
+done < "$shard_assignments_file"
 
 if [ "$kept" -eq 0 ]; then
   echo "❌ Shard ${INDEX}/${TOTAL} selected 0 test files. Refusing to report a vacuous pass." >&2

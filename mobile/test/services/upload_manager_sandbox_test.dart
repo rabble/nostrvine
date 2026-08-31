@@ -230,20 +230,6 @@ void main() {
   });
 
   group('Regression Guards', () {
-    test('No ~/Documents access in any upload-related service', () {
-      // This test documents the expectation
-      // In CI, we'd add a grep-based check to ensure no code contains:
-      // - getApplicationDocumentsDirectory() in upload services
-      // - Hard-coded paths to ~/Documents
-
-      // For now, just document the requirement
-      expect(
-        true,
-        isTrue,
-        reason: 'Code review should verify no ~/Documents access',
-      );
-    });
-
     test(
       'App uses getApplicationSupportDirectory for all persistent storage',
       () {

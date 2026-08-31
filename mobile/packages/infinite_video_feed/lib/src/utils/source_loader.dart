@@ -9,9 +9,6 @@ const _mediaProcessingRetryDelays = <Duration>[
   Duration(seconds: 8),
 ];
 
-/// Waits before a same-source retry after media returns HTTP 202.
-typedef SourceLoadDelay = Future<void> Function(Duration duration);
-
 /// Signals that source loading was cancelled because the owning controller
 /// window moved on while fallbacks were still in flight.
 class SourceLoadAborted implements Exception {
@@ -35,9 +32,21 @@ class SourceLoadAborted implements Exception {
 /// Logs each failure via [log] and re-throws the last error when every
 /// source fails.
 ///
+/// Authentication errors always stop the source ladder immediately. When
+/// [applyTypedFailoverPolicy] is true, other typed player errors that cannot be
+/// fixed by changing sources also stop immediately and preserve their original
+/// error and stack trace. Media-processing errors remain eligible for fallback
+/// because another rendition may already be ready.
+///
 /// [maxPlaybackDuration] becomes the clip's end position, so the native
 /// player stops (and loops) there. Sources shorter than the cap are
 /// unaffected — both backends clamp the clip end to the real duration.
+///
+/// [trimToCommonTrackEnd] hides the loop seam left by a source whose audio and
+/// video tracks end a few milliseconds apart, and is what a looping feed wants.
+/// Turn it off wherever playback is measured against the container duration —
+/// an editor timeline, for instance — because the clamp can end playback up to
+/// 500 ms before the duration such an axis is drawn from.
 Future<(String, int)> setSourceWithFallbacks({
   required int index,
   required DivineVideoPlayerController controller,
@@ -46,7 +55,9 @@ Future<(String, int)> setSourceWithFallbacks({
   Map<String, String>? Function(String source)? httpHeadersForSource,
   bool Function()? isLoadCurrent,
   Duration? maxPlaybackDuration,
-  SourceLoadDelay delay = Future<void>.delayed,
+  bool trimToCommonTrackEnd = true,
+  bool applyTypedFailoverPolicy = true,
+  Future<void> Function(Duration duration) delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
   void Function(String source)? onSourceLoadFailure,
 }) async {
@@ -68,7 +79,7 @@ Future<(String, int)> setSourceWithFallbacks({
           source,
           end: maxPlaybackDuration,
           httpHeaders: httpHeadersForSource?.call(source) ?? const {},
-          trimToCommonTrackEnd: true,
+          trimToCommonTrackEnd: trimToCommonTrackEnd,
         ),
       );
       abortIfStale(source);
@@ -81,7 +92,14 @@ Future<(String, int)> setSourceWithFallbacks({
       lastStackTrace = stackTrace;
       onSourceLoadFailure?.call(source);
       final nativeErrorCode = nativePlayerErrorCodeFromError(error);
-      if (nativeErrorCode == NativePlayerErrorCode.authRequired) {
+      final isTypedNonFailoverError =
+          nativeErrorCode == NativePlayerErrorCode.authRequired ||
+          (applyTypedFailoverPolicy &&
+              nativeErrorCode != null &&
+              nativeErrorCode != NativePlayerErrorCode.unknown &&
+              nativeErrorCode != NativePlayerErrorCode.mediaProcessing &&
+              !nativeErrorCode.shouldFailover);
+      if (isTypedNonFailoverError) {
         log(
           'Source failed without failover index $index: '
           'failedSource=$source '
@@ -112,7 +130,7 @@ Future<(String, int)> setSourceWithFallbacks({
                 source,
                 end: maxPlaybackDuration,
                 httpHeaders: httpHeadersForSource?.call(source) ?? const {},
-                trimToCommonTrackEnd: true,
+                trimToCommonTrackEnd: trimToCommonTrackEnd,
               ),
             );
             abortIfStale(source);

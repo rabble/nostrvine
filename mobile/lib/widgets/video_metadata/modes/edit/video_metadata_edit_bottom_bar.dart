@@ -8,13 +8,17 @@ import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/video_metadata_update_error_l10n.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
-import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom action bar for the video metadata edit screen.
@@ -44,6 +48,25 @@ class _VideoMetadataEditBottomBarState
     extends ConsumerState<VideoMetadataEditBottomBar> {
   bool _isUpdating = false;
   bool _isDeleting = false;
+  late final OwnerVideoActionsCubit _ownerVideoActionsCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+      contentDeletionService: () =>
+          ref.read(contentDeletionServiceProvider.future),
+      videoEventService: () => ref.read(videoEventServiceProvider),
+      enforcementRepository: () =>
+          ref.read(creatorDeleteEnforcementRepositoryProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ownerVideoActionsCubit.close();
+    super.dispose();
+  }
 
   bool get _isBusy => _isUpdating || _isDeleting;
 
@@ -89,17 +112,30 @@ class _VideoMetadataEditBottomBarState
           context.pop();
           messenger.showSnackBar(snackBar);
         }
+      } else if (result is VideoUpdateOriginalUnavailable) {
+        _reportOriginalVideoUnavailable();
       } else if (result is VideoUpdateFailure) {
-        _reportUpdateFailure(result.error);
+        _reportUpdateFailure(result.reason, result.reason.name);
       }
     } catch (e) {
-      _reportUpdateFailure(e);
+      _reportUpdateFailure(VideoMetadataUpdateError.generic, e);
     }
   }
 
-  void _reportUpdateFailure(Object error) {
+  void _reportOriginalVideoUnavailable() {
+    if (!mounted) return;
+    setState(() => _isUpdating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        context.l10n.shareMenuOriginalVideoUnavailable,
+        error: true,
+      ),
+    );
+  }
+
+  void _reportUpdateFailure(VideoMetadataUpdateError reason, Object detail) {
     Log.error(
-      'Failed to update video: $error',
+      'Failed to update video: $detail',
       name: 'VideoMetadataEditBottomBar',
       category: LogCategory.ui,
     );
@@ -108,7 +144,7 @@ class _VideoMetadataEditBottomBarState
     setState(() => _isUpdating = false);
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
-        context.l10n.shareMenuFailedToUpdateVideo('$error'),
+        context.l10n.videoMetadataUpdateErrorMessage(reason),
         error: true,
       ),
     );
@@ -128,9 +164,11 @@ class _VideoMetadataEditBottomBarState
       onSecondaryPressed: () => Navigator.of(context).pop(false),
     );
 
-    if (confirmed == true) {
-      await _deleteVideo();
-    }
+    // Guard against the edit surface being unmounted while the confirm sheet
+    // is open (external navigation): _deleteVideo calls setState. Matches the
+    // other owner-delete surfaces, which recheck mounted after their confirm.
+    if (confirmed != true || !mounted) return;
+    await _deleteVideo();
   }
 
   Future<void> _deleteVideo() async {
@@ -138,19 +176,17 @@ class _VideoMetadataEditBottomBarState
     setState(() => _isDeleting = true);
 
     try {
-      final deletionService = await ref.read(
-        contentDeletionServiceProvider.future,
-      );
+      final start = await _ownerVideoActionsCubit.deleteVideo(widget.video);
+      if (start == OwnerVideoDeleteStart.busy) return;
+      if (!mounted) return;
+      final operation = _ownerVideoActionsCubit.state.forVideo(widget.video.id);
 
-      final result = await deletionService.quickDelete(
-        video: widget.video,
-        reason: DeleteReason.personalChoice,
-      );
-
-      if (result.success) {
-        final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoEventCompletely(widget.video);
-
+      if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+        showOwnerVideoCleanupCompletion(
+          context,
+          _ownerVideoActionsCubit,
+          widget.video.id,
+        );
         Log.info(
           'Video deleted successfully: ${widget.video.id}',
           name: 'VideoMetadataEditBottomBar',
@@ -160,8 +196,8 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           final snackBar = DivineSnackbarContainer.snackBar(
-            localizedPartialDeleteMessage(context, result) ??
-                context.l10n.shareMenuVideoDeletionRequested,
+            localizedOwnerVideoDeleteSuccessMessage(context, operation),
+            error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
           );
           context.pop();
           messenger.showSnackBar(snackBar);
@@ -171,7 +207,12 @@ class _VideoMetadataEditBottomBarState
           setState(() => _isDeleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              localizedDeleteFailureMessage(context, result),
+              operation.deleteResult == null
+                  ? context.l10n.shareMenuDeleteFailedGeneric
+                  : localizedDeleteFailureMessage(
+                      context,
+                      operation.deleteResult!,
+                    ),
               error: true,
             ),
           );
@@ -192,6 +233,10 @@ class _VideoMetadataEditBottomBarState
             error: true,
           ),
         );
+      }
+    } finally {
+      if (mounted && _isDeleting) {
+        setState(() => _isDeleting = false);
       }
     }
   }

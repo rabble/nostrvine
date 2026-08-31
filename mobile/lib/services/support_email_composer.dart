@@ -15,6 +15,14 @@ typedef ShareTextLauncher =
       Rect? sharePositionOrigin,
     });
 
+typedef SupportEmailCompose =
+    Future<void> Function({
+      required String toEmail,
+      required String subject,
+      required String body,
+      Rect? sharePositionOrigin,
+    });
+
 String _buildFallbackShareText({
   required String toEmail,
   required String subject,

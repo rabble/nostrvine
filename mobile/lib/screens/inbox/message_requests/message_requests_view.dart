@@ -71,8 +71,33 @@ class MessageRequestsView extends ConsumerWidget {
       case RequestBulkAction.markAllRead:
         await actionsCubit.markAllRequestsAsRead(ids);
       case RequestBulkAction.removeAll:
-        await actionsCubit.removeAllRequests(ids);
+        final messenger = ScaffoldMessenger.of(context);
+        final withheldText =
+            context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+        final errorText = context.l10n.commonSomethingWentWrong;
+        // Whole list, not ids: the repository decides what "all requests"
+        // excludes, so a Divine moderation notice cannot be swept away by a
+        // gesture aimed at spam (#6971). Keeping the policy there means every
+        // removal caller inherits it.
+        final outcome = await actionsCubit.removeAllRequests(requests);
         if (context.mounted) context.pop();
+        // Silence reads as a broken button: a list holding nothing but a
+        // notice removes nothing and emits nothing, so without this the tap
+        // looks like it missed (#8347). The strings and messenger are captured
+        // before the await because the pop can retire this context.
+        //
+        // A failure outranks the withheld notice: the removal is transactional,
+        // so a throw left every row in place and naming the notice would blame
+        // the guard for a sweep that did nothing.
+        if (outcome.failed) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(errorText, error: true),
+          );
+        } else if (outcome.withheld) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(withheldText),
+          );
+        }
     }
   }
 }
@@ -158,10 +183,17 @@ class _RequestList extends StatelessWidget {
         .where((pk) => pk != currentPubkey)
         .toList();
 
+    final extra = conversation.subject == null
+        ? otherPubkeys
+        : {
+            'participantPubkeys': otherPubkeys,
+            'subject': conversation.subject,
+          };
+
     context.pushNamed(
       RequestPreviewPage.routeName,
       pathParameters: {'id': conversation.id},
-      extra: otherPubkeys,
+      extra: extra,
     );
   }
 }

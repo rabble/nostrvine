@@ -2,6 +2,7 @@
 // ABOUTME: Maintains a stack of visited tabs, allows navigating back through tab history
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/providers/providers.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -15,15 +16,14 @@ class TabHistory extends Notifier<List<int>> {
       final ctx = next.asData?.value;
       if (ctx == null) return;
 
-      // Only track main tab routes (home, explore, notifications, profile)
-      // Ignore sub-routes like hashtag, search, etc.
-      final tabIndex = _tabIndexFromRouteType(ctx.type);
+      // Only track routes a bottom-nav tab owns; ignore everything else.
+      final tabIndex = tabIndexFromRouteType(ctx.type);
       if (tabIndex == null) return; // Not a main tab route
 
       // Get previous context to check if we're switching tabs
       final prevCtx = prev?.asData?.value;
       final prevTabIndex = prevCtx != null
-          ? _tabIndexFromRouteType(prevCtx.type)
+          ? tabIndexFromRouteType(prevCtx.type)
           : null;
 
       // Only add to history if we're switching to a different tab
@@ -40,7 +40,7 @@ class TabHistory extends Notifier<List<int>> {
       newHistory.add(tabIndex);
 
       Log.debug(
-        'Tab history updated: ${newHistory.map(_tabName).join(" → ")}',
+        'Tab history updated: ${newHistory.map(tabName).join(" → ")}',
         name: 'TabHistory',
         category: LogCategory.ui,
       );
@@ -51,7 +51,7 @@ class TabHistory extends Notifier<List<int>> {
     // Initialize with current tab (if available)
     final ctx = ref.read(pageContextProvider).asData?.value;
     if (ctx != null) {
-      final tabIndex = _tabIndexFromRouteType(ctx.type);
+      final tabIndex = tabIndexFromRouteType(ctx.type);
       if (tabIndex != null) {
         return [tabIndex];
       }
@@ -59,39 +59,6 @@ class TabHistory extends Notifier<List<int>> {
 
     // Default to home tab
     return [0];
-  }
-
-  /// Get the tab index from route type
-  /// Returns null if not a main tab route
-  int? _tabIndexFromRouteType(RouteType type) {
-    switch (type) {
-      case RouteType.home:
-        return 0;
-      case RouteType.explore:
-      case RouteType.hashtag: // Hashtag is part of explore tab
-        return 1;
-      case RouteType.notifications:
-        return 2;
-      case RouteType.profile:
-        return 3;
-      default:
-        return null; // Not a main tab route
-    }
-  }
-
-  String _tabName(int index) {
-    switch (index) {
-      case 0:
-        return 'Home';
-      case 1:
-        return 'Explore';
-      case 2:
-        return 'Notifications';
-      case 3:
-        return 'Profile';
-      default:
-        return 'Unknown';
-    }
   }
 
   /// Get the previous tab in history (without removing it)
@@ -124,7 +91,7 @@ class TabHistory extends Notifier<List<int>> {
     // Get previous tab
     final previousTab = state.last;
     Log.debug(
-      'Navigating back to tab: ${_tabName(previousTab)}',
+      'Navigating back to tab: ${tabName(previousTab)}',
       name: 'TabHistory',
       category: LogCategory.ui,
     );

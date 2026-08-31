@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -91,6 +92,11 @@ class CameraController(
     // only forward a diagnostic when it transitions (the Status event fires
     // continuously). Reset to the sentinel on each recording Start.
     private var lastAudioState: Int = Int.MIN_VALUE
+
+    // Whether the user asked for capture without the platform's speech-tuned
+    // processing (Music mode, #7796). Set per initialize like every other
+    // session flag, and read when a Recorder picks its audio source.
+    private var prefersUnprocessedAudio: Boolean = false
 
     // Callback for startRecording - called when recording truly starts or is aborted
     private var startRecordingCallback: ((String?) -> Unit)? = null
@@ -364,13 +370,15 @@ class CameraController(
         enableScreenFlash: Boolean = true,
         mirrorFrontCameraOutput: Boolean = true,
         enableAutoLensSwitch: Boolean = true,
+        preferUnprocessedAudio: Boolean = false,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
-        DivineCameraLog.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch (portrait mode 1080x1920)")
+        DivineCameraLog.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch, unprocessedAudio: $preferUnprocessedAudio (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
         this.mirrorFrontCameraOutput = mirrorFrontCameraOutput
         this.autoLensSwitchRequested = enableAutoLensSwitch
+        this.prefersUnprocessedAudio = preferUnprocessedAudio
 
         // Map lens string to lens type and facing
         currentLensType = lens
@@ -877,6 +885,7 @@ class CameraController(
      * target is a bounded overshoot for that tier (never above the requested
      * one) — still far below the uncapped device default, so acceptable.
      */
+    @SuppressLint("RestrictedApi")
     private fun buildRecorder(aspectRatio: Int): Recorder = Recorder.Builder()
         .setQualitySelector(
             QualitySelector.from(
@@ -887,7 +896,71 @@ class CameraController(
         .setAspectRatio(aspectRatio)
         .setExecutor(cameraExecutor)
         .setTargetVideoEncodingBitRate(videoEncodingBitRate(videoQuality))
+        // setAudioSource is @RestrictTo(LIBRARY): CameraX 1.5.3 publishes no
+        // supported way to choose the source, and no way at all to route
+        // capture to a specific AudioDeviceInfo. Pinned by
+        // AudioInputSourceTest so a CameraX bump that drops it fails the build.
+        .setAudioSource(resolveAudioSource())
         .build()
+
+    /**
+     * Resolves the audio source for a new Recorder from the input devices
+     * connected right now. Falls back to the CameraX default when the
+     * AudioManager is unavailable.
+     *
+     * Evaluated per Recorder build, so initial bind and both lens switches pick
+     * up a microphone attached since the last build; a mic plugged in while the
+     * camera stays bound is picked up on the next switch or re-entry.
+     *
+     * Also honours the user's Music mode preference (#8079), which asks for
+     * capture without the platform's speech-tuned processing. iOS answers that
+     * with an audio-session mode; the audio source is Android's equivalent
+     * lever, and this is the only place Android picks one.
+     *
+     * Logs the decision, both inputs to it, and the inputs the device
+     * reported. A report that the external mic or Music mode was ignored is
+     * only actionable if it says which source was chosen and from what, and a
+     * device naming its mic something we do not route on leaves no other
+     * trace (#6171).
+     */
+    private fun resolveAudioSource(): Int {
+        val audioManager =
+            context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                ?: run {
+                    DivineCameraLog.warning(
+                        "AudioManager unavailable — camera-default audio source",
+                        name = "DivineCamera.Audio"
+                    )
+                    return AudioSpec.SOURCE_AUTO
+                }
+        val types = audioManager
+            .getDevices(AudioManager.GET_DEVICES_INPUTS)
+            .map { it.type }
+            .toIntArray()
+        // Only the exact string "true" means supported. The CDD requires an
+        // unsupporting device to return null (§5.11 [C-2-1]) while AOSP's own
+        // getProperty returns String.valueOf(false) and never null, so both
+        // answers are in the field and both must read as unsupported.
+        val unprocessedSupported = audioManager
+            .getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED)
+            .toBoolean()
+        val source = audioSourceForInputDeviceTypes(
+            types,
+            preferUnprocessedAudio = prefersUnprocessedAudio,
+            unprocessedSourceSupported = unprocessedSupported
+        )
+        val inputs = types
+            .joinToString(", ") { audioInputTypeName(it) }
+            .ifEmpty { "none" }
+        DivineCameraLog.info(
+            "Audio source: ${audioSourceName(source)} " +
+                "(music mode: $prefersUnprocessedAudio, " +
+                "unprocessed supported: $unprocessedSupported, " +
+                "inputs: $inputs)",
+            name = "DivineCamera.Audio"
+        )
+        return source
+    }
 
     /**
      * Starts the camera with preview and video capture use cases.

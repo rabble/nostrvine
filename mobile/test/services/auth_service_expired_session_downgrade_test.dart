@@ -6,10 +6,12 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
+import 'package:nostr_sdk/nostr_sdk.dart' show Nip19, generatePrivateKey;
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -1250,6 +1252,138 @@ void main() {
         );
       },
     );
+
+    test('sign-out closes the active Keycast RPC signer', () async {
+      // Pins the production close-on-clear decision: signOut() clears the
+      // signer through _setKeycastSigner(null), which must close the owned
+      // KeycastRpc transport rather than abandon it.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      arrangeExpiredSessionWithLocalKeys();
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+
+      final activeRpc = KeycastRpc(
+        nostrApi: 'https://login.divine.video/api/nostr',
+        accessToken: 'active_token',
+        httpClient: MockClient(
+          (request) async => http.Response(
+            jsonEncode({'result': 'ok'}),
+            200,
+          ),
+        ),
+      );
+
+      final authService = createAuthService();
+
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
+          authService.debugSetKeycastSigner(activeRpc);
+          await authService.signOut();
+        },
+        (error, stack) {
+          // Ignore background relay/RPC errors
+        },
+      );
+
+      expect(authService.authState, equals(AuthState.unauthenticated));
+      await expectLater(
+        activeRpc.getPublicKey(),
+        throwsA(isA<KeycastRpcClosedException>()),
+        reason:
+            'sign-out must close the KeycastRpc it cleared so later use is '
+            'terminal (KeycastRpcClosedException), not silently dead',
+      );
+    });
+
+    test("same-pubkey nsec import retains the live client's signer", () async {
+      // Pins the retain decision in _setupUserSession's non-OAuth branch:
+      // a Divine OAuth user importing their own nsec keeps the pubkey, so
+      // the app-wide NostrClient is NOT rebuilt (#5909) and still holds the
+      // previous KeycastNostrIdentity — its RPC must stay usable.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      arrangeExpiredSessionWithLocalKeys();
+      final expiredSession = KeycastSession.fromJson(
+        jsonDecode(secureStorage['keycast_session']!) as Map<String, dynamic>,
+      );
+
+      // The nsec for the SAME pubkey the expired session is bound to: the
+      // arrange helper stored its private key in nostr_primary_key.
+      final storedKey = secureStorage['nostr_primary_key']!;
+      final privateKeyHex = storedKey
+          .substring(
+            storedKey.indexOf('privateKeyHex:') + 'privateKeyHex:'.length,
+          )
+          .split('|')
+          .first;
+      final expiredPubkey = expiredSession.userPubkey!;
+
+      final retainedRpc = KeycastRpc(
+        nostrApi: 'https://login.divine.video/api/nostr',
+        accessToken: 'retained_token',
+        httpClient: MockClient(
+          (request) async => http.Response(
+            jsonEncode({'result': expiredPubkey}),
+            200,
+          ),
+        ),
+      );
+
+      final authService = createAuthService();
+      final retainedIdentity = KeycastNostrIdentity(
+        pubkey: expiredPubkey,
+        rpcSigner: retainedRpc,
+      );
+      late AuthResult result;
+
+      await runZonedGuarded(
+        () async {
+          // Stand in for the authenticated OAuth session whose live
+          // NostrClient holds the retained identity.
+          authService.debugSetKeycastSigner(retainedRpc);
+          authService.debugSetIdentity(retainedIdentity);
+
+          result = await authService.importFromNsec(
+            Nip19.encodePrivateKey(privateKeyHex),
+          );
+        },
+        (error, stack) {
+          // Ignore background errors (RPC connection, relay discovery).
+          // Assertions live outside the zone: this handler must not
+          // swallow them into a framework timeout.
+        },
+      );
+
+      expect(result.success, isTrue);
+
+      // Anti-vacuous: the import must have actually swapped the
+      // identity off the retained one while keeping the pubkey.
+      expect(authService.currentIdentity, isNot(same(retainedIdentity)));
+      expect(authService.currentPublicKeyHex, equals(expiredPubkey));
+
+      // The production regression this pins: if the non-OAuth branch
+      // closed the previous signer, this throws
+      // KeycastRpcClosedException.
+      expect(
+        await retainedRpc.getPublicKey(),
+        equals(expiredPubkey),
+        reason:
+            'the RPC still held by the live NostrClient must survive a '
+            'same-pubkey nsec import',
+      );
+    });
 
     test('isRpcUpgradeInProgress is false after upgrade completes', () async {
       // Regression for #4626: isRpcUpgradeInProgress must be false after

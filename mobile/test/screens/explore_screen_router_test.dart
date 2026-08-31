@@ -178,8 +178,10 @@ void main() {
       // Dispose the widget tree (simulates navigation away)
       await tester.pumpWidget(const SizedBox());
 
-      // If we get here without errors, lifecycle is clean
-      expect(true, isTrue);
+      // A provider mutated during initState/dispose surfaces here as a
+      // framework exception rather than a failed matcher
+      // (.claude/rules/state_management.md).
+      expect(tester.takeException(), isNull);
 
       container.dispose();
     });

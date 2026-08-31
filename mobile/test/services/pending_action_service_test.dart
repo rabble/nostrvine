@@ -6,11 +6,16 @@ import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
 
 class MockConnectionStatusService extends Mock
     implements ConnectionStatusService {}
+
+class _TerminalActionException implements TerminalSocialActionException {
+  const _TerminalActionException();
+}
 
 void main() {
   late PendingActionService service;
@@ -292,6 +297,28 @@ void main() {
         final allActions = service.allActions;
         expect(allActions.length, equals(1));
         expect(allActions.first.retryCount, greaterThan(0));
+      });
+
+      test('terminalizes account-policy failures without retrying', () async {
+        when(() => mockConnectionService.isOnline).thenReturn(true);
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+
+        var attempts = 0;
+        service.registerExecutor(PendingActionType.like, (_) async {
+          attempts++;
+          throw const _TerminalActionException();
+        });
+
+        await service.syncPendingActions();
+
+        expect(attempts, 1);
+        expect(service.pendingActions, isEmpty);
+        expect(service.allActions.single.status, PendingActionStatus.failed);
+        expect(service.allActions.single.retryCount, 0);
       });
     });
 

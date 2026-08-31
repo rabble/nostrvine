@@ -182,6 +182,37 @@ void main() {
         expect(userIdentityCalls, 1);
       },
     );
+
+    test(
+      'setAnonymousIdentity waits for an in-flight initialization',
+      () async {
+        var anonymousIdentityCalls = 0;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') {
+                await Future<void>.delayed(const Duration(milliseconds: 20));
+                return true;
+              }
+              if (call.method == 'setAnonymousIdentity') {
+                anonymousIdentityCalls++;
+                return true;
+              }
+              return null;
+            });
+
+        final initialization = ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        final identitySet = await ZendeskSupportService.setAnonymousIdentity();
+        await initialization;
+
+        expect(identitySet, true);
+        expect(anonymousIdentityCalls, 1);
+      },
+    );
   });
 
   group('ZendeskSupportService.showNewTicketScreen', () {
@@ -348,6 +379,31 @@ void main() {
 
       expect(result, true);
       expect(showTicketListCalled, true);
+    });
+
+    test('sets a plain anonymous identity without cached user info', () async {
+      final calls = <String>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            calls.add(call.method);
+            if (call.method == 'initialize') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.showTicketListScreen();
+
+      expect(result, isTrue);
+      expect(
+        calls,
+        containsAllInOrder(['setAnonymousIdentity', 'showTicketList']),
+      );
     });
 
     test('retries with anonymous identity when NO_IDENTITY error', () async {
@@ -871,6 +927,51 @@ void main() {
       expect(capturedSubject, 'Links not working in DMs');
       expect(capturedSubject, isNot(startsWith('fix:')));
     });
+
+    test(
+      'includes aggregate local-storage diagnostics in the ticket',
+      () async {
+        String? capturedDescription;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') return true;
+              if (call.method == 'createTicket') {
+                capturedDescription = call.arguments['description'] as String?;
+                return true;
+              }
+              return null;
+            });
+
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        await ZendeskSupportService.createStructuredBugReport(
+          subject: 'Drafts disappeared',
+          description: 'The library is empty',
+          reportId: 'test-local-storage-001',
+          appVersion: '1.0.20+848',
+          deviceInfo: {
+            'platform': 'ios',
+            'localStorage': {
+              'databaseRecovery': {'outcome': 'recreatedKeyLoss'},
+              'contentInventory': {
+                'visibleDraftRows': 0,
+                'foreignDraftRows': 4,
+              },
+            },
+          },
+        );
+
+        expect(capturedDescription, contains('localStorage'));
+        expect(capturedDescription, contains('recreatedKeyLoss'));
+        expect(capturedDescription, contains('visibleDraftRows: 0'));
+        expect(capturedDescription, contains('foreignDraftRows: 4'));
+      },
+    );
 
     test('subject with user-typed prefix is not double-prefixed', () async {
       String? capturedSubject;
@@ -1422,30 +1523,33 @@ void main() {
       expect(methodCalls, ['showNewTicket']);
     });
 
-    test('showTicketListScreen without auth context skips refresh', () async {
-      final methodCalls = <String>[];
+    test(
+      'showTicketListScreen without auth context sets anonymous identity',
+      () async {
+        final methodCalls = <String>[];
 
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            methodCalls.add(call.method);
-            if (call.method == 'initialize') return true;
-            if (call.method == 'showTicketList') return true;
-            return null;
-          });
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
 
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
 
-      methodCalls.clear();
+        methodCalls.clear();
 
-      final result = await ZendeskSupportService.showTicketListScreen();
+        final result = await ZendeskSupportService.showTicketListScreen();
 
-      expect(result, true);
-      expect(methodCalls, ['showTicketList']);
-    });
+        expect(result, true);
+        expect(methodCalls, ['setAnonymousIdentity', 'showTicketList']);
+      },
+    );
 
     test(
       'showTicketListScreen falls back to anonymous identity when JWT refresh fails',
@@ -1621,7 +1725,7 @@ void main() {
 
         expect(result, isTrue);
         expect(refreshCallCount, 0);
-        expect(methodCalls, ['showTicketList']);
+        expect(methodCalls, ['setAnonymousIdentity', 'showTicketList']);
       },
     );
   });

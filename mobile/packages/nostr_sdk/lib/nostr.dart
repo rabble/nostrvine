@@ -275,7 +275,19 @@ class Nostr {
     return null;
   }
 
+  /// Marks the relay pool as closing so nothing opens another socket while
+  /// the owner works its way through the rest of its teardown.
+  ///
+  /// [close] is the real teardown; this only has to run first, before the
+  /// owner's first await. See [RelayPool.beginClose].
+  void beginClose() {
+    _pool.beginClose();
+  }
+
   void close() {
+    // Idempotent, and already done by an owner that called [beginClose] first;
+    // repeated here so a direct [close] closes the same window.
+    _pool.beginClose();
     _pool.removeAll();
     nostrSigner.close();
   }
@@ -303,6 +315,7 @@ class Nostr {
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
     void Function()? onEose,
+    void Function(String reason)? onClosed,
   }) {
     return _pool.subscribe(
       filters,
@@ -313,6 +326,7 @@ class Nostr {
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
       onEose: onEose,
+      onClosed: onClosed,
     );
   }
 

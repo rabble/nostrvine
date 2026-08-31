@@ -151,12 +151,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsNotifications => 'ማሳወቂያዎች';
 
   @override
-  String get settingsContentPreferences => 'የይዘት ምርጫዎች';
-
-  @override
-  String get settingsModerationControls => 'ልከኝነት መቆጣጠሪያዎች';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky ማተም';
 
   @override
@@ -209,7 +203,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'ግብዣዎች';
+  String get settingsShareDivine => 'Divineን ከጓደኞችዎ ጋር ያጋሩ';
 
   @override
   String get settingsSwitchAccount => 'መለያ ቀይር';
@@ -384,6 +378,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ሲነቃ ሌሎች ከቪዲዮዎችዎ ኦዲዮን መጠቀም ይችላሉ።';
 
   @override
+  String get contentPreferencesMusicMode => 'የሙዚቃ ሁነታ';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'የሙዚቃ መሣሪያዎችን የሚያደበዝዘውን የድምፅ ማጽጃ ያጠፋል። ለሙዚቃ የተሻለ፣ ለድምፅ ግን ትንሽ ሻካራ።';
+
+  @override
   String get contentPreferencesAccountLabels => 'መለያ መለያዎች';
 
   @override
@@ -464,18 +465,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'መገለጫን ማጋራት አልተሳካም፦ $error';
-  }
-
-  @override
-  String get profileEditProfile => 'መገለጫ አርትዕ';
-
-  @override
-  String get profileCreatorAnalytics => 'የፈጣሪ ትንታኔ';
-
-  @override
-  String get profileShareProfile => 'መገለጫ አጋራ';
+  String get profileShareFailed => 'መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get profileCopyPublicKey => 'የህዝብ ቁልፍ ቅዳ (npub)';
@@ -488,12 +478,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'ኮድ ክተት ወደ ቅንጥብ ሰሌዳ ተቀድቷል።';
-
-  @override
-  String get profileRefreshTooltip => 'አድስ';
-
-  @override
-  String get profileRefreshSemanticLabel => 'መገለጫ አድስ';
 
   @override
   String get profileMoreTooltip => 'ተጨማሪ';
@@ -680,19 +664,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'ተጠቃሚ ታግዷል';
-
-  @override
-  String get profileUserBlockedContent => 'የዚህን ተጠቃሚ ይዘት በምግብዎ ውስጥ አያዩም።';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'በማንኛውም ጊዜ ከመገለጫቸው ወይም በቅንብሮች > ደህንነት ውስጥ እገዳውን ማንሳት ትችላለህ።';
-
-  @override
-  String get profileCloseButton => 'ገጠመ';
-
-  @override
   String get profileNoCollabsTitle => 'እስካሁን ምንም ትብብር የለም።';
 
   @override
@@ -795,23 +766,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCompleteSubtitle => 'ለመጀመር የእርስዎን ስም፣ የህይወት ታሪክ እና ምስል ያክሉ';
 
   @override
-  String get profileSetUpButton => 'አዋቅር';
-
-  @override
-  String get profileVerifyingEmail => 'ኢሜል በማረጋገጥ ላይ...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'የማረጋገጫ ማገናኛን ለማግኘት $emailን ያረጋግጡ';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'የኢሜይል ማረጋገጫን በመጠበቅ ላይ';
-
-  @override
-  String get profileVerificationFailed => 'ማረጋገጥ አልተሳካም።';
-
-  @override
   String get profilePleaseTryAgain => 'እባክህ እንደገና ሞክር';
 
   @override
@@ -823,9 +777,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'እንደገና ይሞክሩ';
-
-  @override
-  String get profileRegisterButton => 'ይመዝገቡ';
 
   @override
   String get profileSessionExpired => 'ክፍለ ጊዜው አልፎበታል።';
@@ -861,13 +812,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileDeletedAccountName => 'የተሰረዘ መለያ';
 
   @override
+  String get inboxActionReportVanishedAccount => 'ሪፖርት ይህን መለያ';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'አግድ ይህን መለያ';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'እገዳን አንሳ ይህን መለያ';
+
+  @override
+  String get inboxReportedVanishedAccount => 'ሪፖርት ተደርጓል ይህን መለያ';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'ታግዷል ይህን መለያ';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'እገዳው ተነስቷል ይህን መለያ';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'ይህ ውይይቱን ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'ይህ መለያ ተሰርዟል';
 
   @override
   String get profileUserFallback => 'ተጠቃሚ';
-
-  @override
-  String get profileDismissTooltip => 'አሰናብት';
 
   @override
   String get profileLinkCopied => 'የመገለጫ አገናኝ ተቀድቷል።';
@@ -925,9 +895,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'አውታረ መረቡ ላይ መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
-  String get profileSetupRetryLabel => 'እንደገና ይሞክሩ';
-
-  @override
   String get profileSetupDisplayNameLabel => 'የማሳያ ስም';
 
   @override
@@ -946,10 +913,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupUsernameLabel => 'የተጠቃሚ ስም (አማራጭ)';
 
   @override
-  String get profileSetupUsernameHelper => 'ልዩ ማንነትህ በDivine ላይ';
-
-  @override
-  String get profileSetupProfileColorLabel => 'የመገለጫ ቀለም (አማራጭ)';
+  String get profileSetupUsernameHelper =>
+      'ፊደላትን፣ ቁጥሮችን ወይም ሀሰረ መስመሮችን ተጠቀም። የተጠቃሚ ስምህ የdivine.video አድራሻ ይሆናል። ለክፍተቶች ወይም ምልክቶች የማሳያ ስምህን ተጠቀም።';
 
   @override
   String get profileSetupSaveButton => 'አስቀምጥ';
@@ -961,9 +926,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupImageUrlTitle => 'ምስል ያክሉ URL';
 
   @override
-  String get profileSetupPictureUploaded => 'የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!';
-
-  @override
   String get profileSetupImageSelectionFailed =>
       'የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።';
 
@@ -971,9 +933,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'ምስሎች';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'የካሜራ መዳረሻ አልተሳካም፦ $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'የካሜራ መዳረሻ ጠፍቷል። ፎቶ ለማንሳት ከቅንብሮች አብራው።';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'በዚህ መሣሪያ ላይ የካሜራ መዳረሻ አይፈቀድም።';
+
+  @override
+  String get cameraPickErrorBusy => 'መምረጫው አስቀድሞ ተከፍቷል። ዝጋውና እንደገና ሞክር።';
+
+  @override
+  String get cameraPickErrorGeneric => 'ካሜራውን መክፈት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get profileSetupGotItButton => 'ገባኝ';
@@ -997,10 +968,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
   String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
@@ -1082,6 +1049,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ፊደሎች፣ ቁጥሮች እና ሰረዞች ብቻ ይፈቀዳሉ።';
 
   @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'የተጠቃሚ ስም በሀሰረ መስመር ሊጀምር ወይም ሊጨርስ አይችልም።';
+
+  @override
   String get profileSetupUsernameInvalidLength =>
       'የተጠቃሚ ስም 3-63 ቁምፊዎች መሆን አለበት።';
 
@@ -1120,12 +1091,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileSetupSendRequest => 'ጥያቄ ላክ';
-
-  @override
-  String get profileSetupPickColorTitle => 'ቀለም ይምረጡ';
-
-  @override
-  String get profileSetupSelectButton => 'ይምረጡ';
 
   @override
   String get profileSetupUseOwnNip05 => 'የራስህን NIP-05 አድራሻ ተጠቀም';
@@ -1225,9 +1190,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get nostrInfoGotIt => 'ገባኝ!';
 
   @override
-  String get profileTabRefreshTooltip => 'አድስ';
-
-  @override
   String get videoGridRefreshLabel => 'ተጨማሪ ቪዲዮዎችን በመፈለግ ላይ';
 
   @override
@@ -1248,11 +1210,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'ይዘትን በመሰረዝ ላይ...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'ይዘትን መሰረዝ አልተሳካም፦ $error';
-  }
 
   @override
   String get exploreTabFeatured => 'ተለይተው የቀረቡ';
@@ -1279,8 +1236,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreTabIntegratedApps => 'የተዋሃዱ መተግበሪያዎች';
 
   @override
-  String exploreFeaturedPaidPartnership(String sponsor) {
-    return 'In paid partnership with $sponsor';
+  String exploreFeaturedSponsoredBy(String sponsor) {
+    return 'Sponsored by $sponsor';
   }
 
   @override
@@ -1299,11 +1256,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get exploreNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
-
-  @override
-  String exploreErrorPrefix(Object error) {
-    return 'ስህተት፡ $error';
-  }
 
   @override
   String get exploreDiscoverLists => 'ዝርዝሮችን ያግኙ';
@@ -1336,9 +1288,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreSubscribedLists => 'የተመዘገቡ ዝርዝሮች';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'ዝርዝሮችን መጫን ላይ ስህተት፦ $error';
-  }
+  String get exploreErrorLoadingLists => 'ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -1363,9 +1313,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'ቪዲዮን በመጫን ላይ...';
-
-  @override
   String get videoPlayerPlayVideo => 'ቪዲዮ አጫውት።';
 
   @override
@@ -1373,12 +1320,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'የቪዲዮ ድምጸ-ከል አንሳ';
-
-  @override
-  String get videoPlayerEditVideo => 'ቪዲዮን ያርትዑ';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
 
   @override
   String get videoPlayerTapHint => 'ለማጫወት ወይም ለማቆም ይንኩ። ለመውደድ ሁለት ጊዜ ይንኩ።';
@@ -1584,19 +1525,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoErrorNotFound => 'ቪዲዮ አልተገኘም።';
 
   @override
-  String get videoErrorNetwork => 'የአውታረ መረብ ስህተት';
-
-  @override
-  String get videoErrorTimeout => 'የመጫኛ ጊዜ ማብቂያ';
-
-  @override
-  String get videoErrorFormat =>
-      'የቪዲዮ ቅርጸት ስህተት\n(እንደገና ይሞክሩ ወይም የተለየ አሳሽ ይጠቀሙ)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'የማይደገፍ የቪዲዮ ቅርጸት';
-
-  @override
   String get videoErrorPlayback => 'የቪዲዮ መልሶ ማጫወት ስህተት';
 
   @override
@@ -1607,9 +1535,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => 'ይህ ቪዲዮ አሁን አይገኝም።';
-
-  @override
-  String get videoErrorVerifyAge => 'ዕድሜን ያረጋግጡ';
 
   @override
   String get videoErrorRetry => 'እንደገና ይሞክሩ';
@@ -1672,9 +1597,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'የቪዲዮ ማጫወቻን ዝጋ';
-
-  @override
-  String get videoFollowButtonFollowing => 'በመከተል ላይ';
 
   @override
   String get videoFollowButtonFollow => 'ተከተል';
@@ -1861,12 +1783,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionMoreOptions => 'ተጨማሪ አማራጮች';
 
   @override
-  String get videoActionHideSubtitles => 'የትርጉም ጽሑፎችን ደብቅ';
-
-  @override
-  String get videoActionShowSubtitles => 'የትርጉም ጽሑፎችን አሳይ';
-
-  @override
   String get videoEngagementLikersTitle => 'የወደዱት';
 
   @override
@@ -1901,11 +1817,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoOverlayCommentPostFailedSnackbar => 'አስተያየት መለጠፍ አልተቻለም';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count ሉፖች';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2066,6 +1977,74 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'የገንቢ ሁነታ ተሰናክሏል';
 
   @override
+  String get devOptionsShorebirdTitle => 'የShorebird ማስተካከያዎች';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'እየሰራ ያለ ማስተካከያ';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'ምንም ማስተካከያ አልተጫነም';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'በዚህ ግንባታ ውስጥ አይገኝም';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'ማስተካከያዎች በshorebird release በተፈጠረ ግንባታ ውስጥ ብቻ ይሰራሉ።';
+
+  @override
+  String get devOptionsShorebirdLoading => 'የማስተካከያ ሁኔታ እየተነበበ ነው…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'የሙከራ ትራኩ ገና አልተፈተሸም።';
+
+  @override
+  String get devOptionsShorebirdCheck => 'የሙከራ ትራኩን ፈትሽ';
+
+  @override
+  String get devOptionsShorebirdApply => 'የሙከራ ማስተካከያውን ተግብር';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'ወደ የተረጋጋ ዝማኔዎች ተመለስ';
+
+  @override
+  String get devOptionsShorebirdChecking => 'የሙከራ ትራኩ እየተፈተሸ ነው…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable => 'የሙከራ ማስተካከያ ለመተግበር ዝግጁ ነው።';
+
+  @override
+  String get devOptionsShorebirdUpToDate => 'ለዚህ ልቀት የሙከራ ማስተካከያ የለም።';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ወርዷል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'መመለሻ ዝግጁ ነው። ወደ መሰረታዊ ልቀት ለመመለስ እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdApplying => 'እየወረደ እና እየተጫነ ነው…';
+
+  @override
+  String get devOptionsShorebirdApplied => 'ተጭኗል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'ምንም አልተጫነም። የሙከራ ትራኩን ፈትሸው እንደገና ይሞክሩ።';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => 'የተረጋጋ ትራክ በመምረጥ ላይ…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'የተረጋጋ ትራክ ተመርጧል። የተረጋጋ ፓች ለመፈተሽ መተግበሪያውን ዳግም ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdFailure => 'አልተሳካም። ለዝርዝሮች ምዝግቦቹን ይመልከቱ።';
+
+  @override
   String get devOptionsPageLoadTimes => 'የገጽ ጭነት ጊዜያት';
 
   @override
@@ -2192,11 +2171,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'ያልተሳኩ ጥያቄዎች';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'የመጨረሻው ስህተት፡ $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'የማስተላለፊያ መረጃን በመጫን ላይ...';
@@ -2402,12 +2376,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'ቁልፎችን ማስወገድ አልተሳካም፦ $error';
-  }
+      'ይህን መለያ ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get nostrSettingsDeleteAccount => 'መለያ እና ውሂብ ሰርዝ';
@@ -2559,9 +2528,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'መጠይቁ አልተሳካም፡ $error';
-  }
+  String get relayDiagnosticQueryFailed => 'መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2573,9 +2540,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'የግንኙነት ድጋሚ መሞከር አልተሳካም፦ $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'ተገናኝቷል እና የተረጋገጠ';
@@ -2639,35 +2605,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsNewPostsSubtitle => 'የምትከታተለው ሰው ሲለጥፍ';
 
   @override
-  String get notificationSettingsSystem => 'ሲስተም';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'የመተግበሪያ ዝማኔዎችና የሲስተም መልእክቶች';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'የግፊት ማሳወቂያዎች';
-
-  @override
-  String get notificationSettingsPushNotifications => 'የግፊት ማሳወቂያዎች';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'መተግበሪያው ሲዘጋ ማሳወቂያዎችን ተቀበል';
-
-  @override
-  String get notificationSettingsSound => 'ድምፅ';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'ለማሳወቂያዎች ድምፅ አጫውት';
-
-  @override
-  String get notificationSettingsVibration => 'ንዝረት';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'ለማሳወቂያዎች ንዘር';
-
-  @override
   String get notificationSettingsActions => 'ድርጊቶች';
 
   @override
@@ -2695,12 +2632,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'ማሳወቂያዎች የተጎላበተው በNostr ፕሮቶኮል ነው። የቅጽበታዊ ዝማኔዎች ከNostr ቅብብሎሽ ጋር ባለዎት ግንኙነት ይወሰናል። አንዳንድ ማሳወቂያዎች መዘግየቶች ሊኖራቸው ይችላል።';
-
-  @override
-  String get safetySettingsTitle => 'ደህንነት እና ግላዊነት';
-
-  @override
-  String get safetySettingsLabel => 'ቅንብሮች';
 
   @override
   String get safetySettingsWhatYouSee => 'የሚያዩት';
@@ -3445,29 +3376,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authRegistrationComplete => 'ምዝገባው ተጠናቅቋል። እባክህ ኢሜልህን አረጋግጥ።';
 
   @override
-  String get authVerificationFailedTitle => 'ማረጋገጥ አልተሳካም።';
-
-  @override
-  String get authClose => 'ገጠመ';
-
-  @override
-  String get authAccountSecured => 'መለያ ደህንነቱ የተጠበቀ!';
-
-  @override
-  String get authAccountLinkedToEmail => 'መለያዎ አሁን ከኢሜይልዎ ጋር ተገናኝቷል።';
-
-  @override
-  String get authVerifyYourEmail => 'ኢሜልዎን ያረጋግጡ';
-
-  @override
-  String get authClickLinkContinue =>
-      'ምዝገባውን ለማጠናቀቅ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ። እስከዚያው መተግበሪያውን መጠቀም መቀጠል ይችላሉ።';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'ማረጋገጫን በመጠበቅ ላይ...';
-
-  @override
-  String get authContinueToApp => 'ወደ መተግበሪያ ይቀጥሉ';
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
 
   @override
   String get authFailedToSendResetEmail => 'ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።';
@@ -3524,6 +3434,31 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get authVerificationErrorPinUnavailable =>
       'የኮድ ማስገቢያ አሁን አይገኝም። በኢሜይልዎ ውስጥ ያለውን አገናኝ ይንኩ፣ ወይም አዲስ ለማግኘት እንደገና ይላኩ።';
+
+  @override
+  String get authInviteCodeErrorMalformed => 'እንደ ABCD-EFGH ያለ የግብዣ ኮድ ያስገቡ።';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'ያ የግብዣ ኮድ ትክክል አይመስልም።';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'ያ የግብዣ ኮድ ቀደም ሲል ጥቅም ላይ ውሏል ወይም ተሰርዟል።';
+
+  @override
+  String get authInviteGateErrorCreatorFull => 'የዚህ ፈጣሪ ግብዣዎች አልቀዋል';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'ያ የግብዣ ኮድ አይገኝም። በተጠባባቂ ዝርዝሩ ይመዝገቡ፣ ቦታ ሲኖር ግብዣ እንልክልዎታለን።';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'ያንን ኮድ ማረጋገጥ አልቻልንም። እንደገና ይሞክሩ።';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'የሆነ ችግር ተፈጥሯል። የግብዣ ኮድዎን እንደገና ይሞክሩ።';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3590,9 +3525,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'በ በኩል አጋራ';
-
-  @override
-  String get shareSheetReport => 'ሪፖርት አድርግ';
 
   @override
   String get shareSheetEventJson => 'ክስተት JSON';
@@ -3724,145 +3656,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'በውሃ ምልክት የተደረገበትን ቪዲዮ ወደ ካሜራ ጥቅልዎ በማስቀመጥ ላይ...';
 
   @override
-  String get uploadProgressVideoUpload => 'ቪዲዮ ሰቀላ';
-
-  @override
-  String get uploadProgressPause => 'ለአፍታ አቁም';
-
-  @override
-  String get uploadProgressResume => 'ከቆመበት ቀጥል';
-
-  @override
-  String get uploadProgressGoBack => 'ተመለስ';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'እንደገና ይሞክሩ ($count ግራ)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'ሰርዝ';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '${count}d በፊት';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '$countሰ በፊት';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '$countደቂቃ በፊት';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'ልክ አሁን';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'በመስቀል ላይ $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'ባለበት ቆሟል $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'ቪዲዮ አጋራ';
-
-  @override
-  String get shareMenuReportAiContent => 'AI ይዘትን ሪፖርት አድርግ';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'ፈጣን ሪፖርት በ AI የመነጨ ይዘት ተጠርጥሯል።';
-
-  @override
-  String get shareMenuReportingAiContent => 'AI ይዘትን ሪፖርት በማድረግ ላይ...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'ይዘትን ሪፖርት ማድረግ አልተሳካም፦ $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'የኤአይ ይዘትን ሪፖርት ማድረግ አልተሳካም፦ $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'የቪዲዮ ሁኔታ';
-
-  @override
-  String get shareMenuViewAllLists => 'ሁሉንም ዝርዝሮች ይመልከቱ →';
-
-  @override
-  String get shareMenuShareWith => 'ሼር በማድረግ ያካፍሉ።';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'በሌሎች መተግበሪያዎች አጋራ';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'በሌሎች መተግበሪያዎች ያጋሩ ወይም አገናኝ ይቅዱ';
-
-  @override
-  String get shareMenuSaveToGallery => 'ወደ ማዕከለ-ስዕላት አስቀምጥ';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle => 'የመጀመሪያውን ቪዲዮ ወደ ካሜራ ጥቅል አስቀምጥ';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'በውሃ ምልክት አስቀምጥ';
-
-  @override
-  String get shareMenuSaveVideo => 'ቪዲዮ አስቀምጥ';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'በDivine የውሃ ምልክት ያውርዱ';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'ቪዲዮን ወደ ካሜራ ጥቅል አስቀምጥ';
-
-  @override
-  String get shareMenuLists => 'ዝርዝሮች';
-
-  @override
-  String get shareMenuAddToList => 'ወደ ዝርዝር ያክሉ';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'ወደ የተመረጡ ዝርዝሮችዎ ያክሉ';
-
-  @override
-  String get shareMenuCreateNewList => 'አዲስ ዝርዝር ይፍጠሩ';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => 'አዲስ የተሰበሰበ ስብስብ ይጀምሩ';
-
-  @override
-  String get shareMenuRemovedFromList => 'ከዝርዝሩ ተወግዷል';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => 'ከዝርዝሩ ማስወገድ አልተሳካም።';
-
-  @override
   String get shareMenuBookmarks => 'ዕልባቶች';
-
-  @override
-  String get shareMenuFollowSets => 'የሰዎች ዝርዝሮች';
-
-  @override
-  String get shareMenuCreateFollowSet => 'የክትትል ስብስብ ይፍጠሩ';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle => 'በዚህ ፈጣሪ አዲስ ስብስብ ጀምር';
-
-  @override
-  String get shareMenuAddToFollowSet => 'ለመከተል አዘጋጅ ያክሉ';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3871,10 +3665,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'ወደ ዝርዝር ያክሉ';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'ይህንን ፈጣሪ ከዝርዝሮችዎ ውስጥ በአንዱ ያስቀምጡት።';
 
   @override
   String get peopleListsSheetTitle => 'ወደ ዝርዝር ያክሉ';
@@ -4014,38 +3804,15 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'ወደ ዕልባቶች ታክሏል!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'ዕልባት ማከል አልተሳካም።';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return '\"$name\" የሚባል ዝርዝር ተፈጥሯል እና ቪዲዮ ታክሏል';
-  }
-
-  @override
-  String get shareMenuManageContent => 'ይዘትን አስተዳድር';
-
-  @override
   String get shareMenuEditVideo => 'ቪዲዮ አርትዕ';
-
-  @override
-  String get shareMenuEditVideoSubtitle => 'ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ';
 
   @override
   String get shareMenuDeleteVideo => 'ቪዲዮ ሰርዝ';
 
   @override
-  String get shareMenuVideoInTheseLists => 'ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count ቪዲዮዎች';
   }
-
-  @override
-  String get shareMenuClose => 'ገጠመ';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4056,14 +3823,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'ሰርዝ';
-
-  @override
-  String get shareMenuDeletingContent => 'ይዘትን በመሰረዝ ላይ...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'ይዘትን መሰረዝ አልተሳካም፦ $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4085,6 +3844,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ሪሌው ይህን የመሰረዝ ጥያቄ አልተቀበለውም። ከጥቂት ቆይታ በኋላ እንደገና ሞክር።';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'ሪሌውን ማግኘት አልተቻለም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
 
@@ -4096,58 +3859,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuDeleteFailedGeneric => 'ይህን ቪዲዮ መሰረዝ አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
-  String get shareMenuFollowSetName => 'የቅንብር ስም ተከተል';
-
-  @override
-  String get shareMenuFollowSetNameHint => 'ለምሳሌ፣ የይዘት ፈጣሪዎች፣ ሙዚቀኞች፣ ወዘተ';
-
-  @override
-  String get shareMenuDescriptionOptional => 'መግለጫ (አማራጭ)';
-
-  @override
-  String get shareMenuCreate => 'ፍጠር';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return '\"$name\" የሚባል የመከተል ስብስብ ተፈጥሯል እና ፈጣሪ ታክሏል';
-  }
-
-  @override
-  String get shareMenuDone => 'ተከናውኗል';
-
-  @override
-  String get shareMenuEditTitle => 'ርዕስ';
-
-  @override
-  String get shareMenuEditTitleHint => 'የቪዲዮ ርዕስ አስገባ';
-
-  @override
-  String get shareMenuEditDescription => 'መግለጫ';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'የቪዲዮ መግለጫ ያስገቡ';
-
-  @override
-  String get shareMenuEditHashtags => 'ሃሽታጎች';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'ነጠላ ሰረዝ፣ መለያየት፣ ሃሽታጎች';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'ማስታወሻ፡ ሜታዳታ ብቻ ነው ሊስተካከል የሚችለው። የቪዲዮ ይዘት ሊቀየር አይችልም።';
-
-  @override
-  String get shareMenuDeleting => 'በመሰረዝ ላይ...';
-
-  @override
   String get shareMenuUpdate => 'አዘምን';
 
   @override
   String get shareMenuChangeCover => 'ሽፋን ቀይር';
-
-  @override
-  String get shareMenuCoverUploadingBackground => 'ድቅን ምስሉ ዳራ ላይ እየተሰቀለ ነው';
 
   @override
   String get shareMenuVideoUpdated => 'ቪዲዮው በተሳካ ሁኔታ ተዘምኗል';
@@ -4164,61 +3879,42 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'ቪዲዮውን ማዘመን አልተሳካም፦ $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'እንደገና ግባ፣ ከዚያ ደግመህ ሞክር።';
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'ቪዲዮውን መሰረዝ አልተሳካም፦ $error';
-  }
+  String get videoUpdateErrorNoPlayableVideo =>
+      'ይህ ቪዲዮ ሊጫወት የሚችል ምንጭ የለውም፣ ስለዚህ ሊስተካከል አይችልም።';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => 'ማዘመኛውን መፈረም አልተቻለም። እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'ማስተላለፊያው ማዘመኛውን አልተቀበለም። ትንሽ ቆይተህ እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorGeneric => 'ይህን ቪዲዮ ማዘመን አልተቻለም። እንደገና ሞክር።';
+
+  @override
+  String get shareMenuOriginalVideoUnavailable =>
+      'Couldn\'t load the original video. Try again in a moment.';
 
   @override
   String get shareMenuDeleteVideoQuestion => 'ቪዲዮ ይሰረዝ?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'ቪዲዮ ተሰርዟል።';
+  String get shareMenuDeleteCleanupInProgress => 'ቪዲዮው እየተወገደ ነው…';
 
   @override
-  String get shareMenuContentLabels => 'የይዘት መለያዎች';
+  String get shareMenuDeleteCleanupConfirmed => 'ቪዲዮው ተሰርዟል።';
 
   @override
-  String get shareMenuAddContentLabels => 'የይዘት መለያዎችን ያክሉ';
+  String get shareMenuDeleteCleanupDelayed =>
+      'ቪዲዮው ተሰርዟል። ከሁሉም ቦታ ለመጥፋት ትንሽ ጊዜ ሊወስድ ይችላል።';
 
   @override
-  String get shareMenuClearAll => 'ሁሉንም አጽዳ';
-
-  @override
-  String get shareMenuCollaborators => 'ተባባሪዎች';
-
-  @override
-  String get shareMenuAddCollaborator => 'ተባባሪ ጋብዝ';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'እነሱን እንደ ተባባሪ ለመጋበዝ $nameን በጋራ መከተል አለቦት።';
-  }
-
-  @override
-  String get shareMenuLoading => 'በመጫን ላይ...';
-
-  @override
-  String get shareMenuInspiredBy => 'ተመስጦ';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'ተመስጦ ክሬዲት ያክሉ';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced => 'ይህ ፈጣሪ ሊጠቀስ አይችልም።';
-
-  @override
-  String get shareMenuUnknown => 'ያልታወቀ';
-
-  @override
-  String get shareMenuUseThisSound => 'ይህንን ድምጽ ይጠቀሙ';
-
-  @override
-  String get shareMenuOriginalSound => 'ኦሪጅናል ድምጽ';
+  String get shareMenuDeleteCleanupFailed =>
+      'ቪዲዮው ተሰርዟል፣ ግን ሁሉንም ቅጂዎች ማስወገድ አልቻልንም። ድጋፍን ያነጋግሩ።';
 
   @override
   String get authSessionExpired => 'ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።';
@@ -4231,27 +3927,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authSignInFailed => 'መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
-  String get localeAppLanguage => 'የመተግበሪያ ቋንቋ';
-
-  @override
-  String get localeDeviceDefault => 'የመሣሪያ ነባሪ';
-
-  @override
-  String get localeSelectLanguage => 'ቋንቋ ይምረጡ';
-
-  @override
   String get webAuthNotSupportedSecureMode =>
       'የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'የማረጋገጫ ውህደት አልተሳካም፦ $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'ያልተጠበቀ ስህተት፡ $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'እባክህ ማስቀመጫ አስገባ URI';
@@ -4297,30 +3974,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsSearchHint => 'ድምፆችን ፈልግ...';
 
   @override
-  String get soundsPreviewUnavailable => 'ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'ቅድመ እይታን ማጫወት አልተሳካም፦ $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'ተለይተው የቀረቡ ድምፆች';
-
-  @override
-  String get soundsTrendingSounds => 'በመታየት ላይ ያሉ ድምፆች';
-
-  @override
-  String get soundsAllSounds => 'ሁሉም ድምጾች';
-
-  @override
   String get soundsSearchResults => 'የፍለጋ ውጤቶች';
-
-  @override
-  String get soundsNoSoundsAvailable => 'ምንም ድምፆች የሉም';
-
-  @override
-  String get soundsNoSoundsDescription => 'ፈጣሪዎች ኦዲዮን ሲያጋሩ ድምጾች እዚህ ይታያሉ';
 
   @override
   String get soundsNoSoundsFound => 'ምንም ድምፆች አልተገኙም።';
@@ -4343,12 +3997,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'ድምፅን እዚህ ለማስቀመጥ በቪዲዮ ላይ ድምፅ ተጠቀም የሚለውን ይንኩ።';
-
-  @override
-  String get soundsAvailabilityPrivate => 'የግል';
-
-  @override
-  String get soundsAvailabilityCommunity => 'ማህበረሰብ';
 
   @override
   String get soundsRemoveSavedSound => 'ድምፁን አስወግድ';
@@ -4395,22 +4043,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'በዚህ መሣሪያ ላይ የተመሳሰለ ቤተ-መጻሕፍትዎን መክፈት አልተቻለም።';
 
   @override
-  String get soundsFailedToLoad => 'ድምጾችን መጫን አልተሳካም።';
-
-  @override
-  String get soundsRetry => 'እንደገና ይሞክሩ';
-
-  @override
-  String get soundsScreenLabel => 'ስክሪን ይሰማል።';
-
-  @override
   String get profileTitle => 'መገለጫ';
-
-  @override
-  String get profileRefresh => 'አድስ';
-
-  @override
-  String get profileRefreshLabel => 'መገለጫ አድስ';
 
   @override
   String get profileMoreOptions => 'ተጨማሪ አማራጮች';
@@ -4428,11 +4061,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return 'ያልተከተለ $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'ስህተት፡ $error';
   }
 
   @override
@@ -4468,20 +4096,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsRefreshError => 'ማደስ አልተቻለም — ያለዎትን እያሳየ ነው';
 
   @override
-  String get notificationsCheckingNew => 'አዲስ ማሳወቂያዎችን በመፈተሽ ላይ';
-
-  @override
-  String get notificationsNoneYet => 'እስካሁን ምንም ማሳወቂያዎች የሉም';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'ምንም $type ማሳወቂያዎች የሉም';
-  }
-
-  @override
-  String get notificationsEmptyDescription => 'ሰዎች ከይዘትህ ጋር ሲገናኙ እዚህ ታየዋለህ';
-
-  @override
   String get notificationsUnreadPrefix => 'ያልተነበበ ማስታወቂያ';
 
   @override
@@ -4512,11 +4126,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsVideoThumbnail => 'የቪዲዮ ድንክዬ';
 
   @override
-  String notificationsLoadingType(String type) {
-    return '$type ማሳወቂያዎችን በመጫን ላይ...';
-  }
-
-  @override
   String get notificationsInviteSingular => 'ከጓደኛዎ ጋር ለመጋራት 1 ግብዣ አለዎት!';
 
   @override
@@ -4525,13 +4134,33 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'ቪዲዮ አልተገኘም።';
+  String notificationsTabBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Badges ($count)',
+      zero: 'Badges',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsPendingBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count badges are waiting for you to accept them',
+      one: 'A badge is waiting for you to accept it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsBadgesEmpty =>
+      'No badges waiting. When someone awards you one, it lands here.';
 
   @override
   String get notificationsVideoUnavailable => 'ቪዲዮ አይገኝም';
-
-  @override
-  String get notificationsFromNotification => 'ከማስታወቂያ';
 
   @override
   String get feedFailedToLoadVideos => 'ቪዲዮዎችን መጫን አልተሳካም።';
@@ -4586,62 +4215,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedExploreVideos => 'ቪዲዮዎችን ያስሱ';
 
   @override
-  String get feedExternalVideoSlow => 'ውጫዊ ቪዲዮ ቀስ በቀስ በመጫን ላይ';
-
-  @override
-  String get feedSkip => 'ዝለል';
-
-  @override
   String get feedLoadingMore => 'ተጨማሪ ቪዲዮዎችን በመጫን ላይ…';
 
   @override
   String get feedRefreshed => 'ፊድ ታድሷል';
 
   @override
-  String get uploadWaitingToUpload => 'ለመስቀል በመጠበቅ ላይ';
-
-  @override
   String get uploadUploadingVideo => 'ቪዲዮ በመስቀል ላይ';
-
-  @override
-  String get uploadProcessingVideo => 'ቪዲዮን በመስራት ላይ';
-
-  @override
-  String get uploadProcessingComplete => 'ማካሄድ ተጠናቋል';
-
-  @override
-  String get uploadPublishedSuccessfully => 'በተሳካ ሁኔታ ታትሟል';
-
-  @override
-  String get uploadFailed => 'ሰቀላው አልተሳካም።';
-
-  @override
-  String get uploadRetrying => 'ሰቀላን እንደገና በመሞከር ላይ';
-
-  @override
-  String get uploadPaused => 'ሰቀላ ባለበት ቆሟል';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% ተጠናቋል';
-  }
-
-  @override
-  String get uploadQueuedMessage => 'ቪዲዮዎ ለመስቀል ተሰልፏል';
-
-  @override
-  String get uploadUploadingMessage => 'ወደ አገልጋይ በመስቀል ላይ...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'ቪዲዮን በመስራት ላይ - ይህ ጥቂት ደቂቃዎችን ሊወስድ ይችላል።';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'ቪዲዮው በተሳካ ሁኔታ ተከናውኗል እና ለመታተም ዝግጁ ነው።';
-
-  @override
-  String get uploadPublishedMessage => 'ቪዲዮ ወደ መገለጫዎ ታትሟል';
 
   @override
   String get postPublishConfirmationTitle => 'ወደ መገለጫዎ ታትሟል';
@@ -4656,33 +4236,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get postPublishConfirmationThumbnailLabel => 'አሁን ያሳተሙት ቪዲዮ ድንክዬ';
 
   @override
-  String get uploadFailedMessage => 'ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ';
-
-  @override
-  String get uploadRetryingMessage => 'ሰቀላን እንደገና በመሞከር ላይ...';
-
-  @override
-  String get uploadPausedMessage => 'ሰቀላው ባለበት ቆሟል';
-
-  @override
-  String get uploadRetryButton => 'እንደገና ይሞክሩ';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'ሰቀላን እንደገና መሞከር አልተሳካም፦ $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'ተጠቃሚዎችን ይፈልጉ';
-
-  @override
   String get userSearchNoResults => 'ምንም ተጠቃሚዎች አልተገኙም።';
-
-  @override
-  String get userSearchFailed => 'ፍለጋ አልተሳካም።';
-
-  @override
-  String get userPickerSearchByName => 'በስም ፈልግ';
 
   @override
   String get userPickerFilterByNameHint => 'በስም አጣራ...';
@@ -4770,39 +4324,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get ageVerificationYes => 'አዎ';
 
   @override
-  String get shareLinkCopied => 'ማገናኛ ወደ ቅንጥብ ሰሌዳ ተቀድቷል።';
-
-  @override
-  String get shareFailedToCopy => 'አገናኙን መቅዳት አልተሳካም።';
-
-  @override
-  String get shareVideoSubject => 'ይህንን ቪዲዮ በDivine ላይ ይመልከቱ';
-
-  @override
-  String get shareFailedToShare => 'ማጋራት አልተሳካም።';
-
-  @override
-  String get shareVideoTitle => 'ቪዲዮ አጋራ';
-
-  @override
-  String get shareToApps => 'ለመተግበሪያዎች አጋራ';
-
-  @override
-  String get shareToAppsSubtitle => 'በመልዕክት፣ በማህበራዊ መተግበሪያዎች አጋራ';
-
-  @override
-  String get shareCopyWebLink => 'የድር ሊንክ ቅዳ';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'ሊጋራ የሚችል የድር አገናኝ ይቅዱ';
-
-  @override
-  String get shareCopyNostrLink => 'ቅዳ Nostr አገናኝ';
-
-  @override
-  String get shareCopyNostrLinkSubtitle => 'ለደንበኞች nevent አገናኝን ይቅዱ';
-
-  @override
   String get navHome => 'ቤት';
 
   @override
@@ -4815,12 +4336,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get navProfile => 'መገለጫ';
 
   @override
-  String get navSearch => 'ፈልግ';
-
-  @override
-  String get navSearchTooltip => 'ፈልግ';
-
-  @override
   String get navMyProfile => 'የእኔ መገለጫ';
 
   @override
@@ -4828,9 +4343,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'ካሜራ ክፈት';
-
-  @override
-  String get navUnknown => 'ያልታወቀ';
 
   @override
   String get navExploreClassics => 'ክላሲኮች';
@@ -4951,6 +4463,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportExportLogsFailed => 'ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'ምዝግቦች ተቀምጠዋል በ $path';
   }
@@ -4970,22 +4490,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
-  }
-
-  @override
-  String get reportTitle => 'ይዘትን ሪፖርት አድርግ';
-
-  @override
   String get reportWhyReporting => 'ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?';
 
   @override
   String get reportPolicyNotice =>
       'Divine ይዘቱን በማስወገድ እና አጸያፊ ይዘቱን ያቀረበውን ተጠቃሚ በማስወጣት የይዘት ሪፖርቶችን በ24 ሰዓታት ውስጥ ይሰራል።';
-
-  @override
-  String get reportAdditionalDetails => 'ተጨማሪ ዝርዝሮች (አማራጭ)';
 
   @override
   String get reportBlockUser => 'ይህን ተጠቃሚ አግድ';
@@ -5004,6 +4513,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'እባክህ ችግሩን ግለጽ';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'ጽሑፍ ብቻ — ፎቶዎችን እና GIF-ዎችን እዚህ ማያያዝ አይቻልም።';
 
   @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
@@ -5073,9 +4586,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
 
   @override
-  String reportFailed(Object error) {
-    return 'ይዘትን ሪፖርት ማድረግ አልተሳካም፦ $error';
-  }
+  String get reportFailed => 'ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get reportNotSent => 'ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
@@ -5096,9 +4607,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'የልከኝነት ቡድኑን መልእክት ላክ';
-
-  @override
-  String get reportLearnMore => 'የበለጠ ተማር';
 
   @override
   String get reportLearnMoreAt => 'የበለጠ ይወቁ በ';
@@ -5163,7 +4671,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listAddCollaboratorTitle => 'ተባባሪ ጨምር';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine ፈልግ...';
+  String get listCollaboratorSearchHint => 'Divine ፈልግ...';
 
   @override
   String get listNameLabel => 'የዝርዝር ስም';
@@ -5323,7 +4831,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
 
   @override
-  String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
+  String get keyManagementKeycastGenericFailure =>
+      'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get keyManagementRestrictedTitle => 'ቁልፎችህ በDivine ይተዳደራሉ';
@@ -5353,18 +4862,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementImportSuccess => 'ቁልፍ በተሳካ ሁኔታ ገብቷል!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'ቁልፍ ማስመጣት አልተሳካም፦ $error';
-  }
+  String get keyManagementImportFailed => 'ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementExportSuccess =>
       'የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ $error';
-  }
+  String get keyManagementExportFailed =>
+      'ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'የህዝብ ቁልፍህ (npub)';
@@ -5485,9 +4991,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundUnableToPreview => 'ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'ቅድመ እይታን ማጫወት አልተሳካም፦ $error';
-  }
+  String get soundPreviewFailed => 'ቅድመ እይታን ማጫወት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundViewSource => 'ምንጭ ይመልከቱ';
@@ -5537,11 +5041,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName መክፈት አልተቻለም';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
   }
 
   @override
@@ -5964,8 +5463,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'ይህ ከ$displayName ጋር ያለህን ውይይት ይሰርዛል። ይህ እርምጃ ሊመለስ አይችልም።';
+    return 'ይህ ከ$displayName ጋር ያለህን ውይይት ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።';
   }
+
+  @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'ይህ የቡድን ውይይቱን ከመልእክት ሳጥንዎ ያስወግዳል። ማንኛውም ሰው እንደገና ለቡድኑ መልእክት ከላከ አዲስ ውይይት ይጀምራል።';
 
   @override
   String get inboxRemoveConfirmConfirm => 'አስወግድ';
@@ -6031,12 +5534,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'በ$title ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+    return 'በ$title ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+    return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -6064,6 +5567,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get dmRetiredThreadClosedTitle => 'ይህ ውይይት ተዘግቷል።';
+
+  @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'ይህ የDivine Moderation ማሳወቂያ ሊወገድ አይችልም።';
 
   @override
   String get dmRetiredThreadClosedBody =>
@@ -6138,9 +5645,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmReelReplyViewChat => 'ውይይት ይመልከቱ';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'ውይይት ይክፈቱ';
-
-  @override
   String get dmReelReplySentAnnouncement => 'መልስ ተልኳል';
 
   @override
@@ -6212,17 +5716,22 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'ያልተነበቡ፣ የ$displayName ውይይት';
+    return 'ያልተነበበ፣ የ$displayName ውይይት';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ሌሎች',
+      one: '$count ሌላ',
+    );
+    return '$name እና $_temp0';
   }
 
   @override
   String get inboxConversationTileLongPressHint => 'የውይይት እርምጃዎችን አሳይ';
-
-  @override
-  String get reportDialogCancel => 'ሰርዝ';
-
-  @override
-  String get reportDialogReport => 'ሪፖርት አድርግ';
 
   @override
   String exploreVideoId(String id) {
@@ -6248,20 +5757,14 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get discoverListsTitle => 'ዝርዝሮችን ያግኙ';
 
   @override
   String get discoverListsFailedToLoad => 'ዝርዝሮችን መጫን አልተሳካም';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'ዝርዝሮችን መጫን አልተሳካም፦ $error';
-  }
 
   @override
   String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
@@ -6345,9 +5848,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commonSomethingWentWrong => 'የሆነ ችግር ተፈጥሯል';
-
-  @override
-  String get commonNext => 'ቀጥሎ';
 
   @override
   String get commonDelete => 'ሰርዝ';
@@ -6448,9 +5948,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryTabClips => 'ክሊፖች';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'ወደ ካሜራ ጥቅል አስቀምጥ';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'የተመረጡ ቅንጥቦችን ሰርዝ';
 
   @override
@@ -6504,20 +6001,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get librarySortVerticalFirst => 'ቁመት በመጀመሪያ';
 
   @override
-  String get libraryDeleteClipsTitle => 'ክሊፖችን ሰርዝ';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count የተመረጡ ክሊፖች',
-      one: '$count የተመረጠ ክሊፕ',
-    );
-    return '$_temp0 መሰረዝ እርግጠኛ ነህ?';
-  }
-
-  @override
   String get libraryDeleteClipsWarning =>
       'ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።';
 
@@ -6543,6 +6026,11 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
     return '$successCount ተቀምጧል፣ $failureCount አልተሳካም።';
+  }
+
+  @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'ወደ $destination ማስቀመጥ አልተቻለም';
   }
 
   @override
@@ -6645,20 +6133,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDeleteClipMessage => 'እርግጠኛ ነዎት ይህን ክሊፕ መሰረዝ ይፈልጋሉ?';
 
   @override
-  String get libraryClipSelectionTitle => 'ክሊፖች';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return '$seconds ይቀራል';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds ሰከ';
   }
-
-  @override
-  String get libraryAddClips => 'አክል';
 
   @override
   String get libraryRecordVideo => 'ቪዲዮ ይቅረጹ';
@@ -6666,6 +6143,11 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String videoClipSemanticLabel(String duration) {
     return 'የቪዲዮ ክሊፕ፣ $duration ሰከንድ';
+  }
+
+  @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'መዝገብ ውስጥ ተቀምጧል። $label';
   }
 
   @override
@@ -7190,6 +6672,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'አትቀበል እና አስወግድ';
 
   @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'የ$displayName ጥያቄ ውድቅ ተደርጓል';
+  }
+
+  @override
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';
 
   @override
@@ -7232,24 +6719,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎችን ቀይረዋል፣ ስለዚህ ምንም አልተሰረዘም። ለማስወገድ ለሚፈልጉት መለያ ስረዛን እንደገና ይክፈቱ።';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'አንዳንድ የመሰረዝ ጥያቄዎች ተቀባይነት አግኝተዋል፣ ነገር ግን መለያ ስለቀየርክ ጽዳቱ ቆሟል። ለማጠናቀቅ ወደ መጀመሪያው መለያ በድጋሚ ግባ።';
-
-  @override
-  String get deleteAccountBurnUsernameFailed =>
-      'የተጠቃሚ ስምዎን ማስለቀቅ አልተቻለም። መለያዎ አልተሰረዘም። እንደገና ይሞክሩ፣ ወይም አማራጩን ያስወግዱ።';
-
-  @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'የተጠቃሚ ስምዎ $username በቋሚነት ተለቋል፣ ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ ሰርዝ የሚለውን እንደገና ይንኩ።';
-  }
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$usernameንም እንዲሁ በቋሚነት ይተው';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'ለማረጋገጥ፣ ይተይቡ፦';
 
   @override
@@ -7262,19 +6731,72 @@ class AppLocalizationsAm extends AppLocalizations {
   String get deleteAccountConfirmationHintUsername => 'የተጠቃሚ ስምዎን ይተይቡ';
 
   @override
-  String get deleteAccountContentDeletionFailed =>
-      'ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
-
-  @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
+
+  @override
+  String get accountDeletionRecoveryTitle => 'የመለያዎን መሰረዝ ያጠናቅቁ';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። የተጠቃሚ ስምዎ ለእርስዎ ተይዞልዎታል፣ አሁንም መመለስ ይቻላል።';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername => 'የተጠቃሚ ስሜን ይመልሱ';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'የመሰረዝ ጥያቄዎ አሁንም እየተሰራ ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
+
+  @override
+  String get accountDeletionCancellingBody =>
+      'የመሰረዝ ጥያቄዎን እየሰረዝን ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'የተጠቃሚ ስምዎን ገና መመለስ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'የተጠቃሚ ስምዎ ተመልሷል። መለያዎ አልተሰረዘም።';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'የመሰረዙን ሁኔታ ማረጋገጥ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get deleteAccountDeletionUnavailable =>
+      'የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም።';
 
   @override
   String get deleteAccountDeletionIncomplete =>
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ የመጨረሻ ማረጋገጫ';
@@ -7311,11 +6833,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።';
+      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ትንሽ ቆይተው እንደገና ይሞክሩ።';
 
   @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
@@ -7327,24 +6845,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።';
-
-  @override
-  String get exportProgressStageApplyingTextOverlay => 'የጽሑፍ ሽፋን በመጨመር ላይ...';
-
-  @override
-  String get exportProgressStageComplete => 'ወደ ውጪ መላክ ተጠናቀቀ!';
-
-  @override
-  String get exportProgressStageConcatenating => 'ክሊፖችን በማጣመር ላይ...';
-
-  @override
-  String get exportProgressStageError => 'ወደ ውጪ መላክ አልተሳካም';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail => 'ድንክዬ በማመንጨት ላይ...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'ድምጽ በመጨመር ላይ...';
 
   @override
   String get findPeopleAnonymousUser => 'ስም-አልባ';
@@ -7467,6 +6967,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
 
@@ -7540,9 +7047,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'ድምጽ መጫን አልተሳካም፦ $error';
-  }
+  String get soundDetailLoadError => 'ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundDetailNotFoundMessage => 'ይህ ድምጽ ሊገኝ አልቻለም';
@@ -7551,15 +7056,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'ድምጽ አልተገኘም';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'የቪዲዮ መግለጫ';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count ሉፖች';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'የቪዲዮ ሉፕ ብዛት';
 
   @override
   String get originalSoundUnavailableBody => 'ከዚህ ቪዲዮ የሚገኘው ኦዲዮ ለብቻው አይገኝም።';
@@ -7570,11 +7069,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String globalUploadPendingCount(int count) {
-    return 'በመጠባበቅ ላይ ያሉ ስቀላዎች ($count)';
-  }
-
-  @override
   String get ogVinerBadgeLabel => 'OG Viner';
 
   @override
@@ -7582,22 +7076,18 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህ ሰው Divine በማህደር ውስጥ ያገኘውን ዋና Vine ለጥፏል። ይህ የመለያ ማረጋገጫ ባጅ አይደለም።';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'የመገለጫ ምልክት';
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine ይህን ምልክት ለቡድን መለያዎች እና በእጅ ለጸደቁ ጥቂት መገለጫዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'በ$count ዝርዝሮች ውስጥ',
-      one: 'በ$count ዝርዝር ውስጥ',
-    );
-    return '$_temp0';
-  }
+      'Divine ይህን ምልክት ለቡድን መለያዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
 
   @override
   String get unfollowConfirmButton => 'አትከተል';
@@ -7694,11 +7184,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bugReportSendFailed => 'የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'የሳንካ ሪፖርት መላክ አልተሳካም፦ $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'ጥያቄ ላክ';
 
   @override
@@ -7728,11 +7213,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get featureRequestSendFailed => 'የባህሪ ጥያቄ መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'የባህሪ ጥያቄ መላክ አልተሳካም፦ $error';
-  }
 
   @override
   String get notificationFollowBack => 'ተመለስ ተከታተል።';
@@ -7785,16 +7265,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get followSortOldest => 'አሮጌዎቹ መጀመሪያ';
 
   @override
-  String get reportMessageTitle => 'መልዕክትን ሪፖርት አድርግ';
-
-  @override
-  String get reportMessageWhyReporting => 'ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'እባክዎ ይህን መልዕክት ሪፖርት ለማድረግ ምክንያት ይምረጡ';
-
-  @override
   String get newMessageTitle => 'አዲስ መልዕክት';
 
   @override
@@ -7831,9 +7301,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'ቅንብሮችን ማስቀመጥ አልተሳካም፦ $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'ቅንብሮችን ማስቀመጥ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get blossomValidServerUrl =>
@@ -7969,14 +7438,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get invitesNoneAvailable => 'አሁን ምንም ግብዣዎች የሉም';
 
   @override
-  String get invitesShareWithPeople => 'diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ';
+  String get invitesShareWithPeople => 'Divineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ';
 
   @override
   String get invitesUsedInvites => 'ያገለገሉ ግብዣዎች';
 
   @override
   String invitesShareMessage(String code) {
-    return 'diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ $code ተጠቀም፦\nhttps://divine.video/invite/$code';
+    return 'Divine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ $code ተጠቀም፦\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -7989,7 +7458,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get invitesShareInvite => 'ግብዣ አጋራ';
 
   @override
-  String get invitesShareSubject => 'diVine ላይ አብረኝ ግባ';
+  String get invitesShareSubject => 'Divine ላይ አብረኝ ግባ';
 
   @override
   String get invitesClaimed => 'ተጠቅመዋል';
@@ -8059,14 +7528,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት';
-
-  @override
-  String get featureRequestCancel => 'ሰርዝ';
-
-  @override
-  String keyImportError(String error) {
-    return 'ስህተት፡ $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>
@@ -8276,9 +7737,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSystemUpdate => 'አዲስ ማሻሻያ አለህ።';
 
   @override
-  String get notificationSomeoneLikedYourVideo => 'አንድ ሰው ቪዲዮህን ወድዶታል።';
-
-  @override
   String get commentReplyToPrefix => 'ድጋሚ፡';
 
   @override
@@ -8409,6 +7867,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'ወደ ምግብ ተመለስ';
+
+  @override
+  String get cameraCouldNotStart => 'ካሜራውን ማስጀመር አልተቻለም';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'ካሜራው በዚህ መድረክ ላይ ገና አይገኝም።\nአሁንም ቪዲዮዎችን ማሰስና መመልከት ይችላሉ።';
 
   @override
   String get cameraPermissionErrorTitle => 'የፍቃድ ስህተት';
@@ -8940,40 +8405,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'ቪዲዮን ያጫውቱ ወይም ለአፍታ ያቁሙ';
 
   @override
-  String get videoEditorCropSemanticLabel => 'ሰብል';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'ክሊፕ በሂደት ላይ እያለ መከፋፈል አይቻልም። እባክህ ጠብቅ።';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'የመክፈል ቦታው ልክ አይደለም። ሁለቱም ክሊፖች ቢያንስ ${minDurationMs}ms ርዝመት ሊኖራቸው ይገባል።';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'ክሊፕ ከቤተ-መጽሐፍት ያክሉ';
-
-  @override
   String get videoEditorSaveSelectedClip => 'የተመረጠውን ቅንጥብ ያስቀምጡ';
 
   @override
-  String get videoEditorSplitClip => 'የተከፈለ ቅንጥብ';
-
-  @override
   String get videoEditorSaveClip => 'ቅንጥብ ያስቀምጡ';
-
-  @override
-  String get videoEditorDeleteClip => 'ቅንጥብ ሰርዝ';
 
   @override
   String get videoEditorClipSavedSuccess => 'ክሊፕ ወደ ቤተ-መጽሐፍት ተቀምጧል';
 
   @override
   String get videoEditorClipSaveFailed => 'ቅንጥብ ማስቀመጥ አልተሳካም።';
-
-  @override
-  String get videoEditorClipDeleted => 'ክሊፕ ተሰርዟል።';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'ቀለም መራጭ';
@@ -9004,12 +8450,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'ተለጣፊዎችን መጫን አልተሳካም።';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'ድምጽን ያስተካክሉ';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'የተቀዳ ኦዲዮ';
 
   @override
   String get videoEditorVoiceOverLabel => 'የድምፅ ትረካ';
@@ -9070,12 +8510,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'ለአፍታ አቁም';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'ኦዲዮ ድምጸ-ከል አድርግ';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'የድምጽ ድምጸ-ከል አንሳ';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'ድምጽ አስተካክል';
@@ -9185,9 +8619,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህ መሣሪያ ቀጥታ ቅድመ-እይታን ማሳየት አይችልም። ቅንብሮችህ ግን ወደ ውጭ ሲወጣ ይሠራሉ።';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'ዋናው ኦዲዮ';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'ቅንጥብ $index';
   }
@@ -9218,14 +8649,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return 'በአንድ ምስል $count ፍሬሞች';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'በአንድ ምስል ፍሬሞችን ጨምር';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'በአንድ ምስል ፍሬሞችን ቀንስ';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9325,9 +8748,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'ግልብጥ';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'ጥምርታ';
 
   @override
   String get videoEditorTransformResetLabel => 'ዳግም አስጀምር';
@@ -9483,13 +8903,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'የእኔ ድምፆች';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle => 'ተለይተው የቀረቡ ድምፆች በቅርቡ';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'ዝግጁ ሲሆኑ ተለይተው የቀረቡ ድምፆችን እዚህ እናስቀምጣለን።';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'የቀስት መሣሪያ';
 
   @override
@@ -9555,10 +8968,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'እንደገና ለመደርደር በረጅሙ ተጫን';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'ለማርትዕ መታ ያድርጉ። እንደገና ለመደርደር ይያዙ እና ይጎትቱ።';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'ወደ ግራ ውሰድ';
@@ -9634,6 +9043,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoEditorReverseSelectedFramesSemanticLabel =>
       'የተመረጡ ፍሬሞችን አገላብጥ';
+
+  @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'የተመረጡ ፍሬሞችን ያባዛ';
 
   @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
@@ -9720,9 +9133,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataTagsLabel => 'መለያዎች';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'ሰርዝ';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'መለያን ሰርዝ $tag';
   }
@@ -9739,12 +9149,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'በይዘትህ ላይ የሚመለከተውን ሁሉ ምረጥ';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'ተከናውኗል';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'ይህን ድምፅ አሳትም';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'ሌሎች የዚህን ቪዲዮ ድምፅ እንዲያስቀምጡ እና እንደገና እንዲጠቀሙ ፍቀድ።';
 
@@ -9759,27 +9163,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'ተባባሪ ጋብዝ';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip => 'ተባባሪዎች እንዴት እንደሚሠሩ';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max ተባባሪዎች';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel => 'ተባባሪውን ያስወግዱ';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'በዚህ ልጥፍ ላይ ተባባሪዎች እንደ ተባባሪ ፈጣሪዎች ተጋብዘዋል። እርስዎ በጋራ የሚከተሏቸውን ሰዎች ብቻ መጋበዝ ይችላሉ፣ እና ካረጋገጡ በኋላ እንደ ተባባሪዎች ሆነው ይታያሉ።';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'የጋራ ተከታዮች';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'እነሱን እንደ ተባባሪ ለመጋበዝ $nameን በጋራ መከተል አለቦት።';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'ተመስጦ';
@@ -9788,21 +9172,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataSetInspiredBySemanticLabel => 'ተመስጦ የተዘጋጀ';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip => 'ማበረታቻ ምስጋናዎች እንዴት እንደሚሠሩ';
-
-  @override
-  String get videoMetadataInspiredByNone => 'ምንም';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'መለያ ለመስጠት ይህንን ይጠቀሙ። ተነሳሽነት ያለው ክሬዲት ከተባባሪዎች የተለየ ነው፡ ተጽዕኖን ይቀበላል፣ ነገር ግን አንድን ሰው እንደ ተባባሪ ፈጣሪ መለያ አይሰጥም።';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'ይህ ፈጣሪ ሊጠቀስ አይችልም።';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel => 'ተመስጦ አስወግድ';
 
   @override
   String get videoMetadataPostDetailsTitle => 'ዝርዝሮችን ይለጥፉ';
@@ -10088,6 +9459,26 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'ባጁን መልስ';
+
+  @override
+  String get badgeDetailRevokeTitle => 'ይህን ባጅ ትመልሰዋለህ?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'ይህ ሪሌዮች ለዚህ ሰው የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል። ሪሌዮች ሊከለክሉ ይችላሉ፣ ባጁን በመገለጫቸው ላይ ሰክተውት ከሆነም እስኪያስወግዱት ድረስ እዚያው ይቆያል። ለማንኛውም አይነገራቸውም።';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'ይህ ሪሌዮች ለራስህ የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል፣ ባጁንም ከመገለጫህ ላይ ያነሳል። ሪሌዮቹ ስረዛውን ካልተቀበሉት ምንም አይለወጥም።';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'መልስ';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'ባጁ ተመልሷል';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'የባጅ ጠያቂዎችን አግድ';
 
   @override
@@ -10208,10 +9599,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'የቤተሰብ መመሪያ';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'እስካሁን 16 አልሞላህም? ችግር የለም። ማድረግ የምትችለው ይኸው።';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'እስካሁን 16 አልሞላህም? ችግር የለም።';
 
   @override
@@ -10253,9 +9640,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => 'ከ13 እስከ 15 ዓመት';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'ለቤተሰቦች ጠቃሚ';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10312,6 +9696,80 @@ class AppLocalizationsAm extends AppLocalizations {
       'ድጋፍና የቁጥጥር መልእክትህ አሁንም ይገኛሉ';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewResponseClockRunningTitle => 'Time to respond';
+
+  @override
+  String minorAccountReviewResponseClockRunningDays(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String minorAccountReviewResponseClockRunningHours(int hours, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return '$_temp0 left to respond. Deadline: $date.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockPausedTitle =>
+      'Response clock paused';
+
+  @override
+  String minorAccountReviewResponseClockPausedBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'The response clock is paused. About $_temp0 will remain when it restarts.';
+  }
+
+  @override
+  String get minorAccountReviewResponseClockExpiredTitle =>
+      'Response deadline passed';
+
+  @override
+  String get minorAccountReviewResponseClockExpiredBody =>
+      'The response deadline has passed. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableTitle =>
+      'Deadline unavailable';
+
+  @override
+  String get minorAccountReviewResponseClockUnavailableBody =>
+      'We can\'t show your response deadline right now. Contact Support Center if you need help.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => 'የድጋፍ ማዕከልን ክፈት';
 
   @override
@@ -10319,16 +9777,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'የግምገማ ገጹን ክፈት';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle => 'መለያዎን ይዘው መሄድ ይችላሉ';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'የDivine ማንነትዎን በሌላ መሠረተ ልማት ላይ መጠቀም ይችላሉ። መለያዎን ያንቀሳቅሱ ወይም ማህደርዎን ያውርዱ።';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'መለያዎን ያንቀሳቅሱ';
 
   @override
   String get minorAccountReviewCheckAgain => 'እንደገና ፈትሽ';
@@ -10386,9 +9834,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'አብዛኛው የበይነመረብ ክፍል ሰዎችን በሩን ለማለፍ የሚያስፈልገውን ማንኛውንም ነገር በመናገር እንዲሸለሙ ተዘጋጅቷል። ይህ ጥሩ ነው ብለን አናስብም። አዎ፣ ወደ ኋላ ተመልሰህ ከዕድሜህ በላይ ነኝ ልትል ትችላለህ፣ ግን ያ ታማኝ አይሆንም፣ እናም የፈለግከውን ለማግኘት ውሸት እንድትዋሽ አናሠለጥንህም።';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle => 'መልሱ አሁንም ለምን አይሆንም እንደሆነ';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -10614,12 +10059,47 @@ class AppLocalizationsAm extends AppLocalizations {
       'የአካለ መጠን ያልደረሰ መለያ ግምገማ ማስመሰያ ጸድቷል';
 
   @override
-  String get devOptionsMinorReviewTeenEnabledToast =>
-      'የተመሰለው የ13–15 ግምገማ ጉዳይ በርቷል';
-
-  @override
   String get devOptionsMinorReviewUnder13EnabledToast =>
       'የተመሰለው ከ13 በታች የድጋፍ ጉዳይ በርቷል';
+
+  @override
+  String get devOptionsMinorReviewResponseClockTitle => 'Response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunning => 'Running';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPaused => 'Paused';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpired => 'Expired';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicable =>
+      'Not applicable';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformed => 'Malformed payload';
+
+  @override
+  String get devOptionsMinorReviewResponseClockRunningToast =>
+      'Simulated running response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockPausedToast =>
+      'Simulated paused response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockExpiredToast =>
+      'Simulated expired response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockNotApplicableToast =>
+      'Simulated not-applicable response clock';
+
+  @override
+  String get devOptionsMinorReviewResponseClockMalformedToast =>
+      'Simulated malformed response clock';
 
   @override
   String get devOptionsProtectedMinorSimulationTitle => 'የተጠበቀ ታዳጊ ማስመሰያ';
@@ -10694,8 +10174,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => 'የአገልጋይ እሴት፦ ጠፍቷል';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      'የአገልጋይ እሴት፦ አይታወቅም (በነባሪ በርቷል)';
+  String get devOptionsInviteAvailabilityServerUnknown => 'የአገልጋይ እሴት፦ አይታወቅም';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
@@ -10834,9 +10313,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get generalSettingsHoldToRecordSubtitle => 'ሲይዙ ቀረጻ ይጀምራል፣ ሲለቁ ይቆማል';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'ቅድመ እይታን ማጫወት አልተሳካም';
 
   @override
   String uploadPublishedCountMessage(int count) {
@@ -11784,6 +11260,33 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryUnarchiveAction => 'ከመዝገብ አውጣ';
 
   @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'በእነዚህ ምድቦች ውስጥ ማቆየት?',
+      one: 'በዚህ ምድብ ውስጥ ማቆየት?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'በ$name ውስጥ አቆይ';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => 'በምድቦቻቸው ውስጥ አቆይ';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'ከ$name አስወግድ';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => 'ከምድቦቻቸው አስወግድ';
+
+  @override
   String get libraryMoveSelectedClipsTooltip => 'የተመረጡ ክሊፖችን አንቀሳቅስ';
 
   @override
@@ -11987,7 +11490,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።';
 
   @override
-  String get dbFailureResetConfirm => 'ዳግም አስጀምር እና ዝጋ';
+  String get dbFailureResetConfirm => 'የአካባቢ ዳታቤዝ አሁን ዳግም አስጀምር';
 
   @override
   String get dbFailureCancel => 'ሰርዝ';
@@ -12010,4 +11513,139 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authHidePassword => 'የይለፍ ቃል ደብቅ';
+
+  @override
+  String get followUserSemanticLabel => 'ተጠቃሚን ተከታተል';
+
+  @override
+  String get unfollowUserSemanticLabel => 'ተጠቃሚን መከታተል አቁም';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'አስተያየቶች በመጫን ላይ';
+
+  @override
+  String get analyticsWindowAll => 'ሁሉም';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'ተጠቃሚን ተከታተል $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'ተጠቃሚን መከታተል አቁም $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / በወር';
+  }
+
+  @override
+  String get videoDetailHiddenBySettingsTitle => 'Hidden by your settings';
+
+  @override
+  String videoDetailHiddenByHostFilterBody(String host) {
+    return 'This one\'s hosted on $host, and you\'re set to only show Divine-hosted videos.';
+  }
+
+  @override
+  String get videoDetailHiddenByContentFilterBody =>
+      'Your content filters are hiding this one.';
+
+  @override
+  String get videoDetailHiddenByProvenanceFilterBody =>
+      'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.';
+
+  @override
+  String get videoDetailHiddenShowAnyway => 'Show it anyway';
+
+  @override
+  String get videoDetailHiddenOpenSettings => 'Change setting';
+
+  @override
+  String get safetySettingsShowVerifiedOnly =>
+      'Only show camera-verified videos';
+
+  @override
+  String get safetySettingsShowVerifiedOnlySubtitle =>
+      'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

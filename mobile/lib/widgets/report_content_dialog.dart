@@ -405,7 +405,7 @@ class _ReportContentViewState extends State<_ReportContentView> {
     final detailsText = _detailsController.text.trim();
     final details = detailsText.isEmpty ? selectedReasonTitle : detailsText;
 
-    final failureDetail = await cubit.submit(
+    await cubit.submit(
       reason: reason,
       reasonTitle: selectedReasonTitle,
       details: details,
@@ -418,9 +418,7 @@ class _ReportContentViewState extends State<_ReportContentView> {
         // Nothing left the device, so the confirmation would be false in four
         // places at once. Surface the failure and leave Submit live.
         ReportSubmissionStatus.notSent => l10n.reportNotSent,
-        ReportSubmissionStatus.failure => l10n.reportFailed(
-          failureDetail ?? '',
-        ),
+        ReportSubmissionStatus.failure => l10n.reportFailed,
         _ => null,
       };
     });
@@ -538,6 +536,12 @@ class _ReportFormBody extends StatelessWidget {
                     l10n.reportDetailsRequired,
                     style: VineTheme.labelSmallFont(
                       color: context.vineColors.accentPositive,
+                    ),
+                  ),
+                  Text(
+                    l10n.reportDetailsTextOnly,
+                    style: VineTheme.labelSmallFont(
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   _CappedDetailsField(
@@ -761,6 +765,9 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           enableInteractiveSelection: true,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,

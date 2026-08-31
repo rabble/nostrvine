@@ -9,6 +9,7 @@ import 'package:models/models.dart'
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
@@ -39,8 +40,30 @@ class VideoUpdateSuccess extends VideoUpdateResult {
 
 /// The re-publish failed with an unrecoverable error.
 class VideoUpdateFailure extends VideoUpdateResult {
-  const VideoUpdateFailure(this.error);
-  final Object error;
+  const VideoUpdateFailure(this.reason);
+
+  /// Why it failed. The exception itself is logged by the service and never
+  /// travels to the UI — see `.claude/rules/error_handling.md`.
+  final VideoMetadataUpdateError reason;
+}
+
+/// Carries a [VideoMetadataUpdateError] out of the deep call chain to the one
+/// handler at the end of `updateVideo`. Private: nothing outside this file
+/// needs to catch it, and the code is what escapes.
+class _VideoUpdateException implements Exception {
+  const _VideoUpdateException(this.reason, this.message);
+
+  final VideoMetadataUpdateError reason;
+  final String message;
+
+  @override
+  String toString() => 'VideoUpdateException(${reason.name}): $message';
+}
+
+/// The original event could not be loaded with the raw tags required for a
+/// lossless addressable-event replacement.
+class VideoUpdateOriginalUnavailable extends VideoUpdateResult {
+  const VideoUpdateOriginalUnavailable();
 }
 
 /// Tag names the metadata-edit flow always rebuilds from the editor state
@@ -62,8 +85,8 @@ const _editRebuiltTagNames = {
 /// Every other tag on the original event — audio-attribution `e` tags,
 /// engagement counts, expiration, client, relay hints, ProofMode/C2PA
 /// provenance, reply threading, subtitle text-tracks, … — is preserved
-/// unchanged so a metadata edit does not drop data it does not own,
-/// provided the raw tags are available (see [_sourceOriginalTags]).
+/// unchanged so a metadata edit does not drop data it does not own. Publishing
+/// is refused unless the raw tags are available (see [_sourceOriginalTags]).
 ///
 /// [isVideoReply] gates the inspired-by a-tag: the edit flow only rebuilds
 /// that tag for non-reply videos (see the rebuild block in `updateVideo`),
@@ -239,7 +262,15 @@ class VideoMetadataUpdateService {
   }) async {
     try {
       if (!_authService.isAuthenticated) {
-        throw Exception('User not authenticated');
+        throw const _VideoUpdateException(
+          VideoMetadataUpdateError.notAuthenticated,
+          'User not authenticated',
+        );
+      }
+
+      final originalTags = _sourceOriginalTags(originalVideo);
+      if (originalTags.isEmpty) {
+        return const VideoUpdateOriginalUnavailable();
       }
 
       // A pubkey promoted from a plain mention to a collaborator in this
@@ -257,7 +288,7 @@ class VideoMetadataUpdateService {
       // Preserve every tag the edit flow does not own; the owned ones are
       // rebuilt from the editor state below.
       final isVideoReply = originalVideo.isVideoReply;
-      final preservedTags = _sourceOriginalTags(originalVideo)
+      final preservedTags = originalTags
           .where(
             (tag) =>
                 !_isEditRebuiltTag(tag, isVideoReply: isVideoReply) &&
@@ -272,7 +303,10 @@ class VideoMetadataUpdateService {
 
       final videoUrls = _extractVideoUrls(originalVideo);
       if (videoUrls.isEmpty) {
-        throw Exception('Cannot update video: no valid HTTP video URLs found');
+        throw const _VideoUpdateException(
+          VideoMetadataUpdateError.noPlayableVideoUrl,
+          'Cannot update video: no valid HTTP video URLs found',
+        );
       }
 
       final imetaComponents = <String>[];
@@ -418,12 +452,18 @@ class VideoMetadataUpdateService {
       );
 
       if (event == null) {
-        throw Exception('Failed to create updated event');
+        throw const _VideoUpdateException(
+          VideoMetadataUpdateError.couldNotSign,
+          'Failed to create updated event',
+        );
       }
 
       final publishResult = await _nostrService.publishEvent(event);
       if (publishResult is! PublishSuccess) {
-        throw Exception('Failed to publish updated event');
+        throw const _VideoUpdateException(
+          VideoMetadataUpdateError.publishRejected,
+          'Failed to publish updated event',
+        );
       }
       final publishedEvent = publishResult.event;
 
@@ -448,7 +488,11 @@ class VideoMetadataUpdateService {
         name: 'VideoMetadataUpdateService',
         category: LogCategory.video,
       );
-      return VideoUpdateFailure(e);
+      return VideoUpdateFailure(
+        e is _VideoUpdateException
+            ? e.reason
+            : VideoMetadataUpdateError.generic,
+      );
     }
   }
 
@@ -458,7 +502,7 @@ class VideoMetadataUpdateService {
   /// rehydrated from a JSON cache that omits raw tags (the own-profile grid
   /// and cold-start feed do this). In that case, recover the raw event from
   /// the personal cache so preservation is not silently defeated; if it is
-  /// not cached, fall back to an empty list (the pre-existing behavior).
+  /// not cached, return an empty list so [updateVideo] can refuse to publish.
   List<List<String>> _sourceOriginalTags(VideoEvent video) {
     return sourceOriginalVideoTags(
       video: video,
@@ -525,6 +569,8 @@ class VideoMetadataUpdateService {
       previousCollaboratorPubkeys: initialCollaboratorPubkeys,
       updatedCollaboratorPubkeys: updatedCollaboratorPubkeys,
     );
-    return results.values.where((r) => !r.success).length;
+    return results.values
+        .where((result) => !result.success && !result.retryablePending)
+        .length;
   }
 }

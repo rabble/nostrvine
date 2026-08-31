@@ -208,13 +208,20 @@ class ExploreListsTab extends ConsumerWidget {
               padding: EdgeInsets.all(16),
               child: Center(child: BrandedLoadingIndicator(size: 60)),
             ),
-            error: (error, stack) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                context.l10n.exploreErrorLoadingLists(error),
-                style: const TextStyle(color: VineTheme.likeRed),
-              ),
-            ),
+            error: (error, stack) {
+              Log.error(
+                'Failed to load lists: $error',
+                name: 'ExploreListsTab',
+                category: LogCategory.ui,
+              );
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  context.l10n.exploreErrorLoadingLists,
+                  style: VineTheme.bodyMediumFont(color: VineTheme.error),
+                ),
+              );
+            },
           ),
 
           // SUBSCRIBED LISTS - Load separately with its own loading state

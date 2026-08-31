@@ -19,6 +19,7 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
@@ -400,11 +401,12 @@ void main() {
         const viewerB =
             '2222222222222222222222222222222222222222222222222222222222222222';
         var currentViewer = viewerA;
-        final authService = createMockAuthService();
+        final authService = createMockAuthService(
+          authState: AuthState.authenticated,
+        );
         when(
           () => authService.currentPublicKeyHex,
         ).thenAnswer((_) => currentViewer);
-        when(() => authService.isAuthenticated).thenReturn(true);
         when(() => authService.isAnonymous).thenReturn(false);
         when(() => authService.hasExpiredOAuthSession).thenReturn(false);
         when(() => authService.isRpcUpgradeInProgress).thenReturn(false);

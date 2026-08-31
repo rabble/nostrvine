@@ -16,6 +16,7 @@ import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/utils/draft_audio_path_resolver.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -178,11 +179,16 @@ class DivineVideoDraft {
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       sourceDraftId: json['sourceDraftId'] as String?,
       proofManifestJson: json['proofManifestJson'] as String?,
-      editorStateHistory:
-          (json['editorStateHistory'] as Map<String, dynamic>?) ?? const {},
-      editorEditingParameters:
-          (json['editorEditingParameters'] as Map<String, dynamic>?) ??
-          const {},
+      editorStateHistory: resolveAudioPaths(
+        (json['editorStateHistory'] as Map<String, dynamic>?) ?? const {},
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
+      editorEditingParameters: resolveAudioPaths(
+        (json['editorEditingParameters'] as Map<String, dynamic>?) ?? const {},
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       finalRenderedClip: json['finalRenderedClip'] != null
           ? DivineVideoClip.fromJson(
               json['finalRenderedClip'] as Map<String, dynamic>,
@@ -206,7 +212,13 @@ class DivineVideoDraft {
       // Old format (selectedAudioEventId/selectedAudioRelay) is ignored -
       // user must re-select sound if loading old draft
       selectedSound: json['selectedSound'] != null
-          ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
+          ? AudioEvent.fromJson(
+              resolveAudioPaths(
+                json['selectedSound'] as Map<String, dynamic>,
+                documentsPath,
+                useOriginalPath: useOriginalPath,
+              ),
+            )
           : null,
       audioShareAttribution: json['audioShareAttribution'] is Map
           ? AudioShareAttribution.fromJson(
@@ -497,9 +509,10 @@ class DivineVideoDraft {
     if (sourceDraftId != null) 'sourceDraftId': sourceDraftId,
     'publishAttempts': publishAttempts,
     'proofManifestJson': proofManifestJson,
-    if (editorStateHistory.isNotEmpty) 'editorStateHistory': editorStateHistory,
+    if (editorStateHistory.isNotEmpty)
+      'editorStateHistory': toPortableAudioPaths(editorStateHistory),
     if (editorEditingParameters.isNotEmpty)
-      'editorEditingParameters': editorEditingParameters,
+      'editorEditingParameters': toPortableAudioPaths(editorEditingParameters),
     if (finalRenderedClip != null)
       'finalRenderedClip': finalRenderedClip!.toJson(),
     if (collaboratorPubkeys.isNotEmpty)
@@ -510,7 +523,8 @@ class DivineVideoDraft {
       'clipSourceCredits': clipSourceCredits
           .map((credit) => credit.toJson())
           .toList(),
-    if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
+    if (selectedSound != null)
+      'selectedSound': toPortableAudioPaths(selectedSound!.toJson()),
     if (audioShareAttribution != null)
       'audioShareAttribution': audioShareAttribution!.toJson(),
     if (contentWarning != null) 'contentWarning': contentWarning,

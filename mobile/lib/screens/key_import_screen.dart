@@ -294,21 +294,29 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
             category: LogCategory.auth,
           );
         }
+      } else if (mounted &&
+          result.failureReason == AuthFailureReason.incorrectPassword) {
+        setState(() {
+          _passwordError = context.l10n.keyManagementKeycastWrongPassword;
+        });
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              result.errorMessage ?? context.l10n.keyImportFailedToImport,
-            ),
+            content: Text(context.l10n.keyImportFailedToImport),
             backgroundColor: VineTheme.error,
           ),
         );
       }
     } catch (e) {
+      Log.error(
+        'Key import failed: $e',
+        name: 'KeyImportScreen',
+        category: LogCategory.ui,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.keyImportError('$e')),
+            content: Text(context.l10n.keyImportFailedToImport),
             backgroundColor: VineTheme.error,
           ),
         );

@@ -16,6 +16,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/startup/app_side_effects.dart';
 
 List<RouteBase> shellRoutes() {
   return [
@@ -43,15 +44,20 @@ List<RouteBase> shellRoutes() {
           ...state.uri.queryParameters,
         },
         restorationId: state.pageKey.value,
-        // Provided above AppShell so both consumers can reach the same
-        // instance: VineBottomNav (inside AppShell) signals a home-tab retap
-        // and renders the refresh spinner; VideoFeedView (inside the home
-        // branch) listens and performs the refresh.
-        child: BlocProvider<HomeFeedRetapCubit>(
-          create: (_) => HomeFeedRetapCubit(),
-          child: AppShell(
-            currentIndex: navigationShell.currentIndex,
-            child: navigationShell,
+        // The shell-tier app-wide side effects are activated here rather than
+        // inside AppShell so the shell widget stays pure chrome — see
+        // AppShellSideEffects for the membership rule.
+        child: AppShellSideEffects(
+          // Provided above AppShell so both consumers can reach the same
+          // instance: VineBottomNav (inside AppShell) signals a home-tab retap
+          // and renders the refresh spinner; VideoFeedView (inside the home
+          // branch) listens and performs the refresh.
+          child: BlocProvider<HomeFeedRetapCubit>(
+            create: (_) => HomeFeedRetapCubit(),
+            child: AppShell(
+              currentIndex: navigationShell.currentIndex,
+              child: navigationShell,
+            ),
           ),
         ),
       ),

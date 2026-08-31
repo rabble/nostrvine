@@ -7,36 +7,30 @@ extension DraftLocalAudioPaths on DivineVideoDraft {
   /// Absolute file paths of draft-local audio referenced by this draft.
   ///
   /// Covers imported audio created by `LocalAudioImportService` (stored under
-  /// `draft_audio_imports/<draftId>`) and committed voice-over recordings, both
-  /// persisted as draft-local [AudioEvent]s. Sweeps every history entry's audio
-  /// metadata in [DivineVideoDraft.editorStateHistory] plus the legacy
-  /// [DivineVideoDraft.selectedSound], collecting [AudioEvent.localFilePath] for
-  /// each [AudioEvent.isLocalImport] track. Used by draft deletion to remove
-  /// audio files that would otherwise persist after the draft is gone.
+  /// `draft_audio_imports/<draftId>`), committed voice-over recordings, and
+  /// audio extracted from the draft's own clips — all persisted as draft-local
+  /// [AudioEvent]s. Sweeps every history entry's audio metadata in
+  /// [DivineVideoDraft.editorStateHistory], the completed-editor snapshot in
+  /// [DivineVideoDraft.editorEditingParameters], plus the legacy
+  /// [DivineVideoDraft.selectedSound], collecting [AudioEvent.localFilePath]
+  /// for each [AudioEvent.isDraftLocalAudio] track. Used by draft deletion to
+  /// remove audio files that would otherwise persist after the draft is gone.
   Set<String> get localAudioFilePaths {
     final paths = <String>{};
 
     void addIfLocal(AudioEvent event) {
-      // localFilePath is non-null only for a local import with a non-empty
-      // url, so the null check alone covers the import and emptiness guards.
+      // localFilePath is non-null only for draft-local audio with a non-empty
+      // url, so the null check alone covers the locality and emptiness guards.
       final path = event.localFilePath;
       if (path != null) {
         paths.add(path);
       }
     }
 
-    final selected = selectedSound;
-    if (selected != null) addIfLocal(selected);
-
-    final history = editorStateHistory['history'];
-    if (history is! Iterable) return paths;
-
-    for (final item in history) {
-      if (item is! Map) continue;
-      final meta = item['meta'];
-      if (meta is! Map) continue;
-      final audio = meta[VideoEditorConstants.audioStateHistoryKey];
-      if (audio is! Iterable) continue;
+    void addFromMeta(Object? rawMeta) {
+      if (rawMeta is! Map) return;
+      final audio = rawMeta[VideoEditorConstants.audioStateHistoryKey];
+      if (audio is! Iterable) return;
       for (final raw in audio) {
         if (raw is! Map) continue;
         try {
@@ -44,6 +38,19 @@ extension DraftLocalAudioPaths on DivineVideoDraft {
         } catch (_) {
           // Skip malformed audio entries; cleanup must never throw.
         }
+      }
+    }
+
+    final selected = selectedSound;
+    if (selected != null) addIfLocal(selected);
+
+    addFromMeta(editorEditingParameters['meta']);
+
+    final history = editorStateHistory['history'];
+    if (history is Iterable) {
+      for (final item in history) {
+        if (item is! Map) continue;
+        addFromMeta(item['meta']);
       }
     }
 

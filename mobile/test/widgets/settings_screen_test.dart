@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -19,10 +20,11 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_availability.dart';
-import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -31,6 +33,7 @@ import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/draft_storage_service.dart';
@@ -137,6 +140,7 @@ void main() {
       _MockBackgroundPublishBloc? publishBloc,
       InviteAvailabilityCubit? availabilityCubit,
       bool developerMode = false,
+      AccountEnforcementKind? enforcement,
     }) {
       when(
         () => mockAuthService.getKnownAccounts(),
@@ -166,11 +170,18 @@ void main() {
           ),
           currentAuthStateProvider.overrideWith((ref) => authState),
           knownAccountsProvider.overrideWith((ref) async => knownAccounts),
+          isAccountEnforcedProvider.overrideWithValue(
+            enforcement?.isEnforced ?? false,
+          ),
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(null),
           ),
           if (developerMode)
             isDeveloperModeEnabledProvider.overrideWithValue(true),
+          if (enforcement != null)
+            accountEnforcementStatusProvider.overrideWith(
+              (ref) async => AccountEnforcementStatus(kind: enforcement),
+            ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -297,7 +308,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('loads invite status so profile can show invite access', (
+    testWidgets('does not load invite status for the share action', (
       tester,
     ) async {
       final mockInviteCubit = _createMockInviteCubit();
@@ -305,118 +316,58 @@ void main() {
       await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
       await tester.pumpAndSettle();
 
-      verify(mockInviteCubit.load).called(1);
+      verifyNever(mockInviteCubit.load);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('hides invite shortcut when signup invites are disabled', (
+    testWidgets('shows share action when signup invites are disabled', (
       tester,
     ) async {
-      final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
-      when(() => mockInviteCubit.state).thenReturn(
-        const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
-          inviteStatus: InviteStatus(
-            canInvite: true,
-            remaining: 5,
-            total: 5,
-            codes: [],
-          ),
-        ),
-      );
       final availabilityCubit = seededInviteAvailabilityCubit(
         serverMode: OnboardingMode.open,
       );
       addTearDown(availabilityCubit.close);
 
       await tester.pumpWidget(
-        buildSubject(
-          inviteCubit: mockInviteCubit,
-          availabilityCubit: availabilityCubit,
-        ),
+        buildSubject(availabilityCubit: availabilityCubit),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Invites'), findsNothing);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets(
-      'hides invite shortcut immediately when override forces disabled',
-      (tester) async {
-        final mockInviteCubit = _MockInviteStatusCubit();
-        when(mockInviteCubit.load).thenAnswer((_) async {});
-        when(() => mockInviteCubit.state).thenReturn(
-          const InviteStatusState(
-            status: InviteStatusLoadingStatus.loaded,
-            inviteStatus: InviteStatus(
-              canInvite: true,
-              remaining: 5,
-              total: 5,
-              codes: [],
-            ),
-          ),
-        );
-        final availabilityCubit = seededInviteAvailabilityCubit();
-        addTearDown(availabilityCubit.close);
-
-        await tester.pumpWidget(
-          buildSubject(
-            inviteCubit: mockInviteCubit,
-            availabilityCubit: availabilityCubit,
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(find.text('Invites'), findsOneWidget);
-
-        availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
-        expect(availabilityCubit.state.isEnabled, isFalse);
-        await tester.pumpAndSettle();
-
-        expect(find.text('Invites'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
-
-    testWidgets('renders invite shortcut when unclaimed invites exist', (
+    testWidgets('keeps share action when invite override forces disabled', (
       tester,
     ) async {
-      final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
-      when(() => mockInviteCubit.state).thenReturn(
-        const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
-          inviteStatus: InviteStatus(
-            canInvite: true,
-            remaining: 0,
-            total: 1,
-            codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
-          ),
-        ),
-      );
+      final availabilityCubit = seededInviteAvailabilityCubit();
+      addTearDown(availabilityCubit.close);
 
-      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpWidget(
+        buildSubject(availabilityCubit: availabilityCubit),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+
+      availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
+      expect(availabilityCubit.state.isEnabled, isFalse);
       await tester.pumpAndSettle();
 
-      expect(find.text('Invites'), findsOneWidget);
-      expect(find.text('1'), findsNothing);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('renders invite shortcut when invite capacity exists', (
+    testWidgets('share action does not show an invite activity badge', (
       tester,
     ) async {
       final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
       when(() => mockInviteCubit.state).thenReturn(
         const InviteStatusState(
           status: InviteStatusLoadingStatus.loaded,
@@ -432,52 +383,12 @@ void main() {
       await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
       await tester.pumpAndSettle();
 
-      expect(find.text('Invites'), findsOneWidget);
-      expect(find.text('5'), findsOneWidget);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+      expect(find.text('5'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
-
-    testWidgets(
-      'reveals invite shortcut immediately when lazy allocation arrives',
-      (tester) async {
-        final mockInviteCubit = _MockInviteStatusCubit();
-        when(mockInviteCubit.load).thenAnswer((_) async {});
-        final states = StreamController<InviteStatusState>();
-        addTearDown(states.close);
-        whenListen(
-          mockInviteCubit,
-          states.stream,
-          initialState: const InviteStatusState(
-            status: InviteStatusLoadingStatus.loading,
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
-        await tester.pumpAndSettle();
-        expect(find.text('Invites'), findsNothing);
-
-        states.add(
-          const InviteStatusState(
-            status: InviteStatusLoadingStatus.loaded,
-            inviteStatus: InviteStatus(
-              canInvite: true,
-              remaining: 5,
-              total: 5,
-              codes: [],
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Invites'), findsOneWidget);
-        expect(find.text('5'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
 
     testWidgets(
       'hides account action when multiple accounts exist and switching is disabled',
@@ -893,6 +804,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        await tester.scrollUntilVisible(
+          find.text(l10n.settingsGeneralTitle),
+          200,
+        );
         expect(find.text(l10n.settingsGeneralTitle), findsOneWidget);
         expect(find.text('Bluesky Publishing'), findsNothing);
 
@@ -1177,5 +1092,78 @@ void main() {
         await tester.pump();
       },
     );
+
+    group('account status tile', () {
+      testWidgets('is hidden when no restriction is confirmed', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            enforcement: AccountEnforcementKind.noRestrictionReported,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.accountStatusTitle), findsNothing);
+        expect(
+          find.text(l10n.accountStatusTileSubtitleRestricted),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+
+      testWidgets('flags a restricted account on the row itself', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(enforcement: AccountEnforcementKind.suspended),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.accountStatusTitle),
+          200,
+          scrollable: scrollable,
+        );
+
+        expect(
+          find.text(l10n.accountStatusTileSubtitleRestricted),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+
+      testWidgets('tapping it opens the account status route', (tester) async {
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(
+            goRouter: mockGoRouter,
+            enforcement: AccountEnforcementKind.suspended,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.accountStatusTitle),
+          200,
+          scrollable: scrollable,
+        );
+        await tester.tap(find.text(l10n.accountStatusTitle));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.push(AccountStatusScreen.path)).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+    });
   });
 }

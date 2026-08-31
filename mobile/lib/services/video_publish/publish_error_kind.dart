@@ -69,6 +69,9 @@ enum PublishErrorKind {
   /// Media uploaded but the Nostr event could not be published.
   nostrPublishFailed,
 
+  /// The authoritative Divine publish surface rejected the account.
+  accountRestricted,
+
   /// Media uploaded but the selected sound's own event forbids reuse, so the
   /// post was withheld. Distinct from [nostrPublishFailed]: the refusal is
   /// stamped on the event itself, no relay lookup is involved, and retrying

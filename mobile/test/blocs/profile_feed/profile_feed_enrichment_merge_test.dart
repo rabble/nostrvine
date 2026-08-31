@@ -14,6 +14,16 @@ VideoEvent _video({
   String? textTrackRef,
   List<String> textTrackRefs = const [],
   String? textTrackContent,
+  int? eventCreatedAt,
+  List<List<String>> nostrEventTags = const [],
+  List<String> hashtags = const [],
+  String? title,
+  int? nostrLikeCount,
+  int? nostrCommentCount,
+  int? nostrRepostCount,
+  List<String> categories = const [],
+  List<String> moderationLabels = const [],
+  ProofVerificationSummary? proofSummary,
 }) {
   return VideoEvent(
     id: id,
@@ -26,6 +36,16 @@ VideoEvent _video({
     textTrackRef: textTrackRef,
     textTrackRefs: textTrackRefs,
     textTrackContent: textTrackContent,
+    eventCreatedAt: eventCreatedAt,
+    nostrEventTags: nostrEventTags,
+    hashtags: hashtags,
+    title: title,
+    nostrLikeCount: nostrLikeCount,
+    nostrCommentCount: nostrCommentCount,
+    nostrRepostCount: nostrRepostCount,
+    categories: categories,
+    moderationLabels: moderationLabels,
+    proofSummary: proofSummary,
   );
 }
 
@@ -120,6 +140,91 @@ void main() {
       );
 
       expect(merged, [current]);
+    });
+
+    test('uses raw tags from a strictly newer enriched event', () {
+      final current = _video(
+        id: 'rest',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 100,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'stale'],
+        ],
+        hashtags: const ['stale'],
+        title: 'Stale title',
+        nostrLikeCount: 11,
+        nostrCommentCount: 7,
+        nostrRepostCount: 3,
+        categories: const ['comedy'],
+        moderationLabels: const ['label'],
+        proofSummary: const ProofVerificationSummary(
+          status: 'present',
+          level: 'basic_proof',
+          version: 1,
+          checks: {'proofmode_present': true},
+        ),
+      );
+      final enriched = _video(
+        id: 'nostr',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 101,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'current'],
+        ],
+        hashtags: const ['current'],
+        title: 'Current title',
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.nostrEventTags, enriched.nostrEventTags);
+      expect(merged.single.hashtags, enriched.hashtags);
+      expect(merged.single.title, enriched.title);
+      expect(merged.single.id, enriched.id);
+      expect(merged.single.nostrLikeCount, 11);
+      expect(merged.single.nostrCommentCount, 7);
+      expect(merged.single.nostrRepostCount, 3);
+      expect(merged.single.categories, ['comedy']);
+      expect(merged.single.moderationLabels, ['label']);
+      expect(merged.single.proofSummary, current.proofSummary);
+    });
+
+    test('keeps raw tags from a newer current event', () {
+      final current = _video(
+        id: 'nostr-current',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 102,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'current'],
+        ],
+      );
+      final enriched = _video(
+        id: 'stale-enrichment',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 101,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'stale'],
+        ],
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.nostrEventTags, current.nostrEventTags);
+      expect(merged.single.id, current.id);
     });
   });
 }

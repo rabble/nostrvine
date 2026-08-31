@@ -89,15 +89,6 @@ void main() {
       expect(stats!.requestsThisSession, equals(4));
     });
 
-    test('records request failure', () {
-      service.recordRequestFailure(testRelay, 'Connection timeout');
-
-      final stats = service.getStatistics(testRelay);
-      expect(stats!.failedRequests, equals(1));
-      expect(stats.lastError, equals('Connection timeout'));
-      expect(stats.lastErrorTime, isNotNull);
-    });
-
     test('tracks multiple subscriptions correctly', () {
       service.recordSubscriptionStarted(testRelay, 'sub_1');
       service.recordSubscriptionStarted(testRelay, 'sub_2');
@@ -119,7 +110,13 @@ void main() {
 
       service.recordConnection(relay2);
       service.recordEventReceived(relay2);
-      service.recordRequestFailure(relay2, 'Error');
+      // syncSdkCounters is the only production writer of failedRequests.
+      service.syncSdkCounters(
+        relay2,
+        eventsReceived: 1,
+        queriesSent: 0,
+        errors: 1,
+      );
 
       final stats1 = service.getStatistics(relay1);
       final stats2 = service.getStatistics(relay2);

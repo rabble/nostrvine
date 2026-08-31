@@ -218,7 +218,7 @@ class NostrConnectCoordinator {
 
       // Success! Apply the connection on the facade (build signer + session).
       Log.info(
-        'NostrConnect succeeded! Bunker pubkey: ${result.remoteSignerPubkey}',
+        'NostrConnect succeeded! Bunker pubkey: ${pubkeyForLogs(result.remoteSignerPubkey)}',
         name: 'NostrConnectCoordinator',
         category: LogCategory.auth,
       );

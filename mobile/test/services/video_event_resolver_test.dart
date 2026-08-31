@@ -72,6 +72,28 @@ void main() {
       verifyNever(() => cache.getEventById(any()));
     });
 
+    test('requireRawTags skips incomplete in-memory and cache hits', () async {
+      final incomplete = _videoEvent(id: eventId, pubkey: otherPubkey);
+      final incompleteCached = _kind34236Event(
+        id: eventId,
+        pubkey: otherPubkey,
+        tags: const [],
+      );
+      final completeRelay = _kind34236Event(id: eventId, pubkey: otherPubkey);
+      when(
+        () => videoService.getVideoEventById(eventId),
+      ).thenReturn(incomplete);
+      when(() => cache.getEventById(eventId)).thenReturn(incompleteCached);
+
+      final resolver = build();
+      final future = resolver.resolveById(eventId, requireRawTags: true);
+      relayController.add(completeRelay);
+
+      final result = await future;
+      expect(result, isNotNull);
+      expect(result!.nostrEventTags, isNotEmpty);
+    });
+
     test('returns personal cache hit when in-memory misses', () async {
       final event = _kind34236Event(id: eventId, pubkey: otherPubkey);
       when(() => cache.getEventById(eventId)).thenReturn(event);
@@ -177,16 +199,22 @@ VideoEvent _videoEvent({required String id, required String pubkey}) {
   );
 }
 
-Event _kind34236Event({required String id, required String pubkey}) {
+Event _kind34236Event({
+  required String id,
+  required String pubkey,
+  List<List<String>>? tags,
+}) {
   return Event.fromJson({
     'id': id,
     'pubkey': pubkey,
     'created_at': 1700000000,
     'kind': 34236,
-    'tags': [
-      ['d', 'd-tag-$id'],
-      ['url', 'https://example.com/video.mp4'],
-    ],
+    'tags':
+        tags ??
+        [
+          ['d', 'd-tag-$id'],
+          ['url', 'https://example.com/video.mp4'],
+        ],
     'content': 'content',
     'sig': 'signature',
   });

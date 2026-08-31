@@ -13,9 +13,9 @@ import '../helpers/flutter_assets_channel.dart';
 
 const _wordmarkAssetKey = 'assets/icon/divine_wordmark.png';
 
-/// Mocks `flutter/assets` so [rootBundle] serves [bytes] for the wordmark path,
-/// mirroring the deterministic asset-loading pattern in
-/// `seed_media_preload_service_test.dart` (safe under the merged VGV isolate).
+/// Mocks `flutter/assets` so [rootBundle] serves [bytes] for the wordmark
+/// path, restoring the default handler via [restoreFlutterAssetsDefaultHandler]
+/// so the override stays safe under the merged VGV isolate.
 void _mockWordmarkAsset(Uint8List bytes) {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMessageHandler('flutter/assets', (ByteData? message) async {

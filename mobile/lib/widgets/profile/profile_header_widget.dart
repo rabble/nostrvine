@@ -14,6 +14,8 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/config/profile_metrics.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -21,12 +23,14 @@ import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
@@ -38,9 +42,11 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/secure_account_prompt_dismissal.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
@@ -177,8 +183,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // fetchUserProfileProvider, and the route hints — so evicting the cached
     // row is not enough on its own: the hints are supplied by whoever
     // navigated here and outlive the cache entirely.
-    final isVanished =
-        ref.watch(profileVanishedProvider(widget.userIdHex)).value ?? false;
+    final isVanished = ref.watch(profileVanishedProvider(widget.userIdHex));
 
     final UserProfile? effectiveProfile;
     final bool isLoadingIdentity;
@@ -274,6 +279,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // upgrade resolves — the auth stream emits a nudge in both cases)
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
+    final isAccountEnforced =
+        widget.isOwnProfile && ref.watch(isAccountEnforcedProvider);
     final hasExpiredSession = authService.hasExpiredOAuthSession;
     final isRpcUpgradeInProgress = authService.isRpcUpgradeInProgress;
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -292,11 +299,20 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         !isDivineLoginBannerHidden;
 
     // Compute pending profile actions for the avatar badge
-    final pendingActions = ProfileActionType.pending(
-      isOwnProfile: widget.isOwnProfile,
-      isAnonymous: isAnonymous,
-      hasAnyProfileInfo: hasAnyProfileInfo,
+    final secureAccountPromptDismissal = SecureAccountPromptDismissalStore(
+      prefs: prefs,
+      userIdHex: widget.userIdHex,
     );
+    final pendingActions =
+        ProfileActionType.pending(
+          isOwnProfile: widget.isOwnProfile,
+          isAccountEnforced: isAccountEnforced,
+          isAnonymous: isAnonymous,
+          hasAnyProfileInfo: hasAnyProfileInfo,
+        ).where((action) {
+          return action != ProfileActionType.secureAccount ||
+              !secureAccountPromptDismissal.isDismissed();
+        }).toList();
 
     // Banner is rendered separately by ProfileBannerLayer in profile_grid.dart
     // so it can be placed behind the safe area. This widget only renders the
@@ -385,9 +401,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     showSkeleton: showIdentitySkeleton,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
-                    onActionTap: pendingActions.isNotEmpty
-                        ? () => _showActionsSheet(context, pendingActions)
-                        : null,
+                    onActionTap: pendingActions.isEmpty
+                        ? null
+                        : pendingActions.first ==
+                              ProfileActionType.accountRestricted
+                        ? () => context.push(RoutePaths.accountStatus)
+                        : () => _showActionsSheet(
+                            context,
+                            pendingActions,
+                            secureAccountPromptDismissal,
+                          ),
                   ),
                 ),
 
@@ -536,12 +559,23 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   void _showActionsSheet(
     BuildContext context,
     List<ProfileActionType> actions,
+    SecureAccountPromptDismissalStore secureAccountPromptDismissal,
   ) {
     VineBottomSheet.show<void>(
       context: context,
       scrollable: false,
       showHeaderDivider: false,
-      body: ProfileActionsSheetContent(actions: actions),
+      body: ProfileActionsSheetContent(
+        actions: actions,
+        onMaybeLater: (action) {
+          if (action != ProfileActionType.secureAccount) return;
+          // The write lands in the in-memory SharedPreferences cache before
+          // the future completes, so an empty setState is enough to drop the
+          // action from the next build.
+          unawaited(secureAccountPromptDismissal.dismiss());
+          if (mounted) setState(() {});
+        },
+      ),
     );
   }
 }

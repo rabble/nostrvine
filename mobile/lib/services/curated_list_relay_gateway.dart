@@ -263,6 +263,7 @@ class CuratedListRelayGateway {
         try {
           final subscription = _nostrService.subscribe(
             [filter],
+            closeOnEose: true,
             onEose: () {
               Log.info(
                 '📋 EOSE received for public curated lists: '
@@ -402,7 +403,10 @@ class CuratedListRelayGateway {
       );
 
       // Subscribe to matching events
-      final subscription = _nostrService.subscribe([filter]);
+      final subscription = _nostrService.subscribe(
+        [filter],
+        closeOnEose: true,
+      );
 
       // Set a timeout for the subscription
       timeoutTimer = Timer(const Duration(seconds: 10), () {
@@ -522,7 +526,7 @@ class CuratedListRelayGateway {
 
     // Subscribe and transform events to CuratedList objects
     return _nostrService
-        .subscribe([filter])
+        .subscribe([filter], closeOnEose: true)
         .map((event) {
           final dTag = CuratedListConverter.extractDTag(event);
           if (dTag == null) return null;

@@ -29,6 +29,9 @@ enum BadgeDetailActionStatus {
   /// The viewer's award is being removed from their profile.
   removing,
 
+  /// An award is being taken back from one recipient.
+  revoking,
+
   /// A deletion request is publishing.
   deleting,
 
@@ -41,14 +44,23 @@ enum BadgeDetailActionStatus {
   /// The last mutation completed.
   completed,
 
+  /// One recipient's award was taken back.
+  ///
+  /// Its own outcome rather than [completed] because the detail screen has
+  /// something to say about it — the row simply vanishing is no feedback to
+  /// a screen reader — while awarding, accepting and removing all show their
+  /// own result on screen.
+  revoked,
+
   /// The last mutation failed.
   failure,
 
-  /// A relay refused the deletion request outright.
+  /// A relay refused a deletion request outright.
   ///
-  /// Kept apart from [failure] because a refusal is usually transient: the
-  /// relay authorizes a badge deletion only against event ids it has already
-  /// indexed, so deleting a badge seconds after creating it is refused while
+  /// Covers both deleting a badge and revoking one award, which are the same
+  /// `kind:5` request. Kept apart from [failure] because a refusal is usually
+  /// transient: the relay authorizes a deletion only against event ids it has
+  /// already indexed, so deleting seconds after publishing is refused while
   /// the identical request succeeds a moment later.
   deleteRejected,
 }
@@ -61,6 +73,7 @@ class BadgeDetailState extends Equatable {
     this.status = BadgeDetailStatus.initial,
     this.actionStatus = BadgeDetailActionStatus.idle,
     this.detail,
+    this.actionRecipient,
   });
 
   /// Address of the badge being shown.
@@ -75,11 +88,25 @@ class BadgeDetailState extends Equatable {
   /// The loaded badge, once available.
   final BadgeDetailData? detail;
 
+  /// The recipient the running action targets, for the actions that target
+  /// one. Never read on its own — [isRevoking] gates it on [actionStatus],
+  /// so a settled action needs no second emit to clear it.
+  final String? actionRecipient;
+
+  /// Whether [pubkey]'s award is being taken back right now.
+  ///
+  /// Per recipient rather than per screen: [isBusy] disables every row, but
+  /// only the row actually going away should show that it is working.
+  bool isRevoking(String pubkey) =>
+      actionStatus == BadgeDetailActionStatus.revoking &&
+      actionRecipient == pubkey;
+
   /// Whether a mutation is in flight.
   bool get isBusy =>
       actionStatus == BadgeDetailActionStatus.awarding ||
       actionStatus == BadgeDetailActionStatus.accepting ||
       actionStatus == BadgeDetailActionStatus.removing ||
+      actionStatus == BadgeDetailActionStatus.revoking ||
       actionStatus == BadgeDetailActionStatus.deleting ||
       actionStatus == BadgeDetailActionStatus.blockingClaimants;
 
@@ -89,6 +116,7 @@ class BadgeDetailState extends Equatable {
   /// pops the route, so a reload must leave both alone.
   bool get hasSettledAction =>
       actionStatus == BadgeDetailActionStatus.completed ||
+      actionStatus == BadgeDetailActionStatus.revoked ||
       actionStatus == BadgeDetailActionStatus.failure ||
       actionStatus == BadgeDetailActionStatus.deleteRejected;
 
@@ -101,15 +129,23 @@ class BadgeDetailState extends Equatable {
     BadgeDetailStatus? status,
     BadgeDetailActionStatus? actionStatus,
     BadgeDetailData? detail,
+    String? actionRecipient,
   }) {
     return BadgeDetailState(
       coordinate: coordinate,
       status: status ?? this.status,
       actionStatus: actionStatus ?? this.actionStatus,
       detail: detail ?? this.detail,
+      actionRecipient: actionRecipient ?? this.actionRecipient,
     );
   }
 
   @override
-  List<Object?> get props => [coordinate, status, actionStatus, detail];
+  List<Object?> get props => [
+    coordinate,
+    status,
+    actionStatus,
+    detail,
+    actionRecipient,
+  ];
 }

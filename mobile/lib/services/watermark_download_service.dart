@@ -72,6 +72,18 @@ class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
 /// interrupted download) is evicted and re-fetched.
 const _videoExtensions = <String>{'.mp4', '.mov', '.webm', '.mkv', '.m4v'};
 
+/// Frame-rate ceiling for the watermark render.
+///
+/// iOS Photos tags an import above ~60 fps as high-frame-rate and plays it back
+/// as slow motion, so a 120 fps rendition reaches the camera roll as a Slo-Mo
+/// clip. 60 is the highest rate Photos still treats as an ordinary video, which
+/// keeps a genuine 60 fps source intact instead of dropping real frames.
+///
+/// This is a cap, not a target: a source already at or below it is untouched.
+/// It only reaches the watermark render — `downloadOriginal` copies the file
+/// without re-encoding, so there is nothing to cap there.
+const _maxWatermarkFrameRate = 60;
+
 String _redownloadCacheKey(String videoId) =>
     '$videoId-redownload-${DateTime.now().microsecondsSinceEpoch}';
 
@@ -406,6 +418,7 @@ class WatermarkDownloadService {
         id: '${videoId}_watermark',
         videoSegments: [VideoSegment(video: EditorVideo.file(videoFile))],
         shouldOptimizeForNetworkUse: true,
+        maxFrameRate: _maxWatermarkFrameRate,
         imageLayers: [
           ImageLayer(image: EditorLayerImage.memory(watermarkBytes)),
         ],

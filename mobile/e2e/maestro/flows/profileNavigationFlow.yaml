@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/profileFreshInstall.yaml

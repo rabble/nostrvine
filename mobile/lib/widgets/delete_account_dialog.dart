@@ -12,6 +12,9 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -43,24 +46,17 @@ Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
 /// DELETE).
 ///
 /// This sheet ensures they understand the dangerous/irreversible nature of
-/// account deletion. It opens immediately; [ownedUsernameFuture] is
-/// resolved in the background and the opt-in "burn my username" toggle is
-/// revealed only once it completes with a non-null handle — so a slow
-/// name-server lookup never blocks the tap or lets a second tap stack a
-/// duplicate sheet. [onConfirm] receives the handle the sheet actually
-/// displayed, so a burn only ever targets the name the user consented to.
+/// account deletion. It opens immediately and never blocks on a name-server
+/// lookup: name ownership is resolved at the deletion boundary (in
+/// [executeAccountDeletion]) once [onConfirm] runs, so a slow or failed lookup
+/// fails the deletion closed rather than silently skipping the release.
 ///
 /// Dismissing the sheet cancels: nothing is deleted until the token is typed
 /// and the destructive button is tapped.
 Future<void> showDeleteAllContentWarningSheet({
   required BuildContext context,
   required DeleteAccountConfirmation confirmation,
-  required void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })
-  onConfirm,
-  required Future<({String name, String canonical})?> ownedUsernameFuture,
+  required VoidCallback onConfirm,
 }) async {
   // The form and the pinned footer are sibling slots of the sheet rather than
   // one subtree, so the footer learns about the typed token through this
@@ -93,7 +89,6 @@ Future<void> showDeleteAllContentWarningSheet({
     buildScrollBody: (scrollController) => _DeleteAllContentForm(
       key: formKey,
       confirmation: confirmation,
-      ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
       canConfirm: canConfirm,
       scrollController: scrollController,
@@ -152,7 +147,6 @@ class _DeleteAllContentActions extends StatelessWidget {
 class _DeleteAllContentForm extends StatefulWidget {
   const _DeleteAllContentForm({
     required this.confirmation,
-    required this.ownedUsernameFuture,
     required this.onConfirm,
     required this.canConfirm,
     required this.scrollController,
@@ -160,12 +154,7 @@ class _DeleteAllContentForm extends StatefulWidget {
   });
 
   final DeleteAccountConfirmation confirmation;
-  final Future<({String name, String canonical})?> ownedUsernameFuture;
-  final void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })
-  onConfirm;
+  final void Function() onConfirm;
 
   /// Mirrors "the typed token matches" out to the pinned footer.
   final ValueNotifier<bool> canConfirm;
@@ -177,24 +166,6 @@ class _DeleteAllContentForm extends StatefulWidget {
 
 class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   final _confirmationController = TextEditingController();
-  var _burnUsername = false;
-  ({String name, String canonical})? _ownedUsername;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(
-      widget.ownedUsernameFuture
-          .then<void>((owned) {
-            if (!mounted || owned == null) return;
-            setState(() => _ownedUsername = owned);
-          })
-          .catchError((Object _) {
-            // Lookup failed: treat as "no handle" and leave the toggle hidden,
-            // matching getUsernameByPubkey's unknown-means-no-name contract.
-          }),
-    );
-  }
 
   @override
   void dispose() {
@@ -202,7 +173,8 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     super.dispose();
   }
 
-  /// Closes the sheet and hands the consented values to the caller.
+  /// Closes the sheet and runs the deletion; name ownership is resolved at the
+  /// deletion boundary, not here.
   ///
   /// Called by the footer through the form's key, since the two are sibling
   /// slots of the sheet.
@@ -211,16 +183,12 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     // notifier, which only gates the button's enabled state.
     if (!widget.confirmation.matches(_confirmationController.text)) return;
     context.pop();
-    widget.onConfirm(
-      burnUsername: _burnUsername,
-      ownedUsername: _ownedUsername,
-    );
+    widget.onConfirm();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final owned = _ownedUsername;
     final c = widget.confirmation;
 
     return SingleChildScrollView(
@@ -271,24 +239,6 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
                 : TextCapitalization.characters,
             onChanged: (value) => widget.canConfirm.value = c.matches(value),
           ),
-          // Row rather than the ListTile-based DivineCheckboxTile: the sheet
-          // paints its surface with a ColoredBox, which a ListTile's ink and
-          // background cannot draw through.
-          if (owned != null)
-            DivineRowCheckbox(
-              state: _burnUsername
-                  ? DivineCheckboxState.selected
-                  : DivineCheckboxState.unselected,
-              onChanged: (value) => setState(() => _burnUsername = value),
-              label: Text(
-                l10n.deleteAccountBurnUsernameToggle(
-                  '@${owned.name}.divine.video',
-                ),
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.primaryText,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -413,26 +363,27 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 
 /// Execute the full account deletion flow:
 /// 1. Show loading indicator with progress
-/// 2. If [burnUsername], release the @divine.video handle first (needs a
-///    working signer); on failure, abort with nothing deleted (hard-block)
+/// 2. Resolve [ownedUsernameLookup]. When it finds a name, prepare a
+///    recoverable @divine.video release (needs a working signer); on failure,
+///    abort with nothing deleted (hard-block). Release is mandatory whenever
+///    the user owns a name.
 /// 3. Send NIP-62 deletion request (requires working signer)
-/// 4. Delete Keycast account if exists (invalidates signer)
+/// 4. Submit the deletion to the coordinator, which finalizes the username and
+///    Keycast account; without a username, delete Keycast directly
 /// 5. Sign out and delete local keys
 /// 6. Show success snackbar (router auto-redirects to /welcome)
 ///
-/// If the burn commits but a later step fails, the error discloses that the
-/// username was permanently released (the burn is never rolled back).
+/// If a later step fails after preparation, the user can restore the username.
+/// The server keeps that recovery state across app restarts and reinstalls.
 ///
-/// Aborts before any step (including the burn) when [confirmedPubkey] is set and
-/// no longer matches the signed-in account.
+/// Aborts before any step (including the release) when [confirmedPubkey] is set
+/// and no longer matches the signed-in account.
 ///
 /// [context] - BuildContext for showing sheets
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
-/// [profileRepository] - Burns the username / re-checks ownership when
-///   [burnUsername] is set
-/// [burnUsername] - Whether the user opted in to permanently burn their handle
-/// [ownedUsername] - The active handle (display name + canonical) to burn
+/// [ownedUsernameLookup] - The eventual found / confirmed-not-found / unknown
+///   ownership result. Unknown and lookup failures abort before deletion.
 /// [confirmedPubkey] - When set, aborts before any step if the signed-in
 ///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
@@ -440,17 +391,39 @@ Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
   required AuthService authService,
-  ProfileRepository? profileRepository,
-  bool burnUsername = false,
-  ({String name, String canonical})? ownedUsername,
+  required AccountDeletionRecoveryRepository deletionRecoveryRepository,
+  required Future<DivineUsernameLookup> ownedUsernameLookup,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
-  // Create cubit for tracking progress
+  if (!context.mounted) return;
+
+  // Created after the mounted gate: returning above it would leave this cubit
+  // open, since only the `finally` below ever closes one.
   final cubit = AccountDeletionProgressCubit();
 
-  // Show progress sheet with BlocProvider
-  if (!context.mounted) return;
+  // Signing out flips auth state to unauthenticated, which makes the global
+  // redirect replace the whole stack with /welcome — tearing down the route
+  // this was called from. Everything needed to report the outcome afterwards
+  // is therefore captured here: the messenger and the view sit above the
+  // Navigator and outlive the redirect, so the confirmation lands on the
+  // destination instead of vanishing with the caller (#6450).
+  final messenger = ScaffoldMessenger.of(context);
+  final view = View.of(context);
+  final textDirection = Directionality.of(context);
+  // The navigator the sheet is pushed onto, resolved while the caller is
+  // still mounted. `context.pop()` would resolve to the innermost navigator
+  // instead, which for a shell-nested caller is not the one holding it.
+  final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+  // The sheet's own route, captured so dismissal can target exactly this
+  // sheet: `VineBottomSheet.show` hands back the result future, not the route.
+  ModalRoute<void>? progressSheetRoute;
+  // Set once the sheet has left the navigator, whoever took it down. Before
+  // the sheet's first build there is no route to target, and this is then the
+  // only way to tell "not shown yet" from "already gone".
+  var progressSheetClosed = false;
+
   unawaited(
     VineBottomSheet.show<void>(
       context: context,
@@ -467,33 +440,46 @@ Future<void> executeAccountDeletion({
       // leaving the bottom nav tappable mid-deletion.
       useRootNavigator: true,
       body: const _DeletionProgressSheetContent(),
-      contentWrapper: (_, child) =>
-          BlocProvider.value(value: cubit, child: child),
-    ),
+      contentWrapper: (sheetContext, child) {
+        progressSheetRoute = ModalRoute.of<void>(sheetContext);
+        return BlocProvider.value(value: cubit, child: child);
+      },
+    ).whenComplete(() => progressSheetClosed = true),
   );
 
   // Track if the progress sheet was dismissed to avoid double-popping.
   var progressSheetDismissed = false;
 
   void dismissProgressSheet() {
-    if (!progressSheetDismissed && context.mounted) {
-      progressSheetDismissed = true;
-      // Targets the navigator the sheet was pushed onto. `context.pop()` would
-      // resolve to the innermost navigator instead, which for a shell-nested
-      // caller is not the one holding this sheet.
-      Navigator.of(context, rootNavigator: true).pop();
+    if (progressSheetDismissed || !rootNavigator.mounted) return;
+    progressSheetDismissed = true;
+    final route = progressSheetRoute;
+    if (route == null) {
+      // The sheet has not had its first build yet, so no frame has run since
+      // it was pushed and nothing can have moved it: it is still on top —
+      // unless it never made it onto the navigator, or left again before it
+      // could build. Popping blindly then removes someone else's route, which
+      // is the failure this whole function exists to avoid.
+      if (!progressSheetClosed) rootNavigator.pop();
+      return;
+    }
+    // Once built, dismiss by identity rather than popping whatever sits on
+    // top. The sign-out redirect takes this sheet down together with the
+    // route it was pushed over, and a blind pop then removes the page the
+    // redirect just installed — for /welcome, the last one on the stack, so
+    // the app is left with no page at all (#6450).
+    if (!route.isActive) return;
+    if (route.isCurrent) {
+      rootNavigator.pop();
+    } else {
+      rootNavigator.removeRoute(route);
     }
   }
 
   // Speak each delete outcome so screen-reader users hear the result the
   // snackbar shows visually. Mirrors the snackbar text at every outcome site.
   void announceOutcome(String message) {
-    if (!context.mounted) return;
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      message,
-      Directionality.of(context),
-    );
+    SemanticsService.sendAnnouncement(view, message, textDirection);
   }
 
   // Captured before the first await so the post-sign-out catch can localize
@@ -502,23 +488,116 @@ Future<void> executeAccountDeletion({
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
-  final accountChangedAfterDeletionText =
-      context.l10n.deleteAccountAccountChangedAfterDeletion;
-  final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
+  final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
+  final reportBugText = context.l10n.supportReportBug;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
-  final relayConfirmationFailedText =
-      context.l10n.deleteAccountRelayConfirmationFailed;
-  final handleLabel = ownedUsername != null
-      ? '@${ownedUsername.name}.divine.video'
-      : null;
-  // Disclosure message for when the burn committed but the account could not
-  // be fully deleted — states the permanent release (never rolled back).
-  final burnReleasedText = handleLabel != null
-      ? context.l10n.deleteAccountBurnUsernameReleased(handleLabel)
-      : null;
+  final deletionNotStartedText = context.l10n.deleteAccountDeletionNotStarted;
+  // Assigned at the deletion boundary once name ownership is resolved.
+  String? handleLabel;
+  final recoveryBodyText = context.l10n.accountDeletionRecoveryBody;
+  final cancelAttemptBodyText = context.l10n.accountDeletionCancelAttemptBody;
+  final restoreUsernameText = context.l10n.accountDeletionRestoreUsername;
+  final cancelAttemptText = context.l10n.accountDeletionCancelAttempt;
+  final usernameRestoredText = context.l10n.accountDeletionUsernameRestored;
+  final attemptCancelledText = context.l10n.accountDeletionAttemptCancelled;
+  final recoveryFailedText = context.l10n.accountDeletionRecoveryFailed;
+  final finishingDeletionText = context.l10n.accountDeletionFinishingBody;
+  final deletionSuccessText = context.l10n.deleteAccountSuccess;
+  final deletionSuccessUnverifiedText =
+      context.l10n.deleteAccountSuccessContentUnverified;
 
-  // Whether the @divine.video handle was permanently released this run.
-  var burnCommitted = false;
+  AccountDeletionAttempt? deletionAttempt;
+  var usernamePrepared = false;
+
+  void showDurableDeletionOutcome(String message, {bool offerCancel = true}) {
+    final attempt = deletionAttempt;
+    if (!context.mounted || attempt == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        message,
+        error: true,
+        duration: const Duration(seconds: 12),
+        actionLabel: offerCancel
+            ? (usernamePrepared ? restoreUsernameText : cancelAttemptText)
+            : null,
+        onActionPressed: offerCancel
+            ? () {
+                unawaited(
+                  deletionRecoveryRepository
+                      .cancelAndWait(attemptId: attempt.id)
+                      .then((restored) {
+                        if (!context.mounted) return;
+                        final succeeded =
+                            restored.status ==
+                            AccountDeletionAttemptStatus.cancelled;
+                        final text = succeeded
+                            ? (usernamePrepared
+                                  ? usernameRestoredText
+                                  : attemptCancelledText)
+                            : (usernamePrepared
+                                  ? recoveryFailedText
+                                  : deletionIncompleteText);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          DivineSnackbarContainer.snackBar(
+                            text,
+                            error: !succeeded,
+                          ),
+                        );
+                        announceOutcome(text);
+                      })
+                      .catchError((Object _) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          DivineSnackbarContainer.snackBar(
+                            usernamePrepared
+                                ? recoveryFailedText
+                                : deletionIncompleteText,
+                            error: true,
+                          ),
+                        );
+                        announceOutcome(
+                          usernamePrepared
+                              ? recoveryFailedText
+                              : deletionIncompleteText,
+                        );
+                      }),
+                );
+              }
+            : null,
+      ),
+    );
+    announceOutcome(message);
+  }
+
+  void abortPreparation(
+    Object error,
+    String message, {
+    bool offerSupport = false,
+  }) {
+    Log.warning(
+      'Account deletion could not be prepared ($error); aborting '
+      'account deletion',
+      name: screenName,
+      category: LogCategory.auth,
+    );
+    dismissProgressSheet();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        message,
+        error: true,
+        duration: offerSupport ? const Duration(seconds: 12) : null,
+        actionLabel: offerSupport ? reportBugText : null,
+        onActionPressed: offerSupport
+            ? () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                context.push(RoutePaths.supportReportBug);
+              }
+            : null,
+      ),
+    );
+    announceOutcome(message);
+  }
 
   bool stopCleanupIfAccountChanged() {
     if (confirmedPubkey == null ||
@@ -533,20 +612,16 @@ Future<void> executeAccountDeletion({
     );
     dismissProgressSheet();
     if (context.mounted) {
-      final text = (burnCommitted && burnReleasedText != null)
-          ? burnReleasedText
-          : accountChangedAfterDeletionText;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
-      announceOutcome(text);
+      showDurableDeletionOutcome(
+        usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+      );
     }
     return true;
   }
 
   try {
     // Bind to the confirmed account: if the signed-in account changed since the
-    // user confirmed, abort before burning or deleting anything.
+    // user confirmed, abort before releasing the name or deleting anything.
     if (confirmedPubkey != null &&
         authService.currentPublicKeyHex != confirmedPubkey) {
       Log.warning(
@@ -593,60 +668,86 @@ Future<void> executeAccountDeletion({
     }
     if (!context.mounted) return;
 
-    // Burn-first hard-block: release the username before any destructive step,
-    // so a failed burn leaves everything intact. Needs a working signer, which
-    // exists before deleteKeycastAccount() below.
-    if (burnUsername) {
-      // Opted in to burn. A missing handle or repository means we cannot honor
-      // it, so we must NOT proceed — treated the same as a failed release
-      // (hard-block, symmetric in both directions).
-      final releaseResult = (ownedUsername == null)
-          ? null
-          : await profileRepository?.releaseUsername(
-              name: ownedUsername.canonical,
-            );
-      if (releaseResult is UsernameReleaseSuccess) {
-        burnCommitted = true;
-        Log.info(
-          'Released $handleLabel before account deletion',
-          name: screenName,
-          category: LogCategory.auth,
+    // Resolve name ownership at the deletion boundary, under the progress sheet
+    // and before any destructive step. Release is mandatory, so an undetermined
+    // lookup fails closed: deleting without releasing a name the user may own is
+    // not acceptable. A confirmed absence proceeds with no release.
+    final DivineUsernameLookup lookup;
+    try {
+      lookup = await ownedUsernameLookup;
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      abortPreparation(error, deletionNotStartedText);
+      return;
+    }
+    if (!context.mounted) return;
+    final String? releaseCanonical;
+    switch (lookup) {
+      case DivineUsernameFound(:final name, :final canonical):
+        releaseCanonical = canonical;
+        handleLabel = '@$name.divine.video';
+      case DivineUsernameNotFound():
+        releaseCanonical = null;
+      case DivineUsernameUnknown():
+        abortPreparation(
+          StateError('Divine username ownership could not be determined'),
+          deletionNotStartedText,
         );
-      } else {
-        // Nothing was destroyed. Pick an honest message:
-        //  - definite failure (not-owner / signer / null repo) -> nothing
-        //    happened, safe to retry.
-        //  - ambiguous network failure -> re-check ownership: if the name is
-        //    still present the burn definitely did not happen; if we cannot
-        //    tell, stay neutral and make no claim about the handle.
-        var message = burnUsernameFailedText;
-        if (releaseResult is UsernameReleaseNetworkError) {
-          final pubkey = authService.currentPublicKeyHex;
-          final stillOwned = (profileRepository != null && pubkey != null)
-              ? await profileRepository.getUsernameByPubkey(pubkeyHex: pubkey)
-              : null;
-          if (stillOwned == null) {
-            message = deletionIncompleteText;
-          }
-        }
-        final abortReason = switch (releaseResult) {
-          null when ownedUsername == null => 'no active handle to burn',
-          null => 'profile repository unavailable',
-          _ => 'release returned ${releaseResult.runtimeType}',
-        };
-        Log.warning(
-          'Username burn could not be honored ($abortReason); aborting '
-          'account deletion',
-          name: screenName,
-          category: LogCategory.auth,
+        return;
+    }
+
+    // Create the durable coordinator attempt for every deletion. Whenever the
+    // user owns a @divine.video name the repository also performs the owner-auth
+    // Name Server prepare and the coordinator's verified handshake — release is
+    // mandatory, so it always runs for a name-holder.
+    {
+      try {
+        final prepared = await deletionRecoveryRepository.prepare(
+          username: releaseCanonical,
         );
-        dismissProgressSheet();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(message, error: true),
+        if (prepared.status != AccountDeletionAttemptStatus.recoverable) {
+          throw AccountDeletionRecoveryException(
+            'Prepare returned ${prepared.status.name}',
+            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
           );
-          announceOutcome(message);
         }
+        deletionAttempt = prepared;
+        usernamePrepared = prepared.username != null;
+        Log.info(
+          'Prepared durable account deletion attempt before deletion',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+      } on AccountDeletionRecoveryException catch (error) {
+        // Release is mandatory, so a name-release failure fails the whole
+        // deletion closed (nothing deleted). The unavailable 503 and the
+        // missing-coordinator route both mean deletion is unavailable right now
+        // — not something a retry fixes — so both take the unavailable copy and
+        // offer the bug-report action. Once the Name Server request starts, its
+        // outcome can be ambiguous and the durable attempt may need recovery,
+        // so those stages must keep neutral guidance rather than claiming that
+        // nothing happened. The remaining pre-name-server failures can say the
+        // deletion did not start.
+        final isUnavailable =
+            error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
+            (error.indicatesUsernameRecoveryUnsupported ||
+                error.indicatesMissingCoordinatorRoute);
+        final needsNeutralRecoveryGuidance =
+            error.stage == AccountDeletionRecoveryStage.usernamePreparation ||
+            error.stage ==
+                AccountDeletionRecoveryStage.coordinatorUsernameConfirmation;
+        abortPreparation(
+          error,
+          isUnavailable
+              ? deletionUnavailableText
+              : needsNeutralRecoveryGuidance
+              ? deletionIncompleteText
+              : deletionNotStartedText,
+          offerSupport: isUnavailable,
+        );
+        return;
+      } on Object catch (error) {
+        abortPreparation(error, deletionNotStartedText);
         return;
       }
     }
@@ -654,20 +755,16 @@ Future<void> executeAccountDeletion({
     final finalReadiness = await authService.checkAccountDeletionReadiness();
     if (finalReadiness == AccountDeletionReadiness.requiresReauthentication) {
       Log.warning(
-        'Deletion blocked after username burn step: session cannot authorize '
+        'Deletion blocked after username release step: session cannot authorize '
         'server-side account deletion',
         name: screenName,
         category: LogCategory.auth,
       );
       dismissProgressSheet();
       if (context.mounted) {
-        final text = (burnCommitted && burnReleasedText != null)
-            ? burnReleasedText
-            : context.l10n.deleteAccountReauthRequired;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
-        announceOutcome(text);
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
       }
       return;
     }
@@ -685,50 +782,48 @@ Future<void> executeAccountDeletion({
       // deletion and sign-out resolve the account that is active right now.
       if (stopCleanupIfAccountChanged()) return;
 
-      // Step 2: Delete Keycast account if one exists (invalidates signer)
-      final keycast = await authService.deleteKeycastAccount();
-      // Check before interpreting the result: `isRegistered` and every later
-      // cleanup operation are properties of the account active right now.
-      if (stopCleanupIfAccountChanged()) return;
-      final keycastSuccess = keycast.success;
-      final keycastError = keycast.error;
-      if (!keycastSuccess && authService.isRegistered) {
-        // divineOAuth users MUST have their Keycast account deleted to
-        // prevent re-login. Show error and do NOT sign out.
-        Log.error(
-          'Keycast account deletion failed for registered user: $keycastError'
-          '${burnCommitted ? ' (username $handleLabel already released)' : ''}',
-          name: screenName,
-          category: LogCategory.auth,
-        );
+      final attempt = deletionAttempt;
+      final eventId = result.deleteEventId;
+      if (eventId == null) {
         dismissProgressSheet();
-        if (context.mounted) {
-          // The vanish and the kind-5 sweep have already been published and
-          // confirmed by a relay at this point, so neither message may claim
-          // that nothing was deleted.
-          final text = (burnCommitted && burnReleasedText != null)
-              ? burnReleasedText
-              : keycast.requiresReauthentication
-              ? context.l10n.deleteAccountServerDeletionRequiresReauth
-              : context.l10n.deleteAccountServerDeletionFailed;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
-          announceOutcome(text);
-        }
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
         return;
       }
-      if (!keycastSuccess) {
-        // Non-OAuth users: log and continue (no server account to delete)
-        Log.warning(
-          'Keycast account deletion failed (continuing anyway): '
-          '$keycastError',
+      try {
+        final submitted = await deletionRecoveryRepository.submit(
+          attemptId: attempt.id,
+          vanishEventId: eventId,
+        );
+        deletionAttempt = submitted;
+        if (submitted.status == AccountDeletionAttemptStatus.processing) {
+          dismissProgressSheet();
+          showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+          return;
+        }
+        if (submitted.status != AccountDeletionAttemptStatus.completed) {
+          throw AccountDeletionRecoveryException(
+            'Submit returned ${submitted.status.name}',
+          );
+        }
+      } on Object catch (error) {
+        Log.error(
+          'Could not submit durable deletion attempt',
           name: screenName,
           category: LogCategory.auth,
+          error: error,
         );
+        dismissProgressSheet();
+        showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+        return;
       }
 
-      // Step 3: Sign out, delete local keys, and clear local account data
+      // Funnelcake owns Keycast deletion for every submitted attempt, with or
+      // without a username. Mobile must not repeat that terminal operation.
+      if (stopCleanupIfAccountChanged()) return;
+
+      // Sign out, delete local keys, and clear local account data.
       // Router will automatically redirect to /welcome when auth state
       // becomes unauthenticated.
       // signOut may throw SecureKeyStorageException if platform key
@@ -753,57 +848,43 @@ Future<void> executeAccountDeletion({
         localDataDeletionFailure = localDataDeletionFailedText;
       }
 
-      // Close loading indicator and show result snackbar
-      // Router will automatically redirect to /welcome after sign out
+      // Close loading indicator and show result snackbar. Sign-out has already
+      // redirected to /welcome and taken the calling route with it, so the
+      // outcome is reported through the messenger captured up front — gating
+      // this on `context.mounted` left a completed deletion silent (#6450).
       dismissProgressSheet();
-      if (context.mounted) {
-        // When the relay query that enumerates existing content failed, no
-        // per-item deletion request was sent for anything the user had already
-        // posted. When a kind-5 batch was not confirmed, some per-item requests
-        // also did not land. Saying "deletion requests sent" would overstate
-        // either outcome.
-        final snackbarText =
-            keyDeletionWarning ??
-            localDataDeletionFailure ??
-            (result.contentQueryFailed || result.contentDeletionIncomplete
-                ? context.l10n.deleteAccountSuccessContentUnverified
-                : context.l10n.deleteAccountSuccess);
-        ScaffoldMessenger.of(context).showSnackBar(
+      // A failed or timed-out relay query may only enumerate cached or partial
+      // content. A capped query or unconfirmed kind-5 batch is incomplete too.
+      // Saying "deletion requests sent" would overstate any of these outcomes.
+      final snackbarText =
+          keyDeletionWarning ??
+          localDataDeletionFailure ??
+          (result.contentQueryFailed || result.contentDeletionIncomplete
+              ? deletionSuccessUnverifiedText
+              : deletionSuccessText);
+      if (messenger.mounted) {
+        messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
             snackbarText,
             error:
                 keyDeletionWarning != null || localDataDeletionFailure != null,
           ),
         );
-        announceOutcome(snackbarText);
       }
+      announceOutcome(snackbarText);
     } else {
       // Content deletion (NIP-62) failed.
-      if (burnCommitted) {
-        Log.error(
-          'Content deletion failed after releasing $handleLabel',
-          name: screenName,
-          category: LogCategory.auth,
-        );
-      }
+      Log.error(
+        'Content deletion failed after preparing durable deletion for '
+        '${handleLabel ?? 'an account without a handle'}',
+        name: screenName,
+        category: LogCategory.auth,
+      );
       dismissProgressSheet();
       if (context.mounted) {
-        final text = (burnCommitted && burnReleasedText != null)
-            ? burnReleasedText
-            : _deleteAccountFailureText(
-                result.failureReason,
-                accountChangedText: accountChangedText,
-                accountChangedAfterDeletionText:
-                    accountChangedAfterDeletionText,
-                relayConfirmationFailedText: relayConfirmationFailedText,
-                reauthRequiredText: context.l10n.deleteAccountReauthRequired,
-                genericFailureText:
-                    context.l10n.deleteAccountContentDeletionFailed,
-              );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
-        announceOutcome(text);
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
       }
     }
   } finally {
@@ -812,28 +893,6 @@ Future<void> executeAccountDeletion({
     // Ensure the progress sheet is dismissed even if an exception occurred.
     dismissProgressSheet();
   }
-}
-
-String _deleteAccountFailureText(
-  DeleteAccountFailureReason? reason, {
-  required String accountChangedText,
-  required String accountChangedAfterDeletionText,
-  required String relayConfirmationFailedText,
-  required String reauthRequiredText,
-  required String genericFailureText,
-}) {
-  return switch (reason) {
-    DeleteAccountFailureReason.accountChanged => accountChangedText,
-    DeleteAccountFailureReason.accountChangedAfterDeletion =>
-      accountChangedAfterDeletionText,
-    DeleteAccountFailureReason.vanishNotConfirmed =>
-      relayConfirmationFailedText,
-    DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,
-    DeleteAccountFailureReason.noPubkey ||
-    DeleteAccountFailureReason.signingFailed ||
-    DeleteAccountFailureReason.unexpected ||
-    null => genericFailureText,
-  };
 }
 
 /// Cubit for managing account deletion progress state.

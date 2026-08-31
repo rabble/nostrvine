@@ -139,6 +139,7 @@ void main() {
 
       // Set up default mock behavior
       when(() => mockNostr.publicKey).thenReturn(testPublicKey);
+      when(() => mockNostr.beginClose()).thenReturn(null);
       when(() => mockNostr.close()).thenReturn(null);
       when(() => mockRelayManager.dispose()).thenAnswer((_) async {});
       // Default to having connected relays (tests can override if needed)
@@ -885,6 +886,46 @@ void main() {
         final outcome = await clientWithCache.publishEventAwaitOk(event);
 
         expect(outcome.failed, isTrue);
+        verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
+        verify(
+          () => mockNostrEventsDao.deleteEventsByIds([event.id]),
+        ).called(1);
+      });
+
+      test('rolls back optimistic cache when SDK dispatch throws', () async {
+        final mockDbClient = _MockAppDbClient();
+        final mockDatabase = _MockAppDatabase();
+        final mockNostrEventsDao = _MockNostrEventsDao();
+        when(() => mockDbClient.database).thenReturn(mockDatabase);
+        when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+        when(
+          () => mockNostrEventsDao.upsertEvent(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNostrEventsDao.deleteEventsByIds(any()),
+        ).thenAnswer((_) async => 1);
+
+        final clientWithCache = NostrClient.forTesting(
+          nostr: mockNostr,
+          relayManager: mockRelayManager,
+          dbClient: mockDbClient,
+        );
+        final event = _createTestEvent(kind: EventKind.reaction);
+        final error = StateError('SDK dispatch failed');
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenThrow(error);
+
+        await expectLater(
+          clientWithCache.publishEventAwaitOk(event),
+          throwsA(same(error)),
+        );
+
         verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
         verify(
           () => mockNostrEventsDao.deleteEventsByIds([event.id]),
@@ -1830,6 +1871,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -1847,6 +1889,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured.single;
         return captured as void Function(Event);
@@ -2109,6 +2152,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2125,8 +2169,129 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
+      });
+
+      test(
+        'closeOnEose releases the relay subscription and closes the stream',
+        () async {
+          void Function()? onEose;
+          when(
+            () => mockNostr.subscribe(
+              any(),
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
+            ),
+          ).thenAnswer((invocation) {
+            onEose = invocation.namedArguments[#onEose] as void Function()?;
+            return invocation.namedArguments[#id] as String;
+          });
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final stream = client.subscribe(
+            [
+              Filter(kinds: [EventKind.textNote]),
+            ],
+            closeOnEose: true,
+          );
+          final done = expectLater(stream, emitsDone);
+
+          onEose!();
+
+          await done;
+          verify(() => mockNostr.unsubscribe(any())).called(1);
+          expect(client.activeSubscriptionCount, 0);
+        },
+      );
+
+      test('EOSE preserves long-lived subscriptions by default', () async {
+        void Function()? onEose;
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
+          ),
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return invocation.namedArguments[#id] as String;
+        });
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        var done = false;
+        final subscription = client
+            .subscribe([
+              Filter(kinds: [EventKind.textNote]),
+            ])
+            .listen((_) {}, onDone: () => done = true);
+
+        onEose!();
+        await pumpEventQueue();
+
+        expect(done, isFalse);
+        expect(client.activeSubscriptionCount, 1);
+        verifyNever(() => mockNostr.unsubscribe(any()));
+        await subscription.cancel();
+      });
+
+      test('CLOSED surfaces its reason as a typed stream error', () async {
+        void Function(String reason)? onClosed;
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
+          ),
+        ).thenAnswer((invocation) {
+          onClosed =
+              invocation.namedArguments[#onClosed]
+                  as void Function(String reason)?;
+          return invocation.namedArguments[#id] as String;
+        });
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final stream = client.subscribe([
+          Filter(kinds: [EventKind.textNote]),
+        ]);
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            emitsError(
+              isA<RelaySubscriptionRefusedException>().having(
+                (error) => error.reason,
+                'reason',
+                'error: too many subscriptions',
+              ),
+            ),
+            emitsDone,
+          ]),
+        );
+
+        onClosed!('error: too many subscriptions');
+
+        await expectation;
+        verify(() => mockNostr.unsubscribe(any())).called(1);
+        expect(client.activeSubscriptionCount, 0);
       });
 
       test('creates new subscription for different filters', () {
@@ -2147,6 +2312,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2165,6 +2331,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(2);
       });
@@ -2185,6 +2352,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           final id = invocation.namedArguments[#id] as String;
@@ -2208,6 +2376,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(2);
       });
@@ -2229,6 +2398,7 @@ void main() {
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
               onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer(
             (invocation) => invocation.namedArguments[#id] as String,
@@ -2260,6 +2430,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer(
           (invocation) => invocation.namedArguments[#id] as String,
@@ -2290,6 +2461,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn(customId);
 
@@ -2305,6 +2477,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
       });
@@ -2326,6 +2499,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2348,6 +2522,7 @@ void main() {
             relayTypes: [RelayType.normal],
             sendAfterAuth: true,
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
       });
@@ -2368,6 +2543,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('nostr-generated-id');
 
@@ -2394,6 +2570,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn(subscriptionId);
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -2434,6 +2611,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((_) => 'sub-${callCount++}');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -2870,27 +3048,38 @@ void main() {
     });
 
     group('sendLike', () {
-      test('sends like successfully', () async {
-        const eventId = 'event-to-like';
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
+      void stubOutcome(PublishOutcome outcome) {
         when(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) async => likeEvent);
+        ).thenAnswer((_) async => outcome);
+      }
+
+      test('sends like successfully', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
+          ),
+        );
 
         final result = await client.sendLike(eventId);
 
-        expect(result, equals(likeEvent));
+        expect(result, isNotNull);
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -2909,24 +3098,24 @@ void main() {
       test('sends like with custom content', () async {
         const eventId = 'event-to-like';
         const content = '❤️';
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => likeEvent);
+        );
 
         await client.sendLike(eventId, content: content);
 
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -2937,15 +3126,14 @@ void main() {
         const eventId = 'event-to-like';
         final tempRelays = ['wss://temp.example.com'];
         final targetRelays = ['wss://target.example.com'];
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://target.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => likeEvent);
+        );
 
         await client.sendLike(
           eventId,
@@ -2954,29 +3142,168 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: targetRelays,
             targetRelays: targetRelays,
+            timeout: any(named: 'timeout'),
           ),
         ).called(1);
       });
 
-      test('returns null when sendLike fails', () async {
+      test('throws a typed restricted result for trusted rejection', () async {
         const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com/': 'blocked: pubkey is suspended',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.accountRestricted,
+            ),
+          ),
+        );
+      });
+
+      test('any relay acceptance wins over a trusted rejection', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://personal.example.com'],
+            rejectedBy: {
+              'wss://relay.example.com': 'blocked: pubkey is banned',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        expect(await client.sendLike(eventId), isNotNull);
+      });
+
+      test('distinguishes rate limiting from unrelated rejection', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com': 'rate-limited: slow down',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.rateLimited,
+            ),
+          ),
+        );
+
+        reset(mockNostr);
+        when(() => mockNostr.publicKey).thenReturn(testPublicKey);
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com': 'blocked: event rejected by policy',
+            },
+            noResponseFrom: [],
+          ),
+        );
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.rejected,
+            ),
+          ),
+        );
+      });
+
+      test('distinguishes no relays from SDK send failure', () async {
+        const eventId = 'event-to-like';
+        when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.noRelays,
+            ),
+          ),
+        );
 
         when(
-          () => mockNostr.sendEvent(
+          () => mockRelayManager.connectedRelays,
+        ).thenReturn(['wss://relay.example.com']);
+        when(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
         ).thenAnswer((_) async => null);
-
-        final result = await client.sendLike(eventId);
-
-        expect(result, isNull);
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.sendFailed,
+            ),
+          ),
+        );
       });
+
+      test(
+        'maps a thrown SDK failure to the typed send-failed result',
+        () async {
+          const eventId = 'event-to-like';
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenThrow(StateError('SDK dispatch failed'));
+
+          await expectLater(
+            client.sendLike(eventId),
+            throwsA(
+              isA<SocialPublishException>().having(
+                (error) => error.result.status,
+                'status',
+                SocialPublishStatus.sendFailed,
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('sendProfileAwaitOk', () {
@@ -3424,27 +3751,38 @@ void main() {
     });
 
     group('deleteEvent', () {
-      test('deletes event successfully', () async {
-        const eventId = 'event-to-delete';
-        final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
-
+      void stubOutcome(PublishOutcome outcome) {
         when(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) async => deleteEvent);
+        ).thenAnswer((_) async => outcome);
+      }
+
+      test('deletes event successfully', () async {
+        const eventId = 'event-to-delete';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
+          ),
+        );
 
         final result = await client.deleteEvent(eventId);
 
-        expect(result, equals(deleteEvent));
+        expect(result, isNotNull);
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -3464,15 +3802,14 @@ void main() {
         const eventId = 'event-to-delete';
         final tempRelays = ['wss://temp.example.com'];
         final targetRelays = ['wss://target.example.com'];
-        final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://target.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => deleteEvent);
+        );
 
         await client.deleteEvent(
           eventId,
@@ -3481,28 +3818,36 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: targetRelays,
             targetRelays: targetRelays,
+            timeout: any(named: 'timeout'),
           ),
         ).called(1);
       });
 
-      test('returns null when deleteEvent fails', () async {
+      test('throws a typed no-response result when no relay answers', () async {
         const eventId = 'event-to-delete';
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {},
+            noResponseFrom: ['wss://relay.example.com'],
           ),
-        ).thenAnswer((_) async => null);
+        );
 
-        final result = await client.deleteEvent(eventId);
-
-        expect(result, isNull);
+        await expectLater(
+          client.deleteEvent(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.noResponse,
+            ),
+          ),
+        );
       });
     });
 
@@ -3767,6 +4112,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -3775,6 +4121,22 @@ void main() {
         await client.dispose();
 
         verify(() => mockNostr.unsubscribe(any())).called(1);
+        verify(() => mockNostr.close()).called(1);
+      });
+
+      test('marks the relay pool as closing before its first await', () async {
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final disposing = client.dispose();
+
+        // Asserted before awaiting, so it pins the ordering rather than just
+        // the call: every await below this point in dispose() is a window in
+        // which an armed relay repair could open a socket that the teardown
+        // at the end has already walked past (#7367).
+        verify(() => mockNostr.beginClose()).called(1);
+        verifyNever(() => mockNostr.close());
+
+        await disposing;
         verify(() => mockNostr.close()).called(1);
       });
     });
@@ -3838,6 +4200,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -3883,6 +4247,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -3920,6 +4286,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -4454,6 +4822,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           // Get the callback and call it with test event
@@ -4486,6 +4855,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -4502,6 +4872,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured;
 
@@ -4530,6 +4901,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           final callback =
@@ -4558,6 +4930,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -4573,6 +4946,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured;
 
@@ -5075,6 +5449,145 @@ void main() {
         final capturedFilters = captured.first as List<Map<String, dynamic>>;
         expect(capturedFilters.first['kinds'], contains(EventKind.textNote));
         expect(capturedFilters.first['authors'], contains(testPublicKey));
+      });
+    });
+
+    group('end-to-end query timeout (#7091)', () {
+      test(
+        'a pool waiter that exhausts its budget never starts a query',
+        () async {
+          final originalMax = NostrClient.maxConcurrentQueries;
+          NostrClient.maxConcurrentQueries = 1;
+          addTearDown(() => NostrClient.maxConcurrentQueries = originalMax);
+
+          final firstQueryStarted = Completer<void>();
+          final releaseFirstQuery = Completer<void>();
+          var queryCount = 0;
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async {
+            queryCount++;
+            if (queryCount == 1) {
+              firstQueryStarted.complete();
+              await releaseFirstQuery.future;
+            }
+            return const [];
+          });
+
+          final pooledClient = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+          );
+          addTearDown(pooledClient.dispose);
+          final firstQuery = pooledClient.queryEventsDetailed(
+            [
+              Filter(kinds: const [EventKind.textNote]),
+            ],
+            useCache: false,
+          );
+          await firstQueryStarted.future;
+
+          final expired = await pooledClient.queryEventsDetailed(
+            [
+              Filter(kinds: const [EventKind.reaction]),
+            ],
+            useCache: false,
+            timeout: Duration.zero,
+          );
+          expect(expired.timedOut, isTrue);
+
+          releaseFirstQuery.complete();
+          await firstQuery;
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            queryCount,
+            1,
+            reason:
+                'an expired pool waiter must release its eventual slot '
+                'without dispatching abandoned network work',
+          );
+        },
+      );
+
+      test('a stalled reconnect is spent from the query budget', () async {
+        // An empty connected set routes the call through the pre-query
+        // reconnect. That reconnect is awaited, so unless it spends from the
+        // same budget the declared timeout bounds only the websocket leg --
+        // measured at 48s against a declared 5s on device (#7091).
+        when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+        final stalledReconnect = Completer<void>();
+        addTearDown(() {
+          if (!stalledReconnect.isCompleted) stalledReconnect.complete();
+        });
+        when(
+          mockRelayManager.retryDisconnectedRelays,
+        ).thenAnswer((_) => stalledReconnect.future);
+        // A real REQ does not settle in a microtask, so an instantly
+        // completing stub would win the race against a zero-length deadline
+        // and hide the behaviour under test.
+        final stalledQuery = Completer<List<Event>>();
+        addTearDown(() {
+          if (!stalledQuery.isCompleted) stalledQuery.complete(const []);
+        });
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) => stalledQuery.future);
+
+        final result = await client.queryEventsDetailed(
+          [
+            Filter(kinds: const [EventKind.dmRelaysList]),
+          ],
+          useCache: false,
+          timeout: Duration.zero,
+        );
+        expect(
+          result.timedOut,
+          isTrue,
+          reason: 'exhausting the budget is inconclusive, not an empty answer',
+        );
+      });
+
+      test('the non-pooled query path spends the same deadline', () async {
+        final stalledQuery = Completer<List<Event>>();
+        addTearDown(() {
+          if (!stalledQuery.isCompleted) stalledQuery.complete(const []);
+        });
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) => stalledQuery.future);
+
+        final result = await client.queryEventsDetailed(
+          [
+            Filter(kinds: const [EventKind.metadata]),
+          ],
+          useCache: false,
+          useQueryPool: false,
+          timeout: Duration.zero,
+        );
+
+        expect(result.timedOut, isTrue);
       });
     });
   });

@@ -20,6 +20,7 @@ void main() {
     VoidCallback? onCopy,
     VoidCallback? onUnfollow,
     VoidCallback? onBlockTap,
+    bool blockable = true,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -29,9 +30,9 @@ void main() {
           displayName: displayName,
           isFollowing: isFollowing,
           isBlocked: isBlocked,
-          onCopy: onCopy ?? () {},
+          onCopy: blockable ? (onCopy ?? () {}) : null,
           onUnfollow: onUnfollow ?? () {},
-          onBlockTap: onBlockTap ?? () {},
+          onBlockTap: blockable ? (onBlockTap ?? () {}) : null,
           onAddToList: onAddToList,
           onReport: onReport,
         ),
@@ -49,6 +50,34 @@ void main() {
       expect(
         find.text(l10n.profileBlockDisplayName(displayName)),
         findsOneWidget,
+      );
+    });
+
+    // Mirrors the Report contract: a null callback hides the action. A group
+    // DM thread passes null because block takes one account and the sheet
+    // opened from a room cannot say which member that would be.
+    testWidgets('hides Block when onBlockTap is null', (tester) async {
+      await tester.pumpWidget(buildSubject(blockable: false));
+
+      expect(
+        find.text(l10n.profileBlockDisplayName(displayName)),
+        findsNothing,
+      );
+      // Copy also targets one account, so it is hidden until the group menu
+      // can offer an explicit member target.
+      expect(find.text(l10n.profileCopyPublicKey), findsNothing);
+    });
+
+    testWidgets('hides Unblock when onBlockTap is null and blocked', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(blockable: false, isBlocked: true),
+      );
+
+      expect(
+        find.text(l10n.profileUnblockDisplayName(displayName)),
+        findsNothing,
       );
     });
 

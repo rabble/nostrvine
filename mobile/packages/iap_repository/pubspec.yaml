@@ -9,6 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
+  crypto: ^3.0.7
   flutter:
     sdk: flutter
   in_app_purchase: ^3.2.0

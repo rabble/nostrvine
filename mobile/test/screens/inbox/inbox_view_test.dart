@@ -81,6 +81,17 @@ class _MockAuthService extends MockAuthService {
 }
 
 void main() {
+  setUpAll(
+    () => registerFallbackValue(
+      DmConversation(
+        id: 'fallback',
+        participantPubkeys: const [],
+        isGroup: false,
+        createdAt: 0,
+      ),
+    ),
+  );
+
   const currentPubkey =
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
   const otherPubkey =
@@ -168,6 +179,9 @@ void main() {
         () => mockActionsCubit.state,
       ).thenReturn(const ConversationActionsState());
       when(() => mockActionsCubit.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockActionsCubit.isRemovalProtected(any()),
+      ).thenReturn(false);
       whenListen(
         mockActionsCubit,
         const Stream<ConversationActionsState>.empty(),
@@ -200,9 +214,7 @@ void main() {
               BlocProvider<NotificationBadgeCubit>.value(
                 value: mockNotifBadgeCubit,
               ),
-              BlocProvider<ConversationMuteCubit>.value(
-                value: mockMuteCubit,
-              ),
+              BlocProvider<ConversationMuteCubit>.value(value: mockMuteCubit),
               BlocProvider<ConversationActionsCubit>.value(
                 value: mockActionsCubit,
               ),
@@ -221,33 +233,27 @@ void main() {
         expect(find.byType(InboxSegmentedToggle), findsOneWidget);
       });
 
-      testWidgets(
-        'forwards DmUnreadCountCubit state to '
-        '$InboxSegmentedToggle.messageCount',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
-          await tester.pump();
+      testWidgets('forwards DmUnreadCountCubit state to '
+          '$InboxSegmentedToggle.messageCount', (tester) async {
+        await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
+        await tester.pump();
 
-          final toggle = tester.widget<InboxSegmentedToggle>(
-            find.byType(InboxSegmentedToggle),
-          );
-          expect(toggle.messageCount, equals(5));
-        },
-      );
+        final toggle = tester.widget<InboxSegmentedToggle>(
+          find.byType(InboxSegmentedToggle),
+        );
+        expect(toggle.messageCount, equals(5));
+      });
 
-      testWidgets(
-        'forwards NotificationBadgeCubit state to '
-        '$InboxSegmentedToggle.notificationCount',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
-          await tester.pump();
+      testWidgets('forwards NotificationBadgeCubit state to '
+          '$InboxSegmentedToggle.notificationCount', (tester) async {
+        await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
+        await tester.pump();
 
-          final toggle = tester.widget<InboxSegmentedToggle>(
-            find.byType(InboxSegmentedToggle),
-          );
-          expect(toggle.notificationCount, equals(7));
-        },
-      );
+        final toggle = tester.widget<InboxSegmentedToggle>(
+          find.byType(InboxSegmentedToggle),
+        );
+        expect(toggle.notificationCount, equals(7));
+      });
 
       testWidgets('renders $FollowingBar in messages tab', (tester) async {
         await tester.pumpWidget(buildSubject());
@@ -261,10 +267,7 @@ void main() {
         // skipOffstage: false because the bar now lives in a sliver and this
         // subject follows nobody, so it collapses to SizedBox.shrink() — a
         // zero-extent sliver, which the default finder treats as offstage.
-        expect(
-          find.byType(FollowingBar, skipOffstage: false),
-          findsOneWidget,
-        );
+        expect(find.byType(FollowingBar, skipOffstage: false), findsOneWidget);
       });
 
       testWidgets('renders $CircularProgressIndicator when status is initial', (
@@ -486,121 +489,114 @@ void main() {
         expect(find.byType(InboxFilterChips), findsOneWidget);
       });
 
-      testWidgets(
-        'tapping the Unread chip dispatches '
-        '$ConversationListFilterChanged',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
+      testWidgets('tapping the Unread chip dispatches '
+          '$ConversationListFilterChanged', (tester) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                visibleConversations: [conversation],
-                hasMore: false,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.inboxFilterUnread));
-          await tester.pump();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxFilterUnread));
+        await tester.pump();
 
-          verify(
-            () => mockBloc.add(
-              const ConversationListFilterChanged(InboxFilter.unread),
+        verify(
+          () => mockBloc.add(
+            const ConversationListFilterChanged(InboxFilter.unread),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('tapping the already-active All chip dispatches nothing', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
             ),
-          ).called(1);
-        },
-      );
+          ),
+        );
+        await tester.pump();
 
-      testWidgets(
-        'tapping the already-active All chip dispatches nothing',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                visibleConversations: [conversation],
-                hasMore: false,
-              ),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxFilterAll));
+        await tester.pump();
+
+        verifyNever(
+          () => mockBloc.add(
+            const ConversationListFilterChanged(InboxFilter.unread),
+          ),
+        );
+      });
+
+      testWidgets('shows caught-up state when unread filter is on and everything '
+          'is read', (tester) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              filter: InboxFilter.unread,
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.inboxFilterAll));
-          await tester.pump();
-
-          verifyNever(
-            () => mockBloc.add(
-              const ConversationListFilterChanged(InboxFilter.unread),
-            ),
-          );
-        },
-      );
-
-      testWidgets(
-        'shows caught-up state when unread filter is on and everything '
-        'is read',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
-
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                filter: InboxFilter.unread,
-                hasMore: false,
-              ),
-            ),
-          );
-          await tester.pump();
-
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text(l10n.inboxUnreadEmptyTitle), findsOneWidget);
-          expect(find.byType(ConversationTile), findsNothing);
-        },
-      );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.inboxUnreadEmptyTitle), findsOneWidget);
+        expect(find.byType(ConversationTile), findsNothing);
+      });
 
       testWidgets('typing in the search bar dispatches '
           '$ConversationListSearchQueryChanged', (tester) async {
@@ -678,49 +674,48 @@ void main() {
         expect(find.byType(ConversationTile), findsNothing);
       });
 
-      testWidgets(
-        'renders only visibleConversations, not the full list',
-        (tester) async {
-          DmConversation conversationWith({
-            required String id,
-            required bool isRead,
-          }) => DmConversation(
-            id: id,
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-            isRead: isRead,
-          );
+      testWidgets('renders only visibleConversations, not the full list', (
+        tester,
+      ) async {
+        DmConversation conversationWith({
+          required String id,
+          required bool isRead,
+        }) => DmConversation(
+          id: id,
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+          isRead: isRead,
+        );
 
-          final unread = conversationWith(id: 'unread-conv', isRead: false);
-          final read = conversationWith(id: 'read-conv', isRead: true);
+        final unread = conversationWith(id: 'unread-conv', isRead: false);
+        final read = conversationWith(id: 'read-conv', isRead: true);
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [unread, read],
-                visibleConversations: [unread],
-                filter: InboxFilter.unread,
-                hasMore: false,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [unread, read],
+              visibleConversations: [unread],
+              filter: InboxFilter.unread,
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(ConversationTile), findsOneWidget);
-          final tile = tester.widget<ConversationTile>(
-            find.byType(ConversationTile),
-          );
-          expect(tile.conversation.id, equals('unread-conv'));
-        },
-      );
+        expect(find.byType(ConversationTile), findsOneWidget);
+        final tile = tester.widget<ConversationTile>(
+          find.byType(ConversationTile),
+        );
+        expect(tile.conversation.id, equals('unread-conv'));
+      });
 
       testWidgets(
         'suppresses the load-more spinner while a filter narrows the list',
@@ -1011,20 +1006,14 @@ void main() {
               return found;
             }
 
-            expect(
-              hasConversationSemantics(),
-              isTrue,
-            );
+            expect(hasConversationSemantics(), isTrue);
 
             await tester.tap(find.text('Notifications'));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 350));
 
             expect(find.byType(ConversationTile), findsOneWidget);
-            expect(
-              hasConversationSemantics(),
-              isFalse,
-            );
+            expect(hasConversationSemantics(), isFalse);
           } finally {
             semantics.dispose();
           }
@@ -1499,10 +1488,7 @@ void main() {
         expect(find.byType(DivineSearchBar), findsOneWidget);
         final chipsBefore = tester.getTopLeft(find.byType(InboxFilterChips));
 
-        await tester.drag(
-          find.byType(CustomScrollView),
-          const Offset(0, -400),
-        );
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
         await tester.pump();
 
         // The search field is chrome now, not a fixed header: it leaves the
@@ -1517,15 +1503,13 @@ void main() {
         );
       });
 
-      // A pinned SliverPersistentHeader lays its child out with a TIGHT height
-      // equal to maxExtent, so `getSize(...).height` only ever reports the
-      // extent the delegate declared — asserting it equals a constant measures
-      // that constant against itself and cannot catch an under-declared header.
-      // What can: the chips' own intrinsic height, which is computed from the
-      // content and is independent of the constraint it was laid out under. If
-      // the header declares less than that, the label is silently clipped
-      // (cross-axis overflow in a Row does not throw), which is the failure
-      // these two tests exist to catch.
+      // `laidOut` is the height the chips actually got; `needed` is their
+      // intrinsic height, computed from the content and independent of the
+      // constraint they were laid out under. Comparing the two is what catches
+      // a clipped label, since a Row overflowing on its cross axis does not
+      // throw. Both matter: a header shorter than `needed` clips the chips,
+      // and a header taller than what its child lays out to used to blank the
+      // whole pane — see the Dynamic Type sweep below.
       Future<({double laidOut, double needed})> pumpChips(
         WidgetTester tester, {
         required TextScaler textScaler,
@@ -1544,8 +1528,12 @@ void main() {
         );
         await openMessages(tester);
 
+        // skipOffstage:false so this helper still reports sizes when the
+        // viewport is broken: the onstage element walk itself null-crashes on
+        // a sliver left unlaid-out, and swallowing that here would hide which
+        // assertion below actually failed.
         final box = tester.renderObject<RenderBox>(
-          find.byType(InboxFilterChips),
+          find.byType(InboxFilterChips, skipOffstage: false),
         );
         return (
           laidOut: box.size.height,
@@ -1553,13 +1541,107 @@ void main() {
         );
       }
 
+      // Every Dynamic Type size iOS can hand us, as the ratio of that
+      // category's body point size to the 17pt default — the mapping the
+      // engine uses to turn `preferredContentSizeCategory` into
+      // `textScaleFactor`.
+      //
+      // `TextScaler.linear` is a stand-in: on device `MediaQuery.textScalerOf`
+      // is a `SystemTextScaler`, whose `scale()` defers to
+      // `PlatformDispatcher.scaleFontSize`. That falls back to
+      // `size * textScaleFactor` only while the platform sends no
+      // `configurationId` — otherwise it asks the engine for a per-size curve,
+      // which is the Android 14+ non-linear path. Measured on an iPhone at
+      // extraLarge, a 14pt/1.4x paragraph lays out at 22.0, matching the
+      // linear form, so the ladder is faithful where it has been checked.
+      //
+      // Neither form is what a declared extent has to match, though: the
+      // child's height comes from a laid-out line box that snaps to whole
+      // pixels, and no arithmetic over `scale()` reproduces that rounding.
+      // Measuring the child is immune to all of it; a declared extent is not,
+      // on either platform.
+      //
+      // The header used to declare its own extent as arithmetic over
+      // `textScaler.scale(20)` while its child settled on whatever the font
+      // metrics produced, and those snap to whole pixels. Eleven of these
+      // twelve diverged. Six declared MORE than the child laid out to —
+      // extraSmall, extraLarge (one notch above the default), XXXL, and
+      // AX3/AX4/AX5 — leaving paintExtent below layoutExtent, which fails
+      // SliverGeometry's contract inside the viewport's performLayout, aborts
+      // the child layout sequence, and leaves the conversation list with a
+      // null geometry: a blank pane. The other five declared LESS than the
+      // chips need — small, medium, XXL, AX1, AX2 — silently clipping them.
+      // Only the default was correct (#7854). The scale this file covered
+      // before, 2.0, lands on a whole pixel and never diverged, which is why
+      // it did not catch either half.
+      const iosDynamicTypeScales = <String, double>{
+        'extraSmall': 14 / 17,
+        'small': 15 / 17,
+        'medium': 16 / 17,
+        'large (default)': 1,
+        'extraLarge': 19 / 17,
+        'extraExtraLarge': 21 / 17,
+        'extraExtraExtraLarge': 23 / 17,
+        'AX1': 28 / 17,
+        'AX2': 33 / 17,
+        'AX3': 40 / 17,
+        'AX4': 47 / 17,
+        'AX5': 53 / 17,
+      };
+
+      for (final MapEntry(key: category, value: scale)
+          in iosDynamicTypeScales.entries) {
+        testWidgets('renders the conversation list at iOS $category', (
+          tester,
+        ) async {
+          final size = await pumpChips(
+            tester,
+            textScaler: TextScaler.linear(scale),
+          );
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'the header must not break the SliverGeometry contract',
+          );
+          expect(
+            size.laidOut,
+            greaterThanOrEqualTo(size.needed),
+            reason: 'the header must not clip the chips',
+          );
+          // The canary: this finder walks the onstage element tree, which is
+          // exactly what null-crashes when a sliver was left unlaid-out. It
+          // failing IS the blank pane.
+          expect(find.byType(ConversationTile), findsWidgets);
+
+          // Pinning only engages once there is something to pin against, and
+          // that is a different geometry path — scrollOffset above zero,
+          // layoutExtent shrinking toward zero — than the initial layout.
+          // `PinnedHeaderSliver` derives paintExtent as
+          // `min(childExtent, remainingPaintExtent - overlap)`. That second
+          // term has no lower clamp, so it is safe here only because nothing
+          // pinned sits above this header and `overlap` stays at zero. Adding
+          // one would put paintExtent back under layoutExtent and blank the
+          // pane again, so pin it.
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, -400),
+          );
+          await tester.pump();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'the header must survive scrolling to its pinned edge',
+          );
+          expect(find.byType(ConversationTile), findsWidgets);
+        });
+      }
+
       testWidgets('the pinned header fits the chips at the default text scale', (
         tester,
       ) async {
-        final size = await pumpChips(
-          tester,
-          textScaler: TextScaler.noScaling,
-        );
+        final size = await pumpChips(tester, textScaler: TextScaler.noScaling);
 
         // 48 = 8px padding either side of a DivineButtonSize.tiny chip, which
         // is itself 6 + a 20px line box + 6. Asserting the chips ASK for 48 is
@@ -1643,10 +1725,7 @@ void main() {
 
         // Focus alone reclaims the bar — no text needed. minSearchQueryLength
         // is 2, so a query-driven collapse would still be showing faces here.
-        expect(
-          find.byType(FollowingBar, skipOffstage: false),
-          findsNothing,
-        );
+        expect(find.byType(FollowingBar, skipOffstage: false), findsNothing);
         expect(
           tester.getTopLeft(find.text('Message 0')).dy,
           lessThan(firstTileBefore - 100),
@@ -1717,7 +1796,7 @@ void main() {
       });
     });
 
-    group('pinned support row (#6283)', () {
+    group('conversation identity and pinned support row (#6283)', () {
       const moderationPubkey = kModerationPubkeyHex;
 
       PinnedSupport supportPin({
@@ -1741,6 +1820,50 @@ void main() {
         await tester.tap(find.text('Messages'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
+      }
+
+      Future<void> pumpVanishedConversation(
+        WidgetTester tester, {
+        bool isBlocked = false,
+      }) async {
+        final actionsCubit = _MockConversationActionsCubit();
+        when(
+          () => actionsCubit.blockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.unblockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.reportUser(otherPubkey),
+        ).thenAnswer((_) async => true);
+        final conversation = DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+        final subject = buildSubject(
+          wrapInScaffold: true,
+          actionsCubit: actionsCubit,
+          state: ConversationListState(
+            status: ConversationListStatus.loaded,
+            conversations: [conversation],
+            visibleConversations: [conversation],
+            hasMore: false,
+          ),
+          additionalOverrides: [
+            profileVanishedProvider(otherPubkey).overrideWith((ref) => true),
+            profileVanishedSnapshotProvider(
+              otherPubkey,
+            ).overrideWith((ref) async => true),
+          ],
+        );
+        when(() => actionsCubit.isBlocked(otherPubkey)).thenReturn(isBlocked);
+
+        await tester.pumpWidget(subject);
+        await openMessages(tester);
       }
 
       final wordmarkFinder = find.byWidgetPredicate(
@@ -1843,6 +1966,328 @@ void main() {
           find.text('You can reply to this message to appeal.'),
           findsNothing,
         );
+      });
+
+      // #7380: the long-press sheet resolves the peer name on its own, and
+      // that chain omits `moderationDisplayName`. The tile above it reads
+      // "Divine Moderation"; the sheet it opens must not disagree.
+      testWidgets('names moderation in the sheet a retired-key row opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final retiredConversation = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: [currentPubkey, kLegacyModerationPubkeys.first],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'You can reply to this message to appeal.',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [retiredConversation],
+              visibleConversations: [retiredConversation],
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        // The tile and the sheet it opened must name the same account.
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(
+          find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        // #7380: the peer used to resolve to the bare literal 'user', so the
+        // sheet offered to block "user" under a tile titled "Divine
+        // Moderation". No profile lookup can produce that string now.
+        expect(find.text(l10n.inboxActionBlock('user')), findsNothing);
+      });
+
+      // The other half of #7380. Blocking moderation suppresses the pin, so
+      // the thread falls back into the Blocked slice as an ordinary row — and
+      // that row is the one a user unblocks through. Its long-press is only
+      // live once the thread carries a message; a blocked account with no
+      // thread renders a placeholder whose long-press is null.
+      testWidgets('names moderation in the sheet the Blocked slice opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final blockedModeration = DmConversation(
+          id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          participantPubkeys: const [currentPubkey, moderationPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Your video was removed.',
+          lastMessageTimestamp: nowUnix,
+        );
+        final actionsCubit = _MockConversationActionsCubit();
+
+        final subject = buildSubject(
+          actionsCubit: actionsCubit,
+          state: ConversationListState(
+            status: ConversationListStatus.loaded,
+            filter: InboxFilter.blocked,
+            visibleConversations: [blockedModeration],
+            blockedConversations: [blockedModeration],
+            hasMore: false,
+          ),
+        );
+        // After buildSubject, which stubs isBlocked to false by default.
+        when(() => actionsCubit.isBlocked(any())).thenReturn(true);
+
+        await tester.pumpWidget(subject);
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionUnblock(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
+      });
+
+      // A group room has no single counterparty. `otherPubkey` is whichever
+      // peer sorts first, so naming the row after them hides that anyone else
+      // is in it, and Report/Block would act on that one account alone while
+      // reading as though they dealt with the thread.
+      group('group conversations', () {
+        const peerA =
+            'a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
+        const peerB =
+            'b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2';
+
+        DmConversation groupConversation({String? subject}) => DmConversation(
+          id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          participantPubkeys: const [currentPubkey, peerA, peerB],
+          isGroup: true,
+          createdAt: nowUnix,
+          subject: subject,
+          lastMessageContent: 'Anyone free on Saturday?',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        Future<void> openSheet(
+          WidgetTester tester,
+          DmConversation conversation,
+        ) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                visibleConversations: [conversation],
+                hasMore: false,
+              ),
+            ),
+          );
+          await openMessages(tester);
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets('names a titled room by its NIP-17 subject', (
+          tester,
+        ) async {
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          // The row and the sheet it opened must agree, and neither may fall
+          // back to a participant's generated name.
+          expect(find.text('Weekend trip'), findsWidgets);
+          expect(
+            find.text(UserProfile.defaultDisplayNameFor(peerA)),
+            findsNothing,
+          );
+        });
+
+        testWidgets('names an untitled room for who is in it', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation());
+
+          expect(
+            find.text(
+              l10n.inboxGroupConversationTitle(
+                UserProfile.defaultDisplayNameFor(peerA),
+                1,
+              ),
+            ),
+            findsWidgets,
+          );
+        });
+
+        testWidgets('offers no single-target Report or Block', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          // Conversation-scoped actions stay: both mean what they say here.
+          expect(find.text(l10n.inboxActionMute), findsOneWidget);
+          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          // Account-scoped ones do not, in any of their label variants.
+          expect(
+            find.text(l10n.inboxActionReport('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionBlock('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionUnblock('Weekend trip')),
+            findsNothing,
+          );
+          expect(
+            find.text(l10n.inboxActionReportVanishedAccount),
+            findsNothing,
+          );
+          expect(find.text(l10n.inboxActionBlockVanishedAccount), findsNothing);
+        });
+
+        testWidgets('a 1:1 still offers both, so the guard is not blanket', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final oneToOne = DmConversation(
+            id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+            participantPubkeys: const [currentPubkey, peerA],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hey',
+            lastMessageTimestamp: nowUnix,
+          );
+          await openSheet(tester, oneToOne);
+
+          final name = UserProfile.defaultDisplayNameFor(peerA);
+          expect(find.text(l10n.inboxActionReport(name)), findsOneWidget);
+          expect(find.text(l10n.inboxActionBlock(name)), findsOneWidget);
+        });
+
+        // "This removes your conversation with Weekend trip from your inbox"
+        // reads as a conversation with the room, not with the people in it.
+        testWidgets('removes without claiming a conversation with the room', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await openSheet(tester, groupConversation(subject: 'Weekend trip'));
+
+          await tester.tap(find.text(l10n.inboxActionRemove));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxRemoveConfirmBodyGroup), findsOneWidget);
+          expect(
+            find.text(l10n.inboxRemoveConfirmBody('Weekend trip')),
+            findsNothing,
+          );
+        });
+      });
+
+      group('vanished conversation actions', () {
+        // #8185, the same shape one layer out: `ConversationTile`
+        // short-circuits on the NIP-62 vanish before every other branch, and
+        // the sheet's own chain had no such branch. Applying a vanish evicts
+        // the cached profile, so the sheet did not fall back to the peer's
+        // last known name — it fell all the way to a generated
+        // "Adjective Animal N" and offered to block that, under a row reading
+        // "Deleted account".
+        testWidgets('names a vanished peer in the sheet its row opens', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxActionBlockVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionReportVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+            findsNothing,
+          );
+        });
+
+        testWidgets('confirms reporting a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionReportVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxReportedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('confirms blocking a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionBlockVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxBlockedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('confirms unblocking a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester, isBlocked: true);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          expect(
+            find.text(l10n.inboxActionUnblockVanishedAccount),
+            findsOneWidget,
+          );
+          await tester.tap(find.text(l10n.inboxActionUnblockVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxUnblockedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('removes a vanished peer without using a name template', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionRemove));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxRemoveConfirmBodyVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              l10n.inboxRemoveConfirmBody(l10n.profileDeletedAccountName),
+            ),
+            findsNothing,
+          );
+        });
       });
 
       testWidgets('drops out of a search it does not match', (tester) async {
@@ -2212,7 +2657,7 @@ void main() {
 
           // The pin replaced an ordinary row that had these actions; losing
           // them on adoption is the regression this guards (#6388 review).
-          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          // Remove is the deliberate exception — see the sibling test below.
           expect(
             find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
             findsOneWidget,
@@ -2229,6 +2674,182 @@ void main() {
           );
         },
       );
+
+      // #8391: the arc #6971 -> #8302 made an enforcement notice unremovable
+      // in Message Requests, but the CURRENT-key notice never goes there — it
+      // is lifted into the pinned row, whose long-press offered "Remove
+      // conversation" through a cubit with no policy at all. Withdrawing the
+      // action is the deliberate reversal of the #6388-review expectation
+      // above: Mute / Report / Block still survive adoption, Remove does not,
+      // because removal is permanent and the notice is the user's only copy
+      // of why they were actioned.
+      testWidgets(
+        'withdraws Remove from the sheet for a protected moderation thread',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final actionsCubit = _MockConversationActionsCubit();
+
+          await tester.pumpWidget(
+            buildSubject(
+              actionsCubit: actionsCubit,
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => actionsCubit.isRemovalProtected(any()),
+          ).thenReturn(true);
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxActionRemove), findsNothing);
+          // The safety actions the pin inherited are untouched.
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+        },
+      );
+
+      // Defence in depth: if the action is reached anyway, the repository
+      // still refuses, and a refusal must read as an explanation rather than
+      // as an error or a false success.
+      testWidgets('explains a refusal instead of reporting success', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final actionsCubit = _MockConversationActionsCubit();
+
+        await tester.pumpWidget(
+          buildSubject(
+            actionsCubit: actionsCubit,
+            wrapInScaffold: true,
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(
+                isPersisted: true,
+                lastMessageContent: 'We looked into your report',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => actionsCubit.removeConversation(any()),
+        ).thenAnswer((_) async => RemoveConversationOutcome.refused);
+        await openMessages(tester);
+
+        await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxActionRemove));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxRemoveConfirmConfirm));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxRemovedConversation), findsNothing);
+      });
+
+      testWidgets(
+        'keeps moderation safety actions named when the vanish lookup fails',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+              additionalOverrides: [
+                profileVanishedSnapshotProvider(moderationPubkey).overrideWith(
+                  (ref) => Future<bool>.error(StateError('database closed')),
+                ),
+              ],
+            ),
+          );
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets('keeps safety actions available when identity lookups fail', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [
+                DmConversation(
+                  id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                  participantPubkeys: const [currentPubkey, otherPubkey],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                  lastMessageContent: 'Hello',
+                  lastMessageTimestamp: nowUnix,
+                ),
+              ],
+              visibleConversations: [
+                DmConversation(
+                  id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                  participantPubkeys: const [currentPubkey, otherPubkey],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                  lastMessageContent: 'Hello',
+                  lastMessageTimestamp: nowUnix,
+                ),
+              ],
+              hasMore: false,
+            ),
+            additionalOverrides: [
+              profileVanishedSnapshotProvider(otherPubkey).overrideWith(
+                (ref) => Future<bool>.error(StateError('database closed')),
+              ),
+              fetchUserProfileProvider(otherPubkey).overrideWith(
+                (ref) => Future<UserProfile?>.error(
+                  StateError('profile cache closed'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        final fallback = UserProfile.defaultDisplayNameFor(otherPubkey);
+        expect(find.text(l10n.inboxActionReport(fallback)), findsOneWidget);
+        expect(find.text(l10n.inboxActionBlock(fallback)), findsOneWidget);
+      });
 
       testWidgets(
         "survives a search that matches the adopted pin's last message",
@@ -2300,7 +2921,13 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.inboxActionReport('user')));
+        await tester.tap(
+          find.text(
+            l10n.inboxActionReport(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+        );
         await tester.pumpAndSettle();
       }
 
@@ -2311,7 +2938,14 @@ void main() {
         await longPressAndReport(tester);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.inboxReportedUser('user')), findsOneWidget);
+        expect(
+          find.text(
+            l10n.inboxReportedUser(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('surfaces an error when the report reached no channel', (
@@ -2325,12 +2959,70 @@ void main() {
         await longPressAndReport(tester);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.reportNotSent), findsOneWidget);
+        // Silence is the regression, so the confirmation must not render.
         expect(
-          find.text(l10n.reportNotSent),
+          find.text(
+            l10n.inboxReportedUser(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+          findsNothing,
+        );
+      });
+    });
+
+    group('remove confirmation copy', () {
+      final conversation = DmConversation(
+        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        participantPubkeys: const [currentPubkey, otherPubkey],
+        isGroup: false,
+        createdAt: nowUnix,
+        lastMessageContent: 'Hello',
+        lastMessageTimestamp: nowUnix,
+      );
+
+      Widget buildRemoveSubject() => buildSubject(
+        wrapInScaffold: true,
+        state: ConversationListState(
+          status: ConversationListStatus.loaded,
+          conversations: [conversation],
+          visibleConversations: [conversation],
+          hasMore: false,
+        ),
+        additionalOverrides: [
+          fetchUserProfileProvider(
+            otherPubkey,
+          ).overrideWith((ref) async => null),
+        ],
+      );
+
+      // The headline of #7881: the confirmation must describe what removing
+      // actually does (clears the inbox, a new message reopens it) rather than
+      // promise a permanent, irreversible delete the protocol cannot deliver.
+      testWidgets('tells the truth about what removing does', (tester) async {
+        await tester.pumpWidget(buildRemoveSubject());
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxActionRemove));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxRemoveConfirmTitle), findsOneWidget);
+        expect(
+          find.text(
+            l10n.inboxRemoveConfirmBody(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
           findsOneWidget,
         );
-        // Silence is the regression, so the confirmation must not render.
-        expect(find.text(l10n.inboxReportedUser('user')), findsNothing);
       });
     });
   });

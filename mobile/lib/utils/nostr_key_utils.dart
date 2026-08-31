@@ -1,10 +1,15 @@
-// ABOUTME: Utility functions for Nostr key encoding and masking
-// ABOUTME: Centralized functions for encoding pubkeys to npub format and masking keys for display
+// ABOUTME: Utility functions for Nostr key encoding and UI-side shortening
+// ABOUTME: Centralized functions for encoding pubkeys to npub format and
+// ABOUTME: shortening them for UI display (never for logs — see AGENTS.md)
 
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 
-/// Utility class for Nostr key operations
+/// Utility class for Nostr key operations.
+///
+/// The shortening helpers here are for UI display only. Logs, analytics and
+/// debug output carry the full identifier — see the Nostr rule in AGENTS.md
+/// and the guard in scripts/check_nostr_id_log_truncation.sh.
 class NostrKeyUtils {
   NostrKeyUtils._(); // Private constructor to prevent instantiation
 
@@ -27,16 +32,6 @@ class NostrKeyUtils {
   /// Wraps keyIsValid from nostr_sdk for consistent usage across the codebase
   static bool isValidKey(String key) {
     return keyIsValid(key);
-  }
-
-  /// Mask a key for display purposes (show first 8 and last 4 characters)
-  ///
-  /// Useful for logging and UI display where full keys should not be shown
-  static String maskKey(String key) {
-    if (key.length < 12) return key;
-    final start = key.substring(0, 8);
-    final end = key.substring(key.length - 4);
-    return '$start...$end';
   }
 
   /// Check if nsec is valid by attempting to decode it

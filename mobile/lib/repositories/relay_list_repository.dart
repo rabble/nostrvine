@@ -190,7 +190,7 @@ class RelayListRepository {
     final npub = Nip19.encodePubKey(pubkey);
     await _relayDiscoveryService.clearCache(npub);
     Log.info(
-      'Published kind:10002 relay list for $pubkey to an indexer',
+      'Published kind:10002 relay list for ${pubkeyForLogs(pubkey)} to an indexer',
       name: 'RelayListRepository',
       category: LogCategory.relay,
     );

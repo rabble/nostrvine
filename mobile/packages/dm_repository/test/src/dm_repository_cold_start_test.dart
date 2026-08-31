@@ -36,6 +36,8 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(_FakeEvent());
+      // queryEventsDetailed takes a `Duration timeout` (#8212).
+      registerFallbackValue(Duration.zero);
     });
 
     setUp(() {
@@ -80,7 +82,9 @@ void main() {
           ),
         );
 
-        // No one-shot relay query either.
+        // No one-shot relay query either, through either read API — the own
+        // kind-10050 resolve moved to queryEventsDetailed (#8212), so
+        // asserting only on queryEvents would pass vacuously.
         verifyNever(
           () => mockNostrClient.queryEvents(
             any(),
@@ -89,6 +93,18 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             useCache: any(named: 'useCache'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
           ),
         );
 

@@ -94,9 +94,7 @@ class KeycastKeyExportCard extends ConsumerWidget {
       // A definitive "there is no key" is not a failure to reach the service,
       // and unlike the generic arm no retry will change it.
       ExportKeyFailure.noKey => l10n.keyManagementKeycastNoKey,
-      _ => l10n.keyManagementExportFailed(
-        l10n.keyManagementKeycastGenericFailure,
-      ),
+      _ => l10n.keyManagementKeycastGenericFailure,
     };
   }
 }

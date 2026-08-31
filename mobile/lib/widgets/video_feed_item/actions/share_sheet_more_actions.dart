@@ -17,6 +17,7 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onCopyEventJson,
     required this.onCopyEventId,
     this.isSavePending = false,
+    this.isDeletePending = false,
     this.onEditVideo,
     this.onDeleteVideo,
     this.onAddVideoToClips,
@@ -29,6 +30,7 @@ class _MoreActionsSection extends ConsumerWidget {
 
   /// Whether the bookmark toggle is mid-flight (#7073).
   final bool isSavePending;
+  final bool isDeletePending;
   final ShareSheetBookmarkStatus bookmarkStatus;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
@@ -66,12 +68,14 @@ class _MoreActionsSection extends ConsumerWidget {
           icon: DivineIconName.pencilSimpleLine,
           label: context.l10n.shareMenuEditVideo,
           onTap: onEditVideo!,
+          isDisabled: isDeletePending,
         ),
       if (onDeleteVideo != null)
         _ActionData(
           icon: DivineIconName.trash,
           label: context.l10n.shareMenuDeleteVideo,
           onTap: onDeleteVideo!,
+          isPending: isDeletePending,
         ),
       // `unknown` deliberately renders as "Save": an unresolved read must not
       // claim the video is unsaved, and "Save" is the pre-existing wording.
@@ -169,6 +173,7 @@ class _MoreActionsSection extends ConsumerWidget {
                   label: action.label,
                   onTap: action.onTap,
                   isPending: action.isPending,
+                  isDisabled: action.isDisabled,
                 );
               },
             ),
@@ -185,6 +190,7 @@ class _ActionData {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isDisabled = false,
   });
 
   final DivineIconName icon;
@@ -194,6 +200,9 @@ class _ActionData {
   /// Whether the action is mid-flight, so the circle shows a spinner and stops
   /// responding to taps.
   final bool isPending;
+
+  /// Whether another operation temporarily prevents this action.
+  final bool isDisabled;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -202,6 +211,7 @@ class _ActionCircle extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isDisabled = false,
   });
 
   final DivineIconName icon;
@@ -209,21 +219,28 @@ class _ActionCircle extends StatelessWidget {
   final VoidCallback onTap;
   final bool isPending;
 
+  /// Disables the action without presenting it as the pending operation.
+  final bool isDisabled;
+
   static const double _circleSize = 48;
   static const double _iconSize = 22;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
-    final iconColor = context.vineColors.accentPositive;
+    final bgColor = isDisabled
+        ? context.vineColors.surfaceContainer
+        : VineTheme.vineGreen.withValues(alpha: 0.15);
+    final iconColor = isDisabled
+        ? context.vineColors.secondaryText
+        : context.vineColors.accentPositive;
 
     return Semantics(
       button: true,
       label: label,
-      enabled: !isPending,
+      enabled: !isPending && !isDisabled,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: isPending ? null : onTap,
+        onTap: isPending || isDisabled ? null : onTap,
         child: SizedBox(
           width: 68,
           child: Column(

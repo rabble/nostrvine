@@ -26,6 +26,10 @@ class _MockC2paSigningService extends Mock implements C2paSigningService {}
 /// output file, so [WatermarkDownloadService.downloadWithWatermark] can run
 /// end-to-end without a native platform.
 class _FakeProVideoEditor extends ProVideoEditor {
+  /// The last task handed to the renderer, so tests can assert what the
+  /// service asked the native side to produce.
+  VideoRenderData? lastRenderTask;
+
   @override
   void initializeStream() {}
 
@@ -51,6 +55,7 @@ class _FakeProVideoEditor extends ProVideoEditor {
     VideoRenderData value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
+    lastRenderTask = value;
     File(filePath).writeAsStringSync('watermarked');
     return filePath;
   }
@@ -68,6 +73,46 @@ VideoEvent _createTestVideo() => VideoEvent(
   timestamp: DateTime.now(),
   videoUrl: 'https://example.com/video.mp4',
 );
+
+/// Stands a `downloadWithWatermark` run up without a native platform: a temp
+/// directory holding the source video and receiving the render output, a fake
+/// editor that records the render task, and cache/gallery stubs.
+///
+/// Registers its own teardown, so call it from inside a test body.
+({File videoFile, _FakeProVideoEditor editor}) _arrangeWatermarkRender({
+  required String tempPrefix,
+  required _MockMediaCacheManager mockCache,
+  required _MockGallerySaveService mockGallerySave,
+}) {
+  final tempDir = Directory.systemTemp.createTempSync(tempPrefix);
+  addTearDown(() {
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+  });
+
+  final videoFile = File('${tempDir.path}/video.mp4')
+    ..writeAsBytesSync(const [1, 2, 3, 4]);
+
+  final originalPathProvider = PathProviderPlatform.instance;
+  PathProviderPlatform.instance = MockPathProviderPlatform()
+    ..setTemporaryPath(tempDir.path);
+  addTearDown(() {
+    PathProviderPlatform.instance = originalPathProvider;
+  });
+
+  final editor = _FakeProVideoEditor();
+  final originalEditor = ProVideoEditor.instance;
+  ProVideoEditor.instance = editor;
+  addTearDown(() {
+    ProVideoEditor.instance = originalEditor;
+  });
+
+  when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
+  when(
+    () => mockGallerySave.saveVideoToGallery(any()),
+  ).thenAnswer((_) async => const GallerySaveSuccess());
+
+  return (videoFile: videoFile, editor: editor);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -265,67 +310,18 @@ void main() {
         ]);
         verify(() => mockGallerySave.saveVideoToGallery(any())).called(1);
       });
-
-      test('returns failure when video file cannot be downloaded', () async {
-        when(() => mockCache.getCachedFileSync(any())).thenReturn(null);
-
-        // Since getPlayableUrl requires network access and we can't
-        // easily mock the static extension, we test the flow contracts
-        // by verifying the service handles null cache gracefully.
-        // The getCachedFileSync returning null + no network = failure.
-      });
-
-      test('reports downloading then saving stages', () {
-        // Verify the enum ordering matches the expected flow
-        expect(
-          OriginalSaveStage.downloading.index,
-          lessThan(OriginalSaveStage.saving.index),
-        );
-      });
     });
 
     group('downloadWithWatermark', () {
-      test('reports all three stages in order', () {
-        expect(
-          WatermarkDownloadStage.downloading.index,
-          lessThan(WatermarkDownloadStage.watermarking.index),
-        );
-        expect(
-          WatermarkDownloadStage.watermarking.index,
-          lessThan(WatermarkDownloadStage.saving.index),
-        );
-      });
-
       test(
         'carries the C2PA manifest onto the rendered file before the '
         'gallery save',
         () async {
-          final tempDir = await Directory.systemTemp.createTemp(
-            'watermark-c2pa-test',
-          );
-          final videoFile = File('${tempDir.path}/video.mp4');
-          await videoFile.writeAsBytes(const [1, 2, 3, 4]);
-          addTearDown(() async {
-            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
-          });
-
-          final originalPathProvider = PathProviderPlatform.instance;
-          PathProviderPlatform.instance = MockPathProviderPlatform()
-            ..setTemporaryPath(tempDir.path);
-          addTearDown(() {
-            PathProviderPlatform.instance = originalPathProvider;
-          });
-
-          final originalProVideoEditor = ProVideoEditor.instance;
-          ProVideoEditor.instance = _FakeProVideoEditor();
-          addTearDown(() {
-            ProVideoEditor.instance = originalProVideoEditor;
-          });
-
-          when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
-          when(
-            () => mockGallerySave.saveVideoToGallery(any()),
-          ).thenAnswer((_) async => const GallerySaveSuccess());
+          final videoFile = _arrangeWatermarkRender(
+            tempPrefix: 'watermark-c2pa-test',
+            mockCache: mockCache,
+            mockGallerySave: mockGallerySave,
+          ).videoFile;
 
           final stages = <WatermarkDownloadStage>[];
           final result = await service.downloadWithWatermark(
@@ -355,6 +351,29 @@ void main() {
           ]);
         },
       );
+
+      test('caps the rendered frame rate so the camera roll does not treat '
+          'the download as slow motion', () async {
+        final editor = _arrangeWatermarkRender(
+          tempPrefix: 'watermark-fps-test',
+          mockCache: mockCache,
+          mockGallerySave: mockGallerySave,
+        ).editor;
+
+        final result = await service.downloadWithWatermark(
+          video: _createTestVideo(),
+          watermarkText: 'alice@divine.video',
+          onProgress: (_) {},
+        );
+
+        expect(result, isA<WatermarkDownloadSuccess>());
+        expect(editor.lastRenderTask, isNotNull);
+        // Exactly 60, not merely at-or-under it: an import above ~60 fps is
+        // what iOS Photos plays back as Slo-Mo, and 60 is the highest rate it
+        // still treats as ordinary, so a lower cap would throw away frames a
+        // genuine 60 fps source actually has.
+        expect(editor.lastRenderTask!.maxFrameRate, 60);
+      });
     });
 
     group('_getVideoFile (cached file fallback)', () {

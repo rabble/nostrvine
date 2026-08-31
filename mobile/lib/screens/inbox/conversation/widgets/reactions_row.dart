@@ -306,10 +306,10 @@ class _PoppingEmojiState extends State<_PoppingEmoji>
     duration: _emojiPopDuration,
   );
 
-  late final Animation<double> _scale = Tween<double>(begin: 0.6, end: 1)
-      .animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-      );
+  late final Animation<double> _scale = Tween<double>(
+    begin: 0.6,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
   @override
   void initState() {
@@ -331,7 +331,7 @@ class _PoppingEmojiState extends State<_PoppingEmoji>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: _scale,
-      child: Text(widget.emoji, style: _emojiTextStyle),
+      child: DivineHeartText(widget.emoji, style: _emojiTextStyle),
     );
   }
 }
@@ -407,6 +407,11 @@ class _PillAvatar extends ConsumerWidget {
         .asData
         ?.value;
 
+    // The pill is what opens the reactor sheet, so it resolves the vanish the
+    // same way: a peer whose photo is still on the pill and whose sheet row
+    // reads "Deleted account" is the divergence this pill would introduce.
+    final isVanished = ref.watch(profileVanishedProvider(pubkey));
+
     // cornerRadius == diameter / 2 makes UserAvatar a true circle whose own
     // border is circular too. Clipping the default rounded-square avatar to a
     // circle would slice that border into arcs (the "cut border" artifact) —
@@ -417,8 +422,12 @@ class _PillAvatar extends ConsumerWidget {
         border: Border.all(color: context.vineColors.primaryText, width: 1.5),
       ),
       child: UserAvatar(
-        imageUrl: profile?.picture,
-        name: profile?.bestDisplayName,
+        imageUrl: isVanished ? null : profile?.picture,
+        // The initial is derived from the name, so a stale row would leak the
+        // account's first letter even with the picture suppressed.
+        name: isVanished
+            ? context.l10n.profileDeletedAccountName
+            : profile?.bestDisplayName,
         size: _diameter,
         cornerRadius: _diameter / 2,
       ),

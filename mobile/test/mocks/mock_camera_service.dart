@@ -9,6 +9,7 @@ import 'package:divine_camera/divine_camera.dart'
         DivineVideoStabilizationMode,
         PhotoCaptureResult;
 import 'package:flutter/material.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -34,6 +35,7 @@ class MockCameraService extends CameraService {
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     _currentLens = initialLens;
     _isInitialized = true;
@@ -176,7 +178,7 @@ class MockCameraService extends CameraService {
   CameraLensMetadata? get currentLensMetadata => null;
 
   @override
-  String? get initializationError => null;
+  CameraInitializationError? get initializationError => null;
 
   @override
   Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {

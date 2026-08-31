@@ -2,6 +2,7 @@
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
 import 'package:creator_sync/creator_sync.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,9 +74,7 @@ class UserDataCleanupService {
 
   /// Legacy owner-scoped preference keys that contain user data but may still
   /// need to survive a same-user non-destructive logout.
-  static const List<String> ownerScopedLegacyKeys = [
-    'vine_drafts',
-  ];
+  static const List<String> ownerScopedLegacyKeys = ['vine_drafts'];
 
   static const String legacyDraftOwnerKey = 'vine_drafts_owner_pubkey_hex';
 
@@ -86,8 +85,6 @@ class UserDataCleanupService {
   static const List<String> identityChangePrefixes = [
     'following_list_', // follow cache per pubkey
     'relay_discovery_', // relay discovery cache per npub
-    'dm.newestSyncedAt.', // DM sync cursor per pubkey
-    'dm.oldestSyncedAt.', // DM sync cursor per pubkey
   ];
 
   /// Checks if user-specific data should be cleared for the given pubkey.
@@ -168,7 +165,7 @@ class UserDataCleanupService {
       'Starting user data cleanup (reason: $cleanupReason, '
       'identityChange: $isIdentityChange, '
       'deleteUserData: $deleteUserData, '
-      'userPubkey: ${userPubkey ?? "null"}, '
+      'userPubkey: ${pubkeyForLogs(userPubkey, whenNull: "null")}, '
       'checking ${userSpecificKeys.length} keys'
       '${isIdentityChange ? ' + ${identityChangePrefixes.length} prefixes' : ''})',
       name: 'UserDataCleanupService',
@@ -253,7 +250,11 @@ class UserDataCleanupService {
           name: 'UserDataCleanupService',
           category: LogCategory.auth,
         );
-        if (deleteUserData) {
+        // An account switch must fail closed: proceeding after its shared
+        // database cleanup fails can expose the departing account's local DM
+        // state to the incoming session. Ordinary same-account logout remains
+        // best-effort unless it is explicitly destructive.
+        if (deleteUserData || isIdentityChange) {
           rethrow;
         }
       }
@@ -308,7 +309,7 @@ class UserDataCleanupService {
     try {
       await onClaimLegacyRows!(userPubkey);
       Log.info(
-        'Legacy row claim complete for $userPubkey',
+        'Legacy row claim complete for ${pubkeyForLogs(userPubkey)}',
         name: 'UserDataCleanupService',
         category: LogCategory.auth,
       );

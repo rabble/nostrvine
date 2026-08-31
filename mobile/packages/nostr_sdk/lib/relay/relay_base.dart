@@ -28,6 +28,15 @@ class RelayBase extends Relay {
   /// Tracks whether doConnect is in progress to avoid duplicate onConnected calls
   bool _isConnecting = false;
 
+  /// Whether [dispose] has run.
+  ///
+  /// [doConnect] creates the connection manager lazily, so without this a
+  /// connect on a disposed relay would mint a *fresh* manager — one the
+  /// manager's own disposed guard cannot catch, because that guard lives on
+  /// the instance [dispose] threw away. The socket and heartbeat timer it
+  /// opened would then belong to a relay nothing references (#7367).
+  bool _disposed = false;
+
   bool _connectionIsFresh = true;
 
   @override
@@ -35,6 +44,11 @@ class RelayBase extends Relay {
 
   @override
   Future<bool> doConnect() async {
+    if (_disposed) {
+      log("connect refused: $url - relay is disposed");
+      return false;
+    }
+
     // If already connected, return true
     if (_connectionManager != null && _connectionManager!.isConnected) {
       log("connect break: $url - already connected");
@@ -260,6 +274,7 @@ class RelayBase extends Relay {
 
   @override
   void dispose() {
+    _disposed = true;
     _stateSubscription?.cancel();
     _messageSubscription?.cancel();
     _errorSubscription?.cancel();

@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
@@ -218,6 +219,43 @@ void main() {
         expect(find.text('More actions'), findsOneWidget);
       });
 
+      testWidgets(
+        'keeps owner actions aligned with provider scope when auth changes',
+        (tester) async {
+          final mockAuth = createMockAuthService();
+          late StateSetter rebuildHost;
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  rebuildHost = setState;
+                  return Scaffold(
+                    body: ShareActionButton(video: testVideo),
+                  );
+                },
+              ),
+              additionalOverrides: [
+                videoSharingServiceProvider.overrideWith(
+                  (ref) => mockVideoSharingService,
+                ),
+              ],
+              mockAuthService: mockAuth,
+              mockProfileRepository: mockProfileRepository,
+            ),
+          );
+          await tester.tap(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+          expect(find.text('Delete video'), findsNothing);
+
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(ownPubkey);
+          rebuildHost(() {});
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Delete video'), findsNothing);
+        },
+      );
+
       testWidgets('shows standard action items', (tester) async {
         final mockAuth = createMockAuthService();
 
@@ -294,10 +332,10 @@ void main() {
       testWidgets('shows own-video download actions for owned content', (
         tester,
       ) async {
-        final mockAuth = createMockAuthService();
-
-        when(() => mockAuth.isAuthenticated).thenReturn(true);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(ownPubkey);
+        final mockAuth = createMockAuthService(
+          authState: AuthState.authenticated,
+          currentPublicKeyHex: ownPubkey,
+        );
 
         await tester.pumpWidget(
           testMaterialApp(

@@ -12,6 +12,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
@@ -314,6 +315,21 @@ class ProfileRepository implements ProfileReader {
     _vanished.addAll(await dao.getAllPubkeys());
   }
 
+  /// Live view of the durable `vanished_profiles` table.
+  ///
+  /// The same source the inbox row reads through `profileVanishedProvider`,
+  /// and deliberately not [isVanished]: that mirror is seeded by an unawaited
+  /// [loadVanishedPubkeys], so until it resolves it is a strict subset of the
+  /// table and a consumer sampling it names an account the row contradicts.
+  ///
+  /// Emits an empty set when no [VanishedProfilesDao] is wired, matching
+  /// [isVanished]'s behaviour in the same configuration.
+  Stream<Set<String>> watchVanishedPubkeys() {
+    final dao = _vanishedProfilesDao;
+    if (dao == null) return Stream.value(const <String>{});
+    return dao.watchAllPubkeys().map(Set<String>.from);
+  }
+
   /// Evicts the local profile, stats, identity-claims and Divine-identity
   /// entries for an account that requested deletion, and records the pubkey
   /// durably so the eviction survives a restart.
@@ -547,7 +563,7 @@ class ProfileRepository implements ProfileReader {
       } on Exception catch (e) {
         cacheReadFailed = true;
         Log.warning(
-          'Identity-tags cache read failed for $pubkey: $e',
+          'Identity-tags cache read failed for ${pubkeyForLogs(pubkey)}: $e',
           name: 'ProfileRepository',
         );
       }
@@ -595,7 +611,7 @@ class ProfileRepository implements ProfileReader {
       final cachedTags = _decodeIdentityTags(row.tagsJson);
       if (cachedTags == null) return null;
       Log.warning(
-        'Kind-$identityEventKind read for $pubkey (created_at '
+        'Kind-$identityEventKind read for ${pubkeyForLogs(pubkey)} (created_at '
         '${live.createdAt}) is superseded by the cached event (created_at '
         '$cachedCreatedAt); keeping the cached claims',
         name: 'ProfileRepository',
@@ -603,7 +619,7 @@ class ProfileRepository implements ProfileReader {
       return cachedTags;
     } on Exception catch (e) {
       Log.warning(
-        'Identity-tags cache read failed for $pubkey: $e',
+        'Identity-tags cache read failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
       return null;
@@ -635,7 +651,7 @@ class ProfileRepository implements ProfileReader {
       );
     } on Exception catch (e) {
       Log.warning(
-        'Identity-tags cache write failed for $pubkey: $e',
+        'Identity-tags cache write failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
     }
@@ -646,18 +662,15 @@ class ProfileRepository implements ProfileReader {
   /// Returns `null` when no event is found or the query fails.
   Future<Event?> _fetchIdentityEvent(String pubkey) async {
     try {
-      final events = await _nostrClient.queryEvents(
-        [
-          Filter(kinds: const [identityEventKind], authors: [pubkey], limit: 5),
-        ],
-        useCache: false,
-      );
+      final events = await _nostrClient.queryEvents([
+        Filter(kinds: const [identityEventKind], authors: [pubkey], limit: 5),
+      ], useCache: false);
       return newestIdentityEvent(
         events.where((e) => e.kind == identityEventKind).toList(),
       );
     } on Exception catch (e) {
       Log.warning(
-        'Kind-$identityEventKind fetch failed for $pubkey: $e',
+        'Kind-$identityEventKind fetch failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
       return null;
@@ -707,11 +720,14 @@ class ProfileRepository implements ProfileReader {
     });
   }
 
-  /// Caches profile stats (video stats and engagement data) from a
-  /// [UserProfileResult] into the local [ProfileStatsDao].
+  /// Caches profile stats — social counts, video stats and engagement data —
+  /// from a [UserProfileResult] into the local [ProfileStatsDao].
   ///
-  /// Follower/following counts are owned by FollowRepository because it merges
-  /// REST, relay, and persisted inputs with hysteresis stabilization.
+  /// The REST `social` counts are cached here because they are the
+  /// authoritative follower/following numbers (#8197) and the only ones
+  /// available before any relay work finishes, so the profile header can
+  /// render immediately. FollowRepository still owns the relay-fallback path
+  /// and its hysteresis stabilization for the case where REST cannot answer.
   Future<void> _cacheProfileStatsFromResult(
     String pubkey,
     UserProfileResult result,
@@ -723,8 +739,9 @@ class ProfileRepository implements ProfileReader {
     // so no switch is needed here.
     final stats = result.stats;
     final engagement = result.engagement;
+    final social = result.social;
 
-    if (stats == null && engagement == null) return;
+    if (stats == null && engagement == null && social == null) return;
 
     int? publicViewCount;
     if (engagement != null) {
@@ -733,9 +750,33 @@ class ProfileRepository implements ProfileReader {
           : engagement.totalLoops.round();
     }
 
+    // A zero field is not data. `/api/users/{pubkey}/social` answers 200 for
+    // every pubkey, and funnelcake collapses ClickHouse failures into
+    // `{0, 0}`, so "never indexed", "genuinely zero", "vanished" and "the
+    // summary table is down" are indistinguishable here. Writing it would
+    // overwrite a good baseline with zeros (#8259 review), so this writer
+    // withholds each ambiguous field independently. The two counts come from
+    // different inputs, so a positive value in one cannot legitimize a zero in
+    // the other (#8259 review).
+
     await dao.upsertStats(
       pubkey: pubkey,
-      videoCount: stats?.videoCount,
+      // The REST social counts are the authoritative follower/following
+      // numbers (#8197) and the only ones available before any relay work
+      // finishes, so the profile header can render them immediately.
+      followerCount: (social?.followerCount ?? 0) > 0
+          ? social!.followerCount
+          : null,
+      followingCount: (social?.followingCount ?? 0) > 0
+          ? social!.followingCount
+          : null,
+      // Same reasoning as the two counts above, and the same collapse:
+      // `get_user_stats` maps both a miss and a ClickHouse failure to a
+      // default, so funnelcake answers 200 with `video_count: 0` when the
+      // summary table is down. Withholding it lets `upsertStats` keep the
+      // previous real count instead of overwriting it with an ambiguous zero
+      // (#8403).
+      videoCount: (stats?.videoCount ?? 0) > 0 ? stats!.videoCount : null,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,
     );
@@ -831,7 +872,10 @@ class ProfileRepository implements ProfileReader {
       if (delay > Duration.zero) {
         await Future<void>.delayed(delay);
       }
-      final retry = await _doFetchFreshProfile(pubkey, requireRawKind0: true);
+      final retry = await _doFetchFreshProfile(
+        pubkey,
+        requireRawKind0: true,
+      );
       if (retry != null) return retry;
     }
 
@@ -948,7 +992,8 @@ class ProfileRepository implements ProfileReader {
     // All sources exhausted — mark as confirmed missing.
     _confirmedMissing.add(pubkey);
     Log.debug(
-      'No profile found for $pubkey across all sources, marked missing',
+      'No profile found for ${pubkeyForLogs(pubkey)} across all sources, '
+      'marked missing',
       name: 'ProfileRepository.fetchFreshProfile',
       category: LogCategory.relay,
     );
@@ -1371,6 +1416,8 @@ class ProfileRepository implements ProfileReader {
         case UsernameClaimNetworkError():
         case UsernameClaimError():
           return PendingSaveDriveOutcome.retryableFailure;
+        case UsernameClaimInvalidFormat():
+          return PendingSaveDriveOutcome.permanentFailure;
       }
     }
 
@@ -1505,8 +1552,8 @@ class ProfileRepository implements ProfileReader {
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({required String username}) async {
     final validation = validateDivineUsername(username);
-    if (validation case DivineUsernameInvalid(:final reason)) {
-      return UsernameClaimError(reason);
+    if (validation case DivineUsernameInvalid(:final failure)) {
+      return UsernameClaimInvalidFormat(failure);
     }
 
     final normalizedUsername = (validation as DivineUsernameValid).normalized;
@@ -1704,6 +1751,7 @@ class ProfileRepository implements ProfileReader {
   /// valid 200 response with `found:false`. Network, timeout, non-200, and
   /// wrong-shaped responses return [DivineUsernameUnknown] so callers do not
   /// confuse "could not check" with "no name exists."
+  @override
   Future<DivineUsernameLookup> lookupUsernameByPubkey({
     required String pubkeyHex,
   }) async {
@@ -1728,23 +1776,6 @@ class ProfileRepository implements ProfileReader {
       );
       return const DivineUsernameUnknown();
     }
-  }
-
-  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
-  /// `(name, canonical)` record — `name` is the display form (for UI labels),
-  /// `canonical` is the round-trip-safe key to send back to `/release` — or
-  /// `null` if the pubkey owns none or the lookup could not be determined.
-  Future<({String name, String canonical})?> getUsernameByPubkey({
-    required String pubkeyHex,
-  }) async {
-    final lookup = await lookupUsernameByPubkey(pubkeyHex: pubkeyHex);
-    return switch (lookup) {
-      DivineUsernameFound(:final name, :final canonical) => (
-        name: name,
-        canonical: canonical,
-      ),
-      DivineUsernameNotFound() || DivineUsernameUnknown() => null,
-    };
   }
 
   /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
@@ -1825,8 +1856,8 @@ class ProfileRepository implements ProfileReader {
     String? currentUserPubkey,
   }) async {
     final validation = validateDivineUsername(username);
-    if (validation case DivineUsernameInvalid(:final reason)) {
-      return UsernameInvalidFormat(reason);
+    if (validation case DivineUsernameInvalid(:final failure)) {
+      return UsernameInvalidFormat(failure);
     }
     final normalizedUsername = (validation as DivineUsernameValid).normalized;
 
@@ -1896,9 +1927,7 @@ class ProfileRepository implements ProfileReader {
         return switch (code) {
           'reserved' => const UsernameReserved(),
           'burned' => const UsernameBurned(),
-          'invalid_format' => UsernameInvalidFormat(
-            reason ?? 'Invalid username format',
-          ),
+          'invalid_format' => const UsernameInvalidFormat(),
           // taken, pending_confirmation, or any unknown code
           _ => const UsernameTaken(),
         };
@@ -2441,6 +2470,7 @@ class ProfileRepository implements ProfileReader {
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter = false,
   }) async {
     if (pubkeys.isEmpty) return {};
 
@@ -2449,7 +2479,7 @@ class ProfileRepository implements ProfileReader {
 
     Map<String, UserProfile> filteredResults() {
       final blockFilter = _blockFilter;
-      if (blockFilter != null) {
+      if (!ignoreBlockFilter && blockFilter != null) {
         results.removeWhere((pubkey, _) => blockFilter(pubkey));
       }
       return results;
@@ -2527,15 +2557,19 @@ class ProfileRepository implements ProfileReader {
       // Connected relay fetches (one per pubkey, in parallel)
       final relayFuture = Future.wait(
         remainingList.map(
-          (pubkey) => Future.sync(() => _nostrClient.fetchProfile(pubkey))
-              .catchError((Object e) {
-                Log.warning(
-                  'Batch connected relay fetch failed for $pubkey: $e',
-                  name: 'ProfileRepository.fetchBatchProfiles',
-                  category: LogCategory.relay,
-                );
-                return null;
-              }, test: (_) => true),
+          (
+            pubkey,
+          ) => Future.sync(() => _nostrClient.fetchProfile(pubkey)).catchError((
+            Object e,
+          ) {
+            Log.warning(
+              'Batch connected relay fetch failed for '
+              '${pubkeyForLogs(pubkey)}: $e',
+              name: 'ProfileRepository.fetchBatchProfiles',
+              category: LogCategory.relay,
+            );
+            return null;
+          }, test: (_) => true),
         ),
       );
 

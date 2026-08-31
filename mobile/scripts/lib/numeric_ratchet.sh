@@ -33,6 +33,13 @@
 #   emit_current()       prints the current "key<TAB>count" lines (one per key)
 #   print_baseline_header()  prints the baseline file header comment block
 #
+# A trailing "# reason" on a baseline line is documentation, ignored by every
+# comparison and CARRIED FORWARD across UPDATE_BASELINE (matched by key, so a
+# changed count keeps its reason). That mirrors lib/list_ratchet.sh, whose
+# baselines have always been able to explain themselves; without it a reason
+# survives only until the next regeneration, which is why no numeric baseline
+# carried one before #3340.
+#
 # Honours UPDATE_BASELINE=1 to regenerate. Bash 3.2 compatible (sort/join only).
 
 set -euo pipefail
@@ -45,6 +52,52 @@ _nr_strip() {
   sed 's/[[:space:]]*#.*//' | grep -v '^[[:space:]]*$' | LC_ALL=C sort -t "$(_nr_tab)" -k1,1 || true
 }
 
+# Rewrite BASELINE_FILE from the emitted lines, re-attaching each key's existing
+# trailing "# reason". Reasons are keyed on field 1 alone, so a count that moved
+# keeps its explanation instead of silently losing it.
+_nr_write_baseline() {
+  local emitted="$1"
+  local TAB; TAB="$(_nr_tab)"
+  local reasons; reasons="$(mktemp)"
+
+  if [[ -f "$BASELINE_FILE" ]]; then
+    awk -F '\t' '
+      /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+      {
+        line = $0
+        comment = ""
+        if (match(line, /[[:space:]]+#.*/)) {
+          comment = substr(line, RSTART)
+          sub(/^[[:space:]]+/, "", comment)
+        }
+        if (comment != "") print $1 "\t" comment
+      }
+    ' "$BASELINE_FILE" > "$reasons"
+  else
+    : > "$reasons"
+  fi
+
+  # `|| true` is load-bearing: with an EMPTY offender set grep matches nothing
+  # and exits 1, which under `set -o pipefail` + `set -e` would abort before the
+  # baseline is written. A zero-entry baseline is the normal state of a
+  # frozen-at-zero guard, not a failure.
+  {
+    print_baseline_header
+    { printf '%s\n' "$emitted" | grep -v '^[[:space:]]*$' || true; } | while IFS= read -r line; do
+      local key reason
+      key="${line%%"$TAB"*}"
+      reason="$(awk -F '\t' -v target="$key" '$1 == target { print $2; exit }' "$reasons")"
+      if [[ -n "$reason" ]]; then
+        printf '%s %s\n' "$line" "$reason"
+      else
+        printf '%s\n' "$line"
+      fi
+    done
+  } > "$BASELINE_FILE"
+
+  rm -f "$reasons"
+}
+
 run_numeric_ratchet() {
   local TAB; TAB="$(_nr_tab)"
   local REPO_ROOT; REPO_ROOT="$(cd "$MOBILE_DIR/.." && pwd)"
@@ -52,7 +105,7 @@ run_numeric_ratchet() {
 
   if [[ "${UPDATE_BASELINE:-0}" == "1" ]]; then
     mkdir -p "$(dirname "$BASELINE_FILE")"
-    { print_baseline_header; printf '%s\n' "$CURRENT" | grep -v '^[[:space:]]*$' || true; } > "$BASELINE_FILE"
+    _nr_write_baseline "$CURRENT"
     local count; count="$(printf '%s\n' "$CURRENT" | grep -c . || true)"
     echo "OK [$RATCHET_LABEL]: wrote $count baseline entries to ${BASELINE_FILE#"$MOBILE_DIR"/}."
     return 0

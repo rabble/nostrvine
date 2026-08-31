@@ -985,34 +985,6 @@ void main() {
       });
     });
 
-    group('clearAll', () {
-      test('deletes all conversations', () async {
-        await dao.upsertConversation(
-          id: 'conv_1',
-          participantPubkeys: '["a","b"]',
-          isGroup: false,
-          createdAt: 1700000000,
-        );
-        await dao.upsertConversation(
-          id: 'conv_2',
-          participantPubkeys: '["a","c"]',
-          isGroup: false,
-          createdAt: 1700000000,
-        );
-
-        final deleted = await dao.clearAll();
-
-        expect(deleted, equals(2));
-        final results = await dao.getAllConversations();
-        expect(results, isEmpty);
-      });
-
-      test('returns 0 when table is empty', () async {
-        final deleted = await dao.clearAll();
-        expect(deleted, equals(0));
-      });
-    });
-
     group('ownerPubkey scoping', () {
       const userA = 'pubkey_user_a';
       const userB = 'pubkey_user_b';
@@ -1071,31 +1043,34 @@ void main() {
         },
       );
 
-      test('clearAllForUser only deletes that user conversations', () async {
-        await dao.upsertConversation(
-          id: 'conv_a1',
-          participantPubkeys: '["pubkey_a","pubkey_b"]',
-          isGroup: false,
-          createdAt: 1700000000,
-          lastMessageTimestamp: 1700000100,
-          ownerPubkey: userA,
-        );
-        await dao.upsertConversation(
-          id: 'conv_b1',
-          participantPubkeys: '["pubkey_c","pubkey_d"]',
-          isGroup: false,
-          createdAt: 1700000000,
-          lastMessageTimestamp: 1700000200,
-          ownerPubkey: userB,
-        );
+      test(
+        'account-switch cleanup preserves another user conversations',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_a1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000100,
+            ownerPubkey: userA,
+          );
+          await dao.upsertConversation(
+            id: 'conv_b1',
+            participantPubkeys: '["pubkey_c","pubkey_d"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000200,
+            ownerPubkey: userB,
+          );
 
-        final deleted = await dao.clearAllForUser(userA);
+          final deleted = await dao.clearForAccountSwitch(userA);
 
-        expect(deleted, equals(1));
-        final remaining = await dao.getAllConversations(ownerPubkey: userB);
-        expect(remaining, hasLength(1));
-        expect(remaining.first.id, equals('conv_b1'));
-      });
+          expect(deleted, equals(1));
+          final remaining = await dao.getAllConversations(ownerPubkey: userB);
+          expect(remaining, hasLength(1));
+          expect(remaining.first.id, equals('conv_b1'));
+        },
+      );
 
       test('unread count respects ownerPubkey', () async {
         await dao.upsertConversation(

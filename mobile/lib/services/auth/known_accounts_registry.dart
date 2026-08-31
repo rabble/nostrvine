@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart' show SecureKeyStorage;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth/signer_secure_store.dart';
@@ -206,7 +207,7 @@ class KnownAccountsRegistry {
       );
       Log.info(
         'Legacy migration: created entry for '
-        'pubkey=$pubkeyHex, source=${source.name}',
+        'pubkey=${pubkeyForLogs(pubkeyHex)}, source=${source.name}',
         name: 'KnownAccountsRegistry',
         category: LogCategory.auth,
       );
@@ -329,7 +330,7 @@ class KnownAccountsRegistry {
 
       Log.info(
         'Updated known accounts registry '
-        '(total=${accounts.length}, pubkey=$pubkeyHex, source=${source.name})',
+        '(total=${accounts.length}, pubkey=${pubkeyForLogs(pubkeyHex)}, source=${source.name})',
         name: 'KnownAccountsRegistry',
         category: LogCategory.auth,
       );
@@ -353,7 +354,7 @@ class KnownAccountsRegistry {
       await prefs.setString(kKnownAccountsKey, json);
 
       Log.info(
-        'Removed $pubkeyHex from known accounts '
+        'Removed ${pubkeyForLogs(pubkeyHex)} from known accounts '
         '(remaining=${accounts.length})',
         name: 'KnownAccountsRegistry',
         category: LogCategory.auth,
@@ -424,7 +425,7 @@ class KnownAccountsRegistry {
       }
     } catch (e) {
       Log.warning(
-        'signOut: failed to verify local nsec for ${account.pubkeyHex}: $e',
+        'signOut: failed to verify local nsec for ${pubkeyForLogs(account.pubkeyHex)}: $e',
         name: 'KnownAccountsRegistry',
         category: LogCategory.auth,
       );

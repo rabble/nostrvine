@@ -9,6 +9,7 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/hold_to_record_preference_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
+import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -33,6 +34,16 @@ final holdToRecordPreferenceServiceProvider =
       final prefs = ref.watch(sharedPreferencesProvider);
       return HoldToRecordPreferenceService(prefs);
     });
+
+/// Music mode preference service: whether recordings capture the microphone
+/// without the platform's speech-tuned cleanup. Non-autoDispose so the
+/// setting outlives the settings screen that wrote it.
+final musicModePreferenceServiceProvider = Provider<MusicModePreferenceService>(
+  (ref) {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return MusicModePreferenceService(prefs);
+  },
+);
 
 final nostrSignatureVerificationPreferenceServiceProvider =
     Provider<NostrSignatureVerificationPreferenceService>((ref) {

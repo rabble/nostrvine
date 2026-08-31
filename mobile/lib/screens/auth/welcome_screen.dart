@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -76,12 +77,16 @@ class WelcomeScreen extends ConsumerWidget {
   static String inviteGatePathWithCode(
     String code, {
     String? error,
+    InviteGateError? errorReason,
     String? sourceSlug,
   }) {
     final queryParameters = <String, String>{'code': code};
 
     if (error != null && error.isNotEmpty) {
       queryParameters['error'] = error;
+    }
+    if (errorReason != null) {
+      queryParameters['errorReason'] = errorReason.queryValue;
     }
     if (sourceSlug != null && sourceSlug.isNotEmpty) {
       queryParameters['sourceSlug'] = sourceSlug;
@@ -148,7 +153,7 @@ class _WelcomeView extends StatelessWidget {
           case WelcomeStatus.navigatingToCreateAccount:
             final invitesEnabled =
                 context.read<InviteAvailabilityCubit?>()?.state.isEnabled ??
-                true;
+                false;
             context.push(
               invitesEnabled
                   ? WelcomeScreen.inviteGatePath
@@ -197,6 +202,7 @@ class _WelcomeView extends StatelessWidget {
               ? DiVineAppBar(
                   title: '',
                   leadingIcon: SvgIconSource(DivineIconName.x.assetPath),
+                  leadingActionSemanticLabel: context.l10n.commonClose,
                   onLeadingPressed: () {
                     final bloc = context.read<WelcomeBloc>();
                     // If a specific account was pre-selected (account-switcher

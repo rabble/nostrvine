@@ -11,80 +11,86 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
-  testWidgets('VideoEditorThumbnail renders safely with no clips', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoEditorThumbnail(contentSize: Size(120, 120)),
+  group('renders', () {
+    testWidgets('VideoEditorThumbnail renders safely with no clips', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoEditorThumbnail(contentSize: Size(120, 120)),
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    expect(tester.takeException(), isNull);
-    expect(find.byType(Image), findsNothing);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Image), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
 
-  testWidgets('bounds the thumbnail decode to the content height', (
-    tester,
-  ) async {
-    const contentSize = Size(90, 160);
-    final thumbnailPath = '${Directory.systemTemp.path}/editor_thumbnail.png';
-    final clip = DivineVideoClip(
-      id: 'clip_thumbnail_test',
-      video: EditorVideo.file('/path/to/video.mp4'),
-      duration: const Duration(seconds: 2),
-      recordedAt: DateTime(2026),
-      targetAspectRatio: .vertical,
-      originalAspectRatio: 9 / 16,
-      thumbnailPath: thumbnailPath,
-    );
+    testWidgets('bounds the thumbnail decode to the content height', (
+      tester,
+    ) async {
+      const contentSize = Size(90, 160);
+      final thumbnailPath = '${Directory.systemTemp.path}/editor_thumbnail.png';
+      final clip = DivineVideoClip(
+        id: 'clip_thumbnail_test',
+        video: EditorVideo.file('/path/to/video.mp4'),
+        duration: const Duration(seconds: 2),
+        recordedAt: DateTime(2026),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+        thumbnailPath: thumbnailPath,
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          clipManagerProvider.overrideWith(
-            () => _TestClipManagerNotifier([clip]),
-          ),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoEditorThumbnail(contentSize: contentSize),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clipManagerProvider.overrideWith(
+              () => _TestClipManagerNotifier([clip]),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoEditorThumbnail(contentSize: contentSize),
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    // The decode is bounded to the same height (in device pixels) the
-    // stop-motion player asks for, so the two share one image-cache entry
-    // rather than decoding the raw camera still twice. Asserting on the
-    // ResizeImage pins both the bound and the cache key the sharing needs.
-    final image = tester.widget<Image>(find.byType(Image)).image;
-    expect(
-      image,
-      isA<ResizeImage>()
-          .having(
-            (r) => r.height,
-            'height',
-            (contentSize.height * tester.view.devicePixelRatio).round(),
-          )
-          .having((r) => r.width, 'width', isNull)
-          .having(
-            (r) => r.imageProvider,
-            'imageProvider',
-            isA<FileImage>().having((f) => f.file.path, 'path', thumbnailPath),
-          ),
-    );
+      // The decode is bounded to the same height (in device pixels) the
+      // stop-motion player asks for, so the two share one image-cache entry
+      // rather than decoding the raw camera still twice. Asserting on the
+      // ResizeImage pins both the bound and the cache key the sharing needs.
+      final image = tester.widget<Image>(find.byType(Image)).image;
+      expect(
+        image,
+        isA<ResizeImage>()
+            .having(
+              (r) => r.height,
+              'height',
+              (contentSize.height * tester.view.devicePixelRatio).round(),
+            )
+            .having((r) => r.width, 'width', isNull)
+            .having(
+              (r) => r.imageProvider,
+              'imageProvider',
+              isA<FileImage>().having(
+                (f) => f.file.path,
+                'path',
+                thumbnailPath,
+              ),
+            ),
+      );
+    });
   });
 }
 

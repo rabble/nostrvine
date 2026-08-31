@@ -45,9 +45,17 @@ FeaturedTabConfig _config({Map<String, String> disclosureLabel = const {}}) {
 FeaturedTabConfig _sponsoredConfig() =>
     _config(disclosureLabel: const {'default': 'Acme Bikes'});
 
-String _partnershipLine(String sponsor) => lookupAppLocalizations(
+String _sponsoredLine(String sponsor) => lookupAppLocalizations(
   const Locale('en'),
-).exploreFeaturedPaidPartnership(sponsor);
+).exploreFeaturedSponsoredBy(sponsor);
+
+/// The disclosure's own wording, with the brand taken out.
+///
+/// Negative assertions match on this rather than on one brand string. A line
+/// that renders with the wrong sponsor — or with none at all — is still a
+/// commercial disclosure on a collection that has no sponsor, and a matcher
+/// naming a brand the widget was never given cannot fail on either.
+String _disclosureWording() => _sponsoredLine('').trim();
 
 VideoEvent _video(String id) {
   return VideoEvent(
@@ -92,9 +100,8 @@ void main() {
           cursor: any(named: 'cursor'),
         ),
       ).thenAnswer(
-        (_) async => FeaturedTabVideosPage(
-          videos: [_video('first'), _video('second')],
-        ),
+        (_) async =>
+            FeaturedTabVideosPage(videos: [_video('first'), _video('second')]),
       );
       when(
         () => router.push<Object?>(any(), extra: any(named: 'extra')),
@@ -128,22 +135,62 @@ void main() {
       await tester.pump();
 
       final captured = verify(
-        () => router.push<Object?>(
-          any(),
-          extra: captureAny(named: 'extra'),
-        ),
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
       ).captured.single;
       final args = captured as PooledFullscreenVideoFeedArgs;
 
       expect(args.source, isA<VideoListViewSource>());
       expect(args.initialIndex, 0);
       expect(args.initialVideoId, 'first');
+      expect(args.sponsorName, isNull);
       expect(args.trafficSource, ViewTrafficSource.discoveryFeatured);
       expect(args.sourceDetail, 'ft_a1b2c3d4');
       expect(args.feedRepository, same(feedRepository));
 
       final source = args.source as VideoListViewSource;
       expect(source.videos.map((video) => video.id), ['first', 'second']);
+    });
+
+    testWidgets('carries the resolved sponsor into the fullscreen feed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(VideoThumbnailWidget).first);
+      await tester.pump();
+
+      final captured = verify(
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
+      ).captured.single;
+      final args = captured as PooledFullscreenVideoFeedArgs;
+
+      expect(args.sponsorName, 'Acme Bikes');
+    });
+
+    testWidgets('carries the sanitized sponsor into the fullscreen feed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          config: _config(
+            disclosureLabel: const {
+              'default': '\u0000Acme Bikes and Accessories Beyond Limit',
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(VideoThumbnailWidget).first);
+      await tester.pump();
+
+      final captured = verify(
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
+      ).captured.single;
+      final args = captured as PooledFullscreenVideoFeedArgs;
+
+      expect(args.sponsorName, 'Acme Bikes and Accessor…');
     });
 
     testWidgets('refetches an empty page when a config poll lands', (
@@ -186,9 +233,7 @@ void main() {
       await featuredTabsCubit.refresh();
       await tester.pumpAndSettle();
 
-      verifyNever(
-        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
-      );
+      verifyNever(() => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'));
     });
 
     testWidgets('reloads when the configuration is retargeted in place', (
@@ -227,7 +272,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
 
-      final line = find.text(_partnershipLine('Acme Bikes'));
+      final line = find.text(_sponsoredLine('Acme Bikes'));
       expect(line, findsOneWidget);
       // Pinned above the grid rather than scrolled into it.
       expect(
@@ -242,7 +287,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('paid partnership'), findsNothing);
+      expect(find.textContaining(_disclosureWording()), findsNothing);
     });
 
     testWidgets(
@@ -252,14 +297,12 @@ void main() {
         // appear as a line naming somebody else's locale either.
         await tester.pumpWidget(
           buildSubject(
-            config: _config(
-              disclosureLabel: const {'pt': 'Acme Bicicletas'},
-            ),
+            config: _config(disclosureLabel: const {'pt': 'Acme Bicicletas'}),
           ),
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('paid partnership'), findsNothing);
+        expect(find.textContaining(_disclosureWording()), findsNothing);
       },
     );
 
@@ -276,7 +319,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
 
-      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
+      expect(find.text(_sponsoredLine('Acme Bikes')), findsOneWidget);
     });
 
     testWidgets('keeps the disclosure when the videos request fails', (
@@ -292,7 +335,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
       // It describes the tab's commercial arrangement, not its contents.
-      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
+      expect(find.text(_sponsoredLine('Acme Bikes')), findsOneWidget);
     });
   });
 }

@@ -452,20 +452,6 @@ class _RelayDetails extends StatelessWidget {
                 ? VineTheme.error
                 : context.vineColors.secondaryText,
           ),
-          if (stats!.lastError != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              context.l10n.relaySettingsLastError(stats!.lastError!),
-              style: VineTheme.bodySmallFont(color: VineTheme.error),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (stats!.lastErrorTime != null)
-              Text(
-                _formatTime(context, stats!.lastErrorTime!),
-                style: VineTheme.bodySmallFont(color: VineTheme.error),
-              ),
-          ],
           _RelayInfoSection(relayUrl: relayUrl, entry: entry),
         ],
       ),

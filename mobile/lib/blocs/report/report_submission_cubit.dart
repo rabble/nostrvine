@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
@@ -296,17 +297,17 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
   /// [reasonTitle] is the localized reason name for the DM's human-readable
   /// body; localization stays in the UI layer.
   ///
-  /// Returns the `{error}` argument for the caller's `reportFailed` message,
-  /// or null when there is nothing to interpolate. Deliberately a return value
-  /// rather than a state field: per rules/state_management.md, state carries no
-  /// error strings. Read [ReportSubmissionState.status] for which message, if
-  /// any, to show.
-  Future<String?> submit({
+  /// Read [ReportSubmissionState.status] for which message, if any, to show.
+  ///
+  /// Returns nothing: the moderation service's own prose is arbitrary
+  /// server-controlled text, and Divine's error surface is not the place to
+  /// render it (#3589). It is logged instead.
+  Future<void> submit({
     required ContentFilterReason reason,
     required String reasonTitle,
     required String details,
   }) async {
-    if (state.isSubmitting) return null;
+    if (state.isSubmitting) return;
     _update(status: ReportSubmissionStatus.submitting);
 
     try {
@@ -325,7 +326,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
               details: details,
               sourceRelay: _target.sourceRelay,
             );
-      if (isClosed) return null;
+      if (isClosed) return;
 
       if (result.success && result.delivery == ReportDelivery.localOnly) {
         // Nothing left the device — every channel refused, which usually
@@ -350,7 +351,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
         // instead of stacking a second one for the sweep (#6610).
         unawaited(_sendModerationDm(reason, reasonTitle, details));
         _update(status: ReportSubmissionStatus.notSent);
-        return null;
+        return;
       }
 
       if (result.success) {
@@ -359,16 +360,21 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
           reasonTitle,
           details,
         );
-        if (isClosed) return null;
+        if (isClosed) return;
         _update(
           status: ReportSubmissionStatus.submitted,
           moderationDmFailed: moderationDmFailed,
         );
-        return null;
+        return;
       }
 
+      Log.error(
+        'Report submission failed: ${result.error}',
+        name: 'ReportSubmissionCubit',
+        category: LogCategory.ui,
+      );
       _update(status: ReportSubmissionStatus.failure);
-      return result.error ?? '';
+      return;
     } catch (e, stackTrace) {
       Log.error(
         'Failed to submit report: $e',
@@ -382,7 +388,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
       // Crashlytics until there is evidence it is an invariant violation.
       addError(e, stackTrace);
       _update(status: ReportSubmissionStatus.failure);
-      return '$e';
+      return;
     }
   }
 
@@ -593,7 +599,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
           'Moderation DM not delivered '
-          '(recipient=${transport.pubkey}, '
+          '(recipient=${pubkeyForLogs(transport.pubkey)}, '
           'blocked=${failure.blocked}, '
           'retryablePending=${failure.retryablePending}): '
           '${failure.error}',

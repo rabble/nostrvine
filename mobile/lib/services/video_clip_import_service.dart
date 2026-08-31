@@ -128,7 +128,6 @@ class VideoClipImportService {
 
     final importedAt = _now();
     final clipId = _clipIdFor(video, importedAt);
-    final duration = _durationFor(video);
 
     try {
       await Directory(documentsPath).create(recursive: true);
@@ -137,6 +136,9 @@ class VideoClipImportService {
         documentsPath,
         clipId,
       );
+
+      final metadata = await _probeMetadata(copiedVideo);
+      final duration = _durationFor(video, metadata);
 
       final thumbnail = await _extractThumbnail(
         videoPath: copiedVideo.path,
@@ -147,7 +149,7 @@ class VideoClipImportService {
         videoDuration: duration,
       );
 
-      final actualRatio = await _resolveAspectRatio(video, copiedVideo);
+      final actualRatio = _resolveAspectRatio(video, metadata);
 
       final clip = DivineVideoClip(
         id: clipId,
@@ -292,12 +294,43 @@ class VideoClipImportService {
     return '${prefix}_${safeStableId}_${importedAt.microsecondsSinceEpoch}';
   }
 
-  Duration _durationFor(models.VideoEvent video) {
+  /// Resolves the clip's duration, preferring the measured file over the
+  /// event's `duration` tag.
+  ///
+  /// The tag cannot be trusted: every Vine archive import advertises a
+  /// hardcoded `duration 6` regardless of the real length, which measures
+  /// anywhere from 5.201s to 6.548s. The value becomes the export's segment
+  /// end, so a wrong one truncates the clip, and on Android — which has no
+  /// track-end trim — leaves custom audio playing past the last video frame,
+  /// freezing it until the loop restarts (#7920).
+  Duration _durationFor(models.VideoEvent video, VideoMetadata? metadata) {
+    final measured = metadata?.duration;
+    if (measured != null && measured > Duration.zero) return measured;
+
     final seconds = video.duration;
     if (seconds != null && seconds > 0) {
       return Duration(seconds: seconds);
     }
     return const Duration(seconds: 6);
+  }
+
+  /// Probes the copied file once for the duration and resolution the import
+  /// needs.
+  ///
+  /// Returns `null` when the probe fails, leaving both to the event's own
+  /// `duration` and `dim` tags — and to their defaults when it carries
+  /// neither.
+  Future<VideoMetadata?> _probeMetadata(File copiedVideo) async {
+    try {
+      return await _readVideoMetadata(EditorVideo.file(copiedVideo.path));
+    } catch (e) {
+      Log.warning(
+        'Failed to read video metadata for ${copiedVideo.path}: $e',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return null;
+    }
   }
 
   Duration _thumbnailTimestampFor(Duration duration) {
@@ -322,34 +355,22 @@ class VideoClipImportService {
 
   /// Resolves the real aspect ratio of the source video.
   ///
-  /// Prefers the dimensions advertised in the Nostr event. Falls back to
-  /// probing the downloaded file with [ProVideoEditor.getMetadata] when the
-  /// event has no usable `dim` tag (common for own uploads that bypass the
-  /// transcoding pipeline).
-  Future<double?> _resolveAspectRatio(
+  /// Prefers the dimensions advertised in the Nostr event, falling back to the
+  /// probed [metadata] when the event has no usable `dim` tag (common for own
+  /// uploads that bypass the transcoding pipeline).
+  double? _resolveAspectRatio(
     models.VideoEvent video,
-    File copiedVideo,
-  ) async {
+    VideoMetadata? metadata,
+  ) {
     final fromEvent = _aspectRatioFor(video);
     if (fromEvent != null) return fromEvent;
+    if (metadata == null) return null;
 
-    try {
-      final metadata = await _readVideoMetadata(
-        EditorVideo.file(copiedVideo.path),
-      );
-      final width = metadata.resolution.width;
-      final height = metadata.resolution.height;
-      if (width <= 0 || height <= 0) return null;
-      // ProVideoEditor reports display dimensions with rotation applied.
-      return width / height;
-    } catch (e) {
-      Log.warning(
-        'Failed to read video metadata for aspect ratio: $e',
-        name: _logName,
-        category: LogCategory.video,
-      );
-      return null;
-    }
+    final width = metadata.resolution.width;
+    final height = metadata.resolution.height;
+    if (width <= 0 || height <= 0) return null;
+    // ProVideoEditor reports display dimensions with rotation applied.
+    return width / height;
   }
 
   /// Determines the target crop aspect ratio for the editor.

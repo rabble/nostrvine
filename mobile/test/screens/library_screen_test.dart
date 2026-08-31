@@ -38,6 +38,8 @@ import '../helpers/go_router.dart';
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
 
+class _FakeEditorVideo extends Fake implements EditorVideo {}
+
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
@@ -107,6 +109,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(<DivineVideoClip>[]);
+      registerFallbackValue(_FakeEditorVideo());
     });
 
     setUp(() async {
@@ -1001,6 +1004,81 @@ void main() {
 
         softDelete.complete(true);
         await tester.pumpAndSettle();
+      });
+    });
+
+    group('gallery save failure', () {
+      // The failure arm of the gallery-save switch used to render
+      // `e.toString()` straight into the snackbar, while its two sibling arms
+      // both localized. Nothing covered it. This drives a real
+      // GallerySaveService throw through the bloc and pins the localized copy
+      // — and pins that the raw exception text does NOT reach the screen.
+      testWidgets('shows localized copy and never the raw exception text', (
+        tester,
+      ) async {
+        final clip = DivineVideoClip(
+          id: 'clip-save-fail',
+          video: EditorVideo.file('/test/save-fail.mp4'),
+          duration: const Duration(seconds: 4),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: models.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/test/save-fail.jpg',
+          ghostFramePath: '/test/save-fail_ghost.jpg',
+        );
+
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockGallerySaveService.saveVideoToGallery(any()),
+        ).thenThrow(Exception('boom-secret-path-/Users/someone/clip.mp4'));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              gallerySaveServiceProvider.overrideWithValue(
+                mockGallerySaveService,
+              ),
+              clipLibraryServiceProvider.overrideWithValue(
+                mockClipLibraryService,
+              ),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              clipManagerProvider.overrideWith(ClipManagerNotifier.new),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: const LibraryScreen(
+                initialTabIndex: 1,
+                tabsMode: LibraryTabsMode.withoutSounds,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final bloc =
+            tester.element(find.byType(ClipsTab)).read<ClipsLibraryBloc>()
+              ..add(ClipsLibraryToggleSelection(clip));
+        await tester.pumpAndSettle();
+        bloc.add(const ClipsLibrarySaveToGallery());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            en.libraryClipsSaveFailed(GallerySaveService.destinationName),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('boom-secret-path'), findsNothing);
       });
     });
 

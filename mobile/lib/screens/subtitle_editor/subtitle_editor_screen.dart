@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
@@ -26,7 +27,8 @@ import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 ///
 /// The screen is keyed on [videoId] so it can be rebuilt from the route alone.
 /// A [prefetched] video may be passed as a fast path when navigating from a
-/// feed or metadata screen, but route state is not required for correctness.
+/// feed or metadata screen. It is used only when its complete raw tag array is
+/// available for the video replacement published after subtitle changes.
 class SubtitleEditorScreen extends ConsumerStatefulWidget {
   /// Creates the subtitle editor page for [videoId].
   const SubtitleEditorScreen({
@@ -48,7 +50,7 @@ class SubtitleEditorScreen extends ConsumerStatefulWidget {
   /// The event id of the video whose subtitles are being edited.
   final String videoId;
 
-  /// Optional prefetched video used to avoid an async resolve on push.
+  /// Optional complete prefetched video used to avoid an async resolve.
   final VideoEvent? prefetched;
 
   @override
@@ -70,7 +72,9 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
   @override
   void initState() {
     super.initState();
-    if (widget.prefetched != null && widget.prefetched!.id == widget.videoId) {
+    if (widget.prefetched != null &&
+        widget.prefetched!.id == widget.videoId &&
+        widget.prefetched!.nostrEventTags.isNotEmpty) {
       _resolved = widget.prefetched;
     } else {
       _resolve();
@@ -82,6 +86,7 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
     final video = await resolver.resolveById(
       widget.videoId,
       allowOwnContentBypass: true,
+      requireRawTags: true,
     );
     if (!mounted) return;
     setState(() {
@@ -289,6 +294,7 @@ class _CueList extends StatelessWidget {
               child: _Stage(
                 state: state,
                 videoUrl: videoUrl,
+                playbackUrls: video.previewPlaybackSources,
                 videoId: video.id,
                 loadFrames: loadFrames,
               ),
@@ -502,12 +508,14 @@ class _Stage extends StatelessWidget {
   const _Stage({
     required this.state,
     required this.videoUrl,
+    required this.playbackUrls,
     required this.videoId,
     required this.loadFrames,
   });
 
   final SubtitleEditorState state;
   final String videoUrl;
+  final List<String> playbackUrls;
   final String videoId;
   final TimelineFrameLoader loadFrames;
 
@@ -519,6 +527,7 @@ class _Stage extends StatelessWidget {
         Expanded(
           child: SubtitleEditorStage(
             videoUrl: videoUrl,
+            playbackUrls: playbackUrls,
             videoId: videoId,
             cues: state.cues,
             totalDuration: Duration(milliseconds: state.timelineDurationMs),

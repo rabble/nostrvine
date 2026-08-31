@@ -8,7 +8,10 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/notifications_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -23,6 +26,47 @@ import 'package:unified_logger/unified_logger.dart';
 /// skip the side-effect-free `activate()` refactor (design §8.2 correction).
 typedef AccountSignIn =
     Future<void> Function(ProviderContainer container, KnownAccount account);
+
+const _accountSwitchPushCleanupTimeout = Duration(seconds: 15);
+
+/// Stops the outgoing account's DM ingest before the incoming container signs
+/// in and wipes shared DM state.
+///
+/// The identity-change cleanup runs from the *incoming* container, where
+/// `dmListeningStopProvider` finds no repository and returns early — while the
+/// outgoing container's repository is still draining history into the
+/// `DeviceScope`-shared database and `SharedPreferences`. The invariant is
+/// that no writer for an account may be live while that account's
+/// device-scoped data is wiped, and the scope that owns the data is the device,
+/// not either container. See #7318.
+Future<bool> _quiesceOutgoingDmIngest(ProviderContainer? outgoing) async {
+  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return false;
+  try {
+    await outgoing.read(dmListeningStopProvider)();
+    return true;
+  } catch (error) {
+    Log.warning(
+      'Stopping the outgoing account DM ingest before the swap failed: $error',
+      name: 'swapAccount',
+    );
+    return false;
+  }
+}
+
+/// Re-opens the outgoing account's DM ingest after a failed swap, so the
+/// rollback does not leave the still-signed-in user without DMs.
+Future<void> _resumeOutgoingDmIngest(ProviderContainer? outgoing) async {
+  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return;
+  try {
+    await outgoing.read(dmRepositoryProvider).startListening();
+  } catch (error) {
+    Log.warning(
+      'Resuming the outgoing account DM ingest after a failed swap '
+      'failed: $error',
+      name: 'swapAccount',
+    );
+  }
+}
 
 Future<void> _defaultSignIn(
   ProviderContainer container,
@@ -132,6 +176,12 @@ String? accountSwitchInitialLocation({
 /// intentionally: it only ever copies the leaving account's own credentials
 /// into its own slot.
 ///
+/// Push deregistration follows the same commit boundary. The outgoing
+/// coordinator is captured before sign-in can replace shared signer storage,
+/// but it runs only after [AccountSwitchController.swapTo] commits the target.
+/// The swap host retains the outgoing container until cleanup settles so its
+/// account-scoped signer remains usable throughout deregistration.
+///
 /// Rolling the container back is not enough on its own: a sign-in that got far
 /// enough to fail has already restored the *target* account's signer keys over
 /// the shared slots and persisted its auth source, which the live container
@@ -151,6 +201,10 @@ Future<void> swapAccount({
   await controller.runExclusive(() async {
     await currentAuthService.archiveCurrentSignerInfo();
     final current = controller.currentContainer;
+    final outgoingPushCoordinator =
+        current != null && current.exists(pushNotificationSyncProvider)
+        ? current.read(pushNotificationSyncProvider)
+        : null;
     final currentLocation = accountSwitchInitialLocation(
       currentLocation: _currentRouterLocation(controller),
       currentPubkeyHex: current?.read(authServiceProvider).currentPublicKeyHex,
@@ -165,12 +219,53 @@ Future<void> swapAccount({
     );
     final keyStorage = container.read(secureKeyStorageProvider);
     SecureKeyContainer? previousPrimary;
+    var outgoingDmIngestQuiesced = false;
     try {
       previousPrimary = await keyStorage.getKeyContainer();
+      // Before sign-in, because sign-in is what runs the identity-change
+      // cleanup that wipes the shared DM tables. See #7318.
+      outgoingDmIngestQuiesced = await _quiesceOutgoingDmIngest(current);
       await signIn(container, account);
-      await controller.swapTo(container);
-      await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
+      await controller.swapTo(
+        container,
+        beforePreviousContainerDispose: outgoingPushCoordinator == null
+            ? null
+            : () async {
+                try {
+                  await outgoingPushCoordinator
+                      .deregisterLastReadyPubkeyAfterAccountSwitch()
+                      .timeout(_accountSwitchPushCleanupTimeout);
+                } catch (error) {
+                  // The target account is already live. Push cleanup is
+                  // best-effort and must not turn a committed switch into a
+                  // rollback attempt.
+                  Log.warning(
+                    'Outgoing account push deregistration failed: $error',
+                    name: 'swapAccount',
+                  );
+                }
+              },
+      );
+      try {
+        await container
+            .read(authServiceProvider)
+            .claimLegacyRowsForCurrentUser();
+      } catch (error) {
+        // The target container is already mounted, so this post-commit
+        // migration cannot be rolled back.
+        Log.warning(
+          'Claiming legacy user data after account swap failed: $error',
+          name: 'swapAccount',
+        );
+      }
     } catch (_) {
+      // The outgoing container stays live on a rollback. If this attempt
+      // stopped its live subscription, restore that subscription before the
+      // key restores below, which can throw. History recovery remains
+      // resumable and restarts on the next inbox open. See #7318.
+      if (outgoingDmIngestQuiesced) {
+        await _resumeOutgoingDmIngest(current);
+      }
       try {
         await currentAuthService.restoreSignerInfoForCurrentAccount();
         await keyStorage.restorePrimaryKeyContainer(previousPrimary);

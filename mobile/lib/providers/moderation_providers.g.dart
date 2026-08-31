@@ -556,7 +556,7 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -564,13 +564,22 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 ///
 /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
 /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+///
+/// It also flushes a mute-list publish that was withheld because the read
+/// preceding it was inconclusive (#6750). A block is kept local rather than
+/// published over a list we could not read, so something has to retry it: a
+/// later block republishes the whole list anyway, and this covers the user who
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 
 @ProviderFor(blocklistSyncBridge)
 final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -578,13 +587,22 @@ final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 ///
 /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
 /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+///
+/// It also flushes a mute-list publish that was withheld because the read
+/// preceding it was inconclusive (#6750). A block is kept local rather than
+/// published over a list we could not read, so something has to retry it: a
+/// later block republishes the whole list anyway, and this covers the user who
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 
 final class BlocklistSyncBridgeProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
   /// Bridge that starts blocklist sync when the Nostr session becomes ready.
   ///
-  /// Watch this at app shell level. It listens to [nostrSessionProvider] and
+  /// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
   /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
   /// the first time the signer-backed Nostr client is initialized. This covers:
   /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -592,6 +610,15 @@ final class BlocklistSyncBridgeProvider
   ///
   /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
   /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+  ///
+  /// It also flushes a mute-list publish that was withheld because the read
+  /// preceding it was inconclusive (#6750). A block is kept local rather than
+  /// published over a list we could not read, so something has to retry it: a
+  /// later block republishes the whole list anyway, and this covers the user who
+  /// blocked once while relays were unhealthy and has not blocked since. The
+  /// signal is the app returning to the foreground — "we might be healthy
+  /// again". A restart is covered inside the repository instead, which
+  /// reconciles its persisted blocks against the list the relay serves back.
   BlocklistSyncBridgeProvider._()
     : super(
         from: null,
@@ -626,7 +653,7 @@ final class BlocklistSyncBridgeProvider
 }
 
 String _$blocklistSyncBridgeHash() =>
-    r'0ffe1bb65877c094a330ec773089bb738247fe98';
+    r'8dab15bbb574ddc0ed97e28a4898b37d7149719f';
 
 /// Republishes the contact list when a block contradicts the published
 /// follow list.
@@ -652,7 +679,7 @@ String _$blocklistSyncBridgeHash() =>
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 
 @ProviderFor(blockedFollowReconciler)
 final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
@@ -681,7 +708,7 @@ final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 
 final class BlockedFollowReconcilerProvider
     extends $FunctionalProvider<void, void, void>
@@ -710,7 +737,7 @@ final class BlockedFollowReconcilerProvider
   /// missing — the #6109 class of loss, on the write side where no merge
   /// guard can catch it.
   ///
-  /// Watch this at app shell level.
+  /// Activated by `AppShellSideEffects`.
   BlockedFollowReconcilerProvider._()
     : super(
         from: null,

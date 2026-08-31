@@ -7,13 +7,19 @@ import 'dart:convert';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/utils/draft_audio_path_resolver.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum SavedSoundSaveResult { saved, alreadySaved }
 
 class SavedSoundsService {
-  SavedSoundsService(this._preferences, {String? pubkeyHex})
-    : _pubkeyHex = pubkeyHex;
+  SavedSoundsService(
+    this._preferences, {
+    String? pubkeyHex,
+    String documentsPath = '',
+  }) : _pubkeyHex = pubkeyHex,
+       _documentsPath = documentsPath;
 
   /// Prefix for the per-account storage keys.
   static const _keyPrefix = 'saved_reusable_sounds';
@@ -41,6 +47,10 @@ class SavedSoundsService {
   /// Signed-in pubkey (hex) whose saved sounds this instance manages, or
   /// `null` when signed out.
   final String? _pubkeyHex;
+
+  /// Application documents directory that draft-local audio paths are stored
+  /// relative to. Empty on web, and in tests that never persist a local file.
+  final String _documentsPath;
 
   /// SharedPreferences key for a specific account's saved sounds.
   ///
@@ -82,25 +92,37 @@ class SavedSoundsService {
     }
   }
 
-  List<SavedSound> loadSavedSounds() {
+  /// The account's saved sounds, newest first.
+  ///
+  /// Draft-local audio is stored relative to the documents directory, so its
+  /// path is rebased onto [_documentsPath] on the way out — that is what keeps
+  /// an imported sound playable after an iOS app update rewrites the container
+  /// path. Pass [resolveLocalPaths] as `false` to get the stored form instead,
+  /// which is what cross-device sync publishes: a body carrying this device's
+  /// container path would change hash on every app update and republish itself.
+  List<SavedSound> loadSavedSounds({bool resolveLocalPaths = true}) {
     _migrateLegacyBucketIfNeeded();
     final rawSounds = _preferences.getString(storageKey);
     if (rawSounds == null || rawSounds.isEmpty) {
       return [];
     }
 
+    final List<SavedSound> sounds;
     try {
       final decoded = jsonDecode(rawSounds);
       if (decoded is List) {
-        return _readLegacySounds(decoded);
+        sounds = _readLegacySounds(decoded);
+      } else if (decoded is Map) {
+        sounds = _readVersionedSounds(Map<String, dynamic>.from(decoded));
+      } else {
+        return [];
       }
-      if (decoded is Map) {
-        return _readVersionedSounds(Map<String, dynamic>.from(decoded));
-      }
-      return [];
     } catch (_) {
       return [];
     }
+
+    if (!resolveLocalPaths) return sounds;
+    return sounds.map(_resolvedRecord).toList();
   }
 
   Future<SavedSoundSaveResult> saveSound(AudioEvent sound) async {
@@ -187,6 +209,64 @@ class SavedSoundsService {
     return sounds;
   }
 
+  /// Basenames of draft-local audio files a saved sound points at, across
+  /// *every* account bucket on this device.
+  ///
+  /// Audio imported from the Library still lands under the draft that was open
+  /// at the time (`draft_audio_imports/<draftId>/`), so a file a My Sounds
+  /// entry depends on can be owned by a draft the user later deletes. Draft
+  /// cleanup consults this and keeps such a file: a dangling path heals on the
+  /// next load, a deleted file does not (#7977).
+  ///
+  /// All accounts, not just the signed-in one — draft cleanup already scans
+  /// drafts device-wide, and a saved sound outlives the account switch that
+  /// hides it. Never throws: an undecodable bucket contributes nothing.
+  static Set<String> referencedLocalAudioFilenames(
+    SharedPreferences preferences,
+  ) {
+    final filenames = <String>{};
+    for (final key in preferences.getKeys()) {
+      if (!key.startsWith(_keyPrefix)) continue;
+      final raw = preferences.getString(key);
+      if (raw == null || raw.isEmpty) continue;
+      for (final audioJson in _storedAudioJson(raw)) {
+        try {
+          final path = AudioEvent.fromJson(audioJson).localFilePath;
+          if (path != null && path.isNotEmpty) {
+            filenames.add(p.basename(path));
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+    return filenames;
+  }
+
+  /// The `AudioEvent` json of every entry in a stored bucket [raw], in either
+  /// the legacy list shape or the versioned `{schemaVersion, sounds}` shape.
+  static Iterable<Map<String, dynamic>> _storedAudioJson(String raw) sync* {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } catch (_) {
+      return;
+    }
+    final List<dynamic> entries;
+    if (decoded is List) {
+      entries = decoded;
+    } else if (decoded is Map && decoded['sounds'] is List) {
+      entries = decoded['sounds'] as List<dynamic>;
+    } else {
+      return;
+    }
+    for (final entry in entries.whereType<Map>()) {
+      // Legacy entries are the AudioEvent itself; versioned ones nest it.
+      final audio = entry['audio'];
+      yield Map<String, dynamic>.from(audio is Map ? audio : entry);
+    }
+  }
+
   static bool _isNewerSchema(Map<String, dynamic> decoded) {
     final version = decoded['schemaVersion'];
     return version is int &&
@@ -229,10 +309,45 @@ class SavedSoundsService {
     return sound.copyWith(audio: _persistableSound(sound.audio));
   }
 
+  /// [sound] in the form that is written to disk.
+  ///
+  /// Strips the editor's clip anchor, and stores a draft-local audio file
+  /// relative to the documents directory rather than by absolute path — iOS
+  /// rewrites the container path on every app update, so an absolute path
+  /// dangles from then on and the saved sound plays nothing (#7977).
   AudioEvent _persistableSound(AudioEvent sound) {
-    return sound.anchorClipId == null
+    final unanchored = sound.anchorClipId == null
         ? sound
         : sound.copyWith(clearAnchorClipId: true);
+    return _mapLocalAudioPath(unanchored, toPortableAudioPath);
+  }
+
+  SavedSound _resolvedRecord(SavedSound sound) =>
+      sound.copyWith(audio: _resolvedSound(sound.audio));
+
+  /// [sound] with its stored draft-local path rebased onto [_documentsPath].
+  ///
+  /// [resolveAudioPath] also accepts an absolute path from a previous
+  /// container, so a sound saved before the portable form existed heals the
+  /// first time it is loaded.
+  AudioEvent _resolvedSound(AudioEvent sound) => _mapLocalAudioPath(
+    sound,
+    (path) => resolveAudioPath(path, _documentsPath),
+  );
+
+  /// Applies [transform] to [sound]'s file path when it is draft-local audio.
+  ///
+  /// [AudioEvent.localFilePath] is the gate: a published or bundled sound's
+  /// `url` is a remote address, and rewriting one would turn a playable url
+  /// into a dangling local path.
+  static AudioEvent _mapLocalAudioPath(
+    AudioEvent sound,
+    String Function(String path) transform,
+  ) {
+    final path = sound.localFilePath;
+    if (path == null) return sound;
+    final mapped = transform(path);
+    return mapped == path ? sound : sound.copyWith(url: mapped);
   }
 
   /// One-time upgrade migration: adopt the pre-namespacing device-wide list

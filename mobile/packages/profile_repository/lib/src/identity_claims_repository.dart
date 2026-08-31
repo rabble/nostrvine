@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -600,7 +601,7 @@ class IdentityClaimsRepository {
         id: pending?.id ?? identityEvent.id,
       );
       Log.info(
-        'Identity event for $pubkey carries '
+        'Identity event for ${pubkeyForLogs(pubkey)} carries '
         '${identityTagsOf(tags).length} claim tag(s)',
         name: 'IdentityClaimsRepository',
       );
@@ -620,7 +621,8 @@ class IdentityClaimsRepository {
         identityTagsOf(legacyEvent.tags),
       );
       Log.info(
-        'No kind-$identityEventKind event for $pubkey; kind-0 carries '
+        'No kind-$identityEventKind event for ${pubkeyForLogs(pubkey)}; kind-0 '
+        'carries '
         '${tags.length} claim tag(s)',
         name: 'IdentityClaimsRepository',
       );
@@ -630,7 +632,7 @@ class IdentityClaimsRepository {
 
     final cached = await _cachedIdentityTags(pubkey);
     Log.warning(
-      'No identity event returned for $pubkey; snapshot has '
+      'No identity event returned for ${pubkeyForLogs(pubkey)}; snapshot has '
       '${cached?.length ?? 0} claim tag(s)',
       name: 'IdentityClaimsRepository',
     );
@@ -749,7 +751,7 @@ class IdentityClaimsRepository {
       return _decodeSnapshot(row.verifiedClaimsJson)?.isNotEmpty ?? false;
     } on Object catch (e) {
       Log.warning(
-        'Verdict snapshot read failed for $pubkey: $e',
+        'Verdict snapshot read failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'IdentityClaimsRepository',
       );
       return false;
@@ -772,7 +774,7 @@ class IdentityClaimsRepository {
       ];
     } on Object catch (e) {
       Log.warning(
-        'Identity-tags snapshot is unreadable for $pubkey: $e',
+        'Identity-tags snapshot is unreadable for ${pubkeyForLogs(pubkey)}: $e',
         name: 'IdentityClaimsRepository',
       );
       return null;
@@ -797,7 +799,7 @@ class IdentityClaimsRepository {
       return await dao.getEvent(pubkey);
     } on Object catch (e) {
       Log.warning(
-        'Identity-tags snapshot read failed for $pubkey: $e',
+        'Identity-tags snapshot read failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'IdentityClaimsRepository',
       );
       return null;
@@ -907,7 +909,8 @@ class IdentityClaimsRepository {
     if (missing.isEmpty && kept.length == relayTags.length) return relayTags;
 
     Log.warning(
-      'Relay read for $pubkey lags this device: re-adding ${missing.length} '
+      'Relay read for ${pubkeyForLogs(pubkey)} lags this device: re-adding '
+      '${missing.length} '
       'published claim(s), dropping ${relayTags.length - kept.length} removed',
       name: 'IdentityClaimsRepository',
     );
@@ -944,7 +947,8 @@ class IdentityClaimsRepository {
     final cached = await _cachedIdentitySource(pubkey);
     if (cached != null && _isBehind(source, cached)) {
       Log.warning(
-        'Identity snapshot for $pubkey mirrors a newer event (created_at '
+        'Identity snapshot for ${pubkeyForLogs(pubkey)} mirrors a newer event '
+        '(created_at '
         '${cached.createdAt}) than the one just read (created_at '
         '${source.createdAt}); keeping the snapshot',
         name: 'IdentityClaimsRepository',
@@ -961,7 +965,8 @@ class IdentityClaimsRepository {
       );
     } on Object catch (e) {
       Log.warning(
-        'Identity-tags cache write after publish failed for $pubkey: $e',
+        'Identity-tags cache write after publish failed for '
+        '${pubkeyForLogs(pubkey)}: $e',
         name: 'IdentityClaimsRepository',
       );
     }

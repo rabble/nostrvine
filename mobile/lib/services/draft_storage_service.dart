@@ -10,6 +10,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,11 +21,19 @@ class DraftStorageService {
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
     this.ownerPubkey,
+    SharedPreferences? preferences,
   }) : _draftsDao = draftsDao,
-       _clipsDao = clipsDao;
+       _clipsDao = clipsDao,
+       _preferences = preferences;
 
   final DraftsDao _draftsDao;
   final ClipsDao _clipsDao;
+
+  /// Where saved sounds live, consulted before deleting a draft's audio files.
+  ///
+  /// Nullable so tests that never delete a draft need not wire it; a null
+  /// instance simply cannot see My Sounds references.
+  final SharedPreferences? _preferences;
 
   /// Hex pubkey of the current account. When set, new drafts are tagged
   /// with this owner and queries filter by it (plus legacy NULL rows).
@@ -645,8 +654,8 @@ class DraftStorageService {
     }
   }
 
-  /// Basenames of draft-local audio files referenced by any surviving draft,
-  /// across all accounts.
+  /// Basenames of draft-local audio files referenced by any surviving draft or
+  /// saved sound, across all accounts.
   ///
   /// The same local audio file can be shared by a draft and its publish copy —
   /// `copyWith` carries [DivineVideoDraft.editorStateHistory] and
@@ -655,12 +664,17 @@ class DraftStorageService {
   /// directly (audio paths live there, not in an indexed column) and never
   /// throws: a corrupt blob is logged and skipped.
   ///
+  /// My Sounds is scanned too. Audio imported from the Library is written
+  /// under whichever draft was open at the time, so deleting that draft would
+  /// otherwise reclaim a file a saved sound still points at — and unlike a
+  /// stale path, a deleted file cannot be healed on load (#7977).
+  ///
   /// Callers run this *after* deleting the draft they are cleaning up, so
   /// every row it sees is a survivor and there is nothing to exclude.
   Future<Set<String>> _referencedLocalAudioFilenames() async {
     final rows = await _draftsDao.getAllDrafts();
     final documentsPath = await getDocumentsPath();
-    final filenames = <String>{};
+    final filenames = <String>{..._savedSoundAudioFilenames()};
 
     for (final row in rows) {
       final DivineVideoDraft draft;
@@ -683,6 +697,15 @@ class DraftStorageService {
     }
 
     return filenames;
+  }
+
+  /// Basenames of draft-local audio files a saved sound points at, or empty
+  /// when this instance was built without access to storage.
+  Set<String> _savedSoundAudioFilenames() {
+    final preferences = _preferences;
+    return preferences == null
+        ? const {}
+        : SavedSoundsService.referencedLocalAudioFilenames(preferences);
   }
 
   /// Basenames of clip ghost-frame files referenced by any surviving clip,
@@ -778,11 +801,13 @@ class DraftStorageService {
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );
-    // No drafts survive a clear-all, so nothing can still reference the audio.
+    // No draft survives a clear-all, but My Sounds does — and a saved sound
+    // can point at a file the cleared drafts owned (#7977).
     await FileCleanupService.deleteDraftAudioFiles(
       allAudioPaths,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
+      referencedAudioFilenames: _savedSoundAudioFilenames(),
     );
   }
 }

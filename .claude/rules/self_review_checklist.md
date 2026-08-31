@@ -75,7 +75,18 @@ Localization and brand:
 - [ ] Every user-facing string will come from `context.l10n` — plan ARB
   keys up front, not at commit time. See
   [`localization.md`](localization.md).
+- [ ] Every ARB key this change **adds** is read through `context.l10n` in
+  the same change. A key that lands ahead of its call site gets translated
+  into 21 locales and never rendered; the orphan ratchet (#3630) fails CI on
+  it, and `arb_consistency_test` will not — an orphan exists in all 22
+  locales, so parity passes. See
+  [`localization.md`](localization.md#orphaned-keys-never-add-a-key-ahead-of-its-call-site).
 - [ ] Copy matches brand voice (`brand-guidelines/TONE_OF_VOICE.md`).
+- [ ] If the change writes or edits a non-English ARB value, it follows the
+  per-locale register, dialect, and locked-term decisions in
+  [`mobile/docs/LOCALIZATION_STYLE_GUIDE.md`](../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md).
+  A green ARB parity guard proves the key exists, not that it reads like
+  Divine in that language.
 
 ---
 
@@ -99,6 +110,16 @@ Design system (check `divine_ui` first — most review nits map here):
 - [ ] Interactive tap targets (`GestureDetector`, `InkWell`, custom) are
   wrapped in `Semantics(button: true, label: ...)`. Decorative images
   use `ExcludeSemantics`. See [`accessibility.md`](accessibility.md).
+- [ ] Every text field sets `keyboardType`, `textCapitalization` and
+  `textInputAction` deliberately. Single-line fields chain: the last one
+  is `.done`, every earlier one `.next`; Flutter traverses focus unless
+  `onEditingComplete` overrides that default. A multiline field is not in
+  the chain — it sets `.multiline`, `newline`, and `maxLines > 1`, so a
+  form ending in one has no `done` field. Plus `autocorrect: false` on
+  identifiers. Credential fields share an `AutofillGroup`, and successful
+  submission calls `TextInput.finishAutofillContext()`. Adding a field
+  means re-checking the one above it.
+  See [`ui_theming.md`](ui_theming.md#text-fields).
 
 Composition and style:
 
@@ -111,6 +132,26 @@ Composition and style:
   classes.
 - [ ] Check `context.mounted` after every `await` before using
   `BuildContext`.
+
+Nostr identifiers:
+
+- [ ] No Nostr identifier is shortened on its way into a log, analytics or
+  debug sink. Drop the `.substring(0, 8)`, the `preview` local, and the mask
+  helper — the full value is in scope at every site this has ever fired on. UI
+  shortening stays allowed, but prefer `maxLines` + `TextOverflow.ellipsis` to
+  cutting the string. Frozen at zero by `check_nostr_id_log_truncation.sh`
+  (#3372); see [`AGENTS.md`](../../AGENTS.md) → Nostr And Async Rules.
+- [ ] Every pubkey reaching a log/debug sink goes through `pubkeyForLogs`, so
+  the line carries the full npub **and** the full hex. Hex greps against relay
+  and backend rows; npub is the only form a person can paste into a client, and
+  a Zendesk report is one-way, so the log has to carry both. Pass `whenNull:`
+  when the call site's own wording for an absent value is itself diagnostic,
+  and map a collection rather than passing it. A count, boolean or joined
+  string is not a pubkey and needs nothing. Frozen at zero by
+  `check_pubkey_log_encoding.sh` (#8066).
+- [ ] A **secret** — `nsec`, `ncryptsec`, a raw private key — is not logged at
+  all, whole or shortened. Truncation is not a security control; omit or redact
+  whole (`BugReportConfig.sensitivePatterns`, `sanitizeForCrashReport`).
 
 Scroll and navigation:
 
@@ -171,6 +212,17 @@ Testing:
 - [ ] New public method on a strict-coverage package (currently
   `mobile/packages/divine_ui`) has a matching test **in the same PR**.
   See [`testing.md`](testing.md#strict-coverage-packages).
+- [ ] Every test you add can FAIL. No `expect(true, isTrue)`, no test body
+  that asserts nothing it controls. Frozen at zero by
+  `check_placeholder_tests.sh` (#3340) — a construction smoke test asserts
+  `expect(() => Foo(), returnsNormally)`, a lifecycle pump asserts
+  `expect(tester.takeException(), isNull)`. See
+  [`testing.md`](testing.md#a-test-must-be-able-to-fail).
+- [ ] No new `skip:` / `@Skip`. A failing test on your branch is caused by
+  your branch — fix it, delete it, or quarantine it behind a tag, never
+  silence it. Frozen per file by `check_skip_ceiling.sh`; a baselined file
+  may only shrink. See
+  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault).
 
 ---
 

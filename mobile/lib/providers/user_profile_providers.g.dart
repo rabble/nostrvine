@@ -158,6 +158,212 @@ final class UserProfileReactiveFamily extends $Family
   String toString() => r'userProfileReactiveProvider';
 }
 
+/// Resolves profiles for the accounts the viewer has blocked.
+///
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
+
+@ProviderFor(blockedUserProfiles)
+final blockedUserProfilesProvider = BlockedUserProfilesFamily._();
+
+/// Resolves profiles for the accounts the viewer has blocked.
+///
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
+
+final class BlockedUserProfilesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, UserProfile>>,
+          Map<String, UserProfile>,
+          FutureOr<Map<String, UserProfile>>
+        >
+    with
+        $FutureModifier<Map<String, UserProfile>>,
+        $FutureProvider<Map<String, UserProfile>> {
+  /// Resolves profiles for the accounts the viewer has blocked.
+  ///
+  /// Fetching the set in bounded batches avoids starting a REST request plus two
+  /// relay queries for every uncached row when a synced mute list is large.
+  BlockedUserProfilesProvider._({
+    required BlockedUserProfilesFamily super.from,
+    required Set<String> super.argument,
+  }) : super(
+         retry: null,
+         name: r'blockedUserProfilesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedUserProfilesHash();
+
+  @override
+  String toString() {
+    return r'blockedUserProfilesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, UserProfile>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, UserProfile>> create(Ref ref) {
+    final argument = this.argument as Set<String>;
+    return blockedUserProfiles(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BlockedUserProfilesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$blockedUserProfilesHash() =>
+    r'85f3707aa089783ffa55e4854d874a4a7bd3b68f';
+
+/// Resolves profiles for the accounts the viewer has blocked.
+///
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
+
+final class BlockedUserProfilesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<Map<String, UserProfile>>,
+          Set<String>
+        > {
+  BlockedUserProfilesFamily._()
+    : super(
+        retry: null,
+        name: r'blockedUserProfilesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Resolves profiles for the accounts the viewer has blocked.
+  ///
+  /// Fetching the set in bounded batches avoids starting a REST request plus two
+  /// relay queries for every uncached row when a synced mute list is large.
+
+  BlockedUserProfilesProvider call(Set<String> pubkeys) =>
+      BlockedUserProfilesProvider._(argument: pubkeys, from: this);
+
+  @override
+  String toString() => r'blockedUserProfilesProvider';
+}
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+@ProviderFor(blockedUserProfile)
+final blockedUserProfileProvider = BlockedUserProfileFamily._();
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+final class BlockedUserProfileProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<UserProfile?>,
+          UserProfile?,
+          Stream<UserProfile?>
+        >
+    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
+  /// Watches a blocked account's cached profile without starting another fetch.
+  ///
+  /// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+  /// keeps each tile reactive to that hydration and later profile updates.
+  BlockedUserProfileProvider._({
+    required BlockedUserProfileFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'blockedUserProfileProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedUserProfileHash();
+
+  @override
+  String toString() {
+    return r'blockedUserProfileProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<UserProfile?> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<UserProfile?> create(Ref ref) {
+    final argument = this.argument as String;
+    return blockedUserProfile(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BlockedUserProfileProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$blockedUserProfileHash() =>
+    r'939f57fd466b49999d7e73e97937c0660e1e1d77';
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+final class BlockedUserProfileFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
+  BlockedUserProfileFamily._()
+    : super(
+        retry: null,
+        name: r'blockedUserProfileProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Watches a blocked account's cached profile without starting another fetch.
+  ///
+  /// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+  /// keeps each tile reactive to that hydration and later profile updates.
+
+  BlockedUserProfileProvider call(String pubkey) =>
+      BlockedUserProfileProvider._(argument: pubkey, from: this);
+
+  @override
+  String toString() => r'blockedUserProfileProvider';
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
@@ -273,6 +479,14 @@ final class FetchUserProfileFamily extends $Family
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 @ProviderFor(profileVanished)
 final profileVanishedProvider = ProfileVanishedFamily._();
@@ -283,16 +497,32 @@ final profileVanishedProvider = ProfileVanishedFamily._();
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 final class ProfileVanishedProvider
-    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
-    with $FutureModifier<bool>, $StreamProvider<bool> {
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
   /// Whether the account behind [pubkey] has requested NIP-62 deletion.
   ///
   /// Backed by the durable `vanished_profiles` table, so a cold start resolves
   /// without a network round trip, and it flips live when a fetch discovers a
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
+  ///
+  /// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+  /// window belongs to the source stream, so returning a `Stream<bool>` would
+  /// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+  /// Building the profile repository subscribes the source, so the wait starts
+  /// no later than the moment the profile graph can leave `isLoading`; that
+  /// ordering is what keeps a vanished account from rendering a generated name
+  /// first (#8208), and `repository_providers_test.dart` pins it.
   ProfileVanishedProvider._({
     required ProfileVanishedFamily super.from,
     required String super.argument,
@@ -316,13 +546,21 @@ final class ProfileVanishedProvider
 
   @$internal
   @override
-  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  Stream<bool> create(Ref ref) {
+  bool create(Ref ref) {
     final argument = this.argument as String;
     return profileVanished(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
   }
 
   @override
@@ -336,7 +574,7 @@ final class ProfileVanishedProvider
   }
 }
 
-String _$profileVanishedHash() => r'9c15d7c790f73dd872f1cf8e8c690ef0f411ba17';
+String _$profileVanishedHash() => r'29720937045a4363d508c27d1a2bf503d6f41bf7';
 
 /// Whether the account behind [pubkey] has requested NIP-62 deletion.
 ///
@@ -344,9 +582,17 @@ String _$profileVanishedHash() => r'9c15d7c790f73dd872f1cf8e8c690ef0f411ba17';
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 
 final class ProfileVanishedFamily extends $Family
-    with $FunctionalFamilyOverride<Stream<bool>, String> {
+    with $FunctionalFamilyOverride<bool, String> {
   ProfileVanishedFamily._()
     : super(
         retry: null,
@@ -362,6 +608,14 @@ final class ProfileVanishedFamily extends $Family
   /// without a network round trip, and it flips live when a fetch discovers a
   /// new deletion. This — not the profile provider — drives the deleted-account
   /// treatment in the inbox and the following bar.
+  ///
+  /// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+  /// window belongs to the source stream, so returning a `Stream<bool>` would
+  /// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+  /// Building the profile repository subscribes the source, so the wait starts
+  /// no later than the moment the profile graph can leave `isLoading`; that
+  /// ordering is what keeps a vanished account from rendering a generated name
+  /// first (#8208), and `repository_providers_test.dart` pins it.
 
   ProfileVanishedProvider call(String pubkey) =>
       ProfileVanishedProvider._(argument: pubkey, from: this);

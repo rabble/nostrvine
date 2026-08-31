@@ -99,6 +99,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => status,
           ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
         ],
       );
       // Route normalization is required for the parent-contact fallbacks.

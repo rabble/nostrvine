@@ -22,6 +22,8 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const pubkey2 =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const currentUserPubkey =
+      'facade00facade00facade00facade00facade00facade00facade00facade00';
 
   final now = DateTime.now();
 
@@ -52,6 +54,8 @@ void main() {
       required MyFollowingState state,
       List<dynamic> additionalOverrides = const [],
       ValueChanged<String>? onUserTapped,
+      Locale? locale,
+      String viewerPubkey = currentUserPubkey,
     }) {
       whenListen(
         mockFollowingBloc,
@@ -60,11 +64,15 @@ void main() {
       );
 
       return testMaterialApp(
+        locale: locale,
         additionalOverrides: additionalOverrides,
         home: BlocProvider<MyFollowingBloc>.value(
           value: mockFollowingBloc,
           child: Scaffold(
-            body: FollowingBar(onUserTapped: onUserTapped ?? (_) {}),
+            body: FollowingBar(
+              onUserTapped: onUserTapped ?? (_) {},
+              currentUserPubkey: viewerPubkey,
+            ),
           ),
         ),
       );
@@ -78,6 +86,67 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(FollowingBar), findsOneWidget);
+        expect(find.byType(UserAvatar), findsNothing);
+        expect(find.byType(SizedBox), findsOneWidget);
+      });
+
+      testWidgets('omits the viewer when their contact list self-follows', (
+        tester,
+      ) async {
+        final profile1 = createTestProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+        );
+        final selfProfile = createTestProfile(
+          pubkey: currentUserPubkey,
+          displayName: 'Me',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [pubkey1, currentUserPubkey],
+            ),
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                pubkey1,
+              ).overrideWith((ref) async => profile1),
+              fetchUserProfileProvider(
+                currentUserPubkey,
+              ).overrideWith((ref) async => selfProfile),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UserAvatar), findsOneWidget);
+        expect(find.text('Me'), findsNothing);
+      });
+
+      testWidgets('collapses when the viewer is the only followed pubkey', (
+        tester,
+      ) async {
+        final selfProfile = createTestProfile(
+          pubkey: currentUserPubkey,
+          displayName: 'Me',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [currentUserPubkey],
+            ),
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                currentUserPubkey,
+              ).overrideWith((ref) async => selfProfile),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
         expect(find.byType(UserAvatar), findsNothing);
         expect(find.byType(SizedBox), findsOneWidget);
       });
@@ -159,9 +228,11 @@ void main() {
       Future<void> pumpBar(
         WidgetTester tester, {
         required bool vanished,
+        Locale? locale,
       }) async {
         await tester.pumpWidget(
           buildSubject(
+            locale: locale,
             state: const MyFollowingState(
               status: MyFollowingStatus.success,
               followingPubkeys: [pubkey1],
@@ -171,9 +242,7 @@ void main() {
                 (ref) async =>
                     createTestProfile(pubkey: pubkey1, displayName: 'Alice'),
               ),
-              profileVanishedProvider(
-                pubkey1,
-              ).overrideWith((ref) => Stream.value(vanished)),
+              profileVanishedProvider(pubkey1).overrideWith((ref) => vanished),
             ],
           ),
         );
@@ -193,10 +262,13 @@ void main() {
       });
 
       testWidgets('resolves the copy from l10n', (tester) async {
-        await pumpBar(tester, vanished: true);
+        // Pump in German and require the German string. Asserting the German
+        // copy is *absent* from an English pump passes whether or not the
+        // widget reads l10n, so it proved nothing.
+        await pumpBar(tester, vanished: true, locale: const Locale('de'));
 
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.profileDeletedAccountName), findsNothing);
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
       });
 
       testWidgets('leaves a live account untouched', (tester) async {

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/nip07_interop.dart' as nip07;
 import 'package:unified_logger/unified_logger.dart';
 
@@ -145,7 +146,7 @@ class Nip07Service {
         category: LogCategory.system,
       );
       Log.verbose(
-        'Public key: $pubkey',
+        'Public key: ${pubkeyForLogs(pubkey)}',
         name: 'Nip07Service',
         category: LogCategory.system,
       );

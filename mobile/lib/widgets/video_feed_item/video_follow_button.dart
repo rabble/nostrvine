@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -132,7 +133,7 @@ class VideoFollowButtonView extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               Log.info(
-                'Follow button tapped for $pubkey',
+                'Follow button tapped for ${pubkeyForLogs(pubkey)}',
                 name: 'VideoFollowButton',
                 category: LogCategory.ui,
               );

@@ -4,6 +4,9 @@
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/utils/draft_audio_path_resolver.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -103,6 +106,10 @@ class AudioExtractionService {
   ///
   /// [videoPath] - Path to the source video file.
   /// [speed] - Optional playback speed to apply to the extracted audio.
+  /// [outputDirectory] - Where to write the file. Defaults to the temporary
+  /// directory, which suits one-shot consumers that read the audio and drop
+  /// it. Pass a persistent directory when the result outlives the session —
+  /// see [extractAudioForDraft].
   ///
   /// Returns an [AudioExtractionResult] containing the path to the extracted
   /// audio file and metadata (duration, file size, SHA-256 hash, MIME type).
@@ -114,6 +121,7 @@ class AudioExtractionService {
   Future<AudioExtractionResult> extractAudio({
     required String videoPath,
     double? speed,
+    Directory? outputDirectory,
   }) async {
     final effectiveSpeed = speed != null && speed > 0 ? speed : 1.0;
 
@@ -159,9 +167,11 @@ class AudioExtractionService {
     }
 
     // Generate output path — extension must match AudioFormat.wav
-    final tempDir = await getTemporaryDirectory();
+    final isTemporary = outputDirectory == null;
+    final directory = outputDirectory ?? await getTemporaryDirectory();
+    await directory.create(recursive: true);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputPath = '${tempDir.path}/extracted_audio_$timestamp.wav';
+    final outputPath = '${directory.path}/extracted_audio_$timestamp.wav';
 
     Log.debug(
       'Extracting audio to: $outputPath',
@@ -199,8 +209,11 @@ class AudioExtractionService {
       throw const AudioExtractionException('Audio file was not created');
     }
 
-    // Track this file for potential cleanup
-    _temporaryFiles.add(outputPath);
+    // Track this file for potential cleanup. A caller-owned directory is not
+    // tracked: `cleanupTemporaryFiles()` with no argument sweeps the whole
+    // list, and a draft-owned track must not be reachable that way. Deleting
+    // one by explicit path still works — see [cleanupAudioFile].
+    if (isTemporary) _temporaryFiles.add(outputPath);
 
     // Calculate hash and get file size using streaming (memory efficient)
     Log.debug(
@@ -311,6 +324,28 @@ class AudioExtractionService {
       );
       throw AudioExtractionException('Failed to merge audio', cause: e);
     }
+  }
+
+  /// Extracts audio that will be attached to a draft's timeline.
+  ///
+  /// Same contract as [extractAudio], except the file is written where it can
+  /// survive: an extracted track is persisted into the draft's editor history,
+  /// and the temporary directory is both replaced on an app update and
+  /// purgeable by iOS at any time, so a track left there goes silent without
+  /// warning. The caller owns the file from here — draft deletion reclaims it
+  /// through [AudioEvent.localFilePath].
+  Future<AudioExtractionResult> extractAudioForDraft({
+    required String videoPath,
+    double? speed,
+  }) async => extractAudio(
+    videoPath: videoPath,
+    speed: speed,
+    outputDirectory: await _draftAudioDirectory(),
+  );
+
+  static Future<Directory> _draftAudioDirectory() async {
+    final docs = await getApplicationDocumentsDirectory();
+    return Directory(p.join(docs.path, extractedClipAudioDirName));
   }
 
   /// Cleans up temporary audio files created by this service.

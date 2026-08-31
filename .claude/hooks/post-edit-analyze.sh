@@ -23,6 +23,20 @@ if [[ ! -f "$FILE_PATH" ]]; then
   exit 0
 fi
 
+# If the build-artifact purge removed package resolution state, analyzer output
+# is all missing-package noise until pub get runs again.
+FILE_DIR=$(dirname "$FILE_PATH")
+CANONICAL_FILE_PATH="$FILE_PATH"
+if CANONICAL_FILE_DIR=$(cd -P "$FILE_DIR" 2>/dev/null && pwd); then
+  CANONICAL_FILE_PATH="$CANONICAL_FILE_DIR/$(basename "$FILE_PATH")"
+fi
+REPO_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+if [[ -n "$REPO_ROOT" && "$CANONICAL_FILE_PATH" == "$REPO_ROOT"/mobile/* && ! -f "$REPO_ROOT/mobile/.dart_tool/package_config.json" ]]; then
+  jq -n --arg path "$REPO_ROOT/mobile/.dart_tool/package_config.json" \
+    '{systemMessage: ("Skipped Dart analysis because " + $path + " is missing. Run `cd mobile && flutter pub get` before relying on post-edit analysis in this worktree.")}'
+  exit 0
+fi
+
 # Run analyzer on the specific file
 ANALYSIS_OUTPUT=$(dart analyze "$FILE_PATH" 2>&1 || true)
 

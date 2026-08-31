@@ -144,7 +144,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
     }
 
     final published = await _publishEventToNostr(signedAudioEvent);
-    if (!published) {
+    if (published != _EventPublishOutcome.published) {
       Log.error(
         'Failed to publish imported audio event to relays',
         name: 'VideoEventPublisher',
@@ -235,7 +235,10 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       ),
       tags: bridge.toTags(),
     );
-    if (event == null || !await _publishEventToNostr(event)) return null;
+    if (event == null ||
+        await _publishEventToNostr(event) != _EventPublishOutcome.published) {
+      return null;
+    }
     return event.id;
   }
 
@@ -445,7 +448,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
 
       final publishResult = await _publishEventToNostr(signedAudioEvent);
 
-      if (!publishResult) {
+      if (publishResult != _EventPublishOutcome.published) {
         Log.error(
           'Failed to publish audio event to relays',
           name: 'VideoEventPublisher',

@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # The classic session holds at least one clip: the top bar's continue button
 # goes live and the row above the preview reveals delete-last-clip.

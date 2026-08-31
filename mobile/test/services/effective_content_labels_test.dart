@@ -4,7 +4,7 @@ import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 
 /// Fake exposing only the four lookup getters that
-/// [resolveEffectiveContentLabels] consumes; all other members are unused and
+/// the effective-label resolvers consume; all other members are unused and
 /// fall through to [noSuchMethod].
 class _FakeModerationLabelService implements ModerationLabelService {
   _FakeModerationLabelService({
@@ -109,6 +109,33 @@ void main() {
   group('resolveEffectiveContentLabels', () {
     test('returns empty when there are no labels, service, or hashtags', () {
       expect(resolveEffectiveContentLabels(_video()), isEmpty);
+    });
+
+    test('preserves creator and trusted provenance before merging', () {
+      final video = _video(
+        id: 'source-aware',
+        contentWarningLabels: ['profanity', 'violence'],
+      );
+      final service = _FakeModerationLabelService(
+        byEventId: {
+          'source-aware': [_label('violence'), _label('hate')],
+        },
+      );
+
+      final sources = resolveEffectiveContentLabelSources(
+        video,
+        moderationLabelService: service,
+      );
+
+      expect(sources.creator, ['profanity', 'violence']);
+      expect(sources.trusted, ['violence', 'hate']);
+      expect(
+        resolveEffectiveContentLabels(
+          video,
+          moderationLabelService: service,
+        ),
+        ['profanity', 'violence', 'hate'],
+      );
     });
 
     group('creator self-labels', () {

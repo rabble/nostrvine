@@ -190,7 +190,7 @@ class CollaboratorConfirmationRepository {
     if (collaboratorPubkey != _currentUserPubkey) {
       Log.warning(
         'markLocal called for non-current-user pubkey '
-        '$collaboratorPubkey; ignoring',
+        '${pubkeyForLogs(collaboratorPubkey)}; ignoring',
         name: 'CollaboratorConfirmationRepository',
         category: LogCategory.system,
       );
@@ -278,7 +278,7 @@ class CollaboratorConfirmationRepository {
     if (!taggedPubkeys.contains(normalizedEventPubkey)) {
       Log.info(
         'Ignoring kind-$_kindCollaboratorResponse from non-tagged pubkey '
-        '${event.pubkey} for $videoAddress',
+        '${pubkeyForLogs(event.pubkey)} for $videoAddress',
         name: 'CollaboratorConfirmationRepository',
         category: LogCategory.system,
       );

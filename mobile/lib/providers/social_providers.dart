@@ -9,8 +9,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
-import 'package:openvine/config/app_config.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -53,9 +54,12 @@ part 'social_providers.g.dart';
 /// `connectivity_plus` reports any non-`none` result, so work queued during a
 /// brief network drop is re-driven the moment connectivity returns — without
 /// waiting for an app-foreground transition. The sweep short-circuits when
-/// nothing is retryable. `→ none` transitions are filtered out because
-/// [DmReactionRetryService] has no offline gate of its own — an offline pass
-/// would burn each row's retry budget on attempts that deterministically fail.
+/// nothing is retryable. For [DmReactionRetryService], `→ none` transitions
+/// are filtered out because a sweep fired on going offline has nothing to do:
+/// its own offline gate skips the pass anyway. The filter is a cheap
+/// short-circuit for the reaction consumer; the profile-save consumer also
+/// shares this stream and relies on the filter to avoid a futile offline
+/// trigger until it gains the same guard.
 Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
     .onConnectivityChanged
     .where((results) => results.any((r) => r != ConnectivityResult.none))
@@ -151,10 +155,7 @@ Stream<void> dmMessageRetryTriggerWithRelayRepair({
 
 /// Whether two connectivity reports describe the same set of transports.
 /// Order-insensitive: `connectivity_plus` gives no ordering guarantee.
-bool _sameConnectivity(
-  List<ConnectivityResult> a,
-  List<ConnectivityResult> b,
-) {
+bool _sameConnectivity(List<ConnectivityResult> a, List<ConnectivityResult> b) {
   final aSet = a.toSet();
   final bSet = b.toSet();
   return aSet.length == bSet.length && aSet.containsAll(bSet);
@@ -458,6 +459,10 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
     return null;
   }
 
+  // The retry service can be constructed above the app composition tree.
+  // Watching DmRepository makes its downward resolver wiring deterministic
+  // before the fire-immediately sweep can settle a retry through the pool.
+  ref.watch(dmRepositoryProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
 
   // Bridge the synchronous AppForeground notifier into a Stream<bool> so the
@@ -476,6 +481,7 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
     reactionsRepository: reactionsRepository,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,
+    isOffline: dmSendConnectivityIsOffline,
   );
 
   service.initialize().catchError((e) {
@@ -560,15 +566,10 @@ ProductEventQueue productEventQueue(Ref ref) {
     // Read fresh at flush so a logout/login as a different account only
     // publishes that account's own queued events under its own signature.
     currentOwnerPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,
+    // AnalyticsService enables delivery only after it has loaded consent and
+    // confirmed this is an explicitly enabled build (the queue defaults to
+    // sending disabled).
   );
-
-  queue.recoverPublishingAndFlush().catchError((Object e) {
-    Log.debug(
-      'Initial ProductEventQueue recovery/flush failed: $e',
-      name: 'AppProviders',
-      category: LogCategory.system,
-    );
-  });
 
   ref.listen<bool>(appForegroundProvider, (_, next) {
     if (next) {
@@ -588,6 +589,18 @@ ProductEventQueue productEventQueue(Ref ref) {
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
+String resolveProductAnalyticsRelease({
+  required String runtimeVersion,
+  required String environment,
+  required String stagingOverride,
+}) {
+  final isStaging = environment.toUpperCase() == 'STAGING';
+  final isSmokeMarker = RegExp(
+    r'^staging-smoke-[0-9a-f]{32}$',
+  ).hasMatch(stagingOverride);
+  return isStaging && isSmokeMarker ? stagingOverride : runtimeVersion;
+}
+
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
   final db = ref.watch(databaseProvider);
@@ -595,17 +608,49 @@ AnalyticsService analyticsService(Ref ref) {
   final viewPublisher = ref.watch(viewEventPublisherProvider);
   final retryService = ref.watch(viewEventRetryServiceProvider);
   final productQueue = ref.watch(productEventQueueProvider);
+  final appVersion = resolveProductAnalyticsRelease(
+    runtimeVersion: ref.watch(appVersionProvider),
+    environment: const String.fromEnvironment('DEFAULT_ENV'),
+    stagingOverride: const String.fromEnvironment('PRODUCT_ANALYTICS_RELEASE'),
+  );
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,
     productEventQueue: productQueue,
     currentUserPubkey: () => authService.currentPublicKeyHex,
-    appVersion: () => AppConfig.appVersion,
+    appVersion: () => appVersion,
   );
 
+  var lastPubkey = authService.currentPublicKeyHex;
+  final unregisterBeforeTeardown = authService
+      .registerBeforeSessionTeardownCallback(() async {
+        await service.handleIdentityChange();
+        lastPubkey = null;
+      });
+  final authStateSubscription = authService.authStateStream.listen((_) {
+    final nextPubkey = authService.currentPublicKeyHex;
+    final previousPubkey = lastPubkey;
+    lastPubkey = nextPubkey;
+    if (previousPubkey != nextPubkey) {
+      unawaited(
+        service.handleIdentityChange().catchError((Object error) {
+          Log.warning(
+            'Failed to apply product analytics identity boundary: $error',
+            name: 'SocialProviders',
+            category: LogCategory.system,
+          );
+        }),
+      );
+    }
+  });
+
   // Ensure cleanup on disposal
-  ref.onDispose(service.dispose);
+  ref.onDispose(() {
+    unregisterBeforeTeardown();
+    unawaited(authStateSubscription.cancel());
+    service.dispose();
+  });
 
   // Initialize asynchronously but don't block the provider
   Future.microtask(service.initialize);
@@ -643,6 +688,9 @@ DraftStorageService draftStorageService(Ref ref) {
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
     ownerPubkey: ownerPubkey,
+    // Deleting a draft reclaims its audio files; My Sounds can point at one of
+    // them, so cleanup has to be able to see the saved sound buckets.
+    preferences: ref.watch(sharedPreferencesProvider),
   );
 }
 
@@ -679,10 +727,13 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // Escaping cleanup reads must go through port providers; direct reads of
   // auth-dependent providers from this callback can recreate #7389.
   //
-  // When [deleteUserData] is true (destructive sign-out or identity change),
-  // also deletes per-user DAO rows scoped by [userPubkey].
-  // Non-destructive sign-out (account switch) skips per-user deletion since
-  // those rows are already scoped by ownerPubkey.
+  // Every delete here is scoped to [userPubkey], the account being left. The
+  // DM family used to be wiped unqualified on this path, which destroyed every
+  // account's decrypted history on an ordinary switch (#7325).
+  //
+  // [deleteUserData] additionally widens the destructive paths: it drops rows
+  // this account may still need (removal tombstones, retryable reactions) that
+  // a plain switch deliberately preserves.
   service.onDatabaseCleanup =
       ({String? userPubkey, bool deleteUserData = false}) async {
         Future<void> safeCleanup(
@@ -693,14 +744,31 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             await fn();
           } catch (e) {
             Log.warning(
-              'Failed to clean $name for ${userPubkey ?? "unknown user"}: $e',
+              'Failed to clean $name for ${pubkeyForLogs(userPubkey, whenNull: "unknown user")}: $e',
               name: 'UserDataCleanup',
               category: LogCategory.auth,
             );
           }
         }
 
-        await safeCleanup(
+        Future<void> requiredCleanup(
+          String name,
+          Future<void> Function() fn,
+        ) async {
+          try {
+            await fn();
+          } catch (e) {
+            Log.error(
+              'Required account-boundary cleanup failed for $name and '
+              '${pubkeyForLogs(userPubkey, whenNull: "unknown user")}: $e',
+              name: 'UserDataCleanup',
+              category: LogCategory.auth,
+            );
+            rethrow;
+          }
+        }
+
+        await requiredCleanup(
           'dmRepository',
           () => ref.read(dmListeningStopProvider)(),
         );
@@ -716,19 +784,28 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             category: LogCategory.auth,
           );
         }
-        await safeCleanup('directMessages', db.directMessagesDao.clearAll);
-        await safeCleanup('conversations', db.conversationsDao.clearAll);
-        // Raw failed-decrypt gift wraps are encrypted DM data of the same
-        // class as direct_messages — wipe them on the same path so they never
-        // outlive the account's decrypted DMs. See #5202.
-        await safeCleanup('pendingGiftWraps', db.pendingGiftWrapsDao.clearAll);
-        // Wipe the processed-wrap dedup ledger on the same path: a stale ledger
-        // must never suppress re-population of an account's reactions/deletions
-        // after its DM data is cleared. See #5452.
-        await safeCleanup(
-          'processedGiftWraps',
-          db.processedGiftWrapsDao.clearAll,
-        );
+        // A switch must leave no DM data attributable to the departing account
+        // and must never expose ambiguous legacy data to the incoming account.
+        // Known-owner rows for every other saved account remain intact. When
+        // the departing account is unknown, delete only NULL/empty-owner rows.
+        // See #7325.
+        await requiredCleanup('DM tables', () async {
+          await db.transaction(() async {
+            if (userPubkey != null) {
+              await db.directMessagesDao.clearForAccountSwitch(userPubkey);
+              await db.conversationsDao.clearForAccountSwitch(userPubkey);
+              // Raw failed-decrypt wraps and their terminal dedup ledger must
+              // never outlive the decrypted DM data they accompany.
+              await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
+              await db.processedGiftWrapsDao.clearForAccountSwitch(userPubkey);
+            } else {
+              await db.directMessagesDao.clearUnowned();
+              await db.conversationsDao.clearUnowned();
+              await db.pendingGiftWrapsDao.clearUnowned();
+              await db.processedGiftWrapsDao.clearUnowned();
+            }
+          });
+        });
         if (deleteUserData && userPubkey != null) {
           await safeCleanup(
             'removedConversations',
@@ -764,9 +841,26 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           'identityVerifications',
           db.identityVerificationsDao.clearAll,
         );
-        // Clear DM sync cursors so the next login triggers a full re-fetch
-        // from relays instead of using stale `since:` boundaries.
-        await safeCleanup('dmSyncState', () => DmSyncState(prefs).clearAll());
+        // Clear the leaving account's DM sync cursors so its next login
+        // re-fetches from relays instead of resuming from a `since:` boundary
+        // whose local rows have just been deleted.
+        //
+        // Per-pubkey, not clearAll: the sweep is prefix-based over every
+        // account's keys, so a switch used to drop the *other* accounts'
+        // cursors and drain-complete flags too, re-opening a full history
+        // re-download for each of them. `clear` has existed for this since it
+        // was written — its doc comment already says "Called on account
+        // switch" — it just was never wired up. See #7325.
+        //
+        // main.dart's onDatabaseReset callers keep clearAll: there the whole
+        // database was recreated, so every account's cursors are genuinely
+        // stale.
+        if (userPubkey != null) {
+          await safeCleanup(
+            'dmSyncState',
+            () => DmSyncState(prefs).clear(userPubkey),
+          );
+        }
 
         // Per-user data cleanup (#2999): only on destructive paths
         if (deleteUserData && userPubkey != null) {
@@ -778,7 +872,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               await fn();
             } catch (e) {
               Log.warning(
-                'Failed to clean $name for $userPubkey: $e',
+                'Failed to clean $name for ${pubkeyForLogs(userPubkey)}: $e',
                 name: 'UserDataCleanup',
                 category: LogCategory.auth,
               );

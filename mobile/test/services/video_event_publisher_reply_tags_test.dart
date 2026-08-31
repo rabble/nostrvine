@@ -161,117 +161,122 @@ void main() {
     ).thenAnswer((_) async => <Event>[publishedEvent]);
   }
 
-  test('adds NIP-22 root tags for a top-level video reply', () async {
-    stubSignAndPublish();
+  group('publishDirectUpload', () {
+    test('adds NIP-22 root tags for a top-level video reply', () async {
+      stubSignAndPublish();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(),
-      replyContext: const VideoReplyContext(
-        rootEventId: rootEventId,
-        rootEventKind: 34236,
-        rootAuthorPubkey: rootAuthorPubkey,
-        rootAddressableId: rootAddressableId,
-      ),
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        replyContext: const VideoReplyContext(
+          rootEventId: rootEventId,
+          rootEventKind: 34236,
+          rootAuthorPubkey: rootAuthorPubkey,
+          rootAddressableId: rootAddressableId,
+        ),
+      );
 
-    expect(result, isTrue);
-    expect(
-      _containsTag(capturedTags, const [
-        'E',
-        rootEventId,
-        '',
-        rootAuthorPubkey,
-      ]),
-      isTrue,
-    );
-    expect(
-      _containsTag(capturedTags, const ['A', rootAddressableId, '']),
-      isTrue,
-    );
-    expect(_containsTag(capturedTags, const ['K', '34236']), isTrue);
-    expect(_containsTag(capturedTags, const ['P', rootAuthorPubkey]), isTrue);
-    expect(
-      _containsTag(capturedTags, const [
-        'e',
-        rootEventId,
-        '',
-        rootAuthorPubkey,
-      ]),
-      isTrue,
-    );
-    expect(
-      _containsTag(capturedTags, const ['a', rootAddressableId, '']),
-      isTrue,
-    );
-    expect(_containsTag(capturedTags, const ['k', '34236']), isTrue);
-    expect(_containsTag(capturedTags, const ['p', rootAuthorPubkey]), isTrue);
-    verifyNever(() => videoEventService.addVideoEvent(any()));
-  });
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'E',
+          rootEventId,
+          '',
+          rootAuthorPubkey,
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const ['A', rootAddressableId, '']),
+        isTrue,
+      );
+      expect(_containsTag(capturedTags, const ['K', '34236']), isTrue);
+      expect(_containsTag(capturedTags, const ['P', rootAuthorPubkey]), isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'e',
+          rootEventId,
+          '',
+          rootAuthorPubkey,
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const ['a', rootAddressableId, '']),
+        isTrue,
+      );
+      expect(_containsTag(capturedTags, const ['k', '34236']), isTrue);
+      expect(_containsTag(capturedTags, const ['p', rootAuthorPubkey]), isTrue);
+      verifyNever(() => videoEventService.addVideoEvent(any()));
+    });
 
-  test('adds NIP-22 parent tags for a nested video reply', () async {
-    stubSignAndPublish();
+    test('adds NIP-22 parent tags for a nested video reply', () async {
+      stubSignAndPublish();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(),
-      replyContext: const VideoReplyContext(
-        rootEventId: rootEventId,
-        rootEventKind: 34236,
-        rootAuthorPubkey: rootAuthorPubkey,
-        rootAddressableId: rootAddressableId,
-        parentCommentId: parentCommentId,
-        parentAuthorPubkey: parentAuthorPubkey,
-      ),
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        replyContext: const VideoReplyContext(
+          rootEventId: rootEventId,
+          rootEventKind: 34236,
+          rootAuthorPubkey: rootAuthorPubkey,
+          rootAddressableId: rootAddressableId,
+          parentCommentId: parentCommentId,
+          parentAuthorPubkey: parentAuthorPubkey,
+        ),
+      );
 
-    expect(result, isTrue);
-    expect(
-      _containsTag(capturedTags, const [
-        'E',
-        rootEventId,
-        '',
-        rootAuthorPubkey,
-      ]),
-      isTrue,
-    );
-    expect(
-      _containsTag(capturedTags, const ['A', rootAddressableId, '']),
-      isTrue,
-    );
-    expect(
-      _containsTag(capturedTags, const [
-        'e',
-        parentCommentId,
-        '',
-        parentAuthorPubkey,
-      ]),
-      isTrue,
-    );
-    expect(_containsTag(capturedTags, const ['k', '1111']), isTrue);
-    expect(_containsTag(capturedTags, const ['p', parentAuthorPubkey]), isTrue);
-  });
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'E',
+          rootEventId,
+          '',
+          rootAuthorPubkey,
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const ['A', rootAddressableId, '']),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'e',
+          parentCommentId,
+          '',
+          parentAuthorPubkey,
+        ]),
+        isTrue,
+      );
+      expect(_containsTag(capturedTags, const ['k', '1111']), isTrue);
+      expect(
+        _containsTag(capturedTags, const ['p', parentAuthorPubkey]),
+        isTrue,
+      );
+    });
 
-  test('can opt a video reply into normal feed visibility', () async {
-    stubSignAndPublish();
+    test('can opt a video reply into normal feed visibility', () async {
+      stubSignAndPublish();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(),
-      replyContext: const VideoReplyContext(
-        rootEventId: rootEventId,
-        rootEventKind: 34236,
-        rootAuthorPubkey: rootAuthorPubkey,
-        rootAddressableId: rootAddressableId,
-      ),
-      addReplyToFeed: true,
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        replyContext: const VideoReplyContext(
+          rootEventId: rootEventId,
+          rootEventKind: 34236,
+          rootAuthorPubkey: rootAuthorPubkey,
+          rootAddressableId: rootAddressableId,
+        ),
+        addReplyToFeed: true,
+      );
 
-    expect(result, isTrue);
-    expect(
-      _containsTag(capturedTags, const [
-        videoReplyVisibilityTagName,
-        videoReplyVisibilityFeedValue,
-      ]),
-      isTrue,
-    );
-    verify(() => videoEventService.addVideoEvent(any())).called(1);
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          videoReplyVisibilityTagName,
+          videoReplyVisibilityFeedValue,
+        ]),
+        isTrue,
+      );
+      verify(() => videoEventService.addVideoEvent(any())).called(1);
+    });
   });
 }

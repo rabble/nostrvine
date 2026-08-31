@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Modal sheet listing every reactor on a DM message.
@@ -142,9 +143,30 @@ class _ReactorRow extends ConsumerWidget {
       userProfileReactiveProvider(reaction.reactorPubkey),
     );
     final profile = profileAsync.asData?.value;
-    final name =
-        profile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(reaction.reactorPubkey);
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(reaction.reactorPubkey),
+    );
+
+    // A reactor is a DM peer, so it resolves through the same chain as the
+    // conversation header and the inbox row — otherwise the one sheet a
+    // "Deleted account" thread can open names its reactors a different way.
+    // In a group thread the reactor need not be the counterparty at all, so
+    // this is the only DM surface that can name a third participant.
+    final isVanished = ref.watch(
+      profileVanishedProvider(reaction.reactorPubkey),
+    );
+
+    final name = dmPeerDisplayName(
+      context,
+      pubkeyHex: reaction.reactorPubkey,
+      isVanished: isVanished,
+      profile: profile,
+      isResolving: isResolving,
+    );
+    final isIdentityResolving = isResolving && name.isEmpty;
+    final visualName = name.isEmpty
+        ? UserProfile.defaultDisplayNameFor(reaction.reactorPubkey)
+        : name;
 
     final isFailed = reaction.publishStatus == DmReactionPublishStatus.failed;
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
@@ -157,7 +179,10 @@ class _ReactorRow extends ConsumerWidget {
               context.l10n.dmReactionChipFailedA11yLabel,
             _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
           }
-        : context.l10n.dmReactionChipOtherA11yLabel(name, reaction.emoji);
+        : context.l10n.dmReactionChipOtherA11yLabel(
+            isIdentityResolving ? context.l10n.commonLoading : name,
+            reaction.emoji,
+          );
 
     return Semantics(
       button: isOwn && !isPending,
@@ -172,18 +197,28 @@ class _ReactorRow extends ConsumerWidget {
           // cornerRadius == size / 2 renders a true circle whose border is
           // also circular. Wrapping the rounded-square UserAvatar in ClipOval
           // would slice its border into arcs (the "cut border" artifact).
-          leading: UserAvatar(
-            imageUrl: profile?.picture,
-            name: name,
-            size: _avatarSize,
-            cornerRadius: _avatarSize / 2,
+          leading: IdentitySkeletonizer(
+            isLoading: isIdentityResolving,
+            excludeSemantics: true,
+            child: UserAvatar(
+              // `watchProfile` is an ungated `select(userProfiles)`, so a row
+              // that outlived its tombstone still streams a picture here.
+              imageUrl: isVanished ? null : profile?.picture,
+              name: visualName,
+              size: _avatarSize,
+              cornerRadius: _avatarSize / 2,
+            ),
           ),
-          title: Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: VineTheme.titleSmallFont(
-              color: context.vineColors.onSurface,
+          title: IdentitySkeletonizer(
+            isLoading: isIdentityResolving,
+            excludeSemantics: true,
+            child: Text(
+              visualName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
           ),
           trailing: _Trailing(
@@ -247,7 +282,10 @@ class _Trailing extends StatelessWidget {
   Widget build(BuildContext context) {
     // Natural leading — a forced line-height drops the colour-emoji glyph low
     // on Android (see ReactionsRow emoji styling).
-    final emojiText = Text(emoji, style: const TextStyle(fontSize: 18));
+    final emojiText = DivineHeartText(
+      emoji,
+      style: const TextStyle(fontSize: 18),
+    );
     if (!isOwn) return emojiText;
 
     final Widget action;

@@ -12,6 +12,7 @@
 // the BlocProvider element persists across rebuilds and the bloc stays
 // bound to stale repositories.
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,16 +32,44 @@ import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
 
+import '../../helpers/badge_fixtures.dart';
+
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+/// The inbox page reads the badge repository for its Badges tab. These tests
+/// only swap the notification and follow repositories, so a stub keeps the
+/// real one — and its SharedPreferences dependency — out of the scope.
+class _MockBadgeRepository extends Mock implements BadgeRepository {}
+
+_MockBadgeRepository _stubBadgeRepository({int pendingAwards = 0}) {
+  final repository = _MockBadgeRepository();
+  when(repository.loadDashboard).thenAnswer(
+    (_) async => BadgeDashboardData(
+      awarded: [
+        for (var i = 0; i < pendingAwards; i++)
+          badgeAwardFixture(
+            isAccepted: false,
+            name: 'Badge $i',
+            dTag: 'badge-$i',
+            seed: i + 1,
+          ),
+      ],
+      issued: const [],
+      created: const [],
+    ),
+  );
+  return repository;
+}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
 final _notificationRepoSwap = StateProvider<int>((ref) => 0);
 final _followRepoSwap = StateProvider<int>((ref) => 0);
+final _badgeRepoSwap = StateProvider<int>((ref) => 0);
 
 void main() {
   group('NotificationsPage — BlocProvider repo-swap', () {
@@ -76,6 +105,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -114,6 +144,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -155,6 +186,7 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -196,6 +228,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -297,6 +330,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -341,6 +375,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -388,6 +423,7 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -426,6 +462,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -469,6 +506,53 @@ void main() {
         expect(blocAfter.state.unreadCount, equals(0));
         expect(blocAfter.state.hasMore, isTrue);
         expect(blocAfter.state.refreshError, isFalse);
+      },
+    );
+
+    testWidgets(
+      'rebinds the badges cubit when badgeRepositoryProvider rebuilds with a '
+      'new repository instance',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final badgeRepoA = _stubBadgeRepository();
+        final badgeRepoB = _stubBadgeRepository(pendingAwards: 2);
+
+        final container = ProviderContainer(
+          overrides: [
+            badgeRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_badgeRepoSwap);
+              return v == 0 ? badgeRepoA : badgeRepoB;
+            }),
+            notificationRepositoryProvider.overrideWithValue(
+              mockNotificationRepoA,
+            ),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: const Scaffold(body: InboxNotificationsPage()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsTabBadges(0)), findsOneWidget);
+
+        final feedBefore = _notificationFeedBlocFor(tester);
+
+        container.read(_badgeRepoSwap.notifier).state = 1;
+        await tester.pumpAndSettle();
+
+        // The new repository's awards drive the label...
+        expect(find.text(l10n.notificationsTabBadges(2)), findsOneWidget);
+        // ...and the notification feeds are untouched by a badge-only swap.
+        expect(_notificationFeedBlocFor(tester), same(feedBefore));
       },
     );
   });

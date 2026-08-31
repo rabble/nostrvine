@@ -1,3 +1,4 @@
+import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
+import 'package:openvine/startup/close_app_support.dart';
 
 /// Result of resolving the DB cipher key during app startup.
 class DatabaseBootstrapStartupResult {
@@ -102,6 +104,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
     required this.error,
     required this.stack,
     this.locale,
+    this.canCloseApp,
     this.onCloseApp = SystemNavigator.pop,
     this.onResetLocalDatabase,
     super.key,
@@ -117,6 +120,9 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   /// this screen keeps no dependency on SharedPreferences — it has to render
   /// even when startup did not get far enough to have one.
   final Locale? locale;
+
+  /// Overrides platform close support in tests.
+  final bool? canCloseApp;
 
   final VoidCallback onCloseApp;
 
@@ -148,6 +154,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
       home: _FailureScreen(
         error: error,
         stack: stack,
+        canCloseApp: canCloseApp ?? platformCanCloseApp,
         onCloseApp: onCloseApp,
         onResetLocalDatabase: onResetLocalDatabase,
       ),
@@ -159,12 +166,14 @@ class _FailureScreen extends StatefulWidget {
   const _FailureScreen({
     required this.error,
     required this.stack,
+    required this.canCloseApp,
     required this.onCloseApp,
     required this.onResetLocalDatabase,
   });
 
   final Object error;
   final StackTrace stack;
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
   final Future<void> Function(DatabaseBootstrapDiagnosis diagnosis)?
   onResetLocalDatabase;
@@ -223,9 +232,9 @@ class _FailureScreenState extends State<_FailureScreen> {
       });
       _announce(context.l10n.dbFailureResetDoneTitle);
     }
-    // Finishes the activity on Android. On iOS the process stays alive, which
-    // is what the done step renders for.
-    widget.onCloseApp();
+    // Supported platforms close after the reset. Unsupported platforms stay
+    // on the done step, whose body already explains how to restart Divine.
+    if (widget.canCloseApp) widget.onCloseApp();
   }
 
   void _announce(String message) => SemanticsService.sendAnnouncement(
@@ -248,6 +257,7 @@ class _FailureScreenState extends State<_FailureScreen> {
                 _Step.failure => _FailureView(
                   error: widget.error,
                   stack: widget.stack,
+                  canCloseApp: widget.canCloseApp,
                   onCloseApp: widget.onCloseApp,
                   onResetRequested: _canReset
                       ? () => _goTo(
@@ -263,7 +273,10 @@ class _FailureScreenState extends State<_FailureScreen> {
                   onCancel: () =>
                       _goTo(_Step.failure, context.l10n.dbFailureTitle),
                 ),
-                _Step.done => _ResetDoneView(onCloseApp: widget.onCloseApp),
+                _Step.done => _ResetDoneView(
+                  canCloseApp: widget.canCloseApp,
+                  onCloseApp: widget.onCloseApp,
+                ),
               },
             ),
           ),
@@ -277,12 +290,14 @@ class _FailureView extends StatelessWidget {
   const _FailureView({
     required this.error,
     required this.stack,
+    required this.canCloseApp,
     required this.onCloseApp,
     required this.onResetRequested,
   });
 
   final Object error;
   final StackTrace stack;
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
   final VoidCallback? onResetRequested;
 
@@ -319,11 +334,12 @@ class _FailureView extends StatelessWidget {
           style: _diagnosticStyle,
         ),
         const SizedBox(height: 24),
-        DivineButton(
-          label: l10n.dbFailureCloseApp,
-          onPressed: onCloseApp,
-          type: DivineButtonType.secondary,
-        ),
+        if (canCloseApp)
+          DivineButton(
+            label: l10n.dbFailureCloseApp,
+            onPressed: onCloseApp,
+            type: DivineButtonType.secondary,
+          ),
         if (onResetRequested != null) ...[
           const SizedBox(height: 12),
           DivineButton(
@@ -405,13 +421,16 @@ class _ResetConfirmView extends StatelessWidget {
 
 /// Terminal step after a successful reset.
 ///
-/// Only ever seen where [DatabaseBootstrapFailureApp.onCloseApp] did not end
-/// the process — on iOS `SystemNavigator.pop` cannot close the app, so without
-/// this step the confirmation would sit there spinning behind two disabled
-/// buttons with nothing left to happen.
+/// Unsupported platforms stay here after reset because they cannot close the
+/// app. Supported platforms briefly build this step before closing, keeping
+/// the state transition deterministic and testable.
 class _ResetDoneView extends StatelessWidget {
-  const _ResetDoneView({required this.onCloseApp});
+  const _ResetDoneView({
+    required this.canCloseApp,
+    required this.onCloseApp,
+  });
 
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
 
   @override
@@ -438,11 +457,12 @@ class _ResetDoneView extends StatelessWidget {
           style: _bodyStyle,
         ),
         const SizedBox(height: 24),
-        DivineButton(
-          label: l10n.dbFailureCloseApp,
-          onPressed: onCloseApp,
-          type: DivineButtonType.secondary,
-        ),
+        if (canCloseApp)
+          DivineButton(
+            label: l10n.dbFailureCloseApp,
+            onPressed: onCloseApp,
+            type: DivineButtonType.secondary,
+          ),
       ],
     );
   }
@@ -463,6 +483,10 @@ enum DatabaseBootstrapDiagnosis {
   /// The database file is structurally corrupt — neither readable plaintext nor
   /// recognizably encrypted.
   databaseUnreadable('db-unreadable'),
+
+  /// A transient SQLite failure prevented the file format from being safely
+  /// classified. Restarting may recover; deleting data is not justified.
+  classificationUnavailable('db-classification-unavailable'),
 
   /// Anything else. Read the exception from Crashlytics for this one.
   bootstrapFailed('db-bootstrap-failed');
@@ -492,7 +516,7 @@ enum DatabaseBootstrapDiagnosis {
   /// choice deliberately instead of defaulting into a destructive offer.
   bool get allowsLocalDatabaseReset => switch (this) {
     cipherMismatch || databaseUnreadable || bootstrapFailed => true,
-    cipherUnavailable || secureStorage => false,
+    cipherUnavailable || secureStorage || classificationUnavailable => false,
   };
 }
 
@@ -514,6 +538,9 @@ DatabaseBootstrapDiagnosis databaseBootstrapDiagnosis(Object error) {
   }
   if (error is DatabaseUnreadableError) {
     return DatabaseBootstrapDiagnosis.databaseUnreadable;
+  }
+  if (error is DatabaseClassificationException) {
+    return DatabaseBootstrapDiagnosis.classificationUnavailable;
   }
 
   final message = error.toString();

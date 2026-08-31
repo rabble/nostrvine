@@ -7,6 +7,38 @@ part of 'app_router.dart';
 bool _hasNavigated = false;
 bool _suppressNextAuthenticatedAuthRouteRedirect = false;
 
+@visibleForTesting
+bool accountDeletionRecoveryGateActive(
+  AsyncValue<AccountDeletionAttempt?>? attempt,
+) {
+  if (attempt == null || !attempt.hasValue) return false;
+  return attempt.value?.requiresRecoveryScreen ?? false;
+}
+
+/// Whether the deletion lookup is still in flight for cold-start routing.
+///
+/// The router fails open while this is true so it never paints the recovery
+/// screen without evidence of an interrupted deletion. Separately, the native
+/// startup splash is held (via [authenticatedDeletionLookupSettled]) until this
+/// is false, so an authenticated user sees neither a false recovery screen nor
+/// a feed flash before the lookup resolves.
+///
+/// Any in-flight load counts as pending, including the first post-auth refetch:
+/// that re-run retains the pre-auth `AsyncData(null)`, so it is `isLoading`
+/// while `hasValue` is true. Excluding it would settle against the stale null
+/// and release the splash early (#8058: stay fail-closed until the lookup
+/// resolves).
+bool accountDeletionRecoveryLookupPending(
+  AsyncValue<AccountDeletionAttempt?>? attempt,
+) => attempt == null || attempt.isLoading;
+
+bool authenticatedDeletionLookupSettled(
+  AuthState authState,
+  AsyncValue<AccountDeletionAttempt?>? attempt,
+) =>
+    authState == AuthState.authenticated &&
+    !accountDeletionRecoveryLookupPending(attempt);
+
 /// Prevents the next authenticated auth-route redirect from going home.
 ///
 /// Used when a cold-start quick action already opened a protected route before
@@ -306,6 +338,10 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   }
 
   final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
+  final deletionAttemptAsync = ref.read(currentAccountDeletionAttemptProvider);
+  final deletionRecoveryGateActive = accountDeletionRecoveryGateActive(
+    deletionAttemptAsync,
+  );
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(
     authService,
@@ -313,6 +349,8 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   );
 
   final isReviewRoute = location == MinorAccountReviewScreen.path;
+  final isDeletionRecoveryRoute =
+      location == AccountDeletionRecoveryScreen.path;
   final isPublicReviewRoute = location == MinorAccountReviewScreen.welcomePath;
   final isReviewLoadingRoute = location == MinorAccountReviewLoadingScreen.path;
   final isPublicParentConsentRoute =
@@ -326,6 +364,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
       location == SupportCenterScreen.path ||
       location == BugReportScreen.path ||
       location == FeatureRequestScreen.path;
+  final isPublicSupportRoute = location == SupportCenterScreen.path;
   final isModerationConversationRoute =
       moderationConversationId != null &&
       location == ConversationPage.pathForId(moderationConversationId);
@@ -340,6 +379,18 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // Auth routes don't require authentication — user is in the
   // process of logging in.
   final isAuthRoute = _isAuthEntryLocation(location);
+
+  if (authState == AuthState.authenticated &&
+      deletionRecoveryGateActive &&
+      !isDeletionRecoveryRoute &&
+      !isSupportRoute) {
+    return AccountDeletionRecoveryScreen.path;
+  }
+  if (authState == AuthState.authenticated &&
+      !deletionRecoveryGateActive &&
+      isDeletionRecoveryRoute) {
+    return VideoFeedPage.pathForIndex(0);
+  }
 
   // Only bounce to the loading screen on a true cold load (no value yet).
   // Riverpod keeps the previous value during a background refetch
@@ -428,6 +479,16 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
         location == WelcomeScreen.loginOptionsPath) {
       return deepLinkRewrite;
     }
+    // Allow an anonymously-authenticated user through to login options when
+    // they arrive from the Secure account key-conflict recovery flow, which
+    // deep-links here with a prefilled `email` param. Without this they would
+    // be bounced to the feed and the "sign in to the existing account"
+    // recovery affordance would dead-end.
+    if (authService.isAnonymous &&
+        location == WelcomeScreen.loginOptionsPath &&
+        state.uri.queryParameters.containsKey('email')) {
+      return deepLinkRewrite;
+    }
     if (_suppressNextAuthenticatedAuthRouteRedirect) {
       _suppressNextAuthenticatedAuthRouteRedirect = false;
       Log.info(
@@ -461,6 +522,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // awaitingTosAcceptance has no dedicated screen, so treat it like
   // unauthenticated.
   if (!isAuthRoute &&
+      !isPublicSupportRoute &&
       !_isPublicRecorderLocation(location) &&
       (authState == AuthState.unauthenticated ||
           authState == AuthState.awaitingTosAcceptance)) {

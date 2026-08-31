@@ -547,7 +547,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         pubkey: pubkey,
       );
       if (!_resultStillApplies(mutation, owner)) return;
-      if (!result.submitted) {
+      if (result.status == PeopleListPublishStatus.failed) {
         _emitRollback(emit, mutation.id, undo);
         return;
       }
@@ -618,7 +618,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         pubkey: pubkey,
       );
       if (!_resultStillApplies(mutation, owner)) return;
-      if (!result.submitted) {
+      if (result.status == PeopleListPublishStatus.failed) {
         _emitRollback(emit, mutation.id, undo);
         return;
       }

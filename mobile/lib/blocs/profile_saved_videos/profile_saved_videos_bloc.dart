@@ -1,11 +1,12 @@
 // ABOUTME: BLoC for managing profile saved (bookmarked) videos grid
-// ABOUTME: Coordinates between BookmarkService (NIP-51 kind 10003) and VideosRepository
+// ABOUTME: Coordinates between BookmarksRepository (NIP-51 kind 10003) and VideosRepository
 // ABOUTME: (cache-aware relay fetch with SQLite local storage). Own profile only.
 
 import 'dart:async';
 import 'dart:math';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,6 @@ import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -25,7 +25,7 @@ part 'profile_saved_videos_state.dart';
 /// BLoC for managing profile saved (bookmarked) videos.
 ///
 /// Coordinates between:
-/// - [BookmarkService]: Provides NIP-51 global bookmarks (kind 10003) — only
+/// - [BookmarksRepository]: Provides NIP-51 global bookmarks (kind 10003) — only
 ///   items of type `'e'` (event bookmarks) are treated as saved videos.
 /// - [VideosRepository]: Fetches video data with cache-first lookups via
 ///   SQLite local storage. Automatically checks cache before relay queries.
@@ -35,12 +35,12 @@ part 'profile_saved_videos_state.dart';
 class ProfileSavedVideosBloc
     extends Bloc<ProfileSavedVideosEvent, ProfileSavedVideosState> {
   ProfileSavedVideosBloc({
-    required Future<BookmarkService> bookmarkService,
+    required Future<BookmarksRepository> bookmarksRepository,
     required VideosRepository videosRepository,
     required String currentUserPubkey,
     required Stream<String> removedVideoIds,
     required bool Function(VideoEvent video) deletedVideoFilter,
-  }) : _bookmarkServiceFuture = bookmarkService,
+  }) : _bookmarksRepositoryFuture = bookmarksRepository,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
        _deletedVideoFilter = deletedVideoFilter,
@@ -63,10 +63,10 @@ class ProfileSavedVideosBloc
     });
   }
 
-  /// Resolved lazily on the first sync — [bookmarkServiceProvider] is an
+  /// Resolved lazily on the first sync — [bookmarksRepositoryProvider] is an
   /// async provider so the service isn't immediately available at widget
   /// build time.
-  final Future<BookmarkService> _bookmarkServiceFuture;
+  final Future<BookmarksRepository> _bookmarksRepositoryFuture;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
   late final StreamSubscription<String> _removedVideoIdsSubscription;
@@ -167,9 +167,9 @@ class ProfileSavedVideosBloc
   /// and the caller is only reading. (The write path treats the same failure
   /// as fatal, because republishing an unreconciled list destroys bookmarks.)
   Future<List<String>> _resolveSavedIds() async {
-    final bookmarkService = await _bookmarkServiceFuture;
-    await bookmarkService.syncGlobalBookmarks();
-    return bookmarkService.globalBookmarks
+    final bookmarksRepository = await _bookmarksRepositoryFuture;
+    await bookmarksRepository.syncGlobalBookmarks();
+    return bookmarksRepository.globalBookmarks
         .where((item) => item.type == 'e')
         .map((item) => item.id)
         .toList();

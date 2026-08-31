@@ -1,3 +1,5 @@
+import 'package:profile_repository/src/divine_username_policy.dart';
+
 /// Sealed class representing the result of a username availability check.
 sealed class UsernameAvailabilityResult {
   /// Creates a username availability result.
@@ -30,11 +32,11 @@ class UsernameBurned extends UsernameAvailabilityResult {
 
 /// Username has an invalid format (e.g. contains dots, underscores, etc.).
 class UsernameInvalidFormat extends UsernameAvailabilityResult {
-  /// Creates an invalid format result with the given [reason].
-  const UsernameInvalidFormat(this.reason);
+  /// Creates an invalid format result.
+  const UsernameInvalidFormat([this.failure]);
 
-  /// Description of why the format is invalid.
-  final String reason;
+  /// Client-side failure, or `null` when the server rejected the format.
+  final DivineUsernameValidationFailure? failure;
 }
 
 /// An error occurred during availability check.

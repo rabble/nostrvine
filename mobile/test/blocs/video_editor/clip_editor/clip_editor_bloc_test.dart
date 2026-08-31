@@ -3339,7 +3339,7 @@ void main() {
         'emits isExtractingAudio then success with muted clip and correct endTime',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3392,7 +3392,7 @@ void main() {
           expect(result.audioEvent.anchorClipId, equals(clip.id));
           expect(result.audioEvent.isAnchored, isTrue);
           verify(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: '/path/clip-local.mp4',
               speed: any(named: 'speed'),
             ),
@@ -3406,7 +3406,7 @@ void main() {
         'extracts audio from the clip named by the event, not the selection',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3440,7 +3440,7 @@ void main() {
           expect(clips.firstWhere((c) => c.id == 'b').volume, equals(0));
           expect(clips.firstWhere((c) => c.id == 'a').volume, equals(1.0));
           verify(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: '/path/b.mp4',
               speed: any(named: 'speed'),
             ),
@@ -3456,7 +3456,7 @@ void main() {
         'dedupes a queued re-extraction of an already-extracted clip',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3491,7 +3491,7 @@ void main() {
           expect(bloc.state.extractedAudioClipIds, contains('b'));
           // Extraction ran exactly once despite two queued requests.
           verify(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3505,7 +3505,7 @@ void main() {
         're-extracts after the clip is manually un-muted',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3536,7 +3536,7 @@ void main() {
           // even though it is already in extractedAudioClipIds.
           expect(bloc.state.clips.single.volume, equals(0));
           verify(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3548,7 +3548,7 @@ void main() {
         'uses playback duration and forwards speed for extracted source clip',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3584,7 +3584,7 @@ void main() {
             equals(clip.playbackDuration),
           );
           verify(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: '/path/clip-local.mp4',
               speed: 2.0,
             ),
@@ -3596,7 +3596,7 @@ void main() {
         'uses playback-time offsets when an extracted clip follows a slowed clip',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3648,7 +3648,7 @@ void main() {
           'in-flight extraction', () async {
         final completer = Completer<AudioExtractionResult>();
         when(
-          () => mockService.extractAudio(
+          () => mockService.extractAudioForDraft(
             videoPath: any(named: 'videoPath'),
             speed: any(named: 'speed'),
           ),
@@ -3690,7 +3690,7 @@ void main() {
           isA<ClipAudioExtractionDiscarded>(),
         );
         verify(
-          () => mockService.extractAudio(
+          () => mockService.extractAudioForDraft(
             videoPath: '/path/clip-local.mp4',
             speed: 2.0,
           ),
@@ -3706,7 +3706,7 @@ void main() {
         'emits isExtractingAudio then ClipAudioExtractionFailure on AudioExtractionException',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3738,7 +3738,7 @@ void main() {
         'wraps unexpected extraction errors in Reportable with context',
         build: () {
           when(
-            () => mockService.extractAudio(
+            () => mockService.extractAudioForDraft(
               videoPath: any(named: 'videoPath'),
               speed: any(named: 'speed'),
             ),
@@ -3780,7 +3780,7 @@ void main() {
           'when source clip is removed during in-flight extraction', () async {
         final completer = Completer<AudioExtractionResult>();
         when(
-          () => mockService.extractAudio(
+          () => mockService.extractAudioForDraft(
             videoPath: any(named: 'videoPath'),
             speed: any(named: 'speed'),
           ),

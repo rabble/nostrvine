@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -292,8 +293,11 @@ final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
   return client;
 });
 
-/// Provider that sets Zendesk user identity when auth state changes
-/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+/// Provider that sets Zendesk user identity when auth state changes.
+///
+/// Activated by `AppRootSideEffects`, above `MaterialApp.router`, so the
+/// identity is mirrored for the whole process rather than from the moment the
+/// bottom-nav shell mounts.
 @Riverpod(keepAlive: true)
 void zendeskIdentitySync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -333,8 +337,12 @@ void zendeskIdentitySync(Ref ref) {
 ///
 /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
 /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
-/// coupled to the lifetime of the support-desk integration. Watch this
-/// provider at app startup to keep the analytics identity in sync with auth.
+/// coupled to the lifetime of the support-desk integration.
+///
+/// Activated by `AppRootSideEffects`. It used to be activated from
+/// `AppShell.build()`, which left every crash report and analytics event
+/// before the first bottom-nav tab — splash, auth restore, sign-up, e-mail
+/// verification, onboarding — without a `user_id`.
 @Riverpod(keepAlive: true)
 void analyticsIdentitySync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -422,7 +430,8 @@ Future<void> _setZendeskIdentity(
     }
 
     Log.info(
-      'Zendesk identity set for user: ${profile?.bestDisplayName ?? npub}',
+      'Zendesk identity set for user: '
+      '${profile?.bestDisplayName ?? pubkeyForLogs(npub)}',
       name: 'ZendeskIdentitySync',
       category: LogCategory.system,
     );

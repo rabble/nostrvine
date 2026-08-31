@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
@@ -75,16 +76,16 @@ void main() {
   });
 
   setUp(() {
-    mockAuthService = createMockAuthService();
+    mockAuthService = createMockAuthService(
+      authState: AuthState.authenticated,
+      currentPublicKeyHex: ownerPubkey,
+    );
     mockNostrService = createMockNostrService();
     mockBlossomUploadService = _MockBlossomUploadService();
     mockDmRepository = _MockDmRepository();
     mockPersonalEventCacheService = _MockPersonalEventCacheService();
     mockVideoEventService = _MockVideoEventService();
     capturedTags = [];
-
-    when(() => mockAuthService.isAuthenticated).thenReturn(true);
-    when(() => mockAuthService.currentPublicKeyHex).thenReturn(ownerPubkey);
 
     late Event signedEvent;
     when(
@@ -128,56 +129,63 @@ void main() {
     );
   });
 
-  test('buildCollaboratorPTag emits the exact lowercase collaborator tag', () {
-    expect(
-      buildCollaboratorPTag(collaboratorPubkey),
-      equals(const [
-        'p',
-        collaboratorPubkey,
-        collaboratorInviteRelayHint,
-        'collaborator',
-      ]),
+  group('buildCollaboratorPTag', () {
+    test(
+      'buildCollaboratorPTag emits the exact lowercase collaborator tag',
+      () {
+        expect(
+          buildCollaboratorPTag(collaboratorPubkey),
+          equals(const [
+            'p',
+            collaboratorPubkey,
+            collaboratorInviteRelayHint,
+            'collaborator',
+          ]),
+        );
+      },
     );
   });
 
-  test(
-    'edit-video flow republishes collaborator p-tags with lowercase marker',
-    () async {
-      final editorState = VideoEditorProviderState(
-        collaboratorPubkeys: {collaboratorPubkey},
-      );
+  group('updateVideo', () {
+    test(
+      'edit-video flow republishes collaborator p-tags with lowercase marker',
+      () async {
+        final editorState = VideoEditorProviderState(
+          collaboratorPubkeys: {collaboratorPubkey},
+        );
 
-      final result = await service.updateVideo(
-        originalVideo: _testVideo(
-          ownerPubkey: ownerPubkey,
-          collaboratorPubkey: collaboratorPubkey,
-        ),
-        editorState: editorState,
-        initialCollaboratorPubkeys: {collaboratorPubkey},
-      );
-
-      expect(result, isA<VideoUpdateSuccess>());
-      expect(
-        capturedTags.where((tag) => tag.isNotEmpty && tag.first == 'p'),
-        hasLength(1),
-      );
-      expect(
-        capturedTags,
-        contains(equals(buildCollaboratorPTag(collaboratorPubkey))),
-      );
-      expect(
-        capturedTags,
-        isNot(
-          contains(
-            equals(const [
-              'p',
-              collaboratorPubkey,
-              collaboratorInviteRelayHint,
-              'Collaborator',
-            ]),
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(
+            ownerPubkey: ownerPubkey,
+            collaboratorPubkey: collaboratorPubkey,
           ),
-        ),
-      );
-    },
-  );
+          editorState: editorState,
+          initialCollaboratorPubkeys: {collaboratorPubkey},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(
+          capturedTags.where((tag) => tag.isNotEmpty && tag.first == 'p'),
+          hasLength(1),
+        );
+        expect(
+          capturedTags,
+          contains(equals(buildCollaboratorPTag(collaboratorPubkey))),
+        );
+        expect(
+          capturedTags,
+          isNot(
+            contains(
+              equals(const [
+                'p',
+                collaboratorPubkey,
+                collaboratorInviteRelayHint,
+                'Collaborator',
+              ]),
+            ),
+          ),
+        );
+      },
+    );
+  });
 }

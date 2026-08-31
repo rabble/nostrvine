@@ -179,49 +179,51 @@ void main() {
   /// The `x <digest>` component of the emitted imeta tag.
   String? capturedDigest() => capturedImeta('x');
 
-  test('reuses the digest the upload already computed', () async {
-    stubSignAndPublish();
+  group('publishDirectUpload', () {
+    test('reuses the digest the upload already computed', () async {
+      stubSignAndPublish();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(videoId: uploadedDigest),
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(videoId: uploadedDigest),
+      );
 
-    expect(result, isTrue);
-    expect(capturedDigest(), equals(uploadedDigest));
-    // Re-hashing the file would produce this instead — the whole point is that
-    // the video is never read back at publish time.
-    expect(
-      capturedDigest(),
-      isNot(equals(sha256.convert(videoBytes).toString())),
-    );
-  });
+      expect(result, isTrue);
+      expect(capturedDigest(), equals(uploadedDigest));
+      // Re-hashing the file would produce this instead — the whole point is that
+      // the video is never read back at publish time.
+      expect(
+        capturedDigest(),
+        isNot(equals(sha256.convert(videoBytes).toString())),
+      );
+    });
 
-  test('emits the digest even when the local file is already gone', () async {
-    stubSignAndPublish();
+    test('emits the digest even when the local file is already gone', () async {
+      stubSignAndPublish();
 
-    // Funnelcake materializes events_local.sha256 from this sub-field and
-    // joins moderation labels on it — a publish landing after local cleanup
-    // must still carry x, even though size (which needs the file) cannot.
-    await videoFile.delete();
+      // Funnelcake materializes events_local.sha256 from this sub-field and
+      // joins moderation labels on it — a publish landing after local cleanup
+      // must still carry x, even though size (which needs the file) cannot.
+      await videoFile.delete();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(videoId: uploadedDigest),
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(videoId: uploadedDigest),
+      );
 
-    expect(result, isTrue);
-    expect(capturedDigest(), equals(uploadedDigest));
-  });
+      expect(result, isTrue);
+      expect(capturedDigest(), equals(uploadedDigest));
+    });
 
-  test('reuses the blurhash the thumbnail leg already derived', () async {
-    stubSignAndPublish();
+    test('reuses the blurhash the thumbnail leg already derived', () async {
+      stubSignAndPublish();
 
-    final result = await publisher.publishDirectUpload(
-      createUpload(videoId: uploadedDigest, blurhash: 'LEHV6nWB2yk8pyoJadR*'),
-    );
+      final result = await publisher.publishDirectUpload(
+        createUpload(videoId: uploadedDigest, blurhash: 'LEHV6nWB2yk8pyoJadR*'),
+      );
 
-    expect(result, isTrue);
-    // Decoding the video again here would yield nothing for these bytes, so a
-    // present value proves it came from the record.
-    expect(capturedImeta('blurhash'), equals('LEHV6nWB2yk8pyoJadR*'));
+      expect(result, isTrue);
+      // Decoding the video again here would yield nothing for these bytes, so a
+      // present value proves it came from the record.
+      expect(capturedImeta('blurhash'), equals('LEHV6nWB2yk8pyoJadR*'));
+    });
   });
 }

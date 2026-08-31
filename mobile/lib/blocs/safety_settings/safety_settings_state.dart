@@ -23,6 +23,7 @@ class SafetySettingsState extends Equatable {
     this.isAdultContentLocked = false,
     this.isPeopleIFollowEnabled = false,
     this.showDivineHostedOnly = true,
+    this.showVerifiedOnly = false,
     this.customLabelers = const <String>{},
     this.blockedUsers = const <String>{},
   });
@@ -35,6 +36,9 @@ class SafetySettingsState extends Equatable {
   final bool isAdultContentLocked;
   final bool isPeopleIFollowEnabled;
   final bool showDivineHostedOnly;
+
+  /// Whether to hide videos with no capture chain (archive exempt).
+  final bool showVerifiedOnly;
 
   /// Subscribed labeler pubkeys excluding the built-in Divine labeler.
   final Set<String> customLabelers;
@@ -49,6 +53,7 @@ class SafetySettingsState extends Equatable {
     bool? isAdultContentLocked,
     bool? isPeopleIFollowEnabled,
     bool? showDivineHostedOnly,
+    bool? showVerifiedOnly,
     Set<String>? customLabelers,
     Set<String>? blockedUsers,
   }) {
@@ -59,6 +64,7 @@ class SafetySettingsState extends Equatable {
       isPeopleIFollowEnabled:
           isPeopleIFollowEnabled ?? this.isPeopleIFollowEnabled,
       showDivineHostedOnly: showDivineHostedOnly ?? this.showDivineHostedOnly,
+      showVerifiedOnly: showVerifiedOnly ?? this.showVerifiedOnly,
       customLabelers: customLabelers ?? this.customLabelers,
       blockedUsers: blockedUsers ?? this.blockedUsers,
     );
@@ -71,6 +77,7 @@ class SafetySettingsState extends Equatable {
     isAdultContentLocked,
     isPeopleIFollowEnabled,
     showDivineHostedOnly,
+    showVerifiedOnly,
     customLabelers,
     blockedUsers,
   ];

@@ -381,7 +381,7 @@ class _RangeSelector extends StatelessWidget {
       children: _AnalyticsWindow.values.map((window) {
         final isSelected = window == selected;
         return ChoiceChip(
-          label: Text(window.label),
+          label: Text(window.labelFor(context.l10n)),
           selected: isSelected,
           selectedColor: VineTheme.vineGreen.withValues(alpha: 0.2),
           labelStyle: VineTheme.bodySmallFont(
@@ -1442,15 +1442,26 @@ class _AnalyticsCard extends StatelessWidget {
 }
 
 enum _AnalyticsWindow {
-  last7Days('7D', Duration(days: 7)),
-  last28Days('28D', Duration(days: 28)),
-  last90Days('90D', Duration(days: 90)),
-  allTime('All', null);
+  last7Days(Duration(days: 7)),
+  last28Days(Duration(days: 28)),
+  last90Days(Duration(days: 90)),
+  allTime(null);
 
-  const _AnalyticsWindow(this.label, this.duration);
+  const _AnalyticsWindow(this.duration);
 
-  final String label;
   final Duration? duration;
+}
+
+extension on _AnalyticsWindow {
+  /// 7D / 28D / 90D are numeric abbreviations that read the same everywhere;
+  /// only the all-time window is a word, and it shipped as a hardcoded 'All'.
+  /// Switched exhaustively so a new window has to make this choice too.
+  String labelFor(AppLocalizations l10n) => switch (this) {
+    _AnalyticsWindow.allTime => l10n.analyticsWindowAll,
+    _AnalyticsWindow.last7Days => '7D',
+    _AnalyticsWindow.last28Days => '28D',
+    _AnalyticsWindow.last90Days => '90D',
+  };
 }
 
 class _CreatorAnalyticsData {

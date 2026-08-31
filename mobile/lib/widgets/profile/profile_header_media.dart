@@ -1,25 +1,5 @@
 part of 'profile_header_widget.dart';
 
-/// Smallest lifetime loop total a profile shows to visitors.
-///
-/// Below this the Loops column is omitted for everyone but the owner: a small
-/// headline number on a new creator's profile discourages the visitor and
-/// tells them nothing useful. Owners always see their own total, since
-/// correcting a creator's underestimate of their audience is what keeps them
-/// posting.
-///
-/// A product call, not a technical one — the single value to change if the
-/// bar sits wrong.
-///
-/// Deliberately higher than `publicLoopCountFloor` in
-/// `widgets/video_feed_item/video_card_meta.dart`, which hides small counts on
-/// feed cards. A profile headline is a summary of a whole creator and carries
-/// more weight than a number beside one video, so it earns a higher bar. The
-/// two are independent product calls, not a value that drifted — do not
-/// collapse them into one constant without deciding that both surfaces want
-/// the same number.
-const int profileLoopsVisibilityFloor = 10000;
-
 /// Hero tag for the avatar ↔ lightbox shared-element flight, scoped to the
 /// user. A global tag would let two profile headers with the same tag in one
 /// navigator (e.g. other-profile → other-profile, both on the root navigator)
@@ -557,22 +537,30 @@ class _ProfileActionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, label) = switch (action) {
+      ProfileActionType.accountRestricted => (
+        DivineIconName.warning,
+        context.l10n.profileAccountRestricted,
+      ),
       ProfileActionType.secureAccount => (
         DivineIconName.lockSimple,
-        'Secure your account',
+        context.l10n.profileSecureYourAccount,
       ),
       ProfileActionType.completeProfile => (
         DivineIconName.pencilSimple,
-        'Complete your profile',
+        context.l10n.profileCompleteYourProfile,
       ),
     };
 
-    final chip = context.vineColors.accentChipYellow;
+    final chip = action == ProfileActionType.accountRestricted
+        ? context.vineColors.accentChipOrange
+        : context.vineColors.accentChipYellow;
+    final maxWidth = MediaQuery.sizeOf(context).width - 32;
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
+          constraints: BoxConstraints(maxWidth: maxWidth),
           padding: const EdgeInsets.fromLTRB(12, 8, 16, 8),
           decoration: BoxDecoration(
             color: chip.container,
@@ -595,9 +583,13 @@ class _ProfileActionLabel extends StatelessWidget {
             spacing: 8,
             children: [
               DivineIcon(icon: icon, size: 16, color: chip.onContainer),
-              Text(
-                label,
-                style: VineTheme.titleSmallFont(color: chip.onContainer),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.titleSmallFont(color: chip.onContainer),
+                ),
               ),
             ],
           ),

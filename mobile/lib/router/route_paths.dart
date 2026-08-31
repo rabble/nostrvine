@@ -12,6 +12,7 @@
 /// Screens still expose their own `path` members as thin delegates to these
 /// values, so existing `SomeScreen.path` call sites are unaffected.
 abstract final class RoutePaths {
+  static const accountDeletionRecovery = '/account-deletion-recovery';
   static const appLanguage = '/app-language';
   static const appearanceSettings = '/appearance-settings';
   static const appsDirectory = '/apps';
@@ -66,7 +67,10 @@ abstract final class RoutePaths {
   static const soundDetailBase = '/sound';
   static const storageManagement = '/storage-management';
   static const subtitleEditor = '/subtitle-edit';
+  static const accountStatus = '/settings/account-status';
+  static const accountStatusSubpath = 'account-status';
   static const supportCenter = '/support-center';
+  static const supportReportBug = '/support-center/report-bug';
   static const videoDetailBase = '/video';
   static const videoEditor = '/video-editor';
   static const videoMetadata = '/video-metadata';

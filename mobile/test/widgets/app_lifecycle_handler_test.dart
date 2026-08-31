@@ -67,191 +67,195 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('flushes pending autosave before background lifecycle states', (
-    tester,
-  ) async {
-    final authService = _MockAuthService();
-    addTearDown(() {
-      BackgroundActivityManager().onAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
+  group('lifecycle transitions', () {
+    testWidgets('flushes pending autosave before background lifecycle states', (
+      tester,
+    ) async {
+      final authService = _MockAuthService();
+      addTearDown(() {
+        BackgroundActivityManager().onAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      });
+
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+      final clipLibraryService = _MockClipLibraryService();
+      when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
+      when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
+      final draftStorageService = _MockDraftStorageService();
+      when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
+
+      final editorNotifier = _FlushTrackingVideoEditorNotifier();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            videoEditorProvider.overrideWith(() => editorNotifier),
+            videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
+            clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
+            draftStorageServiceProvider.overrideWithValue(draftStorageService),
+          ],
+          child: const MaterialApp(
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
+        ),
       );
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+
+      // Do not simulate detached here: flutter_tester treats it as shell teardown.
+      expect(editorNotifier.flushCalls, 3);
+      // Drain BackgroundActivityManager's private 30-second suspension timer.
+      await tester.pump(const Duration(seconds: 31));
     });
 
-    when(() => authService.isAuthenticated).thenReturn(true);
-    when(
-      () => authService.authStateStream,
-    ).thenAnswer((_) => const Stream<AuthState>.empty());
-    final clipLibraryService = _MockClipLibraryService();
-    when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
-    when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
-    final draftStorageService = _MockDraftStorageService();
-    when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
+    testWidgets('treats inactive as non-foreground on iOS', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final authService = _MockAuthService();
+      addTearDown(() {
+        BackgroundActivityManager().onAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      });
 
-    final editorNotifier = _FlushTrackingVideoEditorNotifier();
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+      final clipLibraryService = _MockClipLibraryService();
+      when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
+      when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
+      final draftStorageService = _MockDraftStorageService();
+      when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authServiceProvider.overrideWithValue(authService),
-          videoEditorProvider.overrideWith(() => editorNotifier),
-          videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
-          clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
-          draftStorageServiceProvider.overrideWithValue(draftStorageService),
-        ],
-        child: const MaterialApp(
-          home: AppLifecycleHandler(child: SizedBox.shrink()),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
+            clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
+            draftStorageServiceProvider.overrideWithValue(draftStorageService),
+          ],
+          child: const MaterialApp(
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
         ),
-      ),
-    );
+      );
 
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      final context = tester.element(find.byType(AppLifecycleHandler));
+      final container = ProviderScope.containerOf(context);
+      expect(container.read(appForegroundProvider), isTrue);
 
-    // Do not simulate detached here: flutter_tester treats it as shell teardown.
-    expect(editorNotifier.flushCalls, 3);
-    // Drain BackgroundActivityManager's private 30-second suspension timer.
-    await tester.pump(const Duration(seconds: 31));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+
+      expect(container.read(appForegroundProvider), isFalse);
+      await tester.pump(const Duration(seconds: 31));
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 
-  testWidgets('treats inactive as non-foreground on iOS', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    final authService = _MockAuthService();
-    addTearDown(() {
-      BackgroundActivityManager().onAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
+  group('app badge', () {
+    testWidgets('clears the app badge on launch and resume', (tester) async {
+      final authService = _MockAuthService();
+      addTearDown(() {
+        BackgroundActivityManager().onAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      });
+
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+      final clipLibraryService = _MockClipLibraryService();
+      when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
+      when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
+      final draftStorageService = _MockDraftStorageService();
+      when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
+
+      final appBadgeClearer = _CountingAppBadgeClearer();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appBadgeServiceProvider.overrideWithValue(appBadgeClearer),
+            authServiceProvider.overrideWithValue(authService),
+            notificationRefreshCoordinatorProvider.overrideWithValue(null),
+            videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
+            clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
+            draftStorageServiceProvider.overrideWithValue(draftStorageService),
+          ],
+          child: const MaterialApp(
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
+        ),
       );
+
+      await tester.pump();
+      expect(appBadgeClearer.clearCalls, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(appBadgeClearer.clearCalls, 2);
     });
 
-    when(() => authService.isAuthenticated).thenReturn(true);
-    when(
-      () => authService.authStateStream,
-    ).thenAnswer((_) => const Stream<AuthState>.empty());
-    final clipLibraryService = _MockClipLibraryService();
-    when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
-    when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
-    final draftStorageService = _MockDraftStorageService();
-    when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
+    testWidgets('badge clear failure does not break resume handling', (
+      tester,
+    ) async {
+      final authService = _MockAuthService();
+      addTearDown(() {
+        BackgroundActivityManager().onAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authServiceProvider.overrideWithValue(authService),
-          videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
-          clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
-          draftStorageServiceProvider.overrideWithValue(draftStorageService),
-        ],
-        child: const MaterialApp(
-          home: AppLifecycleHandler(child: SizedBox.shrink()),
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+      final clipLibraryService = _MockClipLibraryService();
+      when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
+      when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
+      final draftStorageService = _MockDraftStorageService();
+      when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
+
+      final appBadgeClearer = _CountingAppBadgeClearer(throwOnClear: true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appBadgeServiceProvider.overrideWithValue(appBadgeClearer),
+            authServiceProvider.overrideWithValue(authService),
+            notificationRefreshCoordinatorProvider.overrideWithValue(null),
+            videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
+            clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
+            draftStorageServiceProvider.overrideWithValue(draftStorageService),
+          ],
+          child: const MaterialApp(
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
         ),
-      ),
-    );
-
-    final context = tester.element(find.byType(AppLifecycleHandler));
-    final container = ProviderScope.containerOf(context);
-    expect(container.read(appForegroundProvider), isTrue);
-
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pump();
-
-    expect(container.read(appForegroundProvider), isFalse);
-    await tester.pump(const Duration(seconds: 31));
-    debugDefaultTargetPlatformOverride = null;
-  });
-
-  testWidgets('clears the app badge on launch and resume', (tester) async {
-    final authService = _MockAuthService();
-    addTearDown(() {
-      BackgroundActivityManager().onAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
       );
+      await tester.pump();
+
+      final context = tester.element(find.byType(AppLifecycleHandler));
+      final container = ProviderScope.containerOf(context);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(container.read(appForegroundProvider), isTrue);
+      expect(appBadgeClearer.clearCalls, 2);
+      await tester.pump(const Duration(seconds: 31));
     });
-
-    when(() => authService.isAuthenticated).thenReturn(true);
-    when(
-      () => authService.authStateStream,
-    ).thenAnswer((_) => const Stream<AuthState>.empty());
-    final clipLibraryService = _MockClipLibraryService();
-    when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
-    when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
-    final draftStorageService = _MockDraftStorageService();
-    when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
-
-    final appBadgeClearer = _CountingAppBadgeClearer();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          appBadgeServiceProvider.overrideWithValue(appBadgeClearer),
-          authServiceProvider.overrideWithValue(authService),
-          notificationRefreshCoordinatorProvider.overrideWithValue(null),
-          videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
-          clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
-          draftStorageServiceProvider.overrideWithValue(draftStorageService),
-        ],
-        child: const MaterialApp(
-          home: AppLifecycleHandler(child: SizedBox.shrink()),
-        ),
-      ),
-    );
-
-    await tester.pump();
-    expect(appBadgeClearer.clearCalls, 1);
-
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-
-    expect(appBadgeClearer.clearCalls, 2);
-  });
-
-  testWidgets('badge clear failure does not break resume handling', (
-    tester,
-  ) async {
-    final authService = _MockAuthService();
-    addTearDown(() {
-      BackgroundActivityManager().onAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
-      );
-    });
-
-    when(() => authService.isAuthenticated).thenReturn(true);
-    when(
-      () => authService.authStateStream,
-    ).thenAnswer((_) => const Stream<AuthState>.empty());
-    final clipLibraryService = _MockClipLibraryService();
-    when(clipLibraryService.migrateOldClips).thenAnswer((_) async {});
-    when(clipLibraryService.purgeExpiredTrash).thenAnswer((_) async => 0);
-    final draftStorageService = _MockDraftStorageService();
-    when(draftStorageService.migrateOldDrafts).thenAnswer((_) async {});
-
-    final appBadgeClearer = _CountingAppBadgeClearer(throwOnClear: true);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          appBadgeServiceProvider.overrideWithValue(appBadgeClearer),
-          authServiceProvider.overrideWithValue(authService),
-          notificationRefreshCoordinatorProvider.overrideWithValue(null),
-          videoPublishProvider.overrideWith(_NoopVideoPublishNotifier.new),
-          clipLibraryServiceProvider.overrideWithValue(clipLibraryService),
-          draftStorageServiceProvider.overrideWithValue(draftStorageService),
-        ],
-        child: const MaterialApp(
-          home: AppLifecycleHandler(child: SizedBox.shrink()),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    final context = tester.element(find.byType(AppLifecycleHandler));
-    final container = ProviderScope.containerOf(context);
-
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-
-    expect(container.read(appForegroundProvider), isTrue);
-    expect(appBadgeClearer.clearCalls, 2);
-    await tester.pump(const Duration(seconds: 31));
   });
 }

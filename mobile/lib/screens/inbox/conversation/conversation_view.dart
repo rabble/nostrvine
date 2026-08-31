@@ -27,7 +27,7 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
-import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -40,6 +40,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// View for a single DM conversation.
 ///
@@ -49,10 +50,15 @@ import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 /// Uses [BlocSelector] for child widgets that depend on specific slices of
 /// [ConversationState] to avoid unnecessary rebuilds.
 class ConversationView extends ConsumerStatefulWidget {
-  const ConversationView({required this.participantPubkeys, super.key});
+  const ConversationView({
+    required this.participantPubkeys,
+    this.subject,
+    super.key,
+  });
 
   /// Pubkeys of the other participants (excludes current user).
   final List<String> participantPubkeys;
+  final String? subject;
 
   @override
   ConsumerState<ConversationView> createState() => _ConversationViewState();
@@ -63,6 +69,8 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  bool _isOpeningOptions = false;
+
   /// The account this thread addresses. The route passes `participantPubkeys`
   /// as the counterparty list, so self is already excluded.
   String get _otherPubkey => widget.participantPubkeys.isNotEmpty
@@ -80,52 +88,124 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     );
   }
 
-  Future<void> _onOptions(String otherPubkey, String displayName) async {
-    if (otherPubkey.isEmpty) return;
-
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final followRepository = ref.read(followRepositoryProvider);
-    final isBlocked = blocklistRepository.isBlocked(otherPubkey);
-    final isFollowing = followRepository.isFollowing(otherPubkey);
-
-    final result = await VineBottomSheet.show<MoreSheetResult>(
-      context: context,
-      expanded: false,
-      scrollable: false,
-      isScrollControlled: true,
-      body: MoreSheetContent(
-        userIdHex: otherPubkey,
-        displayName: displayName,
-        isFollowing: isFollowing,
-        isBlocked: isBlocked,
-        showReport: true,
-      ),
-      children: const [],
-    );
-
-    if (!mounted || result == null) return;
-
-    switch (result) {
-      case MoreSheetResult.copy:
-        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-        await ClipboardUtils.copyPubkey(context, npub);
-      case MoreSheetResult.unfollow:
-        await followRepository.toggleFollow(otherPubkey);
-      case MoreSheetResult.report:
-        if (!mounted) return;
-        await ReportContentDialog.showForUser(context, userPubkey: otherPubkey);
-      case MoreSheetResult.blockConfirmed:
-        await blocklistRepository.blockUser(
-          otherPubkey,
-          ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+  Future<void> _onOptions(String otherPubkey) async {
+    if (otherPubkey.isEmpty || _isOpeningOptions) return;
+    _isOpeningOptions = true;
+    // Self is already excluded from the route's counterparty list, so more
+    // than one of them is a group.
+    final isGroup = widget.participantPubkeys.length > 1;
+    try {
+      bool isVanished;
+      try {
+        isVanished = await ref.read(
+          profileVanishedSnapshotProvider(otherPubkey).future,
         );
-        if (mounted) context.pop();
-      case MoreSheetResult.unblockConfirmed:
-        await blocklistRepository.unblockUser(otherPubkey);
-      case MoreSheetResult.addToList:
-        // addToList is not surfaced from this caller (showAddToList defaults
-        // to false on MoreSheetContent here), so this branch is unreachable.
-        break;
+      } catch (error, stackTrace) {
+        Log.warning(
+          'Could not read durable vanish state; opening conversation options '
+          'with the live-account identity fallback',
+          name: 'ConversationView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        isVanished = false;
+      }
+      if (!mounted) return;
+
+      final String displayName;
+      final knownName = dmPeerNameWithoutProfile(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+      );
+      if (knownName != null) {
+        displayName = knownName;
+      } else {
+        UserProfile? profile;
+        try {
+          profile = await ref.read(
+            fetchUserProfileProvider(otherPubkey).future,
+          );
+        } catch (error, stackTrace) {
+          Log.warning(
+            'Could not read the conversation peer profile; opening '
+            'conversation options with the generated identity fallback',
+            name: 'ConversationView',
+            category: LogCategory.ui,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+        if (!mounted) return;
+        displayName = dmPeerDisplayName(
+          context,
+          pubkeyHex: otherPubkey,
+          isVanished: isVanished,
+          profile: profile,
+        );
+      }
+
+      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+      final followRepository = ref.read(followRepositoryProvider);
+      final isBlocked = blocklistRepository.isBlocked(otherPubkey);
+      final isFollowing = followRepository.isFollowing(otherPubkey);
+
+      final result = await VineBottomSheet.show<MoreSheetResult>(
+        context: context,
+        expanded: false,
+        scrollable: false,
+        isScrollControlled: true,
+        body: MoreSheetContent(
+          userIdHex: otherPubkey,
+          displayName: displayName,
+          isFollowing: isFollowing,
+          isBlocked: isBlocked,
+          // Same rule as the inbox action sheet: Report and Block take one
+          // account, and `otherPubkey` on a group is whichever member sorted
+          // first — so offering them under a room's name reads as dealing
+          // with the thread while acting on a stranger. Copy, Unfollow and
+          // Add to list stay: each plainly names the person it affects and
+          // none implies the thread stops. An individual is still reportable
+          // and blockable from their own profile.
+          showReport: !isGroup,
+          showBlock: !isGroup,
+          // Hidden for a group too: this sheet has no room identity to copy,
+          // and `otherPubkey` is an arbitrary member.
+          showCopy: !isGroup,
+        ),
+        children: const [],
+      );
+
+      if (!mounted || result == null) return;
+
+      switch (result) {
+        case MoreSheetResult.copy:
+          final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+          await ClipboardUtils.copyPubkey(context, npub);
+        case MoreSheetResult.unfollow:
+          await followRepository.toggleFollow(otherPubkey);
+        case MoreSheetResult.report:
+          if (!mounted) return;
+          await ReportContentDialog.showForUser(
+            context,
+            userPubkey: otherPubkey,
+          );
+        case MoreSheetResult.blockConfirmed:
+          await blocklistRepository.blockUser(
+            otherPubkey,
+            ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+          );
+          if (mounted) context.pop();
+        case MoreSheetResult.unblockConfirmed:
+          await blocklistRepository.unblockUser(otherPubkey);
+        case MoreSheetResult.addToList:
+          // addToList is not surfaced from this caller (showAddToList defaults
+          // to false on MoreSheetContent here), so this branch is unreachable.
+          break;
+      }
+    } finally {
+      _isOpeningOptions = false;
     }
   }
 
@@ -135,14 +215,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     // Reactors to hide from the reaction pill + who-reacted sheet: the
-    // repository's canonical feed-hide set (blocked ∪ muted ∪ muted-by ∪
-    // blocked-by), the same union `shouldFilterFromFeeds` enforces app-wide.
+    // repository's DM-hide set (blocked ∪ muted), the same union
+    // `shouldFilterFromDms` enforces across DM surfaces. Deliberately not
+    // `feedHiddenPubkeys`, which also carries muted-by and blocked-by — a
+    // third party must not be able to strip reactions out of the viewer's own
+    // thread by publishing a list (#7345).
     // Watching blocklistVersionProvider rebuilds this view — re-reading the
     // set and re-passing it to every ReactionsRow — on any block/unblock/mute
     // change while the thread is open.
     ref.watch(blocklistVersionProvider);
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final blockedReactors = blocklistRepository.feedHiddenPubkeys;
+    final blockedReactors = blocklistRepository.dmHiddenPubkeys;
 
     // A thread reached from the Blocked chip is readable but not writable:
     // the block stays in force, so the composer and the reaction affordance
@@ -157,23 +240,56 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
+    final isResolving = ref.watch(
+      profileIdentityResolvingProvider(otherPubkey),
+    );
     // The conversation and its history remain readable — they are the viewer's
     // own copy of messages a NIP-62 vanish cannot retract. Only the header
     // identity changes.
-    final isDeleted = ref
-        .watch(profileVanishedProvider(otherPubkey))
-        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
-    final displayName = isDeleted
-        ? context.l10n.profileDeletedAccountName
-        : moderationDisplayName(context, otherPubkey) ??
-              profile?.bestDisplayName ??
-              UserProfile.defaultDisplayNameFor(otherPubkey);
+    final isDeleted = ref.watch(profileVanishedProvider(otherPubkey));
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      profile: profile,
+      isResolving: isResolving,
+    );
+    final isGroup = widget.participantPubkeys.length > 1;
+    final conversationDisplayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: [currentPubkey, ...widget.participantPubkeys],
+      currentUserPubkey: currentPubkey,
+      isGroup: isGroup,
+      peerName: displayName,
+      subject: widget.subject,
+    );
+    // Derived from the room title, not the peer name: a titled group resolves
+    // without a profile and must not skeleton, while an untitled one is named
+    // for its peer and must.
+    final isIdentityResolving = isResolving && conversationDisplayName.isEmpty;
+    final visualDisplayName = conversationDisplayName.isEmpty
+        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+        : conversationDisplayName;
     final claimedNip05 = profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
               .watch(nip05VerificationProvider(otherPubkey))
               .whenOrNull(data: (status) => status)
         : null;
+    // Counts live in the `profile_statistics` store, not on the profile.
+    // `UserProfile.restFollowerCount` reads `rawData['follower_count']`, which
+    // only the people-search shape ever writes and which is never persisted to
+    // the cache this screen reads — so it was permanently null here and the
+    // social-proof fallback never fired (#8403). The repository routes
+    // `GET /api/users/{pubkey}`'s `social` block into `profile_statistics`
+    // instead. A vanished account takes the branch below and never reaches the
+    // resolver; `fetchFreshProfile` short-circuits for it in any case.
+    final followerCount = ref
+        .watch(userProfileStatsReactiveProvider(otherPubkey))
+        .asData
+        ?.value
+        ?.followers;
+
     // Prefer the profile's NIP-05 / divine handle when set, otherwise the
     // follow relationship — which tells the viewer which of several
     // same-named people they are messaging, as a truncated npub never did.
@@ -187,7 +303,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 relationship:
                     ref.watch(followRelationshipProvider(otherPubkey)).value ??
                     FollowRelationship.none,
-                followerCount: profile?.restFollowerCount,
+                followerCount: followerCount,
               ) ??
               '';
 
@@ -246,7 +362,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                     child: Column(
                       children: [
                         ConversationAppBar(
-                          displayName: displayName,
+                          displayName: conversationDisplayName,
+                          isResolving: isIdentityResolving,
+                          loadingDisplayName: visualDisplayName,
                           handle: handle,
                           onBack: () => context.pop(),
                           onTitleTap: otherPubkey.isNotEmpty
@@ -254,7 +372,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
                                 )
                               : null,
-                          onOptions: () => _onOptions(otherPubkey, displayName),
+                          onOptions: () => _onOptions(otherPubkey),
                         ),
                         Expanded(
                           // Force the messages card to fill the available width
@@ -275,7 +393,8 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   otherPubkey: otherPubkey,
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
-                                  displayName: displayName,
+                                  displayName: conversationDisplayName,
+                                  isResolving: isIdentityResolving,
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,
@@ -609,6 +728,7 @@ class _ConversationContent extends StatelessWidget {
     required this.participantPubkeys,
     required this.blockedPubkeys,
     required this.displayName,
+    required this.isResolving,
     required this.reactionsEnabled,
     required this.sendRecoveryEnabled,
     this.imageUrl,
@@ -623,6 +743,7 @@ class _ConversationContent extends StatelessWidget {
   /// Effective block/mute set; reactions from these pubkeys are hidden.
   final Set<String> blockedPubkeys;
   final String displayName;
+  final bool isResolving;
   final bool reactionsEnabled;
 
   /// Whether tapping a failed own bubble may offer to resend it.
@@ -658,11 +779,14 @@ class _ConversationContent extends StatelessWidget {
           ConversationStatus.loaded =>
             selected.messages.isEmpty
                 ? EmptyConversation(
-                    displayName: displayName,
+                    displayName: isResolving
+                        ? UserProfile.defaultDisplayNameFor(otherPubkey)
+                        : displayName,
                     pubkey: otherPubkey,
                     imageUrl: imageUrl,
                     nip05: nip05,
                     onViewProfile: onViewProfile,
+                    isIdentityResolving: isResolving,
                     mayBeIncomplete: context.select<DmRestoreStatusCubit, bool>(
                       (cubit) => cubit.state.mayBeIncomplete,
                     ),
@@ -930,11 +1054,12 @@ class _MessageList extends StatelessWidget {
         // Suppress legacy NIP-04 invite plaintext duplicates (#3559).
         // Phase 1 stopped new sends from emitting this fallback, but
         // older app builds and cross-client senders can still produce
-        // bubbles that read "Open diVine to review and accept" — useless
-        // copy inside diVine, and the structured fields needed to render
-        // an actionable card are not recoverable from plaintext alone.
-        if (message.content.endsWith(
-          CollaboratorInviteService.invitePlaintextSuffix,
+        // bubbles that read "Open Divine to review and accept" (or its
+        // pre-#7915 "diVine" spelling) — useless copy inside Divine, and
+        // the structured fields needed to render an actionable card are
+        // not recoverable from plaintext alone.
+        if (CollaboratorInviteService.hasInvitePlaintextSuffix(
+          message.content,
         )) {
           return const SizedBox.shrink();
         }

@@ -392,6 +392,31 @@ void main() {
       });
 
       test(
+        'permanentFailure when a queued username has an invalid format',
+        () async {
+          await seedSlot(claimConfirmed: false, username: 'alice_example');
+
+          expect(
+            await repository.drivePendingSave(pubkey),
+            PendingSaveDriveOutcome.permanentFailure,
+          );
+          expect(await slotDao.get(pubkey), isNotNull);
+          verifyNever(
+            () => httpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          );
+          verifyNever(
+            () => nostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+            ),
+          );
+        },
+      );
+
+      test(
         'retryableFailure when the claim hits a network error — slot kept',
         () async {
           when(

@@ -9,10 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
@@ -37,6 +41,7 @@ AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
 VideoEvent _video({
+  String pubkey = _authorPubkey,
   int? originalLoops,
   Map<String, String> rawTags = const {},
   int? createdAt,
@@ -44,7 +49,7 @@ VideoEvent _video({
   final at = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
   return VideoEvent(
     id: 'video-card-meta-line-test-0123456789abcdef0123456789abcdef0123',
-    pubkey: _authorPubkey,
+    pubkey: pubkey,
     createdAt: at,
     content: 'caption',
     timestamp: DateTime.fromMillisecondsSinceEpoch(at * 1000, isUtc: true),
@@ -125,6 +130,18 @@ void main() {
   ).videoFeedLoopCountLine(StringUtils.formatCompactNumber(count), count);
 
   group('video card meta line', () {
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await pump(tester, video: _video(pubkey: pubkey));
+
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
+
     testWidgets('hides a small count from a stranger', (
       tester,
     ) async {

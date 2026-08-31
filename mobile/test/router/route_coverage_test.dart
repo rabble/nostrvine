@@ -461,6 +461,22 @@ void main() {
         final context = parseRoute('/video-editor');
         expect(context.type, RouteType.videoEditor);
       });
+      test('the editor origin query does not change the route type', () {
+        // The library entry point carries ?from=library (#3335). A segment
+        // match that saw the query would read "video-editor?from=library",
+        // match nothing, and fall through to the RouteType.home fallback —
+        // which the normalizer then "corrects" by yanking the user to /home/0.
+        expect(
+          parseRoute(VideoEditorScreen.pathFor(fromLibrary: true)).type,
+          RouteType.videoEditor,
+        );
+        expect(
+          parseRoute(
+            VideoEditorScreen.pathFor(draftId: 'draft-1', fromLibrary: true),
+          ).type,
+          RouteType.videoEditor,
+        );
+      });
       test('/video-edit parses to RouteType.videoEdit', () {
         final context = parseRoute('/video-edit');
         expect(context.type, RouteType.videoEdit);

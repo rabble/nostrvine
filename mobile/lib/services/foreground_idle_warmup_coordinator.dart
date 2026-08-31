@@ -103,7 +103,6 @@ class ForegroundIdleWarmupScheduler {
 /// Logical warmup surfaces.
 enum ForegroundIdleWarmupTaskId {
   forYou,
-  following,
   newVideos,
   popular,
   notifications,

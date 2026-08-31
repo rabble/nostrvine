@@ -1,6 +1,8 @@
 // ABOUTME: Provides singleton AppDatabase instance with proper lifecycle management
 // ABOUTME: Database auto-closes when provider container is disposed
+// ABOUTME: Also hosts the durable vanished-profile pubkey stream read off Drift
 import 'package:db_client/db_client.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/services/database_corruption_service.dart';
@@ -61,3 +63,16 @@ AppDbClient appDbClient(Ref ref) {
   final dbClient = DbClient(generatedDatabase: db);
   return AppDbClient(dbClient, db);
 }
+
+/// Live view of the durable NIP-62 `vanished_profiles` table.
+///
+/// Housed with the database handle rather than with either consumer: building
+/// the profile repository primes it and `profileVanishedProvider` derives from
+/// it, so a home owned by either of those files would close an import cycle.
+final vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
+  return ref
+      .watch(databaseProvider)
+      .vanishedProfilesDao
+      .watchAllPubkeys()
+      .map((pubkeys) => pubkeys.toSet());
+});

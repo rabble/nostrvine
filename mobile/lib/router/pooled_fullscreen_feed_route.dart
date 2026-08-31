@@ -16,10 +16,7 @@ import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 /// discarded on page reload or mobile lifecycle restoration. When that
 /// happens, recover the selected video through its durable URL identity.
 /// Falls back to the home feed only for legacy URLs with no video identity.
-String? fullscreenFeedRedirect(
-  Object? extra, {
-  String? fallbackVideoId,
-}) {
+String? fullscreenFeedRedirect(Object? extra, {String? fallbackVideoId}) {
   if (extra is PooledFullscreenVideoFeedArgs ||
       extra is ProfilePooledFullscreenVideoFeedArgs) {
     return null;
@@ -43,6 +40,7 @@ Widget buildPooledFullscreenFeed(BuildContext context, GoRouterState state) {
       initialVideoId: extra.initialVideoId,
       initialStableId: extra.initialStableId,
       contextTitle: extra.contextTitle,
+      sponsorName: extra.sponsorName,
       trafficSource: extra.trafficSource,
       sourceDetail: extra.sourceDetail,
       autoOpenComments: extra.autoOpenComments,

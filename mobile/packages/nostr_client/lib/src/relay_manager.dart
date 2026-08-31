@@ -469,11 +469,59 @@ class RelayManager {
   // Reconnection
   // ---------------------------------------------------------------------------
 
-  /// Retry connecting to all disconnected relays.
+  /// Aggregate bound on one reconnect sweep.
   ///
-  /// Also checks for idle/dead connections (those that appear connected but
-  /// haven't received messages recently) and disconnects them first.
-  Future<void> retryDisconnectedRelays() async {
+  /// Parallelising already bounds a healthy sweep at roughly one connect
+  /// (a 10s handshake timeout plus a 2s orphan close), but nothing above the
+  /// socket layer guarantees a connect honours that: `_tryReconnect` with no
+  /// deadline retries with exponential backoff and can run for minutes. This
+  /// is the outer stop, so a wedged host cannot hold a DM send's inbox lookup
+  /// open indefinitely (#7091).
+  @visibleForTesting
+  static Duration reconnectSweepBudget = const Duration(seconds: 15);
+
+  /// Reconnects disconnected relays and checks connected relays for health.
+  ///
+  /// Concurrent callers share the underlying sweep for the full lifetime of
+  /// its dials. Each caller stops waiting at the sweep's original aggregate
+  /// deadline, while late dial results continue updating their own relay
+  /// status. `_connectToRelay` replaces the prior relay object, so clearing the
+  /// single-flight latch when only the caller deadline expires would let the
+  /// next caller start duplicate sockets against the same hosts (#7091).
+  Future<void> retryDisconnectedRelays() {
+    final inFlight = _retryInFlight;
+    if (inFlight != null) return _waitForRetrySweep(inFlight);
+    _retryDeadline = DateTime.now().add(reconnectSweepBudget);
+    final sweep = _runRetrySweep();
+    late final Future<void> tracked;
+    tracked = sweep.whenComplete(() {
+      if (identical(_retryInFlight, tracked)) {
+        _retryInFlight = null;
+        _retryDeadline = null;
+      }
+    });
+    _retryInFlight = tracked;
+    return _waitForRetrySweep(tracked);
+  }
+
+  Future<void>? _retryInFlight;
+  DateTime? _retryDeadline;
+
+  Future<void> _waitForRetrySweep(Future<void> sweep) async {
+    final deadline = _retryDeadline;
+    if (deadline == null) return sweep;
+    final remaining = deadline.difference(DateTime.now());
+    try {
+      await sweep.timeout(remaining.isNegative ? Duration.zero : remaining);
+    } on TimeoutException {
+      _log(
+        'Reconnect sweep exceeded ${reconnectSweepBudget.inSeconds}s; '
+        'hosts still dialling remain in flight',
+      );
+    }
+  }
+
+  Future<void> _runRetrySweep() async {
     _log('Retrying disconnected relays');
 
     // First, check health of all "connected" relays to detect dead connections
@@ -489,20 +537,25 @@ class RelayManager {
     }
     _notifyStatusChange();
 
-    for (final url in disconnected) {
-      final success = await _connectToRelay(url);
-      if (success) {
-        _updateRelayStatus(url, RelayState.connected);
-      } else {
-        _updateRelayStatus(
-          url,
-          RelayState.error,
-          errorMessage: 'Reconnection failed',
-        );
-      }
-    }
-
-    _notifyStatusChange();
+    // Connect in PARALLEL, as _connectToConfiguredRelays already does for the
+    // startup path. Each result owns only its relay's status: the aggregate
+    // caller deadline must not turn unresolved dials into failures, and a dial
+    // that succeeds after that deadline is still the live pooled connection.
+    await Future.wait(
+      disconnected.map((url) async {
+        final success = await _connectToRelay(url);
+        if (success) {
+          _updateRelayStatus(url, RelayState.connected);
+        } else {
+          _updateRelayStatus(
+            url,
+            RelayState.error,
+            errorMessage: 'Reconnection failed',
+          );
+        }
+        _notifyStatusChange();
+      }),
+    );
   }
 
   /// Check health of all connected relays and disconnect any that are idle.

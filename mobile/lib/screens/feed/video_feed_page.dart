@@ -111,7 +111,7 @@ class VideoFeedPage extends ConsumerWidget {
           create: (_) => VideoPlaybackStatusCubit(
             canAutoAuthorizeAgeRestrictedMedia: () => ref
                 .read(mediaAuthInterceptorProvider)
-                .shouldAutoAuthorizeAgeRestrictedMedia,
+                .canAutoAuthorizeAdultMedia(),
           ),
         ),
       ],

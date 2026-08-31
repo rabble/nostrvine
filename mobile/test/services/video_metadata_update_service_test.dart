@@ -3,6 +3,7 @@
 // ABOUTME: edited-field replacement, replacement created_at, successful publish,
 // ABOUTME: publish failure, and invite failure via inviteFailureCount.
 
+import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -13,8 +14,10 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -74,10 +77,14 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
+    registerFallbackValue(File('/tmp/fallback-thumbnail.jpg'));
   });
 
   setUp(() {
-    mockAuthService = createMockAuthService();
+    mockAuthService = createMockAuthService(
+      authState: AuthState.authenticated,
+      currentPublicKeyHex: _ownerPubkey,
+    );
     mockNostrService = createMockNostrService();
     mockBlossomUploadService = _MockBlossomUploadService();
     mockDmRepository = _MockDmRepository();
@@ -85,9 +92,6 @@ void main() {
     mockVideoEventService = _MockVideoEventService();
     capturedTags = [];
     capturedCreatedAt = 0;
-
-    when(() => mockAuthService.isAuthenticated).thenReturn(true);
-    when(() => mockAuthService.currentPublicKeyHex).thenReturn(_ownerPubkey);
 
     late Event signedEvent;
     when(
@@ -137,6 +141,9 @@ void main() {
     group('auth guard', () {
       test('returns VideoUpdateFailure when not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockAuthService.authState,
+        ).thenReturn(AuthState.unauthenticated);
 
         final result = await service.updateVideo(
           originalVideo: _testVideo(),
@@ -144,7 +151,14 @@ void main() {
           initialCollaboratorPubkeys: const {},
         );
 
-        expect(result, isA<VideoUpdateFailure>());
+        expect(
+          result,
+          isA<VideoUpdateFailure>().having(
+            (f) => f.reason,
+            'reason',
+            VideoMetadataUpdateError.notAuthenticated,
+          ),
+        );
         verifyNever(
           () => mockAuthService.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -180,7 +194,14 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.noPlayableVideoUrl,
+            ),
+          );
         },
       );
     });
@@ -580,38 +601,117 @@ void main() {
         expect(capturedTags, contains(equals(['expiration', '1799999999'])));
       });
 
-      test('rebuilds imeta from videoUrl when nostrEventTags is empty and the '
-          'event is not cached', () async {
-        final video = VideoEvent(
-          id: 'uncached-event-id',
-          pubkey: _ownerPubkey,
-          createdAt: 1757385263,
-          content: 'Test video content',
-          timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
-          videoUrl: 'https://cdn.example.com/video.mp4',
-          title: 'Test Video Title',
-          vineId: 'video-d-tag',
-        );
-        when(
-          () => mockPersonalEventCacheService.getEventById('uncached-event-id'),
-        ).thenReturn(null);
+      test(
+        'refuses to publish when original raw tags are unavailable',
+        () async {
+          final video = VideoEvent(
+            id: 'uncached-event-id',
+            pubkey: _ownerPubkey,
+            createdAt: 1757385263,
+            content: 'Test video content',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+            title: 'Test Video Title',
+            vineId: 'video-d-tag',
+          );
+          when(
+            () =>
+                mockPersonalEventCacheService.getEventById('uncached-event-id'),
+          ).thenReturn(null);
 
-        final result = await service.updateVideo(
-          originalVideo: video,
-          editorState: VideoEditorProviderState(),
-          initialCollaboratorPubkeys: const {},
-        );
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+            newThumbnailFile: File('/tmp/unused-thumbnail.jpg'),
+          );
 
-        expect(result, isA<VideoUpdateSuccess>());
-        final imetaTags = capturedTags
-            .where((t) => t.isNotEmpty && t.first == 'imeta')
-            .toList();
-        expect(imetaTags, hasLength(1));
-        expect(
-          imetaTags.single,
-          contains('url https://cdn.example.com/video.mp4'),
-        );
-      });
+          expect(result, isA<VideoUpdateOriginalUnavailable>());
+          verifyNever(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          );
+          verifyNever(() => mockNostrService.publishEvent(any()));
+        },
+      );
+
+      test(
+        'REST-sourced edit preserves hashtags and provenance tags',
+        () async {
+          final video = VideoStats.fromJson(const {
+            'event': {
+              'id': 'rest-event-id',
+              'pubkey': _ownerPubkey,
+              'created_at': 1757385263,
+              'kind': 34236,
+              'content': 'Test video content',
+              'tags': [
+                ['d', 'video-d-tag'],
+                [
+                  'imeta',
+                  'url https://cdn.example.com/video.mp4',
+                  'm video/mp4',
+                  'size 480000',
+                ],
+                ['t', 'first'],
+                ['t', 'second'],
+                ['alt', 'Accessible description'],
+                ['duration', '6'],
+                ['proofmode', 'proof-manifest'],
+                ['c2pa_manifest_id', 'urn:c2pa:test'],
+                ['verification', 'verified_mobile'],
+                ['device_attestation', 'attestation'],
+                ['text-track', '39307:author:subtitles:video-d-tag'],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          }).toVideoEvent();
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              title: video.title ?? '',
+              description: video.content,
+              tags: video.hashtags.toSet(),
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          for (final tag in const [
+            ['t', 'first'],
+            ['t', 'second'],
+            ['alt', 'Accessible description'],
+            ['duration', '6'],
+            ['proofmode', 'proof-manifest'],
+            ['c2pa_manifest_id', 'urn:c2pa:test'],
+            ['verification', 'verified_mobile'],
+            ['device_attestation', 'attestation'],
+            ['text-track', '39307:author:subtitles:video-d-tag'],
+          ]) {
+            expect(capturedTags, contains(equals(tag)));
+          }
+          expect(
+            capturedTags.singleWhere((tag) => tag.first == 'imeta'),
+            contains('size 480000'),
+          );
+        },
+      );
     });
 
     group('edited field replacement', () {
@@ -652,6 +752,28 @@ void main() {
           expect(capturedTags, isNot(contains(equals(['t', 'oldtag']))));
         },
       );
+
+      test('allows the user to clear hashtags from a complete event', () async {
+        final video = _testVideo(
+          extraTags: const [
+            ['t', 'oldtag'],
+            ['proofmode', 'proof-manifest'],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(capturedTags.where((tag) => tag.first == 't'), isEmpty);
+        expect(
+          capturedTags,
+          contains(equals(['proofmode', 'proof-manifest'])),
+        );
+      });
 
       test(
         'removes the content-warning group when warnings are cleared',
@@ -1152,7 +1274,14 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.publishRejected,
+            ),
+          );
           verifyNever(
             () => mockPersonalEventCacheService.cacheUserEvent(any()),
           );
@@ -1178,7 +1307,51 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          // `couldNotSign` is the *null-return* arm: in production
+          // `SignerFactory.createAndSignEvent` catches and returns null. A
+          // throw from the auth service itself is an infrastructure failure
+          // that propagates to the outer handler, so it maps to `generic`.
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.generic,
+            ),
+          );
+          verifyNever(() => mockNostrService.publishEvent(any()));
+        },
+      );
+
+      test(
+        'returns couldNotSign when createAndSignEvent returns null',
+        () async {
+          // The production path: SignerFactory catches internally and returns
+          // null rather than throwing, so this is the arm a real signer
+          // refusal takes.
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.couldNotSign,
+            ),
+          );
           verifyNever(() => mockNostrService.publishEvent(any()));
         },
       );
@@ -1222,6 +1395,36 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'returns inviteFailureCount = 0 when the invite remains queued',
+        () async {
+          when(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure(
+              'Delivery confirmation pending',
+              retryablePending: true,
+            ),
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(
+              collaboratorPubkeys: const {newCollaborator},
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect((result as VideoUpdateSuccess).inviteFailureCount, equals(0));
+        },
+      );
 
       test(
         'returns inviteFailureCount = 0 when no new collaborators were added',

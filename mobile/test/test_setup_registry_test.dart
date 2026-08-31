@@ -12,55 +12,64 @@ TestDefaultBinaryMessenger get _messenger =>
 Future<Object?>? _foreign(MethodCall call) async => null;
 
 void main() {
-  test('registers a canonical handler for every shared channel', () {
-    expect(
-      canonicalSharedHandlers.keys.toSet(),
-      equals(sharedChannelNames),
-    );
-    for (final name in sharedChannelNames) {
+  group('shared channel registry', () {
+    test('registers a canonical handler for every shared channel', () {
       expect(
-        _messenger.checkMockMessageHandler(name, canonicalSharedHandlers[name]),
-        isTrue,
-        reason: '$name should carry its canonical handler after setup',
+        canonicalSharedHandlers.keys.toSet(),
+        equals(sharedChannelNames),
       );
-    }
-  });
+      for (final name in sharedChannelNames) {
+        expect(
+          _messenger.checkMockMessageHandler(
+            name,
+            canonicalSharedHandlers[name],
+          ),
+          isTrue,
+          reason: '$name should carry its canonical handler after setup',
+        );
+      }
+    });
 
-  test('restoreSharedChannel reinstalls one channel canonical', () {
-    const channel = MethodChannel('plugins.flutter.io/image_picker');
-    _messenger.setMockMethodCallHandler(channel, _foreign);
-    expect(
-      _messenger.checkMockMessageHandler(
-        channel.name,
-        canonicalSharedHandlers[channel.name],
-      ),
-      isFalse,
-    );
-
-    restoreSharedChannel(channel);
-
-    expect(
-      _messenger.checkMockMessageHandler(
-        channel.name,
-        canonicalSharedHandlers[channel.name],
-      ),
-      isTrue,
-    );
-  });
-
-  test('restoreSharedChannelDefaults reinstalls all shared channels', () {
-    for (final name in sharedChannelNames) {
-      _messenger.setMockMethodCallHandler(MethodChannel(name), _foreign);
-    }
-
-    restoreSharedChannelDefaults();
-
-    for (final name in sharedChannelNames) {
+    test('restoreSharedChannel reinstalls one channel canonical', () {
+      const channel = MethodChannel('plugins.flutter.io/image_picker');
+      _messenger.setMockMethodCallHandler(channel, _foreign);
       expect(
-        _messenger.checkMockMessageHandler(name, canonicalSharedHandlers[name]),
-        isTrue,
-        reason: '$name should be canonical after restoreSharedChannelDefaults',
+        _messenger.checkMockMessageHandler(
+          channel.name,
+          canonicalSharedHandlers[channel.name],
+        ),
+        isFalse,
       );
-    }
+
+      restoreSharedChannel(channel);
+
+      expect(
+        _messenger.checkMockMessageHandler(
+          channel.name,
+          canonicalSharedHandlers[channel.name],
+        ),
+        isTrue,
+      );
+    });
+
+    test('restoreSharedChannelDefaults reinstalls all shared channels', () {
+      for (final name in sharedChannelNames) {
+        _messenger.setMockMethodCallHandler(MethodChannel(name), _foreign);
+      }
+
+      restoreSharedChannelDefaults();
+
+      for (final name in sharedChannelNames) {
+        expect(
+          _messenger.checkMockMessageHandler(
+            name,
+            canonicalSharedHandlers[name],
+          ),
+          isTrue,
+          reason:
+              '$name should be canonical after restoreSharedChannelDefaults',
+        );
+      }
+    });
   });
 }

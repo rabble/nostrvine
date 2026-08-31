@@ -173,10 +173,19 @@ assert_contains '-d emulator-5554' "$flutter_args_file" \
   "local Android runner should default to the first emulator instead of a physical device"
 assert_contains '--dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004' "$flutter_args_file" \
   "local Android runner should pass the Android emulator invite-server URL to Flutter"
-assert_contains 'shell pm clear co.openvine.app' "$adb_args_file" \
-  "local Android runner should clear persisted app data before launching"
-assert_contains 'Clearing persisted app data for co.openvine.app' "${tmp_dir}/emulator-selection.err" \
+assert_contains 'shell pm clear co.openvine.app.staging' "$adb_args_file" \
+  "debug local Android runner should clear staging app data before launching"
+assert_contains 'Clearing persisted app data for co.openvine.app.staging' "${tmp_dir}/emulator-selection.err" \
   "local Android runner should make the deterministic reset visible"
+
+rm -f "$adb_args_file" "$flutter_args_file"
+env ADB_DEVICES_OUTPUT=$'emulator-5554\tdevice\n' ADB_ARGS_FILE="$adb_args_file" \
+  FLUTTER_ARGS_FILE="$flutter_args_file" PATH="${tmp_dir}/bin:${PATH}" \
+  bash "${SCRIPT_DIR}/run_android_local.sh" emulator-5554 profile >/dev/null 2>"${tmp_dir}/profile.err"
+assert_contains 'shell pm clear co.openvine.app' "$adb_args_file" \
+  "profile local Android runner should clear production-identity app data"
+assert_contains '--profile' "$flutter_args_file" \
+  "profile local Android runner should preserve the requested build mode"
 
 rm -f "$adb_args_file" "$flutter_args_file"
 env ADB_DEVICES_OUTPUT=$'emulator-5554\tdevice\n' ADB_ARGS_FILE="$adb_args_file" \
@@ -187,7 +196,7 @@ assert_contains '-d emulator-5554' "$flutter_args_file" \
   "local Android runner should still launch Flutter when no app data exists yet"
 assert_contains '--dart-define=DEFAULT_ENV=LOCAL' "$flutter_args_file" \
   "missing app data should not bypass the LOCAL dart define"
-assert_contains 'No existing app install found for co.openvine.app' "${tmp_dir}/missing-package-reset.err" \
+assert_contains 'No existing app install found for co.openvine.app.staging' "${tmp_dir}/missing-package-reset.err" \
   "missing app data should be reported as an idempotent first-run reset"
 
 rm -f "$adb_args_file" "$flutter_args_file"
@@ -200,7 +209,7 @@ clear_failure_exit=$?
 set -e
 assert_eq "1" "$clear_failure_exit" \
   "local Android runner should fail when app data exists but cannot be cleared"
-assert_contains 'Failed to clear persisted app data for co.openvine.app' "${tmp_dir}/clear-failure.err" \
+assert_contains 'Failed to clear persisted app data for co.openvine.app.staging' "${tmp_dir}/clear-failure.err" \
   "clear failure should preserve the underlying hard adb error"
 assert_not_file_exists "$flutter_args_file" \
   "local Android runner should not launch Flutter after a real app-data clear failure"

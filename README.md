@@ -81,7 +81,7 @@ A Docker-based local stack (relay, Keycast, Blossom, and supporting services) li
 
 ## Configuration
 
-Runtime environment is selected at build time with `--dart-define=DEFAULT_ENV=<env>`, defaulting to `PRODUCTION`. Supported values (see `mobile/lib/models/environment_config.dart`) are `POC`, `STAGING`, `TEST`, `PRODUCTION`, and `LOCAL`; each maps to one relay URL and API base URL (production API is `https://api.divine.video`). For example, `mise run local_build` builds a debug APK with `DEFAULT_ENV=LOCAL`.
+Runtime environment is selected at build time with `--dart-define=DEFAULT_ENV=<env>`, defaulting to `PRODUCTION`. Supported values (see `mobile/lib/models/environment_config.dart`) are `POC`, `STAGING`, `PRODUCTION`, and `LOCAL`; each maps to one relay URL and API base URL (production API is `https://api.divine.video`). For example, `mise run local_build` builds a debug APK with `DEFAULT_ENV=LOCAL`.
 
 Additional `--dart-define` values wire up optional services, supplied by the run/build scripts and CI:
 

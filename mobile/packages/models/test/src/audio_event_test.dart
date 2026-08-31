@@ -582,6 +582,38 @@ void main() {
       });
     });
 
+    group('extracted clip audio', () {
+      AudioEvent extracted({String id = 'local_extracted_1', String? url}) =>
+          AudioEvent(
+            id: id,
+            pubkey: '',
+            createdAt: 1700000000,
+            url: url ?? '/docs/extracted_clip_audio/extracted_audio_1.wav',
+          );
+
+      test('is draft-local audio with a usable file path', () {
+        final event = extracted();
+
+        expect(event.isLocalExtracted, isTrue);
+        expect(event.isDraftLocalAudio, isTrue);
+        expect(
+          event.localFilePath,
+          equals('/docs/extracted_clip_audio/extracted_audio_1.wav'),
+        );
+      });
+
+      test('is not a local import, so reuse and attribution skip it', () {
+        // An extracted track is the video's own sound. Treating it as
+        // imported material would push it into the reuse-consent and
+        // attribution paths, which key on isLocalImport.
+        expect(extracted().isLocalImport, isFalse);
+      });
+
+      test('has no file path without a url', () {
+        expect(extracted(url: '').localFilePath, isNull);
+      });
+    });
+
     group('fromLocalImport', () {
       test('creates draft-local audio event', () {
         final event = AudioEvent.fromLocalImport(

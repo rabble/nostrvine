@@ -12,13 +12,37 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
-final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
-  return ref
-      .watch(databaseProvider)
-      .vanishedProfilesDao
-      .watchAllPubkeys()
-      .map((pubkeys) => pubkeys.toSet());
-});
+const _blockedProfileFetchChunkSize = 50;
+
+/// Whether a peer's profile identity is still being resolved.
+///
+/// The reactive profile stream intentionally emits `null` while the read
+/// repository is unavailable, so its value alone cannot distinguish that
+/// cold-start state from a settled account with no profile. The one-shot
+/// provider owns the cache lookup and fresh fetch. Waiting for both paths keeps
+/// the signal aligned with widgets that consume either one, and auto-disposal
+/// releases their per-pubkey watchers when the surface unmounts.
+// ignore: specify_nonobvious_property_types
+final profileIdentityResolvingProvider = Provider.autoDispose
+    .family<bool, String>((ref, pubkey) {
+      if (ref.watch(profileReadRepositoryProvider) == null) return true;
+      final fetched = ref.watch(fetchUserProfileProvider(pubkey));
+      final reactive = ref.watch(userProfileReactiveProvider(pubkey));
+      return fetched.isLoading || reactive.isLoading;
+    });
+
+/// One-shot durable vanish lookup for imperative paths that must resolve the
+/// state before acting.
+///
+/// [profileVanishedProvider] reports `false` until its shared Drift stream
+/// first emits — right for a widget that repaints on the next tick, wrong for
+/// a read-once caller, which would commit to the live-account branch and
+/// never revisit it.
+// ignore: specify_nonobvious_property_types
+final profileVanishedSnapshotProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, pubkey) {
+      return ref.watch(databaseProvider).vanishedProfilesDao.isVanished(pubkey);
+    });
 
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
@@ -94,6 +118,44 @@ Stream<UserProfile?> _watchUserProfile(
   yield* repo.watchProfile(pubkey: pubkey);
 }
 
+/// Resolves profiles for the accounts the viewer has blocked.
+///
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
+@riverpod
+Future<Map<String, UserProfile>> blockedUserProfiles(
+  Ref ref,
+  Set<String> pubkeys,
+) async {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null || pubkeys.isEmpty) return const {};
+
+  final profiles = <String, UserProfile>{};
+  final pending = pubkeys.toList();
+  for (var i = 0; i < pending.length; i += _blockedProfileFetchChunkSize) {
+    final chunk = pending.skip(i).take(_blockedProfileFetchChunkSize).toList();
+    profiles.addAll(
+      await repo.fetchBatchProfiles(
+        pubkeys: chunk,
+        ignoreBlockFilter: true,
+      ),
+    );
+  }
+  return profiles;
+}
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+@riverpod
+Stream<UserProfile?> blockedUserProfile(Ref ref, String pubkey) {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null) return Stream.value(null);
+
+  return repo.watchProfile(pubkey: pubkey);
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
@@ -119,9 +181,17 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
 /// without a network round trip, and it flips live when a fetch discovers a
 /// new deletion. This — not the profile provider — drives the deleted-account
 /// treatment in the inbox and the following bar.
+///
+/// Reports `false` until [vanishedProfilePubkeysProvider] first emits. That
+/// window belongs to the source stream, so returning a `Stream<bool>` would
+/// not shorten it — only wrap it in a second, per-pubkey `AsyncLoading`.
+/// Building the profile repository subscribes the source, so the wait starts
+/// no later than the moment the profile graph can leave `isLoading`; that
+/// ordering is what keeps a vanished account from rendering a generated name
+/// first (#8208), and `repository_providers_test.dart` pins it.
 @riverpod
-Stream<bool> profileVanished(Ref ref, String pubkey) {
+bool profileVanished(Ref ref, String pubkey) {
   final pubkeys =
-      ref.watch(_vanishedProfilePubkeysProvider).value ?? const <String>{};
-  return Stream.value(pubkeys.contains(pubkey));
+      ref.watch(vanishedProfilePubkeysProvider).value ?? const <String>{};
+  return pubkeys.contains(pubkey);
 }

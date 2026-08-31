@@ -4,7 +4,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -216,10 +215,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             prefixText: '@',
             suffixText: _divineVideoDomainSuffix,
             textInputAction: TextInputAction.next,
-            inputFormatters: [
-              const LowercaseTextInputFormatter(),
-              FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
-            ],
+            inputFormatters: const [LowercaseTextInputFormatter()],
             onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             onChanged: (value) {
               context.read<ProfileEditorBloc>().add(UsernameChanged(value));
@@ -236,7 +232,6 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             UsernameStatusIndicator(
               status: state.usernameStatus,
               error: state.usernameError,
-              formatMessage: state.usernameFormatMessage,
             ),
         ],
       ),

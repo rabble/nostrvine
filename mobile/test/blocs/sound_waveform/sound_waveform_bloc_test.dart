@@ -130,8 +130,13 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      // The failure detail belongs in the error stream, never in state
+      // (`state_management.md`). This pins both halves: `addError` still
+      // carries the underlying exception text, and the emitted state is
+      // value-equal to a bare `SoundWaveformError()` — so nothing about the
+      // exception leaked into it.
       blocTest<SoundWaveformBloc, SoundWaveformState>(
-        'error state contains error message',
+        'reports the failure through addError and keeps it out of state',
         setUp: () {
           mockProVideoEditor.shouldThrowError = true;
         },
@@ -142,11 +147,17 @@ void main() {
             soundId: 'test-sound-id',
           ),
         ),
-        verify: (bloc) {
-          final state = bloc.state as SoundWaveformError;
-          expect(state.message, contains('Waveform extraction failed'));
-        },
-        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<SoundWaveformLoading>(),
+          const SoundWaveformError(),
+        ],
+        errors: () => [
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'toString',
+            contains('Waveform extraction failed'),
+          ),
+        ],
       );
 
       // The mapping at sound_waveform_bloc.dart:36-40 turns each
@@ -299,7 +310,7 @@ void main() {
       blocTest<SoundWaveformBloc, SoundWaveformState>(
         'emits [$SoundWaveformInitial] when clearing from error state',
         build: buildBloc,
-        seed: () => const SoundWaveformError('Test error'),
+        seed: () => const SoundWaveformError(),
         act: (bloc) => bloc.add(const SoundWaveformClear()),
         expect: () => [isA<SoundWaveformInitial>()],
       );
@@ -412,16 +423,10 @@ void main() {
       expect(state1, isNot(equals(state2)));
     });
 
-    test('$SoundWaveformError states with same message are equal', () {
-      const state1 = SoundWaveformError('Error message');
-      const state2 = SoundWaveformError('Error message');
+    test('$SoundWaveformError states are equal regardless of cause', () {
+      const state1 = SoundWaveformError();
+      const state2 = SoundWaveformError();
       expect(state1, equals(state2));
-    });
-
-    test('$SoundWaveformError states with different message are not equal', () {
-      const state1 = SoundWaveformError('Error 1');
-      const state2 = SoundWaveformError('Error 2');
-      expect(state1, isNot(equals(state2)));
     });
   });
 }

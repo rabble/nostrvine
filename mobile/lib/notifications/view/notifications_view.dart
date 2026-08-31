@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart'
     show VideoEngagementType;
 import 'package:openvine/l10n/l10n.dart';
@@ -404,7 +405,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
   void _navigateToProfile(BuildContext context, String userPubkey) {
     Log.info(
-      'Navigating to profile: $userPubkey',
+      'Navigating to profile: ${pubkeyForLogs(userPubkey)}',
       name: 'NotificationsView',
       category: LogCategory.ui,
     );

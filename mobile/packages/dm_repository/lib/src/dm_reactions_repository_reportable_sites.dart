@@ -12,8 +12,13 @@ abstract class DmReactionsRepositoryReportableSites {
   /// Programming-invariant violation — the validator above passed.
   static const String persistIncomingDaoUpsert = 'persistIncoming.daoUpsert';
 
-  /// `handleIncomingDeletion`: DAO soft-delete threw despite a validated
-  /// matching reaction row.
+  /// `applyDeletion`: DAO soft-delete threw despite a validated matching
+  /// reaction row.
+  ///
+  /// The wire value still says `handleIncomingDeletion` — the method's name
+  /// before #7809 split message routing out of it. Crashlytics aggregates on
+  /// this string, so renaming it would fork the dashboard history for a
+  /// failure whose cause has not changed.
   static const String handleIncomingDeletionSoftDelete =
       'handleIncomingDeletion.softDelete';
 

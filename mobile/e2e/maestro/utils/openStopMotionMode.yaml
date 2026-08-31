@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Utility: given the user is signed in and on a feed surface, open the recorder
 #and leave it on a ready stop-motion viewfinder with an empty session.

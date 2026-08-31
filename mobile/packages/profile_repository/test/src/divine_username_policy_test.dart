@@ -4,16 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 void main() {
-  const hyphenEdgeReason = "Usernames can't start or end with a hyphen";
-  const charsetReason =
-      'Only letters, numbers, and hyphens are allowed '
-      '(your username becomes username.divine.video)';
-  const requiredReason = 'Username is required';
-
-  String lengthFailureReason() =>
-      'Usernames must be $kDivineUsernameMinLength–'
-      '$kDivineUsernameMaxLength characters';
-
   group('validateDivineUsername', () {
     group('acceptance criteria (#3364 table)', () {
       final cases =
@@ -23,7 +13,7 @@ void main() {
               String input,
               bool valid,
               String? normalized,
-              String? reason,
+              DivineUsernameValidationFailure? failure,
             })
           >[
             (
@@ -31,98 +21,98 @@ void main() {
               input: 'alice',
               valid: true,
               normalized: 'alice',
-              reason: null,
+              failure: null,
             ),
             (
               label: 'a-b',
               input: 'a-b',
               valid: true,
               normalized: 'a-b',
-              reason: null,
+              failure: null,
             ),
             (
               label: 'a_b',
               input: 'a_b',
               valid: false,
               normalized: null,
-              reason: charsetReason,
+              failure: DivineUsernameValidationFailure.invalidCharacters,
             ),
             (
               label: 'a.b',
               input: 'a.b',
               valid: false,
               normalized: null,
-              reason: charsetReason,
+              failure: DivineUsernameValidationFailure.invalidCharacters,
             ),
             (
               label: '-alice',
               input: '-alice',
               valid: false,
               normalized: null,
-              reason: hyphenEdgeReason,
+              failure: DivineUsernameValidationFailure.leadingOrTrailingHyphen,
             ),
             (
               label: 'alice-',
               input: 'alice-',
               valid: false,
               normalized: null,
-              reason: hyphenEdgeReason,
+              failure: DivineUsernameValidationFailure.leadingOrTrailingHyphen,
             ),
             (
               label: 'two chars',
               input: 'ab',
               valid: false,
               normalized: null,
-              reason: lengthFailureReason(),
+              failure: DivineUsernameValidationFailure.invalidLength,
             ),
             (
               label: '21 chars (within max)',
               input: List.filled(21, 'a').join(),
               valid: true,
               normalized: List.filled(21, 'a').join(),
-              reason: null,
+              failure: null,
             ),
             (
               label: '64 chars (over max)',
               input: List.filled(64, 'a').join(),
               valid: false,
               normalized: null,
-              reason: lengthFailureReason(),
+              failure: DivineUsernameValidationFailure.invalidLength,
             ),
             (
               label: 'min length boundary (3)',
               input: 'abc',
               valid: true,
               normalized: 'abc',
-              reason: null,
+              failure: null,
             ),
             (
               label: 'max length boundary (63)',
               input: List.filled(63, 'z').join(),
               valid: true,
               normalized: List.filled(63, 'z').join(),
-              reason: null,
+              failure: null,
             ),
             (
               label: 'trim and lowercase',
               input: '  Alice  ',
               valid: true,
               normalized: 'alice',
-              reason: null,
+              failure: null,
             ),
             (
               label: 'empty',
               input: '',
               valid: false,
               normalized: null,
-              reason: requiredReason,
+              failure: DivineUsernameValidationFailure.required,
             ),
             (
               label: 'whitespace only',
               input: '   ',
               valid: false,
               normalized: null,
-              reason: requiredReason,
+              failure: DivineUsernameValidationFailure.required,
             ),
           ];
 
@@ -138,7 +128,7 @@ void main() {
             );
           } else {
             expect(r, isA<DivineUsernameInvalid>());
-            expect((r as DivineUsernameInvalid).reason, c.reason);
+            expect((r as DivineUsernameInvalid).failure, c.failure);
           }
         });
       }

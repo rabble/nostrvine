@@ -456,7 +456,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       context.pop(newClips);
     } else {
       if (!context.mounted) return;
-      await context.push(VideoEditorScreen.path, extra: {'fromLibrary': true});
+      await context.push(VideoEditorScreen.pathFor(fromLibrary: true));
       // Re-sync selection with ClipManager after returning from editor.
       if (!context.mounted) return;
       final currentClipIds = ref
@@ -536,8 +536,14 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                   ),
                   error: true,
                 );
-              case GallerySaveResultError(:final message):
-                _showSnackBar(context, label: message, error: true);
+              case GallerySaveResultError():
+                _showSnackBar(
+                  context,
+                  label: context.l10n.libraryClipsSaveFailed(
+                    GallerySaveService.destinationName,
+                  ),
+                  error: true,
+                );
             }
           },
         ),
@@ -565,8 +571,8 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                 context.l10n.libraryClipsUnarchived(count),
             };
 
-            // Archiving is the one action that makes clips disappear from
-            // the view the user is looking at, so it gets the undo.
+            // Archiving changes the clip's working status, and may also take
+            // it out of its category, so offer one undo for both changes.
             final canUndo =
                 result.action == ClipsLibraryOrganizeAction.archived;
             _showSnackBar(
@@ -583,6 +589,10 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                         ClipsLibraryClipsArchiveChanged(
                           clipIds: result.clipIds,
                           archived: false,
+                          // Undo puts back both halves: the clips leave the
+                          // archive and return to the category the archive
+                          // took them out of.
+                          restoreCategoryIds: result.previousCategoryIds,
                         ),
                       );
                     }

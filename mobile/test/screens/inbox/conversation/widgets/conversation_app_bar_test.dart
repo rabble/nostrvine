@@ -11,6 +11,7 @@ void main() {
       String handle = '@alice',
       VoidCallback? onBack,
       VoidCallback? onOptions,
+      bool isResolving = false,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -21,6 +22,8 @@ void main() {
             handle: handle,
             onBack: onBack ?? () {},
             onOptions: onOptions ?? () {},
+            isResolving: isResolving,
+            loadingDisplayName: 'Generated Name',
           ),
         ),
       );
@@ -51,6 +54,17 @@ void main() {
         expect(find.text('Alice'), findsOneWidget);
         expect(find.text(''), findsNothing);
       });
+
+      testWidgets('announces loading instead of the placeholder identity', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(buildSubject(isResolving: true));
+
+        expect(find.bySemanticsLabel('Loading'), findsOneWidget);
+        expect(find.bySemanticsLabel('Generated Name'), findsNothing);
+        semantics.dispose();
+      });
     });
 
     group('interactions', () {
@@ -61,9 +75,9 @@ void main() {
           buildSubject(onBack: () => onBackCalled = true),
         );
 
-        // DiVineAppBar renders the back button with a 'Go back' semantic
-        // label inside an IconButton.
-        final backButton = find.bySemanticsLabel('Go back');
+        // Identifier, not label: DiVineAppBar's back label is now
+        // MaterialLocalizations.backButtonTooltip and moves per locale.
+        final backButton = find.bySemanticsIdentifier('back_button');
         await tester.tap(backButton.first);
         await tester.pump();
 

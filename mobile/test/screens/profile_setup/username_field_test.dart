@@ -60,6 +60,7 @@ void main() {
     ) async {
       await pump(tester);
       expect(find.text(l10n.profileSetupUsernameLabel), findsOneWidget);
+      expect(find.text(l10n.profileSetupUsernameHelper), findsOneWidget);
       expect(find.byType(UsernameStatusIndicator), findsOneWidget);
     });
 
@@ -72,6 +73,20 @@ void main() {
         () => bloc.add(captureAny()),
       ).captured.whereType<UsernameChanged>().toList();
       expect(changes.last.username, 'bob');
+    });
+
+    testWidgets('keeps invalid characters visible for validation feedback', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.enterText(find.byType(TextField), 'Last_Outlaw');
+
+      expect(controller.text, 'last_outlaw');
+      final changes = verify(
+        () => bloc.add(captureAny()),
+      ).captured.whereType<UsernameChanged>().toList();
+      expect(changes.last.username, 'last_outlaw');
     });
 
     testWidgets('pins the public handle shape to at-name', (tester) async {

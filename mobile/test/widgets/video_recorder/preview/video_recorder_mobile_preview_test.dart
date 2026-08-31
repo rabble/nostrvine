@@ -32,6 +32,7 @@ class _FakeCameraPlatform extends DivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = true,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(isInitialized: true, textureId: 1);
   }

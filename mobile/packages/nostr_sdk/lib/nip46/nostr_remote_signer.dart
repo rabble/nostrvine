@@ -1,7 +1,9 @@
+import '../nip19/pubkey_for_logs.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import '../client_utils/keys.dart';
 import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
@@ -37,7 +39,15 @@ class NostrRemoteSigner extends NostrSigner {
 
   late LocalNostrSigner localNostrSigner;
 
-  NostrRemoteSigner(this.relayMode, this.info);
+  NostrRemoteSigner(this.relayMode, this.info) {
+    if (!keyIsValid(info.remoteSignerPubkey)) {
+      throw ArgumentError.value(
+        info.remoteSignerPubkey,
+        'info.remoteSignerPubkey',
+        'A valid remote signer pubkey is required',
+      );
+    }
+  }
 
   List<Relay> relays = [];
 
@@ -100,6 +110,15 @@ class NostrRemoteSigner extends NostrSigner {
       }
     });
     final results = await Future.wait(futures.toList());
+    // `close()` can land inside that dial. Adopting a relay after it has run
+    // would put a live socket on a list nothing will ever walk again, so shut
+    // down what finished connecting instead (#7962).
+    if (_isClosed) {
+      for (final relay in results) {
+        if (relay != null) _shutDownRelay(relay);
+      }
+      return null;
+    }
     for (final relay in results) {
       if (relay != null) relays.add(relay);
     }
@@ -115,7 +134,7 @@ class NostrRemoteSigner extends NostrSigner {
         "sign_event,get_relays,get_public_key,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt",
       ]);
       log(
-        '[NIP46] connect: sending connect request id=${request.id} to remoteSignerPubkey=${info.remoteSignerPubkey}',
+        '[NIP46] connect: sending connect request id=${request.id} to remoteSignerPubkey=${pubkeyForLogs(info.remoteSignerPubkey)}',
       );
       var result = await sendAndWaitForResult(request, timeout: 120);
       log('[NIP46] connect: result=$result');
@@ -127,8 +146,16 @@ class NostrRemoteSigner extends NostrSigner {
   Future<String?> pullPubkey() async {
     var request = NostrRemoteRequest("get_public_key", []);
     var pubkey = await sendAndWaitForResult(request, timeout: 120);
-    info.userPubkey = pubkey;
-    return pubkey;
+    // Never bind the session to a malformed pubkey: get_public_key must
+    // return a 32-byte hex key, and everything downstream trusts this value
+    // as the account identity (#7344).
+    if (pubkey == null || !keyIsValid(pubkey)) {
+      log('[NIP46] pullPubkey: dropping non-hex get_public_key result');
+      return null;
+    }
+    final normalizedPubkey = pubkey.toLowerCase();
+    info.userPubkey = normalizedPubkey;
+    return normalizedPubkey;
   }
 
   Future<void> onMessage(Relay relay, List<dynamic> json) async {
@@ -140,23 +167,64 @@ class NostrRemoteSigner extends NostrSigner {
         final subscriptionId = json[1];
         final event = Event.fromJson(json[2]);
         log(
-          '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${event.pubkey}, createdAt=${event.createdAt}',
+          '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${pubkeyForLogs(event.pubkey)}, createdAt=${event.createdAt}',
         );
         if (event.kind == EventKind.nostrRemoteSigning) {
+          // NIP-46 responses must be authored by the paired remote signer.
+          // Compare against the signer key, not the user's account key: those
+          // keys legitimately differ for some bunkers.
+          final expectedSigner = info.remoteSignerPubkey;
+          if (event.pubkey.toLowerCase() != expectedSigner.toLowerCase()) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from an '
+              'unexpected author: expected=${pubkeyForLogs(expectedSigner)} '
+              'got=${pubkeyForLogs(event.pubkey)}',
+            );
+            return;
+          }
+          // isValid is id-integrity (sha256); isSigned is the Schnorr
+          // verification. Both are required — an attacker clears isValid
+          // trivially by recomputing the id over their own forged event.
+          if (!event.isValid || !event.isSigned) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from '
+              '${pubkeyForLogs(event.pubkey)} that failed id/signature '
+              'validation',
+            );
+            return;
+          }
           var response = await NostrRemoteResponse.decrypt(
             event.content,
             localNostrSigner,
             event.pubkey,
           );
           if (response != null) {
-            // Check for auth_url challenge - this means user needs to approve
-            if (response.result == 'auth_url' && response.error != null) {
+            if (response.result == 'auth_url' && !response.isAuthChallenge) {
               log(
-                '[NIP46] onMessage: auth challenge received, URL=${response.error}',
+                '[NIP46] onMessage: ignoring malformed auth challenge for '
+                'id=${response.id}',
               );
-              // Only open the auth URL once per request ID
-              // This prevents re-opening the browser on reconnection when
-              // historical events are replayed from the relay
+              return;
+            }
+            // An auth challenge answers a request the client already sent, so
+            // its id must be one we are waiting on. Correlating here (and not
+            // logging the URL) closes the last of the unsolicited-challenge
+            // surface after the author check above (#7339).
+            if (response.isAuthChallenge) {
+              if (!callbacks.containsKey(response.id)) {
+                log(
+                  '[NIP46] onMessage: ignoring auth challenge for unknown '
+                  'request id=${response.id}',
+                );
+                return;
+              }
+              log(
+                '[NIP46] onMessage: auth challenge received for '
+                'id=${response.id}',
+              );
+              // Only open the auth URL once per request ID. This prevents
+              // re-opening the browser on reconnection when historical events
+              // are replayed from the relay.
               if (_openedAuthUrls.contains(response.id)) {
                 log(
                   '[NIP46] onMessage: auth URL already opened for id=${response.id}, ignoring',
@@ -259,6 +327,14 @@ class NostrRemoteSigner extends NostrSigner {
     return relay;
   }
 
+  /// Whether a reconnect that has already suspended must drop its connect.
+  ///
+  /// Re-checked after every await in [_reconnectRelay]: [close] landing inside
+  /// one of those waits takes the relay off [relays], so a connect resuming
+  /// afterwards opens a socket and arms a heartbeat that no owner is left to
+  /// close (#7962).
+  bool get _reconnectAbandoned => _isClosed || _isPaused;
+
   /// Attempts to reconnect a relay after disconnection
   /// Uses exponential backoff to avoid hammering the relay
   Future<void> _reconnectRelay(Relay relay) async {
@@ -309,10 +385,21 @@ class NostrRemoteSigner extends NostrSigner {
     );
     await Future<void>.delayed(Duration(milliseconds: backoffMs));
 
+    if (_reconnectAbandoned) {
+      log('[NIP46] _reconnectRelay: abandoned during backoff for $addr');
+      return;
+    }
+
     try {
       // Add subscription query to pending messages before reconnecting
       if (relay.pendingMessages.isEmpty) {
         await addPenddingQueryMsg(relay);
+        if (_reconnectAbandoned) {
+          log(
+            '[NIP46] _reconnectRelay: abandoned while queueing REQ for $addr',
+          );
+          return;
+        }
       }
 
       await relay.connect();
@@ -384,10 +471,13 @@ class NostrRemoteSigner extends NostrSigner {
     // our device and the bunker server (subtract 30 seconds)
     final adjustedSinceTimestamp = sinceTimestamp - 30;
 
+    // The receive-side author check remains the backstop for a relay that
+    // ignores this filter.
     var filter = Filter(
       since: adjustedSinceTimestamp,
       p: [pubkey],
       kinds: [EventKind.nostrRemoteSigning],
+      authors: [info.remoteSignerPubkey],
     );
 
     final filterJson = filter.toJson();
@@ -409,8 +499,14 @@ class NostrRemoteSigner extends NostrSigner {
     NostrRemoteRequest request, {
     int timeout = 60,
   }) async {
-    // Check and reconnect any disconnected relays before sending
-    for (var relay in relays) {
+    // Check and reconnect any disconnected relays before sending.
+    // Iterate a snapshot: `close()` clears `relays`, and landing inside the
+    // connect below would otherwise throw ConcurrentModificationError.
+    for (final relay in List<Relay>.of(relays)) {
+      if (_isClosed) {
+        log('[NIP46] sendAndWaitForResult: signer closed, abandoning request');
+        return null;
+      }
       final status = relay.relayStatus.connected;
       log(
         '[NIP46] sendAndWaitForResult: checking relay ${relay.relayStatus.addr}, status=$status',
@@ -433,9 +529,14 @@ class NostrRemoteSigner extends NostrSigner {
       }
     }
 
+    if (_isClosed) {
+      log('[NIP46] sendAndWaitForResult: signer closed, abandoning request');
+      return null;
+    }
+
     var senderPubkey = await localNostrSigner.getPublicKey();
     log(
-      '[NIP46] sendAndWaitForResult: method=${request.method}, senderPubkey=$senderPubkey',
+      '[NIP46] sendAndWaitForResult: method=${request.method}, senderPubkey=${pubkeyForLogs(senderPubkey)}',
     );
     var content = await request.encrypt(
       localNostrSigner,
@@ -454,6 +555,14 @@ class NostrRemoteSigner extends NostrSigner {
         log(
           '[NIP46] sendAndWaitForResult: sending event id=${event.id} to ${relays.length} relays',
         );
+
+        if (_isClosed) {
+          log(
+            '[NIP46] sendAndWaitForResult: signer closed while signing, '
+            'abandoning request',
+          );
+          return null;
+        }
 
         // set completer to callbacks
         var completer = Completer<String?>();
@@ -594,6 +703,22 @@ class NostrRemoteSigner extends NostrSigner {
   /// Whether the signer is currently paused
   bool get isPaused => _isPaused;
 
+  /// Takes a relay down for good.
+  ///
+  /// [Relay.disconnect] alone leaves the relay connectable: it closes the
+  /// socket but keeps the connection manager, so a reconnect resuming later
+  /// reuses it and opens a fresh socket plus heartbeat. [Relay.dispose] is
+  /// what sets the disposed flag that makes the relay refuse that connect
+  /// (#7962, guard added in #7367).
+  void _shutDownRelay(Relay relay) {
+    try {
+      relay.disconnect();
+      relay.dispose();
+    } catch (e) {
+      log('[NIP46] error shutting down relay ${relay.relayStatus.addr}: $e');
+    }
+  }
+
   @override
   void close() {
     log('[NIP46] close: closing signer and disconnecting all relays');
@@ -601,13 +726,7 @@ class NostrRemoteSigner extends NostrSigner {
 
     // Disconnect all relays to stop reconnection attempts
     for (final relay in relays) {
-      try {
-        relay.disconnect();
-      } catch (e) {
-        log(
-          '[NIP46] close: error disconnecting relay ${relay.relayStatus.addr}: $e',
-        );
-      }
+      _shutDownRelay(relay);
     }
     relays.clear();
 

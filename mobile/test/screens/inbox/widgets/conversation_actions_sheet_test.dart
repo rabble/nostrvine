@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -14,8 +15,14 @@ void main() {
       required ValueChanged<ConversationAction?> onResult,
       bool isMuted = false,
       bool isBlocked = false,
+      String displayName = 'Alice',
+      bool isVanished = false,
+      bool isGroup = false,
+      bool canRemove = true,
+      Locale? locale,
     }) {
       return testMaterialApp(
+        locale: locale,
         home: Builder(
           builder: (context) {
             return Scaffold(
@@ -23,9 +30,12 @@ void main() {
                 onPressed: () async {
                   final result = await ConversationActionsSheet.show(
                     context,
-                    displayName: 'Alice',
+                    displayName: displayName,
+                    isVanished: isVanished,
                     isMuted: isMuted,
                     isBlocked: isBlocked,
+                    isGroup: isGroup,
+                    canRemove: canRemove,
                   );
                   onResult(result);
                 },
@@ -60,6 +70,65 @@ void main() {
 
         expect(find.text('Unblock Alice'), findsOneWidget);
         expect(find.text('Block Alice'), findsNothing);
+      });
+
+      testWidgets('keeps safety actions with identity-neutral vanished copy', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (_) {},
+            displayName: 'Deleted account',
+            isVanished: true,
+          ),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionReportVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionBlockVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport(l10n.profileDeletedAccountName)),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.inboxActionBlock(l10n.profileDeletedAccountName)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('localizes vanished actions as complete sentences', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('fil'));
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (_) {},
+            displayName: 'Deleted account',
+            isVanished: true,
+            locale: const Locale('fil'),
+          ),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionReportVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport('ang account na ito')),
+          findsNothing,
+        );
       });
 
       testWidgets('renders $SwitchListTile for mute toggle', (tester) async {
@@ -156,6 +225,56 @@ void main() {
 
         expect(callbackCalled, isTrue);
         expect(result, isNull);
+      });
+    });
+
+    // A group sheet has no way to say WHICH account Report and Block would
+    // act on, so it offers neither. Conversation-scoped actions stay.
+    // Only reachable once BOTH withdrawals apply: a group thread whose
+    // members include a removal-protected account (#8391) loses Report,
+    // Block and Remove, leaving Mute alone. Neither change creates this on
+    // its own.
+    testWidgets('a group with nothing removable keeps only Mute', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(
+        buildSubject(onResult: (_) {}, isGroup: true, canRemove: false),
+      );
+      await tester.tap(find.text('Show sheet'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.inboxActionMute), findsOneWidget);
+      expect(find.text(l10n.inboxActionRemove), findsNothing);
+      expect(find.text(l10n.inboxActionReport('Alice')), findsNothing);
+      expect(find.text(l10n.inboxActionBlock('Alice')), findsNothing);
+    });
+
+    group('a group conversation', () {
+      testWidgets('offers only the conversation-scoped actions', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(onResult: (_) {}, isGroup: true),
+        );
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxActionMute), findsOneWidget);
+        expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+        expect(find.text(l10n.inboxActionReport('Alice')), findsNothing);
+        expect(find.text(l10n.inboxActionBlock('Alice')), findsNothing);
+      });
+
+      testWidgets('a 1:1 still offers both', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(buildSubject(onResult: (_) {}));
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxActionReport('Alice')), findsOneWidget);
+        expect(find.text(l10n.inboxActionBlock('Alice')), findsOneWidget);
       });
     });
   });

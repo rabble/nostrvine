@@ -132,6 +132,33 @@ void main() {
         expect(find.text('Hello there'), findsOneWidget);
       });
 
+      testWidgets('bounds painted hearts across markdown leaves', (
+        tester,
+      ) async {
+        // Each plain markdown leaf builds its own linkifier, so a per-leaf
+        // heart cap would reset at every emphasis boundary. The budget is
+        // shared across the whole message instead.
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message:
+                    '**x**$divineGreenHeart' * (kDivineHeartMaxPainted + 2),
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          _divineIcon(DivineIconName.heartFill),
+          findsNWidgets(kDivineHeartMaxPainted),
+        );
+      });
+
       testWidgets('renders timestamp when isFirstInGroup is true', (
         tester,
       ) async {

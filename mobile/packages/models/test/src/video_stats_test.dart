@@ -123,6 +123,89 @@ void main() {
         expect(stats.trendingScore, equals(0.75));
       });
 
+      test('preserves repeated and provenance tags for editing', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'content': 'Description',
+            'tags': [
+              ['d', 'video-1'],
+              ['imeta', 'url https://example.com/video.mp4'],
+              ['t', 'first'],
+              ['t', 'second'],
+              ['alt', 'Accessible description'],
+              ['duration', '6'],
+              ['proofmode', 'proof-manifest'],
+              ['c2pa_manifest_id', 'urn:c2pa:test'],
+              ['verification', 'verified_mobile'],
+              ['device_attestation', 'attestation'],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        });
+
+        final video = stats.toVideoEvent();
+
+        expect(stats.eventTags, hasLength(10));
+        expect(video.nostrEventTags, equals(stats.eventTags));
+        expect(video.hashtags, equals(['first', 'second']));
+        expect(video.altText, equals('Accessible description'));
+        expect(video.duration, equals(6));
+        expect(
+          video.nostrEventTags,
+          contains(equals(['proofmode', 'proof-manifest'])),
+        );
+        expect(
+          video.nostrEventTags,
+          contains(equals(['c2pa_manifest_id', 'urn:c2pa:test'])),
+        );
+        expect(
+          video.nostrEventTags,
+          contains(equals(['verification', 'verified_mobile'])),
+        );
+        expect(
+          video.nostrEventTags,
+          contains(equals(['device_attestation', 'attestation'])),
+        );
+      });
+
+      test('standalone file size overrides imeta for metadata editing', () {
+        final video = VideoStats.fromJson(const {
+          'event': {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'content': 'Description',
+            'tags': [
+              ['d', 'video-1'],
+              [
+                'imeta',
+                'url https://example.com/video.mp4',
+                'size 480000',
+              ],
+              ['size', '640000'],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        }).toVideoEvent();
+
+        expect(video.fileSize, 640000);
+      });
+
       test(
         'parses explicit addressable d tag fields from compact REST JSON',
         () {

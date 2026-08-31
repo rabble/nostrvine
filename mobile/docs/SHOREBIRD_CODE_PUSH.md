@@ -79,11 +79,48 @@ Codemagic run. Their build numbers can differ too: the APK uses
 `PROJECT_BUILD_NUMBER`, while the AAB uses the higher of that value and the next
 available Play build number.
 
-`auto_update` is left at its default (on), so patches apply in the background
-on launch. `shorebird_code_push` is a runtime dependency. There is no in-app UI
-for controlling patch state, but startup records patch availability and the
-current patch number in logs and Crashlytics custom keys. Use those values when
-triaging crashes that may be specific to a code-push patch.
+Shorebird's native `auto_update` is disabled because it always checks `stable`
+and would race the staged-patch validation relaunch. The app replaces it during
+startup, before `runApp`, so a Dart-side failure mid-launch does not strand the
+check: ordinary installations check `stable`, while a tester who has
+downloaded a staged patch stays subscribed to `staging` until they explicitly
+return to stable updates in Developer Options.
+`shorebird_code_push` is a runtime dependency. Startup also records patch availability and the current
+patch number in logs and Crashlytics custom keys. Use those values when
+triaging crashes that may be patch-specific.
+
+### Third-party attribution
+
+`shorebird release` statically links Shorebird's Rust updater into the Flutter
+engine. Flutter's license collector does not discover that native dependency:
+it assembles `NOTICES` from Flutter, `sky_engine`, and packages in the Dart
+package configuration. Divine therefore registers the updater's MIT and
+Apache-2.0 license choices from `assets/licenses/` during app startup so both
+appear under **Shorebird updater** in Settings → Legal → Open Source Licenses.
+The updater is offered under either license at the recipient's option; showing
+both documents records the available choices, rather than asserting that both
+licenses must be satisfied simultaneously.
+
+The bundled texts were copied from `shorebirdtech/updater` at commit
+`1f85c4ab1ee5b540269b9859c75e1bffbb9050c7`, with one trailing newline added
+to each local text asset (upstream license blob ids
+`6802bc4b80c0f8df1413d55b16267c0969e352c9` and
+`a7e77cb28d386ec6eddeaabf441f91473ddefa1e`). The store engine paired with the
+current Flutter 3.44.9 pin is `27bc060323bfdfe2f5b6732174d4e499e74eca70`.
+
+When Flutter or Shorebird changes, re-check attribution without producing a
+store artifact:
+
+1. Read `bin/internal/engine.version` from the Flutter SDK selected by
+   Shorebird.
+2. Compare the Shorebird fork's root `LICENSE` and cached
+   `bin/cache/pkg/sky_engine/LICENSE` with the corresponding stock Flutter
+   files.
+3. Search those files for `shorebird` and `updater`, and inspect the fork's
+   `flutter_tools` asset collector changes.
+4. Compare the immutable upstream updater license blobs above with the current
+   updater license files. Update the bundled assets and this provenance only
+   when the canonical texts change.
 
 ### Flutter version
 
@@ -116,15 +153,33 @@ App Store version train.
 iOS publishing deliberately stops after uploading the Shorebird IPA to App
 Store Connect (`submit_to_testflight: false`, `submit_to_app_store: false`).
 App Store Connect, not Codemagic, provides automatic internal TestFlight
-distribution. This depends on configuration outside this repository: enable
-**Automatic Distribution** on every internal-only tester group that should
-receive each build without Beta App Review. Do not put external testers in
-those groups.
+distribution. This depends on configuration outside this repository.
+
+There is exactly one internal tester group: **Divine Internal**. It must have
+**Automatic Distribution** enabled, and it must contain no external testers —
+adding one turns every build into a Beta App Review submission. Codemagic no
+longer names the group, because it stopped assigning beta groups when
+publishing became upload-only, so nothing in this repository fails if that
+toggle is turned off or the group is renamed. Manage membership in App Store
+Connect; the group is recorded here only so the dependency stays reviewable.
+
+Because it is a single group, it is also a single point of failure: if its
+Automatic Distribution is off, no internal tester receives any build, and
+every Codemagic run still reports success.
 
 A green Codemagic build confirms the IPA upload, not successful App Store
-Connect processing or tester distribution. After each iOS build, confirm the
-build finishes processing and reaches **Ready to Test**, then verify an internal
-tester can see it before treating internal delivery as complete.
+Connect processing or tester distribution. After each iOS build, work through
+this before treating internal delivery as complete:
+
+1. Confirm the build finishes processing in App Store Connect and reaches
+   **Ready to Test**. Codemagic reports success as soon as the upload lands,
+   which is several minutes earlier.
+2. Confirm the build was distributed to **Divine Internal**.
+3. Confirm an internal tester actually sees it in TestFlight.
+
+A build that uploaded but never reached testers looks identical to a healthy
+one from Codemagic alone, which is why this is a checklist rather than a
+closing remark.
 
 After internal testing passes, perform a manual external TestFlight promotion
 of the same build in App Store Connect: add it to the external groups and submit
@@ -230,6 +285,23 @@ test-backed.
    git push -u origin shorebird-patch/<platform>/<release-version>
    ```
 
+   Config trust is shared across git worktrees, so a patch worktree is
+   already trusted whenever the main checkout's `mobile/mise.toml` is — the
+   normal case, and why this step is usually a no-op. It bites on a machine
+   whose main checkout was never trusted (a clone cut fresh for the drill),
+   under `paranoid` mode, or on mise older than `2026.7.5`, which predates
+   that sharing. Then every `mise exec` step in the hook aborts, and because
+   the analyze step sends stderr to `/dev/null` the trust error never reaches
+   the terminal: the hook prints a bare `Analysis failed!` with nothing above
+   it. Check with `mise trust --show` from the patch worktree's `mobile/`
+   directory and run `mise trust` there if it reports `untrusted`. Then run
+   `flutter pub get` explicitly and confirm `git status --short` is clean so
+   no lockfile churn joins the patch payload — `flutter analyze` would
+   resolve dependencies itself, but a `pubspec.lock` change is a blocked path
+   and would fail the patch-source validator. The hook also warns that
+   `shorebird` is not a semantic branch prefix; that warning is expected on a
+   patch line, which never becomes a PR. Never reach for `--no-verify`.
+
 ### Build, validate, and promote
 
 1. Start `ios-patch` or `android-patch` manually **from `main`** in Codemagic.
@@ -248,10 +320,10 @@ test-backed.
    reviewer must read that complete output before proceeding; the relevant iOS
    or Android platform owner must approve promotion.
 1. The workflow publishes to `staging`, never directly to `stable`. Validate
-   the exact release plus staged patch on the affected platform with
-   `shorebird preview --track staging --release-version <version>` or an
-   equivalent installed build. Verify the regression, adjacent behavior,
-   startup, and the current patch number in logs or Crashlytics.
+   the exact release plus staged patch on the affected platform using the
+   **Shorebird Patches** section in Settings → Developer Options (see
+   [Validating a staged patch](#validating-a-staged-patch) below). Verify the
+   regression, adjacent behavior, startup, and the current patch number.
 1. Record the incident owner, mobile reviewer, platform owner, release version,
    patch number, validation evidence, and rollback decision in the incident or
    patch issue. Then promote the exact approved patch:
@@ -262,7 +334,10 @@ test-backed.
 
    `shorebird patches promote --release-version <version> --patch-number <n>`
    is the deprecated legacy shorthand in the pinned CLI. Do not use it in new
-   automation.
+   automation. After promotion, tap **Return to stable updates** in Settings →
+   Developer Options → **Shorebird Patches**. Do not switch the validation
+   device back before promotion: its next launch would check `stable` and could
+   roll back the staged patch.
 1. Monitor patch installation/failure diagnostics and the original production
    signal after promotion. If the patch regresses behavior, roll it back first
    and investigate second; rollback is emergency recovery, not validation.
@@ -286,6 +361,40 @@ commit is `a46851e924b183fa0cb2ce6c6cfaae7ed02cc189`; the equivalent reachable
 `a17e0660a782e439c5d405c2d06dd49e5b7fbc81`, which CI verifies. Its private
 record is deliberately marked unpatchable because the historical dart-defines
 cannot be established from source control.
+
+### Validating a staged patch
+
+An ordinary installed build polls `stable`. A patch published to `staging` is
+invisible until a tester explicitly subscribes the installation through
+Developer Options; promoting first would defeat the validation gate.
+
+`shorebird preview` cannot close that gap on iOS. It downloads the release
+artifact and tries to install it, but our IPA is signed for App Store
+distribution: `get-task-allow` is false, `beta-reports-active` is true, and
+the profile carries no `ProvisionedDevices`. `ideviceinstaller` rejects it
+with `0xe800801f`. That is a property of the artifact we ship, not a
+misconfiguration — an installable preview would need a development- or
+ad-hoc-signed build, which is a different binary from the one under test.
+
+So the affordance lives in the app. Settings → Developer Options →
+**Shorebird Patches** shows the running patch number. Its check and apply
+actions call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
+
+- **Check staging track** — reports whether a staged patch is waiting.
+- **Apply staged patch** — downloads and installs it; relaunch to run it.
+- **Return to stable updates** — selects `stable` for the next launch; it does
+  not immediately remove the downloaded or running staging patch. Use it only
+  after that exact patch is promoted to `stable`, then relaunch so the app can
+  check the stable track and reconcile the installed patch.
+
+Install the TestFlight build of the exact release under test, run the patch
+workflow, then pull the patch through this section. The build number shown in
+Settings must match the release version you patched. The section reports
+"Not available in this build" on a plain `flutter run` — the updater
+is only linked by `shorebird release`, so a debug build can never validate a
+patch.
+
+Promotion to `stable` happens only after this validation succeeds.
 
 ### A patch targets a release version, not a channel
 
@@ -313,7 +422,8 @@ longer exists.
 
 The same group holds patch-signing key material:
 
-- `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release`
+- `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release` and
+  `shorebird patch`
 - `SHOREBIRD_PATCH_PRIVATE_KEY` — secure private PEM passed to `shorebird patch`
 - `SHOREBIRD_PROVENANCE_HMAC_KEY` — secure random key for dart-define
   fingerprints
@@ -321,8 +431,48 @@ The same group holds patch-signing key material:
 
 Store both patch-signing keys as single-line values with literal `\n` sequences
 between PEM lines. CI decodes and validates that envelope before invoking
-Shorebird. Release jobs only materialize the public key; patch jobs only
-materialize the private key.
+Shorebird. Release jobs materialize only the public key; patch jobs materialize
+both keys.
+
+### The signing key is bound to the release
+
+Shorebird links the public key into the release binary and the installed app
+verifies every patch signature against *that* key. Sign a patch with a rotated
+private key and the app rejects it — on device, after download, with nothing in
+the build log to explain it.
+
+So provenance records `patch_public_key_sha256`, a plain SHA-256 of the
+normalized public PEM, and the patch workflow aborts when the key it is about
+to sign with is not the key the release was built with:
+
+```
+ERROR: patch signing key does not match the key this release was built with
+```
+
+The digest is deliberately not the keyed HMAC used for `config_fingerprints` —
+the key is public, so a value anyone can recompute is worth more than
+concealment. It covers the PEM with surrounding whitespace stripped, so
+recompute it as:
+
+```
+printf '%s' "$(openssl pkey -pubin -in key.pem)" | shasum -a 256
+```
+
+The `$( )` is load-bearing: it drops the trailing newline `openssl` emits, and
+`shasum` on the file directly returns a different digest.
+
+When that error appears, restore the release's key pair rather than editing the
+record; provenance is create-only.
+
+Releases recorded before this field existed verify with a note on stderr rather
+than an abort. Nothing can be checked for them, which is the reason to prefer
+patching a release cut under the current scheme.
+
+**Rotating the patch-signing pair strands every release built with the old
+one**, exactly as moving the CLI pin does. Rotate immediately after a store
+release, never while a shipped release is the only thing standing between
+production and a hot fix, and retain the retired pair for as long as any
+release signed with it can still be patched.
 
 The `github_credentials` token used by release and patch jobs must have read
 and write access to the private `divinevideo/divine-release-provenance`
@@ -358,6 +508,15 @@ on every cache hit.
 To upgrade Shorebird, review a tagged CLI revision, update the 40-character CLI
 SHA and expected version together, then run the CI configuration tests. Never
 replace the revision pin with a branch or tag.
+
+**Upgrading strands every release recorded under the old pin.** Provenance
+records `shorebird_cli_version` and `shorebird_cli_revision`, and the patch
+workflow refuses to patch a release whose recorded CLI does not match the
+pinned one. Moving the pin therefore makes every existing release permanently
+unpatchable — the record is create-only and must not be rewritten to match.
+Sequence an upgrade as: merge the pin bump, cut a **new** store release under
+the new pin, and patch only releases recorded under it. Never upgrade while a
+shipped release is the only thing standing between production and a hot fix.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.
@@ -397,6 +556,25 @@ cd mobile && flutter build apk --config-only   # injects the wrapper
 
 `init` also needs a JDK for that call, which a machine set up only for iOS
 work will not have.
+
+**The patch-source validator does not exist on older patch lines.** A release
+whose baseline predates #7844 has no `mobile/scripts/shorebird_patch_source.rb`
+in its tree, which is the design: the patch workflow copies the script from
+`main` into `build/shorebird/` *before* checking out the patch branch, so the
+rules that gate a patch always come from current trusted `main` rather than
+from the release being patched. To dry-run the same checks locally, invoke
+`main`'s copy against the patch worktree rather than looking for the script
+inside it:
+
+```bash
+cd <patch-worktree>/mobile && ruby <main-checkout>/mobile/scripts/shorebird_patch_source.rb \
+  --baseline <patch-baseline-commit> \
+  --platform <platform> \
+  --release-version <release-version> \
+  --branch shorebird-patch/<platform>/<release-version>
+```
+
+It reads `refs/remotes/origin/main`, so fetch `main` first.
 
 **`shorebird init` invents a `divineuitests` flavor.** Its iOS detection treats
 every shared Xcode scheme that is not `Runner` as a product flavor, and picks up

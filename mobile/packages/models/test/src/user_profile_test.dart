@@ -1716,5 +1716,70 @@ void main() {
         expect(result, contains('hasAvatar: true'));
       });
     });
+
+    // #7486. The Vine archive importer writes its metadata as Kind 0 *tags*
+    // (`divine-resurrection-publisher/src/nostr.ts:104-129`), but these
+    // getters read `rawData`, which is the parsed Kind 0 *content*. Measured
+    // over 3,313 unique Kind 0 events on relay.divine.video: `vine_followers`
+    // appears in content 0 times and in tags 6. Pinned with a verbatim
+    // production event so the divergence cannot be rediscovered from scratch.
+    group('production Vine archive shape', () {
+      // pubkey 504363973e96a794628f01e481affc63191db0bd04219fdc3dfdb10b6c59fdd3
+      final archiveContent = jsonEncode(const {
+        'name': 'soloin',
+        'display_name': 'Soloin',
+        'location': 'Youtube: Soloin',
+        'picture': 'http://v.cdn.vine.co/r/avatars/4EFCEE3B84.jpg',
+        'banner': '0x33ccbf',
+        'website': 'https://divine.video/profile/5043',
+        'nip05': '_@soloin.divine.video',
+      });
+
+      Event archiveEvent() => Event(
+        testPubkey,
+        EventKind.metadata,
+        const [
+          ['i', 'vine:934260621510324224'],
+          ['vine_user_id', '934260621510324224'],
+          ['vine_username', 'Soloin'],
+          ['client', 'vine-archive-importer'],
+          ['vine_followers', '4213'],
+          ['vine_loops', '99871'],
+          ['vine_verified', 'true'],
+        ],
+        archiveContent,
+        createdAt: 1780262893,
+      )..id = testEventId;
+
+      test('carries the vine tags on rawTags', () {
+        final profile = UserProfile.fromNostrEvent(archiveEvent());
+
+        expect(
+          profile.rawTags.any((tag) => tag.first == 'vine_followers'),
+          isTrue,
+        );
+        expect(profile.rawTags.any((tag) => tag.first == 'vine_loops'), isTrue);
+      });
+
+      test('leaves every vine getter empty, because they read content', () {
+        final profile = UserProfile.fromNostrEvent(archiveEvent());
+
+        expect(profile.vineFollowers, isNull);
+        expect(profile.vineLoops, isNull);
+        expect(profile.vineUsername, isNull);
+        expect(profile.vineVerified, isFalse);
+      });
+
+      test('yields no follower or video count from a Kind 0', () {
+        final profile = UserProfile.fromNostrEvent(archiveEvent());
+
+        // Kind 0 never carries the REST keys either, so the conflating
+        // getters have nothing to fall back to on a by-pubkey surface.
+        expect(profile.restFollowerCount, isNull);
+        expect(profile.restVideoCount, isNull);
+        expect(profile.followerCount, isNull);
+        expect(profile.videoCount, isNull);
+      });
+    });
   });
 }

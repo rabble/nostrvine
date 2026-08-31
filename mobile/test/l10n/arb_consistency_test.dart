@@ -38,6 +38,16 @@ void main() {
       }
     });
 
+    test('known untranslated debt only names template messages', () {
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      expect(
+        _knownUntranslatedDebt.difference(_messageKeys(template)),
+        isEmpty,
+        reason: 'stale untranslated-debt entries must be removed',
+      );
+    });
+
     test('owner delete copy keeps Divine and Nostr disclosure', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
@@ -418,6 +428,101 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Deletion prep-failure copy (feature #6126). Deferred to the l10n
+  // translation-debt pass (#7632) rather than machine-translating a
+  // safety-critical "nothing was deleted" message. Mirror the translated
+  // sibling deleteAccountDeletionIncomplete per locale when the pass runs.
+  'deleteAccountDeletionNotStarted',
+  // Log-export copy (#8112 / #8113 / #8114). Left in English until a human
+  // translation pass; machine-translating a diagnostic instruction the user
+  // has to follow exactly is how it stops meaning what it says.
+  'supportNoLogsToExport',
+  'supportExportLogsUnconfirmed',
+  // Account-enforcement translation remains tracked in #7765. The policy copy
+  // is deliberately left in English until its human translation pass.
+  'accountStatusTitle',
+  'accountStatusAllClearHeading',
+  'accountStatusTileSubtitleRestricted',
+  'profileAccountRestricted',
+  'publishErrorAccountRestricted',
+  'uploadFailureSheetAccountStatusButton',
+  'accountStatusSuspendedHeading',
+  'accountStatusSuspendedBody',
+  'accountStatusBannedHeading',
+  'accountStatusBannedBody',
+  'accountStatusRestrictedHeading',
+  'accountStatusRestrictedBody',
+  'accountStatusLastKnownBody',
+  'accountStatusUnavailableHeading',
+  'accountStatusUnavailableBody',
+  'accountStatusSignedOutHeading',
+  'accountStatusSignedOutBody',
+  'accountStatusKeysUnaffectedHeading',
+  'accountStatusKeysUnaffectedBody',
+  'accountStatusAppealHeading',
+  'accountStatusAppealBody',
+  'accountStatusContactSupport',
+  'accountStatusMoveAccount',
+  'accountStatusRetry',
+  // Restricted-minor age/deletion copy (#8238). This is load-bearing copy,
+  // so non-English locales fall back to English until speaker review.
+  'minorAccountReviewContentTitle',
+  'minorAccountReviewContentBody',
+  // Response clock copy (#8156). Load-bearing deadline guidance remains in
+  // English until human translation review.
+  'minorAccountReviewResponseClockRunningTitle',
+  'minorAccountReviewResponseClockRunningDays',
+  'minorAccountReviewResponseClockRunningHours',
+  'minorAccountReviewResponseClockPausedTitle',
+  'minorAccountReviewResponseClockPausedBody',
+  'minorAccountReviewResponseClockExpiredTitle',
+  'minorAccountReviewResponseClockExpiredBody',
+  'minorAccountReviewResponseClockUnavailableTitle',
+  'minorAccountReviewResponseClockUnavailableBody',
+  'devOptionsMinorReviewResponseClockTitle',
+  'devOptionsMinorReviewResponseClockRunning',
+  'devOptionsMinorReviewResponseClockPaused',
+  'devOptionsMinorReviewResponseClockExpired',
+  'devOptionsMinorReviewResponseClockNotApplicable',
+  'devOptionsMinorReviewResponseClockMalformed',
+  'devOptionsMinorReviewResponseClockRunningToast',
+  'devOptionsMinorReviewResponseClockPausedToast',
+  'devOptionsMinorReviewResponseClockExpiredToast',
+  'devOptionsMinorReviewResponseClockNotApplicableToast',
+  'devOptionsMinorReviewResponseClockMalformedToast',
+  // Restricted-minor appeal policy (#8239). This is load-bearing age and
+  // moderation copy, so non-English locales fall back to English until
+  // speaker review.
+  'minorAccountReviewAppealTitle',
+  'minorAccountReviewAppealTeenBody',
+  'minorAccountReviewAppealUnder13Body',
+  // Inbox Badges tab and its All-tab banner. Translation deferred to the next
+  // l10n pass.
+  'notificationsTabBadges',
+  'notificationsPendingBadges',
+  'notificationsBadgesEmpty',
+  // Critical metadata-loss prevention copy added in #8014. Translation is
+  // deferred to the next l10n pass.
+  'shareMenuOriginalVideoUnavailable',
+  // #7892: safety-filter explanation on the video detail screen. Translation
+  // deferred to the next l10n pass.
+  'videoDetailHiddenBySettingsTitle',
+  'videoDetailHiddenByHostFilterBody',
+  'videoDetailHiddenByContentFilterBody',
+  'videoDetailHiddenShowAnyway',
+  'videoDetailHiddenOpenSettings',
+  'videoDetailHiddenByProvenanceFilterBody',
+  'safetySettingsShowVerifiedOnly',
+  'safetySettingsShowVerifiedOnlySubtitle',
+  // Restricted-account deletion guidance tracked in #7879.
+  'shareMenuDeleteFailedAccountRestricted',
+  // Account-deletion and recovery copy translation tracked in #7879.
+  'accountDeletionAttemptCancelled',
+  'accountDeletionCancelAttempt',
+  'accountDeletionCancelAttemptBody',
+  'accountDeletionRecoveryBodyWithExpiry',
+  'accountDeletionSignOut',
+  'accountDeletionTerminalFailureBody',
   // Translation pass tracked in #7632.
   'analyticsConnectionIssue',
   'analyticsDiagnosticsFailedSources',
@@ -426,11 +531,22 @@ const _knownUntranslatedDebt = <String>{
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
-  // Commercial disclosure copy, deliberately not machine-translated: "paid"
-  // is load-bearing and a softened rendering discloses nothing. Translation
-  // pass tracked in #7673, and required before any non-English campaign.
-  'exploreFeaturedPaidPartnership',
+  // Commercial disclosure copy, deliberately not machine-translated: a
+  // softened rendering discloses nothing. Translation pass tracked in #7673,
+  // and required before any non-English campaign.
+  'exploreFeaturedSponsoredBy',
   'exploreFeaturedSponsoredPillSemanticLabel',
+  // Secure-account key-conflict recovery copy is new; translation pass
+  // tracked in #7984.
+  'authSecureAccountAlreadyRegistered',
+  // OG Beta Tester explainer copy is new; translation pass tracked in #7947.
+  // Only the body is deferred — the label ships mirrored verbatim. Note that
+  // is not a precedent the "OG Viner" family actually sets: app_pt.arb has
+  // "Viner OG" and app_de.arb has "OG Viner" for classicVinersTitle, so
+  // translators do adapt these. #7947 should add both this key and
+  // profileBadgeOgVinerBody to _profileBadgeSheetKeys below, which already
+  // guards the sheet against English fallback and covers neither today.
+  'profileBadgeOgBetaTesterBody',
   // Create-account marketing opt-in copy is provisional (reuses the waitlist
   // string) pending product approval in review; translation deferred until the
   // final copy lands.

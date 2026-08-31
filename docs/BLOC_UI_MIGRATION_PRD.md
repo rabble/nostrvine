@@ -61,6 +61,7 @@ a UI BLoC would be the wrong layer.
 | `lib/services/content_filter_service.dart` | Adult-content / category filters. |
 | `lib/services/curated_list_service.dart` | NIP-51 curated lists. |
 | `lib/services/divine_host_filter_service.dart` | Divine-hosted-only filter preference. |
+| `lib/services/video_provenance_filter_service.dart` | Capture-verified-only filter preference. |
 | `lib/services/environment_service.dart` | Build environment (dev/staging/prod). |
 | `lib/services/feed_aspect_ratio_preference_service.dart` | Feed aspect-ratio preference. |
 | `lib/services/nip05_verification_service.dart` | NIP-05 verification cache. |

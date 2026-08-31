@@ -19,6 +19,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -456,10 +457,20 @@ class _EmailVerificationScreenState
     _cubit.stopPolling();
     ref.read(pendingVerificationServiceProvider).clear();
     context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
-    final error = errorCode == null
-        ? null
-        : context.l10n.emailVerificationErrorMessage(errorCode);
-    context.go(WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error));
+    final errorReason = switch (errorCode) {
+      EmailVerificationError.inviteAlreadyUsed ||
+      EmailVerificationError.inviteInvalid => InviteGateError.inviteUnavailable,
+      EmailVerificationError.inviteTemporary => InviteGateError.checkFailed,
+      EmailVerificationError.inviteUnknown => InviteGateError.unknown,
+      null => null,
+      _ => InviteGateError.unknown,
+    };
+    context.go(
+      WelcomeScreen.inviteGatePathWithCode(
+        inviteCode,
+        errorReason: errorReason,
+      ),
+    );
   }
 
   @override
@@ -547,70 +558,80 @@ class _EmailVerificationScreenState
                   // (`resizeToAvoidBottomInset: false`), so shrink the scroll
                   // viewport by the inset instead: PIN entry and its submit
                   // button stay reachable while the keyboard is up.
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.viewInsetsOf(context).bottom,
-                    ),
-                    child: CustomScrollView(
-                      slivers: [
-                        // Fills the viewport so the content's `Spacer`s can
-                        // center it, and scrolls once it no longer fits.
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              24,
-                              _contentTopPadding(context),
-                              24,
-                              32,
-                            ),
-                            child: switch (state.status) {
-                              EmailVerificationStatus.initial =>
-                                _PollingContent(
-                                  email: null,
-                                  isPollingMode:
-                                      widget.isPollingMode || !_isTokenMode,
-                                ),
-                              EmailVerificationStatus.polling =>
-                                _PollingContent(
-                                  email: state.pendingEmail,
-                                  isPollingMode:
-                                      widget.isPollingMode || !_isTokenMode,
-                                ),
-                              EmailVerificationStatus.pollingTimedOut =>
-                                _PollingContent(
-                                  email: state.pendingEmail,
-                                  isPollingMode:
-                                      widget.isPollingMode || !_isTokenMode,
-                                  isActivelyPolling: false,
-                                ),
-                              EmailVerificationStatus.success =>
-                                const _SuccessContent(),
-                              EmailVerificationStatus.failure => _ErrorContent(
-                                errorCode: state.errorCode,
-                                onStartOver: _handleStartOver,
-                                onSignInInstead:
-                                    state.errorCode ==
-                                        EmailVerificationError
-                                            .emailAlreadyRegistered
-                                    ? () => _handleSignInRecovery(
-                                        state.pendingEmail,
-                                        state.errorCode!,
-                                      )
-                                    : null,
-                                onReturnToInviteGate:
-                                    state.showInviteGateRecovery &&
-                                        state.inviteRecoveryCode != null
-                                    ? () => _handleInviteRecovery(
-                                        state.inviteRecoveryCode!,
-                                        state.errorCode,
-                                      )
-                                    : null,
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    // Focus dismissal is not an accessibility action; exclude
+                    // this detector so it does not make the whole screen tap.
+                    excludeFromSemantics: true,
+                    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.viewInsetsOf(context).bottom,
+                      ),
+                      child: CustomScrollView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        slivers: [
+                          // Fills the viewport so the content's `Spacer`s can
+                          // center it, and scrolls once it no longer fits.
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                24,
+                                _contentTopPadding(context),
+                                24,
+                                32,
                               ),
-                            },
+                              child: switch (state.status) {
+                                EmailVerificationStatus.initial =>
+                                  _PollingContent(
+                                    email: null,
+                                    isPollingMode:
+                                        widget.isPollingMode || !_isTokenMode,
+                                  ),
+                                EmailVerificationStatus.polling =>
+                                  _PollingContent(
+                                    email: state.pendingEmail,
+                                    isPollingMode:
+                                        widget.isPollingMode || !_isTokenMode,
+                                  ),
+                                EmailVerificationStatus.pollingTimedOut =>
+                                  _PollingContent(
+                                    email: state.pendingEmail,
+                                    isPollingMode:
+                                        widget.isPollingMode || !_isTokenMode,
+                                    isActivelyPolling: false,
+                                  ),
+                                EmailVerificationStatus.success =>
+                                  const _SuccessContent(),
+                                EmailVerificationStatus.failure =>
+                                  _ErrorContent(
+                                    errorCode: state.errorCode,
+                                    onStartOver: _handleStartOver,
+                                    onSignInInstead:
+                                        state.errorCode ==
+                                            EmailVerificationError
+                                                .emailAlreadyRegistered
+                                        ? () => _handleSignInRecovery(
+                                            state.pendingEmail,
+                                            state.errorCode!,
+                                          )
+                                        : null,
+                                    onReturnToInviteGate:
+                                        state.showInviteGateRecovery &&
+                                            state.inviteRecoveryCode != null
+                                        ? () => _handleInviteRecovery(
+                                            state.inviteRecoveryCode!,
+                                            state.errorCode,
+                                          )
+                                        : null,
+                                  ),
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 

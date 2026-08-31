@@ -1,8 +1,3 @@
-// Permanent: mutates MethodChannel handlers, SharedPreferences, PathProvider,
-// and Hive's process-wide box registry for resumable upload recovery paths.
-@Tags(['skip_very_good_optimization'])
-library;
-
 import 'dart:async';
 import 'dart:io';
 
@@ -29,6 +24,12 @@ void _mockConnectivity(String result) {
         if (call.method == 'check') return [result];
         return null;
       });
+  // Test-local channel, so it is not covered by the shared-channel
+  // heal-and-blame tearDown; remove the per-test override.
+  addTearDown(
+    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null),
+  );
 }
 
 void main() {
@@ -88,6 +89,10 @@ void main() {
 
     tearDown(() async {
       uploadManager.dispose();
+      // dispose() nulls the store's reference without closing the box, so
+      // close and delete it before the directory underneath it goes away.
+      await TestHelpers.cleanupHiveBox('pending_uploads');
+      Hive.init(null);
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
@@ -572,8 +577,10 @@ void main() {
         expect(persisted.resumableSession?.nextOffset, equals(chunkSize * 5));
 
         final expectedProgress =
-            ((chunkSize * 5) / fileSize * UploadManager.videoProgressShare)
-                .clamp(0.0, UploadManager.videoProgressShare);
+            ((chunkSize * 5) / fileSize * videoProgressShare).clamp(
+              0.0,
+              videoProgressShare,
+            );
         expect(persisted.uploadProgress, closeTo(expectedProgress, 0.001));
 
         // Complete the upload future and await the full startUpload so
@@ -804,6 +811,10 @@ void main() {
 
     tearDown(() async {
       uploadManager.dispose();
+      // dispose() nulls the store's reference without closing the box, so
+      // close and delete it before the directory underneath it goes away.
+      await TestHelpers.cleanupHiveBox('pending_uploads');
+      Hive.init(null);
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);

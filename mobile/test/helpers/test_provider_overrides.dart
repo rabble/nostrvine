@@ -15,12 +15,16 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_version_provider.dart';
+import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -64,6 +68,15 @@ class MockVideoEventService extends Mock implements VideoEventService {
   bool isVideoEventKnownDeleted(VideoEvent video) => false;
 }
 
+/// Prevents unrelated widget tests from starting timers or sending analytics.
+class TestAnalyticsService extends AnalyticsService {
+  TestAnalyticsService()
+    : super(disableNostrPublishing: true, productAnalyticsEnabled: false);
+
+  @override
+  Future<void> initialize() async {}
+}
+
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
   final mockPrefs = MockSharedPreferences();
@@ -77,9 +90,7 @@ MockSharedPreferences createMockSharedPreferences() {
     when(
       () => mockPrefs.remove('ff_${flag.name}'),
     ).thenAnswer((_) async => true);
-    when(
-      () => mockPrefs.containsKey('ff_${flag.name}'),
-    ).thenReturn(false);
+    when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
   }
 
   // Add common SharedPreferences stubs that tests might need
@@ -103,26 +114,47 @@ MockSharedPreferences createMockSharedPreferences() {
 }
 
 /// Creates a properly stubbed MockAuthService for testing
-MockAuthService createMockAuthService() {
+MockAuthService createMockAuthService({
+  AuthState authState = AuthState.unauthenticated,
+  String? currentPublicKeyHex,
+}) {
   final mockAuth = MockAuthService();
 
   // Stub common auth methods with sensible defaults
-  when(() => mockAuth.isAuthenticated).thenReturn(false);
+  when(
+    () => mockAuth.isAuthenticated,
+  ).thenReturn(authState == AuthState.authenticated);
   when(() => mockAuth.canExportLocalNsec).thenReturn(false);
   when(
     () => mockAuth.authenticationSource,
   ).thenReturn(AuthenticationSource.none);
-  when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
+  when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPublicKeyHex);
   when(() => mockAuth.isNip07Available).thenReturn(false);
+  when(() => mockAuth.signerReadiness).thenReturn(SignerReadiness.pending);
+  when(
+    () => mockAuth.authRpcCapability,
+  ).thenReturn(AuthRpcCapability.unavailable);
+  when(
+    () => mockAuth.authRpcCapabilityStream,
+  ).thenAnswer((_) => const Stream<AuthRpcCapability>.empty());
 
   // Stub authState and authStateStream so currentAuthStateProvider does not
   // crash with type 'Null' is not a subtype of type 'Stream<AuthState>'
-  when(() => mockAuth.authState).thenReturn(AuthState.unauthenticated);
+  when(() => mockAuth.authState).thenReturn(authState);
   when(
     () => mockAuth.authStateStream,
   ).thenAnswer((_) => const Stream<AuthState>.empty());
+  _stubSessionCleanupRegistration(mockAuth);
 
   return mockAuth;
+}
+
+void _stubSessionCleanupRegistration(AuthService mockAuth) {
+  if (mockAuth is! Mock) return;
+
+  when(
+    () => mockAuth.registerBeforeSessionTeardownCallback(any()),
+  ).thenReturn(() {});
 }
 
 /// Creates a properly stubbed MockSocialService for testing
@@ -251,6 +283,12 @@ MockProfileRepository createMockProfileRepository() {
   when(
     () => mockRepo.watchProfile(pubkey: any(named: 'pubkey')),
   ).thenAnswer((_) => Stream.value(null));
+  // Surfaces that show counts read `profile_statistics` rather than the
+  // profile, so anything pumping them needs this stubbed or the provider
+  // throws `MissingStubError` before the widget builds.
+  when(
+    () => mockRepo.watchProfileStats(pubkey: any(named: 'pubkey')),
+  ).thenAnswer((_) => Stream.value(null));
 
   return mockRepo;
 }
@@ -288,9 +326,7 @@ MockFollowRepository createMockFollowRepository({
   when(() => mock.isFollowing(any())).thenReturn(false);
   when(
     mock.watchMyFollowingCached,
-  ).thenAnswer(
-    (_) => const Stream<CacheResult<FollowingSnapshot>>.empty(),
-  );
+  ).thenAnswer((_) => const Stream<CacheResult<FollowingSnapshot>>.empty());
   when(
     () => mock.watchOthersFollowingCached(
       any(),
@@ -346,6 +382,7 @@ MockVideoEventService createMockVideoEventService() {
 List<dynamic> getStandardTestOverrides({
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -358,6 +395,9 @@ List<dynamic> getStandardTestOverrides({
 }) {
   final mockPrefs = mockSharedPreferences ?? createMockSharedPreferences();
   final mockAuth = mockAuthService ?? createMockAuthService();
+  if (mockAuthService != null) {
+    _stubSessionCleanupRegistration(mockAuth);
+  }
   final mockSocial = mockSocialService ?? createMockSocialService();
   final mockNostr = mockNostrService ?? createMockNostrService();
   final mockSub = mockSubscriptionManager ?? createMockSubscriptionManager();
@@ -371,9 +411,14 @@ List<dynamic> getStandardTestOverrides({
   final mockFollow = mockFollowRepository ?? createMockFollowRepository();
 
   return [
-    // Mirror DeviceScope's required bootstrap override for test containers.
+    // Mirror DeviceScope's required bootstrap overrides for test containers.
     appVersionProvider.overrideWithValue('test'),
-
+    documentsPathProvider.overrideWithValue('/documents'),
+    // Analytics has its own focused tests. Other widget tests must not create
+    // its transport, timers, or session listeners as an incidental side effect.
+    analyticsServiceProvider.overrideWithValue(
+      analyticsService ?? TestAnalyticsService(),
+    ),
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
@@ -406,7 +451,12 @@ List<dynamic> getStandardTestOverrides({
     // which widget tests do not wire, and the inbox surfaces watch it on every
     // build. Tests that exercise the deleted-account treatment override it
     // again with `additionalOverrides`.
-    profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
+    profileVanishedProvider.overrideWith((ref, pubkey) => false),
+    profileVanishedSnapshotProvider.overrideWith((ref, pubkey) async => false),
+    // Existing widget fixtures provide profiles through their original
+    // reactive/one-shot provider. Keep the new derived loading signal settled
+    // by default; loading-specific tests override this provider explicitly.
+    profileIdentityResolvingProvider.overrideWith((ref, pubkey) => false),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
@@ -444,6 +494,7 @@ Widget testProviderScope({
   List<dynamic>? additionalOverrides,
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -460,6 +511,7 @@ Widget testProviderScope({
       ...getStandardTestOverrides(
         mockSharedPreferences: mockSharedPreferences,
         mockAuthService: mockAuthService,
+        analyticsService: analyticsService,
         mockSocialService: mockSocialService,
         mockNostrService: mockNostrService,
         mockSubscriptionManager: mockSubscriptionManager,
@@ -507,6 +559,7 @@ Widget testMaterialApp({
   List<dynamic>? additionalOverrides,
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -518,11 +571,13 @@ Widget testMaterialApp({
   FollowRepository? mockFollowRepository,
   VideoEventService? mockVideoEventService,
   ThemeData? theme,
+  Locale? locale,
 }) {
   return testProviderScope(
     additionalOverrides: additionalOverrides,
     mockSharedPreferences: mockSharedPreferences,
     mockAuthService: mockAuthService,
+    analyticsService: analyticsService,
     mockSocialService: mockSocialService,
     mockNostrService: mockNostrService,
     mockSubscriptionManager: mockSubscriptionManager,
@@ -534,6 +589,7 @@ Widget testMaterialApp({
     mockFollowRepository: mockFollowRepository,
     mockVideoEventService: mockVideoEventService,
     child: MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: home,

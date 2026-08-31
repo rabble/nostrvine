@@ -28,6 +28,7 @@ class IdentitySkeletonizer extends StatefulWidget {
     required this.isLoading,
     required this.child,
     this.fallthroughTimeout = const Duration(seconds: 7),
+    this.excludeSemantics = false,
     super.key,
   });
 
@@ -42,11 +43,44 @@ class IdentitySkeletonizer extends StatefulWidget {
   /// fallback instead of an infinite shimmer.
   final Duration fallthroughTimeout;
 
+  /// Hides placeholder identity semantics while the shimmer is active.
+  ///
+  /// Opt in only when the child is wholly placeholder content. Interactive
+  /// [Skeleton.keep] descendants must remain available to assistive tech.
+  final bool excludeSemantics;
+
   /// The avatar + name subtree to skeletonize.
   final Widget child;
 
   @override
   State<IdentitySkeletonizer> createState() => _IdentitySkeletonizerState();
+}
+
+/// Lays the switch animation out from the leading edge, filling the slot.
+///
+/// `AnimatedSwitcher`'s default layout builder is a `Stack` with
+/// `alignment: Alignment.center`, so every name wrapped by this widget was
+/// centred inside whatever slot it was given — visibly so in the inbox, where
+/// the conversation title floated while the preview beneath it stayed
+/// left-aligned. The switch animation is worth keeping; the centring is not.
+///
+/// The fit stays **loose** on purpose. `StackFit.expand` also lead-aligns, but
+/// it forces tight constraints on the child, which throws
+/// `RenderBox was not laid out` wherever the slot is horizontally unbounded —
+/// the following bar's horizontal list, for one. Loose constraints still carry
+/// the slot's `maxWidth`, so a long name ellipsizes at the same width it always
+/// did; only the leading alignment changes.
+Widget _leadingAlignedSwitcherLayout(
+  Widget? currentChild,
+  List<Widget> previousChildren,
+) {
+  return Stack(
+    alignment: AlignmentDirectional.centerStart,
+    children: <Widget>[
+      ...previousChildren,
+      ?currentChild,
+    ],
+  );
 }
 
 class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
@@ -86,11 +120,17 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
 
   @override
   Widget build(BuildContext context) {
-    return Skeletonizer(
-      enabled: widget.isLoading && !_timeoutExpired,
+    final isSkeletonized = widget.isLoading && !_timeoutExpired;
+    final skeleton = Skeletonizer(
+      enabled: isSkeletonized,
       enableSwitchAnimation: true,
+      switchAnimationConfig: const SwitchAnimationConfig(
+        layoutBuilder: _leadingAlignedSwitcherLayout,
+      ),
       effect: vineSkeletonEffectOf(context),
       child: widget.child,
     );
+    if (!widget.excludeSemantics) return skeleton;
+    return ExcludeSemantics(excluding: isSkeletonized, child: skeleton);
   }
 }

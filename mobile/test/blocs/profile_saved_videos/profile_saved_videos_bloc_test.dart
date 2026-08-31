@@ -1,9 +1,10 @@
 // ABOUTME: Tests for ProfileSavedVideosBloc — loading bookmarked videos from
-// ABOUTME: BookmarkService and paginating through VideosRepository.
+// ABOUTME: BookmarksRepository and paginating through VideosRepository.
 
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,10 +13,9 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-class _MockBookmarkService extends Mock implements BookmarkService {}
+class _MockBookmarksRepository extends Mock implements BookmarksRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
@@ -58,7 +58,7 @@ class _InMemoryCacheDao implements CacheDao {
 
 void main() {
   group('ProfileSavedVideosBloc', () {
-    late _MockBookmarkService mockBookmarkService;
+    late _MockBookmarksRepository mockBookmarksRepository;
     late _MockVideosRepository mockVideosRepository;
     late _InMemoryCacheDao cacheDao;
 
@@ -66,7 +66,7 @@ void main() {
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
     setUp(() async {
-      mockBookmarkService = _MockBookmarkService();
+      mockBookmarksRepository = _MockBookmarksRepository();
       mockVideosRepository = _MockVideosRepository();
       cacheDao = _InMemoryCacheDao();
       await CacheSync.init(dao: cacheDao);
@@ -74,7 +74,7 @@ void main() {
       // The bloc reconciles with the relay before reading the list; tests that
       // care about the relay-sourced path override this.
       when(
-        () => mockBookmarkService.syncGlobalBookmarks(),
+        () => mockBookmarksRepository.syncGlobalBookmarks(),
       ).thenAnswer((_) async => true);
     });
 
@@ -82,7 +82,7 @@ void main() {
       Stream<String>? removedVideoIds,
       bool Function(VideoEvent video)? deletedVideoFilter,
     }) => ProfileSavedVideosBloc(
-      bookmarkService: Future.value(mockBookmarkService),
+      bookmarksRepository: Future.value(mockBookmarksRepository),
       videosRepository: mockVideosRepository,
       currentUserPubkey: currentUserPubkey,
       removedVideoIds: removedVideoIds ?? const Stream<String>.empty(),
@@ -147,7 +147,9 @@ void main() {
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'emits success with empty list when there are no bookmarks',
         setUp: () {
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
+          when(
+            () => mockBookmarksRepository.globalBookmarks,
+          ).thenReturn(const []);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
@@ -163,7 +165,9 @@ void main() {
       test(
         're-sync of a settled empty tab still settles (pull-to-refresh)',
         () async {
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
+          when(
+            () => mockBookmarksRepository.globalBookmarks,
+          ).thenReturn(const []);
           final bloc = createBloc();
           addTearDown(bloc.close);
 
@@ -206,11 +210,13 @@ void main() {
         // #6627: on a fresh install the SharedPreferences cache is empty, so
         // without the reconcile the tab renders nothing even though the user's
         // kind-10003 list is on the relay.
-        when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
-        when(() => mockBookmarkService.syncGlobalBookmarks()).thenAnswer((
+        when(
+          () => mockBookmarksRepository.globalBookmarks,
+        ).thenReturn(const []);
+        when(() => mockBookmarksRepository.syncGlobalBookmarks()).thenAnswer((
           _,
         ) async {
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+          when(() => mockBookmarksRepository.globalBookmarks).thenReturn(const [
             BookmarkItem(type: 'e', id: 'video-1'),
           ]);
           return true;
@@ -237,7 +243,9 @@ void main() {
       });
 
       test('a sync arriving during the snapshot write still runs', () async {
-        when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
+        when(
+          () => mockBookmarksRepository.globalBookmarks,
+        ).thenReturn(const []);
         final bloc = createBloc();
         addTearDown(bloc.close);
 
@@ -280,7 +288,7 @@ void main() {
               hasMoreContent: false,
             ).toJson(),
           );
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+          when(() => mockBookmarksRepository.globalBookmarks).thenReturn(const [
             BookmarkItem(type: 'e', id: 'video-1'),
             BookmarkItem(type: 'e', id: 'video-2'),
           ]);
@@ -322,7 +330,7 @@ void main() {
             ).toJson(),
           );
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn(const [BookmarkItem(type: 'e', id: 'video-1')]);
         },
         build: () => createBloc(
@@ -365,7 +373,7 @@ void main() {
               hasMoreContent: false,
             ).toJson(),
           );
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+          when(() => mockBookmarksRepository.globalBookmarks).thenReturn(const [
             BookmarkItem(type: 'e', id: 'video-2'),
           ]);
           when(
@@ -524,7 +532,7 @@ void main() {
             ).toJson(),
           );
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn([for (final id in ids) BookmarkItem(type: 'e', id: id)]);
           when(
             () => mockVideosRepository.getVideosByIds(
@@ -584,7 +592,7 @@ void main() {
             ).toJson(),
           );
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn([for (final id in ids) BookmarkItem(type: 'e', id: id)]);
           when(
             () => mockVideosRepository.getVideosByIds(
@@ -625,7 +633,7 @@ void main() {
         'filters non-event bookmarks (hashtags, urls) and loads videos for '
         'event bookmarks',
         setUp: () {
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+          when(() => mockBookmarksRepository.globalBookmarks).thenReturn(const [
             BookmarkItem(type: 'e', id: 'video-1'),
             BookmarkItem(type: 't', id: 'flutter'),
             BookmarkItem(type: 'e', id: 'video-2'),
@@ -663,7 +671,7 @@ void main() {
         'emits failure when fetching videos throws',
         setUp: () {
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn(const [BookmarkItem(type: 'e', id: 'video-1')]);
           when(
             () => mockVideosRepository.getVideosByIds(
@@ -701,7 +709,7 @@ void main() {
           // binding reports android, so the filter is inert without this.
           debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn(manyBookmarks);
           when(
             () => mockVideosRepository.getVideosByIds(
@@ -743,7 +751,7 @@ void main() {
         'fetches the next page and advances offset',
         setUp: () {
           when(
-            () => mockBookmarkService.globalBookmarks,
+            () => mockBookmarksRepository.globalBookmarks,
           ).thenReturn(manyBookmarks);
           when(
             () => mockVideosRepository.getVideosByIds(

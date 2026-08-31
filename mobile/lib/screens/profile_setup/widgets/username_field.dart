@@ -1,6 +1,5 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -61,25 +60,18 @@ class UsernameField extends StatelessWidget {
               },
               onChanged: (value) =>
                   context.read<ProfileEditorBloc>().add(UsernameChanged(value)),
-              // Lowercase as the user types and restrict to canonical
-              // subdomain characters. The name server stores and resolves
+              // Lowercase as the user types. The name server stores and resolves
               // usernames as lowercase, so normalizing here avoids a confusing
-              // "invalid format" error for a typed capital letter.
-              inputFormatters: [
-                const LowercaseTextInputFormatter(),
-                FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
-              ],
+              // "invalid format" error for a typed capital letter. Invalid
+              // characters remain visible so validation can explain the rule.
+              inputFormatters: const [LowercaseTextInputFormatter()],
             ),
-            if (isExternal)
-              ProfileFieldSupportingText(
-                context.l10n.profileSetupUsernameHelper,
-              )
-            else
+            ProfileFieldSupportingText(context.l10n.profileSetupUsernameHelper),
+            if (!isExternal)
               BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
                 builder: (context, state) => UsernameStatusIndicator(
                   status: state.usernameStatus,
                   error: state.usernameError,
-                  formatMessage: state.usernameFormatMessage,
                 ),
               ),
           ],

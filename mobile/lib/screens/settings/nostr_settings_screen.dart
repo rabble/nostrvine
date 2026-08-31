@@ -30,6 +30,7 @@ import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/modal_progress_overlay.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class NostrSettingsScreen extends ConsumerWidget {
   static const routeName = 'nostr-settings';
@@ -191,7 +192,6 @@ class _RemoveKeysTile extends StatelessWidget {
     final authService = ref.read(authServiceProvider);
     final couldNotRemoveKeysMessage =
         context.l10n.nostrSettingsCouldNotRemoveKeys;
-    final failedToRemoveKeysFn = context.l10n.nostrSettingsFailedToRemoveKeys;
 
     final confirmed = await showRemoveKeysWarningSheet(context);
     if (!confirmed || !context.mounted) return;
@@ -224,11 +224,16 @@ class _RemoveKeysTile extends StatelessWidget {
         ),
       );
     } catch (e) {
+      Log.error(
+        'Local account removal failed: $e',
+        name: 'NostrSettingsScreen',
+        category: LogCategory.ui,
+      );
       progressOverlay.dismiss();
       if (!messenger.mounted) return;
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          failedToRemoveKeysFn('$e'),
+          couldNotRemoveKeysMessage,
           error: true,
         ),
       );

@@ -2,6 +2,7 @@
 // ABOUTME: Uses mocked dependencies to test publish flow without real uploads
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -47,6 +49,9 @@ class MockMentionResolutionService extends Mock
     implements MentionResolutionService {}
 
 /// Captures what a publish would report to Firebase, without any Firebase.
+class _MockDraftUploadMaterializer extends Mock
+    implements DraftUploadMaterializer {}
+
 class _FakePerformanceTrace implements PerformanceTrace {
   final Map<String, int> metrics = {};
   final Map<String, String> attributes = {};
@@ -83,6 +88,7 @@ void main() {
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
   late MockUploadManager mockUploadManager;
+  late _MockDraftUploadMaterializer mockDraftMaterializer;
   late MockAuthService mockAuthService;
   late MockVideoEventPublisher mockVideoEventPublisher;
   late MockBlossomUploadService mockBlossomService;
@@ -97,6 +103,7 @@ void main() {
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(File(''));
     registerFallbackValue(
       DivineVideoDraft.create(
         clips: [_createTestClip()],
@@ -111,6 +118,7 @@ void main() {
 
   setUp(() {
     mockUploadManager = MockUploadManager();
+    mockDraftMaterializer = _MockDraftUploadMaterializer();
     mockAuthService = MockAuthService();
     mockVideoEventPublisher = MockVideoEventPublisher();
     mockBlossomService = MockBlossomUploadService();
@@ -127,7 +135,26 @@ void main() {
       () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
     ).thenAnswer((_) async => false);
 
+    // The materializer turns a draft into an uploadable file; its own
+    // behaviour is covered by draft_upload_materializer_test.dart.
+    when(
+      () => mockDraftMaterializer.materialize(
+        draft: any(named: 'draft'),
+        pendingUploads: any(named: 'pendingUploads'),
+        videoDuration: any(named: 'videoDuration'),
+      ),
+    ).thenAnswer(
+      (_) async => (
+        videoFile: File('/test/video.mp4'),
+        videoWidth: 640,
+        videoHeight: 480,
+        videoDuration: const Duration(seconds: 6),
+        transientRenderPaths: <String>{},
+      ),
+    );
+
     service = VideoPublishService(
+      draftMaterializer: mockDraftMaterializer,
       uploadManager: mockUploadManager,
       authService: mockAuthService,
       videoEventPublisher: mockVideoEventPublisher,
@@ -403,6 +430,36 @@ void main() {
         );
       });
 
+      test(
+        'reports an account restriction as terminal publish failure',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          _stubPublishVideoEventThrows(
+            mockVideoEventPublisher,
+            const AccountRestrictedPublishException(
+              reason: 'blocked: pubkey is suspended',
+              source: AccountRestrictionSource.rest,
+            ),
+          );
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(
+            result,
+            isA<PublishError>().having(
+              (error) => error.kind,
+              'kind',
+              PublishErrorKind.accountRestricted,
+            ),
+          );
+        },
+      );
+
       group('caption publishing', () {
         const overlayTrack = CaptionTrack(
           presetId: 'classic',
@@ -547,6 +604,7 @@ void main() {
             ).thenAnswer((_) => Completer<BlossomUploadResult>().future);
 
             final boundedService = VideoPublishService(
+              draftMaterializer: mockDraftMaterializer,
               uploadManager: mockUploadManager,
               authService: mockAuthService,
               videoEventPublisher: mockVideoEventPublisher,
@@ -615,6 +673,7 @@ void main() {
             ).thenAnswer((_) => Completer<String?>().future);
 
             final boundedService = VideoPublishService(
+              draftMaterializer: mockDraftMaterializer,
               uploadManager: mockUploadManager,
               authService: mockAuthService,
               videoEventPublisher: mockVideoEventPublisher,
@@ -1242,10 +1301,19 @@ void main() {
             () => mockDraftService.saveDraft(any()),
           ).thenAnswer((_) async {});
           when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(() => mockUploadManager.pendingUploads).thenReturn([]);
           when(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
+            () => mockUploadManager.startUpload(
+              videoFile: any(named: 'videoFile'),
               nostrPubkey: any(named: 'nostrPubkey'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              videoWidth: any(named: 'videoWidth'),
+              videoHeight: any(named: 'videoHeight'),
+              videoDuration: any(named: 'videoDuration'),
+              proofManifestJson: any(named: 'proofManifestJson'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer(
@@ -1401,6 +1469,48 @@ void main() {
         },
       );
 
+      test(
+        'successful publish does not warn for a queued collaborator invite',
+        () async {
+          const collaboratorPubkey =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(
+              results: {
+                collaboratorPubkey: CollaboratorInviteResult(
+                  success: false,
+                  retryablePending: true,
+                ),
+              },
+            ),
+          );
+
+          final result = await service.publishVideo(
+            draft: _createTestDraft(
+              collaboratorPubkeys: {collaboratorPubkey},
+            ),
+          );
+
+          expect(result, isA<PublishSuccess>());
+          expect((result as PublishSuccess).inviteWarnings, isEmpty);
+        },
+      );
+
       test('returns error when video event publishing fails', () async {
         // Arrange
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -1409,10 +1519,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer(
@@ -1476,9 +1595,17 @@ void main() {
         when(() => mockUploadManager.isInitialized).thenReturn(false);
         when(() => mockUploadManager.initialize()).thenAnswer((_) async {});
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer(
@@ -1519,10 +1646,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer(
@@ -1576,9 +1712,17 @@ void main() {
         expect((result as PublishError).kind, PublishErrorKind.accountChanged);
         verifyNever(() => mockDraftService.saveDraft(any()));
         verifyNever(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         );
@@ -1595,6 +1739,117 @@ void main() {
       });
     });
 
+    group('paused upload polling', () {
+      test(
+        'terminates instead of polling a paused upload forever',
+        () async {
+          // UploadStatus.paused is a tombstone (#6935) — no shipped code path
+          // writes it. _pollUploadProgress used to treat it as a poll state and
+          // recurse with no timeout or iteration cap, so a paused row hung the
+          // publish flow at 20 Hz forever. This test times out if that returns.
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(() => mockUploadManager.pendingUploads).thenReturn([]);
+
+          final pausedUpload = _createPendingUpload(
+            status: UploadStatus.paused,
+          );
+          when(
+            () => mockUploadManager.startUpload(
+              videoFile: any(named: 'videoFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              videoWidth: any(named: 'videoWidth'),
+              videoHeight: any(named: 'videoHeight'),
+              videoDuration: any(named: 'videoDuration'),
+              proofManifestJson: any(named: 'proofManifestJson'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => pausedUpload);
+          when(
+            () => mockUploadManager.getUpload(any()),
+          ).thenReturn(pausedUpload);
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(result, isA<PublishError>());
+        },
+        timeout: const Timeout(Duration(seconds: 15)),
+      );
+    });
+
+    group('draft upload composition', () {
+      test(
+        'forwards materialized output and registers transient renders',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          final videoFile = File('/materialized/video.mp4');
+          const transientPaths = {'/materialized/stop-motion.mp4'};
+          when(
+            () => mockDraftMaterializer.materialize(
+              draft: any(named: 'draft'),
+              pendingUploads: any(named: 'pendingUploads'),
+              videoDuration: any(named: 'videoDuration'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              videoFile: videoFile,
+              videoWidth: 1080,
+              videoHeight: 1920,
+              videoDuration: const Duration(seconds: 5),
+              transientRenderPaths: transientPaths,
+            ),
+          );
+          final draft = _createTestDraft(
+            proofManifestJson: '{"proof":"manifest"}',
+            thumbnailTimestamp: const Duration(seconds: 2),
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockUploadManager.startUpload(
+              videoFile: videoFile,
+              nostrPubkey: 'test_pubkey',
+              title: 'Test Video',
+              description: 'Test description',
+              hashtags: any(
+                named: 'hashtags',
+                that: unorderedEquals(['test', 'video']),
+              ),
+              videoWidth: 1080,
+              videoHeight: 1920,
+              videoDuration: const Duration(seconds: 5),
+              proofManifestJson: '{"proof":"manifest"}',
+              thumbnailTimestamp: const Duration(seconds: 2),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+          verify(
+            () => mockUploadManager.registerTransientRenderPaths(
+              'test_upload_id',
+              transientPaths,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('upload reuse', () {
       test('reuses readyToPublish upload matching video path', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -1603,6 +1858,7 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
 
         final readyUpload = _createPendingUpload(
           status: UploadStatus.readyToPublish,
@@ -1631,9 +1887,17 @@ void main() {
         expect(result, isA<PublishSuccess>());
         // Should NOT have started a new upload.
         verifyNever(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         );
@@ -1659,9 +1923,17 @@ void main() {
 
           expect(result, isA<PublishSuccess>());
           verify(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
+            () => mockUploadManager.startUpload(
+              videoFile: any(named: 'videoFile'),
               nostrPubkey: any(named: 'nostrPubkey'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              videoWidth: any(named: 'videoWidth'),
+              videoHeight: any(named: 'videoHeight'),
+              videoDuration: any(named: 'videoDuration'),
+              proofManifestJson: any(named: 'proofManifestJson'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               onProgress: any(named: 'onProgress'),
             ),
           ).called(1);
@@ -1676,6 +1948,7 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
 
         final uploadingUpload = _createPendingUpload(
           status: UploadStatus.uploading,
@@ -1720,9 +1993,17 @@ void main() {
           () => mockUploadManager.resumeInterruptedUpload(uploadingUpload.id),
         ).called(1);
         verifyNever(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         );
@@ -1738,10 +2019,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('404 not_found'));
@@ -1768,10 +2058,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('network connection failed'));
@@ -1796,10 +2095,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('Connection timed out'));
@@ -1821,10 +2129,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('HandshakeException: certificate verify failed'));
@@ -1846,10 +2163,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('413 payload too large'));
@@ -1875,10 +2201,19 @@ void main() {
             () => mockDraftService.saveDraft(any()),
           ).thenAnswer((_) async {});
           when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(() => mockUploadManager.pendingUploads).thenReturn([]);
           when(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
+            () => mockUploadManager.startUpload(
+              videoFile: any(named: 'videoFile'),
               nostrPubkey: any(named: 'nostrPubkey'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              videoWidth: any(named: 'videoWidth'),
+              videoHeight: any(named: 'videoHeight'),
+              videoDuration: any(named: 'videoDuration'),
+              proofManifestJson: any(named: 'proofManifestJson'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               onProgress: any(named: 'onProgress'),
             ),
           ).thenThrow(Exception('500 internal server error'));
@@ -1907,10 +2242,19 @@ void main() {
             () => mockDraftService.saveDraft(any()),
           ).thenAnswer((_) async {});
           when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(() => mockUploadManager.pendingUploads).thenReturn([]);
           when(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
+            () => mockUploadManager.startUpload(
+              videoFile: any(named: 'videoFile'),
               nostrPubkey: any(named: 'nostrPubkey'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              videoWidth: any(named: 'videoWidth'),
+              videoHeight: any(named: 'videoHeight'),
+              videoDuration: any(named: 'videoDuration'),
+              proofManifestJson: any(named: 'proofManifestJson'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               onProgress: any(named: 'onProgress'),
             ),
           ).thenThrow(Exception('502 bad gateway'));
@@ -1935,10 +2279,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('401 unauthorized'));
@@ -1960,10 +2313,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('403 forbidden'));
@@ -1985,10 +2347,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('No such file or directory'));
@@ -2010,10 +2381,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('no space left, disk full'));
@@ -2035,10 +2415,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('Failed to publish nostr event'));
@@ -2064,10 +2453,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('SocketException: Network is unreachable'));
@@ -2089,10 +2487,19 @@ void main() {
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
+        when(() => mockUploadManager.pendingUploads).thenReturn([]);
         when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
+          () => mockUploadManager.startUpload(
+            videoFile: any(named: 'videoFile'),
             nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            videoWidth: any(named: 'videoWidth'),
+            videoHeight: any(named: 'videoHeight'),
+            videoDuration: any(named: 'videoDuration'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenThrow(Exception('Connection refused'));
@@ -2181,6 +2588,7 @@ void main() {
       VideoPublishService buildServiceWithLanguage(
         LanguagePreferenceService languageService,
       ) => VideoPublishService(
+        draftMaterializer: mockDraftMaterializer,
         uploadManager: mockUploadManager,
         authService: mockAuthService,
         videoEventPublisher: mockVideoEventPublisher,
@@ -2263,14 +2671,23 @@ void _stubFailedUpload({
   when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
   when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
   when(() => mockUploadManager.isInitialized).thenReturn(true);
+  when(() => mockUploadManager.pendingUploads).thenReturn([]);
   final failed = _createPendingUpload(
     status: UploadStatus.failed,
     errorMessage: errorMessage,
   );
   when(
-    () => mockUploadManager.startUploadFromDraft(
-      draft: any(named: 'draft'),
+    () => mockUploadManager.startUpload(
+      videoFile: any(named: 'videoFile'),
       nostrPubkey: any(named: 'nostrPubkey'),
+      title: any(named: 'title'),
+      description: any(named: 'description'),
+      hashtags: any(named: 'hashtags'),
+      videoWidth: any(named: 'videoWidth'),
+      videoHeight: any(named: 'videoHeight'),
+      videoDuration: any(named: 'videoDuration'),
+      proofManifestJson: any(named: 'proofManifestJson'),
+      thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
       onProgress: any(named: 'onProgress'),
     ),
   ).thenAnswer((_) async => failed);
@@ -2393,6 +2810,8 @@ DivineVideoDraft _createTestDraft({
   Map<String, dynamic> editorStateHistory = const {},
   Set<String> collaboratorPubkeys = const {},
   Map<String, dynamic>? editorEditingParameters,
+  String? proofManifestJson,
+  Duration? thumbnailTimestamp,
 }) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
@@ -2404,6 +2823,8 @@ DivineVideoDraft _createTestDraft({
     editorStateHistory: editorStateHistory,
     collaboratorPubkeys: collaboratorPubkeys,
     editorEditingParameters: editorEditingParameters,
+    proofManifestJson: proofManifestJson,
+    thumbnailTimestamp: thumbnailTimestamp,
   );
 }
 
@@ -2442,10 +2863,19 @@ void _setupSuccessfulPublish({
   when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
   when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
   when(() => mockUploadManager.isInitialized).thenReturn(true);
+  when(() => mockUploadManager.pendingUploads).thenReturn([]);
   when(
-    () => mockUploadManager.startUploadFromDraft(
-      draft: any(named: 'draft'),
+    () => mockUploadManager.startUpload(
+      videoFile: any(named: 'videoFile'),
       nostrPubkey: any(named: 'nostrPubkey'),
+      title: any(named: 'title'),
+      description: any(named: 'description'),
+      hashtags: any(named: 'hashtags'),
+      videoWidth: any(named: 'videoWidth'),
+      videoHeight: any(named: 'videoHeight'),
+      videoDuration: any(named: 'videoDuration'),
+      proofManifestJson: any(named: 'proofManifestJson'),
+      thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
       onProgress: any(named: 'onProgress'),
     ),
   ).thenAnswer((_) async => upload);

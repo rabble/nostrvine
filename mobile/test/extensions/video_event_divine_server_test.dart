@@ -345,34 +345,57 @@ void main() {
     });
   });
 
-  group('getFallbackUrl', () {
+  group('previewPlaybackSources', () {
     const hash =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-    test('returns HLS URL for Divine-hosted videos', () {
+    test('withholds the bare blob for extensionless Divine URLs', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      final fallback = video.getFallbackUrl();
-      expect(fallback, isNotNull);
-      expect(fallback, contains('/hls/'));
-      expect(fallback, contains('.m3u8'));
-    });
-
-    test('returns null for non-Divine videos', () {
-      final video = _createVideoWithUrl(
-        'https://blossom.primal.net/test/video.mp4',
+      // The regression in #7550: the preview used to be handed the bare blob,
+      // which answers a Range request with a cached NoSuchKey body dressed up
+      // as a 206 (divine-blossom#198).
+      expect(
+        video.previewPlaybackSources,
+        equals([
+          'https://media.divine.video/$hash/720p.mp4',
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ]),
       );
-
-      expect(video.getFallbackUrl(), isNull);
     });
 
-    test('returns different URL than getOptimalVideoUrlForPlatform', () {
+    test('falls back to HLS after the raw blob when raw playback is '
+        'forced', () async {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      final primary = video.getOptimalVideoUrlForPlatform();
-      final fallback = video.getFallbackUrl();
+      await videoFormatPreference.setFormat(VideoPlaybackFormat.raw);
+      addTearDown(() => videoFormatPreference.setFormat(null));
 
-      expect(primary, isNot(equals(fallback)));
+      expect(
+        video.previewPlaybackSources,
+        equals([
+          'https://media.divine.video/$hash',
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ]),
+      );
+    });
+
+    test('offers the HLS rung as a master playlist, not a media playlist', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      // A media playlist (stream_720p.m3u8) carries no #EXT-X-STREAM-INF, so
+      // anything that parses variants out of it resolves to nothing. The
+      // master is the rung the feed uses and the one the native player takes.
+      expect(video.previewPlaybackSources.last, endsWith('/hls/master.m3u8'));
+    });
+
+    test('leaves non-Divine videos with their single original source', () {
+      final video = _createVideoWithUrl('https://example.com/video.mp4');
+
+      expect(
+        video.previewPlaybackSources,
+        equals(['https://example.com/video.mp4']),
+      );
     });
   });
 }

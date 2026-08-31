@@ -48,10 +48,7 @@ void main() {
           EventChannel(eventChannel),
           MockStreamHandler.inline(
             onListen: (arguments, sink) {
-              events.stream.listen(
-                sink.success,
-                onDone: sink.endOfStream,
-              );
+              events.stream.listen(sink.success, onDone: sink.endOfStream);
             },
           ),
         );
@@ -127,132 +124,73 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  testWidgets('clips to the provided border radius', (tester) async {
-    const borderRadius = BorderRadius.all(Radius.circular(12));
+  group('renders', () {
+    testWidgets('clips to the provided border radius', (tester) async {
+      const borderRadius = BorderRadius.all(Radius.circular(12));
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: VideoCommentPlayer(
-            videoUrl: 'https://media.divine.video/comment-video.mp4',
-            borderRadius: borderRadius,
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoCommentPlayer(
+              videoUrl: 'https://media.divine.video/comment-video.mp4',
+              borderRadius: borderRadius,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    final clip = tester.widget<ClipRRect>(
-      find.ancestor(
-        of: find.byType(VisibilityDetector),
-        matching: find.byType(ClipRRect),
-      ),
-    );
-    expect(clip.borderRadius, borderRadius);
+      final clip = tester.widget<ClipRRect>(
+        find.ancestor(
+          of: find.byType(VisibilityDetector),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      expect(clip.borderRadius, borderRadius);
+    });
+
+    testWidgets('opens the full video page from the inline comment player', (
+      tester,
+    ) async {
+      var opened = false;
+
+      await tester.pumpWidget(buildPlayer(onOpenVideo: () => opened = true));
+
+      expect(find.byType(VideoCommentPlayer), findsOneWidget);
+      await tester.tap(find.byType(DivineIconButton));
+      await tester.pump();
+
+      expect(opened, isTrue);
+    });
+
+    testWidgets('renders a $DivineVideoPlayer surface', (tester) async {
+      await tester.pumpWidget(buildPlayer());
+
+      expect(find.byType(DivineVideoPlayer), findsOneWidget);
+    });
   });
 
-  testWidgets('opens the full video page from the inline comment player', (
-    tester,
-  ) async {
-    var opened = false;
-
-    await tester.pumpWidget(buildPlayer(onOpenVideo: () => opened = true));
-
-    expect(find.byType(VideoCommentPlayer), findsOneWidget);
-    await tester.tap(find.byType(DivineIconButton));
-    await tester.pump();
-
-    expect(opened, isTrue);
-  });
-
-  testWidgets('renders a $DivineVideoPlayer surface', (tester) async {
-    await tester.pumpWidget(buildPlayer());
-
-    expect(find.byType(DivineVideoPlayer), findsOneWidget);
-  });
-
-  testWidgets('creates and plays a Divine controller when tapped', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildPlayer());
-    await startPlayback(tester);
-
-    expect(
-      methodCalls,
-      containsAll(<String>['create', 'setClips', 'setLooping', 'play']),
-    );
-  });
-
-  testWidgets('disposes the native controller when unmounted', (tester) async {
-    await tester.pumpWidget(buildPlayer());
-    await startPlayback(tester);
-    expect(DivineVideoPlayerController.liveControllerCount, 1);
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: SizedBox(),
-      ),
-    );
-    await tester.pump();
-
-    // dispose() drops the controller from the live registry synchronously.
-    expect(DivineVideoPlayerController.liveControllerCount, 0);
-  });
-
-  testWidgets('pauses playback when the app is backgrounded', (tester) async {
-    await tester.pumpWidget(buildPlayer());
-    await startPlayback(tester);
-
-    methodCalls.clear();
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    expect(methodCalls, contains('pause'));
-  });
-
-  testWidgets('recovers from a failed play() and starts a fresh controller', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildPlayer());
-
-    failNextPlay = true;
-    await startPlayback(tester);
-
-    // The failed controller is torn down (dropped from the live registry) and
-    // its references cleared, so no controller lingers.
-    expect(DivineVideoPlayerController.liveControllerCount, 0);
-
-    // A second tap must build a brand-new controller instead of calling into
-    // the disposed one (which would throw StateError from the package guard).
-    failNextPlay = false;
-    final createsBefore = methodCalls.where((m) => m == 'create').length;
-    await startPlayback(tester);
-
-    expect(tester.takeException(), isNull);
-    expect(methodCalls.where((m) => m == 'create').length, createsBefore + 1);
-    expect(DivineVideoPlayerController.liveControllerCount, 1);
-  });
-
-  testWidgets(
-    'unmounting while playing never touches the disposed controller',
-    (
+  group('playback lifecycle', () {
+    testWidgets('creates and plays a Divine controller when tapped', (
       tester,
     ) async {
       await tester.pumpWidget(buildPlayer());
       await startPlayback(tester);
 
-      // Drive the controller into a playing state so the visibility/lifecycle
-      // pause guards would act on it if the widget still held a reference.
-      playerEvents[0]!.add(<Object?, Object?>{'status': 'playing'});
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        methodCalls,
+        containsAll(<String>['create', 'setClips', 'setLooping', 'play']),
+      );
+    });
 
-      // Unmount, then pump extra frames so any deferred VisibilityDetector
-      // callback (delivered after the render object is disposed) fires.
+    testWidgets('disposes the native controller when unmounted', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPlayer());
+      await startPlayback(tester);
+      expect(DivineVideoPlayerController.liveControllerCount, 1);
+
       await tester.pumpWidget(
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -261,67 +199,130 @@ void main() {
         ),
       );
       await tester.pump();
+
+      // dispose() drops the controller from the live registry synchronously.
+      expect(DivineVideoPlayerController.liveControllerCount, 0);
+    });
+
+    testWidgets('pauses playback when the app is backgrounded', (tester) async {
+      await tester.pumpWidget(buildPlayer());
+      await startPlayback(tester);
+
+      methodCalls.clear();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(tester.takeException(), isNull);
+      expect(methodCalls, contains('pause'));
+    });
+
+    testWidgets('recovers from a failed play() and starts a fresh controller', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPlayer());
+
+      failNextPlay = true;
+      await startPlayback(tester);
+
+      // The failed controller is torn down (dropped from the live registry) and
+      // its references cleared, so no controller lingers.
       expect(DivineVideoPlayerController.liveControllerCount, 0);
-    },
-  );
 
-  testWidgets('aborts playback when the app is not in the foreground', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildPlayer());
+      // A second tap must build a brand-new controller instead of calling into
+      // the disposed one (which would throw StateError from the package guard).
+      failNextPlay = false;
+      final createsBefore = methodCalls.where((m) => m == 'create').length;
+      await startPlayback(tester);
 
-    // Backgrounding does not unmount an inline comment player, and the play()
-    // decision happens only after the initialize()/setSource() awaits. The
-    // widget must abort instead of starting playback in the background.
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pump();
-    await startPlayback(tester);
+      expect(tester.takeException(), isNull);
+      expect(methodCalls.where((m) => m == 'create').length, createsBefore + 1);
+      expect(DivineVideoPlayerController.liveControllerCount, 1);
+    });
 
-    expect(methodCalls, isNot(contains('play')));
-    expect(DivineVideoPlayerController.liveControllerCount, 0);
-  });
+    testWidgets(
+      'unmounting while playing never touches the disposed controller',
+      (tester) async {
+        await tester.pumpWidget(buildPlayer());
+        await startPlayback(tester);
 
-  testWidgets('pauses when scrolled offscreen after playback starts', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ListView(
-            children: const [
-              SizedBox(
-                height: 400,
-                child: VideoCommentPlayer(
-                  videoUrl: 'https://media.divine.video/comment-video.mp4',
-                ),
-              ),
-              SizedBox(height: 1200),
-            ],
+        // Drive the controller into a playing state so the visibility/lifecycle
+        // pause guards would act on it if the widget still held a reference.
+        playerEvents[0]!.add(<Object?, Object?>{'status': 'playing'});
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Unmount, then pump extra frames so any deferred VisibilityDetector
+        // callback (delivered after the render object is disposed) fires.
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SizedBox(),
           ),
-        ),
-      ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull);
+        expect(DivineVideoPlayerController.liveControllerCount, 0);
+      },
     );
 
-    // Start playback. No 'playing' event is emitted, so controller.state
-    // .isPlaying stays false and only the optimistic _isPlaying flag is set.
-    await tester.tap(find.byType(VideoCommentPlayer));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    testWidgets('aborts playback when the app is not in the foreground', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPlayer());
 
-    methodCalls.clear();
-    // Scroll the 400px player mostly offscreen (~12% visible, below the 0.35
-    // threshold) while keeping it mounted (a full scroll past the ListView
-    // cacheExtent would dispose it instead). The pause must still fire even
-    // though state.isPlaying never flipped.
-    await tester.drag(find.byType(Scrollable), const Offset(0, -350));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      // Backgrounding does not unmount an inline comment player, and the play()
+      // decision happens only after the initialize()/setSource() awaits. The
+      // widget must abort instead of starting playback in the background.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      await startPlayback(tester);
 
-    expect(methodCalls, contains('pause'));
+      expect(methodCalls, isNot(contains('play')));
+      expect(DivineVideoPlayerController.liveControllerCount, 0);
+    });
+
+    testWidgets('pauses when scrolled offscreen after playback starts', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ListView(
+              children: const [
+                SizedBox(
+                  height: 400,
+                  child: VideoCommentPlayer(
+                    videoUrl: 'https://media.divine.video/comment-video.mp4',
+                  ),
+                ),
+                SizedBox(height: 1200),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Start playback. No 'playing' event is emitted, so controller.state
+      // .isPlaying stays false and only the optimistic _isPlaying flag is set.
+      await tester.tap(find.byType(VideoCommentPlayer));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      methodCalls.clear();
+      // Scroll the 400px player mostly offscreen (~12% visible, below the 0.35
+      // threshold) while keeping it mounted (a full scroll past the ListView
+      // cacheExtent would dispose it instead). The pause must still fire even
+      // though state.isPlaying never flipped.
+      await tester.drag(find.byType(Scrollable), const Offset(0, -350));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(methodCalls, contains('pause'));
+    });
   });
 }

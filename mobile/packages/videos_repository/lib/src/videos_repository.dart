@@ -23,6 +23,7 @@ import 'package:videos_repository/src/seen_video_lookup.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
+import 'package:videos_repository/src/video_route_lookup_result.dart';
 import 'package:videos_repository/src/video_search_sort.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
@@ -232,7 +233,7 @@ class VideosRepository {
   /// Clears the in-memory feed cache.
   ///
   /// When [key] is provided, only that feed mode's cache is removed
-  /// (e.g. `"home"`, `"latest"`, `"popular"`). When omitted, all
+  /// (e.g. `"latest"`, `"popular"`, `"classics"`). When omitted, all
   /// cached feeds are cleared.
   void clearInMemoryFeedCache({String? key}) {
     if (key != null) {
@@ -277,16 +278,9 @@ class VideosRepository {
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
-    bool skipCache = false,
   }) async {
     if (authors.isEmpty && userPubkey == null) {
       return const HomeFeedResult(videos: []);
-    }
-
-    // Return in-memory cached result when available (initial page only).
-    if (!skipCache && until == null) {
-      final cached = _inMemoryFeedCache?.get('home');
-      if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
@@ -301,8 +295,6 @@ class VideosRepository {
     if (videoRefs.isEmpty) {
       final ordered = await _orderBySeenFreshness(videos);
       final result = HomeFeedResult(videos: ordered);
-      if (until == null) _inMemoryFeedCache?.set('home', result);
-      // Still apply ordering to cached path on next call via cache gate below
       return result;
     }
 
@@ -317,7 +309,6 @@ class VideosRepository {
       videoListSources: merged.videoListSources,
       listOnlyVideoIds: merged.listOnlyVideoIds,
     );
-    if (until == null) _inMemoryFeedCache?.set('home', result);
     return result;
   }
 
@@ -710,6 +701,19 @@ class VideosRepository {
   /// This is the "New" feed mode - shows all public videos sorted by
   /// creation time.
   ///
+  /// Deliberately does not apply seen-freshness reordering. This feed is
+  /// surfaced as "New", and that label is a chronological promise: a video
+  /// watched in the last 24 hours keeps its position rather than sinking
+  /// below older ones. Because reordering ran after pagination it also
+  /// partitioned each page on its own, so timestamps descended, jumped
+  /// backwards at the page's recently-seen block, then descended again from
+  /// the next page's top — the feed read as unsorted rather than merely
+  /// re-prioritised.
+  ///
+  /// Discovery surfaces that do want the bias keep it: [getHomeFeedVideos]
+  /// still demotes via [prioritizeNotRecentlySeenVideos], and classics drop
+  /// recently-seen entirely via [filterOutRecentlySeenVideos].
+  ///
   /// Strategy:
   /// 1. If Funnelcake API is available, tries the REST API first (faster)
   /// 2. Falls back to Nostr relay query
@@ -718,6 +722,13 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
+  /// - [skipCache]: Full manual refresh (pull-to-refresh) — bypasses the
+  ///   in-memory first-page cache and merges newer relay events into a
+  ///   successful API first page.
+  /// - [revalidate]: Bypasses the in-memory first-page cache read only,
+  ///   without the relay merge. Use for session-start revalidation where a
+  ///   fresh first page is wanted but the pull-to-refresh relay round-trip
+  ///   is not.
   ///
   /// Returns a [HomeFeedResult] whose videos are sorted by creation time
   /// (newest first), with [HomeFeedResult.hasMore] reporting whether more
@@ -735,14 +746,14 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
+    bool revalidate = false,
   }) async {
     // Return in-memory cached result when available (initial page only).
-    if (!skipCache && until == null) {
+    if (!skipCache && !revalidate && until == null) {
       final cached = _inMemoryFeedCache?.get('latest');
       if (cached != null) {
-        final ordered = await _orderBySeenFreshness(cached.videos);
         return HomeFeedResult(
-          videos: ordered,
+          videos: cached.videos,
           hasMore: cached.hasMore,
           paginationCursor: cached.paginationCursor,
         );
@@ -764,9 +775,8 @@ class VideosRepository {
             : page.videos;
         // Hydrate views/loops — list endpoint omits them for some rows.
         final hydrated = await _hydrateVideosWithBulkStats(mergedVideos);
-        final ordered = await _orderBySeenFreshness(hydrated);
         return _recentVideosResult(
-          ordered,
+          hydrated,
           limit: limit,
           until: until,
           serverHasMore: page.serverHasMore,
@@ -782,8 +792,7 @@ class VideosRepository {
       until: until,
     );
     final hydrated = await _hydrateVideosWithBulkStats(videos);
-    final ordered = await _orderBySeenFreshness(hydrated);
-    return _recentVideosResult(ordered, limit: limit, until: until);
+    return _recentVideosResult(hydrated, limit: limit, until: until);
   }
 
   /// Wraps a latest-feed page, recording whether more sits behind it so
@@ -1688,6 +1697,7 @@ class VideosRepository {
     Event event, {
     bool permissive = false,
     bool ignoreBlockFilter = false,
+    void Function(VideoEvent video)? onContentFiltered,
   }) {
     // Skip events that aren't valid video kinds
     final isSupported = permissive
@@ -1715,7 +1725,9 @@ class VideosRepository {
     // Skip expired videos (NIP-40)
     if (video.isExpired) return null;
 
-    return _applyContentPreferences(video);
+    final permitted = _applyContentPreferences(video);
+    if (permitted == null) onContentFiltered?.call(video);
+    return permitted;
   }
 
   bool _isReplyOnlyVideoEvent(Event event) {
@@ -2654,16 +2666,41 @@ class VideosRepository {
     String routeId, {
     List<String> fallbackRouteIds = const [],
   }) async {
+    final result = await lookupVideoForRouteId(
+      routeId,
+      fallbackRouteIds: fallbackRouteIds,
+    );
+    return result is VideoRouteFound ? result.video : null;
+  }
+
+  /// Resolves a `/video/<route-id>` reference, distinguishing a video no
+  /// source could supply from one the viewer's content filters removed.
+  ///
+  /// Both collapsed to null before, so a video that exists and plays —
+  /// often the viewer's own — rendered as a permanent "video not found"
+  /// with nothing naming the setting responsible and no way to act on it
+  /// (#7892). Callers that only need the video keep using
+  /// [fetchVideoWithStatsForRouteId].
+  Future<VideoRouteLookupResult> lookupVideoForRouteId(
+    String routeId, {
+    List<String> fallbackRouteIds = const [],
+  }) async {
     FunnelcakeException? apiFailure;
     final attempted = <String>{};
+
+    // Any source may parse the video and then have it filtered; keep the
+    // first so the caller can explain the outcome instead of guessing.
+    VideoEvent? filtered;
+    void onContentFiltered(VideoEvent video) => filtered ??= video;
 
     for (final candidateRouteId in [routeId, ...fallbackRouteIds]) {
       if (!attempted.add(candidateRouteId)) continue;
       try {
         final video = await _fetchVideoWithStatsForSingleRouteId(
           candidateRouteId,
+          onContentFiltered: onContentFiltered,
         );
-        if (video != null) return video;
+        if (video != null) return VideoRouteFound(video);
       } on FunnelcakeException catch (e) {
         // Keep going: a fallback route is a different query shape (an
         // author-scoped addressable resolves against relays alone) and can
@@ -2684,12 +2721,16 @@ class VideosRepository {
     final failure = apiFailure;
     if (failure != null) throw failure;
 
-    return null;
+    final hidden = filtered;
+    if (hidden != null) return VideoRouteHiddenByFilter(hidden);
+
+    return const VideoRouteMissing();
   }
 
   Future<VideoEvent?> _fetchVideoWithStatsForSingleRouteId(
-    String routeId,
-  ) async {
+    String routeId, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     final candidate = _VideoRouteCandidate.parse(routeId);
     if (candidate == null) {
       Log.warning(
@@ -2716,7 +2757,10 @@ class VideosRepository {
       return video;
     }
 
-    final cached = await _fetchRouteVideoFromLocalCache(candidate);
+    final cached = await _fetchRouteVideoFromLocalCache(
+      candidate,
+      onContentFiltered: onContentFiltered,
+    );
     if (cached != null) return resolved('localCache', cached);
     missed.add('localCache');
 
@@ -2728,6 +2772,7 @@ class VideosRepository {
           funnelcakeRouteId,
           expectedPubkey: candidate.addressablePubkey,
           permissive: true,
+          onContentFiltered: onContentFiltered,
         );
         if (byFunnelcake != null) {
           return resolved('funnelcake', byFunnelcake);
@@ -2749,6 +2794,7 @@ class VideosRepository {
     if (candidate.eventId != null) {
       final byEventId = await _fetchRouteVideoByEventIdFromRelay(
         candidate.eventId!,
+        onContentFiltered: onContentFiltered,
       );
       if (byEventId != null) return resolved('relayEventId', byEventId);
       missed.add('relayEventId');
@@ -2757,6 +2803,7 @@ class VideosRepository {
     if (candidate.addressableId != null) {
       final byAddressable = await _fetchAddressableVideoFromRelay(
         candidate.addressableId!,
+        onContentFiltered: onContentFiltered,
       );
       if (byAddressable != null) {
         return resolved('relayAddressable', byAddressable);
@@ -2767,6 +2814,7 @@ class VideosRepository {
     if (candidate.stableId != null) {
       final byStableId = await _fetchVideoByStableIdFromRelay(
         candidate.stableId!,
+        onContentFiltered: onContentFiltered,
       );
       if (byStableId != null) return resolved('relayStableId', byStableId);
       missed.add('relayStableId');
@@ -2829,12 +2877,21 @@ class VideosRepository {
   }
 
   /// Fetches For You videos from the recommendations endpoint.
+  ///
+  /// - [skipCache]: Full manual refresh — bypasses the in-memory first-page
+  ///   cache and draws a new recommendation session seed, so the first page
+  ///   is reshuffled while later pages stay consistent with it.
+  /// - [revalidate]: Bypasses the in-memory first-page cache read only and
+  ///   keeps the current recommendation session seed, so session-start
+  ///   revalidation refetches the first page without reshuffling the
+  ///   session.
   Future<HomeFeedResult> getRecommendedVideos({
     required String? userPubkey,
     int limit = _defaultLimit,
     int? until,
     String? cursor,
     bool skipCache = false,
+    bool revalidate = false,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
@@ -2847,7 +2904,7 @@ class VideosRepository {
     final cacheKey =
         'recommended:${effectiveUserPubkey ?? 'anonymous'}'
         '$preferenceCacheSuffix';
-    if (!skipCache && until == null && cursor == null) {
+    if (!skipCache && !revalidate && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return _withSeenFreshnessOrdering(cached);
     }
@@ -2865,6 +2922,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2888,6 +2946,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2909,6 +2968,7 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        revalidate: revalidate,
         preferredLanguages: preferredLanguages,
         viewerCountry: viewerCountry,
       );
@@ -2933,6 +2993,7 @@ class VideosRepository {
     required int limit,
     required int? until,
     required bool skipCache,
+    required bool revalidate,
     required List<String> preferredLanguages,
     required String? viewerCountry,
   }) async {
@@ -2946,7 +3007,9 @@ class VideosRepository {
         await getPopularVideos(
           limit: limit,
           until: until,
-          skipCache: skipCache,
+          // This legacy, no-variant popular call has no heavier refresh
+          // semantics, so revalidation bypasses its cache like manual refresh.
+          skipCache: skipCache || revalidate,
           preferredLanguages: preferredLanguages,
           viewerCountry: viewerCountry,
         ),
@@ -3118,8 +3181,9 @@ class VideosRepository {
   /// a same-d-tag cache hit from another creator must fall through to the
   /// author-filtered relay lookup instead of satisfying the route.
   Future<VideoEvent?> _fetchRouteVideoFromLocalCache(
-    _VideoRouteCandidate candidate,
-  ) async {
+    _VideoRouteCandidate candidate, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     if (_localStorage == null) return null;
 
     final candidates = <Event>[];
@@ -3145,10 +3209,16 @@ class VideosRepository {
     }
 
     if (candidates.isEmpty) return null;
-    return _parseAndHydrateFirstRouteVideo(candidates);
+    return _parseAndHydrateFirstRouteVideo(
+      candidates,
+      onContentFiltered: onContentFiltered,
+    );
   }
 
-  Future<VideoEvent?> _fetchRouteVideoByEventIdFromRelay(String eventId) async {
+  Future<VideoEvent?> _fetchRouteVideoByEventIdFromRelay(
+    String eventId, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     if (eventId.isEmpty) return null;
 
     final events = await _nostrClient
@@ -3159,10 +3229,16 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    return _parseAndHydrateFirstRouteVideo(events);
+    return _parseAndHydrateFirstRouteVideo(
+      events,
+      onContentFiltered: onContentFiltered,
+    );
   }
 
-  Future<VideoEvent?> _fetchVideoByStableIdFromRelay(String stableId) async {
+  Future<VideoEvent?> _fetchVideoByStableIdFromRelay(
+    String stableId, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     final events = await _nostrClient
         .queryEvents([
           Filter(
@@ -3174,7 +3250,10 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    return _parseAndHydrateFirstRouteVideo(events);
+    return _parseAndHydrateFirstRouteVideo(
+      events,
+      onContentFiltered: onContentFiltered,
+    );
   }
 
   /// Fetches a video by addressable id (`kind:pubkey:d-tag`) from relay only.
@@ -3199,8 +3278,9 @@ class VideosRepository {
   /// kinds (e.g. 21, 22, 34235) reach this branch via naddr1 references and
   /// must resolve the same way they do via raw event id or bare d-tag.
   Future<VideoEvent?> _fetchAddressableVideoFromRelay(
-    String addressableId,
-  ) async {
+    String addressableId, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     final parsed = AId.fromString(addressableId);
     if (parsed == null || !NIP71VideoKinds.isAcceptableVideoKind(parsed.kind)) {
       return null;
@@ -3215,13 +3295,17 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    return _parseAndHydrateFirstRouteVideo(events);
+    return _parseAndHydrateFirstRouteVideo(
+      events,
+      onContentFiltered: onContentFiltered,
+    );
   }
 
   Future<VideoEvent?> _fetchVideoFromRouteApi(
     String routeId, {
     String? expectedPubkey,
     bool permissive = false,
+    void Function(VideoEvent video)? onContentFiltered,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
       return null;
@@ -3234,6 +3318,7 @@ class VideosRepository {
       event,
       permissive: permissive,
       ignoreBlockFilter: true,
+      onContentFiltered: onContentFiltered,
     );
     if (video == null) return null;
     if (expectedPubkey != null && video.pubkey != expectedPubkey) return null;
@@ -3242,8 +3327,9 @@ class VideosRepository {
   }
 
   Future<VideoEvent?> _parseAndHydrateFirstRouteVideo(
-    List<Event> events,
-  ) async {
+    List<Event> events, {
+    void Function(VideoEvent video)? onContentFiltered,
+  }) async {
     if (events.isEmpty) return null;
 
     events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -3253,6 +3339,7 @@ class VideosRepository {
         event,
         permissive: true,
         ignoreBlockFilter: true,
+        onContentFiltered: onContentFiltered,
       );
       if (video != null) {
         videos.add(video);

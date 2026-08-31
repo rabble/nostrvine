@@ -10,11 +10,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_confirmation.dart';
-import 'package:openvine/widgets/delete_account_dialog.dart';
+import 'package:openvine/widgets/delete_account_dialog.dart'
+    hide executeAccountDeletion;
+import 'package:openvine/widgets/delete_account_dialog.dart'
+    as dialog_api
+    show executeAccountDeletion;
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockAccountDeletionService extends Mock
@@ -22,10 +29,66 @@ class _MockAccountDeletionService extends Mock
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockProfileRepository extends Mock implements ProfileRepository {}
+class _MockAccountDeletionRecoveryRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
+const _recoverableAttempt = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+  username: 'alice',
+);
+
+const _completedAttempt = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.completed,
+  username: 'alice',
+);
+
+const _recoverableAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+);
+
+const _completedAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.completed,
+);
 
 const _pubkeyHex =
     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
+_MockAccountDeletionRecoveryRepository _successfulRecoveryRepository() {
+  final repository = _MockAccountDeletionRecoveryRepository();
+  when(
+    repository.prepare,
+  ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
+  when(
+    () => repository.submit(
+      attemptId: any(named: 'attemptId'),
+      vanishEventId: any(named: 'vanishEventId'),
+    ),
+  ).thenAnswer((_) async => _completedAttemptWithoutUsername);
+  return repository;
+}
+
+Future<void> runDeletion({
+  required BuildContext context,
+  required AccountDeletionService deletionService,
+  required AuthService authService,
+  required AccountDeletionRecoveryRepository deletionRecoveryRepository,
+  DivineUsernameLookup lookup = const DivineUsernameNotFound(),
+  Future<DivineUsernameLookup>? lookupFuture,
+  String? confirmedPubkey,
+  String screenName = 'AccountDeletion',
+}) => dialog_api.executeAccountDeletion(
+  context: context,
+  deletionService: deletionService,
+  authService: authService,
+  deletionRecoveryRepository: deletionRecoveryRepository,
+  ownedUsernameLookup: lookupFuture ?? Future.value(lookup),
+  confirmedPubkey: confirmedPubkey,
+  screenName: screenName,
+);
 
 DeleteAccountConfirmation _deleteFallback() => DeleteAccountConfirmation(
   pubkeyHex: _pubkeyHex,
@@ -44,8 +107,23 @@ DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
 /// Minimal router wrapper so [context.pop()] works inside the sheet.
 Widget _wrapWithRouter(Widget child) {
   final router = GoRouter(
-    routes: [GoRoute(path: '/', builder: (_, state) => child)],
+    routes: [
+      GoRoute(path: '/', builder: (_, state) => child),
+      GoRoute(
+        path: RoutePaths.supportCenter,
+        builder: (_, state) =>
+            const Scaffold(body: Text('Support destination')),
+      ),
+      GoRoute(
+        path: RoutePaths.supportReportBug,
+        builder: (_, state) => const Scaffold(body: Text('Bug report form')),
+      ),
+    ],
   );
+  // Same reason the sign-out redirect router is disposed below: an
+  // undisposed GoRouter keeps listening past the end of the test inside the
+  // merged VGV isolate. Most tests in this file go through this helper.
+  addTearDown(router.dispose);
   return MaterialApp.router(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
@@ -56,12 +134,7 @@ Widget _wrapWithRouter(Widget child) {
 Future<void> _showSheet(
   WidgetTester tester, {
   DeleteAccountConfirmation? confirmation,
-  void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })?
-  onConfirm,
-  ({String name, String canonical})? ownedUsername,
+  void Function()? onConfirm,
 }) async {
   await tester.pumpWidget(
     _wrapWithRouter(
@@ -72,13 +145,7 @@ Future<void> _showSheet(
             onPressed: () => showDeleteAllContentWarningSheet(
               context: context,
               confirmation: confirmation ?? _deleteFallback(),
-              ownedUsernameFuture: Future.value(ownedUsername),
-              onConfirm:
-                  onConfirm ??
-                  ({
-                    required bool burnUsername,
-                    ({String name, String canonical})? ownedUsername,
-                  }) {},
+              onConfirm: onConfirm ?? () {},
             ),
             child: const Text('Open'),
           ),
@@ -100,11 +167,100 @@ Finder _deleteAllContentButton() => find.widgetWithText(
 Finder _deleteSheetCancelButton() =>
     find.widgetWithText(DivineButton, _englishL10n().commonCancel);
 
-Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
-  final tile = find.byType(DivineRowCheckbox);
-  await tester.ensureVisible(tile);
-  await tester.pumpAndSettle();
-  await tester.tap(tile);
+/// Mirrors production's global auth redirect: once the account is signed out
+/// every route resolves to /welcome, so the route deletion was started from —
+/// and its context — is torn down while the flow is still running.
+class _SignOutRedirectNotifier extends ChangeNotifier {
+  bool signedOut = false;
+
+  void signOut() {
+    signedOut = true;
+    notifyListeners();
+  }
+}
+
+const _callerScreenMarker = 'Caller screen';
+const _welcomeLocation = '/welcome';
+const _welcomeMarker = 'Welcome destination';
+
+Future<BuildContext> _pumpSignOutRedirectApp(
+  WidgetTester tester,
+  _SignOutRedirectNotifier redirect,
+) async {
+  late BuildContext capturedContext;
+  final router = GoRouter(
+    refreshListenable: redirect,
+    redirect: (_, state) =>
+        redirect.signedOut && state.matchedLocation != _welcomeLocation
+        ? _welcomeLocation
+        : null,
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => Builder(
+          builder: (context) {
+            capturedContext = context;
+            return const Scaffold(body: SizedBox.shrink());
+          },
+        ),
+      ),
+      GoRoute(
+        path: _welcomeLocation,
+        builder: (_, _) => const Scaffold(body: Text(_welcomeMarker)),
+      ),
+    ],
+  );
+  // Ordered so the router drops its refreshListenable subscription before the
+  // notifier it listens to is torn down: addTearDown runs last-registered
+  // first. Without this the router outlives the test inside the merged VGV
+  // isolate, still listening.
+  addTearDown(redirect.dispose);
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
+  );
+  return capturedContext;
+}
+
+void _stubSuccessfulDeletion(
+  _MockAccountDeletionService deletionService,
+  _MockAuthService authService,
+) {
+  when(
+    authService.checkAccountDeletionReadiness,
+  ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+  when(
+    () => deletionService.deleteAccount(
+      onProgress: any(named: 'onProgress'),
+      expectedPubkey: any(named: 'expectedPubkey'),
+    ),
+  ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+}
+
+/// Collects what the deletion flow hands to screen readers.
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
 }
 
 void main() {
@@ -247,14 +403,7 @@ void main() {
       tester,
     ) async {
       var confirmCalls = 0;
-      await _showSheet(
-        tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => confirmCalls++,
-      );
+      await _showSheet(tester, onConfirm: () => confirmCalls++);
 
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
@@ -274,14 +423,7 @@ void main() {
       tester,
     ) async {
       var confirmCalls = 0;
-      await _showSheet(
-        tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => confirmCalls++,
-      );
+      await _showSheet(tester, onConfirm: () => confirmCalls++);
 
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
@@ -363,14 +505,7 @@ void main() {
 
     testWidgets('tapping enabled button calls onConfirm', (tester) async {
       var called = false;
-      await _showSheet(
-        tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => called = true,
-      );
+      await _showSheet(tester, onConfirm: () => called = true);
 
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
@@ -381,182 +516,11 @@ void main() {
       expect(called, isTrue);
     });
 
-    testWidgets('burn toggle is hidden when no username is owned', (
+    testWidgets('never renders a burn toggle, even when a username is owned', (
       tester,
     ) async {
-      await _showSheet(tester);
+      await _showSheet(tester, confirmation: _divineUsername());
       expect(find.byType(DivineRowCheckbox), findsNothing);
-    });
-
-    testWidgets('burn toggle is shown when a username is owned', (
-      tester,
-    ) async {
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'Alice', canonical: 'alice'),
-      );
-      expect(find.byType(DivineRowCheckbox), findsOneWidget);
-      // Pin the consent label naming the exact handle (display form, not
-      // canonical) so swapping the interpolated variable can't slip through.
-      expect(
-        find.text(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).deleteAccountBurnUsernameToggle('@Alice.divine.video'),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('checking burn toggle passes burnUsername true on confirm', (
-      tester,
-    ) async {
-      bool? received;
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => received = burnUsername,
-      );
-
-      await _tapBurnUsernameCheckbox(tester);
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'delete');
-      await tester.pump();
-      await tester.tap(_deleteAllContentButton());
-      await tester.pumpAndSettle();
-
-      expect(received, isTrue);
-    });
-
-    testWidgets('leaving burn toggle unchecked passes burnUsername false', (
-      tester,
-    ) async {
-      bool? received;
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => received = burnUsername,
-      );
-
-      await tester.enterText(find.byType(TextField), 'delete');
-      await tester.pump();
-      await tester.tap(_deleteAllContentButton());
-      await tester.pumpAndSettle();
-
-      expect(received, isFalse);
-    });
-
-    testWidgets('sheet opens before the lookup resolves and reveals the '
-        'toggle only once it completes', (tester) async {
-      final completer = Completer<({String name, String canonical})?>();
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) => Scaffold(
-              body: ElevatedButton(
-                key: const Key('open'),
-                onPressed: () => showDeleteAllContentWarningSheet(
-                  context: context,
-                  confirmation: _deleteFallback(),
-                  ownedUsernameFuture: completer.future,
-                  onConfirm:
-                      ({
-                        required bool burnUsername,
-                        ({String name, String canonical})? ownedUsername,
-                      }) {},
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.byKey(const Key('open')));
-      await tester.pumpAndSettle();
-
-      // Sheet is already open (lookup still pending) but no toggle yet.
-      expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(DivineRowCheckbox), findsNothing);
-
-      completer.complete((name: 'Alice', canonical: 'alice'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DivineRowCheckbox), findsOneWidget);
-    });
-
-    testWidgets('a failed lookup leaves the toggle hidden without crashing', (
-      tester,
-    ) async {
-      final completer = Completer<({String name, String canonical})?>();
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) => Scaffold(
-              body: ElevatedButton(
-                key: const Key('open'),
-                onPressed: () => showDeleteAllContentWarningSheet(
-                  context: context,
-                  confirmation: _deleteFallback(),
-                  ownedUsernameFuture: completer.future,
-                  onConfirm:
-                      ({
-                        required bool burnUsername,
-                        ({String name, String canonical})? ownedUsername,
-                      }) {},
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.byKey(const Key('open')));
-      await tester.pumpAndSettle();
-
-      // Sheet is open with the lookup still pending, then the lookup fails.
-      completer.completeError(Exception('lookup failed'));
-      await tester.pumpAndSettle();
-
-      expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(DivineRowCheckbox), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('confirm passes the resolved handle back to onConfirm', (
-      tester,
-    ) async {
-      ({String name, String canonical})? receivedOwned;
-      var receivedBurn = false;
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'Alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) {
-              receivedBurn = burnUsername;
-              receivedOwned = ownedUsername;
-            },
-      );
-
-      await _tapBurnUsernameCheckbox(tester);
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'delete');
-      await tester.pump();
-      await tester.tap(_deleteAllContentButton());
-      await tester.pumpAndSettle();
-
-      expect(receivedBurn, isTrue);
-      expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
 
     testWidgets('shows the identity (name + handle) and username prompt', (
@@ -605,61 +569,6 @@ void main() {
   });
 
   group('executeAccountDeletion', () {
-    testWidgets(
-      'localizes relay confirmation failure without surfacing raw service text',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.vanishNotConfirmed,
-            diagnosticError: 'Failed to publish deletion request to relays',
-          ),
-        );
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = _englishL10n();
-        expect(
-          find.text(l10n.deleteAccountRelayConfirmationFailed),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Failed to publish deletion request to relays'),
-          findsNothing,
-        );
-        expect(
-          find.text(l10n.deleteAccountContentDeletionFailed),
-          findsNothing,
-        );
-      },
-    );
-
     testWidgets('shows failure when local data cleanup fails after sign-out', (
       tester,
     ) async {
@@ -676,10 +585,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenThrow(
@@ -700,10 +605,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _successfulRecoveryRepository(),
       );
       await tester.pumpAndSettle();
 
@@ -715,60 +621,221 @@ void main() {
       expect(find.text(l10n.deleteAccountSuccess), findsNothing);
     });
 
-    testWidgets('opted-in burn failure aborts deletion and shows error', (
-      tester,
-    ) async {
-      final deletionService = _MockAccountDeletionService();
-      final authService = _MockAuthService();
-      // The pre-flight gate runs on every path; default it to ready so
-      // these tests exercise the behaviour under test, not the gate.
-      when(
-        authService.checkAccountDeletionReadiness,
-      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
-      when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseNotOwner());
+    testWidgets(
+      'confirms a successful deletion on the screen the redirect lands on',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final redirect = _SignOutRedirectNotifier();
+        _stubSuccessfulDeletion(deletionService, authService);
+        // Holds sign-out open while the redirect runs, so the route deletion
+        // was started from is gone before signOut returns — the device
+        // timeline in #6450.
+        final signOutGate = Completer<void>();
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {
+          redirect.signOut();
+          await signOutGate.future;
+        });
+        final announced = _captureAnnouncements(tester);
 
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const Scaffold(body: SizedBox.shrink());
-            },
+        final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
+        final deletion = runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(_welcomeMarker), findsOneWidget);
+
+        signOutGate.complete();
+        await deletion;
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+        expect(announced, contains(l10n.deleteAccountSuccess));
+      },
+    );
+
+    testWidgets(
+      'leaves the redirect destination standing when the sheet is already gone',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final redirect = _SignOutRedirectNotifier();
+        _stubSuccessfulDeletion(deletionService, authService);
+        final signOutGate = Completer<void>();
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {
+          redirect.signOut();
+          await signOutGate.future;
+        });
+
+        final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
+        final deletion = runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
+        );
+        // Stop one frame past the redirect, with the outgoing route still
+        // animating away: the caller context is then still mounted when
+        // sign-out returns, which is what a device reaches whenever the
+        // sign-out work blocks frames. Dismissing the progress sheet by
+        // popping the navigator took the freshly installed /welcome page
+        // with it, leaving the app with no page at all.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          capturedContext.mounted,
+          isTrue,
+          reason:
+              'the scenario needs the caller still mounted after the '
+              'redirect',
+        );
+
+        signOutGate.complete();
+        await deletion;
+        await tester.pumpAndSettle();
+
+        expect(find.text(_welcomeMarker), findsOneWidget);
+        expect(find.text(_englishL10n().deleteAccountSuccess), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'takes down its own sheet and leaves the screen under it standing',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        // Held open so a frame can run while the sheet is up. Every other
+        // test here finishes the deletion inside one microtask turn, so the
+        // sheet is dismissed before it has ever built — and the dismissal
+        // never reaches the route it captured.
+        final deletionGate = Completer<DeleteAccountResult>();
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
           ),
-        ),
-      );
+        ).thenAnswer((_) => deletionGate.future);
 
-      await executeAccountDeletion(
-        context: capturedContext,
-        deletionService: deletionService,
-        authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: true,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-      );
-      await tester.pumpAndSettle();
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: Text(_callerScreenMarker));
+              },
+            ),
+          ),
+        );
 
-      verifyNever(
-        () => deletionService.deleteAccount(
-          onProgress: any(named: 'onProgress'),
-          expectedPubkey: any(named: 'expectedPubkey'),
-        ),
-      );
-      expect(
-        find.text(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).deleteAccountBurnUsernameFailed,
-        ),
-        findsOneWidget,
-      );
-    });
+        final deletion = runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
+        );
+        // Not pumpAndSettle: the sheet's progress indicator never goes quiet.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsOneWidget);
 
-    testWidgets('opted-in burn success proceeds with deletion', (tester) async {
+        deletionGate.complete(
+          DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+          ),
+        );
+        await deletion;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(VineBottomSheet), findsNothing);
+        expect(find.text(_callerScreenMarker), findsOneWidget);
+        expect(
+          find.text(_englishL10n().accountDeletionCancelAttemptBody),
+          findsOneWidget,
+        );
+        verifyNever(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        );
+      },
+    );
+
+    testWidgets(
+      'keeps the caller screen when the sheet is closed by system back',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        final deletionGate = Completer<DeleteAccountResult>();
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer((_) => deletionGate.future);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: Text(_callerScreenMarker));
+              },
+            ),
+          ),
+        );
+
+        final deletion = runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsOneWidget);
+
+        // Nothing stops an Android back press from closing the progress
+        // sheet: it carries no PopScope, and isDismissible/enableDrag only
+        // govern the barrier and the drag.
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsNothing);
+
+        deletionGate.complete(
+          DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+          ),
+        );
+        await deletion;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The sheet is already gone, so there is nothing left to dismiss.
+        expect(find.text(_callerScreenMarker), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('releases the username when the user owns one', (tester) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       // The pre-flight gate runs on every path; default it to ready so
@@ -776,20 +843,22 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseSuccess());
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttempt);
+      when(
+        () => recoveryRepository.submit(
+          attemptId: any(named: 'attemptId'),
+          vanishEventId: any(named: 'vanishEventId'),
+        ),
+      ).thenAnswer((_) async => _completedAttempt);
       when(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -806,13 +875,12 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: true,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -822,67 +890,121 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).called(1);
-      verify(() => profileRepository.releaseUsername(name: 'alice')).called(1);
+      verify(() => recoveryRepository.prepare(username: 'alice')).called(1);
+      verify(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).called(1);
     });
 
-    testWidgets('does not release the username when burn is not opted in', (
+    testWidgets(
+      'fails closed when name ownership cannot be determined, nothing deleted',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+          lookup: const DivineUsernameUnknown(),
+        );
+        await tester.pumpAndSettle();
+
+        // Undetermined ownership must never reach a durable attempt or the
+        // irreversible deletion, and must report that nothing was deleted.
+        verifyNever(
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        );
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        );
+        final l10n = _englishL10n();
+        expect(find.text(l10n.deleteAccountDeletionNotStarted), findsOneWidget);
+      },
+    );
+
+    testWidgets('does not delete while the name lookup is pending', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
-      // The pre-flight gate runs on every path; default it to ready so
-      // these tests exercise the behaviour under test, not the gate.
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      final lookup = Completer<DivineUsernameLookup>();
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
-      when(
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      final deletion = runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookupFuture: lookup.future,
+      );
+      await tester.pump();
+
+      expect(
+        find.text(_englishL10n().deleteAccountPreparingDeletion),
+        findsOneWidget,
+      );
+
+      verifyNever(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      );
+      verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
-      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
-      when(
-        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-      ).thenAnswer((_) async {});
-
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const Scaffold(body: SizedBox.shrink());
-            },
-          ),
-        ),
       );
 
-      await executeAccountDeletion(
-        context: capturedContext,
-        deletionService: deletionService,
-        authService: authService,
-        profileRepository: profileRepository,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-      );
+      lookup.complete(const DivineUsernameUnknown());
+      await deletion;
       await tester.pumpAndSettle();
-
-      verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      );
     });
 
-    testWidgets('opted-in burn aborts when profileRepository is null', (
+    testWidgets('reports a failed name lookup without deleting', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
-      // The pre-flight gate runs on every path; default it to ready so
-      // these tests exercise the behaviour under test, not the gate.
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      final lookup = Completer<DivineUsernameLookup>();
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
@@ -899,17 +1021,21 @@ void main() {
         ),
       );
 
-      // profileRepository omitted (null): an opted-in burn must abort, not
-      // delete.
-      await executeAccountDeletion(
+      final deletion = runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        burnUsername: true,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
+        deletionRecoveryRepository: recoveryRepository,
+        lookupFuture: lookup.future,
       );
+      await tester.pump();
+      lookup.completeError(Exception('lookup failed'));
+      await deletion;
       await tester.pumpAndSettle();
 
+      verifyNever(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      );
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -917,448 +1043,41 @@ void main() {
         ),
       );
       expect(
-        find.text(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).deleteAccountBurnUsernameFailed,
-        ),
+        find.text(_englishL10n().deleteAccountDeletionNotStarted),
         findsOneWidget,
       );
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'discloses the release when content deletion fails after burn',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
-        when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseSuccess());
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.vanishNotConfirmed,
-            diagnosticError: 'relay down',
-          ),
-        );
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: true,
-          ownedUsername: (name: 'alice', canonical: 'alice'),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text(
-            lookupAppLocalizations(
-              const Locale('en'),
-            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-
-    // These two pin a deliberate design decision, not an implementation
-    // detail. From review on #6335: "the current behavior intentionally blocks
-    // sign-out for registered users if Keycast account deletion fails."
-    //
-    // The reason it matters: if a divineOAuth user is signed out locally while
-    // their Keycast account survives, they can log straight back into an
-    // account they believe they deleted. Blocking sign-out keeps them in a
-    // state that is at least honest about having failed.
-    //
-    // Until now that behaviour was guarded by nothing. The only assertion of it
-    // lived in a `skip: true` group in account_deletion_flow_test.dart, and as
-    // written (`signOut(deleteKeys: true)`) it did not match the call shape
-    // production uses, so it could not have failed even if revived.
-    //
-    // The guard is `!keycastSuccess && authService.isRegistered`. Both halves
-    // are load-bearing, so both are pinned: the first test proves registered
-    // users are held back, the second proves everyone else is not. Dropping the
-    // `&& isRegistered` conjunct would permanently stop every anonymous,
-    // imported-nsec, amber and bunker user from deleting their own content —
-    // `oauthClientProvider` is non-nullable, so they all reach
-    // `getSessionOrRefresh()`, have no refresh token, and get `(false, …)` too.
-    testWidgets(
-      'does not sign out a registered user when keycast deletion fails',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.createSuccess('event-id'),
-        );
-        // Content deletion succeeded; the server-side account deletion did not.
-        when(authService.deleteKeycastAccount).thenAnswer(
-          (_) async => (
-            success: false,
-            error: 'server refused',
-            requiresReauthentication: false,
-          ),
-        );
-        when(() => authService.isRegistered).thenReturn(true);
-        when(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        ).thenAnswer((_) async {});
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-        );
-        await tester.pumpAndSettle();
-
-        // The invariant. Asserted with the exact call shape production uses —
-        // a looser matcher would pass vacuously.
-        verifyNever(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        );
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.deleteAccountServerDeletionFailed),
-          findsOneWidget,
-        );
-        // Not the success message, and not the pre-flight message — this
-        // failure happened after publishing, so the gate is not involved.
-        expect(find.text(l10n.deleteAccountSuccess), findsNothing);
-        expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
-      },
-    );
-
-    // A credential refusal from keycast arrives *after* the vanish and the
-    // kind-5 sweep have been published and confirmed by a relay, so the copy
-    // may not repeat the pre-flight message — `deleteAccountReauthRequired`
-    // ends with "Nothing has been deleted yet", which is false here and cannot
-    // be walked back once a NIP-62 vanish is on third-party relays. It also may
-    // not blame the connection, because retrying the same credential fails
-    // identically.
-    //
-    // The failure is recognised from the typed flag, not the message: keycast
-    // answers this 403 with its own prose ("requires the Divine app or web
-    // login with your private key"), which shares no phrase with anything the
-    // client could match against.
-    testWidgets(
-      'tells a registered user to sign in again without claiming nothing '
-      'was deleted',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.createSuccess('event-id'),
-        );
-        when(authService.deleteKeycastAccount).thenAnswer(
-          (_) async => (
-            success: false,
-            error:
-                'Account deletion requires the Divine app or web login with '
-                'your private key',
-            requiresReauthentication: true,
-          ),
-        );
-        when(() => authService.isRegistered).thenReturn(true);
-        when(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        ).thenAnswer((_) async {});
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-        );
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        );
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.deleteAccountServerDeletionRequiresReauth),
-          findsOneWidget,
-        );
-        // Not the connectivity copy, which would send the user into a retry
-        // loop that cannot succeed.
-        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
-        // Not the pre-flight copy, which claims nothing has been deleted.
-        expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
-        expect(find.text(l10n.deleteAccountSuccess), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'still signs out a non-registered user when keycast deletion fails',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.createSuccess('event-id'),
-        );
-        // Every non-OAuth user reaches this call and fails it: there is no
-        // Keycast session to use, so a failure here is expected and benign.
-        when(authService.deleteKeycastAccount).thenAnswer(
-          (_) async => (
-            success: false,
-            error: 'no keycast session',
-            requiresReauthentication: false,
-          ),
-        );
-        when(() => authService.isRegistered).thenReturn(false);
-        when(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        ).thenAnswer((_) async {});
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-        );
-        await tester.pumpAndSettle();
-
-        // They are not held back — they have no server-side account to strand.
-        verify(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        ).called(1);
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
-        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'discloses the release when keycast deletion fails after burn',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
-        when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseSuccess());
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.createSuccess('event-id'),
-        );
-        when(authService.deleteKeycastAccount).thenAnswer(
-          (_) async => (
-            success: false,
-            error: 'fk error',
-            requiresReauthentication: false,
-          ),
-        );
-        when(() => authService.isRegistered).thenReturn(true);
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: true,
-          ownedUsername: (name: 'alice', canonical: 'alice'),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text(
-            lookupAppLocalizations(
-              const Locale('en'),
-            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'network-error release with name still owned aborts as failed',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
-        when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseNetworkError());
-        when(() => authService.currentPublicKeyHex).thenReturn('abc');
-        when(
-          () => profileRepository.getUsernameByPubkey(
-            pubkeyHex: any(named: 'pubkeyHex'),
-          ),
-        ).thenAnswer((_) async => (name: 'alice', canonical: 'alice'));
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: true,
-          ownedUsername: (name: 'alice', canonical: 'alice'),
-        );
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
-        );
-        expect(
-          find.text(
-            lookupAppLocalizations(
-              const Locale('en'),
-            ).deleteAccountBurnUsernameFailed,
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('network-error release we cannot resolve shows incomplete', (
+    testWidgets('does not release the username when the user owns no name', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       // The pre-flight gate runs on every path; default it to ready so
       // these tests exercise the behaviour under test, not the gate.
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
       when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseNetworkError());
-      when(() => authService.currentPublicKeyHex).thenReturn('abc');
-      when(
-        () => profileRepository.getUsernameByPubkey(
-          pubkeyHex: any(named: 'pubkeyHex'),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenAnswer((_) async {});
+      when(
+        recoveryRepository.prepare,
+      ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
+      when(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).thenAnswer((_) async => _completedAttemptWithoutUsername);
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -1372,13 +1091,195 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: true,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
+        deletionRecoveryRepository: recoveryRepository,
+      );
+      await tester.pumpAndSettle();
+
+      verify(recoveryRepository.prepare).called(1);
+      verifyNever(() => recoveryRepository.prepare(username: 'alice'));
+      verify(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('discloses the release when content deletion fails', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttempt);
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer(
+        (_) async => DeleteAccountResult.failure(
+          DeleteAccountFailureReason.vanishNotConfirmed,
+          diagnosticError: 'relay down',
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).accountDeletionRecoveryBody,
+        ),
+        findsOneWidget,
+      );
+      verifyNever(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      );
+    });
+
+    testWidgets(
+      'keeps recovery available while the coordinator is processing',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        // The pre-flight gate runs on every path; default it to ready so
+        // these tests exercise the behaviour under test, not the gate.
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        ).thenAnswer((_) async => _recoverableAttempt);
+        when(
+          () => recoveryRepository.submit(
+            attemptId: any(named: 'attemptId'),
+            vanishEventId: any(named: 'vanishEventId'),
+          ),
+        ).thenAnswer(
+          (_) async => const AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+            username: 'alice',
+          ),
+        );
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+          lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).accountDeletionFinishingBody,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).accountDeletionRestoreUsername,
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('username preparation failure keeps neutral guidance', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenThrow(
+        const AccountDeletionRecoveryException(
+          'name server rejected request',
+          stage: AccountDeletionRecoveryStage.usernamePreparation,
+          statusCode: 409,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -1398,17 +1299,23 @@ void main() {
       );
     });
 
-    testWidgets('opted-in burn aborts when no username is owned', (
+    testWidgets('coordinator outage explains deletion is unavailable', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
-      // The pre-flight gate runs on every path; default it to ready so
-      // these tests exercise the behaviour under test, not the gate.
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
+      when(recoveryRepository.prepare).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (404)',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 404,
+          indicatesMissingCoordinatorRoute: true,
+        ),
+      );
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -1422,29 +1329,241 @@ void main() {
         ),
       );
 
-      // Opted in (burnUsername: true) but ownedUsername omitted (null): the
-      // burn cannot be honored, so deletion must abort, not proceed.
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: true,
+        deletionRecoveryRepository: recoveryRepository,
       );
       await tester.pumpAndSettle();
 
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       );
+
+      await tester.tap(find.text(l10n.supportReportBug));
+      await tester.pumpAndSettle();
+      expect(find.text('Bug report form'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a missing coordinator route shows unavailable even when a name is owned',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+          const AccountDeletionRecoveryException(
+            'Deletion attempt request failed (404)',
+            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+            statusCode: 404,
+            indicatesMissingCoordinatorRoute: true,
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await runDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+          lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(
+          find.text(l10n.deleteAccountDeletionUnavailable),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        );
+      },
+    );
+
+    testWidgets('a transient coordinator failure keeps neutral guidance', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(recoveryRepository.prepare).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (503)',
+          code: 'coordinator_unavailable',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionNotStarted), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
       verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
     });
 
-    testWidgets('aborts before burn when the account changed', (tester) async {
+    testWidgets('a coordinator without username support fails as unavailable', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      // The coordinator answers this 503 only for a username-bearing attempt.
+      // Release is mandatory now, so there is no opt-out to fall back on — the
+      // deletion fails closed and reads as unavailable, with nothing deleted.
+      when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (503)',
+          code: 'username_recovery_unavailable',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+      // Same recourse as the missing-coordinator route: both unavailable states
+      // offer the bug report.
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
+
+    testWidgets('ambiguous post-username failure keeps neutral guidance', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Username confirmation request failed',
+          stage: AccountDeletionRecoveryStage.coordinatorUsernameConfirmation,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
+
+    testWidgets('aborts before release when the account changed', (
+      tester,
+    ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       // The pre-flight gate runs on every path; default it to ready so
@@ -1452,7 +1571,6 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
       when(
         () => authService.currentPublicKeyHex,
       ).thenReturn('now_a_different_pk');
@@ -1485,20 +1603,16 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
-        burnUsername: true,
-        ownedUsername: (name: 'rabble', canonical: 'rabble'),
+        deletionRecoveryRepository: _MockAccountDeletionRecoveryRepository(),
+        lookup: const DivineUsernameFound(name: 'rabble', canonical: 'rabble'),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();
 
-      verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      );
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -1528,116 +1642,6 @@ void main() {
         ),
       );
     });
-
-    testWidgets(
-      'localizes the account-changed outcome when the service reports it',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        // UI pre-check passes (signer still matches), but the service reports a
-        // mid-flight switch — the UI must localize, not surface the raw string.
-        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.accountChanged,
-            diagnosticError: 'Signed-in account changed; deletion aborted',
-          ),
-        );
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          confirmedPubkey: _pubkeyHex,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.deleteAccountAccountChanged), findsOneWidget);
-        // The raw service string must never reach the user.
-        expect(
-          find.text('Signed-in account changed; deletion aborted'),
-          findsNothing,
-        );
-      },
-    );
-
-    testWidgets(
-      'acknowledges a confirmed vanish when the account changes afterward',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.accountChangedAfterDeletion,
-            diagnosticError:
-                'Signed-in account changed after vanish confirmation',
-          ),
-        );
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          confirmedPubkey: _pubkeyHex,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
-          findsOneWidget,
-        );
-        expect(
-          find.text(l10n.deleteAccountAccountChanged),
-          findsNothing,
-        );
-        verifyNever(authService.deleteKeycastAccount);
-      },
-    );
 
     testWidgets(
       'stops cleanup when the account changes as deletion returns success',
@@ -1673,147 +1677,23 @@ void main() {
           ),
         );
 
-        await executeAccountDeletion(
+        await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
           confirmedPubkey: _pubkeyHex,
         );
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
+          find.text(l10n.accountDeletionCancelAttemptBody),
           findsOneWidget,
         );
-        verifyNever(authService.deleteKeycastAccount);
         verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
-        );
-      },
-    );
-
-    testWidgets('does not sign out a new account after Keycast cleanup', (
-      tester,
-    ) async {
-      final deletionService = _MockAccountDeletionService();
-      final authService = _MockAuthService();
-      var currentPubkey = _pubkeyHex;
-      when(
-        authService.checkAccountDeletionReadiness,
-      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      when(
-        () => authService.currentPublicKeyHex,
-      ).thenAnswer((_) => currentPubkey);
-      when(
-        () => deletionService.deleteAccount(
-          onProgress: any(named: 'onProgress'),
-          expectedPubkey: any(named: 'expectedPubkey'),
-        ),
-      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer((_) async {
-        currentPubkey = 'a_different_pubkey_than_confirmed';
-        return (success: true, error: null, requiresReauthentication: false);
-      });
-
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const Scaffold(body: SizedBox.shrink());
-            },
-          ),
-        ),
-      );
-
-      await executeAccountDeletion(
-        context: capturedContext,
-        deletionService: deletionService,
-        authService: authService,
-        confirmedPubkey: _pubkeyHex,
-      );
-      await tester.pumpAndSettle();
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(
-        find.text(l10n.deleteAccountAccountChangedAfterDeletion),
-        findsOneWidget,
-      );
-      verify(authService.deleteKeycastAccount).called(1);
-      verifyNever(
-        () => authService.signOut(
-          deleteKeys: true,
-          deleteLocalUserData: true,
-        ),
-      );
-    });
-
-    testWidgets(
-      'uses partial-deletion copy when a failed Keycast call switches account',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        var currentPubkey = _pubkeyHex;
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        when(
-          () => authService.currentPublicKeyHex,
-        ).thenAnswer((_) => currentPubkey);
-        when(() => authService.isRegistered).thenReturn(true);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.createSuccess('event-id'),
-        );
-        when(authService.deleteKeycastAccount).thenAnswer((_) async {
-          currentPubkey = 'a_different_pubkey_than_confirmed';
-          return (
-            success: false,
-            error: 'server refused',
-            requiresReauthentication: false,
-          );
-        });
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          confirmedPubkey: _pubkeyHex,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.deleteAccountAccountChangedAfterDeletion),
-          findsOneWidget,
-        );
-        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
-        verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
         );
       },
     );
@@ -1846,10 +1726,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _MockAccountDeletionRecoveryRepository(),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();
@@ -1861,12 +1742,12 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       );
-      verifyNever(authService.deleteKeycastAccount);
       verifyNever(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
 
-      // The user is told to sign in again, not that their network is at fault.
+      // The user is told to sign in again, and never the post-publish copy that
+      // reports deletion requests as already sent.
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.deleteAccountReauthRequired), findsOneWidget);
       expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
@@ -1889,10 +1770,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -1909,10 +1786,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _successfulRecoveryRepository(),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();

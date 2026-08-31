@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Utility: flip the aspect-ratio control to Square and back, leaving it on its
 #default. Every mode that renders the control rail renders this one.

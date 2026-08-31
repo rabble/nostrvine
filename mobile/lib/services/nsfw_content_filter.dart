@@ -22,30 +22,20 @@ import 'package:videos_repository/videos_repository.dart';
 VideoContentFilter createNsfwFilter(
   ContentFilterService contentFilterService, {
   ModerationLabelService? moderationLabelService,
+  String? Function()? viewerPubkey,
 }) {
   return (VideoEvent video) {
-    // Check self-applied content-warning labels (NIP-32/NIP-36)
-    final labels = _getContentLabels(
+    final sources = _getContentLabelSources(
       video,
       moderationLabelService: moderationLabelService,
     );
-    if (labels.isNotEmpty) {
-      final pref = contentFilterService.getPreferenceForLabels(labels);
-      if (pref == ContentFilterPreference.hide) return true;
-    }
-
-    // Also check ML-generated moderation labels from Funnelcake.
-    // These only trigger "hide" (never "warn") because ML classifiers
-    // are noisy and would otherwise block autoplay on ordinary videos.
-    final modLabels = video.moderationLabels;
-    if (modLabels.isNotEmpty) {
-      // getPreferenceForLabels ignores unrecognized labels, so a video tagged
-      // only with labels this client does not understand never force-hides.
-      final pref = contentFilterService.getPreferenceForLabels(modLabels);
-      if (pref == ContentFilterPreference.hide) return true;
-    }
-
-    return false;
+    final decision = resolveEffectiveContentFilterDecision(
+      sources: sources,
+      moderationLabels: video.moderationLabels,
+      contentFilterService: contentFilterService,
+      isOwner: contentOwnerMatches(video.pubkey, viewerPubkey?.call()),
+    );
+    return decision.preference == ContentFilterPreference.hide;
   };
 }
 
@@ -54,43 +44,40 @@ VideoContentFilter createNsfwFilter(
 VideoWarningLabelsResolver createNsfwWarnLabels(
   ContentFilterService contentFilterService, {
   ModerationLabelService? moderationLabelService,
+  String? Function()? viewerPubkey,
 }) {
   return (VideoEvent video) {
-    final labels = _getContentLabels(
+    final sources = _getContentLabelSources(
       video,
       moderationLabelService: moderationLabelService,
     );
-    if (labels.isEmpty) return const <String>[];
-
-    return labels.where((value) {
-      final label = ContentLabel.fromValue(value);
-      return label != null &&
-          contentFilterService.getPreference(label) ==
-              ContentFilterPreference.warn;
-    }).toList();
+    return resolveEffectiveContentFilterDecision(
+      sources: sources,
+      moderationLabels: video.moderationLabels,
+      contentFilterService: contentFilterService,
+      isOwner: contentOwnerMatches(video.pubkey, viewerPubkey?.call()),
+    ).warnLabels;
   };
 }
 
 /// Extracts content label values from a [VideoEvent].
 ///
 /// Uses creator self-labels, trusted kind-1985 labels, and hashtag fallbacks.
-List<String> _getContentLabels(
+EffectiveContentLabelSources _getContentLabelSources(
   VideoEvent video, {
   ModerationLabelService? moderationLabelService,
 }) {
-  final labels = <String>[
-    ...resolveEffectiveContentLabels(
-      video,
-      moderationLabelService: moderationLabelService,
-    ),
-  ];
+  final sources = resolveEffectiveContentLabelSources(
+    video,
+    moderationLabelService: moderationLabelService,
+  );
+  final labels = [...sources.creator, ...sources.trusted];
 
   // If content-warning labels exist but none are recognized categories,
   // treat as nudity (conservative default)
   if (labels.isNotEmpty &&
       labels.every((l) => ContentLabel.fromValue(l) == null)) {
-    labels.add('nudity');
+    return (creator: [...sources.creator, 'nudity'], trusted: sources.trusted);
   }
-
-  return labels;
+  return sources;
 }

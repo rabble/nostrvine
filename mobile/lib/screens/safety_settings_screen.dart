@@ -42,6 +42,9 @@ class SafetySettingsScreen extends ConsumerWidget {
     final contentBlocklistRepository = ref.watch(
       contentBlocklistRepositoryProvider,
     );
+    final provenanceFilterService = ref.watch(
+      videoProvenanceFilterServiceProvider,
+    );
     final isAdultContentLocked = ref.watch(isProtectedMinorProvider);
     return BlocProvider(
       // Auth-flippable services are re-keyed so the Cubit reloads with the
@@ -51,6 +54,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         contentFilterService,
         videoEventService,
         divineHostFilterService,
+        provenanceFilterService,
         moderationLabelService,
         followRepository,
         contentBlocklistRepository,
@@ -61,6 +65,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         contentFilterService: contentFilterService,
         videoEventService: videoEventService,
         divineHostFilterService: divineHostFilterService,
+        provenanceFilterService: provenanceFilterService,
         moderationLabelService: moderationLabelService,
         followRepository: followRepository,
         contentBlocklistRepository: contentBlocklistRepository,
@@ -104,6 +109,7 @@ class SafetySettingsView extends StatelessWidget {
                   const _AgeVerificationTile(),
                   const SizedBox(height: 8),
                   const _DivineHostedOnlyTile(),
+                  const _VerifiedOnlyTile(),
                   DivineSectionHeader(context.l10n.safetySettingsModeration),
                   const _DivineProviderTile(),
                   const _PeopleIFollowProviderTile(),
@@ -193,6 +199,25 @@ class _DivineHostedOnlyTile extends StatelessWidget {
       value: showDivineHostedOnly,
       onChanged: (value) =>
           context.read<SafetySettingsCubit>().setShowDivineHostedOnly(value),
+    );
+  }
+}
+
+class _VerifiedOnlyTile extends StatelessWidget {
+  const _VerifiedOnlyTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final showVerifiedOnly = context.select(
+      (SafetySettingsCubit cubit) => cubit.state.showVerifiedOnly,
+    );
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.sealCheck,
+      title: context.l10n.safetySettingsShowVerifiedOnly,
+      subtitle: context.l10n.safetySettingsShowVerifiedOnlySubtitle,
+      value: showVerifiedOnly,
+      onChanged: (value) =>
+          context.read<SafetySettingsCubit>().setShowVerifiedOnly(value),
     );
   }
 }
@@ -391,11 +416,11 @@ class _AddLabelerSheetState extends State<_AddLabelerSheet> {
   }
 }
 
-class _BlockedUsersSection extends StatelessWidget {
+class _BlockedUsersSection extends ConsumerWidget {
   const _BlockedUsersSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final blockedUsers = context.select(
       (SafetySettingsCubit cubit) => cubit.state.blockedUsers,
     );
@@ -410,6 +435,7 @@ class _BlockedUsersSection extends StatelessWidget {
         ),
       );
     }
+    ref.watch(blockedUserProfilesProvider(blockedUsers));
     return Column(
       children: blockedUsers
           .map(
@@ -438,15 +464,17 @@ class _BlockedUsersSection extends StatelessWidget {
 
 /// Tile widget for displaying a blocked user with unblock option.
 class _BlockedUserTile extends ConsumerWidget {
-  const _BlockedUserTile({required this.pubkey, required this.onUnblock});
+  const _BlockedUserTile({
+    required this.pubkey,
+    required this.onUnblock,
+  });
 
   final String pubkey;
   final VoidCallback onUnblock;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
-    final profile = profileAsync.value;
+    final profile = ref.watch(blockedUserProfileProvider(pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
     // No relationship line here: "You follow" under an account you have

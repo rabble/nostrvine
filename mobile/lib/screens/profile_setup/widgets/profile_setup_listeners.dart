@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/extensions/modal_pop_extension.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -42,6 +45,22 @@ class ProfileSetupListeners extends ConsumerStatefulWidget {
 }
 
 class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isNewUser) {
+      unawaited(
+        ref
+            .read(analyticsServiceProvider)
+            .recordOnboardingStep(
+              flow: ProductAnalyticsV2OnboardingFlow.accountSetup,
+              step: ProductAnalyticsV2OnboardingStep.identity,
+              result: ProductAnalyticsV2OnboardingResult.viewed,
+            ),
+      );
+    }
+  }
+
   /// What the last seed wrote into each field.
   ///
   /// Lets a later profile snapshot tell "untouched since we filled it" from
@@ -251,6 +270,17 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
           listenWhen: (prev, curr) => prev.status != curr.status,
           listener: (context, state) {
             if (state.status == ProfileEditorStatus.success) {
+              if (isNewUser) {
+                unawaited(
+                  ref
+                      .read(analyticsServiceProvider)
+                      .recordOnboardingStep(
+                        flow: ProductAnalyticsV2OnboardingFlow.accountSetup,
+                        step: ProductAnalyticsV2OnboardingStep.identity,
+                        result: ProductAnalyticsV2OnboardingResult.completed,
+                      ),
+                );
+              }
               // Invalidate profile providers so profile screen refetches
               final currentPubkey = ref
                   .read(authServiceProvider)
@@ -316,6 +346,22 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
                 ),
               );
             } else if (state.status == ProfileEditorStatus.failure) {
+              if (isNewUser) {
+                final reason =
+                    state.error == ProfileEditorError.claimNetworkError
+                    ? ProductAnalyticsV2OnboardingReason.network
+                    : ProductAnalyticsV2OnboardingReason.validation;
+                unawaited(
+                  ref
+                      .read(analyticsServiceProvider)
+                      .recordOnboardingStep(
+                        flow: ProductAnalyticsV2OnboardingFlow.accountSetup,
+                        step: ProductAnalyticsV2OnboardingStep.identity,
+                        result: ProductAnalyticsV2OnboardingResult.failed,
+                        reason: reason,
+                      ),
+                );
+              }
               // Invalidate profile providers after rollback
               final currentPubkey = ref
                   .read(authServiceProvider)

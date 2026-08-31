@@ -25,7 +25,7 @@ abstract class ConversationBlocReportableSites {
 
   /// `_onMessageDeleted`: non-`ArgumentError` throw from
   /// `DmRepository.deleteMessageForEveryone` — typically the
-  /// `StateError('Failed to sign kind 5 deletion event')` invariant.
+  /// uninitialized-repository `StateError` invariant.
   static const String onMessageDeleted = '_onMessageDeleted';
 
   /// `_onOutgoingSendCancelled`: non-`ArgumentError` throw from

@@ -465,9 +465,7 @@ void main() {
 
       expect(
         find.text(
-          l10n.keyManagementExportFailed(
-            l10n.keyManagementKeycastGenericFailure,
-          ),
+          l10n.keyManagementKeycastGenericFailure,
         ),
         findsOne,
       );

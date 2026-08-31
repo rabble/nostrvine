@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/list_providers.dart';
@@ -55,7 +56,7 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
           // Full IDs (never truncated) so a "link won't open" report is
           // traceable to the exact list.
           Log.warning(
-            'List deep link resolved to no event: /list/$authorPubkey/$listId',
+            'List deep link resolved to no event: /list/${pubkeyForLogs(authorPubkey)}/$listId',
             name: 'CuratedListByAuthorScreen',
             category: LogCategory.ui,
           );
@@ -73,7 +74,7 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
         // Expected failure (relay unavailable / not found) — not reportable
         // per the error decision matrix, but logged with full IDs for triage.
         Log.warning(
-          'Failed to resolve list deep link /list/$authorPubkey/$listId: '
+          'Failed to resolve list deep link /list/${pubkeyForLogs(authorPubkey)}/$listId: '
           '$error',
           name: 'CuratedListByAuthorScreen',
           category: LogCategory.ui,

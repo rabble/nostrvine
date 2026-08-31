@@ -13,6 +13,7 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/config/profile_metrics.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -97,9 +99,14 @@ void main() {
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
-      when(
-        () => mockActionsCubit.state,
-      ).thenReturn(const MessageRequestActionsState());
+      // Default to the settled success status: the action buttons read this
+      // after awaiting to decide whether to confirm-and-pop or surface an
+      // error. Individual tests override it for the error / in-flight paths.
+      when(() => mockActionsCubit.state).thenReturn(
+        const MessageRequestActionsState(
+          status: MessageRequestActionsStatus.success,
+        ),
+      );
 
       when(() => mockPreviewCubit.state).thenReturn(
         const RequestPreviewState(
@@ -168,6 +175,268 @@ void main() {
         ),
       );
     }
+
+    // #7486. These counts had never rendered. The widget read
+    // `UserProfile.followerCount` / `videoCount`, whose REST disjunct is only
+    // ever populated by the people-search shape (never written to the cache
+    // this screen reads) and whose Kind 0 disjunct reads `rawData` for keys
+    // the archive importer writes as tags. Both were structurally null, so the
+    // line was dead. Counts now come from the `profile_statistics` store.
+    group('stats line', () {
+      Widget buildStatsSubject(ProfileStats? stats, {bool vanished = false}) {
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            userProfileReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(testProfile)),
+            userProfileStatsReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(stats)),
+            profileVanishedProvider(
+              otherPubkey,
+            ).overrideWith((ref) => vanished),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      // The skeleton shimmer animates forever, so `pumpAndSettle` would time
+      // out. Pump explicitly instead.
+      Future<void> pumpStats(WidgetTester tester, Widget subject) async {
+        await tester.pumpWidget(subject);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      ProfileStats statsWith({
+        int? followers,
+        int videoCount = 0,
+        int totalViews = 0,
+      }) => ProfileStats(
+        pubkey: otherPubkey,
+        followers: followers,
+        videoCount: videoCount,
+        totalViews: totalViews,
+      );
+
+      // The regression guard: on the pre-fix build the widget ignored
+      // ProfileStats entirely and rendered no counts at all, so this fails
+      // without the source change rather than merely re-asserting it.
+      testWidgets('renders the follower count from ProfileStats', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          await pumpStats(
+            tester,
+            buildStatsSubject(statsWith(followers: 2100)),
+          );
+
+          final followerText = l10n.messageRequestFollowersCount(2100, '2.1K');
+          expect(
+            find.textContaining(followerText, findRichText: true),
+            findsOneWidget,
+          );
+          expect(find.bySemanticsLabel(followerText), findsOneWidget);
+        } finally {
+          semantics.dispose();
+        }
+      });
+
+      testWidgets('renders the video count from ProfileStats', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(videoCount: 15)));
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(15, '15'),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      // A zero is indistinguishable from "never indexed" and from a stats
+      // outage — funnelcake collapses a ClickHouse failure into zeros behind
+      // an HTTP 200 — so it is withheld, matching the repository's own
+      // follower/following guard.
+      testWidgets('omits the video count when it is zero', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(followers: 5)));
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+      });
+
+      // Null followers means "not known yet", never zero.
+      testWidgets('omits the follower count when it is null', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(videoCount: 3)));
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('omits the follower count when it is zero', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(statsWith(followers: 0, videoCount: 3)),
+        );
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('omits loops below the visibility floor', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(
+              videoCount: 3,
+              totalViews: profileLoopsVisibilityFloor - 1,
+            ),
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            l10n.videoFeedLoopCountLine(
+              StringUtils.formatCompactNumber(
+                profileLoopsVisibilityFloor - 1,
+              ),
+              profileLoopsVisibilityFloor - 1,
+            ),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+      });
+
+      // The sender is never the viewer, so the profile header's owner
+      // exemption does not apply — only the floor decides.
+      testWidgets('renders loops at the visibility floor', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(videoCount: 3, totalViews: profileLoopsVisibilityFloor),
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            l10n.videoFeedLoopCountLine(
+              StringUtils.formatCompactNumber(profileLoopsVisibilityFloor),
+              profileLoopsVisibilityFloor,
+            ),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      // An ICU plural fuses its numeral and its noun, so there is no numeral
+      // to swap for a dash the way the profile header's columns do. The line
+      // shimmers, then gives up.
+      testWidgets('hides the line once the skeleton times out', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          await pumpStats(tester, buildStatsSubject(null));
+
+          // A placeholder line stands in while the counts are still arriving.
+          final placeholderFollowers = l10n.messageRequestFollowersCount(
+            99,
+            '99',
+          );
+          final placeholderVideos = l10n.messageRequestVideosCount(99, '99');
+          expect(
+            find.textContaining(placeholderFollowers, findRichText: true),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel(
+              '$placeholderFollowers \u2022 $placeholderVideos',
+            ),
+            findsNothing,
+          );
+
+          await tester.pump(const Duration(seconds: 8));
+
+          // Once the store has plainly not answered, the line goes rather than
+          // shimmering forever or degrading to a dash it cannot pluralise.
+          expect(
+            find.textContaining(placeholderFollowers, findRichText: true),
+            findsNothing,
+          );
+          expect(
+            find.textContaining(placeholderVideos, findRichText: true),
+            findsNothing,
+          );
+        } finally {
+          semantics.dispose();
+        }
+      });
+
+      // Matches the avatar/handle suppression: a vanished account shows no
+      // counts, and does not shimmer waiting for counts that never arrive.
+      testWidgets('renders no stats for a vanished account', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(followers: 2100, videoCount: 9),
+            vanished: true,
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(2100, '2.1K'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(9, '9'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+      });
+    });
 
     // #6416. This screen is where an inbound-first moderation notice is first
     // seen, and it offered "Decline and remove" against an unidentified
@@ -248,6 +517,185 @@ void main() {
         );
         expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
       });
+
+      // #6971. Removal here is permanent — it writes a tombstone that
+      // suppresses relay replay for the account's lifetime — and the notice is
+      // the user's only copy of why they were actioned.
+      testWidgets('a retired moderation notice offers no removal', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildModerationSubject(kLegacyModerationPubkeys.first),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.messageRequestViewMessagesButton),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the current moderation key offers no removal either', (
+        tester,
+      ) async {
+        // The pin lifts a current-key thread out of Requests today, so this is
+        // insurance for the next rotation rather than a live path.
+        await tester.pumpWidget(buildModerationSubject(kModerationPubkeyHex));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a group with a moderation participant offers no removal', (
+        tester,
+      ) async {
+        when(() => mockPreviewCubit.state).thenReturn(
+          RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [otherPubkey, kLegacyModerationPubkeys.first],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+      });
+
+      testWidgets('an ordinary request still offers removal', (tester) async {
+        await tester.pumpWidget(buildModerationSubject(otherPubkey));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsOneWidget,
+        );
+      });
+
+      // #6971. The row that opens this preview already reads "This
+      // conversation is closed"; the preview dropped every closed signal and
+      // replaced it with an overture. "Wants to message you" is false twice
+      // over on a retired key: nobody is behind it, and an enforcement notice
+      // is not a social approach.
+      testWidgets('a retired moderation notice reads as closed, not as an '
+          'overture', (tester) async {
+        await tester.pumpWidget(
+          buildModerationSubject(kLegacyModerationPubkeys.first),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsOneWidget);
+        expect(find.text(l10n.dmRetiredThreadClosedBody), findsOneWidget);
+        expect(
+          find.text(
+            l10n.messageRequestWantsToMessageYou(
+              l10n.inboxSupportRowTitle,
+              l10n.messageRequestMessageCount(1),
+            ),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('an ordinary request keeps the overture framing', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildModerationSubject(otherPubkey));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            l10n.messageRequestWantsToMessageYou(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+              l10n.messageRequestMessageCount(1),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.dmRetiredThreadClosedTitle), findsNothing);
+      });
+    });
+
+    // #8185. The same screen links straight through to the profile, which
+    // already names a vanished account for the state — so this row rendering
+    // a generated handle put both names one tap apart.
+    group('deleted accounts', () {
+      Widget buildVanishedSubject({required bool vanished}) {
+        when(() => mockPreviewCubit.state).thenReturn(
+          const RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [otherPubkey],
+          ),
+        );
+
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            userProfileReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(testProfile)),
+            profileVanishedProvider(
+              otherPubkey,
+            ).overrideWith((ref) => vanished),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('names a vanished sender for the state everywhere', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildVanishedSubject(vanished: true));
+        await tester.pumpAndSettle();
+
+        // Header, the name under the avatar, the "wants to message you"
+        // sentence and the decline confirmation all read the same name.
+        expect(find.text(l10n.profileDeletedAccountName), findsWidgets);
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+        expect(find.textContaining('TestUser'), findsNothing);
+      });
+
+      testWidgets('leaves a live sender untouched', (tester) async {
+        await tester.pumpWidget(buildVanishedSubject(vanished: false));
+        await tester.pumpAndSettle();
+
+        expect(find.text('TestUser'), findsWidgets);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+      });
     });
 
     group('renders', () {
@@ -284,6 +732,38 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Decline and remove'), findsOneWidget);
+      });
+
+      testWidgets('renders only the approved request actions', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        final actionBar = find.byWidgetPredicate(
+          (widget) => widget is SafeArea && !widget.top,
+        );
+        final actions = find.descendant(
+          of: actionBar,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.button == true,
+          ),
+        );
+
+        expect(actionBar, findsOneWidget);
+        expect(actions, findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: actionBar,
+            matching: find.text(l10n.messageRequestViewMessagesButton),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: actionBar,
+            matching: find.text(l10n.messageRequestDeclineAndRemoveButton),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders message count description', (tester) async {
@@ -455,7 +935,7 @@ void main() {
         (tester) async {
           when(
             () => mockActionsCubit.declineRequest(any()),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => DeclineRequestOutcome.removed);
 
           when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
@@ -496,7 +976,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(false);
 
         await tester.pumpWidget(buildSubject());
@@ -506,6 +986,68 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+    });
+
+    group('decline feedback', () {
+      testWidgets('ignores decline while an action is in flight', (
+        tester,
+      ) async {
+        when(() => mockActionsCubit.state).thenReturn(
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.processing,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verifyNever(() => mockActionsCubit.declineRequest(any()));
+      });
+
+      testWidgets('confirms with a snackbar after declining', (tester) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestDeclinedSnackbar('TestUser')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('when the decline fails, warns and does not claim success', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.failed);
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+        expect(
+          find.text(l10n.messageRequestDeclinedSnackbar('TestUser')),
+          findsNothing,
+        );
+        verifyNever(() => mockGoRouter.pop());
       });
     });
 
@@ -643,7 +1185,7 @@ void main() {
         ) async {
           when(
             () => mockActionsCubit.declineRequest(any()),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => DeclineRequestOutcome.removed);
           when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
@@ -668,7 +1210,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(false);
 
         await pumpTwice(
@@ -682,6 +1224,59 @@ void main() {
         await tester.pump();
 
         verify(() => mockGoRouter.go(InboxPage.path)).called(1);
+      });
+
+      // With no resolved counterparty there is no name to put in the
+      // confirmation, so decline falls back to the name-free "Removed
+      // conversation" rather than either staying silent or naming a generated
+      // "Adjective Animal N" placeholder (the #7335 leak / #7881 review).
+      testWidgets('declining an unresolved request confirms without a name', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
+        when(mockGoRouter.canPop).thenReturn(true);
+        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verify(() => mockActionsCubit.declineRequest(conversationId)).called(1);
+        expect(find.text(l10n.inboxRemovedConversation), findsOneWidget);
+      });
+
+      testWidgets('protected unresolved request is kept with an explanation', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.refused);
+        when(mockGoRouter.canPop).thenReturn(true);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+        verifyNever(() => mockGoRouter.pop());
+        verifyNever(() => mockGoRouter.go(any()));
       });
 
       testWidgets('error does not name the sender or count its messages', (

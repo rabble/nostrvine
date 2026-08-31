@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
@@ -235,7 +236,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.profileShareFailed(e),
+            context.l10n.profileShareFailed,
             error: true,
           ),
         );
@@ -410,7 +411,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   @override
   Widget build(BuildContext context) {
     Log.info(
-      '🧭 OtherProfileView.build for ${widget.pubkey}',
+      '🧭 OtherProfileView.build for ${pubkeyForLogs(widget.pubkey)}',
       name: 'OtherProfileView',
     );
 
@@ -445,9 +446,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               // Name the state rather than pass a deleted account's identity
               // downstream. ProfileHeaderWidget applies the same rule to the
               // avatar and the route hints, which it resolves itself.
-              final isVanished =
-                  ref.watch(profileVanishedProvider(widget.pubkey)).value ??
-                  false;
+              final isVanished = ref.watch(
+                profileVanishedProvider(widget.pubkey),
+              );
               final headerProfile = isVanished
                   ? null
                   : switch (state) {

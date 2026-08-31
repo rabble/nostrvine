@@ -105,6 +105,251 @@ void main() {
           '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
         );
       });
+
+      test('retries once on a fresh transport after a socket error', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Connection reset', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
+          final body = jsonDecode(request.body);
+          expect(body['method'], 'get_public_key');
+          return http.Response(
+            jsonEncode({
+              'result':
+                  '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+            }),
+            200,
+          );
+        });
+        var factoryCalls = 0;
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () {
+            factoryCalls++;
+            return retryClient;
+          },
+        );
+
+        final pubkey = await rpc.getPublicKey();
+
+        expect(
+          pubkey,
+          '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+        );
+        expect(firstClientCalls, equals(1));
+        expect(factoryCalls, equals(1));
+        expect(retryClientCalls, equals(1));
+      });
+
+      test('propagates socket error when the one retry also fails', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Bad file descriptor', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
+          throw http.ClientException('Connection reset', request.url);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+        );
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<http.ClientException>()),
+        );
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
+      });
+
+      test(
+        'defers closing a retired transport until sibling requests finish',
+        () async {
+          const pubkey =
+              '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+          final staleRequest = Completer<http.StreamedResponse>();
+          late _ControlledClient firstClient;
+          late _ControlledClient retryClient;
+          var firstClientCalls = 0;
+          var retryClientCalls = 0;
+          var factoryCalls = 0;
+
+          firstClient = _ControlledClient((request) {
+            firstClientCalls++;
+            if (firstClientCalls == 1) {
+              return staleRequest.future;
+            }
+            throw http.ClientException('Connection reset', request.url);
+          });
+          retryClient = _ControlledClient((request) async {
+            retryClientCalls++;
+            return _rpcResult(request, {'result': pubkey});
+          });
+          final clients = [firstClient, retryClient];
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClientFactory: () => clients[factoryCalls++],
+          );
+
+          final staleFuture = rpc.getPublicKey();
+          await Future<void>.value();
+          expect(firstClientCalls, equals(1));
+
+          final resetResult = await rpc.getPublicKey();
+          expect(resetResult, pubkey);
+          expect(factoryCalls, equals(2));
+          expect(firstClient.closeCount, equals(0));
+
+          staleRequest.completeError(
+            http.ClientException(
+              'Bad file descriptor',
+              Uri.parse('https://login.divine.video/api/nostr'),
+            ),
+          );
+
+          expect(await staleFuture, pubkey);
+          expect(factoryCalls, equals(2));
+          expect(retryClientCalls, equals(2));
+          expect(firstClient.closeCount, equals(1));
+        },
+      );
+
+      test('close drains retired transports and rejects later use', () async {
+        const pubkey =
+            '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+        final staleRequest = Completer<http.StreamedResponse>();
+        late _ControlledClient firstClient;
+        late _ControlledClient retryClient;
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        var factoryCalls = 0;
+
+        firstClient = _ControlledClient((request) {
+          firstClientCalls++;
+          if (firstClientCalls == 1) {
+            return staleRequest.future;
+          }
+          throw http.ClientException('Connection reset', request.url);
+        });
+        retryClient = _ControlledClient((request) async {
+          retryClientCalls++;
+          return _rpcResult(request, {'result': pubkey});
+        });
+        final clients = [firstClient, retryClient];
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClientFactory: () => clients[factoryCalls++],
+        );
+
+        final staleFuture = rpc.getPublicKey();
+        await Future<void>.value();
+        expect(await rpc.getPublicKey(), pubkey);
+        expect(firstClient.closeCount, equals(0));
+
+        rpc.close();
+
+        expect(firstClient.closeCount, equals(1));
+        expect(retryClient.closeCount, equals(1));
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<KeycastRpcClosedException>()),
+        );
+
+        staleRequest.completeError(
+          http.ClientException(
+            'Bad file descriptor',
+            Uri.parse('https://login.divine.video/api/nostr'),
+          ),
+        );
+        await expectLater(staleFuture, throwsA(isA<http.ClientException>()));
+        expect(retryClientCalls, equals(1));
+      });
+
+      test('shares one single-op deadline across a socket retry', () async {
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          throw http.ClientException('Connection reset', request.url);
+        });
+        final retryClient = MockClient((request) {
+          retryClientCalls++;
+          return Completer<http.Response>().future;
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+          requestTimeout: const Duration(milliseconds: 300),
+        );
+        final stopwatch = Stopwatch()..start();
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<RpcTimeoutException>()),
+        );
+
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
+        // Shared deadline: ~300ms. A doubled (per-attempt) deadline would take
+        // ~500ms, so this bound fails for the regression it guards while
+        // leaving slack for loaded CI runners.
+        expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 400)));
+      });
+
+      test(
+        'shares one single-op deadline across a 401 refresh retry',
+        () async {
+          var callCount = 0;
+          mockClient = MockClient((request) async {
+            callCount++;
+            if (callCount == 1) {
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+              return http.Response('Unauthorized', 401);
+            }
+            return Completer<http.Response>().future;
+          });
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'expired_token',
+            httpClient: mockClient,
+            onTokenRefresh: () async => 'fresh_token',
+            requestTimeout: const Duration(milliseconds: 300),
+          );
+          final stopwatch = Stopwatch()..start();
+
+          await expectLater(
+            rpc.getPublicKey(),
+            throwsA(isA<RpcTimeoutException>()),
+          );
+
+          expect(callCount, equals(2));
+          // Shared deadline: ~300ms; a doubled deadline would take ~500ms.
+          expect(
+            stopwatch.elapsed,
+            lessThan(const Duration(milliseconds: 400)),
+          );
+        },
+      );
     });
 
     group('signEvent', () {
@@ -672,6 +917,19 @@ void main() {
         'sig': 'b' * 128,
       };
 
+      test('throws when the RPC is closed', () async {
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        )..close();
+
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<KeycastRpcClosedException>()),
+        );
+      });
+
       test('posts the verb with the gift-wrap list and parses ordered '
           'slots', () async {
         final wraps = [giftWrap('11'), giftWrap('22')];
@@ -713,6 +971,53 @@ void main() {
         expect(slots[0].rumor, rumor);
         expect(slots[1].isSuccess, isFalse);
         expect(slots[1].error, 'sender_mismatch');
+      });
+
+      test('retries batch request once on a fresh transport after a socket '
+          'error', () async {
+        final wraps = [giftWrap('11')];
+        final rumor = {
+          'id': 'c' * 64,
+          'pubkey': 'd' * 64,
+          'created_at': 1700000001,
+          'kind': 14,
+          'tags': <List<String>>[],
+          'content': 'hello',
+        };
+        var firstClientCalls = 0;
+        var retryClientCalls = 0;
+        final firstClient = MockClient((request) async {
+          firstClientCalls++;
+          throw http.ClientException('Bad file descriptor', request.url);
+        });
+        final retryClient = MockClient((request) async {
+          retryClientCalls++;
+          final body = jsonDecode(request.body);
+          expect(body['method'], 'nip17_unwrap_batch');
+          expect(body['params'], wraps);
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'rumor': rumor, 'sender': 'd' * 64},
+              ],
+            }),
+            200,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: firstClient,
+          httpClientFactory: () => retryClient,
+        );
+
+        final slots = await rpc.nip17UnwrapBatch(wraps);
+
+        expect(slots, hasLength(1));
+        expect(slots![0].isSuccess, isTrue);
+        expect(firstClientCalls, equals(1));
+        expect(retryClientCalls, equals(1));
       });
 
       test('returns null when the backend lacks the verb', () async {
@@ -761,6 +1066,39 @@ void main() {
           rpc.nip17UnwrapBatch([giftWrap('1')]),
           throwsA(isA<TimeoutException>()),
         );
+      });
+
+      test('late 401 with timed-out refresh propagates timeout rather than '
+          'returning null', () async {
+        var postCalls = 0;
+        mockClient = MockClient((request) async {
+          postCalls++;
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          return http.Response('expired', 401);
+        });
+        var refreshCalls = 0;
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+          batchRequestTimeout: const Duration(milliseconds: 200),
+          onTokenRefresh: () async {
+            refreshCalls++;
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 'fresh_token';
+          },
+        );
+
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<TimeoutException>()),
+        );
+        expect(
+          postCalls,
+          equals(1),
+          reason: 'the refresh timed out before a retry POST could be issued.',
+        );
+        expect(refreshCalls, equals(1));
       });
 
       test('is bounded by batchRequestTimeout, not the shorter single-op '
@@ -856,10 +1194,9 @@ void main() {
           );
         });
 
-        final slots = await rpcWith(mockClient).nip17WrapBatch(
-          rumor,
-          recipients,
-        );
+        final slots = await rpcWith(
+          mockClient,
+        ).nip17WrapBatch(rumor, recipients);
 
         expect(slots, hasLength(2));
         expect(slots![0].isSuccess, isTrue);
@@ -881,10 +1218,9 @@ void main() {
           );
         });
 
-        final slots = await rpcWith(mockClient).nip17WrapBatch(
-          rumor,
-          recipients,
-        );
+        final slots = await rpcWith(
+          mockClient,
+        ).nip17WrapBatch(rumor, recipients);
 
         expect(slots![0].isSuccess, isTrue);
         expect(slots[1].isSuccess, isFalse);
@@ -1075,4 +1411,39 @@ void main() {
       });
     });
   });
+}
+
+http.StreamedResponse _rpcResult(
+  http.BaseRequest request,
+  Object body, {
+  int statusCode = 200,
+}) {
+  return http.StreamedResponse(
+    Stream.value(utf8.encode(jsonEncode(body))),
+    statusCode,
+    request: request,
+  );
+}
+
+class _ControlledClient extends http.BaseClient {
+  _ControlledClient(this._handler);
+
+  final Future<http.StreamedResponse> Function(http.BaseRequest request)
+  _handler;
+  int closeCount = 0;
+  bool isClosed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (isClosed) {
+      throw http.ClientException('Client is already closed.', request.url);
+    }
+    return _handler(request);
+  }
+
+  @override
+  void close() {
+    closeCount++;
+    isClosed = true;
+  }
 }

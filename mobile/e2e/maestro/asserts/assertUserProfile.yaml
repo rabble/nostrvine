@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # Asserts somebody else's profile. See assertProfile.yaml for your own.
 #

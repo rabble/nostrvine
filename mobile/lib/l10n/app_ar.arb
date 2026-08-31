@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "تحليلات الصانع",
     "settingsSupportCenter": "مركز الدعم",
     "settingsNotifications": "الإشعارات",
-    "settingsContentPreferences": "تفضيلات المحتوى",
-    "settingsModerationControls": "ضوابط الإشراف",
     "settingsBlueskyPublishing": "النشر على Bluesky",
     "settingsBlueskyPublishingSubtitle": "أدر النشر المتزامن إلى Bluesky",
     "settingsNostrSettings": "إعدادات Nostr",
@@ -105,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "الدعوات",
+  "settingsShareDivine": "مشاركة Divine مع الأصدقاء",
     "settingsSwitchAccount": "تبديل الحساب",
     "settingsAddAnotherAccount": "إضافة حساب آخر",
   "settingsAccountSwitchFailed": "تعذر تبديل الحسابات. يُرجى المحاولة مرة أخرى.",
@@ -159,6 +157,8 @@
     "contentPreferencesUseDeviceLanguage": "استخدام لغة الجهاز (افتراضي)",
     "contentPreferencesAudioSharing": "إتاحة صوتي للاستخدام",
     "contentPreferencesAudioSharingSubtitle": "عند التفعيل، يمكن للآخرين استخدام الصوت من فيديوهاتك",
+    "contentPreferencesMusicMode": "وضع الموسيقى",
+    "contentPreferencesMusicModeSubtitle": "يوقف تنقية الضوضاء التي تُخفّت صوت الآلات الموسيقية. أفضل للموسيقى، وأقسى على الأصوات.",
     "contentPreferencesAccountLabels": "وسوم الحساب",
     "contentPreferencesAccountLabelsEmpty": "ضع وسومًا لمحتواك",
     "contentPreferencesAccountContentLabels": "وسوم محتوى الحساب",
@@ -199,23 +199,11 @@
             }
         }
     },
-    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "profileEditProfile": "تعديل الملف الشخصي",
-    "profileCreatorAnalytics": "تحليلات الصانع",
-    "profileShareProfile": "مشاركة الملف الشخصي",
+    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي. يرجى المحاولة مرّة أخرى.",
     "profileCopyPublicKey": "نسخ المفتاح العام (npub)",
     "profileGetEmbedCode": "الحصول على كود التضمين",
     "profilePublicKeyCopied": "تم نسخ المفتاح العام إلى الحافظة",
     "profileEmbedCodeCopied": "تم نسخ كود التضمين إلى الحافظة",
-    "profileRefreshTooltip": "تحديث",
-    "profileRefreshSemanticLabel": "تحديث الملف الشخصي",
     "profileMoreTooltip": "المزيد",
     "profileMoreSemanticLabel": "خيارات إضافية",
     "profileFollowingLabel": "متابع",
@@ -300,10 +288,6 @@
     },
     "profileReportDisplayName": "أبلغ عن {displayName}",
     "profileAddToListDisplayName": "أضف {displayName} إلى قائمة",
-    "profileUserBlockedTitle": "تم حظر المستخدم",
-    "profileUserBlockedContent": "لن ترى محتوى من هذا المستخدم في تغذياتك.",
-    "profileUserBlockedUnblockHint": "يمكنك إلغاء حظره في أي وقت من ملفه الشخصي أو من الإعدادات > الأمان.",
-    "profileCloseButton": "إغلاق",
     "profileNoCollabsTitle": "لا توجد تعاونات بعد",
     "profileCollabsOwnEmpty": "ستظهر هنا الفيديوهات التي تتعاون عليها",
     "profileCollabsOtherEmpty": "ستظهر هنا الفيديوهات التي يتعاون عليها",
@@ -340,27 +324,13 @@
     "profileShowLess": "عرض أقل",
     "profileCompleteYourProfile": "أكمل ملفك الشخصي",
     "profileCompleteSubtitle": "أضف اسمك ونبذة عنك وصورة للبدء",
-    "profileSetUpButton": "الإعداد",
-    "profileVerifyingEmail": "جاري التحقق من البريد...",
-    "profileCheckEmailVerification": "تحقّق من {email} للحصول على رابط التحقق",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "في انتظار التحقق من البريد",
-    "profileVerificationFailed": "فشل التحقق",
     "profilePleaseTryAgain": "يرجى المحاولة مرّة أخرى",
     "profileSecureYourAccount": "أمّن حسابك",
     "profileSecureSubtitle": "أضف بريدًا وكلمة مرور لاستعادة حسابك من أي جهاز",
     "profileRetryButton": "إعادة المحاولة",
-    "profileRegisterButton": "تسجيل",
     "profileSessionExpired": "انتهت الجلسة",
     "profileSignInToRestore": "سجّل الدخول مرّة أخرى لاستعادة الوصول الكامل",
     "profileSignInButton": "تسجيل الدخول",
-    "profileDismissTooltip": "تجاهل",
     "profileLinkCopied": "تم نسخ رابط الملف الشخصي",
     "profileSetupEditProfileTitle": "تعديل الملف الشخصي",
     "profileSetupBackLabel": "رجوع",
@@ -378,34 +348,26 @@
     "profileSetupClaimFailed": "تعذّرت المطالبة باسم المستخدم. حاول مرّة أخرى.",
     "profileSetupPublishFailed": "تعذّر نشر الملف الشخصي. حاول مرّة أخرى.",
     "profileSetupNoRelaysConnected": "لا يمكن الوصول إلى الشبكة. تحقق من اتصالك وحاول مرة أخرى.",
-    "profileSetupRetryLabel": "إعادة المحاولة",
     "profileSetupDisplayNameLabel": "الاسم المعروض",
     "profileSetupDisplayNameRequired": "يرجى إدخال اسم معروض",
     "profileSetupBioLabel": "نبذة (اختيارية)",
     "profileSetupPublicKeyLabel": "المفتاح العام (npub)",
     "profileSetupUsernameLabel": "اسم المستخدم (اختياري)",
-    "profileSetupUsernameHelper": "هويتك الفريدة على Divine",
-    "profileSetupProfileColorLabel": "لون الملف الشخصي (اختياري)",
+    "profileSetupUsernameHelper": "استخدم الحروف والأرقام أو الشرطات. يصبح اسم المستخدم عنوانًا على divine.video. استخدم اسم العرض للمسافات أو الرموز.",
     "profileSetupSaveButton": "حفظ",
     "profileSetupSavingButton": "جاري الحفظ...",
     "profileSetupImageUrlTitle": "إضافة رابط صورة",
-    "profileSetupPictureUploaded": "تم رفع صورة الملف الشخصي بنجاح!",
     "profileSetupImageSelectionFailed": "فشل اختيار الصورة. يرجى لصق رابط الصورة أدناه بدلاً من ذلك.",
-    "profileSetupCameraAccessFailed": "فشل الوصول إلى الكاميرا: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "الوصول إلى الكاميرا مغلق. فعّله من الإعدادات لالتقاط صورة.",
+    "cameraPickErrorPermissionRestricted": "الوصول إلى الكاميرا غير مسموح على هذا الجهاز.",
+    "cameraPickErrorBusy": "المُنتقي مفتوح بالفعل. أغلقه وحاول مرّة أخرى.",
+    "cameraPickErrorGeneric": "تعذّر فتح الكاميرا. حاول مرّة أخرى.",
     "profileSetupGotItButton": "فهمت",
     "profileSetupUploadFailedGeneric": "فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.",
     "profileSetupUploadNetworkError": "خطأ في الشبكة: يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",
     "profileSetupUploadAuthError": "خطأ في المصادقة: حاول تسجيل الخروج ثم الدخول مجددًا.",
     "profileSetupUploadFileTooLarge": "الملف كبير جدًا: يرجى اختيار صورة أصغر (10 ميغابايت كحد أقصى).",
     "profileSetupUploadServerError": "فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.",
-    "profileSetupUploadUnsupportedOnWeb": "رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.",
     "profileSetupBannerClearButton": "مسح الغلاف",
     "profileSetupBannerChangeColor": "لون اللافتة",
     "profileSetupBannerColorPickerTitle": "تغيير لون اللافتة",
@@ -432,6 +394,7 @@
     "profileSetupCheckAgain": "تحقّق مجددًا",
     "profileSetupUsernameBurned": "اسم المستخدم هذا لم يعد متاحًا",
     "profileSetupUsernameInvalidFormat": "يُسمح بالأحرف والأرقام والواصلات فقط",
+    "profileSetupUsernameInvalidHyphenPlacement": "لا يمكن أن يبدأ اسم المستخدم أو ينتهي بشرطة",
     "profileSetupUsernameInvalidLength": "يجب أن يتراوح طول اسم المستخدم بين 3 و 63 حرفًا",
     "profileSetupUsernameNetworkError": "تعذّر التحقق من التوفر. حاول مرّة أخرى.",
     "profileSetupUsernameInvalidFormatGeneric": "تنسيق اسم المستخدم غير صالح",
@@ -450,12 +413,10 @@
     "profileSetupSupportRequestSent": "تم إرسال طلب الدعم! سنرد عليك قريبًا.",
     "profileSetupCouldntOpenEmail": "تعذّر فتح البريد. أرسل إلى: names@divine.video",
     "profileSetupSendRequest": "إرسال الطلب",
-    "profileSetupPickColorTitle": "اختر لونًا",
-    "profileSetupSelectButton": "اختيار",
     "profileSetupUseOwnNip05": "استخدم عنوان NIP-05 الخاص بك",
     "profileSetupNip05AddressLabel": "عنوان NIP-05",
     "profileSetupProfilePicturePreview": "معاينة صورة الملف الشخصي",
-    "nostrInfoIntroBuiltOn": "DiVine مبني على Nostr،",
+    "nostrInfoIntroBuiltOn": "Divine مبني على Nostr،",
     "nostrInfoIntroDescription": " بروتوكول مفتوح مقاوم للرقابة يسمح للناس بالتواصل عبر الإنترنت دون الاعتماد على شركة أو منصّة واحدة. ",
     "nostrInfoIntroIdentity": "عند التسجيل في Divine، تحصل على هوية Nostr جديدة.",
     "nostrInfoOwnership": "Nostr يسمح لك بامتلاك محتواك وهويتك وشبكتك الاجتماعية، والتي يمكنك استخدامها في تطبيقات عديدة. النتيجة خيارات أكثر، واحتكار أقل، وإنترنت اجتماعي أكثر صحة ومرونة.",
@@ -469,7 +430,6 @@
     "nostrInfoUsernameDescription": " اسم قابل للقراءة (مثل @name.divine.video) يرتبط بـ npub الخاص بك. يجعل هويتك في Nostr أسهل للتعرّف والتحقق، مثل عنوان البريد الإلكتروني.",
     "nostrInfoLearnMoreAt": "اعرف المزيد على ",
     "nostrInfoGotIt": "فهمت!",
-    "profileTabRefreshTooltip": "تحديث",
     "videoGridRefreshLabel": "البحث عن المزيد من الفيديوهات",
     "videoGridOptionsTitle": "خيارات الفيديو",
     "videoGridEditVideo": "تعديل الفيديو",
@@ -477,14 +437,6 @@
     "videoGridDeleteVideo": "حذف الفيديو",
     "videoGridDeleteVideoSubtitle": "أزل هذا الفيديو من Divine. قد يظل يظهر في عملاء Nostr آخرين.",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
-    "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "مميز",
   "exploreTabClassics": "الكلاسيكيات",
     "exploreTabNew": "جديد",
@@ -497,14 +449,6 @@
     "featuredTabLoadFailed": "تعذّر تحميل هذه المجموعة.",
     "featuredTabRetry": "حاول مرة أخرى",
     "exploreNoVideosAvailable": "لا توجد فيديوهات متاحة",
-    "exploreErrorPrefix": "خطأ: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "اكتشف القوائم",
     "exploreAboutLists": "عن القوائم",
     "exploreAboutListsDescription": "القوائم تساعدك في تنظيم محتوى Divine بطريقتين:",
@@ -514,14 +458,7 @@
     "exploreVideoListsDescription": "أنشئ قوائم تشغيل لفيديوهاتك المفضلة لمشاهدتها لاحقًا",
     "exploreMyLists": "قوائمي",
     "exploreSubscribedLists": "القوائم المشترك بها",
-    "exploreErrorLoadingLists": "خطأ في تحميل القوائم: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "خطأ في تحميل القوائم. يرجى المحاولة مرّة أخرى.",
     "exploreNewVideosCount": "{count, plural, zero{لا توجد فيديوهات جديدة} one{فيديو جديد واحد} two{فيديوان جديدان} few{{count} فيديوهات جديدة} many{{count} فيديو جديد} other{{count} فيديو جديد}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -538,12 +475,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "جاري تحميل الفيديو...",
     "videoPlayerPlayVideo": "تشغيل الفيديو",
     "videoPlayerMute": "كتم الفيديو",
     "videoPlayerUnmute": "إلغاء كتم الفيديو",
-    "videoPlayerEditVideo": "تعديل الفيديو",
-    "videoPlayerEditVideoTooltip": "تعديل الفيديو",
     "contentWarningLabel": "تحذير محتوى",
     "contentWarningNudity": "عري",
     "contentWarningSexualContent": "محتوى جنسي",
@@ -594,15 +528,10 @@
     "communitySuggestActionLabel": "صنّف",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "لم يُعثر على الفيديو",
-    "videoErrorNetwork": "خطأ في الشبكة",
-    "videoErrorTimeout": "انتهت مهلة التحميل",
-    "videoErrorFormat": "خطأ في تنسيق الفيديو\n(حاول مرّة أخرى أو استخدم متصفحًا آخر)",
-    "videoErrorUnsupportedFormat": "تنسيق الفيديو غير مدعوم",
     "videoErrorPlayback": "خطأ في تشغيل الفيديو",
     "videoErrorAgeRestricted": "محتوى مقيّد بالعمر",
     "videoErrorUnavailable": "الفيديو غير متاح",
     "videoErrorUnavailableBody": "هذا الفيديو غير متاح الآن.",
-    "videoErrorVerifyAge": "تحقق من العمر",
     "videoErrorRetry": "إعادة المحاولة",
     "videoErrorContentRestricted": "المحتوى مقيّد",
     "videoErrorContentRestrictedBody": "تمت إزالة هذا الفيديو لمخالفته قواعد المحتوى لدينا.",
@@ -611,7 +540,6 @@
     "videoErrorVerifyAgeButton": "تحقّق من العمر",
     "videoErrorVerifyAgeFailed": "تعذّر التحقق من عمرك. يرجى المحاولة مرّة أخرى.",
     "videoErrorVerifyAgeSignerUnreachable": "انتهت مهلة التحقق. تحقّق من اتصالك أو حاول مرّة أخرى بعد قليل.",
-    "videoFollowButtonFollowing": "متابع",
     "videoFollowButtonFollow": "متابعة",
     "audioAttributionOriginalSound": "صوت أصلي",
     "audioAttributionUnavailableSound": "الصوت غير متاح",
@@ -691,21 +619,11 @@
     "videoActionRepost": "إعادة نشر الفيديو",
     "videoActionViewComments": "عرض التعليقات",
     "videoActionMoreOptions": "خيارات إضافية",
-    "videoActionHideSubtitles": "إخفاء الترجمات",
-    "videoActionShowSubtitles": "عرض الترجمات",
     "videoEngagementLikersTitle": "أعجب به",
     "videoEngagementRepostersTitle": "أعاد نشره",
     "videoEngagementLikersEmpty": "لا توجد إعجابات بعد",
     "videoEngagementRepostersEmpty": "لا توجد إعادات نشر بعد",
     "videoEngagementLoadFailed": "تعذّر تحميل القائمة",
-    "videoDescriptionLoops": "{count} تكرار",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "ليس Divine",
     "metadataBadgeHumanMade": "من صنع البشر",
     "metadataSoundsLabel": "أصوات",
@@ -746,6 +664,27 @@
     "devOptionsDisableDeveloperMode": "تعطيل وضع المطوّر",
     "devOptionsDisableDeveloperModeSubtitle": "إخفاء خيارات المطوّر من الإعدادات",
     "devOptionsDisableDeveloperModeToast": "تم تعطيل وضع المطوّر",
+    "devOptionsShorebirdTitle": "تصحيحات Shorebird",
+    "devOptionsShorebirdPatchLabel": "التصحيح قيد التشغيل",
+    "devOptionsShorebirdNoPatch": "لا يوجد تصحيح مثبّت",
+    "devOptionsShorebirdUnavailable": "غير متاح في هذا الإصدار",
+    "devOptionsShorebirdUnavailableSubtitle": "تعمل التصحيحات فقط في إصدار تم إنشاؤه باستخدام shorebird release.",
+    "devOptionsShorebirdLoading": "جارٍ قراءة حالة التصحيح…",
+    "devOptionsShorebirdNotChecked": "لم يتم التحقق من مسار الاختبار بعد.",
+    "devOptionsShorebirdCheck": "التحقق من مسار الاختبار",
+    "devOptionsShorebirdApply": "تطبيق تصحيح الاختبار",
+    "devOptionsShorebirdUseStable": "العودة إلى التحديثات المستقرة",
+    "devOptionsShorebirdChecking": "جارٍ التحقق من مسار الاختبار…",
+    "devOptionsShorebirdUpdateAvailable": "يوجد تصحيح اختبار جاهز للتطبيق.",
+    "devOptionsShorebirdUpToDate": "لا يوجد تصحيح اختبار لهذا الإصدار.",
+    "devOptionsShorebirdRestartRequired": "تم التنزيل. أعد تشغيل التطبيق لتحميله.",
+    "devOptionsShorebirdRollbackRequired": "التراجع جاهز. أعد التشغيل للعودة إلى الإصدار الأساسي.",
+    "devOptionsShorebirdApplying": "جارٍ التنزيل والتثبيت…",
+    "devOptionsShorebirdApplied": "تم التثبيت. أعد تشغيل التطبيق لتحميله.",
+    "devOptionsShorebirdUnchanged": "لم يتم تثبيت أي شيء. تحقق من مسار الاختبار وحاول مرة أخرى.",
+    "devOptionsShorebirdSelectingStableTrack": "جارٍ اختيار المسار المستقر…",
+    "devOptionsShorebirdStableRestored": "تم اختيار المسار المستقر. أعد تشغيل التطبيق للتحقق من وجود تصحيح مستقر.",
+    "devOptionsShorebirdFailure": "لم تنجح العملية. تحقق من السجلات للحصول على التفاصيل.",
     "devOptionsPageLoadTimes": "أوقات تحميل الصفحات",
     "devOptionsNoPageLoads": "لم يتم تسجيل أي تحميل صفحة بعد.\nتنقّل في التطبيق لرؤية بيانات التوقيت.",
     "devOptionsPageLoadVisible": "مرئي: {visibleMs} ملليثانية  |  البيانات: {dataMs} ملليثانية",
@@ -822,14 +761,6 @@
     "relaySettingsEventsSent": "الأحداث المرسلة",
     "relaySettingsRequestsThisSession": "الطلبات في هذه الجلسة",
     "relaySettingsFailedRequests": "الطلبات الفاشلة",
-    "relaySettingsLastError": "آخر خطأ: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "جاري تحميل معلومات المحول...",
     "relaySettingsAboutRelay": "عن المحول",
     "relaySettingsSupportedNips": "NIPs المدعومة",
@@ -986,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "فشل الاستعلام: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "فشل الاستعلام. يرجى المحاولة مرّة أخرى.",
     "relayDiagnosticConnectedToRelays": "تم الاتصال بـ {count} محول!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1003,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "فشل الاتصال بأي محول",
-    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال. يرجى المحاولة مرّة أخرى.",
     "relayDiagnosticConnectedAuthenticated": "متصل ومُصادَق عليه",
     "relayDiagnosticConnectedOnly": "متصل",
     "relayDiagnosticNotConnected": "غير متصل",
@@ -1042,11 +959,6 @@
     "notificationSettingsResetToDefaults": "تمت إعادة الإعدادات إلى الافتراضي",
     "notificationSettingsAbout": "عن الإشعارات",
     "notificationSettingsAboutDescription": "الإشعارات مدعومة ببروتوكول Nostr. التحديثات الفورية تعتمد على اتصالك بمحولات Nostr. قد تواجه بعض الإشعارات تأخيرًا.",
-    "safetySettingsTitle": "الأمان والخصوصية",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "الإعدادات",
     "safetySettingsShowDivineHostedOnly": "عرض الفيديوهات المستضافة على Divine فقط",
     "safetySettingsShowDivineHostedOnlySubtitle": "إخفاء الفيديوهات المقدّمة من مصادر أخرى",
     "safetySettingsModeration": "الإشراف",
@@ -1367,14 +1279,6 @@
     "authUnableToAccessKeys": "تعذّر الوصول إلى مفاتيحك. حاول مرّة أخرى.",
     "authRegistrationFailed": "فشل التسجيل",
     "authRegistrationComplete": "تم التسجيل. يرجى تفقّد بريدك الإلكتروني.",
-    "authVerificationFailedTitle": "فشل التحقق",
-    "authClose": "إغلاق",
-    "authAccountSecured": "تم تأمين الحساب!",
-    "authAccountLinkedToEmail": "حسابك مرتبط الآن ببريدك الإلكتروني.",
-    "authVerifyYourEmail": "تحقّق من بريدك",
-    "authClickLinkContinue": "انقر على الرابط في بريدك لإكمال التسجيل. يمكنك الاستمرار في استخدام التطبيق في الأثناء.",
-    "authWaitingForVerificationEllipsis": "في انتظار التحقق...",
-    "authContinueToApp": "المتابعة إلى التطبيق",
     "authFailedToSendResetEmail": "فشل إرسال بريد إعادة التعيين.",
     "authSending": "جاري الإرسال...",
     "authSignInButton": "تسجيل الدخول",
@@ -1390,6 +1294,13 @@
     "authVerificationErrorPinLocked": "محاولات كثيرة جدًا. اضغط «إعادة الإرسال» للحصول على رمز جديد.",
     "authVerificationErrorPinFailed": "تعذّر علينا التحقق من هذا الرمز. يرجى المحاولة مرّة أخرى.",
     "authVerificationErrorPinUnavailable": "إدخال الرمز غير متاح حاليًا. اضغط على الرابط في بريدك الإلكتروني، أو أعد الإرسال للحصول على رمز جديد.",
+    "authInviteCodeErrorMalformed": "أدخل رمز دعوة مثل ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "رمز الدعوة هذا لا يبدو صالحًا.",
+    "authInviteCodeErrorAlreadyUsed": "تم استخدام رمز الدعوة هذا أو إلغاؤه.",
+    "authInviteGateErrorCreatorFull": "نفدت دعوات هذا المنشئ",
+    "authInviteGateErrorUnavailable": "رمز الدعوة هذا غير متاح. انضم إلى قائمة الانتظار وسنرسل دعوة عند توفر مكان.",
+    "authInviteGateErrorCheckFailed": "تعذّر التحقق من هذا الرمز. حاول مرة أخرى.",
+    "authInviteGateErrorUnknown": "حدث خطأ ما. حاول إدخال رمز الدعوة مرة أخرى.",
     "authInviteErrorAlreadyUsed": "رمز الدعوة هذا لم يعد متاحًا. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.",
     "authInviteErrorInvalid": "رمز الدعوة هذا لا يمكن استخدامه الآن. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.",
     "authInviteErrorTemporary": "لم نتمكّن من تأكيد دعوتك الآن. عد إلى رمز دعوتك وحاول مرّة أخرى، أو تواصل مع الدعم.",
@@ -1404,7 +1315,6 @@
     "shareSheetAddToList": "إضافة إلى قائمة",
     "shareSheetCopy": "نسخ",
     "shareSheetShareVia": "مشاركة عبر",
-    "shareSheetReport": "إبلاغ",
     "shareSheetEventJson": "JSON الحدث",
     "shareSheetEventId": "معرّف الحدث",
     "shareSheetMoreActions": "إجراءات إضافية",
@@ -1446,103 +1356,7 @@
     "watermarkDownloadStageDownloadingDesc": "جاري جلب الفيديو من الشبكة...",
     "watermarkDownloadStageWatermarkingDesc": "جاري تطبيق علامة Divine المائية...",
     "watermarkDownloadStageSavingDesc": "جاري حفظ الفيديو في ألبوم الكاميرا...",
-    "uploadProgressVideoUpload": "رفع الفيديو",
-    "uploadProgressPause": "إيقاف مؤقت",
-    "uploadProgressResume": "استئناف",
-    "uploadProgressGoBack": "العودة",
-    "uploadProgressRetryWithCount": "إعادة المحاولة ({count} متبقية)",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "حذف",
-    "uploadProgressDaysAgo": "منذ {count} يوم",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "منذ {count} ساعة",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "منذ {count} دقيقة",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "الآن",
-    "uploadProgressUploadingPercent": "جاري الرفع {percent}%",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "موقوف مؤقتًا {percent}%",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "مشاركة الفيديو",
-    "shareMenuReportAiContent": "الإبلاغ عن محتوى بالذكاء الاصطناعي",
-    "shareMenuReportAiContentSubtitle": "إبلاغ سريع عن محتوى يُشتبه بأنّه مُنشأ بالذكاء الاصطناعي",
-    "shareMenuReportingAiContent": "جاري الإبلاغ عن محتوى الذكاء الاصطناعي...",
-    "shareMenuFailedToReportContent": "فشل الإبلاغ عن المحتوى: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "فشل الإبلاغ عن محتوى الذكاء الاصطناعي: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "حالة الفيديو",
-    "shareMenuViewAllLists": "عرض جميع القوائم →",
-    "shareMenuShareWith": "مشاركة مع",
-    "shareMenuShareViaOtherApps": "مشاركة عبر تطبيقات أخرى",
-    "shareMenuShareViaOtherAppsSubtitle": "شارك عبر تطبيقات أخرى أو انسخ الرابط",
-    "shareMenuSaveToGallery": "حفظ في المعرض",
-    "shareMenuSaveOriginalSubtitle": "حفظ الفيديو الأصلي في ألبوم الكاميرا",
-    "shareMenuSaveWithWatermark": "حفظ مع العلامة المائية",
-    "shareMenuSaveVideo": "حفظ الفيديو",
-    "shareMenuDownloadWithWatermark": "تنزيل مع علامة Divine المائية",
-    "shareMenuSaveVideoSubtitle": "حفظ الفيديو في ألبوم الكاميرا",
-    "shareMenuLists": "القوائم",
-    "shareMenuAddToList": "إضافة إلى قائمة",
-    "shareMenuAddToListSubtitle": "أضف إلى قوائمك المختارة",
-    "shareMenuCreateNewList": "إنشاء قائمة جديدة",
-    "shareMenuCreateNewListSubtitle": "ابدأ مجموعة مختارة جديدة",
-    "shareMenuRemovedFromList": "تمت الإزالة من القائمة",
-    "shareMenuFailedToRemoveFromList": "فشلت الإزالة من القائمة",
     "shareMenuBookmarks": "الإشارات المرجعية",
-    "shareMenuFollowSets": "مجموعات المتابعة",
-    "shareMenuCreateFollowSet": "إنشاء مجموعة متابعة",
-    "shareMenuCreateFollowSetSubtitle": "ابدأ مجموعة جديدة بهذا الصانع",
-    "shareMenuAddToFollowSet": "إضافة إلى مجموعة متابعة",
     "shareMenuFollowSetsAvailable": "{count} مجموعة متابعة متاحة",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1551,21 +1365,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "تمت الإضافة إلى الإشارات المرجعية!",
-    "shareMenuFailedToAddBookmark": "فشل إضافة الإشارة المرجعية",
-    "shareMenuCreatedListAndAddedVideo": "تم إنشاء القائمة \"{name}\" وإضافة الفيديو",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "إدارة المحتوى",
     "shareMenuEditVideo": "تعديل الفيديو",
-    "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1574,105 +1375,26 @@
             }
         }
     },
-    "shareMenuClose": "إغلاق",
     "shareMenuDeleteConfirmation": "سيؤدي هذا إلى حذف هذا الفيديو نهائيًا من Divine. قد يظل يظهر في عملاء Nostr تابعين لجهات خارجية يستخدمون مرحّلات أخرى.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
-    "shareMenuDeletingContent": "جاري حذف المحتوى...",
-    "shareMenuFailedToDeleteContent": "فشل حذف المحتوى: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "اسم مجموعة المتابعة",
-    "shareMenuFollowSetNameHint": "مثل: صناع المحتوى، موسيقيون، إلخ.",
-    "shareMenuDescriptionOptional": "الوصف (اختياري)",
-    "shareMenuCreate": "إنشاء",
-    "shareMenuCreatedFollowSetAndAddedCreator": "تم إنشاء مجموعة المتابعة \"{name}\" وإضافة الصانع",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "تم",
-    "shareMenuEditTitle": "العنوان",
-    "shareMenuEditTitleHint": "أدخل عنوان الفيديو",
-    "shareMenuEditDescription": "الوصف",
-    "shareMenuEditDescriptionHint": "أدخل وصف الفيديو",
-    "shareMenuEditHashtags": "الوسوم",
-    "shareMenuEditHashtagsHint": "وسوم، مفصولة، بفواصل",
-    "shareMenuEditMetadataNote": "ملحوظة: يمكن تعديل البيانات الوصفية فقط. لا يمكن تغيير محتوى الفيديو.",
-    "shareMenuDeleting": "جاري الحذف...",
     "shareMenuUpdate": "تحديث",
     "shareMenuChangeCover": "تغيير الغلاف",
-    "shareMenuCoverUploadingBackground": "يتم رفع الصورة المصغرة في الخلفية",
     "shareMenuVideoUpdated": "تم تحديث الفيديو بنجاح",
     "shareMenuVideoUpdatedWithInviteFailures": "تم تحديث الفيديو، لكن {count, plural, =1{لم يتم إرسال دعوة متعاون واحدة.} other{لم يتم إرسال {count} دعوات متعاونين.}}",
-    "shareMenuFailedToUpdateVideo": "فشل تحديث الفيديو: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "سجّل الدخول من جديد ثم حاول مرّة أخرى.",
+    "videoUpdateErrorNoPlayableVideo": "هذا الفيديو ليس له مصدر قابل للتشغيل، لذا لا يمكن تعديله.",
+    "videoUpdateErrorCouldNotSign": "تعذّر توقيع التحديث. حاول مرّة أخرى.",
+    "videoUpdateErrorPublishRejected": "لم يقبل الريلاي التحديث. حاول مرّة أخرى بعد قليل.",
+    "videoUpdateErrorGeneric": "تعذّر تحديث هذا الفيديو. حاول مرّة أخرى.",
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
-    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
-    "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "وسوم المحتوى",
-    "shareMenuAddContentLabels": "إضافة وسوم محتوى",
-    "shareMenuClearAll": "مسح الكل",
-    "shareMenuCollaborators": "المتعاونون",
-    "shareMenuAddCollaborator": "إضافة متعاون",
-    "shareMenuMutualFollowRequired": "تحتاج إلى متابعة متبادلة مع {name} لإضافته كمتعاون.",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "جاري التحميل...",
-    "shareMenuInspiredBy": "مستوحى من",
-    "shareMenuAddInspirationCredit": "إضافة تنويه الإلهام",
-    "shareMenuCreatorCannotBeReferenced": "لا يمكن الإشارة إلى هذا الصانع.",
-    "shareMenuUnknown": "غير معروف",
-    "shareMenuUseThisSound": "استخدم هذا الصوت",
-    "shareMenuOriginalSound": "صوت أصلي",
+    "shareMenuDeleteCleanupInProgress": "جارٍ إزالة الفيديو…",
+    "shareMenuDeleteCleanupConfirmed": "تم حذف الفيديو.",
+    "shareMenuDeleteCleanupDelayed": "تم حذف الفيديو. قد يستغرق اختفاؤه من كل مكان بعض الوقت.",
+    "shareMenuDeleteCleanupFailed": "تم حذف الفيديو، لكننا لم نتمكن من إزالة كل نسخة. التواصل مع الدعم.",
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",
     "authSignInFailed": "فشل تسجيل الدخول. حاول مرّة أخرى.",
-    "localeAppLanguage": "لغة التطبيق",
-    "localeDeviceDefault": "افتراضي الجهاز",
-    "localeSelectLanguage": "اختر اللغة",
     "webAuthNotSupportedSecureMode": "مصادقة الويب غير مدعومة في الوضع الآمن. يرجى استخدام تطبيق الجوال لإدارة المفاتيح بأمان.",
-    "webAuthIntegrationFailed": "فشل تكامل المصادقة: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "خطأ غير متوقّع: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "يرجى إدخال رابط bunker",
     "webAuthConnectTitle": "الاتصال بـ Divine",
     "webAuthChooseMethod": "اختر طريقة مصادقة Nostr المفضّلة لديك",
@@ -1687,34 +1409,14 @@
     "webAuthNostrHelp": "ثبّت إضافة متصفح مثل Alby أو nos2x لتجربة أسهل، أو استخدم nsec bunker للتوقيع الخارجي الآمن.",
     "soundsTitle": "الأصوات",
     "soundsSearchHint": "البحث عن أصوات...",
-    "soundsPreviewUnavailable": "تعذر معاينة الصوت - لا يوجد صوت متاح",
-    "soundsPreviewFailed": "تعذر تشغيل المعاينة: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "تعذر تشغيل المعاينة",
-    "soundsFeaturedSounds": "أصوات مميزة",
-    "soundsTrendingSounds": "أصوات رائجة",
-    "soundsAllSounds": "كل الأصوات",
     "soundSyncStatusSyncing": "جارٍ مزامنة أصواتك…",
     "soundSyncStatusSynced": "الأصوات محدَّثة",
     "soundSyncStatusFailed": "تعذّرت مزامنة أصواتك. سنحاول مرة أخرى.",
     "soundSyncStatusLocked": "تعذّر فتح مكتبتك المتزامنة على هذا الجهاز.",
     "soundsSearchResults": "نتائج البحث",
-    "soundsNoSoundsAvailable": "لا توجد أصوات متاحة",
-    "soundsNoSoundsDescription": "ستظهر الأصوات هنا عندما يشارك المنشئون مقاطع صوتية",
     "soundsNoSoundsFound": "لم يُعثر على أصوات",
     "soundsNoSoundsFoundDescription": "جرِّب كلمة بحث مختلفة",
-    "soundsFailedToLoad": "تعذر تحميل الأصوات",
-    "soundsRetry": "إعادة المحاولة",
-    "soundsScreenLabel": "شاشة الأصوات",
     "profileTitle": "الملف الشخصي",
-    "profileRefresh": "تحديث",
-    "profileRefreshLabel": "تحديث الملف الشخصي",
     "profileMoreOptions": "خيارات أخرى",
     "profileBlockedUser": "تم حظر {name}",
     "@profileBlockedUser": {
@@ -1740,14 +1442,6 @@
             }
         }
     },
-    "profileError": "خطأ: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "الكل",
     "notificationsTabLikes": "الإعجابات",
     "notificationsTabComments": "التعليقات",
@@ -1756,25 +1450,6 @@
     "notificationsFailedToLoad": "تعذر تحميل الإشعارات",
     "notificationsRetry": "إعادة المحاولة",
     "notificationsRefreshError": "تعذّر التحديث — يتم عرض ما هو متاح",
-    "notificationsCheckingNew": "جارٍ التحقق من الإشعارات الجديدة",
-    "notificationsNoneYet": "لا توجد إشعارات بعد",
-    "notificationsNoneForType": "لا توجد إشعارات {type}",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "عندما يتفاعل الأشخاص مع محتواك، سيظهر هنا",
-    "notificationsLoadingType": "جارٍ تحميل إشعارات {type}...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "لديك دعوة واحدة لمشاركتها مع صديق!",
     "notificationsInvitePlural": "لديك {count} دعوات لمشاركتها مع الأصدقاء!",
     "@notificationsInvitePlural": {
@@ -1784,9 +1459,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "لم يُعثر على الفيديو",
     "notificationsVideoUnavailable": "الفيديو غير متاح",
-    "notificationsFromNotification": "من إشعار",
     "feedFailedToLoadVideos": "تعذر تحميل مقاطع الفيديو",
     "feedRetry": "إعادة المحاولة",
     "feedNoFollowedUsers": "لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.",
@@ -1816,50 +1489,13 @@
     "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
     "feedClassicEmpty": "لا توجد كلاسيكيات بعد.\nعد لاحقًا.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
-    "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
-    "feedSkip": "تخطي",
-    "uploadWaitingToUpload": "في انتظار الرفع",
     "uploadUploadingVideo": "جارٍ رفع الفيديو",
-    "uploadProcessingVideo": "جارٍ معالجة الفيديو",
-    "uploadProcessingComplete": "اكتملت المعالجة",
-    "uploadPublishedSuccessfully": "تم النشر بنجاح",
-    "uploadFailed": "فشل الرفع",
-    "uploadRetrying": "جارٍ إعادة محاولة الرفع",
-    "uploadPaused": "الرفع متوقف مؤقتًا",
-    "uploadPercentComplete": "{percent}% مكتمل",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "فيديوك في قائمة انتظار الرفع",
-    "uploadUploadingMessage": "جارٍ الرفع إلى الخادم...",
-    "uploadProcessingMessage": "جارٍ معالجة الفيديو - قد يستغرق هذا بضع دقائق",
-    "uploadReadyToPublishMessage": "تمت معالجة الفيديو بنجاح وهو جاهز للنشر",
-    "uploadPublishedMessage": "تم نشر الفيديو في ملفك الشخصي",
     "postPublishConfirmationTitle": "تم النشر في ملفك الشخصي",
     "postPublishConfirmationView": "عرض",
     "postPublishConfirmationShare": "مشاركة",
     "postPublishConfirmationThumbnailLabel": "صورة مصغرة للفيديو الذي نشرته للتو",
   "uploadPublishedCountMessage": "{count, plural, =1{تم نشر الفيديو في ملفك الشخصي} other{تم نشر {count} مقاطع فيديو في ملفك الشخصي}}",
-    "uploadFailedMessage": "فشل الرفع - يُرجى المحاولة مرة أخرى",
-    "uploadRetryingMessage": "جارٍ إعادة محاولة الرفع...",
-    "uploadPausedMessage": "أوقف المستخدم الرفع مؤقتًا",
-    "uploadRetryButton": "إعادة المحاولة",
-    "uploadRetryFailed": "تعذرت إعادة محاولة الرفع: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "البحث عن مستخدمين",
     "userSearchNoResults": "لم يُعثر على مستخدمين",
-    "userSearchFailed": "فشل البحث",
-    "userPickerSearchByName": "البحث بالاسم",
     "userPickerFilterByNameHint": "التصفية بالاسم...",
     "userPickerSearchByNameHint": "البحث بالاسم...",
     "userPickerClearSearchSemantics": "مسح البحث",
@@ -1898,27 +1534,13 @@
     "ageVerificationCreationQuestion": "هل عمرك 16 عامًا أو أكثر؟",
     "ageVerificationNo": "لا",
     "ageVerificationYes": "نعم",
-    "shareLinkCopied": "تم نسخ الرابط إلى الحافظة",
-    "shareFailedToCopy": "تعذر نسخ الرابط",
-    "shareVideoSubject": "شاهد هذا الفيديو على Divine",
-    "shareFailedToShare": "تعذرت المشاركة",
-    "shareVideoTitle": "مشاركة الفيديو",
-    "shareToApps": "مشاركة إلى التطبيقات",
-    "shareToAppsSubtitle": "شارك عبر تطبيقات المراسلة ووسائل التواصل",
-    "shareCopyWebLink": "نسخ رابط الويب",
-    "shareCopyWebLinkSubtitle": "انسخ رابط ويب قابلًا للمشاركة",
-    "shareCopyNostrLink": "نسخ رابط Nostr",
-    "shareCopyNostrLinkSubtitle": "انسخ رابط nevent لعملاء Nostr",
     "navHome": "الرئيسية",
     "navExplore": "استكشاف",
     "navInbox": "الوارد",
     "navProfile": "الملف الشخصي",
     "navMyProfile": "ملفي الشخصي",
-    "navSearch": "بحث",
     "navNotifications": "الإشعارات",
-    "navSearchTooltip": "بحث",
     "navOpenCamera": "فتح الكاميرا",
-    "navUnknown": "غير معروف",
     "navExploreClassics": "الكلاسيكيات",
     "navExploreNewVideos": "فيديوهات جديدة",
     "navExploreTrending": "الرائجة",
@@ -1968,27 +1590,15 @@
             }
         }
     },
-    "supportErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "reportTitle": "الإبلاغ عن محتوى",
     "reportWhyReporting": "لماذا تُبلِّغ عن هذا المحتوى؟",
     "reportPolicyNotice": "ستتصرف Divine بشأن بلاغات المحتوى خلال 24 ساعة بإزالة المحتوى وإخراج المستخدم الذي قدَّم المحتوى المخالف.",
-    "reportAdditionalDetails": "تفاصيل إضافية (اختياري)",
     "reportBlockUser": "حظر هذا المستخدم",
     "reportCancel": "إلغاء",
     "reportSubmit": "إبلاغ",
     "reportSelectReason": "يُرجى اختيار سبب للإبلاغ عن هذا المحتوى",
     "reportOtherRequiresDetails": "يرجى وصف المشكلة عند اختيار «أخرى»",
     "reportDetailsRequired": "يرجى وصف المشكلة",
+    "reportDetailsTextOnly": "نص فقط — لا يمكن إرفاق الصور أو ملفات GIF هنا.",
     "reportReasonSpam": "محتوى غير مرغوب فيه أو مزعج",
     "reportReasonHarassment": "تحرُّش أو تنمُّر أو تهديدات",
     "reportReasonViolence": "محتوى عنيف أو متطرف",
@@ -1997,19 +1607,11 @@
     "reportReasonFalseInfo": "معلومات كاذبة",
     "reportReasonAiGenerated": "محتوى مُولَّد بالذكاء الاصطناعي",
     "reportReasonOther": "انتهاك آخر للسياسة",
-    "reportFailed": "تعذر الإبلاغ عن المحتوى: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "تعذر الإبلاغ عن المحتوى. يرجى المحاولة مرّة أخرى.",
     "reportNotSent": "تعذّر إرسال بلاغك. تحقق من اتصالك وحاول مرة أخرى.",
     "reportReceivedTitle": "تم استلام البلاغ",
     "reportReceivedThankYou": "شكرًا لمساعدتك في الحفاظ على سلامة Divine.",
     "reportReceivedReviewNotice": "سيُراجع فريقنا بلاغك ويتخذ الإجراء المناسب. قد تتلقى تحديثات عبر رسالة مباشرة.",
-    "reportLearnMore": "اعرف المزيد",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "إغلاق",
     "listAddToList": "إضافة إلى قائمة",
@@ -2044,7 +1646,7 @@
     "listNewPeopleList": "قائمة أشخاص جديدة",
     "listCollaboratorsNone": "لا أحد",
     "listAddCollaboratorTitle": "إضافة متعاون",
-    "listCollaboratorSearchHint": "ابحث في diVine...",
+    "listCollaboratorSearchHint": "ابحث في Divine...",
     "listNameLabel": "اسم القائمة",
     "listDescriptionLabel": "الوصف (اختياري)",
     "listPublicList": "قائمة عامة",
@@ -2107,7 +1709,7 @@
     "keyManagementKeycastEmailUnverified": "أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.",
     "keyManagementKeycastDenied": "تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.",
     "keyManagementKeycastNoKey": "لا يوجد مفتاح مسجّل لهذا الحساب.",
-    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول",
+    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول. حاول مرّة أخرى.",
     "keyManagementRestrictedTitle": "مفاتيحك يديرها Divine",
     "keyManagementRestrictedBody": "للحفاظ على أمان حسابك، النسخ الاحتياطي للمفتاح واستيراد مفتاح آخر غير متاحين هنا.",
     "keyManagementNeverShare": "لا تُشارك nsec مع أي شخص أبدًا!",
@@ -2117,23 +1719,9 @@
     "keyManagementConfirmImportBody": "سيحل هذا محل هويتك الحالية بالهوية المستوردة.\n\nسيُفقد مفتاحك الحالي ما لم تقم بعمل نسخة احتياطية منه أولًا.",
     "keyManagementImportConfirm": "استيراد",
     "keyManagementImportSuccess": "تم استيراد المفتاح بنجاح!",
-    "keyManagementImportFailed": "تعذر استيراد المفتاح: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "تعذر استيراد المفتاح. يرجى المحاولة مرّة أخرى.",
     "keyManagementExportSuccess": "تم نسخ المفتاح الخاص إلى الحافظة!\n\nاحفظه في مكان آمن.",
-    "keyManagementExportFailed": "تعذر تصدير المفتاح: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "تعذر تصدير المفتاح. يرجى المحاولة مرّة أخرى.",
     "saveOriginalSavedToCameraRoll": "تم الحفظ في ألبوم الكاميرا",
     "saveOriginalShare": "مشاركة",
     "saveOriginalDone": "تم",
@@ -2171,14 +1759,7 @@
         }
     },
     "soundUnableToPreview": "تعذر معاينة الصوت - لا يوجد صوت متاح",
-    "soundPreviewFailed": "تعذر تشغيل المعاينة: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "تعذر تشغيل المعاينة. يرجى المحاولة مرّة أخرى.",
     "soundViewSource": "عرض المصدر",
     "soundCloseTooltip": "إغلاق",
     "exploreNotExploreRoute": "ليس مسار استكشاف",
@@ -2199,17 +1780,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2314,14 +1884,7 @@
     "categoryVlog": "مدونة فيديو",
     "categoryVlogging": "تدوين فيديو",
     "categoryWrestling": "مصارعة",
-    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات. يرجى المحاولة مرّة أخرى.",
     "blueskyFailedToUpdateCrosspost": "فشل تحديث إعداد النشر المتقاطع",
     "cameraAgeRestriction": "يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى",
     "categoriesCouldNotLoadCategories": "تعذّر تحميل الفئات",
@@ -2330,15 +1893,7 @@
     "commonCancel": "إلغاء",
     "commonDelete": "حذف",
     "commonRetry": "إعادة المحاولة",
-    "commonNext": "التالي",
-    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك. يرجى المحاولة مرّة أخرى.",
     "exploreVideoCounter": "فيديو {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2366,7 +1921,6 @@
             }
         }
     },
-    "featureRequestCancel": "إلغاء",
     "followersFailedToLoadList": "فشل تحميل قائمة المتابعين",
     "followingFailedToLoadList": "فشل تحميل قائمة المتابَعين",
     "inboxActionBlock": "حظر {displayName}",
@@ -2421,8 +1975,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "تمت دعوتك للتعاون على {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "تمت دعوتك للتعاون على فيديو: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "تمت دعوتك للتعاون على {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "تمت دعوتك للتعاون على فيديو: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "تم إرسال الدعوة",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -2442,7 +1996,7 @@
     "inboxSupportRowSubtitle": "الأخطاء والإشراف ومشكلات الحساب — نحن نستمع.",
     "inboxSearchEmptyTitle": "لا توجد نتائج",
     "inboxSearchEmptySubtitle": "جرّب اسمًا أو كلمة أخرى.",
-    "inboxRemoveConfirmBody": "سيؤدي هذا إلى حذف محادثتك مع {displayName}. لا يمكن التراجع عن هذا الإجراء.",
+    "inboxRemoveConfirmBody": "يؤدي هذا إلى إزالة محادثتك مع {displayName} من صندوق الوارد. إذا راسلك مرة أخرى، تبدأ محادثة جديدة.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -2450,6 +2004,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "يؤدي هذا إلى إزالة محادثة المجموعة من صندوق الوارد. إذا راسل أي شخص المجموعة مرة أخرى، تبدأ محادثة جديدة.",
     "inboxRemoveConfirmConfirm": "إزالة",
     "inboxRemoveConfirmTitle": "إزالة المحادثة؟",
     "inboxRemovedConversation": "تمت إزالة المحادثة",
@@ -2474,16 +2029,6 @@
         }
     },
     "invitesTitle": "دعوة الأصدقاء",
-    "keyImportError": "خطأ: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "libraryAddClips": "إضافة",
-    "libraryClipSelectionTitle": "مقاطع",
     "libraryClipsDeletedCount": "{count, plural, =1{تم حذف مقطع واحد} other{تم حذف {count} مقاطع}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2521,15 +2066,6 @@
     "libraryCreateVideo": "إنشاء فيديو ({count})",
     "libraryDeleteClipMessage": "هل تريد حذف هذا المقطع؟",
     "libraryDeleteClipTitle": "حذف المقطع",
-    "libraryDeleteClipsMessage": "هل تريد حذف {count, plural, one{مقطع واحد محدد} other{# مقاطع محددة}}؟",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "حذف المقاطع",
     "libraryDeleteClipsWarning": "لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.",
     "libraryDeleteConfirm": "حذف",
     "libraryDeleteDraftMessage": "هل تريد حذُ “{title}”؟",
@@ -2576,6 +2112,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "تعذّر الحفظ في {destination}",
     "libraryGalleryPermissionDenied": "تم رفض إذن {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2592,6 +2129,7 @@
     "libraryPreparingVideo": "جاري تجهيز الفيديو...",
     "libraryRecordVideo": "تسجيل فيديو",
     "videoClipSemanticLabel": "مقطع فيديو، {duration} ثانية",
+    "videoClipArchivedSemanticLabel": "مؤرشف. {label}",
     "videoClipStopMotionSemanticLabel": "مقطع حركة إيقافية، {frames}",
     "videoClipSemanticValueSelectedAtPosition": "محدد، رقم {position}",
     "videoClipSemanticValueSelected": "محدد",
@@ -2599,15 +2137,6 @@
     "videoClipSemanticHintDisabled": "معطل",
     "videoClipSemanticHintSelect": "انقر للتحديد، اضغط مطولاً للمعاينة",
     "videoClipSemanticHintDeselect": "انقر لإلغاء التحديد، اضغط مطولاً للمعاينة",
-    "librarySaveToCameraRollTooltip": "حفظ في ألبوم الكاميرا",
-    "librarySecondsRemaining": "متبقى {seconds} ث",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds} ث",
     "libraryTabClips": "مقاطع",
     "libraryTabDrafts": "مسودات",
@@ -2619,6 +2148,7 @@
     "dmSendBlockedMessage": "يمكنك مراسلة حسابات Divine الرسمية فقط",
     "dmSendBlockedRetiredMessage": "لا أحد يقرأ هذه المحادثة. راسل Divine Moderation بدلاً من ذلك.",
     "dmRetiredThreadClosedTitle": "هذه المحادثة مغلقة.",
+    "messageRequestModerationNoticeCannotBeRemoved": "لا يمكن إزالة إشعار Divine Moderation هذا.",
     "dmRetiredThreadClosedBody": "نقلنا Divine Moderation إلى حساب جديد. لم يعد أحد يقرأ هذا الحساب.",
     "dmRetiredThreadOpenSupport": "راسل Divine Moderation",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
@@ -2629,8 +2159,6 @@
     "dmConversationLoadError": "تعذّر تحميل الرسائل",
     "dmMessageInputHint": "قل شيئًا…",
     "dmMessageSendLabel": "إرسال رسالة",
-    "reportDialogCancel": "إلغاء",
-    "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",
     "routerInvalidHashtagRoute": "مسار هاشتاغ غير صالح",
     "searchDiscoverSomethingInteresting": "اكتشف شيئًا مثيرًا للاهتمام",
@@ -2856,16 +2384,16 @@
     "cameraPermissionWebUnsupportedTitle": "الكاميرا غير مدعومة على الويب بعد",
     "cameraPermissionWebUnsupportedDescription": "التقاط الكاميرا وتسجيلها غير متاحين في إصدار الويب بعد.",
     "cameraPermissionBackToFeed": "العودة إلى الخلاصة",
+    "cameraCouldNotStart": "تعذّر تشغيل الكاميرا",
+    "cameraUnsupportedPlatform": "الكاميرا غير متاحة على هذه المنصة بعد.\nلا يزال بالإمكان تصفّح الفيديوهات ومشاهدتها.",
     "cameraPermissionErrorTitle": "خطأ في الأذونات",
     "cameraPermissionErrorDescription": "حدث خطأ أثناء التحقق من الأذونات.",
     "cameraPermissionRetry": "إعادة المحاولة",
     "cameraPermissionAllowAccessTitle": "السماح بالوصول إلى الكاميرا والميكروفون",
     "cameraPermissionAllowAccessDescription": "يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.",
     "cameraPermissionGoToSettings": "الذهاب إلى الإعدادات",
-    "videoEditorAddClipFromLibrary": "إضافة مقطع من المكتبة",
     "videoEditorAddElementSemanticLabel": "إضافة عنصر",
     "videoEditorAddTitle": "إضافة",
-    "videoEditorAdjustVolumeTitle": "ضبط الصوت",
     "videoEditorAudioAddAudio": "إضافة صوت",
     "videoEditorAudioFailedToLoadTitle": "فشل تحميل الأصوات",
     "videoEditorAudioCategoryDivine": "Divine",
@@ -2884,8 +2412,6 @@
     "videoEditorAudioUntitled": "بدون عنوان",
     "videoEditorAudioUntitledSound": "صوت بدون عنوان",
     "videoEditorVolumeLongPressHint": "كتم صوت جميع المسارات أو إلغاء الكتم",
-    "videoEditorCannotSplitProcessing": "لا يمكن تقسيم المقطع أثناء معالجته. يرجى الانتظار.",
-    "videoEditorClipDeleted": "تم حذف المقطع",
     "videoEditorClipSaveFailed": "فشل حفظ المقطع",
     "videoEditorClipSavedSuccess": "تم حفظ المقطع في المكتبة",
     "videoEditorCameraLabel": "الكاميرا",
@@ -2901,8 +2427,6 @@
         }
     },
     "videoEditorConfirmColorSemanticLabel": "تأكيد اللون",
-    "videoEditorCropSemanticLabel": "قص",
-    "videoEditorDeleteClip": "حذف المقطع",
     "videoEditorDeleteLabel": "حذف",
     "videoEditorDeleteLayerDropZone": "منطقة إسقاط لحذف الطبقة",
     "videoEditorDeleteSelectedItemSemanticLabel": "حذف العنصر المحدد",
@@ -2944,7 +2468,6 @@
     "videoEditorHueSemanticLabel": "الصبغة",
     "videoEditorKeepEditingButton": "مواصلة التحرير",
     "videoEditorLevelSemanticLabel": "المستوى",
-    "videoEditorMuteAudioSemanticLabel": "كتم الصوت",
     "videoEditorNoStickersAvailable": "لا توجد ملصقات متاحة",
     "videoEditorNoStickersFound": "لم يتم العثور على ملصقات",
     "videoEditorOpenAudioSemanticLabel": "فتح محرر الصوت",
@@ -3010,7 +2533,6 @@
     "videoEditorPickColorTitle": "اختيار لون",
     "videoEditorPlayPauseSemanticLabel": "تشغيل الفيديو أو إيقافه مؤقتًا",
     "videoEditorPlaySemanticLabel": "تشغيل",
-    "videoEditorRecordedAudioLabel": "الصوت المسجل",
     "videoEditorVoiceOverLabel": "تعليق صوتي",
     "videoEditorVoiceOverTakeName": "تسجيل {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "تسجيل تعليق صوتي",
@@ -3046,7 +2568,6 @@
     "videoEditorSaveSelectedClip": "حفظ المقطع المحدد",
     "videoEditorSelectFontSemanticLabel": "اختيار خط",
     "videoEditorShowTimelineSemanticLabel": "إظهار الجدول الزمني",
-    "videoEditorSplitClip": "تقسيم المقطع",
     "videoEditorSplitLabel": "تقسيم",
     "videoEditorSplitFailed": "فشل التقسيم. يرجى المحاولة مرة أخرى.",
     "videoEditorSplitPlayheadOutsideClip": "يجب أن يكون رأس التشغيل داخل المقطع المحدد للتقسيم.",
@@ -3147,27 +2668,12 @@
     "videoEditorTimelineTrimEndSemanticLabel": "قص النهاية",
     "videoEditorTimelineTrimStartSemanticLabel": "قص البداية",
     "videoEditorUndoSemanticLabel": "تراجع",
-    "videoEditorUnmuteAudioSemanticLabel": "إلغاء كتم الصوت",
     "videoEditorVideoTimelineSemanticLabel": "الجدول الزمني للفيديو",
     "videoMetadataAddCollaboratorSemanticLabel": "إضافة متعاون",
     "videoMetadataClosePostDetailsSemanticLabel": "إغلاق تفاصيل المنشور",
     "videoMetadataClassicDoneButton": "تم",
     "videoMetadataClosePreviewSemanticLabel": "إغلاق معاينة الفيديو",
-    "videoMetadataCollaboratorsCount": "{count}/{max} متعاونين",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataCollaboratorsHelpMessage": "يُضاف المتعاونون كمبدعين مشاركين في هذا المنشور. يمكنك إضافة الأشخاص الذين تتابعهم بشكل متبادل فقط، ويظهرون في بيانات المنشور عند نشره.",
-    "videoMetadataCollaboratorsHelpTooltip": "كيفية عمل المتعاونين",
     "videoMetadataCollaboratorsLabel": "المتعاونون",
-    "videoMetadataContentWarningDoneButton": "تم",
     "videoMetadataContentWarningLabel": "تحذير المحتوى",
     "videoMetadataContentWarningSelectAllThatApply": "اختر كل ما ينطبق على محتواك",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "لا يمكن الإشارة إلى هذا المبدع.",
@@ -3179,7 +2685,6 @@
             }
         }
     },
-    "videoMetadataDeleteTagSemanticLabel": "حذف",
     "videoMetadataDescriptionLabel": "الوصف",
     "videoMetadataDismissHelpDialogSemanticLabel": "إغلاق مربع حوار المساعدة",
     "videoMetadataExpirationLabel": "انتهاء الصلاحية",
@@ -3187,19 +2692,8 @@
     "videoMetadataFormNotReadyHint": "أكمل النموذج للتفعيل",
     "videoMetadataGoToLibraryButton": "الذهاب إلى المكتبة",
     "videoMetadataGotItButton": "فهمت!",
-    "videoMetadataInspiredByHelpMessage": "استخدم هذا لإعطاء الفضل. يختلف رصيد الإلهام عن المتعاونين: يُقرّ بالتأثير، لكنه لا يُضيف شخصًا كمبدع مشارك.",
-    "videoMetadataInspiredByHelpTooltip": "كيفية عمل أرصدة الإلهام",
     "videoMetadataInspiredByLabel": "مستلهم من",
-    "videoMetadataInspiredByNone": "لا شيء",
     "videoMetadataLimitReachedWarning": "تم الوصول إلى حد 64 كيلوبايت. أزل بعض المحتوى للمتابعة.",
-    "videoMetadataMustMutuallyFollowSnackbar": "يجب أن تتابع {name} بشكل متبادل لإضافته كمتعاون.",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataMutualFollowersSearchText": "المتابعون المتبادلون",
     "videoMetadataOpenPreviewSemanticLabel": "فتح شاشة معاينة المنشور",
     "videoMetadataPausePreviewSemanticLabel": "إيقاف المعاينة مؤقتًا",
@@ -3208,8 +2702,6 @@
     "videoMetadataPostDetailsTitle": "تفاصيل المنشور",
     "videoMetadataPostSemanticLabel": "زر النشر",
     "videoMetadataPublishVideoHint": "نشر الفيديو في الخلاصة",
-    "videoMetadataRemoveCollaboratorSemanticLabel": "إزالة المتعاون",
-    "videoMetadataRemoveInspiredBySemanticLabel": "إزالة مصدر الإلهام",
     "videoMetadataRemoveSemanticLabel": "إزالة",
     "videoMetadataSaveForLaterButton": "حفظ لاحقًا",
     "videoMetadataSaveForLaterSemanticLabel": "زر الحفظ لاحقًا",
@@ -3356,7 +2848,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "تعذّر الوصول إلى الريلاي. تحقق من اتصالك وحاول مرة أخرى.",
     "shareMenuDeletePartiallyConfirmed": "تم الحذف. لم تؤكّد كل المرحّلات، لذا قد يظل ظاهرًا في تطبيقات أخرى.",
     "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
-    "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
     "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
     "fullscreenFeedEmptyMessage": "لم يتبقَّ شيء لتشغيله هنا",
     "invitesGenerateCardTitle": "{count, plural, zero{لا توجد دعوات جاهزة للإنشاء} one{دعوة واحدة جاهزة للإنشاء} two{دعوتان جاهزتان للإنشاء} few{{count} دعوات جاهزة للإنشاء} many{{count} دعوة جاهزة للإنشاء} other{{count} دعوة جاهزة للإنشاء}}",
@@ -3400,9 +2891,7 @@
         }
     },
     "notificationSystemUpdate": "لديك تحديث جديد",
-    "notificationSomeoneLikedYourVideo": "شخص ما أعجب بفيديوك",
     "peopleListsAddToList": "أضف إلى القائمة",
-    "peopleListsAddToListSubtitle": "ضع هذا المنشئ في إحدى قوائمك",
     "peopleListsSheetTitle": "أضف إلى القائمة",
     "peopleListsEmptyTitle": "لا توجد قوائم بعد",
     "peopleListsEmptySubtitle": "أنشئ قائمة لبدء تجميع الأشخاص.",
@@ -3478,6 +2967,13 @@
     "profileMyLibraryLabel": "مكتبتي",
     "profileMessageLabel": "رسالة",
     "profileDeletedAccountName": "حساب محذوف",
+    "inboxActionReportVanishedAccount": "الإبلاغ عن هذا الحساب",
+    "inboxActionBlockVanishedAccount": "حظر هذا الحساب",
+    "inboxActionUnblockVanishedAccount": "إلغاء حظر هذا الحساب",
+    "inboxReportedVanishedAccount": "تم الإبلاغ عن هذا الحساب",
+    "inboxBlockedVanishedAccount": "تم حظر هذا الحساب",
+    "inboxUnblockedVanishedAccount": "تم إلغاء حظر هذا الحساب",
+    "inboxRemoveConfirmBodyVanishedAccount": "يؤدي هذا إلى إزالة المحادثة من صندوق الوارد. إذا راسلك مرة أخرى، تبدأ محادثة جديدة.",
     "inboxConversationDeletedAccountSubtitle": "تم حذف هذا الحساب",
     "profileUserFallback": "مستخدم",
     "@profileUserFallback": {
@@ -3647,15 +3143,7 @@
     "nostrSettingsMoveAccountSubtitle": "نزّل أرشيفك وانقل منشوراتك ومقاطع الفيديو الخاصة بك إلى مرحّل أو خادم وسائط آخر.",
     "nostrSettingsRemoveKeys": "إزالة المفاتيح من الجهاز",
     "nostrSettingsRemoveKeysSubtitle": "احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.",
-    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.",
-    "nostrSettingsFailedToRemoveKeys": "فشلت إزالة المفاتيح: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة هذا الحساب من هذا الجهاز. حاول مرّة أخرى.",
     "nostrSettingsDeleteAccount": "حذف الحساب والبيانات",
     "nostrSettingsDeleteAccountSubtitle": "يرسل طلبات حذف لمحتواك ويسجّل خروجك من هذا الجهاز. قد تحتفظ المحوّلات والعملاء وفهارس البحث والأجهزة الأخرى المسجّلة الدخول بنسخ.",
     "safetySettingsWhatYouSee": "ما تراه",
@@ -3741,14 +3229,6 @@
     },
     "discoverListsTitle": "اكتشف القوائم",
     "discoverListsFailedToLoad": "فشل تحميل القوائم",
-    "discoverListsFailedToLoadWithError": "فشل تحميل القوائم: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "جاري اكتشاف القوائم العامة...",
     "discoverListsRelayTimeout": "لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.",
     "discoverListsServiceUnavailable": "الخدمة غير متاحة.",
@@ -3808,14 +3288,6 @@
     "bugReportDiagnosticsNotice": "ستُرفَق معلومات الجهاز والسجلات تلقائيًا.",
     "bugReportSuccessMessage": "شكرًا لك! استلمنا تقريرك وسنستخدمه لجعل Divine أفضل.",
     "bugReportSendFailed": "فشل إرسال تقرير الخطأ. حاول مرّة أخرى لاحقًا.",
-    "bugReportFailedWithError": "فشل إرسال تقرير الخطأ: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "إرسال الطلب",
     "featureRequestSubjectHint": "ملخّص قصير لفكرتك",
     "featureRequestDescriptionRequiredLabel": "ماذا تودّ؟ *",
@@ -3826,14 +3298,6 @@
     "featureRequestWhenHint": "صِف المواقف التي ستساعد فيها",
     "featureRequestSuccessMessage": "شكرًا لك! استلمنا طلب الميزة وسنراجعه.",
     "featureRequestSendFailed": "فشل إرسال طلب الميزة. حاول مرّة أخرى لاحقًا.",
-    "featureRequestFailedWithError": "فشل إرسال طلب الميزة: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "المتابَعون",
     "followingTitleForName": "متابَعو {displayName}",
     "@followingTitleForName": {
@@ -3860,9 +3324,6 @@
     "followSortTitle": "الترتيب حسب",
     "followSortNewest": "الأحدث أولاً",
     "followSortOldest": "الأقدم أولاً",
-    "reportMessageTitle": "الإبلاغ عن الرسالة",
-    "reportMessageWhyReporting": "لماذا تبلّغ عن هذه الرسالة؟",
-    "reportMessageSelectReason": "اختر سببًا للإبلاغ عن هذه الرسالة",
     "newMessageTitle": "رسالة جديدة",
     "newMessageFindPeople": "ابحث عن أشخاص",
     "newMessageNoContacts": "لا جهات اتصال.\nتابع الناس لتراهم هنا.",
@@ -3919,9 +3380,9 @@
   "blueskySetUpHandle": "إعداد",
     "blueskyTemporarilyUnavailable": "النشر على Bluesky غير متاح مؤقتًا. حاول مرة أخرى.",
     "invitesNoneAvailable": "لا توجد دعوات متاحة الآن",
-    "invitesShareWithPeople": "شارك diVine مع من تعرفهم",
+    "invitesShareWithPeople": "شارك Divine مع من تعرفهم",
     "invitesUsedInvites": "الدعوات المستخدمة",
-    "invitesShareMessage": "انضمّ إليّ على diVine! استخدم رمز الدعوة {code} للبدء:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "انضمّ إليّ على Divine! استخدم رمز الدعوة {code} للبدء:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3393,7 @@
     "invitesCopyInvite": "نسخ الدعوة",
     "invitesCopied": "تم نسخ الدعوة!",
     "invitesShareInvite": "مشاركة الدعوة",
-    "invitesShareSubject": "انضمّ إليّ على diVine",
+    "invitesShareSubject": "انضمّ إليّ على Divine",
     "invitesClaimed": "تم استخدامها",
     "invitesCouldNotLoad": "تعذّر تحميل الدعوات",
     "invitesRetry": "إعادة المحاولة",
@@ -4000,6 +3461,12 @@
     "badgeDetailEditAction": "تعديل الشارة",
     "badgeDetailShareAction": "مشاركة",
     "badgeDetailShareMessage": "شاهد هذه الشارة على Divine: {link}",
+    "badgeDetailRevokeAction": "استرجاع الشارة",
+    "badgeDetailRevokeTitle": "تسترجع هذه الشارة؟",
+    "badgeDetailRevokeBody": "يطلب هذا من المُرحِّلات إسقاط ما منحته لهذا الشخص. يمكن للمُرحِّلات أن ترفض، وإن كان قد ثبّت الشارة على ملفه فستبقى هناك حتى يزيلها بنفسه. وفي كل الأحوال لن يُخطر بذلك.",
+    "badgeDetailRevokeSelfBody": "يطلب هذا من المُرحِّلات إسقاط ما منحته لنفسك، ويزيل الشارة من ملفك. وإن رفضت المُرحِّلات الحذف، فلن يتغيّر شيء.",
+    "badgeDetailRevokeConfirm": "استرجاع",
+    "badgeDetailRevokeSuccess": "تم استرجاع الشارة",
     "badgeDetailBlockClaimantsAction": "حظر من يضعون الشارة",
     "badgeDetailBlockClaimantsTitle": "حظر من يضعون الشارة",
     "badgeDetailBlockClaimantsLoadError": "تعذّر تحميل من يضعون هذه الشارة",
@@ -4032,8 +3499,6 @@
     "authInfoBrowserExtensionTitle": "إضافة المتصفح",
     "authInfoBrowserExtensionDescription": "سجّل الدخول باستخدام إضافة متصفح NIP-07 مثل Alby أو nos2x. تبقى مفاتيحك داخل الإضافة — Divine لا يراها أبدًا.",
     "soundsAlreadySavedToLibrary": "موجود بالفعل في الأصوات",
-    "soundsAvailabilityCommunity": "المجتمع",
-    "soundsAvailabilityPrivate": "خاص",
     "soundsRemoveSavedSound": "إزالة الصوت",
     "savedSoundSaveAction": "حفظ",
     "savedSoundPausePreviewAction": "إيقاف المعاينة مؤقتًا",
@@ -4050,11 +3515,8 @@
     "soundsSavedToLibrary": "حُفظ في الأصوات",
     "videoEditorAudioCategoryFeatured": "مميز",
     "videoEditorAudioCategoryMySounds": "أصواتي",
-    "videoEditorAudioFeaturedEmptySubtitle": "سنضع أصواتًا مميزة هنا فور جاهزيتها.",
-    "videoEditorAudioFeaturedEmptyTitle": "الأصوات المميزة قريبًا",
     "videoMetadataAudioReuseSubtitle": "اسمح للآخرين بحفظ صوت هذا الفيديو وإعادة استخدامه.",
     "publishAudioReuseDegradedWarning": "تم نشر فيديوك، لكن الصوت لم يُنشر. عدّل الفيديو لمشاركته.",
-    "videoMetadataAudioReuseTitle": "انشر هذا الصوت",
     "videoMetadataShareReplyToFeedTitle": "شارك أيضًا في موجزي",
     "videoMetadataShareReplyToFeedSubtitle": "إيقافه يبقي هذا الفيديو داخل سلسلة التعليقات فقط.",
     "commentsRecordVideoButtonLabel": "سجّل تعليق فيديو",
@@ -4215,14 +3677,12 @@
     "videoEditorChromaKeyRemoveFailed": "تعذّر إزالة الشاشة الخضراء. مقطعك كما هو دون تغيير.",
     "videoEditorChromaKeyApplying": "جارٍ تطبيق الشاشة الخضراء…",
     "videoEditorChromaKeyPreviewUnavailable": "لا يستطيع هذا الجهاز عرض المعاينة المباشرة. لكن إعداداتك ستُطبَّق عند التصدير.",
-    "videoEditorOriginalAudioLabel": "الصوت الأصلي",
     "videoEditorClipVolumeLabel": "مقطع {index}",
     "dmReactionAddCustomA11yLabel": "إضافة تفاعل إيموجي مخصص",
     "dmReelReplyComposerHint": "مراسلة {name}…",
     "dmReelReplyComposerHintSelf": "الرد على نفسك…",
     "dmReelReplyComposerSemanticLabel": "الرد على هذا الريل",
     "dmReelReplyViewChat": "عرض المحادثة",
-    "dmReelReplyViewChatA11yLabel": "فتح المحادثة",
     "dmReelReplySentAnnouncement": "تم إرسال الرد",
     "dmReelReactionSentAnnouncement": "تفاعلت بـ {emoji}",
     "dmReelReplyFailed": "تعذّر الإرسال",
@@ -4276,7 +3736,6 @@
     "reportReasonCsam": "الاعتداء الجنسي على الأطفال",
     "reportReasonCsamSubtitle": "محتوى يصوّر الاعتداء الجنسي على القاصرين",
     "minorAccountReviewWelcomePageTitle": "دليل العائلة",
-    "minorAccountReviewWelcomeCta": "لم تبلغ 16 بعد؟ لا بأس. إليك ما يمكنك فعله.",
     "minorAccountReviewWelcomeTitle": "لم تبلغ 16 بعد؟ لا بأس.",
     "minorAccountReviewWelcomeBody": "دخولك إلى هذه الصفحة بدل أن تختار ببساطة الإجابة التي تُدخلك أمر مهم. إنه يدل على الصدق والشجاعة والاهتمام الحقيقي بمن حولك.\n\nالقواعد الخاصة بمن هم دون 16 تختلف حسب مكان إقامتك. في Divine نريد للعائلات أن تتحدث في الأمر معًا وتقرر كيف يبدو الاستخدام الصحي لوسائل التواصل الاجتماعي.",
     "minorAccountReviewModerationTitle": "نحتاج خطوة أخرى",
@@ -4290,7 +3749,6 @@
     "minorAccountReviewChooseAgeBandTitle": "اختر المسار المناسب",
     "minorAccountReviewUnder13Cta": "أقل من 13",
     "minorAccountReviewTeenCta": "من 13 إلى 15 عامًا",
-    "minorAccountReviewFamilyResourcesTitle": "مفيد للعائلات",
     "minorAccountReviewFamilyResourcesBody": "زر دليل Divine للعائلات للحصول على نصائح عملية وأدوات للحوار وموارد تساعد المراهقين على استخدام وسائل التواصل بأمان أكبر.",
     "minorAccountReviewFamilyResourcesCta": "احصل على أدلة ونصائح للعائلات",
     "minorAccountReviewFooter": "إذا كنت في 16 أو أكبر ووصلت إلى هنا بالخطأ، تواصل مع دعم Divine ليراجع الأمر شخص حقيقي.",
@@ -4316,9 +3774,6 @@
     "minorAccountReviewOpenSupportCenter": "فتح مركز الدعم",
     "minorAccountReviewOpenModerationMessage": "فتح رسالة الإشراف",
     "minorAccountReviewOpenReviewPage": "فتح صفحة المراجعة",
-    "minorAccountReviewMoveAccountTitle": "يمكنك أخذ حسابك معك",
-    "minorAccountReviewMoveAccountBody": "لا يزال بإمكانك استخدام هوية Divine الخاصة بك على بنية تحتية أخرى. انقل حسابك أو نزّل أرشيفك.",
-    "minorAccountReviewMoveAccountCta": "نقل حسابك",
     "minorAccountReviewCheckAgain": "تحقق مرة أخرى",
     "minorAccountReviewLogOut": "تسجيل الخروج",
     "minorAccountReviewNextStepTitle": "الخطوة التالية",
@@ -4427,7 +3882,6 @@
     "devOptionsMinorReviewUnder13Title": "محاكاة حالة دعم لمن هم دون 13",
     "devOptionsMinorReviewUnder13Subtitle": "حساب مقيّد مع تعليمات بريد الوالدين فقط",
     "devOptionsMinorReviewClearedToast": "تم مسح محاكاة مراجعة حساب القاصر",
-    "devOptionsMinorReviewTeenEnabledToast": "تم تفعيل حالة المراجعة المحاكاة 13–15",
     "devOptionsMinorReviewUnder13EnabledToast": "تم تفعيل حالة الدعم المحاكاة لمن هم دون 13",
     "devOptionsProtectedMinorSimulationTitle": "محاكاة القاصر المحمي",
     "devOptionsProtectedMinorCurrentStateLabel": "الحالة الحالية",
@@ -4452,7 +3906,7 @@
   "devOptionsInviteAvailabilityServerLoading": "قيمة الخادم: جارٍ التحميل",
   "devOptionsInviteAvailabilityServerEnabled": "قيمة الخادم: مفعّلة",
   "devOptionsInviteAvailabilityServerDisabled": "قيمة الخادم: معطّلة",
-  "devOptionsInviteAvailabilityServerUnknown": "قيمة الخادم: غير معروفة (مفعّلة افتراضيًا)",
+  "devOptionsInviteAvailabilityServerUnknown": "قيمة الخادم: غير معروفة",
   "devOptionsInviteAvailabilityOverrideNone": "تجاوز: استخدم قيمة الخادم",
   "devOptionsInviteAvailabilityOverrideEnabled": "تجاوز: فرض التفعيل",
   "devOptionsInviteAvailabilityOverrideDisabled": "تجاوز: فرض التعطيل",
@@ -4472,22 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "حسب القواعد في المكان الذي تعيش فيه، قد تتمكن من العودة وطلب حساب خاص بك. وفي تلك الحالة، إذا كان عمرك بين 13 و15، ستحتاج موافقة أحد الوالدين أو الوصي.",
     "minorAccountReviewParentConsentPauseNote": "هذه وقفة مؤقتة ريثما يراجع فريق دعم Divine الفيديو. إذا تمت الموافقة عليه، سيرشدك الفريق خلال إعداد الحساب الجديد.",
     "minorAccountReviewUnder13WhyTitle": "وإليك السبب",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
-    "notificationSettingsSystem": "النظام",
-    "notificationSettingsSystemSubtitle": "تحديثات التطبيق ورسائل النظام",
-    "notificationSettingsPushNotificationsSection": "الإشعارات الفورية",
-    "notificationSettingsPushNotifications": "الإشعارات الفورية",
-    "notificationSettingsPushNotificationsSubtitle": "تلقّي الإشعارات عندما يكون التطبيق مغلقًا",
-    "notificationSettingsSound": "الصوت",
-    "notificationSettingsSoundSubtitle": "تشغيل صوت مع الإشعارات",
-    "notificationSettingsVibration": "الاهتزاز",
-    "notificationSettingsVibrationSubtitle": "الاهتزاز مع الإشعارات",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4508,7 +3946,6 @@
     "videoEditorTransformFrameFailed": "تعذّر تحويل الإطار. يرجى المحاولة مرة أخرى.",
     "videoEditorTransformRotateLabel": "تدوير",
     "videoEditorTransformFlipLabel": "قلب",
-    "videoEditorTransformRatioLabel": "النسبة",
     "videoEditorTransformResetLabel": "إعادة تعيين",
     "videoEditorTransformApplySemanticLabel": "تطبيق التحويل",
     "videoEditorTransformCancelSemanticLabel": "إلغاء التحويل",
@@ -4542,6 +3979,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "حذف المقاطع المحددة",
     "videoEditorDeleteSelectedFramesSemanticLabel": "حذف الإطارات المحددة",
     "videoEditorReverseSelectedFramesSemanticLabel": "عكس الإطارات المحددة",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "تكرار الإطارات المحددة",
     "videoEditorStopMotionTooShortSnackbar": "يجب أن يكون الفيديو {seconds} ثانية على الأقل — التقط بضعة إطارات إضافية.",
     "videoEditorMergeProgressLabel": "لحظة من فضلك، نقوم بدمج مقاطعك",
     "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى.",
@@ -4651,8 +4089,9 @@
     "@inboxConversationActionsSheetLabel": {"description": "Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens."},
     "inboxConversationTileLabel": "محادثة {displayName}",
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
-    "inboxConversationTileLabelUnread": "غير المقروءة، محادثة {displayName}",
+    "inboxConversationTileLabelUnread": "غير مقروءة، محادثة {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} و{count, plural, =1{شخص آخر} =2{شخصان آخران} few{{count} أشخاص آخرين} other{{count} شخصًا آخر}}",
     "inboxConversationTileLongPressHint": "عرض إجراءات المحادثة",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "إجراءات القائمة",
@@ -4799,6 +4238,8 @@
     "inboxRequestsMarkAllRead": "وسم جميع الطلبات كمقروءة",
     "inboxRequestsRemoveAll": "إزالة جميع الطلبات",
     "messageRequestDeclineAndRemoveButton": "رفض وإزالة",
+    "messageRequestDeclinedSnackbar": "تم رفض طلب {displayName}",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
     "messageRequestLoadFailed": "تعذّر تحميل هذا الطلب.",
     "messageRequestFollowersCount": "{count} متابِع",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
@@ -4812,13 +4253,6 @@
     "@messageRequestWantsToMessageYou": {"placeholders": {"displayName": {"type": "String"}, "messageText": {"type": "String"}}},
     "deleteAccountAccountChanged": "لقد بدّلت الحسابات، لذا لم يُحذف أي شيء. أعد فتح الحذف للحساب الذي تريد إزالته.",
     "@deleteAccountAccountChanged": {"description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."},
-    "deleteAccountAccountChangedAfterDeletion": "تم قبول بعض طلبات الحذف، لكن التنظيف توقف لأنك بدّلت الحسابات. سجّل الدخول مجددًا إلى الحساب الأصلي لإتمام العملية.",
-    "deleteAccountBurnUsernameFailed": "تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.",
-    "@deleteAccountBurnUsernameFailed": {"description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."},
-    "deleteAccountBurnUsernameReleased": "تم تحرير اسم المستخدم {username} نهائيًا، لكن تعذّر علينا إكمال حذف حسابك. اضغط «حذف» مرّة أخرى للإنهاء.",
-    "@deleteAccountBurnUsernameReleased": {"description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
-    "deleteAccountBurnUsernameToggle": "تخلَّ نهائيًا أيضًا عن {username}",
-    "@deleteAccountBurnUsernameToggle": {"description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
     "deleteAccountConfirmDeletePrompt": "للتأكيد، اكتب:",
     "@deleteAccountConfirmDeletePrompt": {"description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."},
     "deleteAccountConfirmUsernamePrompt": "للتأكيد، اكتب اسم المستخدم الخاص بك:",
@@ -4826,11 +4260,19 @@
     "deleteAccountConfirmationHint": "اكتب DELETE",
     "deleteAccountConfirmationHintUsername": "اكتب اسم المستخدم الخاص بك",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
-    "deleteAccountContentDeletionFailed": "فشل حذف المحتوى من المحوّلات",
-    "deleteAccountRelayConfirmationFailed": "تعذّر علينا تأكيد حذف الحساب مع أي ريلاي. تحقق من اتصالك وحاول مرة أخرى.",
     "deleteAccountDeleteAllContentButton": "حذف كل المحتوى",
+    "deleteAccountDeletionUnavailable": "حذف الحساب غير متاح الآن. لم يتم حذف أي شيء.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
+    "accountDeletionRecoveryTitle": "إكمال حذف حسابك",
+    "accountDeletionRecoveryBody": "تعذّر علينا إكمال حذف حسابك. اسم المستخدم الخاص بك محجوز لك ولا يزال من الممكن استعادته.",
+    "accountDeletionRestoreUsername": "استعادة اسم المستخدم",
+    "accountDeletionFinishingBody": "لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.",
+    "accountDeletionCancellingBody": "نُلغي طلب الحذف الآن. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.",
+    "accountDeletionRecoveryFailed": "تعذّرت استعادة اسم المستخدم حتى الآن. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.",
+    "accountDeletionUsernameRestored": "تمّت استعادة اسم المستخدم. لم يُحذف حسابك.",
+    "accountDeletionRecoveryStatusFailed": "تعذّر التحقق من حالة الحذف. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.",
     "deleteAccountFinalConfirmationTitle": "⚠️ التأكيد النهائي",
     "deleteAccountKeyDeletionWarning": "تم إرسال طلبات الحذف، لكن قد لا تكون مفاتيحك أُزيلت بالكامل من هذا الجهاز. اذهب إلى الإعدادات ← مفاتيح Nostr ← إزالة المفاتيح لإعادة المحاولة.",
     "deleteAccountPreparingDeletion": "جارٍ التحضير للحذف...",
@@ -4840,17 +4282,10 @@
     "deleteAccountRemoveKeysBody": "هذا يزيل تسجيل الدخول المحلي لهذا الحساب من هذا الجهاز. لن يحذف حسابك في Divine أو هويتك في Nostr.\n\nستبقى مسوداتك ومقاطعك محفوظة على هذا الجهاز لهذا الحساب. إذا كان هذا آخر حساب محلي لديك، فستعود إلى شاشة تسجيل الدخول.",
     "deleteAccountRemoveKeysConfirm": "إزالة من الجهاز",
     "deleteAccountRemoveKeysTitle": "إزالة هذا الحساب من هذا الجهاز؟",
-    "deleteAccountServerDeletionFailed": "تعذّر حذف حسابك من الخادم. يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",
-    "deleteAccountServerDeletionRequiresReauth": "تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. سجّل الدخول مرّة أخرى لإكمال العملية.",
+    "deleteAccountServerDeletionFailed": "تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. حاول مرّة أخرى بعد قليل.",
     "deleteAccountSuccess": "تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.",
     "deleteAccountSuccessContentUnverified": "تم طلب حذف الحساب. تعذّر تأكيد حذف بعض المنشورات الحالية بشكل فردي.",
     "deleteAccountWarningBody": "هذا يرسل طلبات حذف لحسابك ومحتواك، ويحذف حساب Divine الخاص بك عند الإمكان، ويسجّل خروجك من هذا الجهاز. قد تحتفظ بعض المحوّلات والعملاء وفهارس البحث بنسخ. تبقى الأجهزة الأخرى المسجّلة الدخول نشطة حتى تزيل المفاتيح منها.",
-    "exportProgressStageApplyingTextOverlay": "جارٍ إضافة النص التراكبي...",
-    "exportProgressStageComplete": "اكتمل التصدير!",
-    "exportProgressStageConcatenating": "جارٍ دمج المقاطع...",
-    "exportProgressStageError": "فشل التصدير",
-    "exportProgressStageGeneratingThumbnail": "جارٍ إنشاء الصورة المصغّرة...",
-    "exportProgressStageMixingAudio": "جارٍ إضافة الصوت...",
     "findPeopleAnonymousUser": "مجهول",
     "findPeopleNoContacts": "لم يتم العثور على جهات اتصال.\nابدأ بمتابعة الأشخاص لتراهم هنا.",
     "geoBlockedCityLabel": "المدينة",
@@ -4882,25 +4317,19 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "الصوت: {soundName} بواسطة {creatorName}. اضغط لعرض التفاصيل.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "فشل تحميل الصوت: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "فشل تحميل الصوت. يرجى المحاولة مرّة أخرى.",
     "soundDetailNotFoundMessage": "تعذّر العثور على هذا الصوت",
     "soundDetailNotFoundTitle": "الصوت غير موجود",
-    "videoFeedDescriptionSemanticLabel": "وصف الفيديو",
     "videoFeedLoopCountLabel": "🔁 {count} تكرار",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "عدد تكرارات الفيديو",
     "originalSoundUnavailableBody": "الصوت من هذا الفيديو غير متاح بشكل منفصل.",
     "originalSoundByCreator": "صوت أصلي - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "عمليات الرفع المعلّقة ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "نشر هذا الشخص مقطع Vine أصليًا عثرت عليه Divine في الأرشيف. هذه ليست شارة توثيق حساب.",
     "profileBadgeCheckmarkTitle": "علامة الملف الشخصي",
-    "profileBadgeCheckmarkBody": "تمنح Divine هذه العلامة لحسابات الفريق ولمجموعة صغيرة من الملفات الشخصية المعتمدة يدويًا. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.",
-    "shareVideoInListsCount": "{count, plural, zero{في لا قوائم} one{في قائمة واحدة} two{في قائمتين} few{في {count} قوائم} many{في {count} قائمة} other{في {count} قائمة}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
+    "profileBadgeCheckmarkBody": "تمنح Divine هذه العلامة لحسابات الفريق. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.",
     "unfollowConfirmButton": "إلغاء المتابعة",
     "videoClipSaveFailed": "فشل حفظ المقطع",
     "videoClipSaveTo": "حفظ في {destination}",
@@ -4921,7 +4350,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "لماذا لن نطلب منك ببساطة الرجوع",
     "minorAccountReviewUnder13HonestyBody": "الكثير من الإنترنت مُصمَّم لمكافأة الناس على قول أي شيء يعبرهم البوابة. لا نظن أن هذا أمر جيد. نعم، يمكنك الرجوع والقول إنك أكبر سنًا مما أنت عليه، لكن ذلك لن يكون صادقًا، ولن ندرّبك على الكذب لتحصل على ما تريد.",
-    "minorAccountReviewUnder13LegalTitle": "لماذا لا يزال الجواب لا",
     "minorAccountReviewUnder13LegalBody": "نحاول مساعدة الشباب على استخدام Divine بطرق صحية وإيجابية لهم وللأشخاص من حولهم. علينا أيضًا اتباع قوانين تختلف من مكان لآخر. لذا، إذا كنت دون 13 عامًا، فالجواب هو أنه لا يمكنك امتلاك حسابك الخاص اليوم.",
     "minorAccountReviewParentConsentHonestyTitle": "لماذا نطلب مشاركة أحد الوالدين أو ولي الأمر",
     "minorAccountReviewParentConsentHonestyBody": "على Divine اتباع القوانين المتعلّقة بالعمر حول العالم. نعلم أيضًا أن معظم بوابات التحقق من العمر التقنية غير مثالية. بدلاً من التظاهر بأن القواعد غير موجودة أو أن الكذب بشأن عمرك أمر رائع، نريد من المراهقين والعائلات اتخاذ قرارات مدروسة حول أفضل طريقة لاستخدام Divine. لهذا السبب، بالنسبة لمن هم بين 13 و15 عامًا، نطلب من الوالدين أن يكونوا جزءًا من عملية إنشاء الحساب.",
@@ -5061,8 +4489,6 @@
   "authSignInOptionsHintCta": "عرض جميع خيارات تسجيل الدخول",
     "videoEditorStopMotionFramesPerImageLabel": "الإطارات لكل صورة",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} إطارات لكل صورة",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "زيادة الإطارات لكل صورة",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "تقليل الإطارات لكل صورة",
     "videoEditorStopMotionFrameSemanticLabel": "إطار الحركة الإيقافية {position} من {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, one{إطار واحد} two{إطاران} few{{count} إطارات} other{{count} إطار}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "إطارات",
@@ -5196,6 +4622,11 @@
   "libraryCategoryMoveNewCategory": "فئة جديدة",
   "libraryArchiveAction": "أرشفة",
   "libraryUnarchiveAction": "إلغاء الأرشفة",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{الإبقاء في هذه الفئة؟} two{الإبقاء في هاتين الفئتين؟} other{الإبقاء في هذه الفئات؟}}",
+  "libraryArchiveKeepCategoryAction": "الإبقاء في {name}",
+  "libraryArchiveKeepCategoryActionMixed": "الإبقاء في فئاتها",
+  "libraryArchiveRemoveCategoryAction": "الإزالة من {name}",
+  "libraryArchiveRemoveCategoryActionMixed": "الإزالة من فئاتها",
   "libraryMoveSelectedClipsTooltip": "نقل المقاطع المحددة",
   "libraryCategoryEmptyTitle": "لا شيء هنا بعد",
   "libraryCategoryEmptySubtitle": "اختر بعض المقاطع وانقلها إلى هذه الفئة.",
@@ -5243,12 +4674,19 @@
     "dbFailureResetAction": "إعادة تعيين قاعدة البيانات المحلية",
     "dbFailureConfirmTitle": "إعادة تعيين قاعدة البيانات المحلية؟",
     "dbFailureConfirmBody": "يبقى حسابك. تُحذف المسودات والمقاطع المحفوظة على هذا الجهاز — أما الرسائل والخلاصات فتعود من الشبكة.",
-    "dbFailureResetConfirm": "إعادة التعيين والإغلاق",
+    "dbFailureResetConfirm": "إعادة تعيين قاعدة البيانات المحلية الآن",
     "dbFailureCancel": "إلغاء",
     "dbFailureResetFailed": "لم ينجح ذلك. أغلق Divine وحاول مرة أخرى.",
     "dbFailureResetDoneTitle": "تمت إعادة تعيين قاعدة البيانات المحلية",
     "dbFailureResetDoneBody": "أغلق Divine ثم افتحه مجددًا — سيبني التشغيل التالي قاعدة بيانات محلية جديدة.",
   "authSignInOptionsInfo": "حول خيارات تسجيل الدخول",
   "authShowPassword": "إظهار كلمة المرور",
-  "authHidePassword": "إخفاء كلمة المرور"
+  "authHidePassword": "إخفاء كلمة المرور",
+    "followUserSemanticLabel": "متابعة المستخدم",
+    "unfollowUserSemanticLabel": "إلغاء متابعة المستخدم",
+    "commentsLoadingSemanticLabel": "جارٍ تحميل التعليقات",
+    "analyticsWindowAll": "الكل",
+    "followUserIndexedSemanticLabel": "متابعة المستخدم {index}",
+    "unfollowUserIndexedSemanticLabel": "إلغاء متابعة المستخدم {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / شهريًا"
 }

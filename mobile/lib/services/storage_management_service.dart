@@ -145,7 +145,6 @@ class StorageManagementService {
   final Set<String> Function() _protectedTempRenderPaths;
 
   static const String _logName = 'StorageManagementService';
-  static const String _videoCacheDir = 'openvine_video_cache';
   static const String _imageCacheDir = 'openvine_image_cache';
   static const String _seamDir = 'transition_seams';
 
@@ -163,7 +162,7 @@ class StorageManagementService {
     return CacheUsage(
       video: CacheUsageCategory(
         usedBytes: (await _dirSize(
-          Directory(p.join(temp.path, _videoCacheDir)),
+          Directory(p.join(temp.path, kVideoCacheDirectoryName)),
         )).bytes,
         limitBytes: videoCacheLimitBytes(),
       ),
@@ -194,7 +193,9 @@ class StorageManagementService {
     // clearCache() only removes DB-tracked entries; orphaned/leaked files in
     // the cache directories survive (the leak from #5986). Delete the
     // directory contents so the freed size matches what cacheSizeBytes counts.
-    await _deleteDirContents(Directory(p.join(temp.path, _videoCacheDir)));
+    await _deleteDirContents(
+      Directory(p.join(temp.path, kVideoCacheDirectoryName)),
+    );
     await _deleteDirContents(Directory(p.join(temp.path, _imageCacheDir)));
     final protectedPaths = _normalizedProtectedTempRenderPaths();
     await _forEachTempRender(

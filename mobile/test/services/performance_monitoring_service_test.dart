@@ -137,13 +137,6 @@ void main() {
       service = PerformanceMonitoringService();
     });
 
-    test('should initialize without error', () async {
-      // Service initialization should not throw
-      await service.initialize();
-      // If we get here, initialization succeeded
-      expect(true, true);
-    });
-
     test('isEnabled stays false while Firebase is unavailable', () async {
       // The flag gates the instrumented HTTP client (#7122): it must only
       // turn true once Firebase Performance actually came up, never merely

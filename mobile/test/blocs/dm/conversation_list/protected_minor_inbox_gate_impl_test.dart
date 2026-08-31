@@ -48,130 +48,138 @@ void main() {
         officials: officials,
       );
 
-  test('not restricted -> pass-through, no revalidation', () {
-    final gate = build(restricted: false);
-    final input = [
-      conv('a', [self, approved]),
-      conv('b', [self, blocked]),
-    ];
-
-    final out = gate.filter(input, userPubkey: self);
-
-    expect(out, equals(input));
-    verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
-  });
-
-  test('restricted -> keeps only all-approved conversations', () {
-    final gate = build(restricted: true);
-    final out = gate.filter([
-      conv('a', [self, approved]),
-      conv('b', [self, blocked]),
-    ], userPubkey: self);
-
-    expect(out.map((c) => c.id).toList(), ['a']);
-  });
-
-  test(
-    'restricted group hidden unless every non-self participant approved',
-    () {
-      final gate = build(restricted: true);
-      final out = gate.filter([
-        conv('g', [self, approved, blocked]),
-      ], userPubkey: self);
-
-      expect(out, isEmpty);
-    },
-  );
-
-  test(
-    'restricted -> a conversation with no non-self counterparty is hidden '
-    '(fail-closed on the empty set, matching the route guard)',
-    () {
-      // `every`-style approval is vacuously true on an empty counterparty set,
-      // so a self-only / degenerate row would otherwise stay visible while the
-      // conversation_page route guard bounces entry to it. Fail closed.
-      final gate = build(restricted: true);
-      final out = gate.filter([
-        conv('selfonly', [self]),
-        conv('empty', <String>[]),
-        conv('ok', [self, approved]),
-      ], userPubkey: self);
-
-      expect(out.map((c) => c.id).toList(), ['ok']);
-    },
-  );
-
-  test(
-    'restricted -> kicks receive-time revalidation for counterparties',
-    () async {
-      final gate = build(restricted: true);
-      gate.filter([
+  group('filter', () {
+    test('not restricted -> pass-through, no revalidation', () {
+      final gate = build(restricted: false);
+      final input = [
         conv('a', [self, approved]),
+        conv('b', [self, blocked]),
+      ];
+
+      final out = gate.filter(input, userPubkey: self);
+
+      expect(out, equals(input));
+      verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
+    });
+
+    test('restricted -> keeps only all-approved conversations', () {
+      final gate = build(restricted: true);
+      final out = gate.filter([
+        conv('a', [self, approved]),
+        conv('b', [self, blocked]),
       ], userPubkey: self);
 
-      await Future<void>.delayed(Duration.zero);
-      verify(() => officials.isApprovedMinorDmRecipient(approved)).called(1);
-      // self is never revalidated
-      verifyNever(() => officials.isApprovedMinorDmRecipient(self));
-    },
-  );
+      expect(out.map((c) => c.id).toList(), ['a']);
+    });
 
-  test('changes forwards the service verdict-change stream', () {
-    final controller = StreamController<void>.broadcast();
-    addTearDown(controller.close);
-    when(
-      () => officials.onVerdictChanged,
-    ).thenAnswer((_) => controller.stream);
+    test(
+      'restricted group hidden unless every non-self participant approved',
+      () {
+        final gate = build(restricted: true);
+        final out = gate.filter([
+          conv('g', [self, approved, blocked]),
+        ], userPubkey: self);
 
-    final gate = build(restricted: true);
+        expect(out, isEmpty);
+      },
+    );
 
-    expectLater(gate.changes, emits(null));
-    controller.add(null);
+    test(
+      'restricted -> a conversation with no non-self counterparty is hidden '
+      '(fail-closed on the empty set, matching the route guard)',
+      () {
+        // `every`-style approval is vacuously true on an empty counterparty set,
+        // so a self-only / degenerate row would otherwise stay visible while the
+        // conversation_page route guard bounces entry to it. Fail closed.
+        final gate = build(restricted: true);
+        final out = gate.filter([
+          conv('selfonly', [self]),
+          conv('empty', <String>[]),
+          conv('ok', [self, approved]),
+        ], userPubkey: self);
+
+        expect(out.map((c) => c.id).toList(), ['ok']);
+      },
+    );
+
+    test(
+      'restricted -> kicks receive-time revalidation for counterparties',
+      () async {
+        final gate = build(restricted: true);
+        gate.filter([
+          conv('a', [self, approved]),
+        ], userPubkey: self);
+
+        await Future<void>.delayed(Duration.zero);
+        verify(() => officials.isApprovedMinorDmRecipient(approved)).called(1);
+        // self is never revalidated
+        verifyNever(() => officials.isApprovedMinorDmRecipient(self));
+      },
+    );
   });
 
-  test(
-    'changes also emits on notifyRestrictionChanged, so a settled list '
-    're-filters without waiting for the next DM event',
-    () async {
+  group('changes', () {
+    test('changes forwards the service verdict-change stream', () {
+      final controller = StreamController<void>.broadcast();
+      addTearDown(controller.close);
+      when(
+        () => officials.onVerdictChanged,
+      ).thenAnswer((_) => controller.stream);
+
       final gate = build(restricted: true);
-      addTearDown(gate.dispose);
 
-      final emissions = <void>[];
-      final sub = gate.changes.listen(emissions.add);
-      addTearDown(sub.cancel);
+      expectLater(gate.changes, emits(null));
+      controller.add(null);
+    });
 
-      gate.notifyRestrictionChanged();
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'changes also emits on notifyRestrictionChanged, so a settled list '
+      're-filters without waiting for the next DM event',
+      () async {
+        final gate = build(restricted: true);
+        addTearDown(gate.dispose);
 
-      expect(emissions, hasLength(1));
-    },
-  );
+        final emissions = <void>[];
+        final sub = gate.changes.listen(emissions.add);
+        addTearDown(sub.cancel);
 
-  test(
-    'changes merges both sources (verdict flips AND restriction flips)',
-    () async {
-      final verdicts = StreamController<void>.broadcast();
-      addTearDown(verdicts.close);
-      when(() => officials.onVerdictChanged).thenAnswer((_) => verdicts.stream);
+        gate.notifyRestrictionChanged();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emissions, hasLength(1));
+      },
+    );
+
+    test(
+      'changes merges both sources (verdict flips AND restriction flips)',
+      () async {
+        final verdicts = StreamController<void>.broadcast();
+        addTearDown(verdicts.close);
+        when(
+          () => officials.onVerdictChanged,
+        ).thenAnswer((_) => verdicts.stream);
+        final gate = build(restricted: true);
+        addTearDown(gate.dispose);
+
+        final emissions = <void>[];
+        final sub = gate.changes.listen(emissions.add);
+        addTearDown(sub.cancel);
+
+        verdicts.add(null);
+        gate.notifyRestrictionChanged();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emissions, hasLength(2));
+      },
+    );
+  });
+
+  group('notifyRestrictionChanged', () {
+    test('notifyRestrictionChanged after dispose is a safe no-op', () {
       final gate = build(restricted: true);
-      addTearDown(gate.dispose);
+      gate.dispose();
 
-      final emissions = <void>[];
-      final sub = gate.changes.listen(emissions.add);
-      addTearDown(sub.cancel);
-
-      verdicts.add(null);
-      gate.notifyRestrictionChanged();
-      await Future<void>.delayed(Duration.zero);
-
-      expect(emissions, hasLength(2));
-    },
-  );
-
-  test('notifyRestrictionChanged after dispose is a safe no-op', () {
-    final gate = build(restricted: true);
-    gate.dispose();
-
-    expect(gate.notifyRestrictionChanged, returnsNormally);
+      expect(gate.notifyRestrictionChanged, returnsNormally);
+    });
   });
 }

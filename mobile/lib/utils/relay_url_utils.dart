@@ -32,7 +32,6 @@ const _divineHostedRelayHosts = <String>{
   'relay.divine.video',
   'relay.staging.divine.video',
   'relay.poc.dvines.org',
-  'relay.test.dvines.org',
 };
 
 /// True when [url]'s host is a Divine-operated relay host or a loopback host

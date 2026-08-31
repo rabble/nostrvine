@@ -96,6 +96,8 @@ jobs:
           fetch-depth: 0
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
+      - name: 🛍️ Verify update URLs match shipped store identifiers
+        run: bash mobile/scripts/check_store_url_identifiers.sh
 
   generated-files:
     name: Generated Files
@@ -120,6 +122,8 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: 📊 Verify pinned product analytics contract
+        run: dart run tools/check_product_analytics_contract.dart
       - name: 🔒 Verify native transport security
         # Skipped when no native config changed. The guard's only inputs are
         # mobile/android/**, mobile/ios/**, mobile/macos/** and its own
@@ -181,8 +185,22 @@ jobs:
           # locations come from the RoutePaths leaf instead. #7383 (wave #4506).
           bash scripts/check_layer_direction.sh
       - name: 🧪 Verify skipped-test count does not increase (skip-ceiling ratchet)
-        # Skip-debt epic: #4337 (WS-1). Guard fails closed if the baseline can't load.
-        run: bash scripts/check_skip_ceiling.sh
+        run: |
+          # Per-file CEILING over mobile/test, mobile/integration_test and
+          # mobile/packages/*/test, from a Dart AST rather than a regex: the
+          # regex missed a skip: whose reason dart format wrapped onto the next
+          # line, could not see @Skip, and needed one file excluded by name.
+          # Skip-debt epic: #4337 (WS-1) -> #4836. Fails closed if the baseline
+          # can't load.
+          bash scripts/check_skip_ceiling.sh
+      - name: 🧪 Verify no test can pass unconditionally (placeholder ratchet)
+        run: |
+          # Frozen at ZERO: a test whose every assertion is trivially satisfied
+          # (expect(true, isTrue)), or a *_test.dart declaring no test at all.
+          # #3340 removed all 93 sites, so any hit is a regression. A test with
+          # no assertion is deliberately not counted -- imported helpers and
+          # third-party verifiers assert in ways one file cannot see. #3340.
+          bash scripts/check_placeholder_tests.sh
       - name: ⏳ Verify Future.delayed-in-tests count does not increase (ratchet)
         run: bash scripts/check_future_delayed_ceiling.sh
       - name: ⏳ Verify Future.delayed-in-production count does not increase (ratchet)
@@ -205,6 +223,15 @@ jobs:
           # never test/unit/. Fails closed if the base baseline cannot load.
           # Test-org epic: #4337 (WS-7).
           bash scripts/check_test_unit_structure.sh
+      - name: 🧱 Verify no test declaration sits outside a group (test-structure ratchet)
+        run: |
+          # Issue #3615: a flat test file gives the runner nothing to nest, so
+          # failures print as an undifferentiated wall and a file cannot be run
+          # a slice at a time. Freezes the per-file count of test/testWidgets/
+          # blocTest/patrolTest declarations outside any group() so it can only
+          # shrink. Group by method name (repositories/services/clients), event
+          # name (blocs/cubits), or renders/interactions/navigation (widgets).
+          bash scripts/check_ungrouped_tests.sh
       - name: 🧱 Verify every package ships analysis options + a CI workflow (package CI floor)
         run: |
           # Issues #3574 / #3575: optionless packages silently inherit the
@@ -241,17 +268,34 @@ jobs:
         run: bash scripts/check_service_sentinel_ceiling.sh
       - name: 🧯 Verify ARB {error}-interpolation count does not increase (reliability ratchet)
         run: bash scripts/check_arb_error_ceiling.sh
+      - name: 🧭 Verify Maestro suite copy stays aligned (e2e drift guard)
+        run: |
+          # BLOCKING by decision (review on #6978): a copy change that breaks
+          # the E2E suite is real breakage, so this fails the job like every
+          # sibling ratchet above. Unrelated ARB edits that trip it are fixed
+          # by regenerating the baseline in the same PR (UPDATE_BASELINE=1).
+          # Copy drift rotted the Maestro suite silently between 2026-03 and
+          # 2026-08 (#6948): copy in lib/l10n/app_en.arb and the flows diverged
+          # with nothing failing. The guard binds every asserted literal to its
+          # ARB key.
+          bash scripts/check_maestro_copy_drift.sh
+      - name: 🧭 Verify Maestro flow references resolve (e2e drift guard)
+        run: |
+          # Keep this independent from copy drift so contributors see both
+          # failures in one CI run. macOS hides case errors the linux_x2 runner
+          # hard-fails on.
+          bash e2e/maestro/scripts/check_refs.sh
       - name: 📏 Report oversized files (advisory — does not block CI)
         run: |
           # The 800-line file-size ceiling is advisory (team decision): it
-          # reports new oversized files and files that grew past their recorded
-          # ceiling as a warning, but the script always exits 0 and never fails
+          # reports new oversized files and files that grew relative to main as
+          # a warning, but the script always exits 0 and never fails
           # the job. Surface the findings as a GitHub warning annotation so they
           # bubble up to the PR. Oversized-file epic: #4339 (PR-1).
           output="$(bash scripts/check_file_size_ceiling.sh)"
           echo "$output"
           if printf '%s\n' "$output" | grep -q '^WARN \[file_size_ceiling\]'; then
-            echo "::warning title=File-size ceiling (advisory)::One or more Dart files are newly over 800 lines or grew past their recorded ceiling. This is advisory and does not block CI — see the step log for the list."
+            echo "::warning title=File-size ceiling (advisory)::One or more Dart files are newly over 800 lines or grew relative to main. This is advisory and does not block CI — see the step log for the list."
           fi
       - name: 🎨 Verify raw Icons.* count does not increase (DivineIcon ratchet)
         run: |
@@ -286,6 +330,40 @@ jobs:
           # can only shrink. Fix with emitIfOpen / addIfOpen from
           # lib/blocs/close_guard.dart.
           bash scripts/check_post_close_emit_ceiling.sh
+      - name: 🧷 Verify shared-setUp stubs do not accrete (inherited-stub ratchet)
+        run: |
+          # Issue #8399, follow-up to #8170 / #7324. A stub in a shared setUp is
+          # invisible at every call site that inherits it, so a class of bug can
+          # go unobservable across a whole file -- #7324 shipped exactly that
+          # way. The shape also accretes silently: dm_repository_test.dart's
+          # block went from 6 stubs to 21 across 13 PRs, none of which looked
+          # wrong alone. Freezes the per-file count of stubs registered in a
+          # file-level or outermost-group setUp that descendant groups inherit,
+          # for files carrying 10 or more. Fix by declaring the stub in the
+          # groups that depend on it.
+          bash scripts/check_shared_setup_stubs.sh
+      - name: 🔑 Verify no Nostr ID is shortened into a log (full-identifier ratchet)
+        run: |
+          # Issue #3372. Freezes at ZERO the per-file count of Nostr identifiers
+          # shortened on the way into a log/debug sink, across mobile/lib,
+          # mobile/packages, mobile/test and mobile/integration_test. A truncated
+          # id looks correlatable and is not: `npub1abc...wxyz` cannot be grepped
+          # against relay logs or matched to a funnelcake row, and 8 hex of an
+          # event id is 32 bits. UI shortening is NOT counted (display sink), and
+          # secrets are redacted whole rather than shortened — see the script
+          # header. AGENTS.md -> Nostr And Async Rules.
+          bash scripts/check_nostr_id_log_truncation.sh
+      - name: 🪪 Verify pubkeys reach logs as npub plus hex (encoding ratchet)
+        run: |
+          # Issue #8066, successor to #3372. Freezes at ZERO the per-file count
+          # of pubkeys interpolated into a log/debug sink in one encoding across
+          # mobile/lib and mobile/packages. Hex greps against relay and backend
+          # rows; npub is the only form a person can paste into a client, and
+          # Zendesk bug reports are one-way, so the log has to carry both. Fix
+          # with pubkeyForLogs (packages/nostr_sdk/lib/nip19/pubkey_for_logs.dart),
+          # which takes either encoding and truncates neither. Counts, booleans
+          # and collections that merely mention a pubkey are NOT counted.
+          bash scripts/check_pubkey_log_encoding.sh
       - name: 🌍 Verify delegate-less MaterialApp count does not increase (l10n ratchet)
         run: |
           # Issue #3613. Freezes the per-file count of MaterialApp /
@@ -308,6 +386,21 @@ jobs:
           # permanent (units, percentages, ordinals, ratios) and must NEVER be
           # pluralized — each carries a trailing '# reason'.
           bash scripts/check_countable_plural_floor.sh
+      - name: 🗑️ Verify every ARB key is actually rendered (l10n ratchet)
+        run: |
+          # Issue #3630. Freezes the set of app_en.arb keys that nothing
+          # under mobile/lib renders (lib only — a test cannot render a string,
+          # and a findsNothing assertion is evidence the key is DEAD). An
+          # orphaned key is translated
+          # into 21 locales and compiled into AppLocalizations, yet never
+          # rendered — usually while the string it was written for sits
+          # hardcoded in a widget, still broken for non-English users. Nothing
+          # else sees it: arb_consistency_test proves a key exists in every
+          # locale (an orphan passes in all 22), and `flutter analyze` cannot
+          # report an unused getter on a generated class. Baseline entries are
+          # a worklist, each carrying '# wire: <path>:<line>' or
+          # '# staged: <why>'.
+          bash scripts/check_orphaned_arb_key_floor.sh
       - name: 🔐 Verify no profile publish reaches the ungated read provider (#6423)
         run: bash scripts/check_profile_read_write_split.sh
       - name: 🔨 Verify generated files are up-to-date
@@ -375,6 +468,11 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
+    env:
+      # Single copy of the pin: the install step activates this version and the
+      # replay recipe prints it. A second hardcoded copy could drift from what
+      # CI actually ran, which is the failure the recipe exists to prevent.
+      VERY_GOOD_CLI_VERSION: "1.3.0"
     strategy:
       # Every shard must report. Stopping the others on one failure hides
       # additional failures and forces a second full round-trip to find them.
@@ -398,7 +496,7 @@ jobs:
         # Native-asset hooks store downloaded libs under this tree.
         # flutter-action cache: true does not keep it. merge_group can restore
         # but not save (#7197), so only push-to-main warms the cache.
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
@@ -410,15 +508,16 @@ jobs:
         run: bash scripts/ci/warmup_sqlite3mc.sh
       - name: Save dart hook downloads
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && strategy.job-index == 0
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
       - name: 🛠️ Install Very Good CLI
-        # Pinned so the optimizer's bundle mechanics don't float under CI. 1.3.0
-        # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
+        # Pinned so the optimizer's bundle mechanics don't float under CI. The
+        # version lives in VERY_GOOD_CLI_VERSION above so the replay recipe
+        # prints the same one; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
         # mechanics (package workflows pin 1.1.1 via very_good_workflows). #5738.
-        run: dart pub global activate very_good_cli 1.3.0
+        run: dart pub global activate very_good_cli "$VERY_GOOD_CLI_VERSION"
       - name: 🔪 Reduce test/ to this shard
         # --optimization bundles every untagged test file into ONE suite, so
         # --concurrency=4 has nothing left to schedule once the 18 tagged files
@@ -435,7 +534,73 @@ jobs:
         # AppDatabase "database is locked", no path_provider collisions (#3137).
         # concurrency=1 once pushed the job past 1 hour because each tagged file
         # pays a full Dart VM startup; a higher ceiling overlaps those startups.
-        run: very_good test --optimization --concurrency=4 --exclude-tags integration --test-randomize-ordering-seed random
+        #
+        # DIVINE_STRICT_CHANNELS makes the heal-and-blame tearDown in
+        # test/flutter_test_config.dart fail the test that left a shared
+        # MethodChannel handler replaced, instead of only healing it for the
+        # next suite (#5738). Without it the guard repairs the leak silently
+        # and nothing reports who caused it, so the next such regression is
+        # found the same way #5738 was: as an order-dependent failure
+        # cross-attributed to an innocent suite. Turned on once the full suite
+        # was proven clean under it, which the harness comment set as the
+        # condition.
+        #
+        # The seed is drawn here rather than left as `random`. very_good
+        # resolves `random` once and forwards the result to every sub-process,
+        # so a shard already has exactly one seed — but it only ever reaches
+        # the raw log. That is why every replay in #6880 cost a log dig, and
+        # why two of its occurrences were never reproduced at all: nobody
+        # captured one. Drawing it a line earlier keeps the same fresh-per-run
+        # randomness and lets the summary step below survive the failure with
+        # it. FLAGS is exported so that step prints the same options that ran,
+        # instead of a copy that can drift from them.
+        run: |
+          SEED=$(( (RANDOM << 15) | RANDOM ))
+          FLAGS="--optimization --concurrency=4 --exclude-tags integration --dart-define=DIVINE_STRICT_CHANNELS=true"
+          {
+            echo "TEST_SEED=$SEED"
+            echo "TEST_FLAGS=$FLAGS"
+          } >> "$GITHUB_ENV"
+          # Word-split deliberately: FLAGS is a list of separate options.
+          # shellcheck disable=SC2086
+          very_good test $FLAGS --test-randomize-ordering-seed "$SEED"
+      - name: 🎲 Report the seed so this shard can be replayed
+        # A red shard reads as "your branch broke it" even when the branch is
+        # innocent, and the first thing anyone needs is the seed. Publish it
+        # with the exact recipe rather than leaving it in the raw log.
+        if: ${{ failure() && env.TEST_SEED != '' }}
+        run: |
+          shard="${{ strategy.job-index }}/${{ strategy.job-total }}"
+          sha="${{ github.event.pull_request.head.sha || github.sha }}"
+          {
+            echo "### Tests (shard $shard) failed — replay recipe"
+            echo
+            echo "Seed: \`$TEST_SEED\`"
+            echo
+            echo '```bash'
+            echo "# select_test_shard.sh DELETES test files. Use a throwaway worktree."
+            echo "git worktree add /tmp/shard-replay $sha"
+            echo "cd /tmp/shard-replay/mobile"
+            echo "# Pin the toolchain. The optimizer's bundle mechanics are version-sensitive,"
+            echo "# so a stray flutter or very_good on PATH can bundle differently and replay"
+            echo "# green against a failure that is still there. mise install reads the Flutter"
+            echo "# pin from mobile/mise.toml; \`dart pub global run\` needs no PUB_CACHE on PATH."
+            echo "mise install"
+            echo "mise exec -- dart pub global activate very_good_cli $VERY_GOOD_CLI_VERSION"
+            echo "mise exec -- flutter pub get"
+            echo "bash scripts/ci/select_test_shard.sh --total ${{ strategy.job-total }} --index ${{ strategy.job-index }} --force"
+            echo "# CI=true prefixes the test command only. GitHub sets it job-wide, so a"
+            echo "# CI-gated test passes locally without it — but exporting it would also"
+            echo "# satisfy select_test_shard.sh's guard and let that delete run unasked."
+            echo "CI=true mise exec -- dart pub global run very_good_cli:very_good test $TEST_FLAGS --test-randomize-ordering-seed $TEST_SEED"
+            echo '```'
+            echo
+            echo "Replay at that commit: a shard is a partition of the test files that exist there."
+            echo
+            echo "> Reproduction is effectively Linux-only. The merged bundle enumerates files differently on macOS, so the same seed yields a different permutation and a green local run is not evidence the failure is gone (#8330)."
+            echo
+            echo "> If the failing test is outside your diff, check whether it is one of the known cross-file pollution mechanisms in #6880 before assuming your branch caused it."
+          } >> "$GITHUB_STEP_SUMMARY"
   vgv-tag-gate:
     name: VGV Tag Gate
     needs: changes
@@ -521,7 +686,7 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: Restore dart hook downloads
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
@@ -545,7 +710,7 @@ jobs:
         run: bash scripts/golden.sh update
       - name: Upload regenerated goldens
         if: ${{ inputs.update_goldens }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: goldens
           path: mobile/test/goldens/**/goldens/*.png
@@ -554,7 +719,7 @@ jobs:
       # drift without a local Ubuntu run.
       - name: Upload golden failure diffs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: golden-failures
           path: mobile/test/goldens/**/failures/*.png

@@ -26,6 +26,7 @@ class SupporterPurchaseProof {
     required this.localVerificationData,
     this.transactionId,
     this.capturedPubkey,
+    this.silent = false,
   });
 
   /// Stable client retry key for this purchase attempt.
@@ -48,6 +49,9 @@ class SupporterPurchaseProof {
 
   /// Divine pubkey captured when the purchase or restore was initiated.
   final String? capturedPubkey;
+
+  /// Whether this proof came from background repair rather than user action.
+  final bool silent;
 
   /// The minimum opaque payload sent to the private supporter Worker.
   Map<String, dynamic> toJson() => {
@@ -101,6 +105,7 @@ abstract class EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   });
 
   /// Emits store evidence after a terminal purchase result. This stream does

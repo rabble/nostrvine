@@ -58,6 +58,6 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Divine needs access to save videos to your Photos library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Divine needs access to your Photos library to save videos into the diVine album.</string>
+	<string>Divine needs access to your Photos library to save videos into the Divine album.</string>
 </dict>
 </plist>

@@ -96,10 +96,13 @@ class SeedDataPreloadService {
 
   static void _insertEvent(Batch batch, Map<String, dynamic> event) {
     final kind = event['kind'] as int;
+    // NULL is treated as expired during startup cleanup; seed rows persist.
+    // See #8316.
     batch.customStatement(
       'INSERT OR IGNORE INTO event '
-      '(id, pubkey, created_at, kind, tags, content, sig, sources, d_tag) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)',
+      '(id, pubkey, created_at, kind, tags, content, sig, sources, d_tag, '
+      'expire_at) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)',
       [
         event['id'] as String,
         event['pubkey'] as String,
@@ -109,6 +112,7 @@ class SeedDataPreloadService {
         event['content'] as String,
         event['sig'] as String,
         _dTagForEvent(kind, event['tags'] as List?),
+        neverExpiresAtUnix,
       ],
     );
   }

@@ -2,6 +2,7 @@
 // ABOUTME: Provides remote signing via Keycast server for Nostr events
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -22,11 +23,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     required this.nostrApi,
     required String accessToken,
     http.Client? httpClient,
+    http.Client Function()? httpClientFactory,
     TokenRefreshCallback? onTokenRefresh,
     this.requestTimeout = defaultRequestTimeout,
     this.batchRequestTimeout = defaultBatchRequestTimeout,
   }) : _accessToken = accessToken,
-       _client = httpClient ?? http.Client(),
+       _clientFactory = httpClientFactory ?? http.Client.new,
+       _client = httpClient ?? (httpClientFactory ?? http.Client.new)(),
+       _ownsClient = httpClient == null,
        _onTokenRefresh = onTokenRefresh;
 
   factory KeycastRpc.fromSession(
@@ -107,9 +111,14 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
 
   final String nostrApi;
   String _accessToken;
-  final http.Client _client;
+  final http.Client Function() _clientFactory;
+  http.Client _client;
+  bool _ownsClient;
+  final Map<http.Client, int> _inFlightByClient = HashMap.identity();
+  final Set<http.Client> _clientsPendingClose = HashSet.identity();
   final TokenRefreshCallback? _onTokenRefresh;
   bool _signCanonicalUnsupported = false;
+  bool _isClosed = false;
 
   /// Maximum time to wait for a single-op RPC request before failing with a
   /// [RpcTimeoutException].
@@ -126,10 +135,29 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     Duration? timeout,
     bool classifyLocalTimeout = true,
   }) async {
-    var response = await _sendRequest(
+    final effectiveTimeout = timeout ?? requestTimeout;
+    final stopwatch = Stopwatch()..start();
+
+    Never throwTimeout() {
+      if (!classifyLocalTimeout) {
+        throw TimeoutException('$method request timed out', effectiveTimeout);
+      }
+      throw RpcTimeoutException(
+        'Local $method request timed out after ${effectiveTimeout.inSeconds}s',
+        method: method,
+      );
+    }
+
+    Duration remaining() {
+      final value = effectiveTimeout - stopwatch.elapsed;
+      if (value <= Duration.zero) throwTimeout();
+      return value;
+    }
+
+    var response = await _sendRequestWithRetry(
       method,
       params,
-      timeout: timeout,
+      timeout: remaining,
       classifyLocalTimeout: classifyLocalTimeout,
     );
 
@@ -142,20 +170,20 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       // Bounded like the RPC itself: the refresh callback does its own HTTP
       // round-trip, and an unbounded await here would make one logical
       // signer op hang past every caller's budget despite [requestTimeout].
-      // A timed-out refresh counts as a failed refresh (null), so the
-      // original 401 response flows to the error handling below.
+      // A timed-out refresh is a local timeout, not an authentication failure
+      // or unsupported batch verb signal.
       String? newToken;
       try {
-        newToken = await _onTokenRefresh().timeout(timeout ?? requestTimeout);
+        newToken = await _onTokenRefresh().timeout(remaining());
       } on TimeoutException {
-        newToken = null;
+        throwTimeout();
       }
       if (newToken != null) {
         _accessToken = newToken;
-        response = await _sendRequest(
+        response = await _sendRequestWithRetry(
           method,
           params,
-          timeout: timeout,
+          timeout: remaining,
           classifyLocalTimeout: classifyLocalTimeout,
         );
       }
@@ -190,12 +218,101 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     return fromResult(json['result']);
   }
 
+  /// Sends one RPC request and, for transport-level [http.ClientException],
+  /// resets the HTTP transport before retrying once.
+  ///
+  /// The retry is deliberately below RPC parsing and token-refresh handling:
+  /// a call that also gets one 401 refresh can issue up to four POSTs in the
+  /// worst case. `nip17_wrap_batch` also records a server-side audit row per
+  /// call, so callers must treat the retry as transport recovery rather than
+  /// proof that the first POST had no server-side effect.
+  Future<http.Response> _sendRequestWithRetry(
+    String method,
+    List<dynamic> params, {
+    Duration? Function()? timeout,
+    bool classifyLocalTimeout = true,
+  }) async {
+    _ensureOpen();
+    final attemptClient = _client;
+    try {
+      return await _sendRequest(
+        method,
+        params,
+        client: attemptClient,
+        timeout: timeout?.call(),
+        classifyLocalTimeout: classifyLocalTimeout,
+      );
+    } on http.ClientException catch (error) {
+      if (_isClosed) rethrow;
+      Log.warning(
+        '[Keycast RPC] Socket error during $method: $error; '
+        'resetting HTTP transport and retrying once',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
+      _resetHttpClientAfterFailure(attemptClient);
+      try {
+        return await _sendRequest(
+          method,
+          params,
+          timeout: timeout?.call(),
+          classifyLocalTimeout: classifyLocalTimeout,
+        );
+      } on http.ClientException catch (retryError) {
+        Log.warning(
+          '[Keycast RPC] Socket retry failed during $method: $retryError',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+        rethrow;
+      }
+    }
+  }
+
+  void _resetHttpClientAfterFailure(http.Client failedClient) {
+    if (!identical(_client, failedClient)) return;
+    final shouldCloseFailedClient = _ownsClient;
+    _client = _clientFactory();
+    _ownsClient = true;
+    _retireHttpClient(failedClient, shouldClose: shouldCloseFailedClient);
+  }
+
+  void _retireHttpClient(http.Client client, {required bool shouldClose}) {
+    if (!shouldClose) return;
+    if ((_inFlightByClient[client] ?? 0) > 0) {
+      _clientsPendingClose.add(client);
+      return;
+    }
+    client.close();
+  }
+
+  http.Client _acquireHttpClient([http.Client? preferredClient]) {
+    final client = preferredClient ?? _client;
+    _inFlightByClient[client] = (_inFlightByClient[client] ?? 0) + 1;
+    return client;
+  }
+
+  void _releaseHttpClient(http.Client client) {
+    final inFlight = _inFlightByClient[client];
+    if (inFlight == null) return;
+    if (inFlight > 1) {
+      _inFlightByClient[client] = inFlight - 1;
+      return;
+    }
+    _inFlightByClient.remove(client);
+    if (_clientsPendingClose.remove(client)) {
+      client.close();
+    }
+  }
+
   Future<http.Response> _sendRequest(
     String method,
     List<dynamic> params, {
+    http.Client? client,
     Duration? timeout,
     bool classifyLocalTimeout = true,
   }) async {
+    _ensureOpen();
     Log.debug(
       '[Keycast RPC] Calling $method...',
       name: 'KeycastRpc',
@@ -203,9 +320,10 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     );
     final stopwatch = Stopwatch()..start();
     final effectiveTimeout = timeout ?? requestTimeout;
+    final requestClient = _acquireHttpClient(client);
     http.Response response;
     try {
-      response = await _client
+      response = await requestClient
           .post(
             Uri.parse(nostrApi),
             headers: {
@@ -221,6 +339,8 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         'Local $method request timed out after ${effectiveTimeout.inSeconds}s',
         method: method,
       );
+    } finally {
+      _releaseHttpClient(requestClient);
     }
     stopwatch.stop();
     Log.debug(
@@ -398,90 +518,6 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
-  /// Runs a batch verb under one deadline, including token refresh and retry.
-  Future<T> _callBatch<T>(
-    String method,
-    List<dynamic> params,
-    T Function(dynamic) fromResult, {
-    bool logHttpErrors = true,
-    bool classifyLocalTimeout = true,
-  }) async {
-    final stopwatch = Stopwatch()..start();
-
-    Never throwTimeout() {
-      if (!classifyLocalTimeout) {
-        throw TimeoutException(
-          '$method request timed out',
-          batchRequestTimeout,
-        );
-      }
-      throw RpcTimeoutException(
-        'Local $method request timed out after '
-        '${batchRequestTimeout.inSeconds}s',
-        method: method,
-      );
-    }
-
-    Duration remaining() {
-      final value = batchRequestTimeout - stopwatch.elapsed;
-      if (value <= Duration.zero) throwTimeout();
-      return value;
-    }
-
-    var response = await _sendRequest(
-      method,
-      params,
-      timeout: remaining(),
-      classifyLocalTimeout: classifyLocalTimeout,
-    );
-
-    if (response.statusCode == 401 && _onTokenRefresh != null) {
-      Log.info(
-        '[Keycast RPC] $method returned 401, attempting token refresh',
-        name: 'KeycastRpc',
-        category: LogCategory.auth,
-      );
-      String? newToken;
-      try {
-        newToken = await _onTokenRefresh().timeout(remaining());
-      } on TimeoutException {
-        throwTimeout();
-      }
-      if (newToken != null) {
-        _accessToken = newToken;
-        response = await _sendRequest(
-          method,
-          params,
-          timeout: remaining(),
-          classifyLocalTimeout: classifyLocalTimeout,
-        );
-      }
-    }
-
-    if (response.statusCode != 200) {
-      if (logHttpErrors) {
-        Log.error(
-          '[Keycast RPC] Error response: ${response.body}',
-          name: 'KeycastRpc',
-          category: LogCategory.auth,
-        );
-      }
-      final message = 'HTTP ${response.statusCode}: ${response.body}';
-      throw response.statusCode == _gatewayTimeoutStatus
-          ? RpcTimeoutException(message, method: method)
-          : RpcException(message, method: method);
-    }
-
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    if (json.containsKey('error') && json['error'] != null) {
-      throw RpcException(json['error'].toString(), method: method);
-    }
-    if (!json.containsKey('result')) {
-      throw RpcException('Missing result in response', method: method);
-    }
-    return fromResult(json['result']);
-  }
-
   /// Server-side NIP-59 gift-wrap construction for the remote-signer DM send
   /// path (`nip17_wrap_batch`).
   ///
@@ -513,7 +549,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     List<String> recipientPubkeys,
   ) async {
     try {
-      return await _callBatch(
+      return await _call(
         'nip17_wrap_batch',
         [rumor, recipientPubkeys],
         (result) => [
@@ -526,6 +562,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         // The unsupported-method probe is an expected outcome on an older
         // backend, not an incident; the branch below logs it at info instead.
         logHttpErrors: false,
+        timeout: batchRequestTimeout,
       );
     } on RpcException catch (error) {
       if (!_isUnsupportedWrapBatch(error)) rethrow;
@@ -569,5 +606,22 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   }
 
   @override
-  void close() {}
+  void close() {
+    if (_isClosed) return;
+    _isClosed = true;
+    if (_ownsClient) {
+      _client.close();
+    }
+    for (final client in _clientsPendingClose) {
+      client.close();
+    }
+    _clientsPendingClose.clear();
+    _inFlightByClient.clear();
+  }
+
+  void _ensureOpen() {
+    if (_isClosed) {
+      throw KeycastRpcClosedException();
+    }
+  }
 }

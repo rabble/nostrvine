@@ -81,7 +81,7 @@ String buildBridgeBootstrapScript({
   window.nostr = {
     _pubkey: '$escapedPubkey' || null,
     _metadata: {
-      name: 'diVine',
+      name: 'Divine',
       version: '1.0',
       supports: ['nip44'],
     },

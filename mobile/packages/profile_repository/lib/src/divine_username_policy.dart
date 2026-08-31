@@ -22,13 +22,28 @@ final class DivineUsernameValid extends DivineUsernameValidationResult {
   final String normalized;
 }
 
-/// Failed validation with a human-readable [reason].
+/// Failed validation with a machine-readable [failure].
 final class DivineUsernameInvalid extends DivineUsernameValidationResult {
   /// Creates a failed validation result.
-  const DivineUsernameInvalid({required this.reason});
+  const DivineUsernameInvalid({required this.failure});
 
-  /// Human-readable failure reason.
-  final String reason;
+  /// Machine-readable failure that the UI can localize.
+  final DivineUsernameValidationFailure failure;
+}
+
+/// Why a Divine username failed client-side validation.
+enum DivineUsernameValidationFailure {
+  /// No username was supplied.
+  required,
+
+  /// The username is outside the DNS-label length bounds.
+  invalidLength,
+
+  /// A DNS label cannot start or end with a hyphen.
+  leadingOrTrailingHyphen,
+
+  /// The username contains characters that are not valid in a DNS label.
+  invalidCharacters,
 }
 
 /// Lowercase and trim without validating (shared normalization helper).
@@ -40,26 +55,24 @@ String normalizeDivineUsernameInput(String input) => input.toLowerCase().trim();
 DivineUsernameValidationResult validateDivineUsername(String input) {
   final normalized = normalizeDivineUsernameInput(input);
   if (normalized.isEmpty) {
-    return const DivineUsernameInvalid(reason: 'Username is required');
+    return const DivineUsernameInvalid(
+      failure: DivineUsernameValidationFailure.required,
+    );
   }
   if (normalized.length < kDivineUsernameMinLength ||
       normalized.length > kDivineUsernameMaxLength) {
     return const DivineUsernameInvalid(
-      reason:
-          'Usernames must be '
-          '$kDivineUsernameMinLength–$kDivineUsernameMaxLength characters',
+      failure: DivineUsernameValidationFailure.invalidLength,
     );
   }
   if (normalized.startsWith('-') || normalized.endsWith('-')) {
     return const DivineUsernameInvalid(
-      reason: "Usernames can't start or end with a hyphen",
+      failure: DivineUsernameValidationFailure.leadingOrTrailingHyphen,
     );
   }
   if (!_divineUsernameCharacters.hasMatch(normalized)) {
     return const DivineUsernameInvalid(
-      reason:
-          'Only letters, numbers, and hyphens are allowed '
-          '(your username becomes username.divine.video)',
+      failure: DivineUsernameValidationFailure.invalidCharacters,
     );
   }
   return DivineUsernameValid(normalized: normalized);

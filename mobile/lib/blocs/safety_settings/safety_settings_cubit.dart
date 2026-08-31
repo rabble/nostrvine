@@ -3,7 +3,6 @@
 // ABOUTME: divine-hosted-only) plus reactive labeler and blocklist lists.
 
 import 'dart:async';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +14,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
 /// Cubit backing `SafetySettingsScreen`.
@@ -38,6 +38,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
     required ContentFilterService contentFilterService,
     required VideoEventService videoEventService,
     required DivineHostFilterService divineHostFilterService,
+    required VideoProvenanceFilterService provenanceFilterService,
     required ModerationLabelService moderationLabelService,
     required FollowRepository followRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
@@ -47,6 +48,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
        _contentFilterService = contentFilterService,
        _videoEventService = videoEventService,
        _divineHostFilterService = divineHostFilterService,
+       _provenanceFilterService = provenanceFilterService,
        _moderationLabelService = moderationLabelService,
        _followRepository = followRepository,
        _contentBlocklistRepository = contentBlocklistRepository,
@@ -56,6 +58,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
   final ContentFilterService _contentFilterService;
   final VideoEventService _videoEventService;
   final DivineHostFilterService _divineHostFilterService;
+  final VideoProvenanceFilterService _provenanceFilterService;
   final ModerationLabelService _moderationLabelService;
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _contentBlocklistRepository;
@@ -81,6 +84,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
         isPeopleIFollowEnabled:
             _moderationLabelService.isFollowingModerationEnabled,
         showDivineHostedOnly: _divineHostFilterService.showDivineHostedOnly,
+        showVerifiedOnly: _provenanceFilterService.showVerifiedOnly,
         customLabelers: _moderationLabelService.customLabelers,
         blockedUsers: _contentBlocklistRepository.runtimeBlockedUsers,
       ),
@@ -133,6 +137,21 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emitIfOpen(state.copyWith(showDivineHostedOnly: previous));
+    }
+  }
+
+  /// Toggle "only show camera-verified content".
+  ///
+  /// Independent of the Divine-hosted filter: hosting says who can moderate
+  /// the media, provenance says whether it traces back to a camera.
+  Future<void> setShowVerifiedOnly(bool value) async {
+    final previous = state.showVerifiedOnly;
+    emit(state.copyWith(showVerifiedOnly: value));
+    try {
+      await _provenanceFilterService.setShowVerifiedOnly(value);
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emitIfOpen(state.copyWith(showVerifiedOnly: previous));
     }
   }
 

@@ -2,7 +2,7 @@
 // ABOUTME: Keeps kind 34236 edits relay-replaceable while preserving published_at.
 
 import 'package:models/models.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
+import 'package:nostr_sdk/utils/nostr_timestamp.dart';
 
 /// Returns the next `created_at` to use when replacing [previousEvent].
 ///

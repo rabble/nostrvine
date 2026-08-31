@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:alchemist/alchemist.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
@@ -16,13 +17,23 @@ const _runGoldenSetup = bool.fromEnvironment('DIVINE_GOLDEN_TESTS');
 
 /// When set (via `--dart-define=DIVINE_STRICT_CHANNELS=true`), the
 /// heal-and-blame tearDown also `fail()`s the test that leaked a shared
-/// channel. Off by default so the harness heals silently locally; CI can flip
-/// it on once the full suite is proven clean under it (#5738).
+/// channel. Mobile CI and `mise run test` both set it — the suite was proven
+/// clean under it, which was the condition for turning it on (#5738). It stays
+/// off for a bare `flutter test` so a single-file run still heals silently.
 const _strictChannels = bool.fromEnvironment('DIVINE_STRICT_CHANNELS');
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Set up test environment with plugin mocks (secure_storage, path_provider, etc.)
   setupTestEnvironment();
+
+  if (!kIsWeb) {
+    // ThemeData captures defaultTargetPlatform when it is built, while these
+    // app themes are lazy process-cached values. Build both at flutter_test's
+    // Android baseline before a test-scoped platform override can permanently
+    // determine page transitions for every later test in the merged isolate.
+    final _ = VineTheme.theme;
+    final _ = VineTheme.lightTheme;
+  }
 
   // Under `very_good test --optimization` the whole unit suite runs in one
   // isolate and flutter_test auto-restores nothing, so a test that replaces a

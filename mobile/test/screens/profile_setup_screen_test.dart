@@ -16,6 +16,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
@@ -36,6 +37,8 @@ Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   group('UsernameStatusIndicator', () {
     late _MockProfileEditorBloc mockBloc;
 
@@ -52,8 +55,10 @@ void main() {
     Widget buildIndicator(
       UsernameStatus status, {
       UsernameValidationError? error,
+      Locale locale = const Locale('en'),
     }) {
       return MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
@@ -166,7 +171,9 @@ void main() {
       expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
     });
 
-    testWidgets('shows format error message', (tester) async {
+    testWidgets('shows generic format error for an unclassified rejection', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildIndicator(
           UsernameStatus.error,
@@ -175,8 +182,56 @@ void main() {
       );
 
       expect(
-        find.text('Only letters, numbers, and hyphens are allowed'),
+        find.text(l10n.profileSetupUsernameInvalidFormatGeneric),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('shows the localized invalid-character error', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.invalidFormat,
+          error: UsernameValidationError.invalidCharacters,
+        ),
+      );
+
+      expect(
+        find.text(l10n.profileSetupUsernameInvalidFormat),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows the localized edge-hyphen error', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.invalidFormat,
+          error: UsernameValidationError.invalidHyphenPlacement,
+        ),
+      );
+
+      expect(
+        find.text(l10n.profileSetupUsernameInvalidHyphenPlacement),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows the edge-hyphen error in German', (tester) async {
+      final de = lookupAppLocalizations(const Locale('de'));
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.invalidFormat,
+          error: UsernameValidationError.invalidHyphenPlacement,
+          locale: const Locale('de'),
+        ),
+      );
+
+      expect(
+        find.text(de.profileSetupUsernameInvalidHyphenPlacement),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.profileSetupUsernameInvalidHyphenPlacement),
+        findsNothing,
       );
     });
 
@@ -188,7 +243,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Username must be 3-63 characters'), findsOneWidget);
+      expect(
+        find.text(l10n.profileSetupUsernameInvalidLength),
+        findsOneWidget,
+      );
     });
   });
 
@@ -243,9 +301,8 @@ void main() {
         home: Scaffold(
           body: TextField(
             controller: controller,
-            inputFormatters: [
-              const LowercaseTextInputFormatter(),
-              FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
+            inputFormatters: const [
+              LowercaseTextInputFormatter(),
             ],
           ),
         ),
@@ -263,17 +320,17 @@ void main() {
       expect(controller.text, 'alice');
     });
 
-    testWidgets('disallowed characters are stripped, others lowercased', (
+    testWidgets('disallowed characters stay visible, capitals are lowercased', (
       tester,
     ) async {
       final controller = TextEditingController();
       await tester.pumpWidget(buildField(controller));
 
-      // Underscore, dot, and space are not in [a-z0-9-]; capitals get
-      // lowercased.
+      // Invalid characters remain available to the validator; capitals are
+      // still normalized.
       await tester.enterText(find.byType(TextField), 'Mr Beast.123_xyz');
 
-      expect(controller.text, 'mrbeast123xyz');
+      expect(controller.text, 'mr beast.123_xyz');
     });
   });
 
@@ -545,9 +602,10 @@ void main() {
     late MockProfileRepository mockProfileRepository;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn(testNpub);
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
@@ -656,9 +714,10 @@ void main() {
     late _MockMyProfileBloc mockMyProfileBloc;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn('npub-test-profile');
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
@@ -1204,6 +1263,39 @@ void main() {
           () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
         ).captured;
         expect(captured.whereType<ProfileSaved>().last.displayName, 'Edited');
+      });
+
+      testWidgets('prompt does not offer save for an invalid username', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            displayName: 'Edited',
+            initialDisplayName: 'Original',
+            username: 'last_outlaw',
+            usernameStatus: UsernameStatus.invalidFormat,
+            usernameError: UsernameValidationError.invalidCharacters,
+          ),
+        );
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesSaveButton),
+          findsNothing,
+        );
+        verifyNever(
+          () => mockEditorBloc.add(any(that: isA<ProfileSaved>())),
+        );
       });
 
       testWidgets('clean cancel leaves without showing prompt', (tester) async {

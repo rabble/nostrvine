@@ -2,10 +2,10 @@
 // ABOUTME: Policy engine, host/age/content filters, NIP-32 labels, blocklist + sync bridge
 
 import 'dart:async';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -18,6 +18,7 @@ import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -68,6 +69,37 @@ class DivineHostFilterVersion extends Notifier<int> {
   @override
   int build() {
     final service = ref.watch(divineHostFilterServiceProvider);
+    service.addListener(increment);
+    ref.onDispose(() => service.removeListener(increment));
+    return 0;
+  }
+
+  void increment() => state++;
+}
+
+/// Capture-verified-only filter preference service.
+///
+/// Separate axis from [divineHostFilterServiceProvider]: hosting says who
+/// can moderate the media, provenance says whether it traces to a camera.
+final videoProvenanceFilterServiceProvider =
+    Provider<VideoProvenanceFilterService>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final service = VideoProvenanceFilterService(prefs);
+      ref.onDispose(service.dispose);
+      return service;
+    });
+
+/// Rebuild trigger for consumers that need to react to provenance-filter
+/// preference changes.
+final videoProvenanceFilterVersionProvider =
+    NotifierProvider<VideoProvenanceFilterVersion, int>(
+      VideoProvenanceFilterVersion.new,
+    );
+
+class VideoProvenanceFilterVersion extends Notifier<int> {
+  @override
+  int build() {
+    final service = ref.watch(videoProvenanceFilterServiceProvider);
     service.addListener(increment);
     ref.onDispose(() => service.removeListener(increment));
     return 0;
@@ -247,7 +279,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -255,6 +287,15 @@ class BlocklistVersion extends _$BlocklistVersion {
 ///
 /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
 /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+///
+/// It also flushes a mute-list publish that was withheld because the read
+/// preceding it was inconclusive (#6750). A block is kept local rather than
+/// published over a list we could not read, so something has to retry it: a
+/// later block republishes the whole list anyway, and this covers the user who
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 @Riverpod(keepAlive: true)
 void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -299,6 +340,12 @@ void blocklistSyncBridge(Ref ref) {
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
     unawaited(startSync(next));
   });
+
+  ref.listen<bool>(appForegroundProvider, (previous, next) {
+    if (next && previous != true) {
+      unawaited(blocklistRepository.retryPendingMuteListPublish());
+    }
+  });
 }
 
 /// Republishes the contact list when a block contradicts the published
@@ -325,7 +372,7 @@ void blocklistSyncBridge(Ref ref) {
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 @Riverpod(keepAlive: true)
 void blockedFollowReconciler(Ref ref) {
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);

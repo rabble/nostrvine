@@ -36,11 +36,13 @@ void main() {
         feedRepository: StaticFeedRepository(),
         initialIndex: 2,
         contextTitle: 'For You',
+        sponsorName: 'Acme Bikes',
         trafficSource: ViewTrafficSource.discoveryForYou,
         autoOpenComments: true,
       );
 
       expect(args.contextTitle, 'For You');
+      expect(args.sponsorName, 'Acme Bikes');
       expect(args.trafficSource, ViewTrafficSource.discoveryForYou);
       expect(args.autoOpenComments, isTrue);
     });

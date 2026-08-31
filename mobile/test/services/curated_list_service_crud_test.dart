@@ -18,6 +18,7 @@ import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import '../helpers/curated_list_publish_stubs.dart';
 
@@ -35,6 +36,21 @@ const _ownerPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const _otherPubkey =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+/// A kind 30005 curated-list event as a relay would replay it.
+Event _listEvent(String listId, String title, [String pubkey = _ownerPubkey]) =>
+    Event.fromJson({
+      'id': 'relay_event_for_$listId',
+      'pubkey': pubkey,
+      'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'kind': 30005,
+      'tags': [
+        ['d', listId],
+        ['title', title],
+      ],
+      'content': '',
+      'sig': 'test_signature',
+    });
 
 /// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
 PublishOutcome _accepted(Event event) => PublishOutcome(
@@ -668,7 +684,7 @@ void main() {
         },
       );
 
-      test('merge keeps collaborative lists public', () async {
+      test('merge repairs a legacy private collaborative list', () async {
         SharedPreferences.setMockInitialValues({
           CuratedListService.listsStorageKey: jsonEncode([
             CuratedList(
@@ -710,9 +726,87 @@ void main() {
         await upgraded.fetchUserListsFromRelays();
 
         final merged = upgraded.getListById('collaborative-local')!;
-        expect(merged.isCollaborative, isTrue);
-        expect(merged.isPublic, isTrue);
+        expect(merged.isCollaborative, isFalse);
+        expect(merged.allowedCollaborators, isEmpty);
+        expect(merged.isPublic, isFalse);
       });
+
+      test(
+        'private list wins a collaborative relay conflict and republishes sealed',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'private-local',
+                name: 'Private Local',
+                videoEventIds: const ['local_video'],
+                createdAt: DateTime(2025),
+                updatedAt: DateTime(2025),
+                isPublic: false,
+                pubkey: _ownerPubkey,
+              ).toJson(),
+            ]),
+          });
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'relay_collaborative_event',
+                'pubkey': _ownerPubkey,
+                'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', 'private-local'],
+                  ['title', 'Collaborative Relay'],
+                  ['e', 'relay_video'],
+                  ['collaborative', 'true'],
+                  ['collaborator', _otherPubkey],
+                ],
+                'content': 'Collaborative Relay',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          final merged = upgraded.getListById('private-local')!;
+          expect(merged.isPublic, isFalse);
+          expect(merged.isCollaborative, isFalse);
+          expect(merged.allowedCollaborators, isEmpty);
+          expect(merged.videoEventIds, ['relay_video', 'local_video']);
+
+          final warning = LogCaptureService()
+              .getRecentLogs()
+              .where(
+                (entry) =>
+                    entry.level == LogLevel.warning &&
+                    entry.message.contains('private-local'),
+              )
+              .single;
+          expect(warning.level, LogLevel.warning);
+
+          final republished =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.last
+                  as Event;
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'local_video']))),
+          );
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'relay_video']))),
+          );
+          expect(_unseal(republished.content), isNotNull);
+        },
+      );
 
       test(
         'backs up null-pubkey local lists as the authenticated owner',
@@ -2057,6 +2151,146 @@ void main() {
         );
         expect(published.tags, contains(equals(['k', '30005'])));
       });
+
+      test(
+        'a deleted list is not resurrected by a later relay event',
+        () async {
+          final list = await service.createList(name: 'Doomed List');
+          final listId = list!.id;
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+
+          expect(await service.deleteOwnedList(listId), isTrue);
+          expect(service.getListById(listId), isNull);
+
+          // NIP-09 is advisory. A relay that never saw the deletion, or chose
+          // not to honour it, keeps serving the original kind 30005 event.
+          when(
+            () => mockNostr.subscribe(any()),
+          ).thenAnswer((_) => Stream.value(_listEvent(listId, 'Doomed List')));
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          expect(service.getListById(listId), isNull);
+        },
+      );
+
+      test('records the tombstone before exposing local removal', () async {
+        final list = await service.createList(name: 'Doomed List');
+        final listId = list!.id;
+        reset(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        var removalWasProtected = false;
+        service.setOnListUnsubscribed((removedListId) {
+          final tombstones = prefs.getStringList(
+            CuratedListService.deletedListCoordinatesStorageKey,
+          );
+          removalWasProtected =
+              service.getListById(removedListId) == null &&
+              (tombstones?.contains('$_ownerPubkey:$removedListId') ?? false);
+        });
+
+        expect(await service.deleteOwnedList(listId), isTrue);
+
+        expect(removalWasProtected, isTrue);
+      });
+
+      test(
+        'the deletion survives a new service over the same storage',
+        () async {
+          final list = await service.createList(name: 'Doomed List');
+          final listId = list!.id;
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+          expect(await service.deleteOwnedList(listId), isTrue);
+
+          when(
+            () => mockNostr.subscribe(any()),
+          ).thenAnswer((_) => Stream.value(_listEvent(listId, 'Doomed List')));
+
+          final relaunched = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: prefs,
+          );
+          await relaunched.fetchUserListsFromRelays(force: true);
+
+          expect(relaunched.getListById(listId), isNull);
+        },
+      );
+
+      test(
+        'a re-created default list is not blocked by its own tombstone',
+        () async {
+          // The tombstone and the default-deleted flag are two separate pref
+          // writes, so a launch killed between them leaves the tombstone set and
+          // the flag clear. initialize() then re-creates "My List" on the same
+          // coordinate, and without lifting the tombstone the new list's own
+          // relay events would be discarded for the life of the install.
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.deletedListCoordinatesStorageKey: <String>[
+              '$_ownerPubkey:${CuratedListService.defaultListId}',
+            ],
+          });
+          final relaunched = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+          await relaunched.initialize();
+          final defaultList = relaunched.getDefaultList();
+          expect(defaultList, isNotNull);
+
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(_listEvent(defaultList!.id, 'My List')),
+          );
+          await relaunched.fetchUserListsFromRelays(force: true);
+
+          expect(relaunched.getDefaultList(), isNotNull);
+        },
+      );
+
+      test(
+        "deleting one list does not suppress another owner's same id",
+        () async {
+          final list = await service.createList(name: 'Doomed List');
+          final listId = list!.id;
+          reset(mockNostr);
+          when(() => mockNostr.signer).thenReturn(mockSigner);
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+            (invocation) async =>
+                _accepted(invocation.positionalArguments[0] as Event),
+          );
+          expect(await service.deleteOwnedList(listId), isTrue);
+
+          // A `d` tag is only unique per pubkey, so the tombstone has to be
+          // keyed by owner. Someone else's list that happens to share the
+          // identifier is a different coordinate entirely.
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_otherPubkey);
+          when(mockSigner.getPublicKey).thenAnswer((_) async => _otherPubkey);
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) =>
+                Stream.value(_listEvent(listId, 'Someone Else', _otherPubkey)),
+          );
+
+          await service.fetchUserListsFromRelays(force: true);
+
+          expect(service.getListById(listId), isNotNull);
+          expect(service.getListById(listId)!.pubkey, _otherPubkey);
+        },
+      );
 
       test('keeps local list when publish fails', () async {
         final list = await service.createList(name: 'Owned Public List');

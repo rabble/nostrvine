@@ -59,7 +59,7 @@ final class SupporterApiClientProvider
 }
 
 String _$supporterApiClientHash() =>
-    r'715fac50da56c5849e3451b87c5fad149e223d1b';
+    r'b2fccc742b9187925bc86a96aab4bba3294894de';
 
 /// The store-backed [EntitlementValidator] for the current platform.
 ///
@@ -148,7 +148,7 @@ final class SupporterRepositoryProvider
         argument: null,
         retry: null,
         name: r'supporterRepositoryProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -177,4 +177,4 @@ final class SupporterRepositoryProvider
 }
 
 String _$supporterRepositoryHash() =>
-    r'5064f725ec5fa201ef693a5eee13a95602360834';
+    r'3e2f3f1fa5ec502364222a5bf658af9ffee4f48b';

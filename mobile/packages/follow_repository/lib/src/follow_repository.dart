@@ -25,6 +25,28 @@ import 'package:unified_logger/unified_logger.dart';
 /// API does not expose event timestamps.
 typedef _FollowerRef = ({String pubkey, int? followedAt});
 
+typedef _FollowerSourceResult = ({
+  List<_FollowerRef> refs,
+  Object? error,
+  StackTrace? stackTrace,
+});
+
+typedef _CachedFollowerStats = ({
+  FollowerStats stats,
+  DateTime cachedAt,
+});
+
+typedef _FollowerCountObservation = ({
+  int count,
+  bool isComplete,
+  String source,
+});
+
+typedef _WebSocketFollowerStats = ({
+  int following,
+  List<_FollowerCountObservation> followerCounts,
+});
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -48,6 +70,9 @@ class FollowRepository {
     QueryContactListCallback? queryContactList,
     RelayFactory? relayFactory,
     BlockedPubkeysCallback? blockedPubkeys,
+    DateTime Function()? now,
+    Duration indexerQueryTimeout = const Duration(seconds: 8),
+    Duration indexerOperationTimeout = const Duration(seconds: 12),
   }) : _nostrClient = nostrClient,
        _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
@@ -59,7 +84,10 @@ class FollowRepository {
        _queueOfflineAction = queueOfflineAction,
        _indexerRelayUrls = indexerRelayUrls,
        _queryContactList = queryContactList ?? _defaultQueryContactList,
-       _relayFactory = relayFactory ?? _defaultRelayFactory;
+       _relayFactory = relayFactory ?? _defaultRelayFactory,
+       _now = now ?? DateTime.now,
+       _indexerQueryTimeout = indexerQueryTimeout,
+       _indexerOperationTimeout = indexerOperationTimeout;
 
   final NostrClient _nostrClient;
   final IsCacheInitializedCallback? _isCacheInitialized;
@@ -90,6 +118,55 @@ class FollowRepository {
   ///
   /// Null leaves the published contact list unfiltered.
   final BlockedPubkeysCallback? _blockedPubkeys;
+
+  /// Clock used by expiring caches and persisted-stat stabilization.
+  final DateTime Function() _now;
+
+  /// Maximum time to wait for an indexer relay to finish a count query.
+  final Duration _indexerQueryTimeout;
+
+  /// Maximum time for connect, response collection, and cleanup combined.
+  final Duration _indexerOperationTimeout;
+
+  Duration _remainingIndexerTime(
+    DateTime deadline, {
+    Duration? cap,
+  }) {
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining <= Duration.zero) return Duration.zero;
+    if (cap != null && cap < remaining) return cap;
+    return remaining;
+  }
+
+  Future<T> _awaitIndexerOperation<T>(
+    Future<T> future,
+    DateTime deadline, {
+    required FutureOr<T> Function() onTimeout,
+    Duration? cap,
+  }) => future.timeout(
+    _remainingIndexerTime(deadline, cap: cap),
+    onTimeout: onTimeout,
+  );
+
+  Future<void> _disconnectIndexer(
+    RelayBase relay,
+    String indexerUrl,
+    DateTime deadline,
+  ) async {
+    try {
+      await _awaitIndexerOperation<void>(
+        relay.disconnect(),
+        deadline,
+        onTimeout: () {},
+      );
+    } catch (e) {
+      Log.warning(
+        'Error disconnecting from $indexerUrl: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -152,6 +229,11 @@ class FollowRepository {
   // In-memory cache — following
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
+
+  // A contact-list broadcast withheld because the read that precedes it came
+  // back inconclusive. Flushed by [retryPendingContactListBroadcast] and by
+  // the next follow or unfollow, which rebroadcasts the whole list anyway.
+  bool _contactListBroadcastPending = false;
   bool _isInitialized = false;
   final Completer<void> _initializedCompleter = Completer<void>();
 
@@ -341,16 +423,22 @@ class FollowRepository {
     final followers = await followersFuture;
     final countFromService = await countFuture;
 
+    // The service count is the displayed number, full stop. Substituting the
+    // relay list length when it is 0 would put a relay-derived number back on
+    // screen — the exact inflation #8197 removes — and it would swap the
+    // rendered value a second time once the list resolved (#8259 review).
+    // getFollowerCount already falls back to the persisted baseline when
+    // neither REST nor the relays can answer.
     return FollowersSnapshot(
       pubkeys: followers.pubkeys,
-      count: max(followers.pubkeys.length, countFromService),
+      count: countFromService,
       datedCount: followers.datedCount,
     );
   }
 
   /// Get an accurate follower count for the current user.
   ///
-  /// Uses multi-source fetching with hysteresis stabilization.
+  /// REST-authoritative, with relay fallback (see [getFollowerStats]).
   Future<int> getMyFollowerCount() async {
     final count = await getFollowerCount(_nostrClient.publicKey);
     _cachedMyFollowerCount = count;
@@ -392,10 +480,12 @@ class FollowRepository {
     final countFuture = getMyFollowerCount();
     final followers = await followersFuture;
     final countFromService = await countFuture;
-    final count = max(followers.pubkeys.length, countFromService);
+    // Same rule as fetchFollowersSnapshot: the service count is displayed
+    // verbatim, never substituted with the relay list length (#8259 review).
+    final count = countFromService;
 
     // The list caches are updated by _fetchMyFollowers/getMyFollowerCount;
-    // store the merged count so the next watchMyFollowers call yields it.
+    // store the selected count so the next watchMyFollowers call yields it.
     _cachedMyFollowerCount = count;
 
     return FollowersSnapshot(
@@ -421,9 +511,11 @@ class FollowRepository {
   /// Returns a [FollowingSnapshot] with the deduplicated list of followed
   /// pubkeys. Returns an empty snapshot if no event is found.
   Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
-    final events = await _nostrClient.queryEvents([
-      Filter(authors: [pubkey], kinds: const [3], limit: 1),
-    ]);
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(authors: [pubkey], kinds: const [3], limit: 1),
+        ])
+        .timeout(_fetchFollowersTimeout);
 
     final following = <String>[];
     if (events.isNotEmpty) {
@@ -508,6 +600,7 @@ class FollowRepository {
       fetch: fetchMyFollowersSnapshot,
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
@@ -536,6 +629,7 @@ class FollowRepository {
       fetch: () => getOthersFollowing(_nostrClient.publicKey),
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
@@ -589,7 +683,7 @@ class FollowRepository {
       return stats.followers;
     } catch (e) {
       Log.warning(
-        'Error fetching follower count for $pubkey: $e',
+        'Error fetching follower count for ${pubkeyForLogs(pubkey)}: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -716,7 +810,12 @@ class FollowRepository {
     }
   }
 
-  // === FOLLOWER STATS (count stabilization with hysteresis) ===
+  // === FOLLOWER STATS ===
+  //
+  // Positive REST counts are authoritative per field (#8197). Funnelcake's
+  // follower and following counts come from independent inputs, so a positive
+  // value in one cannot make an ambiguous zero in the other authoritative.
+  // Hysteresis applies only to fields resolved through relay fallback.
 
   /// Counts older than this are considered stale and will be replaced
   /// even if the new value is lower.
@@ -743,8 +842,8 @@ class FollowRepository {
   /// to dominate individual follow/unfollow events.
   static const _hysteresisMinimumCount = 20;
 
-  /// In-memory cache for follower/following counts.
-  final Map<String, FollowerStats> _followerStatsCache = {};
+  /// Short-lived in-memory cache for follower/following counts.
+  final Map<String, _CachedFollowerStats> _followerStatsCache = {};
 
   /// Load persisted follower stats from the Drift database.
   ///
@@ -765,6 +864,12 @@ class FollowRepository {
   }
 
   /// Persist follower stats to the Drift database.
+  ///
+  /// This refreshes the row's count-freshness stamp, which is correct for both
+  /// of its readers: retention keeps the row, and the relay hysteresis treats
+  /// the baseline as recently confirmed. Each ambiguous REST zero is withheld
+  /// upstream, so a stamp means at least one count came from a trusted source
+  /// or an established fallback baseline.
   Future<void> _persistFollowerStats(String pubkey, FollowerStats stats) async {
     await _profileStatsDao?.upsertStats(
       pubkey: pubkey,
@@ -790,7 +895,7 @@ class FollowRepository {
     if (persistedCount < _hysteresisMinimumCount) return freshCount;
 
     // Persisted count is stale → accept the fresh count
-    if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {
+    if (_now().difference(persistedTimestamp) > _staleDuration) {
       return freshCount;
     }
 
@@ -811,24 +916,30 @@ class FollowRepository {
     String pubkey,
     FollowerStats freshStats, {
     required ({int followers, int following, DateTime timestamp})? persisted,
+    required bool followersAuthoritative,
+    required bool followingAuthoritative,
   }) {
     if (persisted == null) return freshStats;
 
-    final stableFollowers = _applyHysteresis(
-      freshCount: freshStats.followers,
-      persistedCount: persisted.followers,
-      persistedTimestamp: persisted.timestamp,
-    );
-    final stableFollowing = _applyHysteresis(
-      freshCount: freshStats.following,
-      persistedCount: persisted.following,
-      persistedTimestamp: persisted.timestamp,
-    );
+    final stableFollowers = followersAuthoritative
+        ? freshStats.followers
+        : _applyHysteresis(
+            freshCount: freshStats.followers,
+            persistedCount: persisted.followers,
+            persistedTimestamp: persisted.timestamp,
+          );
+    final stableFollowing = followingAuthoritative
+        ? freshStats.following
+        : _applyHysteresis(
+            freshCount: freshStats.following,
+            persistedCount: persisted.following,
+            persistedTimestamp: persisted.timestamp,
+          );
 
     if (stableFollowers != freshStats.followers ||
         stableFollowing != freshStats.following) {
       Log.info(
-        'Hysteresis stabilized stats for $pubkey: '
+        'Hysteresis stabilized stats for ${pubkeyForLogs(pubkey)}: '
         'fresh=${freshStats.followers}/${freshStats.following} '
         '-> stable=$stableFollowers/$stableFollowing '
         '(persisted=${persisted.followers}/'
@@ -846,12 +957,12 @@ class FollowRepository {
 
   /// Get follower and following counts for a specific pubkey.
   ///
-  /// Returns in-memory cached data when available, otherwise fetches from
-  /// the network and stabilizes the result against a persistent cache using
-  /// hysteresis to avoid visible count fluctuations across app restarts.
+  /// Returns in-memory cached data when available. Otherwise each positive
+  /// REST field is authoritative (#8197), while an ambiguous zero field falls
+  /// back to relays and the persisted baseline with hysteresis.
   Future<FollowerStats> getFollowerStats(String pubkey) async {
     Log.debug(
-      'Fetching follower stats for: $pubkey',
+      'Fetching follower stats for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -859,41 +970,83 @@ class FollowRepository {
     try {
       // Check in-memory cache first
       final cachedStats = _followerStatsCache[pubkey];
-      if (cachedStats != null) {
+      if (cachedStats != null &&
+          _now().difference(cachedStats.cachedAt) < _profileListCacheTtl) {
         Log.debug(
-          'Using cached follower stats: $cachedStats',
+          'Using cached follower stats: ${cachedStats.stats}',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
-        return cachedStats;
+        return cachedStats.stats;
       }
+      _followerStatsCache.remove(pubkey);
 
       // Fetch from network
-      final freshStats = await _fetchFollowerStats(pubkey);
+      final fetch = await _fetchFollowerStats(pubkey);
+      final freshStats = fetch.stats;
 
+      if (fetch.followersAuthoritative && fetch.followingAuthoritative) {
+        // Both REST fields carry signal, so they are definitive (#8197): a
+        // drop is a real drop and no relay hysteresis applies.
+        _cacheFollowerStats(pubkey, freshStats);
+        final persisted = await _loadPersistedStats(pubkey);
+        if (persisted == null ||
+            freshStats.followers != persisted.followers ||
+            freshStats.following != persisted.following) {
+          await _persistFollowerStats(pubkey, freshStats);
+        }
+        return freshStats;
+      }
+
+      final persisted = await _loadPersistedStats(pubkey);
+
+      // Relay fallback below: counts are partial observations, so guard
+      // zeros and stabilize drops before display.
       // When all sources returned zero, treat it as a network failure
       // and fall back to persisted data rather than showing 0.
       if (freshStats.followers == 0 && freshStats.following == 0) {
-        final persisted = await _loadPersistedStats(pubkey);
         if (persisted != null &&
             (persisted.followers > 0 || persisted.following > 0)) {
           final fallback = FollowerStats(
             followers: persisted.followers,
             following: persisted.following,
           );
-          _followerStatsCache[pubkey] = fallback;
+          _cacheFollowerStats(pubkey, fallback);
           return fallback;
         }
         return freshStats;
       }
 
-      // Apply hysteresis against the persistent cache so counts don't
-      // visibly fluctuate across app restarts due to relay variance.
-      final persisted = await _loadPersistedStats(pubkey);
-      final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
+      // A zero with no authoritative REST signal and no relay observation is
+      // absence, not a measured drop. Preserve that field's known baseline;
+      // otherwise the large-drop branch in hysteresis would accept it as real.
+      final fallbackStats = FollowerStats(
+        followers:
+            !fetch.followersAuthoritative &&
+                freshStats.followers == 0 &&
+                (persisted?.followers ?? 0) > 0
+            ? persisted!.followers
+            : freshStats.followers,
+        following:
+            !fetch.followingAuthoritative &&
+                freshStats.following == 0 &&
+                (persisted?.following ?? 0) > 0
+            ? persisted!.following
+            : freshStats.following,
+      );
+
+      // Apply hysteresis against the persistent cache so relay observations
+      // don't visibly fluctuate across app restarts.
+      final stats = _stabilizeStats(
+        pubkey,
+        fallbackStats,
+        persisted: persisted,
+        followersAuthoritative: fetch.followersAuthoritative,
+        followingAuthoritative: fetch.followingAuthoritative,
+      );
 
       // Cache in memory.
-      _followerStatsCache[pubkey] = stats;
+      _cacheFollowerStats(pubkey, stats);
 
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
@@ -925,7 +1078,7 @@ class FollowRepository {
           followers: persisted.followers,
           following: persisted.following,
         );
-        _followerStatsCache[pubkey] = fallback;
+        _cacheFollowerStats(pubkey, fallback);
         return fallback;
       }
 
@@ -933,44 +1086,110 @@ class FollowRepository {
     }
   }
 
+  void _cacheFollowerStats(String pubkey, FollowerStats stats) {
+    _followerStatsCache[pubkey] = (stats: stats, cachedAt: _now());
+  }
+
   /// Fetch follower stats from the network.
   ///
-  /// Runs REST API and WebSocket queries in parallel, then uses the
-  /// higher count from each source.
-  Future<FollowerStats> _fetchFollowerStats(String pubkey) async {
-    // Run REST and WebSocket queries in parallel for best coverage
-    final results = await Future.wait([
-      _fetchFollowerStatsViaRest(pubkey),
-      _fetchFollowerStatsViaWebSocket(pubkey),
-    ]);
-
-    final restResult = results[0];
-    final wsResult = results[1]!;
-
-    if (restResult == null) {
-      return wsResult;
-    }
-
-    // Use the higher count from each source
-    final followers = restResult.followers > wsResult.followers
-        ? restResult.followers
-        : wsResult.followers;
-    final following = restResult.following > wsResult.following
-        ? restResult.following
-        : wsResult.following;
-
-    if (followers != restResult.followers ||
-        following != restResult.following) {
+  /// The Funnelcake REST API is queried first. Each positive field is used
+  /// verbatim as authoritative (#8197); an ambiguous zero field is resolved
+  /// through relays and the persisted baseline instead. Relay observations
+  /// are partial and vary per query, so only fallback fields feed hysteresis.
+  Future<
+    ({
+      FollowerStats stats,
+      bool followersAuthoritative,
+      bool followingAuthoritative,
+    })
+  >
+  _fetchFollowerStats(
+    String pubkey,
+  ) async {
+    final restResult = await _fetchFollowerStatsViaRest(pubkey);
+    // Authority is per field. The two counts come from independent inputs, so
+    // a positive value in one is no evidence that zero in the other means
+    // "genuinely zero" rather than "not indexed" (#8259 review).
+    // `/api/users/{pubkey}/social` answers 200 for every pubkey — there is no
+    // 404 for an account funnelcake has never ingested — and `get_social_stats`
+    // collapses any ClickHouse failure into `{0, 0}` rather than an error. Four
+    // different server states therefore arrive byte-identical: never indexed,
+    // genuinely zero, vanished, and the summary table being down. Treating them
+    // as authoritative would display zeros and, worse, persist them over a good
+    // baseline; the last of those states was observed returning zeros for every
+    // pubkey in production during review of this change.
+    final followersAuthoritative = (restResult?.followers ?? 0) > 0;
+    final followingAuthoritative = (restResult?.following ?? 0) > 0;
+    if (followersAuthoritative && followingAuthoritative) {
+      final authoritativeRestResult = restResult!;
       Log.info(
-        'Follower stats merged: REST=${restResult.followers}/'
-        '${restResult.following}, WS=${wsResult.followers}/'
-        '${wsResult.following} → using $followers/$following',
+        'Follower counts from REST (authoritative): '
+        '${authoritativeRestResult.followers} followers, '
+        '${authoritativeRestResult.following} following '
+        'for ${pubkeyForLogs(pubkey)}',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return (
+        stats: authoritativeRestResult,
+        followersAuthoritative: true,
+        followingAuthoritative: true,
+      );
+    }
+    if (restResult != null) {
+      Log.info(
+        'REST follower stats need per-field fallback for '
+        '${pubkeyForLogs(pubkey)}: '
+        '${restResult.followers} followers, ${restResult.following} following',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
     }
 
-    return FollowerStats(followers: followers, following: following);
+    final wsResult = await _fetchFollowerStatsViaWebSocket(pubkey);
+    final relayFollowers = _selectFollowerCount(wsResult.followerCounts);
+    final followers = followersAuthoritative
+        ? restResult!.followers
+        : relayFollowers;
+    final following = followingAuthoritative
+        ? restResult!.following
+        : wsResult.following;
+    final observationSummary = wsResult.followerCounts.isEmpty
+        ? 'none'
+        : wsResult.followerCounts
+              .map(
+                (result) =>
+                    '${result.source}=${result.count}'
+                    '${result.isComplete ? '(complete)' : '(partial)'}',
+              )
+              .join(', ');
+
+    Log.info(
+      'Follower count fallback observations: $observationSummary, '
+      'using $followers for ${pubkeyForLogs(pubkey)}',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
+
+    return (
+      stats: FollowerStats(followers: followers, following: following),
+      followersAuthoritative: followersAuthoritative,
+      followingAuthoritative: followingAuthoritative,
+    );
+  }
+
+  /// Selects the best-covered follower count across relay observations.
+  ///
+  /// Only used on the relay-fallback path, where aggregate counts cannot
+  /// distinguish a stale over-count from a source with broader relay
+  /// coverage. Completion only means that source finished answering; it
+  /// does not make its holdings globally authoritative, so a lower
+  /// observation must not discard a potentially better-covered source.
+  static int _selectFollowerCount(
+    List<_FollowerCountObservation> observations,
+  ) {
+    if (observations.isEmpty) return 0;
+    return observations.map((result) => result.count).reduce(max);
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -989,7 +1208,7 @@ class FollowRepository {
           'REST API follower stats: '
           '${counts.followerCount} followers, '
           '${counts.followingCount} following '
-          'for $pubkey',
+          'for ${pubkeyForLogs(pubkey)}',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1010,21 +1229,26 @@ class FollowRepository {
   }
 
   /// Fetch follower stats via WebSocket queries (parallel).
-  Future<FollowerStats> _fetchFollowerStatsViaWebSocket(String pubkey) async {
+  Future<_WebSocketFollowerStats> _fetchFollowerStatsViaWebSocket(
+    String pubkey,
+  ) async {
     try {
-      final results = await Future.wait([
+      final (following, followerCounts) = await (
         _fetchFollowingCountViaWebSocket(pubkey),
         _fetchFollowersCountViaIndexers(pubkey),
-      ]);
+      ).wait;
 
-      return FollowerStats(following: results[0], followers: results[1]);
+      return (following: following, followerCounts: followerCounts);
     } catch (e) {
       Log.error(
         'Error fetching follower stats via WebSocket: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return FollowerStats.zero;
+      return (
+        following: 0,
+        followerCounts: const <_FollowerCountObservation>[],
+      );
     }
   }
 
@@ -1045,7 +1269,7 @@ class FollowRepository {
           .where((tag) => tag.isNotEmpty && tag[0] == 'p')
           .length;
       Log.debug(
-        'WebSocket following count: $count for $pubkey',
+        'WebSocket following count: $count for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1054,8 +1278,10 @@ class FollowRepository {
     return 0;
   }
 
-  /// Get followers count by querying indexer relays directly.
-  Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
+  /// Get follower-count observations by querying indexer relays directly.
+  Future<List<_FollowerCountObservation>> _fetchFollowersCountViaIndexers(
+    String pubkey,
+  ) async {
     final results = await Future.wait(
       _indexerRelayUrls.map(
         (url) =>
@@ -1066,37 +1292,26 @@ class FollowRepository {
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
-              return 0;
+              return null;
             }),
       ),
     );
 
-    // Use the highest count from any indexer
-    var best = 0;
-    for (final count in results) {
-      if (count > best) best = count;
-    }
-
-    Log.info(
-      'Indexer followers counts: $results, '
-      'using $best for $pubkey',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
-
-    return best;
+    return results.whereType<_FollowerCountObservation>().toList();
   }
 
   /// Query a single indexer relay for kind 3 events mentioning pubkey.
-  Future<int> _queryIndexerForFollowerCount(
+  Future<_FollowerCountObservation?> _queryIndexerForFollowerCount(
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<int>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
+    var isComplete = false;
 
     relay.onMessage = (relay, jsonMsg) async {
       if (jsonMsg.isEmpty) return;
@@ -1111,6 +1326,7 @@ class FollowRepository {
         }
       } else if (messageType == 'EOSE') {
         if (!completer.isCompleted) {
+          isComplete = true;
           completer.complete(followerPubkeys.length);
         }
       }
@@ -1123,41 +1339,49 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) {
-        return 0;
+        return null;
       }
 
-      final result = await completer.future.timeout(
-        const Duration(seconds: 8),
+      final result = await _awaitIndexerOperation<int>(
+        completer.future,
+        deadline,
+        cap: _indexerQueryTimeout,
         onTimeout: () => followerPubkeys.length,
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       Log.debug(
         'Indexer $indexerUrl returned $result '
-        'followers for $pubkey',
+        'followers for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return result;
+      return (count: result, isComplete: isComplete, source: indexerUrl);
     } catch (e) {
       Log.warning(
         'Error querying $indexerUrl for followers: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return followerPubkeys.length;
+      return followerPubkeys.isEmpty
+          ? null
+          : (
+              count: followerPubkeys.length,
+              isComplete: isComplete,
+              source: indexerUrl,
+            );
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (e) {
-        Log.warning(
-          'Error disconnecting from $indexerUrl: $e',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-      }
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
@@ -1175,7 +1399,9 @@ class FollowRepository {
   ///
   /// Ordering comes from [_newestFirst].
   ///
-  /// Returns empty list on timeout or failure.
+  /// Returns an empty list when every successful source reports no followers.
+  /// Propagates a source error when no source returns a usable follower, since
+  /// callers cannot distinguish that result from a genuinely empty list.
   Future<List<String>> _fetchFollowers(String pubkey) async =>
       (await _fetchOrderedFollowers(pubkey)).pubkeys;
 
@@ -1190,17 +1416,14 @@ class FollowRepository {
       return (pubkeys: <String>[], datedCount: 0);
     }
 
-    // The API and indexer sources are best-effort here; a connected-relay
-    // failure still fails the whole call, as it always has.
-    final sources = _followerSources(pubkey);
-    final results = await Future.wait<List<_FollowerRef>>([
-      sources[0].catchError((_) => <_FollowerRef>[]),
-      sources[1],
-      sources[2].catchError((_) => <_FollowerRef>[]),
-    ]);
-    final apiFollowers = results[0];
-    final relayFollowers = results[1];
-    final indexerFollowers = results[2];
+    // One unavailable source must not discard usable observations from the
+    // others, but total failure is not evidence that the user has no followers.
+    final results = await Future.wait<_FollowerSourceResult>(
+      _followerSources(pubkey).map(_guardFollowerSource),
+    );
+    final apiFollowers = results[0].refs;
+    final relayFollowers = results[1].refs;
+    final indexerFollowers = results[2].refs;
 
     // Merge all sources (union of pubkeys)
     final merged = _newestFirst([
@@ -1209,6 +1432,17 @@ class FollowRepository {
       ...indexerFollowers,
     ]);
 
+    _FollowerSourceResult? failed;
+    for (final result in results) {
+      if (result.error != null) failed = result;
+    }
+    if (merged.pubkeys.isEmpty && failed != null) {
+      Error.throwWithStackTrace(
+        failed.error!,
+        failed.stackTrace ?? StackTrace.empty,
+      );
+    }
+
     // Unique per source, not raw events: the relay and indexer paths hand
     // back one ref per kind 3 they saw, so a follower whose superseded event
     // is still being served would otherwise inflate them against `merged`.
@@ -1216,7 +1450,7 @@ class FollowRepository {
         refs.map((ref) => ref.pubkey).toSet().length;
 
     Log.info(
-      'Followers for $pubkey: '
+      'Followers for ${pubkeyForLogs(pubkey)}: '
       'API=${uniqueCount(apiFollowers)}, '
       'relays=${uniqueCount(relayFollowers)}, '
       'indexers=${uniqueCount(indexerFollowers)}, '
@@ -1320,7 +1554,7 @@ class FollowRepository {
     final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
         ? _funnelcakeApiClient!
               .getFollowers(pubkey: pubkey, limit: 5000)
-              .then(
+              .then<List<_FollowerRef>>(
                 (r) => [
                   for (final follower in r.pubkeys)
                     (pubkey: follower, followedAt: null),
@@ -1334,6 +1568,17 @@ class FollowRepository {
       _fetchFollowerRefsFromIndexers(pubkey),
     ];
   }
+
+  Future<_FollowerSourceResult> _guardFollowerSource(
+    Future<List<_FollowerRef>> source,
+  ) => source.then<_FollowerSourceResult>(
+    (refs) => (refs: refs, error: null, stackTrace: null),
+    onError: (Object error, StackTrace stackTrace) => (
+      refs: const <_FollowerRef>[],
+      error: error,
+      stackTrace: stackTrace,
+    ),
+  );
 
   /// Streams the current user's followers as each source resolves.
   ///
@@ -1368,18 +1613,12 @@ class FollowRepository {
     Object? lastError;
     StackTrace? lastStackTrace;
 
-    final guarded = _followerSources(pubkey).map(
-      (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
-        (refs) => (refs, null, null),
-        onError: (Object error, StackTrace stackTrace) =>
-            (const <_FollowerRef>[], error, stackTrace),
-      ),
-    );
+    final guarded = _followerSources(pubkey).map(_guardFollowerSource);
 
-    await for (final (refs, error, stackTrace)
-        in Stream<(List<_FollowerRef>, Object?, StackTrace?)>.fromFutures(
-          guarded,
-        )) {
+    await for (final result in Stream<_FollowerSourceResult>.fromFutures(
+      guarded,
+    )) {
+      final (:refs, :error, :stackTrace) = result;
       if (error != null) {
         lastError = error;
         lastStackTrace = stackTrace;
@@ -1440,7 +1679,7 @@ class FollowRepository {
             onTimeout: () {
               Log.warning(
                 'Followers relay query timed out '
-                'for $pubkey',
+                'for ${pubkeyForLogs(pubkey)}',
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
@@ -1457,7 +1696,7 @@ class FollowRepository {
       ];
     } on TimeoutException {
       Log.warning(
-        'Followers relay query timed out for $pubkey',
+        'Followers relay query timed out for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1485,7 +1724,7 @@ class FollowRepository {
 
     Log.debug(
       'Indexer follower pubkeys: '
-      '${refs.map((ref) => ref.pubkey).toSet().length} for $pubkey',
+      '${refs.map((ref) => ref.pubkey).toSet().length} for ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1501,6 +1740,7 @@ class FollowRepository {
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<List<_FollowerRef>>();
@@ -1537,17 +1777,27 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) {
         return [];
       }
 
-      final result = await completer.future.timeout(
-        _fetchFollowersTimeout,
+      final result = await _awaitIndexerOperation<List<_FollowerRef>>(
+        completer.future,
+        deadline,
+        cap: _fetchFollowersTimeout,
         onTimeout: () => List<_FollowerRef>.of(followers),
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       return result;
     } catch (e) {
       Log.warning(
@@ -1557,9 +1807,7 @@ class FollowRepository {
       );
       return List<_FollowerRef>.of(followers);
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (_) {}
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
@@ -1584,7 +1832,7 @@ class FollowRepository {
           await _checkIfTheyFollowUs(pubkey);
     } catch (e) {
       Log.warning(
-        'Failed to check mutual follow for $pubkey: $e',
+        'Failed to check mutual follow for ${pubkeyForLogs(pubkey)}: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1624,7 +1872,7 @@ class FollowRepository {
       return false;
     } catch (e) {
       Log.warning(
-        'Failed to check if $pubkey follows us: $e',
+        'Failed to check if ${pubkeyForLogs(pubkey)} follows us: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1729,7 +1977,7 @@ class FollowRepository {
     // the Kind 3 publish later, which would block every subsequent follow.
     if (!keyIsValid(pubkey)) {
       Log.error(
-        'Cannot follow - invalid pubkey: $pubkey',
+        'Cannot follow - invalid pubkey: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1748,7 +1996,7 @@ class FollowRepository {
 
     if (_followingPubkeys.contains(pubkey)) {
       Log.debug(
-        'Already following user: $pubkey',
+        'Already following user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1756,7 +2004,7 @@ class FollowRepository {
     }
 
     Log.debug(
-      'Following user: $pubkey',
+      'Following user: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1778,7 +2026,7 @@ class FollowRepository {
 
       Log.info(
         'Queued follow action for offline sync: '
-        '$pubkey',
+        '${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1793,7 +2041,7 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Successfully followed user: $pubkey',
+        'Successfully followed user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1834,7 +2082,7 @@ class FollowRepository {
     await _saveToLocalStorage();
 
     Log.info(
-      'Executed follow action for: $pubkey',
+      'Executed follow action for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1863,7 +2111,7 @@ class FollowRepository {
 
     if (!_followingPubkeys.contains(pubkey)) {
       Log.debug(
-        'Not following user: $pubkey',
+        'Not following user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1871,7 +2119,7 @@ class FollowRepository {
     }
 
     Log.debug(
-      'Unfollowing user: $pubkey',
+      'Unfollowing user: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1893,7 +2141,7 @@ class FollowRepository {
 
       Log.info(
         'Queued unfollow action for offline sync: '
-        '$pubkey',
+        '${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1908,7 +2156,7 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Successfully unfollowed user: $pubkey',
+        'Successfully unfollowed user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1949,7 +2197,7 @@ class FollowRepository {
     await _saveToLocalStorage();
 
     Log.info(
-      'Executed unfollow action for: $pubkey',
+      'Executed unfollow action for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -2317,6 +2565,7 @@ class FollowRepository {
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<Event?>();
@@ -2358,15 +2607,25 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) return null;
 
-      final result = await completer.future.timeout(
-        const Duration(seconds: 5),
+      final result = await _awaitIndexerOperation<Event?>(
+        completer.future,
+        deadline,
+        cap: const Duration(seconds: 5),
         onTimeout: () => bestEvent,
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       return result;
     } catch (e) {
       Log.warning(
@@ -2377,9 +2636,7 @@ class FollowRepository {
       );
       return bestEvent;
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (_) {}
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
@@ -2403,7 +2660,7 @@ class FollowRepository {
 
     Log.debug(
       'Subscribing to contact list for: '
-      '$currentUserPubkey',
+      '${pubkeyForLogs(currentUserPubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -2495,6 +2752,79 @@ class FollowRepository {
     return publishable;
   }
 
+  /// How long the pre-broadcast read waits for every relay to settle.
+  ///
+  /// Deliberately shorter than the 5s default: an expiry reports `timedOut`,
+  /// which withholds the broadcast, so erring short errs toward not
+  /// overwriting. It also bounds what a follow tap costs.
+  static const _contactListReadTimeout = Duration(seconds: 3);
+
+  /// Re-read our own kind 3 and report whether the answer was conclusive.
+  ///
+  /// Returns `false` when no relay settled the query — a timeout, or a
+  /// fan-out no relay took. That is not the same as "this account follows
+  /// nobody", and the difference decides whether it is safe to replace the
+  /// event: kind 3 is replaceable, so a broadcast built on an unread answer
+  /// deletes whatever only the unread event held. A *settled* answer of zero
+  /// events is conclusive and returns `true`, so a first-ever follow still
+  /// publishes.
+  ///
+  /// [NostrClient.queryEvents] cannot express this — it drops `timedOut` and
+  /// `noRelays` — which is why the detailed form is used, with
+  /// `requireAllRelaysSettled` so a relay abandoned by the settle window
+  /// arrives as a timeout rather than as an empty answer.
+  Future<bool> _refreshCurrentUserContactList() async {
+    final pubkey = _nostrClient.publicKey;
+    if (pubkey.isEmpty) return false;
+
+    final result = await _nostrClient.queryEventsDetailed(
+      [
+        Filter(authors: [pubkey], kinds: const [EventKind.contactList]),
+      ],
+      requireAllRelaysSettled: true,
+      timeout: _contactListReadTimeout,
+    );
+
+    var newest = _currentUserContactListEvent;
+    for (final event in result.events) {
+      if (event.pubkey != pubkey) continue;
+      if (event.kind != EventKind.contactList) continue;
+      final current = newest;
+      if (current != null && event.createdAt <= current.createdAt) continue;
+      newest = event;
+    }
+    _currentUserContactListEvent = newest;
+
+    return !result.timedOut && !result.noRelays;
+  }
+
+  /// Rebroadcast a contact list whose publish was withheld by an inconclusive
+  /// read.
+  ///
+  /// A no-op unless something is pending, so callers can fire it on any "we
+  /// might be healthy again" signal. Follows and unfollows rebroadcast the
+  /// whole list themselves, so this only matters for a user who followed once
+  /// while relays were unhealthy and has not followed since.
+  ///
+  /// Returns whether the broadcast reached a relay. [_broadcastContactList]
+  /// throws when the publish itself fails; this is a background retry with no
+  /// caller to surface that to, so it is logged and reported as `false` rather
+  /// than propagated. The pending flag stays set, so the next signal retries.
+  Future<bool> retryPendingContactListBroadcast() async {
+    if (!_contactListBroadcastPending) return false;
+    try {
+      await _broadcastContactList();
+      return !_contactListBroadcastPending;
+    } on Object catch (e) {
+      Log.warning(
+        'Retry of a withheld contact list broadcast failed: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
     // Last line of defence: [executeFollowAction] appends without validating,
@@ -2506,6 +2836,22 @@ class FollowRepository {
       source: 'in-memory following list',
     );
     _emitFollowingList();
+
+    // Establish what the relay currently holds before replacing it. Without
+    // this, a cold start publishes `content: ''` over whatever was there —
+    // `_currentUserContactListEvent` is memory-only, and NIP-02 puts the
+    // user's relay list in that field (#8265). The follow is already applied
+    // locally and persisted, so withholding costs propagation, not the follow.
+    if (!await _refreshCurrentUserContactList()) {
+      _contactListBroadcastPending = true;
+      Log.warning(
+        'Withholding contact list broadcast - could not confirm the current '
+        'kind 3. Follows stay local until a read succeeds.',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     final contactList = ContactList();
     for (final pubkey in _publishableFollows()) {
@@ -2526,6 +2872,7 @@ class FollowRepository {
     _cacheUserEvent?.call(event);
 
     _currentUserContactListEvent = event;
+    _contactListBroadcastPending = false;
 
     Log.debug(
       'Broadcasted contact list: ${event.id}',

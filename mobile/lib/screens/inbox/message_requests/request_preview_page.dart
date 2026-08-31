@@ -20,6 +20,7 @@ class RequestPreviewPage extends ConsumerWidget {
   const RequestPreviewPage({
     required this.conversationId,
     this.participantPubkeys = const [],
+    this.subject,
     super.key,
   });
 
@@ -31,6 +32,7 @@ class RequestPreviewPage extends ConsumerWidget {
   /// When empty (e.g. deep link), pubkeys are loaded from the database for
   /// non-restricted users; a DM-restricted user fails closed instead (#176).
   final List<String> participantPubkeys;
+  final String? subject;
 
   static const routeName = 'requestPreview';
   static const pathPattern = '/inbox/message-requests/:id';
@@ -57,7 +59,15 @@ class RequestPreviewPage extends ConsumerWidget {
           )..load(),
         ),
         BlocProvider(
-          create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
+          // Re-key on the captured auth-flippable repository so the cubit is
+          // rebuilt on account switch rather than acting on the previous
+          // account's data. See
+          // .claude/rules/state_management.md ("Bridging Riverpod-provided
+          // dependencies into BlocProvider").
+          key: ValueKey(dmRepository),
+          create: (_) => MessageRequestActionsCubit(
+            dmRepository: dmRepository,
+          ),
         ),
         BlocProvider(
           create: (_) => CollaboratorInviteActionsCubit(
@@ -70,7 +80,7 @@ class RequestPreviewPage extends ConsumerWidget {
           ),
         ),
       ],
-      child: const RequestPreviewView(),
+      child: RequestPreviewView(subject: subject),
     );
   }
 }

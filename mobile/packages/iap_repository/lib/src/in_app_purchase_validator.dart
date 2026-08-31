@@ -2,7 +2,9 @@
 // ABOUTME: plugin (StoreKit on iOS, Google Play Billing on Android).
 
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:iap_repository/src/entitlement_validator.dart';
 import 'package:iap_repository/src/exceptions.dart';
@@ -85,16 +87,19 @@ class InAppPurchaseValidator implements EntitlementValidator {
 
   Future<void> _processPurchase(PurchaseDetails purchase) async {
     final pending = _pendingPurchases.remove(purchase.productID);
+    final context = pending == null && _restoreContext != null
+        ? _PurchaseContext(
+            capturedPubkey: _restoreContext!.capturedPubkey,
+            attemptId: _restoreContext!.attemptId,
+            silent: _restoreContext!.silent,
+          )
+        : pending;
     switch (purchase.status) {
       case PurchaseStatus.purchased:
       case PurchaseStatus.restored:
-        _lifecycleController.add(EntitlementLifecycle.confirming);
-        final context = pending == null && _restoreContext != null
-            ? _PurchaseContext(
-                capturedPubkey: _restoreContext!.capturedPubkey,
-                attemptId: _restoreContext!.attemptId,
-              )
-            : pending;
+        if (context?.silent != true) {
+          _lifecycleController.add(EntitlementLifecycle.confirming);
+        }
         final proof = _proofFromPurchase(purchase, context);
         _unacknowledgedPurchases[proof.attemptId] = purchase;
         _proofController.add(proof);
@@ -107,7 +112,9 @@ class InAppPurchaseValidator implements EntitlementValidator {
           purchase.error?.message ?? 'Purchase failed.',
         );
         pending?.completer?.completeError(exception);
-        _entitlementController.addError(exception);
+        if (context?.silent != true) {
+          _entitlementController.addError(exception);
+        }
       case PurchaseStatus.canceled:
         const exception = PurchaseFailedException(
           null,
@@ -120,7 +127,9 @@ class InAppPurchaseValidator implements EntitlementValidator {
         if (pending != null) {
           _pendingPurchases[purchase.productID] = pending;
         }
-        _lifecycleController.add(EntitlementLifecycle.pending);
+        if (context?.silent != true) {
+          _lifecycleController.add(EntitlementLifecycle.pending);
+        }
     }
   }
 
@@ -129,10 +138,11 @@ class InAppPurchaseValidator implements EntitlementValidator {
     _PurchaseContext? context,
   ) {
     final transactionId = purchase.purchaseID;
-    final contextId = context?.attemptId ?? 'store-${purchase.productID}';
-    final attemptId = transactionId == null || transactionId.isEmpty
-        ? contextId
-        : '$contextId:$transactionId';
+    final proofIdentity = transactionId == null || transactionId.isEmpty
+        ? purchase.verificationData.serverVerificationData
+        : transactionId;
+    final proofDigest = sha256.convert(utf8.encode(proofIdentity));
+    final attemptId = 'store-${purchase.productID}:$proofDigest';
     return SupporterPurchaseProof(
       attemptId: attemptId,
       store: defaultTargetPlatform == TargetPlatform.iOS ? 'apple' : 'google',
@@ -141,6 +151,7 @@ class InAppPurchaseValidator implements EntitlementValidator {
       localVerificationData: purchase.verificationData.localVerificationData,
       transactionId: transactionId,
       capturedPubkey: context?.capturedPubkey,
+      silent: context?.silent ?? false,
     );
   }
 
@@ -221,6 +232,7 @@ class InAppPurchaseValidator implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   }) async {
     if (!await _store.isAvailable()) {
       throw const StoreUnavailableException();
@@ -230,8 +242,13 @@ class InAppPurchaseValidator implements EntitlementValidator {
       capturedPubkey: capturedPubkey,
       attemptId:
           attemptId ?? 'restore-${DateTime.now().microsecondsSinceEpoch}',
+      silent: silent,
     );
-    await _store.restorePurchases();
+    try {
+      await _store.restorePurchases();
+    } finally {
+      _restoreContext = null;
+    }
 
     // Restored purchases are delivered on the purchase stream. We resolve to
     // inactive synchronously and rely on the stream + repository cache to
@@ -275,11 +292,13 @@ class _PurchaseContext {
     required this.capturedPubkey,
     required this.attemptId,
     this.completer,
+    this.silent = false,
   });
 
   final Completer<SupporterEntitlement>? completer;
   final String? capturedPubkey;
   final String attemptId;
+  final bool silent;
 }
 
 typedef _PendingPurchase = _PurchaseContext;
@@ -288,8 +307,10 @@ class _RestoreContext {
   const _RestoreContext({
     required this.capturedPubkey,
     required this.attemptId,
+    required this.silent,
   });
 
   final String? capturedPubkey;
   final String attemptId;
+  final bool silent;
 }

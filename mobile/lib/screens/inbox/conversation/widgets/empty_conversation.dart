@@ -21,6 +21,7 @@ class EmptyConversation extends StatelessWidget {
     this.nip05,
     this.onViewProfile,
     this.mayBeIncomplete = false,
+    this.isIdentityResolving = false,
     super.key,
   });
 
@@ -39,6 +40,10 @@ class EmptyConversation extends StatelessWidget {
   /// line instead of silently asserting the conversation is empty.
   final bool mayBeIncomplete;
 
+  /// Whether the participant avatar and name should use the identity loading
+  /// treatment while their profile is being resolved.
+  final bool isIdentityResolving;
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -46,25 +51,36 @@ class EmptyConversation extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          UserAvatar(
-            imageUrl: imageUrl,
-            name: displayName,
-            placeholderSeed: pubkey,
-            size: 96,
-            contentOverride: isModerationAccount(pubkey)
-                ? const ModerationAvatar()
-                : null,
+          Semantics(
+            label: isIdentityResolving ? context.l10n.commonLoading : null,
+            child: IdentitySkeletonizer(
+              isLoading: isIdentityResolving,
+              excludeSemantics: true,
+              child: UserAvatar(
+                imageUrl: imageUrl,
+                name: displayName,
+                placeholderSeed: pubkey,
+                size: 96,
+                contentOverride: isModerationAccount(pubkey)
+                    ? const ModerationAvatar()
+                    : null,
+              ),
+            ),
           ),
           const SizedBox(height: 32),
           // User info
-          Text(
-            displayName,
-            style: VineTheme.titleLargeFont(
-              color: context.vineColors.primaryText,
+          IdentitySkeletonizer(
+            isLoading: isIdentityResolving,
+            excludeSemantics: true,
+            child: Text(
+              displayName,
+              style: VineTheme.titleLargeFont(
+                color: context.vineColors.primaryText,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           if (nip05 != null && nip05!.isNotEmpty) ...[
             const SizedBox(height: 4),

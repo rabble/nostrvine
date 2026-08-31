@@ -1,6 +1,8 @@
 // ABOUTME: Exception classes for the likes repository.
 // ABOUTME: Provides typed exceptions for like/unlike operations.
 
+import 'package:nostr_client/nostr_client.dart';
+
 /// Base exception for all likes repository errors.
 class LikesRepositoryException implements Exception {
   /// Creates a new likes repository exception.
@@ -25,6 +27,21 @@ class LikeFailedException extends LikesRepositoryException {
 
   @override
   String toString() => 'LikeFailedException: $message';
+}
+
+/// The authoritative Divine relay rejected the action because the account is
+/// suspended or banned.
+///
+/// This is terminal: callers must not place the action in an offline retry
+/// queue. UI code may use the type to open the Account Status explanation.
+class LikeAccountRestrictedException extends LikesRepositoryException
+    implements TerminalSocialActionException {
+  /// Creates the terminal restriction signal.
+  const LikeAccountRestrictedException()
+    : super('Account is restricted from publishing social actions');
+
+  @override
+  String toString() => 'LikeAccountRestrictedException';
 }
 
 /// Exception thrown when an unlike operation fails.

@@ -59,13 +59,6 @@ Widget _buildSubject({
         pageContextProvider.overrideWith(
           (ref) => Stream.value(const RouteContext(type: RouteType.home)),
         ),
-        relayStatisticsBridgeProvider.overrideWithValue(null),
-        relaySetChangeBridgeProvider.overrideWithValue(null),
-        zendeskIdentitySyncProvider.overrideWithValue(null),
-        analyticsIdentitySyncProvider.overrideWithValue(null),
-        pushNotificationSyncProvider.overrideWithValue(null),
-        blocklistSyncBridgeProvider.overrideWithValue(null),
-        blockedFollowReconcilerProvider.overrideWithValue(null),
         authServiceProvider.overrideWithValue(mockAuthService),
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         currentEnvironmentProvider.overrideWithValue(

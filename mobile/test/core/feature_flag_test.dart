@@ -63,13 +63,13 @@ void main() {
         FeatureFlag.communityContentWarnings.audience,
         FeatureFlagAudience.internal,
       );
-      expect(
-        FeatureFlag.publishDmRelayList.audience,
-        FeatureFlagAudience.internal,
-      );
       expect(FeatureFlag.feedTuning.audience, FeatureFlagAudience.internal);
       expect(
-        FeatureFlag.communityContentWarnings.audience,
+        FeatureFlag.postPublishConfirmationExperiment.audience,
+        FeatureFlagAudience.internal,
+      );
+      expect(
+        FeatureFlag.postPublishConfirmationTreatment.audience,
         FeatureFlagAudience.internal,
       );
     });

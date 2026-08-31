@@ -28,45 +28,47 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('pooled feed provider chain is web-compatible', () async {
-    final prefs = await SharedPreferences.getInstance();
-    final mockKeyStorage = _MockSecureKeyStorage();
-    final secureStorage = MockSecureStorage();
+  group('web feed provider compatibility', () {
+    test('pooled feed provider chain is web-compatible', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final mockKeyStorage = _MockSecureKeyStorage();
+      final secureStorage = MockSecureStorage();
 
-    when(mockKeyStorage.initialize).thenAnswer((_) async {});
-    when(mockKeyStorage.hasKeys).thenAnswer((_) async => false);
-    when(mockKeyStorage.getKeyContainer).thenAnswer((_) async => null);
-    when(mockKeyStorage.clearCache).thenReturn(null);
-    when(mockKeyStorage.dispose).thenReturn(null);
-    when(mockKeyStorage.deleteKeys).thenAnswer((_) async {});
-    when(
-      () => mockKeyStorage.storeIdentityKeyContainer(any(), any()),
-    ).thenAnswer((_) async {});
-    when(
-      () => mockKeyStorage.getIdentityKeyContainer(
-        any(),
-        biometricPrompt: any(named: 'biometricPrompt'),
-      ),
-    ).thenAnswer((_) async => null);
-    when(
-      () => mockKeyStorage.switchToIdentity(
-        any(),
-        biometricPrompt: any(named: 'biometricPrompt'),
-      ),
-    ).thenAnswer((_) async => true);
+      when(mockKeyStorage.initialize).thenAnswer((_) async {});
+      when(mockKeyStorage.hasKeys).thenAnswer((_) async => false);
+      when(mockKeyStorage.getKeyContainer).thenAnswer((_) async => null);
+      when(mockKeyStorage.clearCache).thenReturn(null);
+      when(mockKeyStorage.dispose).thenReturn(null);
+      when(mockKeyStorage.deleteKeys).thenAnswer((_) async {});
+      when(
+        () => mockKeyStorage.storeIdentityKeyContainer(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockKeyStorage.switchToIdentity(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => true);
 
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        secureKeyStorageProvider.overrideWith((ref) => mockKeyStorage),
-        flutterSecureStorageProvider.overrideWith((ref) => secureStorage),
-      ],
-    );
-    addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          secureKeyStorageProvider.overrideWith((ref) => mockKeyStorage),
+          flutterSecureStorageProvider.overrideWith((ref) => secureStorage),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    expect(() => container.read(mediaCacheProvider), returnsNormally);
-    expect(() => container.read(authServiceProvider), returnsNormally);
-    expect(() => container.read(blossomAuthServiceProvider), returnsNormally);
-    expect(() => container.read(featureFlagServiceProvider), returnsNormally);
+      expect(() => container.read(mediaCacheProvider), returnsNormally);
+      expect(() => container.read(authServiceProvider), returnsNormally);
+      expect(() => container.read(blossomAuthServiceProvider), returnsNormally);
+      expect(() => container.read(featureFlagServiceProvider), returnsNormally);
+    });
   });
 }

@@ -1,11 +1,6 @@
 // ABOUTME: Pins Hive's home path to one directory regardless of open order
 // ABOUTME: Covers migration of boxes stranded in the legacy documents directory
 
-// Permanent: mutates PathProviderPlatform.instance and Hive's process-global
-// home path while validating where box files land.
-@Tags(['skip_very_good_optimization'])
-library;
-
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +40,23 @@ void main() {
     late PathProviderPlatform originalPathProvider;
 
     setUp(() async {
+      originalPathProvider = PathProviderPlatform.instance;
+      addTearDown(() {
+        PathProviderPlatform.instance = originalPathProvider;
+        HiveStorageService.resetForTesting();
+      });
+
+      // A box another suite left open short-circuits `Hive.openBox`, which
+      // returns the registered box without consulting the home path — these
+      // assertions would then read a stale location. Hive unregisters a box
+      // before its backend close, so a missing prior home can be tolerated
+      // without hiding other close failures.
+      try {
+        await Hive.close();
+      } on FileSystemException {
+        // The stale box is already out of Hive's registry.
+      }
+
       root = await Directory.systemTemp.createTemp('hive_storage_service_');
       documentsDir = await Directory(
         p.join(root.path, 'Documents'),
@@ -57,7 +69,6 @@ void main() {
         HiveStorageService.homeDirectoryName,
       );
 
-      originalPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = _FakePathProviderPlatform(
         documentsPath: documentsDir.path,
         appSupportPath: appSupportDir.path,
@@ -67,10 +78,14 @@ void main() {
     });
 
     tearDown(() async {
-      await Hive.close();
-      PathProviderPlatform.instance = originalPathProvider;
-      HiveStorageService.resetForTesting();
-      if (root.existsSync()) root.deleteSync(recursive: true);
+      try {
+        await Hive.close();
+      } finally {
+        // close() leaves the home path pointing at the directory deleted below,
+        // and resetForTesting() only clears this service's own latch.
+        Hive.init(null);
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      }
     });
 
     test('opens boxes under the Application Support home directory', () async {

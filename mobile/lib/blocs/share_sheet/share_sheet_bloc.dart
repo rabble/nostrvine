@@ -6,15 +6,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/share_sheet/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -40,7 +41,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required VideoSharingService videoSharingService,
     required ProfileReader profileRepository,
     required FollowRepository followRepository,
-    Future<BookmarkService?>? bookmarkServiceFuture,
+    required String currentUserPubkey,
+    Future<BookmarksRepository?>? bookmarksRepositoryFuture,
     BaseCacheManager? cacheManager,
     VideoClipImportService? videoClipImportService,
   }) : _video = video,
@@ -48,7 +50,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
        _videoSharingService = videoSharingService,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
-       _bookmarkServiceFuture = bookmarkServiceFuture,
+       _currentUserPubkey = currentUserPubkey,
+       _bookmarksRepositoryFuture = bookmarksRepositoryFuture,
        _cacheManager = cacheManager,
        _videoClipImportService = videoClipImportService,
        super(const ShareSheetState()) {
@@ -75,7 +78,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final VideoSharingService _videoSharingService;
   final ProfileReader _profileRepository;
   final FollowRepository _followRepository;
-  final Future<BookmarkService?>? _bookmarkServiceFuture;
+  final String _currentUserPubkey;
+  final Future<BookmarksRepository?>? _bookmarksRepositoryFuture;
   final BaseCacheManager? _cacheManager;
   final VideoClipImportService? _videoClipImportService;
 
@@ -100,8 +104,16 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     );
 
     try {
-      final recentUsers = _videoSharingService.recentlySharedWith;
-      final followList = _followRepository.followingPubkeys;
+      // Divine does not support a self-addressed conversation (#8351), so
+      // the viewer is never a share target. Both sources can carry them: a
+      // contact list written by another Nostr client can self-follow, and
+      // recents accumulate whoever a share was sent to.
+      final recentUsers = _videoSharingService.recentlySharedWith
+          .where((user) => !_isSelf(user.pubkey))
+          .toList();
+      final followList = _followRepository.followingPubkeys.where(
+        (pubkey) => !_isSelf(pubkey),
+      );
       final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
 
       final remainingFollows = followList
@@ -234,6 +246,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
   }
 
+  /// Whether [pubkey] addresses the viewer.
+  ///
+  /// Case-insensitive, because a pubkey that reaches Divine from another
+  /// client may be upper-case hex.
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
+
   // --------------------------------------------------------------------------
   // Recipient selection
   // --------------------------------------------------------------------------
@@ -243,6 +261,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     Emitter<ShareSheetState> emit,
   ) {
     final recipient = event.recipient;
+    // Find People searches all users, so it can surface the viewer even
+    // though neither contact source offers them (#8351).
+    if (_isSelf(recipient.pubkey)) return;
+
     final updatedSelection = state.isSelected(recipient)
         ? [
             for (final r in state.selectedRecipients)
@@ -373,7 +395,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 
   /// Resolves [ShareSheetState.bookmarkStatus] from a relay-reconciled read.
   ///
-  /// Uses the non-authoritative [BookmarkService.syncGlobalBookmarks] rather
+  /// Uses the non-authoritative [BookmarksRepository.syncGlobalBookmarks] rather
   /// than the full-settlement form the toggle pays for. `requireAuthoritative`
   /// exists to stop a partially-read list from becoming the base of a
   /// replacing publish; a label publishes nothing, and the toggle reconciles
@@ -387,11 +409,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     ShareSheetBookmarkStatusRequested event,
     Emitter<ShareSheetState> emit,
   ) async {
-    final bookmarkService = await _bookmarkServiceFuture;
-    if (bookmarkService == null || isClosed) return;
+    final bookmarksRepository = await _bookmarksRepositoryFuture;
+    if (bookmarksRepository == null || isClosed) return;
 
     try {
-      final reconciled = await bookmarkService.syncGlobalBookmarks();
+      final reconciled = await bookmarksRepository.syncGlobalBookmarks();
       if (isClosed ||
           !reconciled ||
           state.bookmarkStatus != ShareSheetBookmarkStatus.unknown) {
@@ -401,11 +423,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       // A list whose private items stayed encrypted cannot answer this: the
       // video may well be bookmarked inside `content`. Leaving the status
       // unresolved is the same call the inconclusive-read path makes above.
-      if (bookmarkService.hasUnreadablePrivateItems) return;
+      if (bookmarksRepository.hasUnreadablePrivateItems) return;
 
       emit(
         state.copyWith(
-          bookmarkStatus: bookmarkService.isVideoBookmarkedGlobally(_video.id)
+          bookmarkStatus:
+              bookmarksRepository.isVideoBookmarkedGlobally(_video.id)
               ? ShareSheetBookmarkStatus.saved
               : ShareSheetBookmarkStatus.notSaved,
         ),
@@ -443,10 +466,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     // inert for the whole window, which is the bug (#7073).
     emit(state.copyWith(isSaving: true, clearActionResult: true));
 
-    final bookmarkService = await _bookmarkServiceFuture;
+    final bookmarksRepository = await _bookmarksRepositoryFuture;
     if (isClosed) return;
 
-    if (bookmarkService == null) {
+    if (bookmarksRepository == null) {
       Log.warning(
         'Bookmark service unavailable — cannot save',
         name: 'ShareSheetBloc',
@@ -463,13 +486,15 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 
     // Best-effort guess, used only to word the message if the toggle throws
     // before it can report the reconciled state.
-    var wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(_video.id);
+    var wasBookmarked = bookmarksRepository.isVideoBookmarkedGlobally(
+      _video.id,
+    );
     try {
       // On the success path the direction comes from the toggle's own
       // reconciled read rather than the guess above — the two disagree when
       // the video was bookmarked on another device, and the sheet would then
       // claim the wrong outcome.
-      final result = await bookmarkService.toggleVideoInGlobalBookmarks(
+      final result = await bookmarksRepository.toggleVideoInGlobalBookmarks(
         _video.id,
       );
       if (isClosed) return;

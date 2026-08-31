@@ -9,10 +9,12 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -35,6 +37,9 @@ class _TestNostrSession extends NostrSession {
   NostrSessionReadiness build() => _readiness;
 }
 
+const _ordinaryPeerPubkey =
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
 void main() {
   // 64-character hex pubkey for tests.
   const testPubkey =
@@ -45,6 +50,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(<nostr_filter.Filter>[_FakeFilter()]);
+    registerFallbackValue(Duration.zero);
   });
 
   group('dmRepositoryProvider (#2931)', () {
@@ -77,6 +83,22 @@ void main() {
         ),
       ).thenAnswer((_) => const Stream<Event>.empty());
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          events: const <Event>[],
+          noRelays: false,
+          timedOut: false,
+        ),
+      );
 
       // AuthService stubs for auth-state-driven providers.
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -135,6 +157,69 @@ void main() {
       ).called(1);
       expect(repository.isInitialized, isTrue);
       expect(repository.userPubkey, equals(testPubkey));
+      expect(
+        container.read(dmReactionsRepositoryProvider).hasDmInboxRelayResolver,
+        isTrue,
+      );
+    });
+
+    // #8391: the removal policy is what stops ANY caller destroying a Divine
+    // Moderation enforcement notice. The repository default is permissive, so
+    // a forgotten injection here would silently reopen the hole this fixed —
+    // which is exactly how the bug arose, one layer up.
+    test('injects a removal policy that protects a moderation thread', () {
+      final container = createContainer(
+        readiness: NostrSessionReadiness.nostrReady(
+          pubkey: testPubkey,
+          client: mockNostrClient,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(dmRepositoryProvider);
+
+      expect(
+        repository.isRemovalProtected(
+          DmConversation(
+            id: 'moderation-thread',
+            participantPubkeys: const [testPubkey, kModerationPubkeyHex],
+            isGroup: false,
+            createdAt: 0,
+          ),
+        ),
+        isTrue,
+        reason: 'the current moderation key must be protected',
+      );
+      expect(
+        repository.isRemovalProtected(
+          DmConversation(
+            id: 'retired-moderation-thread',
+            participantPubkeys: [
+              testPubkey,
+              kLegacyModerationPubkeys.first,
+            ],
+            isGroup: false,
+            createdAt: 0,
+          ),
+        ),
+        isTrue,
+        reason: 'a retired key still carries enforcement history (#8302)',
+      );
+      expect(
+        repository.isRemovalProtected(
+          DmConversation(
+            id: 'ordinary-thread',
+            participantPubkeys: const [
+              testPubkey,
+              _ordinaryPeerPubkey,
+            ],
+            isGroup: false,
+            createdAt: 0,
+          ),
+        ),
+        isFalse,
+        reason: 'an ordinary peer stays removable',
+      );
     });
 
     test('does NOT open subscription before Nostr session is ready', () async {

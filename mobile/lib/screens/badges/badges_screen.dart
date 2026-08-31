@@ -6,7 +6,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/badges/badges_cubit.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -16,9 +15,8 @@ import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
-import 'package:openvine/screens/badges/widgets/badge_status_pill.dart';
+import 'package:openvine/widgets/badges/awarded_badge_card.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Shows the current user's Nostr badge dashboard.
 class BadgesScreen extends ConsumerWidget {
@@ -76,10 +74,8 @@ class _BadgesViewState extends State<BadgesView>
             icon: SvgIconSource(DivineIconName.plus.assetPath),
             tooltip: l10n.badgesCreateAction,
             semanticLabel: l10n.badgesCreateAction,
-            onPressed: () => _openAndRefresh(
-              context,
-              BadgeEditorScreen.createPath,
-            ),
+            onPressed: () =>
+                openBadgeAndRefresh(context, BadgeEditorScreen.createPath),
           ),
         ],
       ),
@@ -90,30 +86,13 @@ class _BadgesViewState extends State<BadgesView>
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [
-                _AwardedTab(),
-                _CreatedTab(),
-                _IssuedTab(),
-              ],
+              children: const [_AwardedTab(), _CreatedTab(), _IssuedTab()],
             ),
           ),
         ],
       ),
     );
   }
-}
-
-/// Pushes [path] and reloads the dashboard once it pops.
-///
-/// Creating, editing, and awarding all change what the tabs show, and none of
-/// them run through this screen's cubit.
-Future<void> _openAndRefresh(BuildContext context, String path) async {
-  final cubit = context.read<BadgesCubit>();
-  await context.push<bool>(path);
-  // The dashboard can be gone by the time the pushed route pops — a deep link
-  // out of it, or a sign-out rebuilding the repository.
-  if (cubit.isClosed) return;
-  await cubit.refresh();
 }
 
 class _BadgesTabBar extends StatelessWidget {
@@ -244,7 +223,7 @@ class _AwardedTab extends StatelessWidget {
         else
           _BadgeCardList(
             itemCount: state.awarded.length,
-            itemBuilder: (context, index) => _AwardedBadgeCard(
+            itemBuilder: (context, index) => AwardedBadgeCard(
               award: state.awarded[index],
               actionStatus: state.actionStatus,
             ),
@@ -339,139 +318,6 @@ class _IssuedTabState extends State<_IssuedTab> {
   }
 }
 
-class _AwardedBadgeCard extends StatelessWidget {
-  const _AwardedBadgeCard({required this.award, required this.actionStatus});
-
-  final BadgeAwardViewData award;
-  final BadgeActionStatus actionStatus;
-
-  bool get _isBusy =>
-      actionStatus == BadgeActionStatus.accepting ||
-      actionStatus == BadgeActionStatus.removing ||
-      actionStatus == BadgeActionStatus.hiding;
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<BadgesCubit>();
-    final coordinate = BadgeCoordinate.parse(award.definitionCoordinate);
-    return _Panel(
-      onTap: coordinate == null
-          ? null
-          : () => _openAndRefresh(
-              context,
-              BadgeDetailScreen.pathFor(coordinate),
-            ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _BadgeMedallion(imageUrl: award.imageUrl),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      award.displayName,
-                      style: VineTheme.titleMediumFont(
-                        color: context.vineColors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    BadgeStatusPill(
-                      label: award.isAccepted
-                          ? context.l10n.badgesStatusAccepted
-                          : context.l10n.badgesStatusNotAccepted,
-                      accepted: award.isAccepted,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (award.definition?.description?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 12),
-            Text(
-              award.definition!.description!,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              if (award.isAccepted)
-                DivineButton(
-                  label: context.l10n.badgesActionRemove,
-                  type: DivineButtonType.secondary,
-                  size: DivineButtonSize.small,
-                  isLoading: actionStatus == BadgeActionStatus.removing,
-                  onPressed: _isBusy ? null : () => cubit.removeAward(award),
-                )
-              else
-                DivineButton(
-                  label: context.l10n.badgesActionAccept,
-                  size: DivineButtonSize.small,
-                  isLoading: actionStatus == BadgeActionStatus.accepting,
-                  onPressed: _isBusy ? null : () => cubit.acceptAward(award),
-                ),
-              // Offered for an accepted badge too: removing only unpins it,
-              // and the badge stays on the list until it is also rejected.
-              // Withheld when the award event is gone — the badge is pinned
-              // and unremovable anywhere else, so dismissing the row is the
-              // one thing that must not be possible.
-              if (award.hasAwardEvent)
-                DivineButton(
-                  label: context.l10n.badgesActionReject,
-                  type: DivineButtonType.secondary,
-                  size: DivineButtonSize.small,
-                  isLoading: actionStatus == BadgeActionStatus.hiding,
-                  onPressed: _isBusy
-                      ? null
-                      : () => _hideWithUndo(context, award),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Rejects [award] and offers an immediate way back.
-///
-/// Without an undo a mistap would strand the badge in the hidden section,
-/// so the way back is offered right where the mistake happened.
-Future<void> _hideWithUndo(
-  BuildContext context,
-  BadgeAwardViewData award,
-) async {
-  final cubit = context.read<BadgesCubit>();
-  final messenger = ScaffoldMessenger.of(context);
-  final l10n = context.l10n;
-
-  await cubit.rejectAward(award);
-  if (cubit.state.actionStatus != BadgeActionStatus.completed) return;
-
-  messenger.showSnackBar(
-    DivineSnackbarContainer.snackBar(
-      l10n.badgesHiddenSnackbar,
-      actionLabel: l10n.badgesHiddenSnackbarUndo,
-      // The snackbar lives on the app-level messenger, so it outlives this
-      // route; undoing into a closed cubit would throw.
-      onActionPressed: () {
-        if (!cubit.isClosed) cubit.unhideAward(award);
-      },
-    ),
-  );
-}
-
-/// Collapsible list of awards the user dismissed, each restorable.
 class _HiddenAwardsSection extends StatefulWidget {
   const _HiddenAwardsSection({required this.hidden});
 
@@ -534,11 +380,11 @@ class _HiddenAwardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
+    return BadgePanel(
       child: Row(
         spacing: 14,
         children: [
-          _BadgeMedallion(imageUrl: award.imageUrl),
+          BadgeMedallion(imageUrl: award.imageUrl),
           Expanded(
             child: Text(
               award.displayName,
@@ -567,17 +413,17 @@ class _CreatedBadgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coordinate = BadgeCoordinate.parse(badge.coordinate);
-    return _Panel(
+    return BadgePanel(
       onTap: coordinate == null
           ? null
-          : () => _openAndRefresh(
+          : () => openBadgeAndRefresh(
               context,
               BadgeDetailScreen.pathFor(coordinate),
             ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _BadgeMedallion(imageUrl: badge.imageUrl),
+          BadgeMedallion(imageUrl: badge.imageUrl),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -621,7 +467,7 @@ class _IssuedBadgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasRecipients = badge.recipients.isNotEmpty;
-    return _Panel(
+    return BadgePanel(
       onTap: hasRecipients ? onToggle : null,
       child: Row(
         spacing: 12,
@@ -662,31 +508,6 @@ class _IssuedBadgeCard extends StatelessWidget {
   }
 }
 
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child, this.onTap});
-
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final panel = DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.vineColors.card,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.vineColors.outlineMuted),
-      ),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
-    );
-    if (onTap == null) return panel;
-
-    return Semantics(
-      button: true,
-      child: GestureDetector(onTap: onTap, child: panel),
-    );
-  }
-}
-
 class _EmptyPanel extends StatelessWidget {
   const _EmptyPanel({required this.title, required this.subtitle});
 
@@ -695,7 +516,7 @@ class _EmptyPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
+    return BadgePanel(
       child: Column(
         spacing: 6,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,7 +561,7 @@ class _BadgesLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _Panel(
+    return const BadgePanel(
       child: Center(child: BrandedLoadingIndicator(size: 60)),
     );
   }
@@ -751,7 +572,7 @@ class _BadgesErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
+    return BadgePanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -768,41 +589,6 @@ class _BadgesErrorCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BadgeMedallion extends StatelessWidget {
-  const _BadgeMedallion({required this.imageUrl});
-
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = DecoratedBox(
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: VineTheme.vineGreen,
-      ),
-      child: Center(
-        child: Text(
-          'B',
-          style: VineTheme.titleMediumFont(color: VineTheme.primaryDarkGreen),
-        ),
-      ),
-    );
-
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? fallback
-          : ClipOval(
-              child: VineCachedImage(
-                imageUrl: imageUrl!,
-                errorWidget: (_, _, _) => fallback,
-              ),
-            ),
     );
   }
 }

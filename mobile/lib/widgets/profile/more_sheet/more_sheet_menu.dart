@@ -13,9 +13,9 @@ class MoreSheetMenu extends StatelessWidget {
     required this.displayName,
     required this.isFollowing,
     required this.isBlocked,
-    required this.onCopy,
     required this.onUnfollow,
-    required this.onBlockTap,
+    this.onCopy,
+    this.onBlockTap,
     this.onAddToList,
     this.onReport,
     super.key,
@@ -31,13 +31,18 @@ class MoreSheetMenu extends StatelessWidget {
   final bool isBlocked;
 
   /// Called when copy public key is tapped.
-  final VoidCallback onCopy;
+  final VoidCallback? onCopy;
 
   /// Called when unfollow is tapped.
   final VoidCallback onUnfollow;
 
   /// Called when block/unblock is tapped.
-  final VoidCallback onBlockTap;
+  /// Opens the block/unblock confirmation.
+  ///
+  /// When null, the action is hidden — the same contract as [onReport]. A
+  /// group DM thread passes null: block takes one account and the sheet has no
+  /// way to say which of the room's members it would be.
+  final VoidCallback? onBlockTap;
 
   /// Optional callback for the "Add to list" action.
   ///
@@ -63,11 +68,12 @@ class MoreSheetMenu extends StatelessWidget {
             label: l10n.profileAddToListDisplayName(displayName),
             onTap: onAddToList!,
           ),
-        _MoreSheetMenuItem(
-          icon: DivineIconName.copy,
-          label: l10n.profileCopyPublicKey,
-          onTap: onCopy,
-        ),
+        if (onCopy != null)
+          _MoreSheetMenuItem(
+            icon: DivineIconName.copy,
+            label: l10n.profileCopyPublicKey,
+            onTap: onCopy!,
+          ),
         if (isFollowing)
           _MoreSheetMenuItem(
             icon: DivineIconName.userMinus,
@@ -80,16 +86,17 @@ class MoreSheetMenu extends StatelessWidget {
             label: l10n.profileReportDisplayName(displayName),
             onTap: onReport!,
           ),
-        _MoreSheetMenuItem(
-          icon: isBlocked
-              ? DivineIconName.prohibitInset
-              : DivineIconName.prohibit,
-          label: isBlocked
-              ? l10n.profileUnblockDisplayName(displayName)
-              : l10n.profileBlockDisplayName(displayName),
-          onTap: onBlockTap,
-          color: isBlocked ? context.vineColors.onSurface : VineTheme.error,
-        ),
+        if (onBlockTap != null)
+          _MoreSheetMenuItem(
+            icon: isBlocked
+                ? DivineIconName.prohibitInset
+                : DivineIconName.prohibit,
+            label: isBlocked
+                ? l10n.profileUnblockDisplayName(displayName)
+                : l10n.profileBlockDisplayName(displayName),
+            onTap: onBlockTap!,
+            color: isBlocked ? context.vineColors.onSurface : VineTheme.error,
+          ),
       ],
     );
   }

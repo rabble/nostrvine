@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -10,8 +11,10 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/repositories/invite_availability_repository.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -21,6 +24,15 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 class _MockHttpClient extends Mock implements http.Client {}
 
 class _MockResponse extends Mock implements http.Response {}
+
+const _resolvedInviteRequired = InviteAvailabilityState(
+  hasResolved: true,
+  serverMode: OnboardingMode.inviteCodeRequired,
+  config: InviteClientConfig(
+    mode: OnboardingMode.inviteCodeRequired,
+    supportEmail: 'support@divine.video',
+  ),
+);
 
 void main() {
   late _MockInviteApiClient mockInviteApiClient;
@@ -35,7 +47,11 @@ void main() {
     mockInviteApiClient = _MockInviteApiClient();
   });
 
-  Widget createTestWidget({InviteApiClient? inviteApiClient}) {
+  Widget createTestWidget({
+    InviteApiClient? inviteApiClient,
+    InviteAvailabilityState? availabilitySeed = _resolvedInviteRequired,
+    String initialLocation = WelcomeScreen.inviteGatePath,
+  }) {
     final client = inviteApiClient ?? mockInviteApiClient;
 
     return RepositoryProvider<InviteApiClient>.value(
@@ -44,7 +60,10 @@ void main() {
         providers: [
           BlocProvider(
             create: (_) => InviteAvailabilityCubit(
-              repository: InviteAvailabilityRepository(client: client),
+              repository: InviteAvailabilityRepository(
+                client: client,
+                seed: availabilitySeed,
+              ),
             )..load(),
           ),
           BlocProvider(create: (_) => InviteGateBloc(inviteApiClient: client)),
@@ -54,7 +73,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           routerConfig: GoRouter(
-            initialLocation: WelcomeScreen.inviteGatePath,
+            initialLocation: initialLocation,
             routes: [
               GoRoute(
                 path: WelcomeScreen.path,
@@ -66,14 +85,31 @@ void main() {
                     builder: (context, state) => InviteGateScreen(
                       initialCode: state.uri.queryParameters['code'],
                       initialError: state.uri.queryParameters['error'],
+                      initialErrorReason: InviteGateError.fromQuery(
+                        state.uri.queryParameters['errorReason'],
+                      ),
                       initialSourceSlug:
                           state.uri.queryParameters['sourceSlug'],
                     ),
                   ),
                   GoRoute(
                     path: 'create-account',
-                    builder: (context, state) =>
-                        const Scaffold(body: Text('Create Account')),
+                    builder: (context, state) => Scaffold(
+                      body: Column(
+                        children: [
+                          const Text('Create Account'),
+                          if (state.uri.queryParameters['code']
+                              case final code?)
+                            Text('Code: $code'),
+                          if (state.uri.queryParameters['error']
+                              case final error?)
+                            Text('Error: $error'),
+                          if (state.uri.queryParameters['sourceSlug']
+                              case final sourceSlug?)
+                            Text('Source: $sourceSlug'),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -95,24 +131,62 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(
+        createTestWidget(
+          availabilitySeed: InviteAvailabilityState(
+            hasResolved: true,
+            serverMode: parseOnboardingMode('waitlist_only'),
+            config: InviteClientConfig(
+              mode: parseOnboardingMode('waitlist_only'),
+              supportEmail: 'support@divine.video',
+            ),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Add your invite code'), findsOneWidget);
       expect(find.text('Join waitlist'), findsOneWidget);
     });
 
-    testWidgets('keeps the invite form when client config is unavailable', (
+    testWidgets('bypasses the gate when client config is unavailable', (
       tester,
     ) async {
       when(
         () => mockInviteApiClient.getClientConfig(),
       ).thenThrow(const InviteApiException('unavailable'));
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add your invite code'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsNothing);
+    });
+
+    testWidgets('bypasses the gate while client config is unresolved', (
+      tester,
+    ) async {
+      final pendingConfig = Completer<InviteClientConfig>();
+      when(
+        () => mockInviteApiClient.getClientConfig(),
+      ).thenAnswer((_) => pendingConfig.future);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          availabilitySeed: null,
+          initialLocation:
+              '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
+              '&error=Invite%20problem&sourceSlug=creator',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Code: AB12-EF34'), findsOneWidget);
+      expect(find.text('Error: Invite problem'), findsOneWidget);
+      expect(find.text('Source: creator'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsNothing);
     });
 
     testWidgets('bypasses the gate when server onboarding mode is open', (
@@ -125,7 +199,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);
@@ -155,7 +229,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          createTestWidget(inviteApiClient: previewInviteApiClient),
+          createTestWidget(
+            inviteApiClient: previewInviteApiClient,
+            availabilitySeed: null,
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -235,9 +312,81 @@ void main() {
       expect(editableText.controller.text, 'AB12-');
     });
 
-    testWidgets('shows initial recovery error from query params', (
-      tester,
-    ) async {
+    // #3591: this used to assert `find.text('Invite problem')` — i.e. that the
+    // ?error= query parameter rendered VERBATIM inside the auth error box, on
+    // a pre-auth screen, in whatever words the link chose. The trusted in-app
+    // recovery flow uses a separate allowlisted reason
+    // parameter. The signal survives; attacker-controlled payload does not.
+    testWidgets(
+      'renders a generic error for an inbound ?error= link, never the '
+      'text the link chose',
+      (tester) async {
+        when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+          (_) async => const InviteClientConfig(
+            mode: OnboardingMode.inviteCodeRequired,
+            supportEmail: 'support@divine.video',
+          ),
+        );
+
+        await tester.pumpWidget(
+          RepositoryProvider<InviteApiClient>.value(
+            value: mockInviteApiClient,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => InviteAvailabilityCubit(
+                    repository: InviteAvailabilityRepository(
+                      client: mockInviteApiClient,
+                      seed: _resolvedInviteRequired,
+                    ),
+                  )..load(),
+                ),
+                BlocProvider(
+                  create: (_) =>
+                      InviteGateBloc(inviteApiClient: mockInviteApiClient),
+                ),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                routerConfig: GoRouter(
+                  initialLocation:
+                      '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
+                      '&error=Invite%20problem',
+                  routes: [
+                    GoRoute(
+                      path: WelcomeScreen.path,
+                      builder: (context, state) =>
+                          const Scaffold(body: Text('Welcome')),
+                      routes: [
+                        GoRoute(
+                          path: 'invite',
+                          builder: (context, state) => InviteGateScreen(
+                            initialCode: state.uri.queryParameters['code'],
+                            initialError: state.uri.queryParameters['error'],
+                            initialSourceSlug:
+                                state.uri.queryParameters['sourceSlug'],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.authInviteGateErrorUnknown), findsOneWidget);
+        expect(find.text('Invite problem'), findsNothing);
+        expect(find.text(l10n.authAddInviteCode), findsOneWidget);
+        expect(find.byType(TextField), findsOneWidget);
+      },
+    );
+
+    testWidgets('preserves a trusted in-app recovery reason', (tester) async {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
@@ -245,59 +394,15 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        RepositoryProvider<InviteApiClient>.value(
-          value: mockInviteApiClient,
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (_) => InviteAvailabilityCubit(
-                  repository: InviteAvailabilityRepository(
-                    client: mockInviteApiClient,
-                  ),
-                )..load(),
-              ),
-              BlocProvider(
-                create: (_) =>
-                    InviteGateBloc(inviteApiClient: mockInviteApiClient),
-              ),
-            ],
-            child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: VineTheme.theme,
-              routerConfig: GoRouter(
-                initialLocation:
-                    '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
-                    '&error=Invite%20problem',
-                routes: [
-                  GoRoute(
-                    path: WelcomeScreen.path,
-                    builder: (context, state) =>
-                        const Scaffold(body: Text('Welcome')),
-                    routes: [
-                      GoRoute(
-                        path: 'invite',
-                        builder: (context, state) => InviteGateScreen(
-                          initialCode: state.uri.queryParameters['code'],
-                          initialError: state.uri.queryParameters['error'],
-                          initialSourceSlug:
-                              state.uri.queryParameters['sourceSlug'],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      final location = WelcomeScreen.inviteGatePathWithCode(
+        'AB12-EF34',
+        errorReason: InviteGateError.inviteUnavailable,
       );
+      await tester.pumpWidget(createTestWidget(initialLocation: location));
       await tester.pumpAndSettle();
 
-      expect(find.text('Invite problem'), findsOneWidget);
-      expect(find.text('Add your invite code'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text(l10n.authInviteGateErrorUnavailable), findsOneWidget);
+      expect(find.text(l10n.authInviteGateErrorUnknown), findsNothing);
     });
 
     testWidgets('preserves creator source slug when joining waitlist', (
@@ -329,6 +434,7 @@ void main() {
                 create: (_) => InviteAvailabilityCubit(
                   repository: InviteAvailabilityRepository(
                     client: mockInviteApiClient,
+                    seed: _resolvedInviteRequired,
                   ),
                 )..load(),
               ),
@@ -416,6 +522,7 @@ void main() {
                 create: (_) => InviteAvailabilityCubit(
                   repository: InviteAvailabilityRepository(
                     client: mockInviteApiClient,
+                    seed: _resolvedInviteRequired,
                   ),
                 )..load(),
               ),

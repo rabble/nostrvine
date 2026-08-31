@@ -9,9 +9,23 @@ import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/nip89_client_tag.dart';
 import 'package:nostr_client/src/publish_result.dart';
 import 'package:nostr_client/src/relay_manager.dart';
+import 'package:nostr_client/src/relay_rejection_classifier.dart';
+import 'package:nostr_client/src/social_publish_result.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 import 'package:pool/pool.dart';
+
+/// The relay ended a live subscription before the client unsubscribed.
+class RelaySubscriptionRefusedException implements Exception {
+  /// Creates an exception preserving the relay-provided [reason].
+  const RelaySubscriptionRefusedException(this.reason);
+
+  /// The reason supplied by the relay's `CLOSED` frame.
+  final String reason;
+
+  @override
+  String toString() => 'RelaySubscriptionRefusedException: $reason';
+}
 
 /// Observer for NostrClient activity statistics.
 ///
@@ -449,14 +463,24 @@ class NostrClient {
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
+  /// Adds Divine's NIP-89 `client` tag before publishing, unless [event]
+  /// already carries a signature.
+  ///
+  /// Appending the tag rebuilds the event, which changes its id and so
+  /// invalidates any signature already on it. `nostr_sdk` signs whenever `sig`
+  /// is blank, so clobbering it here silently buys a second signature — with a
+  /// remote signer, a whole extra network round trip per publish (#8166).
+  ///
+  /// Events signed through `SignerFactory.createAndSignEvent` already carry the
+  /// tag, so the only events skipped here are the ones a call site signed
+  /// itself with a raw signer. Those forfeit attribution rather than a round
+  /// trip; NIP-89 makes the tag optional.
   Future<void> _prepareEventForPublish(Event event) async {
-    final changed = await Nip89ClientTag.applyToEvent(event);
-    if (!changed) {
+    if (event.sig.isNotEmpty) {
       return;
     }
 
-    // publishEvent()/publishEventAwaitOk() both delegate signing to nostr_sdk
-    // when sig is blank, so clearing the signature is enough here.
+    await Nip89ClientTag.applyToEvent(event);
   }
 
   /// Completes the first time [initialize] finishes, so consumers can await
@@ -788,19 +812,27 @@ class NostrClient {
       }
     }
 
-    final outcome =
-        await _nostr.sendEventAwaitOk(
-          event,
-          targetRelays: effectiveTargets,
-          tempRelays: effectiveTargets,
-          timeout: timeout,
-        ) ??
-        PublishOutcome(
-          eventId: event.id,
-          acceptedBy: const [],
-          rejectedBy: const {},
-          noResponseFrom: const [],
-        );
+    PublishOutcome outcome;
+    try {
+      outcome =
+          await _nostr.sendEventAwaitOk(
+            event,
+            targetRelays: effectiveTargets,
+            tempRelays: effectiveTargets,
+            timeout: timeout,
+          ) ??
+          PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
+    } on Object {
+      if (useOptimisticCache) {
+        _rollbackCachedEvent(event.id);
+      }
+      rethrow;
+    }
 
     if (outcome.failed) {
       return rollbackOnFailure(outcome);
@@ -831,6 +863,12 @@ class NostrClient {
   /// Calling this on a disposed client is a no-op that returns an empty
   /// list. If the client is disposed while a call is in flight, the
   /// network query is skipped and only cached results are returned.
+  ///
+  /// [timeout] is an end-to-end deadline for the cache read, reconnect sweep,
+  /// query-pool acquisition, and WebSocket query together. Exhausting it
+  /// returns `timedOut: true`. A pool waiter that expires remains in the
+  /// package's FIFO only until a resource reaches it; it releases that resource
+  /// without dispatching network work.
   ///
   /// `timedOut: false` with an empty `events` normally means "the relays
   /// answered and there is nothing", but only for a caller that is content to
@@ -879,6 +917,17 @@ class NostrClient {
       return (events: <Event>[], timedOut: false, noRelays: true);
     }
 
+    // One deadline for the whole call, spent by every awaited step below.
+    // Without it `timeout` bounds only the websocket leg while the cache read,
+    // the reconnect and the pool wait run unbounded beside it — so a caller
+    // that asked for 5s could wait 48s (#7091). This mirrors the same
+    // discipline `Nostr.queryEventsDetailed` already applies one layer down.
+    final deadline = DateTime.now().add(timeout);
+    Duration remainingTimeout() {
+      final remaining = deadline.difference(DateTime.now());
+      return remaining.isNegative ? Duration.zero : remaining;
+    }
+
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final cacheResults = <Event>[];
 
@@ -894,12 +943,21 @@ class NostrClient {
     // coincidence neither side declares.
     final dao = _nostrEventsDao;
     if (useCache && dao != null && filters.length == 1) {
-      cacheResults.addAll(
-        _eventsMatchingAnyFilter(
-          await dao.getEventsByFilter(filters.first),
-          filters,
-        ),
-      );
+      try {
+        cacheResults.addAll(
+          _eventsMatchingAnyFilter(
+            await dao
+                .getEventsByFilter(filters.first)
+                .timeout(
+                  remainingTimeout(),
+                ),
+            filters,
+          ),
+        );
+      } on TimeoutException {
+        // The local read outlived the caller's budget. Cache is an
+        // accelerator, never the answer, so proceed without it.
+      }
     }
 
     // 2. Query via WebSocket.
@@ -909,7 +967,13 @@ class NostrClient {
     // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
     if (_relayManager.connectedRelays.isEmpty &&
         (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
-      await retryDisconnectedRelays();
+      try {
+        await retryDisconnectedRelays().timeout(remainingTimeout());
+      } on TimeoutException {
+        // Reconnecting is best-effort: query whatever came up in the budget
+        // rather than spending the caller's whole timeout dialling hosts that
+        // are not answering.
+      }
     }
     // A pre-flight snapshot, so it can only catch the relayless case it can
     // see from here; the fan-out's own account of who took the REQ is folded
@@ -925,9 +989,32 @@ class NostrClient {
       tempRelays: effectiveTempRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      // Its own subscription budget. The caller's end-to-end contract is
+      // enforced by the deadline applied to this call below, not by shrinking
+      // the argument here.
       timeout: timeout,
       requireAllRelaysSettled: requireAllRelaysSettled,
     );
+
+    Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
+    runPooledWebSocketQuery() async {
+      final acquisition = _queryPool.request();
+      PoolResource resource;
+      try {
+        resource = await acquisition.timeout(remainingTimeout());
+      } on TimeoutException {
+        // package:pool cannot remove a waiter from its FIFO. Drain it when a
+        // slot eventually reaches it, but never run the abandoned callback.
+        unawaited(acquisition.then((resource) => resource.release()));
+        rethrow;
+      }
+      try {
+        return await runWebSocketQuery().timeout(remainingTimeout());
+      } finally {
+        resource.release();
+      }
+    }
+
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
     // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
@@ -943,7 +1030,7 @@ class NostrClient {
     // the NIP-50 search relays and leak temp relays nothing would clean up.
     // This check-then-call has no await before the query, so it closes the
     // race rather than narrowing it. See #5952.
-    final ({List<Event> events, bool timedOut, bool noRelaysParticipated})
+    ({List<Event> events, bool timedOut, bool noRelaysParticipated})
     websocketResult;
     if (_queryPool.isClosed) {
       // Nothing was asked of the relays here, which is a different thing from
@@ -958,9 +1045,23 @@ class NostrClient {
         noRelaysParticipated: false,
       );
     } else {
-      websocketResult = useQueryPool
-          ? await _queryPool.withResource(runWebSocketQuery)
-          : await runWebSocketQuery();
+      try {
+        websocketResult = useQueryPool
+            ? await runPooledWebSocketQuery()
+            : await runWebSocketQuery().timeout(remainingTimeout());
+      } on TimeoutException {
+        // The budget expired before the query settled. This is the same
+        // inconclusive answer a relay that never settled gives — not a
+        // participation failure. `Pool`'s own `timeout:` cannot express the
+        // acquisition half: it is an inactivity timer reset on every acquire
+        // and release, so a busy pool resets it forever while one waiter
+        // starves.
+        websocketResult = (
+          events: <Event>[],
+          timedOut: true,
+          noRelaysParticipated: false,
+        );
+      }
     }
     final websocketEvents = _eventsMatchingAnyFilter(
       websocketResult.events,
@@ -1172,6 +1273,12 @@ class NostrClient {
   /// re-enter safely after a previous listener was canceled. The returned
   /// stream is closed when its last listener cancels; call [subscribe] again
   /// instead of retaining and re-listening to the old stream.
+  ///
+  /// Set [closeOnEose] for bounded reads. Their stream closes after every
+  /// serving relay reports EOSE, and the relay subscription is released.
+  ///
+  /// The stream emits a [RelaySubscriptionRefusedException] if every serving
+  /// relay ends the REQ with `CLOSED`.
   Stream<Event> subscribe(
     List<Filter> filters, {
     String? subscriptionId,
@@ -1180,6 +1287,7 @@ class NostrClient {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final effectiveTargetRelays = _allowedRelays(targetRelays);
@@ -1250,7 +1358,16 @@ class NostrClient {
       targetRelays: effectiveTargetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
-      onEose: onEose,
+      onEose: () {
+        onEose?.call();
+        if (closeOnEose) cleanupSubscription();
+      },
+      onClosed: (reason) {
+        if (!controller.isClosed) {
+          controller.addError(RelaySubscriptionRefusedException(reason));
+        }
+        cleanupSubscription();
+      },
     );
 
     // If nostr_sdk generated a different ID, update our mapping
@@ -1477,14 +1594,12 @@ class NostrClient {
       content ?? '+',
     );
 
-    final result = await publishEvent(
+    final result = await publishSocialEventAwaitOk(
       likeEvent,
       targetRelays: targetRelays ?? tempRelays,
     );
-    if (result case PublishSuccess(:final event)) {
-      return event;
-    }
-    return null;
+    if (!result.accepted) throw SocialPublishException(result);
+    return likeEvent;
   }
 
   /// Sends a user profile (Kind 0 metadata event), waiting for relay
@@ -1632,14 +1747,71 @@ class NostrClient {
       ['e', eventId],
     ], 'delete');
 
-    final result = await publishEvent(
+    final result = await publishSocialEventAwaitOk(
       deletionEvent,
       targetRelays: targetRelays ?? tempRelays,
     );
-    if (result case PublishSuccess(:final event)) {
-      return event;
+    if (!result.accepted) throw SocialPublishException(result);
+    return deletionEvent;
+  }
+
+  /// Publishes a social event and classifies its relay acknowledgement.
+  ///
+  /// Any relay acceptance wins. Account restrictions are only classified
+  /// from the trusted default relay when no relay accepted the event.
+  Future<SocialPublishResult> publishSocialEventAwaitOk(
+    Event event, {
+    List<String>? targetRelays,
+  }) async {
+    final hasExplicitTargets = targetRelays != null && targetRelays.isNotEmpty;
+    if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        return SocialPublishResult(
+          status: SocialPublishStatus.noRelays,
+          event: event,
+        );
+      }
     }
-    return null;
+
+    final PublishOutcome outcome;
+    try {
+      outcome = await publishEventAwaitOk(
+        event,
+        targetRelays: targetRelays,
+      );
+    } on Object catch (error, stackTrace) {
+      log(
+        'Social event dispatch failed before relay acknowledgement',
+        name: 'NostrClient',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return SocialPublishResult(
+        status: SocialPublishStatus.sendFailed,
+        event: event,
+      );
+    }
+    final status = switch (outcome) {
+      PublishOutcome(:final acceptedBy) when acceptedBy.isNotEmpty =>
+        SocialPublishStatus.accepted,
+      _
+          when isAccountRestrictedOutcome(
+            outcome,
+            trustedRelayUrl: defaultRelayUrl,
+          ) =>
+        SocialPublishStatus.accountRestricted,
+      _ when isRateLimitedOutcome(outcome) => SocialPublishStatus.rateLimited,
+      PublishOutcome(:final rejectedBy) when rejectedBy.isNotEmpty =>
+        SocialPublishStatus.rejected,
+      PublishOutcome(:final noResponseFrom) when noResponseFrom.isNotEmpty =>
+        SocialPublishStatus.noResponse,
+      PublishOutcome(:final unreachableTargets)
+          when unreachableTargets.isNotEmpty =>
+        SocialPublishStatus.noRelays,
+      _ => SocialPublishStatus.sendFailed,
+    };
+    return SocialPublishResult(status: status, event: event, outcome: outcome);
   }
 
   /// Deletes multiple events
@@ -1800,6 +1972,11 @@ class NostrClient {
   /// must check [isDisposed] (or their own ownership signal) before using
   /// the client.
   Future<void> dispose() async {
+    // Before the first await: every await below is a window in which an armed
+    // relay repair can fire and open a socket that the teardown at the end has
+    // already walked past, leaving a live WebSocket and heartbeat timer nothing
+    // can reach (#7367).
+    _nostr.beginClose();
     await closeAllSubscriptions();
     await _relayManager.dispose();
     await _queryPool.close();
