@@ -226,19 +226,55 @@ void main() {
       });
 
       test(
-        'upgradeDrainVersionIfNeeded clears a stale completion flag + cursor '
-        'and stamps the current version when below it',
+        'upgradeDrainVersionIfNeeded clears a stale completion flag, seeds the '
+        'cursor at now, and stamps the current version when below it',
         () async {
-          // Simulate an install stranded by an older, buggy drain.
+          final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Simulate an install stranded by an older, buggy drain. It has
+          // processed DMs, which is what distinguishes it from an install
+          // whose completed drain genuinely found nothing.
+          await state.recordSeen(pkA, createdAt: before - 3600);
           await state.markHistoryDrainComplete(pkA);
           await state.setHistoryDrainCursor(pkA, 1234);
           expect(state.historyDrainComplete(pkA), isTrue);
 
           await state.upgradeDrainVersionIfNeeded(pkA);
+          final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
           expect(state.historyDrainComplete(pkA), isFalse);
-          expect(state.historyDrainCursor(pkA), isNull);
+          // Seeded at now, NOT removed. Removing it would let the drain fall
+          // back to oldestSyncedAt and re-read only history the install
+          // already has, which is the whole defect in #8362.
+          expect(
+            state.historyDrainCursor(pkA),
+            inInclusiveRange(before, after),
+          );
           expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test(
+        'the seeded cursor is above a realistic oldestSyncedAt, so the forced '
+        'pass covers the recent window a bare clear would skip — #8362',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Established install: months of history, drain long since latched.
+          await state.recordSeen(pkA, createdAt: nowSec - 90 * 86400);
+          await state.recordSeen(pkA, createdAt: nowSec - 3600);
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion - 1);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          final cursor = state.historyDrainCursor(pkA);
+          expect(cursor, isNotNull);
+          expect(
+            cursor,
+            greaterThan(state.oldestSyncedAt(pkA)!),
+            reason: 'a cursor at oldestSyncedAt cannot reach the stranded band',
+          );
+          // The band #8361 re-exposes sits just under the two-day overlap.
+          expect(cursor, greaterThan(nowSec - 2 * 86400));
         },
       );
 
@@ -271,6 +307,10 @@ void main() {
             reason: 'drain version must advance past the pre-#5304 value (2)',
           );
 
+          await state.recordSeen(
+            pkA,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 3600,
+          );
           await state.setDrainVersion(pkA, 2);
           await state.markHistoryDrainComplete(pkA);
 
