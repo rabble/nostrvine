@@ -741,6 +741,102 @@ void main() {
       });
     });
 
+    group('top outer radius', () {
+      BorderRadius tileRadius(WidgetTester tester, int index) =>
+          tester
+                  .widget<ClipRRect>(
+                    find
+                        .descendant(
+                          of: find.byWidgetPredicate(
+                            (widget) =>
+                                widget is Semantics &&
+                                widget.properties.identifier ==
+                                    'video_thumbnail_$index',
+                          ),
+                          matching: find.byType(ClipRRect),
+                        )
+                        .first,
+                  )
+                  .borderRadius
+              as BorderRadius;
+
+      testWidgets("enlarges only the first row's outer top corners", (
+        tester,
+      ) async {
+        // Phone-width surface pins the responsive column count to 2, so the
+        // top row is exactly items 0 and 1.
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos,
+                  useMasonryLayout: true,
+                  topOuterRadius: 32,
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const inner = Radius.circular(4);
+        const outer = Radius.circular(32);
+        expect(
+          tileRadius(tester, 0),
+          const BorderRadius.only(
+            topLeft: outer,
+            topRight: inner,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        expect(
+          tileRadius(tester, 1),
+          const BorderRadius.only(
+            topLeft: inner,
+            topRight: outer,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        // Second row keeps the default small radius on every corner.
+        expect(tileRadius(tester, 2), const BorderRadius.all(inner));
+      });
+
+      testWidgets('keeps every corner small when not set', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  useMasonryLayout: true,
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const inner = Radius.circular(4);
+        expect(tileRadius(tester, 0), const BorderRadius.all(inner));
+        expect(tileRadius(tester, 1), const BorderRadius.all(inner));
+      });
+    });
+
     group('header slivers', () {
       testWidgets('renders header slivers above the grid', (tester) async {
         await tester.pumpWidget(

@@ -155,7 +155,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     }
 
     final scaffold = Scaffold(
-      backgroundColor: context.vineColors.background,
+      // One surface for app bar, hero, and grid — the design renders the
+      // whole list page on bg/surface (the nav token), not the black
+      // screen background.
+      backgroundColor: context.vineColors.nav,
       appBar: appBar,
       body: videosAsync.when(
         // Keep the current grid on screen while the provider re-runs after a
@@ -191,6 +194,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               builder: (context, selectedVideoIds) => ComposableVideoGrid(
                 videos: videos,
                 useMasonryLayout: true,
+                topOuterRadius: VineTheme.shellInnerCornerRadius,
                 selectedVideoIds: selectedVideoIds,
                 onVideoTap: (videoList, index) =>
                     cubit.togglePost(videoList[index].id),
@@ -202,6 +206,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           return ComposableVideoGrid(
             videos: videos,
             useMasonryLayout: true,
+            topOuterRadius: VineTheme.shellInnerCornerRadius,
             headerSlivers: [
               SliverToBoxAdapter(
                 child: _ListHeroHeader(

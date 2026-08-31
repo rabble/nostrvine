@@ -53,6 +53,7 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
     this.loadMoreThreshold = 5,
     this.headerSlivers = const [],
     this.selectedVideoIds,
+    this.topOuterRadius,
   });
 
   final List<VideoEvent> videos;
@@ -89,6 +90,12 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
   /// [onVideoTap] — the caller decides they toggle — and the own-video
   /// long-press menu is suppressed.
   final Set<String>? selectedVideoIds;
+
+  /// Rounds the grid block's outer top corners by clipping the first row's
+  /// outermost tiles (first tile's top-left, last first-row tile's
+  /// top-right), so the grid reads as one container rounding into the
+  /// surface above it. `null` keeps every tile on the default small radius.
+  final double? topOuterRadius;
 
   @override
   ConsumerState<ComposableVideoGrid> createState() =>
@@ -217,6 +224,24 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         widget.isLoadingMore ||
         (widget.hasMoreContent && widget.onLoadMore != null);
 
+    // Masonry fills the shortest column left to right, so the first
+    // [responsiveCrossAxisCount] items are the top row in column order.
+    BorderRadius tileRadiusFor(int index) {
+      const inner = Radius.circular(4);
+      final outer = widget.topOuterRadius;
+      if (outer == null || index >= responsiveCrossAxisCount) {
+        return const BorderRadius.all(inner);
+      }
+      return BorderRadius.only(
+        topLeft: index == 0 ? Radius.circular(outer) : inner,
+        topRight: index == responsiveCrossAxisCount - 1
+            ? Radius.circular(outer)
+            : inner,
+        bottomLeft: inner,
+        bottomRight: inner,
+      );
+    }
+
     Widget buildItem(BuildContext context, int index) {
       final video = videosToShow[index];
       final listIds = subscribedListCache?.getListsForVideo(video.id);
@@ -226,6 +251,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
       final selectedIds = widget.selectedVideoIds;
       return _VideoItem(
+        borderRadius: tileRadiusFor(index),
         video: video,
         aspectRatio: widget.thumbnailAspectRatio,
         onVideoTap: widget.onVideoTap,
@@ -340,6 +366,7 @@ class _VideoItem extends StatelessWidget {
     this.onLongPress,
     this.isInSubscribedList = false,
     this.isSelected,
+    this.borderRadius = const BorderRadius.all(Radius.circular(4)),
   });
 
   final VideoEvent video;
@@ -357,6 +384,10 @@ class _VideoItem extends StatelessWidget {
   /// this tile is currently selected.
   final bool? isSelected;
 
+  /// Clip radius for this tile; the grid enlarges the outer top corners of
+  /// the first row when [ComposableVideoGrid.topOuterRadius] is set.
+  final BorderRadius borderRadius;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -372,7 +403,7 @@ class _VideoItem extends StatelessWidget {
         onTap: () => onVideoTap(displayedVideos, index),
         onLongPress: onLongPress,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: borderRadius,
           child: Stack(
             children: [
               _VideoThumbnail(video: video),
