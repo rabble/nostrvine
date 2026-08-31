@@ -100,14 +100,19 @@ void main() {
       }
     }
 
-    Future<String> seedConversation(List<String> participants) async {
+    Future<String> seedConversation(
+      List<String> participants, {
+      int createdAt = 1700000000,
+      String? dmProtocol,
+    }) async {
       final id = DmRepository.computeConversationId(participants);
       await conversations.upsertConversation(
         id: id,
         participantPubkeys: jsonEncode(List<String>.from(participants)..sort()),
         isGroup: participants.length > 2,
-        createdAt: 1700000000,
+        createdAt: createdAt,
         ownerPubkey: _me,
+        dmProtocol: dmProtocol,
       );
       return id;
     }
@@ -708,6 +713,47 @@ void main() {
         isEmpty,
       );
     });
+
+    test(
+      'derives group creation and protocol from the recovered room',
+      () async {
+        final oneToOneId = await seedConversation(
+          [_me, _alice],
+          createdAt: 1600000000,
+          dmProtocol: 'nip04',
+        );
+        final groupId = await seedConversation([_me, _alice, _bob]);
+        await seedMessage(
+          id: 'g1',
+          conversationId: groupId,
+          sender: _alice,
+          pTags: [_me, _bob],
+          createdAt: 1700000002,
+        );
+        await seedMessage(
+          id: 'g2',
+          conversationId: groupId,
+          sender: _bob,
+          pTags: [_me, _alice],
+          createdAt: 1700000003,
+        );
+
+        await runHistoricalPass();
+        await recoverViaSetCredentials();
+
+        final restored = await conversations.getConversation(
+          groupId,
+          ownerPubkey: _me,
+        );
+        expect(restored, isNotNull);
+        expect(restored!.createdAt, equals(1700000002));
+        expect(restored.dmProtocol, equals('nip17'));
+        expect(
+          await conversations.getConversation(oneToOneId, ownerPubkey: _me),
+          isNotNull,
+        );
+      },
+    );
 
     test('leaves the unattested reply-mention shape alone', () async {
       final oneToOneId = await seedConversation([_me, _alice]);

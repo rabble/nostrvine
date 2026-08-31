@@ -7219,6 +7219,9 @@ class DmRepository {
     final newest = bucket.reduce(
       (a, b) => b.createdAt >= a.createdAt ? b : a,
     );
+    final oldest = bucket.reduce(
+      (a, b) => b.createdAt < a.createdAt ? b : a,
+    );
     final messageIds = [for (final m in bucket) m.id];
 
     await _conversationsDao.runInTransaction(() async {
@@ -7226,7 +7229,10 @@ class DmRepository {
         id: restoredId,
         participantPubkeys: jsonEncode(participants),
         isGroup: true,
-        createdAt: conversation.createdAt,
+        // The surviving 1:1 predates or postdates this room independently.
+        // The oldest recovered room message is the closest surviving creation
+        // boundary for the deleted group row.
+        createdAt: oldest.createdAt,
         lastMessageTimestamp: newest.createdAt,
         lastMessageSenderPubkey: newest.senderPubkey,
         // NIP-17: the newest subject in the room is the room's subject.
@@ -7238,7 +7244,8 @@ class DmRepository {
         isRead: conversation.isRead,
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: owner,
-        dmProtocol: conversation.dmProtocol,
+        // Group rooms are NIP-17. The surviving 1:1 may instead be NIP-04.
+        dmProtocol: 'nip17',
       );
       await _directMessagesDao.reassignMessages(
         messageIds: messageIds,

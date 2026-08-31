@@ -105,11 +105,10 @@ Map<String, List<RecoveryMessageFacts>> bucketByRoom(
 /// duplicate-conversation bug (#2740) that the destructive pass was written to
 /// fix.
 ///
-/// The one positive signal, and it is required: **two or more distinct senders
-/// inside this exact room**. A mention names a third party; it does not make
-/// them speak. For a bucket keyed on `{me, A, B}` to hold two senders, A must
-/// have written to `{me, B}` *and* B to `{me, A}` — which no mention produces,
-/// because a mention-widened thread has exactly one author.
+/// The required high-confidence signal is **two or more distinct senders inside
+/// this exact room**. One mention names a third party; it does not make them
+/// speak. Reciprocal independent mentions can still produce the same bytes as
+/// a real room, so this is deliberately conservative rather than conclusive.
 ///
 /// A single-sender room is **deliberately skipped**, even though some of those
 /// are real groups whose other members stayed quiet. That case is
