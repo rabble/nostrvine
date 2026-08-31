@@ -770,7 +770,13 @@ class ProfileRepository implements ProfileReader {
       followingCount: (social?.followingCount ?? 0) > 0
           ? social!.followingCount
           : null,
-      videoCount: stats?.videoCount,
+      // Same reasoning as the two counts above, and the same collapse:
+      // `get_user_stats` maps both a miss and a ClickHouse failure to a
+      // default, so funnelcake answers 200 with `video_count: 0` when the
+      // summary table is down. Withholding it lets `upsertStats` keep the
+      // previous real count instead of overwriting it with an ambiguous zero
+      // (#8403).
+      videoCount: (stats?.videoCount ?? 0) > 0 ? stats!.videoCount : null,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,
     );

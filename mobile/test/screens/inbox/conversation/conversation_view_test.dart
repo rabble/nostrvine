@@ -6,7 +6,9 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-import 'package:db_client/db_client.dart';
+// `ProfileStats` here is the domain model from `models`, not the Drift
+// table class of the same name — the repository hides it the same way.
+import 'package:db_client/db_client.dart' hide ProfileStats;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
@@ -182,6 +184,7 @@ void main() {
     Widget buildSubject({
       ConversationState? state,
       UserProfile? otherProfile,
+      ProfileStats? otherStats,
       bool otherProfileVanished = false,
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
@@ -225,6 +228,9 @@ void main() {
           ).overrideWith(
             (ref) => otherProfileFuture ?? Future.value(otherProfile),
           ),
+          userProfileStatsReactiveProvider(
+            counterparty,
+          ).overrideWith((ref) => Stream.value(otherStats)),
           profileVanishedProvider(
             counterparty,
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
@@ -1091,13 +1097,21 @@ void main() {
         final profile = UserProfile(
           pubkey: otherPubkey,
           name: 'Jack',
-          rawData: const {'follower_count': 2100},
+          rawData: const {},
           createdAt: now,
           eventId:
               'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
         );
 
-        await tester.pumpWidget(buildSubject(otherProfile: profile));
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfile: profile,
+            otherStats: const ProfileStats(
+              pubkey: otherPubkey,
+              followers: 2100,
+            ),
+          ),
+        );
         await tester.pump();
         await tester.pump();
 
@@ -1112,13 +1126,18 @@ void main() {
         );
       });
 
-      testWidgets('does not render a self-reported Vine follower count', (
+      // The line's count comes from the `profile_statistics` store, never from
+      // the profile object. Both keys below are shapes this screen's cache can
+      // never produce anyway — `follower_count` is written only by the
+      // people-search path, and `vine_followers` is a Kind 0 *tag* the getter
+      // reads out of *content* — so neither may reach the line (#8403).
+      testWidgets('ignores follower counts carried on the profile', (
         tester,
       ) async {
         final profile = UserProfile(
           pubkey: otherPubkey,
           name: 'Jack',
-          rawData: const {'vine_followers': 430},
+          rawData: const {'follower_count': 2100, 'vine_followers': 430},
           createdAt: now,
           eventId:
               'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
@@ -1128,10 +1147,37 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // vine_followers is the account's own kind-0 claim; only an
-        // authoritative follower_count earns a spot on the line.
         expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(find.textContaining('2.1K'), findsNothing);
         expect(find.textContaining('430'), findsNothing);
+      });
+
+      // A zero is indistinguishable from a stats outage: funnelcake answers
+      // 200 with `{0, 0}` when the summary table is down.
+      testWidgets('omits a zero follower count', (tester) async {
+        final profile = UserProfile(
+          pubkey: otherPubkey,
+          name: 'Jack',
+          rawData: const {},
+          createdAt: now,
+          eventId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfile: profile,
+            otherStats: const ProfileStats(pubkey: otherPubkey, followers: 0),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.socialProofMutual), findsOneWidget);
+        expect(
+          find.textContaining(l10n.socialProofFollowerCount(0, '0')),
+          findsNothing,
+        );
       });
 
       testWidgets(
