@@ -14,14 +14,6 @@ part 'user_profile_providers.g.dart';
 
 const _blockedProfileFetchChunkSize = 50;
 
-final vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
-  return ref
-      .watch(databaseProvider)
-      .vanishedProfilesDao
-      .watchAllPubkeys()
-      .map((pubkeys) => pubkeys.toSet());
-});
-
 /// Whether a peer's profile identity is still being resolved.
 ///
 /// The reactive profile stream intentionally emits `null` while the read
