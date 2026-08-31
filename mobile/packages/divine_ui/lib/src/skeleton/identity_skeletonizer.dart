@@ -64,15 +64,17 @@ class IdentitySkeletonizer extends StatefulWidget {
 /// the conversation title floated while the preview beneath it stayed
 /// left-aligned. The switch animation is worth keeping; the centring is not.
 ///
-/// `StackFit.expand` matters as much as the alignment: a loose `Stack` lets a
-/// `Text` shrink to its intrinsic width, which both re-introduces the drift and
-/// defeats `TextOverflow.ellipsis`.
+/// The fit stays **loose** on purpose. `StackFit.expand` also lead-aligns, but
+/// it forces tight constraints on the child, which throws
+/// `RenderBox was not laid out` wherever the slot is horizontally unbounded —
+/// the following bar's horizontal list, for one. Loose constraints still carry
+/// the slot's `maxWidth`, so a long name ellipsizes at the same width it always
+/// did; only the leading alignment changes.
 Widget _leadingAlignedSwitcherLayout(
   Widget? currentChild,
   List<Widget> previousChildren,
 ) {
   return Stack(
-    fit: StackFit.expand,
     alignment: AlignmentDirectional.centerStart,
     children: <Widget>[
       ...previousChildren,

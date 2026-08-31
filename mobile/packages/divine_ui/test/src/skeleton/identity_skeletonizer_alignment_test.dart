@@ -61,27 +61,39 @@ void main() {
       );
     });
 
-    testWidgets('fills the slot rather than shrinking to the text', (
-      tester,
-    ) async {
-      final rect = await _pumpAndMeasure(tester, isLoading: false);
-
-      expect(
-        rect.width,
-        equals(_expectedChildWidth),
-        reason:
-            'a loose Stack lets the child shrink-wrap, which is what '
-            'defeats TextOverflow.ellipsis on a long name',
-      );
-    });
-
-    testWidgets('still leads and fills while the shimmer is showing', (
-      tester,
-    ) async {
+    testWidgets('still leads while the shimmer is showing', (tester) async {
       final rect = await _pumpAndMeasure(tester, isLoading: true);
 
       expect(rect.left, equals(_leadingInset));
-      expect(rect.width, equals(_expectedChildWidth));
+    });
+
+    testWidgets('lays out where the slot is horizontally unbounded', (
+      tester,
+    ) async {
+      // The following bar puts this inside a horizontal list, so the child
+      // gets unbounded width. A tight fit throws `RenderBox was not laid
+      // out` there — caught on a physical device, not by the bounded cases.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 80,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: IdentitySkeletonizer(
+                  isLoading: false,
+                  excludeSemantics: true,
+                  child: Text('Gastric Fox 26'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Gastric Fox 26'), findsOneWidget);
     });
 
     testWidgets(
