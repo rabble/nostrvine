@@ -1918,5 +1918,274 @@ void main() {
         },
       );
     });
+
+    // ------------------------------------------------------------------
+    // #7321 — kind-10050 inbox routing.
+    //
+    // Stubs live in this leaf group rather than a shared setUp: the shared-
+    // setup ratchet does not baseline this file, and a decision stub is only
+    // legible next to the tests it governs.
+    // ------------------------------------------------------------------
+    group('kind-10050 inbox routing (#7321)', () {
+      const inbox = ['wss://inbox.example'];
+
+      /// Stubs the optimistic insert + placeholder swap a `publish` needs, and
+      /// returns the rumor it will send.
+      Event stubPublishPath({List<String> superseded = const []}) {
+        final rumor = reactionRumor();
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _otherPubkey,
+            content: '🔥',
+            eventKind: EventKind.reaction,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(rumor);
+        when(
+          () => mockDao.insertOwnReactionSuperseding(
+            placeholderId: rumor.id,
+            conversationId: _conversationId,
+            targetMessageId: _targetMessageId,
+            targetMessageAuthor: _otherPubkey,
+            reactorPubkey: _ownerPubkey,
+            emoji: '🔥',
+            createdAt: rumor.createdAt,
+            ownerPubkey: _ownerPubkey,
+            rumorEventJson: jsonEncode(rumor.toJson()),
+          ),
+        ).thenAnswer((_) async => superseded);
+        when(
+          () => mockDao.swapPlaceholderId(
+            placeholderId: rumor.id,
+            realRumorId: rumor.id,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: rumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+        return rumor;
+      }
+
+      Future<DmReactionPublishResult> publishReaction(
+        DmReactionsRepository repository,
+      ) => repository.publish(
+        conversationId: _conversationId,
+        targetMessageId: _targetMessageId,
+        targetMessageAuthor: _otherPubkey,
+        emoji: '🔥',
+      );
+
+      test(
+        'routes the reaction wrap to the resolved kind-10050 inbox',
+        () async {
+          final rumor = stubPublishPath();
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inbox);
+
+          await publishReaction(repository);
+
+          // The exact resolved value, not any() — the whole defect was
+          // that this
+          // argument never arrived at all.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: rumor,
+              recipientPubkey: _otherPubkey,
+              targetRelays: inbox,
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to the default pool when the recipient advertises no inbox',
+        () async {
+          final rumor = stubPublishPath();
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => null);
+
+          await publishReaction(repository);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: rumor,
+              recipientPubkey: _otherPubkey,
+              // `any(that: isNull)` rather than a literal `null`: the literal
+              // matches sendRumor's default and trips
+              // avoid_redundant_argument_values, but asserting the fallback is
+              // the point of these three tests.
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('publishes untargeted when no resolver is wired', () async {
+        final rumor = stubPublishPath();
+        final repository = createRepository();
+
+        await publishReaction(repository);
+
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _otherPubkey,
+            targetRelays: any(named: 'targetRelays', that: isNull),
+            awaitRecipientOk: true,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'a throwing resolver degrades that recipient to the pool, '
+        'it does not fail the fan-out',
+        () async {
+          final rumor = stubPublishPath();
+          final repository = createRepository()
+            ..setDmInboxRelayResolver(
+              (_) async => throw StateError('resolver blew up'),
+            );
+
+          final result = await publishReaction(repository);
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: rumor,
+              recipientPubkey: _otherPubkey,
+              // `any(that: isNull)` rather than a literal `null`: the literal
+              // matches sendRumor's default and trips
+              // avoid_redundant_argument_values, but asserting the fallback is
+              // the point of these three tests.
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('routes the kind-5 reaction removal to the same inbox', () async {
+        final deletionRumor = reactionRumor(
+          id: _giftWrapId,
+          content: '',
+          kind: EventKind.eventDeletion,
+          tags: [
+            ['e', _reactionRumorId],
+            ['k', EventKind.reaction.toString()],
+          ],
+        );
+        when(
+          () => mockDao.markOwnDeletionPending(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _otherPubkey,
+            content: '',
+            eventKind: EventKind.eventDeletion,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(deletionRumor);
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) async => const NIP17SendResult.failure('offline'));
+
+        final repository = createRepository()
+          ..setDmInboxRelayResolver((_) async => inbox);
+        await repository.removeOwn(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+        // _driveDeletion fires via unawaited; let it run.
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            targetRelays: inbox,
+            awaitRecipientOk: true,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'an emoji swap resolves the inbox once for both the kind-5 and kind-7',
+        () async {
+          final deletionRumor = reactionRumor(
+            id: _giftWrapId,
+            content: '',
+            kind: EventKind.eventDeletion,
+            tags: [
+              ['e', _reactionRumorId],
+              ['k', EventKind.reaction.toString()],
+            ],
+          );
+          stubPublishPath(superseded: const [_reactionRumorId]);
+          when(
+            () => mockDao.markOwnDeletionPending(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: _otherPubkey,
+              content: '',
+              eventKind: EventKind.eventDeletion,
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenReturn(deletionRumor);
+          // _driveDeletion writes this on a confirmed kind-5. Unstubbed it
+          // returns null, the await throws, and the drive logs "DM reaction
+          // deletion publish threw" — the test would still pass while
+          // exercising the error branch.
+          when(
+            () => mockDao.markDeletionSent(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer((_) async {});
+
+          var resolveCalls = 0;
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async {
+              resolveCalls++;
+              return inbox;
+            });
+
+          await publishReaction(repository);
+          await Future<void>.delayed(Duration.zero);
+
+          // One recipient, one tap — the supersede kind-5 and the new kind-7
+          // concern the same person at the same moment, so a second lookup
+          // would be latency for an answer that cannot have changed.
+          expect(resolveCalls, 1);
+        },
+      );
+    });
   });
 }

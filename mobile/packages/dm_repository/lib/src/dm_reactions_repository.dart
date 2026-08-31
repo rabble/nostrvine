@@ -101,6 +101,20 @@ class DmReactionRetryTarget {
   final int createdAt;
 }
 
+/// Resolves [pubkey]'s NIP-17 kind-10050 DM inbox relays.
+///
+/// A function port rather than a `DmRepository` reference: `dmRepository`'s
+/// provider already watches `dmReactionsRepositoryProvider`
+/// (`repository_providers.dart`), so reading it back from here would close a
+/// Riverpod dependency cycle — and `ref.read` trips that guard at call time,
+/// not only during build.
+///
+/// Contract: **must not throw**. Resolution failures degrade to `null`, and
+/// `null` means "publish to the default relay pool", which is the behaviour
+/// that shipped before #7321. `DmRepository.resolveDmInboxRelays` satisfies
+/// this — its whole body is wrapped in `on Object catch`.
+typedef DmInboxRelayResolver = Future<List<String>?> Function(String pubkey);
+
 /// Repository for DM emoji reactions.
 ///
 /// Public surface:
@@ -169,6 +183,27 @@ class DmReactionsRepository {
   void clearCredentials() {
     _userPubkey = '';
     _messageService = null;
+  }
+
+  /// Resolves a recipient's kind-10050 DM inbox so a reaction gift wrap is
+  /// published where they actually read (#7321). Null until wired, and a null
+  /// result routes to the default pool — both are the pre-#7321 behaviour.
+  DmInboxRelayResolver? _resolveDmInboxRelays;
+
+  /// Wire the kind-10050 resolver.
+  ///
+  /// Injected downward by `DmRepository`'s provider rather than read from a
+  /// provider here; see [DmInboxRelayResolver] for why. The only consumer that
+  /// reaches this repository without also building `DmRepository` is the
+  /// reaction retry sweep, and the app shell constructs `dmRepositoryProvider`
+  /// eagerly at mount, so the resolver is always wired before a sweep can fire.
+  /// Kept a method rather than a setter: a bare setter trips
+  /// `avoid_setters_without_getters`, and satisfying that would mean exposing a
+  /// getter no consumer wants purely to appease the pair. The `set*` shape also
+  /// matches [setCredentials] / [clearCredentials] on this class.
+  // ignore: use_setters_to_change_properties
+  void setDmInboxRelayResolver(DmInboxRelayResolver? resolver) {
+    _resolveDmInboxRelays = resolver;
   }
 
   /// Drop every reaction row this account holds for [conversationIds].
@@ -337,6 +372,15 @@ class DmReactionsRepository {
     // soft-deleted locally and the new emoji stays as a retryable failed
     // chip — whereas a wire rollback would desync the two sides. Recovery is
     // re-tapping (or the sweep re-driving) the new emoji.
+    // Resolve each recipient's kind-10050 inbox ONCE for the whole tap. An
+    // emoji swap drives two fan-outs milliseconds apart — the kind-5 supersede
+    // below and the kind-7 add after it — and they concern the same recipients
+    // at the same moment, so a second lookup would be redundant latency for an
+    // answer that cannot have changed. Resolved here rather than inside
+    // `_fanOutRumor` so both share it; the optimistic row is already written
+    // above, so this never delays the visible chip.
+    final inboxByRecipient = await _resolveInboxes(recipients);
+
     for (final priorId in superseded) {
       await _durablyDeleteReaction(
         rumorId: priorId,
@@ -344,6 +388,7 @@ class DmReactionsRepository {
         messageService: messageService,
         reportSite:
             DmReactionsRepositoryReportableSites.publishSupersedeDeletion,
+        inboxByRecipient: inboxByRecipient,
       );
     }
 
@@ -352,6 +397,7 @@ class DmReactionsRepository {
         messageService: messageService,
         rumor: rumor,
         recipients: recipients,
+        inboxByRecipient: inboxByRecipient,
         awaitRecipientOk: true,
       );
       switch (result) {
@@ -618,6 +664,7 @@ class DmReactionsRepository {
     required List<String> recipients,
     required NIP17MessageService messageService,
     required String reportSite,
+    Map<String, List<String>?>? inboxByRecipient,
   }) async {
     if (recipients.isEmpty) return;
     final deletion = messageService.buildRumor(
@@ -647,6 +694,7 @@ class DmReactionsRepository {
         deletion: deletion,
         recipients: recipients,
         messageService: messageService,
+        inboxByRecipient: inboxByRecipient,
       ),
     );
   }
@@ -773,12 +821,14 @@ class DmReactionsRepository {
     required Event deletion,
     required List<String> recipients,
     required NIP17MessageService messageService,
+    Map<String, List<String>?>? inboxByRecipient,
   }) async {
     try {
       final result = await _fanOutRumor(
         messageService: messageService,
         rumor: deletion,
         recipients: recipients,
+        inboxByRecipient: inboxByRecipient,
         awaitRecipientOk: true,
       );
       final terminal =
@@ -962,12 +1012,17 @@ class DmReactionsRepository {
     required NIP17MessageService messageService,
     required Event rumor,
     required String recipientPubkey,
+    List<String>? targetRelays,
     bool awaitRecipientOk = false,
   }) {
     return messageService
         .sendRumor(
           rumorEvent: rumor,
           recipientPubkey: recipientPubkey,
+          // Route the wrap to the recipient's advertised NIP-17 inbox when it
+          // resolved; null falls back to the default pool, preserving
+          // reachability for recipients who publish no kind-10050 (#7321).
+          targetRelays: targetRelays,
           awaitRecipientOk: awaitRecipientOk,
         )
         .timeout(
@@ -1038,6 +1093,45 @@ class DmReactionsRepository {
       ? const <String>[]
       : <String>[targetMessageAuthor];
 
+  /// Resolve every recipient's NIP-17 kind-10050 DM inbox concurrently.
+  ///
+  /// Hoisted out of the per-recipient send loop and run in parallel, exactly as
+  /// `DmRepository.sendGroupMessage` does: resolution is a live relay query
+  /// capped at 5 s and is not meaningfully cached, so resolving inside the loop
+  /// would cost N sequential waits before the last wrap is even attempted.
+  ///
+  /// Every lookup is isolated. [DmInboxRelayResolver]'s contract forbids
+  /// throwing and `DmRepository.resolveDmInboxRelays` honours it, but the
+  /// resolver is an injected port rather than a method this class owns — and an
+  /// unguarded `Future.wait` fails *whole* on a single rejection, which would
+  /// turn one bad lookup into a failed fan-out instead of one recipient falling
+  /// back to the default pool.
+  ///
+  /// Returns an empty map when no resolver is wired, so every recipient reads
+  /// back `null` and routing is byte-identical to the pre-#7321 behaviour.
+  Future<Map<String, List<String>?>> _resolveInboxes(
+    List<String> recipients,
+  ) async {
+    final resolve = _resolveDmInboxRelays;
+    if (resolve == null) return const <String, List<String>?>{};
+    final inboxes = <String, List<String>?>{};
+    // try/catch rather than `.catchError((_) => null)`: on a
+    // `Future<List<String>?>` that handler is only type-checked at runtime, and
+    // Dart rejects it with "The error handler of Future.catchError must return
+    // a value of the future's type" — turning the guard into the very crash it
+    // exists to prevent. Caught by the throwing-resolver test below.
+    Future<void> resolveOne(String recipient) async {
+      try {
+        inboxes[recipient] = await resolve(recipient);
+      } on Object {
+        inboxes[recipient] = null;
+      }
+    }
+
+    await Future.wait(recipients.map(resolveOne));
+    return inboxes;
+  }
+
   /// Wrap [rumor] to each of [recipients] (each send also self-wraps for
   /// cross-device recovery; self-wrap copies dedupe on the rumor id at the
   /// receiver). Terminal success ONLY when EVERY recipient wrap lands.
@@ -1068,11 +1162,13 @@ class DmReactionsRepository {
     required NIP17MessageService messageService,
     required Event rumor,
     required List<String> recipients,
+    Map<String, List<String>?>? inboxByRecipient,
     bool awaitRecipientOk = false,
   }) async {
     if (recipients.isEmpty) {
       return const NIP17SendResult.failure('No reaction wrap recipients');
     }
+    final inboxes = inboxByRecipient ?? await _resolveInboxes(recipients);
     NIP17SendSuccess? lastSuccess;
     final failures = <NIP17SendFailure>[];
     for (final recipient in recipients) {
@@ -1080,6 +1176,7 @@ class DmReactionsRepository {
         messageService: messageService,
         rumor: rumor,
         recipientPubkey: recipient,
+        targetRelays: inboxes[recipient],
         awaitRecipientOk: awaitRecipientOk,
       );
       switch (result) {
