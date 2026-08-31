@@ -1,6 +1,8 @@
 // ABOUTME: Time budget for a batched NIP-17 send and its legacy fallback.
 // ABOUTME: Keeps batch-only bounds separate from the legacy send budget.
 
+import 'package:dm_repository/src/dm_send_budget.dart';
+
 /// Bounds the NIP-17 batch-wrap attempt plus its serial fallback path.
 ///
 /// A Keycast send first spends one 30-second `nip17_wrap_batch` request. A
@@ -18,7 +20,7 @@ abstract final class DmBatchSendBudget {
   static const int _recipientOkConfirmSeconds = 10;
   static const int _selfWrapBuildSeconds = 20;
   static const int _selfWrapPublishSeconds = 10;
-  static const int _headroomSeconds = 15;
+  static const int _headroomSeconds = 15 - DmSendBudget.preWrapSeconds;
 
   static const int _recipientWrapBuildSeconds =
       _batchRequestSeconds +
@@ -33,6 +35,7 @@ abstract final class DmBatchSendBudget {
   /// Serial worst case for the bounded portion of a batched send.
   static const Duration chainWorstCase = Duration(
     seconds:
+        DmSendBudget.preWrapSeconds +
         _recipientWrapBuildSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +
@@ -42,6 +45,7 @@ abstract final class DmBatchSendBudget {
   /// Hard backstop on a batched NIP-17 message publish.
   static const Duration messagePublishTimeout = Duration(
     seconds:
+        DmSendBudget.preWrapSeconds +
         _recipientWrapBuildSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +

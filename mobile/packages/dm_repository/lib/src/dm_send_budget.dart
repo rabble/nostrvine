@@ -106,16 +106,94 @@ abstract final class DmSendBudget {
   /// [selfWrapPublish].
   static const int _selfWrapPublishSeconds = 10;
 
+  /// Bound on the injected connectivity probe.
+  ///
+  /// `connectivity_plus`' `checkConnectivity()` is a platform-channel round
+  /// trip with no timeout of its own, and `_isOfflineSafely`'s `try/catch`
+  /// cannot help: a wedged channel is a hang, not a throw. It runs INSIDE the
+  /// publish backstop, so unbounded it spends the cap that exists for a wedged
+  /// signer (#7091). A channel slower than this is wedged, not busy.
+  static const int _connectivityProbeSeconds = 3;
+
+  /// Bound on the injected send-policy check.
+  ///
+  /// Sized to the resolver's own Dio connect/receive bound, so this can only
+  /// fire on a transport that has already given up.
+  static const int _sendPolicyCheckSeconds = 5;
+
+  /// Bound on `Nostr.refreshPublicKey()` before the wrap build.
+  ///
+  /// Deliberately tight. Every signer this app injects answers `getPublicKey`
+  /// from a field: the send path receives a `NostrIdentity`
+  /// (`nostr_client_provider.dart` builds the client from
+  /// `authService.currentIdentity`), which returns `async => pubkey`.
+  /// `KeycastRpc.getPublicKey` IS a real uncached RPC, but it sits behind that
+  /// identity rather than on this path, and NIP-46's returns a local field.
+  /// So this cannot fail work a shipped signer would have completed.
+  static const int _signerPubkeyRefreshSeconds = 3;
+
+  /// Serial worst case of the three pre-wrap steps inside the backstop.
+  ///
+  /// Public so `DmBatchSendBudget` folds in the same number rather than
+  /// restating it — the drift #6586 was about.
+  static const int preWrapSeconds =
+      _connectivityProbeSeconds +
+      _sendPolicyCheckSeconds +
+      _signerPubkeyRefreshSeconds;
+
+  /// Bound on the connectivity probe. See [_connectivityProbeSeconds].
+  static const Duration connectivityProbe = Duration(
+    seconds: _connectivityProbeSeconds,
+  );
+
+  /// Bound on the send-policy check. See [_sendPolicyCheckSeconds].
+  static const Duration sendPolicyCheck = Duration(
+    seconds: _sendPolicyCheckSeconds,
+  );
+
+  /// Bound on the pre-wrap pubkey refresh. See [_signerPubkeyRefreshSeconds].
+  static const Duration signerPubkeyRefresh = Duration(
+    seconds: _signerPubkeyRefreshSeconds,
+  );
+
+  /// End-to-end bound on one recipient kind-10050 inbox resolution.
+  ///
+  /// Unlike everything else here this sits OUTSIDE
+  /// [messagePublishTimeout] — resolution runs before the publish is wrapped.
+  /// It is declared here anyway because `OutgoingDmRetryService` derives its
+  /// interrupted-send guard from the pair, and the whole point of #6586 was
+  /// that a guard restating a number drifts away from the thing it bounds.
+  ///
+  /// Read by `DmRepository.inboxResolutionBudget`.
+  static const Duration inboxResolution = Duration(
+    seconds: _dmInboxQuerySeconds + _inboxAdmissionSeconds,
+  );
+
+  /// The relay read inside a resolution, restated from
+  /// `DmRepository._dmInboxQueryTimeout`.
+  static const int _dmInboxQuerySeconds = 5;
+
+  /// Room inside [inboxResolution] for the work around that read: the tag
+  /// scan, relay admission, and the event-loop hops between them.
+  static const int _inboxAdmissionSeconds = 2;
+
   /// Slack between [chainWorstCase] and [messagePublishTimeout].
   ///
   /// Absorbs event-loop scheduling, isolate hops, and the DAO work interleaved
   /// with the publish. The backstop must sit strictly above the capped worst
   /// case or it fires mid-send and misclassifies it — the #6586 defect.
   ///
-  /// Trimmed by [_wrapBuildLocalCryptoSeconds] when that margin was moved into
-  /// [_recipientWrapBuildSeconds], so [messagePublishTimeout] holds at 120s and
-  /// `OutgoingDmRetryService.interruptedMinAge` does not have to move with it.
-  static const int _headroomSeconds = 15;
+  /// Trimmed twice: once by [_wrapBuildLocalCryptoSeconds] when that margin
+  /// moved into [_recipientWrapBuildSeconds], and again by [preWrapSeconds]
+  /// when the three pre-wrap steps were bounded and folded into
+  /// [chainWorstCase] (#7091). Both trims keep [messagePublishTimeout] at the
+  /// value it has shipped at, so the guard downstream does not move.
+  ///
+  /// Note the live send path reads `DmBatchSendBudget`, not this class —
+  /// `DmRepository._messagePublishTimeout` and
+  /// `OutgoingDmRetryService.interruptedMinAge` both key off that one. This
+  /// class still bounds the legacy non-batch build.
+  static const int _headroomSeconds = 15 - preWrapSeconds;
 
   /// Hard bound on building the recipient gift wrap.
   ///
@@ -208,6 +286,7 @@ abstract final class DmSendBudget {
   /// case is their sum.
   static const Duration chainWorstCase = Duration(
     seconds:
+        preWrapSeconds +
         _recipientWrapBuildSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +
@@ -217,10 +296,13 @@ abstract final class DmSendBudget {
   /// Hard backstop on a single NIP-17 message publish.
   ///
   /// Derived, never hand-written. Callers that need to outlive an in-flight
-  /// send must key off this rather than restating a number — see
+  /// send must key off a backstop rather than restating a number — though the
+  /// one they key off is `DmBatchSendBudget.messagePublishTimeout`, since that
+  /// is what the send path actually uses. See
   /// `OutgoingDmRetryService.interruptedMinAge`.
   static const Duration messagePublishTimeout = Duration(
     seconds:
+        preWrapSeconds +
         _recipientWrapBuildSeconds +
         _recipientOkConfirmSeconds +
         _selfWrapBuildSeconds +

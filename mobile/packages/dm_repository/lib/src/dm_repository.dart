@@ -3418,6 +3418,19 @@ class DmRepository {
     );
   }
 
+  /// End-to-end bound on one inbox resolution.
+  ///
+  /// [_dmInboxQueryTimeout] bounds the relay read; this bounds the whole
+  /// resolution. The distinction matters because resolution runs OUTSIDE the
+  /// publish backstop, and `OutgoingDmRetryService.interruptedMinAge` budgets
+  /// a fixed margin for it — so any segment that escapes the read's own bound
+  /// silently erodes that margin. On device the resolution took 51s on a real
+  /// send while the capped publish took 10ms (#7091).
+  ///
+  /// Mutable only so a test can shorten it; nothing in the app writes it.
+  @visibleForTesting
+  static Duration inboxResolutionBudget = DmSendBudget.inboxResolution;
+
   /// Filters and bounds the relay URLs advertised in a kind-10050.
   ///
   /// A relay list is untrusted input and nothing in the protocol bounds its
@@ -3506,20 +3519,22 @@ class DmRepository {
     _DmRelayListSource source = _DmRelayListSource.remote,
   }) async {
     try {
-      final result = await _nostrClient.queryEventsDetailed(
-        [
-          nostr_filter.Filter(
-            authors: [pubkey],
-            kinds: [EventKind.dmRelaysList],
-            limit: 1,
-          ),
-        ],
-        useCache: !requireAuthoritative,
-        requireAllRelaysSettled: requireAuthoritative,
-        timeout: requireAuthoritative
-            ? _ownDmInboxAuthoritativeTimeout
-            : _dmInboxQueryTimeout,
-      );
+      final result = await _nostrClient
+          .queryEventsDetailed(
+            [
+              nostr_filter.Filter(
+                authors: [pubkey],
+                kinds: [EventKind.dmRelaysList],
+                limit: 1,
+              ),
+            ],
+            useCache: !requireAuthoritative,
+            requireAllRelaysSettled: requireAuthoritative,
+            timeout: requireAuthoritative
+                ? _ownDmInboxAuthoritativeTimeout
+                : _dmInboxQueryTimeout,
+          )
+          .timeout(inboxResolutionBudget);
       final events = result.events;
       // Computed here but applied ONLY at the two exits below where nothing
       // matching came back. A read that DID return the list stays `found` even
@@ -3605,6 +3620,20 @@ class DmRepository {
       return relays.isEmpty
           ? (state: _OwnDmInboxState.absent, relays: null)
           : (state: _OwnDmInboxState.found, relays: relays);
+    } on TimeoutException {
+      // Deliberately `failed`, never `absent`. NIP-17 says an absent kind-10050
+      // means the user "is not ready to receive messages"; a read we abandoned
+      // says nothing about them. Collapsing the two is #7317, and routing a
+      // new timeout into `absent` would make that defect more reachable.
+      // `resolveDmInboxRelays` still flattens both to null, so behaviour here
+      // is unchanged — the distinction is preserved for the caller that needs
+      // it rather than acted on now.
+      Log.warning(
+        'DM inbox resolution for ${pubkeyForLogs(pubkey)} exceeded '
+        '${inboxResolutionBudget.inMilliseconds}ms; treating as unread',
+        category: LogCategory.system,
+      );
+      return (state: _OwnDmInboxState.failed, relays: null);
     } on Object catch (e) {
       Log.warning(
         'Failed to resolve DM inbox relays for ${pubkeyForLogs(pubkey)}: $e',

@@ -593,7 +593,25 @@ class NIP17MessageService {
       // file — is covered at one seam. The injected policy decides which
       // recipients are refused. Checked before any wrap build or publish, so a
       // blocked send leaks no metadata to relays and performs no signing work.
-      final policyDecision = await _sendPolicy(recipientPubkey);
+      // Bounded: the resolver behind this has its own Dio connect/receive
+      // bound, but nothing here enforced it, so a wedged resolver spent the
+      // publish backstop instead (#7091). Fail CLOSED to temporarily-blocked:
+      // this is a safety gate, and a retryable refusal is the safe reading of
+      // "we could not determine whether this recipient is permitted".
+      DmSendPolicyDecision policyDecision;
+      try {
+        policyDecision = await _sendPolicy(
+          recipientPubkey,
+        ).timeout(DmSendBudget.sendPolicyCheck);
+      } on TimeoutException {
+        Log.warning(
+          'NIP-17 send policy check exceeded '
+          '${DmSendBudget.sendPolicyCheck.inSeconds}s; treating as '
+          'temporarily blocked',
+          category: LogCategory.system,
+        );
+        policyDecision = DmSendPolicyDecision.temporarilyBlocked;
+      }
       if (policyDecision != DmSendPolicyDecision.allowed) {
         Log.info(
           'NIP-17 send blocked by policy for recipient',
@@ -636,14 +654,34 @@ class NIP17MessageService {
       // Create a minimal Nostr instance for GiftWrapUtil.
       // Uses the injected signer (works with local or remote signing). The
       // signer stays the source of truth for the seal pubkey (it MUST match
-      // the signing key, NIP-59); Keycast caches getPublicKey locally, so
-      // this refresh is not an RPC round-trip.
+      // the signing key, NIP-59). Every signer the app injects answers this
+      // from a field — the send path receives a `NostrIdentity`, and NIP-46's
+      // returns `info.userPubkey`. `KeycastRpc.getPublicKey` IS an uncached
+      // RPC, but it sits behind that identity rather than on this path.
       final nostr = Nostr(
         _signer,
         [], // Empty filters - not using for subscriptions
         _dummyRelayGenerator, // Dummy relay generator - not using relays
       );
-      await nostr.refreshPublicKey();
+      // Bounded: every signer the app injects answers getPublicKey from a
+      // field (the send path receives a NostrIdentity), so this cannot fail a
+      // refresh a shipped signer would have completed. It ran inside the
+      // publish backstop with no bound of its own (#7091).
+      try {
+        await nostr.refreshPublicKey().timeout(
+          DmSendBudget.signerPubkeyRefresh,
+        );
+      } on TimeoutException {
+        Log.warning(
+          'Signer pubkey refresh exceeded '
+          '${DmSendBudget.signerPubkeyRefresh.inSeconds}s',
+          category: LogCategory.system,
+        );
+        return const NIP17SendResult.failure(
+          'Signer did not answer in time',
+          retryablePending: true,
+        );
+      }
 
       Log.debug(
         'Wrapping kind ${rumorEvent.kind} rumor event',
@@ -924,7 +962,17 @@ class NIP17MessageService {
   /// a flaky probe never blocks a send that might otherwise succeed.
   Future<bool> _isOfflineSafely() async {
     try {
-      return await _isOffline();
+      // Bounded as well as guarded: `connectivity_plus`' checkConnectivity is
+      // a platform-channel round trip, and a wedged channel is a hang, not a
+      // throw — which is why the catch below could never cover it (#7091).
+      return await _isOffline().timeout(DmSendBudget.connectivityProbe);
+    } on TimeoutException {
+      Log.warning(
+        'Offline probe exceeded ${DmSendBudget.connectivityProbe.inSeconds}s; '
+        'assuming online',
+        category: LogCategory.system,
+      );
+      return false;
     } on Object catch (e) {
       Log.warning(
         'Offline probe failed; assuming online: $e',

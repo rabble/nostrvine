@@ -4288,6 +4288,48 @@ void main() {
         ).thenAnswer((_) async => answeredList(events));
       }
 
+      test(
+        'a stalled relay read cannot outlive the resolution budget',
+        () async {
+          // Resolution runs OUTSIDE the publish backstop, and the sweep guard
+          // budgets a fixed margin for it. On device it took 51s on a real send
+          // while the capped publish took 10ms (#7091), so the margin was a
+          // heuristic rather than a guarantee. Stubbed inline, not in
+          // the shared setUp: that setUp is frozen at its stub count.
+          final original = DmRepository.inboxResolutionBudget;
+          DmRepository.inboxResolutionBudget = Duration.zero;
+          addTearDown(() => DmRepository.inboxResolutionBudget = original);
+
+          final stalledRead =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          addTearDown(() {
+            if (!stalledRead.isCompleted) {
+              stalledRead.complete(
+                (events: const <Event>[], timedOut: true, noRelays: false),
+              );
+            }
+          });
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) => stalledRead.future);
+
+          final repository = createRepository();
+
+          expect(
+            await repository.resolveDmInboxRelays(_validPubkeyB),
+            isNull,
+            reason: 'an unread inbox degrades to the default pool, as today',
+          );
+        },
+      );
+
       test('returns relay urls from the kind-10050 relay tags', () async {
         stubQuery([
           kind10050Event(['wss://inbox.example', 'wss://inbox2.example']),

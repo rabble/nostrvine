@@ -132,12 +132,29 @@ class OutgoingDmRetryService {
   final DateTime Function() _now;
   final CrashReportingService _crashReporting;
 
-  /// Extra margin over [DmBatchSendBudget.messagePublishTimeout] for the work a
-  /// send does OUTSIDE that backstop — chiefly recipient kind-10050 inbox
-  /// resolution, which runs before the publish is wrapped and is not itself
-  /// bounded end-to-end. It is a margin, not a guarantee; bounding those
-  /// segments is tracked separately.
-  static const Duration _inboxResolutionMargin = Duration(seconds: 30);
+  /// What a send can cost OUTSIDE [DmBatchSendBudget.messagePublishTimeout].
+  ///
+  /// Chiefly recipient kind-10050 inbox resolution, which runs before the
+  /// publish is wrapped. This used to be a flat 30s estimate documented as
+  /// "a margin, not a guarantee", because nothing bounded that resolution:
+  /// on device it took 51s on a real send while the capped publish took 10ms
+  /// (#7091). It is now derived from the bound actually enforced there, so it
+  /// cannot drift from it — the #6586 failure mode.
+  static final Duration _inboxResolutionMargin =
+      DmSendBudget.inboxResolution + _nonCancellationCushion;
+
+  /// Room beyond the two bounds for a send that has already been abandoned.
+  ///
+  /// `Future.timeout` does not cancel, so a send the backstop gave up on keeps
+  /// running past the cap. This guard has to outlive the IN-FLIGHT send, not
+  /// merely the cap, which is why deriving it from the bounds alone would be
+  /// too tight.
+  ///
+  /// Sized to hold the total at the 160s it has shipped at: bounding the
+  /// segments made the derivation honest, and re-deriving it downward at the
+  /// same time would ship an unmeasured change to how soon the sweep re-drives
+  /// a live send. That is a separate decision, on its own evidence.
+  static const Duration _nonCancellationCushion = Duration(seconds: 23);
 
   /// Minimum age of a still-`pending` row before the interrupted-send arm
   /// may re-drive it. Must exceed the worst-case legitimately-in-flight
@@ -152,6 +169,11 @@ class OutgoingDmRetryService {
   /// chain it bounds, and `Future.timeout` does not cancel — so the abandoned
   /// send keeps running past the cap and this guard has to outlive the
   /// IN-FLIGHT send, not merely the cap.
+  ///
+  /// Both halves are now derived: the backstop covers the whole capped chain
+  /// including the three pre-wrap steps that used to sit in its headroom, and
+  /// [_inboxResolutionMargin] covers resolution at the bound now enforced on
+  /// it. The guard is a guarantee rather than an estimate (#7091).
   static final Duration _interruptedMinAge =
       DmBatchSendBudget.messagePublishTimeout + _inboxResolutionMargin;
 
