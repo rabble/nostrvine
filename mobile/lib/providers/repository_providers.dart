@@ -741,10 +741,8 @@ DmRepository dmRepository(Ref ref) {
   // `dmReactionsRepositoryProvider` above, so reading it back from there would
   // close a Riverpod cycle.
   //
-  // Wired before the readiness gate: resolution only reads, and
-  // `AppShellBadgeScope` builds this provider eagerly at mount, so the resolver
-  // is in place before the reaction retry sweep — the one consumer that reaches
-  // the reactions repository without building this one — can fire.
+  // The reaction retry provider also watches this provider explicitly, making
+  // this wiring complete before its fire-immediately sweep can run.
   reactionsRepository.setDmInboxRelayResolver(repository.resolveDmInboxRelays);
 
   // Set credentials and open the gift-wrap subscription as soon as the

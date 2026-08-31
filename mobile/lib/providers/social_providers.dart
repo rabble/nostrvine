@@ -459,6 +459,10 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
     return null;
   }
 
+  // The retry service can be constructed above the app composition tree.
+  // Watching DmRepository makes its downward resolver wiring deterministic
+  // before the fire-immediately sweep can settle a retry through the pool.
+  ref.watch(dmRepositoryProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
 
   // Bridge the synchronous AppForeground notifier into a Stream<bool> so the
