@@ -20,7 +20,13 @@ import 'dart:io';
 /// - with [broadcast], `EVENT` is also forwarded to every OTHER open
 ///   subscription, which is what a multi-party test needs
 class FakeRelay {
-  FakeRelay._(this._server, this.reply, this.okConfirms, this.broadcast);
+  FakeRelay._(
+    this._server,
+    this.reply,
+    this.okConfirms,
+    this.broadcast,
+    this.stallReqForKinds,
+  );
 
   /// Starts a relay on an ephemeral loopback port.
   ///
@@ -29,13 +35,25 @@ class FakeRelay {
   /// confirms it. Set [broadcast] true to fan a published `EVENT` out to every
   /// other open subscription — off by default so existing tests, which assert
   /// on what the relay was *sent*, see no extra traffic.
+  /// [stallReqForKinds] models a relay that accepts a `REQ` and never
+  /// terminates it: no `EVENT`, no `EOSE`. That is the only shape that makes
+  /// `queryEventsDetailed` report `timedOut` — an `EOSE` is a conclusive
+  /// "nothing here", so a relay answering EOSE cannot stand in for one that
+  /// could not be read.
   static Future<FakeRelay> start({
     Map<String, dynamic>? reply,
     bool okConfirms = true,
     bool broadcast = false,
+    Set<int> stallReqForKinds = const <int>{},
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final relay = FakeRelay._(server, reply, okConfirms, broadcast);
+    final relay = FakeRelay._(
+      server,
+      reply,
+      okConfirms,
+      broadcast,
+      stallReqForKinds,
+    );
     server.listen(relay._handle, onError: (_) {});
     return relay;
   }
@@ -52,6 +70,13 @@ class FakeRelay {
 
   /// Whether an inbound `EVENT` is answered with `OK … true`.
   final bool okConfirms;
+
+  /// Kinds whose `REQ` is swallowed rather than answered.
+  ///
+  /// A subscription whose filter names one of these gets neither `EVENT` nor
+  /// `EOSE`, so the read never settles and the client reports it as timed out
+  /// rather than empty. Other subscriptions on the same socket are unaffected.
+  final Set<int> stallReqForKinds;
 
   /// Whether a published `EVENT` is forwarded to other open subscriptions.
   ///
@@ -137,6 +162,7 @@ class FakeRelay {
         if (frame[0] == 'REQ' && frame.length >= 2) {
           final subId = frame[1] as String;
           _subscriptions[socket]?.add(subId);
+          if (_isStalled(frame)) return;
           if (reply != null) {
             send(<dynamic>['EVENT', subId, reply]);
           }
@@ -153,6 +179,20 @@ class FakeRelay {
       },
       onError: (_) {},
     );
+  }
+
+  /// Whether this `REQ` frame names a kind in [stallReqForKinds].
+  bool _isStalled(List<dynamic> frame) {
+    if (stallReqForKinds.isEmpty) return false;
+    for (final filter in frame.skip(2)) {
+      if (filter is! Map) continue;
+      final kinds = filter['kinds'];
+      if (kinds is! List) continue;
+      for (final kind in kinds) {
+        if (kind is int && stallReqForKinds.contains(kind)) return true;
+      }
+    }
+    return false;
   }
 
   /// Forwards [event] to every open subscription except the publisher's own.
