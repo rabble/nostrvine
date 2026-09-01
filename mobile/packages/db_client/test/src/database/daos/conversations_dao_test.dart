@@ -36,6 +36,71 @@ void main() {
   });
 
   group(ConversationsDao, () {
+    group('clearNip04ProtocolLatch', () {
+      Future<void> seed({
+        required String id,
+        String? protocol,
+        String? owner,
+      }) => dao.upsertConversation(
+        id: id,
+        participantPubkeys: '["pubkey_a","pubkey_b"]',
+        isGroup: false,
+        createdAt: 1700000000,
+        lastMessageContent: 'Hello!',
+        lastMessageTimestamp: 1700000100,
+        lastMessageSenderPubkey: 'pubkey_a',
+        ownerPubkey: owner,
+        dmProtocol: protocol,
+      );
+
+      test('clears a nip04 latch and reports that it did', () async {
+        await seed(id: 'conv_1', protocol: 'nip04');
+
+        expect(await dao.clearNip04ProtocolLatch('conv_1'), isTrue);
+        expect((await dao.getConversation('conv_1'))!.dmProtocol, 'nip17');
+      });
+
+      test('is a no-op on a thread already nip17', () async {
+        await seed(id: 'conv_1', protocol: 'nip17');
+
+        // Reports false so the caller can log the transition exactly once
+        // per thread rather than on every message.
+        expect(await dao.clearNip04ProtocolLatch('conv_1'), isFalse);
+        expect((await dao.getConversation('conv_1'))!.dmProtocol, 'nip17');
+      });
+
+      test('never sets a protocol on a thread that has none', () async {
+        await seed(id: 'conv_1');
+
+        // Only ever an upgrade: a null protocol is "not yet decided", and
+        // stamping it here would invent a decision from a duplicate.
+        expect(await dao.clearNip04ProtocolLatch('conv_1'), isFalse);
+        expect((await dao.getConversation('conv_1'))!.dmProtocol, isNull);
+      });
+
+      test("does not touch another account's row", () async {
+        await seed(id: 'conv_1', protocol: 'nip04', owner: 'owner_a');
+
+        expect(
+          await dao.clearNip04ProtocolLatch('conv_1', ownerPubkey: 'owner_b'),
+          isFalse,
+        );
+        expect((await dao.getConversation('conv_1'))!.dmProtocol, 'nip04');
+      });
+
+      test('leaves the rest of the row alone', () async {
+        await seed(id: 'conv_1', protocol: 'nip04');
+        await dao.clearNip04ProtocolLatch('conv_1');
+
+        // Narrow by design — the caller has learned one fact and must not be
+        // able to rewrite the preview or timestamps through it.
+        final row = (await dao.getConversation('conv_1'))!;
+        expect(row.lastMessageContent, 'Hello!');
+        expect(row.lastMessageTimestamp, 1700000100);
+        expect(row.lastMessageSenderPubkey, 'pubkey_a');
+      });
+    });
+
     group('upsertConversation', () {
       test('inserts new conversation', () async {
         await dao.upsertConversation(

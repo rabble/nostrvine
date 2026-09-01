@@ -279,6 +279,31 @@ END
     return rows > 0;
   }
 
+  /// Clears a `'nip04'` protocol latch on [id], marking the thread NIP-17.
+  ///
+  /// Narrow by design: it touches `dm_protocol` and nothing else, so a caller
+  /// that has only learned "the peer speaks NIP-17" cannot accidentally
+  /// rewrite the preview, timestamps or read state through a full upsert.
+  ///
+  /// Only ever upgrades. The `WHERE dm_protocol = 'nip04'` clause means a
+  /// thread that is already `'nip17'`, or one whose protocol was never set,
+  /// is left exactly as it is — so this can be called unconditionally on the
+  /// evidence without having to read the row first.
+  ///
+  /// Returns `true` when a latch was actually cleared, which is what makes the
+  /// call loggable exactly once per thread rather than on every message.
+  Future<bool> clearNip04ProtocolLatch(String id, {String? ownerPubkey}) async {
+    final rows = await customUpdate(
+      "UPDATE conversations SET dm_protocol = 'nip17' "
+      "WHERE id = ? AND dm_protocol = 'nip04'"
+      '${_ownerSqlClause(ownerPubkey)}',
+      variables: [Variable(id), ..._ownerSqlVariables(ownerPubkey)],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
+    return rows > 0;
+  }
+
   /// Advances the read cursor for [id] to `max(existing, timestamp)` and, when
   /// the cursor then covers the latest message, marks the conversation read.
   ///
