@@ -34,6 +34,18 @@ class _TestCuratedListsState extends CuratedListsState {
   Future<List<CuratedList>> build() async => [_list];
 }
 
+VideoEvent _videoEvent({String id = 'video-one'}) => VideoEvent(
+  id: id,
+  pubkey: 'b' * 64,
+  content: 'A cat video',
+  title: 'A cat video',
+  videoUrl: 'https://example.com/video.mp4',
+  thumbnailUrl: 'https://example.com/thumb.jpg',
+  duration: 5,
+  createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+  timestamp: DateTime(2026),
+);
+
 void main() {
   group(CuratedListFeedScreen, () {
     late _MockCuratedListService mockService;
@@ -65,6 +77,7 @@ void main() {
       MockGoRouter? goRouter,
       List<Override> extraOverrides = const [],
       bool overrideVideoEvents = true,
+      List<VideoEvent> videoEvents = const [],
     }) {
       final list = CuratedList(
         id: listId,
@@ -89,6 +102,10 @@ void main() {
           curatedListsStateProvider.overrideWith(
             () => _TestCuratedListsState(mockService, list),
           ),
+          // Keep the real subscribed-list cache out of the tile chain, as
+          // the grid's own tests do: its sync would hit unstubbed service
+          // members the moment a tile renders.
+          subscribedListVideoCacheProvider.overrideWithValue(null),
           // The hero header and grid live in the videos provider's data
           // branch, so resolve it with an empty grid instead of leaving the
           // screen on the loading spinner. Callers that override the same
@@ -96,11 +113,11 @@ void main() {
           if (overrideVideoEvents && videoIds != null)
             videoEventsByIdsProvider(
               videoIds,
-            ).overrideWith((ref) => Stream.value(const <VideoEvent>[]))
+            ).overrideWith((ref) => Stream.value(videoEvents))
           else if (overrideVideoEvents)
             curatedListVideoEventsProvider(
               listId,
-            ).overrideWith((ref) => Stream.value(const <VideoEvent>[])),
+            ).overrideWith((ref) => Stream.value(videoEvents)),
           ...extraOverrides,
         ],
         child: MaterialApp(
@@ -397,7 +414,11 @@ void main() {
         final semantics = tester.ensureSemantics();
 
         await tester.pumpWidget(
-          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            videoEvents: [_videoEvent()],
+          ),
         );
         await tester.pump();
         await openOwnerSheet(tester);
@@ -411,6 +432,65 @@ void main() {
 
         expect(find.text(l10n.listRemovePostsButton(0)), findsOneWidget);
         semantics.dispose();
+      });
+
+      testWidgets('disables manage posts while the list is empty', (
+        tester,
+      ) async {
+        stubOwnedList();
+        final semantics = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await openOwnerSheet(tester);
+
+        final node = find.semantics
+            .byPredicate(
+              (node) => node.identifier == 'list_manage_posts_option',
+            )
+            .evaluate()
+            .single;
+        expect(node, isSemantics(hasEnabledState: true, isEnabled: false));
+
+        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.pumpAndSettle();
+
+        // The tap is inert: no manage mode, and the sheet stays up.
+        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
+        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
+        semantics.dispose();
+      });
+
+      testWidgets('disables manage posts when the videos fail to load', (
+        tester,
+      ) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            videoIds: null,
+            overrideVideoEvents: false,
+            extraOverrides: [
+              curatedListVideoEventsProvider('owned-list').overrideWith(
+                (ref) =>
+                    Stream<List<VideoEvent>>.error(Exception('relay failure')),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await openOwnerSheet(tester);
+
+        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
+        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
       });
 
       testWidgets('sheet hides share for a list without an author', (
@@ -563,7 +643,11 @@ void main() {
         stubOwnedList();
 
         await tester.pumpWidget(
-          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            videoEvents: [_videoEvent()],
+          ),
         );
         await tester.pump();
         await tester.pump();
@@ -591,8 +675,6 @@ void main() {
         when(
           () => mockService.removeVideoFromList('owned-list', any()),
         ).thenAnswer((_) async => true);
-        // Keep the real subscribed-list cache out of the tile chain, as the
-        // grid's own tests do.
 
         final video = VideoEvent(
           id: 'a' * 64,
@@ -619,7 +701,6 @@ void main() {
             videoIds: null,
             overrideVideoEvents: false,
             extraOverrides: [
-              subscribedListVideoCacheProvider.overrideWithValue(null),
               curatedListVideosProvider('owned-list').overrideWith((ref) async {
                 idReads++;
                 return idReads == 1 ? [video.id] : const <String>[];
@@ -667,6 +748,7 @@ void main() {
             listId: 'owned-list',
             listName: 'Owned List',
             goRouter: goRouter,
+            videoEvents: [_videoEvent()],
           ),
         );
         await tester.pump();

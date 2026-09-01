@@ -92,6 +92,13 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ? ref.watch(videoEventsByIdsProvider(widget.videoIds!))
         : ref.watch(curatedListVideoEventsProvider(widget.listId));
 
+    // Managing posts needs loaded, non-empty content: an empty list has
+    // nothing to remove and an error view has no posts to manage.
+    // hasError, not just a value check: an error kept a previous value in
+    // the AsyncValue, but the body routes it to the error view regardless.
+    final canManagePosts =
+        !videosAsync.hasError && (videosAsync.value?.isNotEmpty ?? false);
+
     final serviceAsync = ref.watch(curatedListsStateProvider);
     final service = ref.read(curatedListsStateProvider.notifier).service;
     final isOwned =
@@ -133,7 +140,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           if (isOwned)
             DiVineAppBarAction(
               icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
-              onPressed: _showOwnerActions,
+              onPressed: () =>
+                  _showOwnerActions(canManagePosts: canManagePosts),
               tooltip: context.l10n.curatedListActionsTooltip,
             ),
         ],
@@ -379,7 +387,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       .service
       ?.getListById(widget.listId);
 
-  Future<void> _showOwnerActions() async {
+  Future<void> _showOwnerActions({required bool canManagePosts}) async {
     final list = _localList();
     // Sharing needs an author pubkey for the canonical URL, so a public
     // list without one must not offer a no-op sheet entry.
@@ -401,6 +409,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           label: context.l10n.listManagePostsAction,
           icon: DivineIconName.pencilSimple,
           action: _CuratedListAction.managePosts,
+          enabled: canManagePosts,
         ),
         if (isShareable)
           _OwnerActionTile(
@@ -778,6 +787,9 @@ class _ListAuthorAttribution extends StatelessWidget {
 }
 
 /// One row of the owner actions sheet; pops the sheet with its [action].
+///
+/// A disabled row renders muted and ignores taps instead of hiding, so the
+/// owner can still see the option exists.
 class _OwnerActionTile extends StatelessWidget {
   const _OwnerActionTile({
     required this.identifier,
@@ -785,6 +797,7 @@ class _OwnerActionTile extends StatelessWidget {
     required this.icon,
     required this.action,
     this.isDestructive = false,
+    this.enabled = true,
   });
 
   final String identifier;
@@ -792,29 +805,36 @@ class _OwnerActionTile extends StatelessWidget {
   final DivineIconName icon;
   final _CuratedListAction action;
   final bool isDestructive;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     // onErrorContainer, not fixed likeRed/error: the sheet surface follows
     // the palette and the token keeps destructive contrast in both
     // appearances (#7147, matching the comment options sheet).
-    final color = isDestructive
-        ? context.vineColors.onErrorContainer
-        : context.vineColors.onSurface;
+    final Color color;
+    if (!enabled) {
+      color = context.vineColors.onSurfaceMuted;
+    } else if (isDestructive) {
+      color = context.vineColors.onErrorContainer;
+    } else {
+      color = context.vineColors.onSurface;
+    }
 
     void select() => Navigator.of(context).pop(action);
 
     return Semantics(
       identifier: identifier,
       button: true,
+      enabled: enabled,
       label: label,
       // excludeSemantics drops the child subtree — including the
       // GestureDetector's tap action — so the action is re-declared here.
-      onTap: select,
+      onTap: enabled ? select : null,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: select,
+        onTap: enabled ? select : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
