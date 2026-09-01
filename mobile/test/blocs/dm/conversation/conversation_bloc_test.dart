@@ -1914,13 +1914,15 @@ void main() {
           isA<ConversationState>().having(
             (s) => s.sendStatus,
             'sendStatus',
-            SendStatus.failed,
+            SendStatus.resendFailed,
           ),
         ],
       );
 
       blocTest<ConversationBloc, ConversationState>(
-        're-raises failed when a hard-failed row still cannot be recovered',
+        'raises resendFailed, not failed, when a hard-failed row still '
+        'cannot be recovered — the bubble was already red, so re-raising '
+        'failed would leave the resend with no visible outcome (#8461)',
         setUp: () {
           when(
             () => mockDmRepository.recoverFullSend(
@@ -1948,7 +1950,7 @@ void main() {
           isA<ConversationState>().having(
             (s) => s.sendStatus,
             'sendStatus',
-            SendStatus.failed,
+            SendStatus.resendFailed,
           ),
         ],
       );

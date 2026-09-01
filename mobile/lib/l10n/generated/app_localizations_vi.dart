@@ -5683,6 +5683,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dmSendFailedMessage => 'Tin nhắn không gửi được';
 
   @override
+  String get dmResendFailedMessage => 'Vẫn không gửi được';
+
+  @override
   String get dmSendFailedSubtitle => 'Gửi lại ngay, hoặc ngừng thử.';
 
   @override

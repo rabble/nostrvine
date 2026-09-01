@@ -1646,6 +1646,51 @@ void main() {
         expect(find.text(l10n.dmSendNoRecipientMessage), findsOneWidget);
       });
 
+      // #8461. A resend that fails again is the one failure the red bubble
+      // cannot express: the bubble was ALREADY red when the user tapped it,
+      // so re-raising `failed` leaves the before and after states identical
+      // and the resend is indistinguishable from a tap that did nothing.
+      testWidgets('shows a toast when a resend fails again', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              status: ConversationStatus.loaded,
+              sendStatus: SendStatus.sending,
+            ),
+            state: const ConversationState(
+              status: ConversationStatus.loaded,
+              sendStatus: SendStatus.resendFailed,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmResendFailedMessage), findsOneWidget);
+      });
+
+      // Guards the split itself: the resend toast must not be the first-send
+      // copy, or collapsing the two statuses back together would still pass.
+      testWidgets(
+        'the resend toast is distinct from the first-send failure copy',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              previousState: const ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sending,
+              ),
+              state: const ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.resendFailed,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+        },
+      );
+
       testWidgets(
         'does not show a SnackBar when sendStatus stays non-failed '
         '(e.g. sending → sent)',

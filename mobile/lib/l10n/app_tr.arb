@@ -2159,6 +2159,7 @@
     "dmRetiredThreadClosedBody": "Divine Moderation'ı yeni bir hesaba taşıdık. Bu hesabı artık kimse okumuyor.",
     "dmRetiredThreadOpenSupport": "Divine Moderation'a mesaj gönder",
     "dmSendFailedMessage": "Mesaj gönderilemedi",
+    "dmResendFailedMessage": "Yine gönderilemedi",
     "dmSendFailedSubtitle": "Şimdi tekrar gönder ya da denemeyi durdur.",
     "dmSendFailedRetry": "Tekrar Dene",
     "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",

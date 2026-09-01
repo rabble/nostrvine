@@ -2159,6 +2159,7 @@
     "dmRetiredThreadClosedBody": "Kami memindahkan Divine Moderation ke akun baru. Akun ini tidak dibaca lagi.",
     "dmRetiredThreadOpenSupport": "Kirim pesan ke Divine Moderation",
     "dmSendFailedMessage": "Pesan gagal dikirim",
+    "dmResendFailedMessage": "Masih gagal dikirim",
     "dmSendFailedSubtitle": "Kirim ulang sekarang, atau berhenti mencoba.",
     "dmSendFailedRetry": "Coba Lagi",
     "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",

@@ -9875,6 +9875,12 @@ abstract class AppLocalizations {
   /// **'Message couldn\'t be sent'**
   String get dmSendFailedMessage;
 
+  /// SnackBar text shown in a DM conversation when the user taps Resend on a failed message and the retry fails again. Distinct from `dmSendFailedMessage`, which titles the recovery sheet and announces a FIRST send failure: on a resend the bubble is already red, so the red bubble cannot signal the new attempt and a toast is the only feedback the user gets.
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t send'**
+  String get dmResendFailedMessage;
+
   /// Subtitle in the recovery bottom sheet shown when a failed own DM bubble is tapped, below the `dmSendFailedMessage` title.
   ///
   /// In en, this message translates to:

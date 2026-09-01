@@ -2162,6 +2162,7 @@
     "dmRetiredThreadClosedBody": "Nous avons déplacé Divine Moderation vers un nouveau compte. Personne ne lit plus celui-ci.",
     "dmRetiredThreadOpenSupport": "Écrire à Divine Moderation",
     "dmSendFailedMessage": "Impossible d'envoyer le message",
+    "dmResendFailedMessage": "Toujours impossible d'envoyer",
     "dmSendFailedSubtitle": "Renvoie-le maintenant, ou arrête d'essayer.",
     "dmSendFailedRetry": "Réessayer",
     "dmSendPartialMessage": "Envoyé, mais pas synchronisé avec tes autres appareils",

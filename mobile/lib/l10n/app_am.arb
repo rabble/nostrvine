@@ -2424,6 +2424,7 @@
     "dmRetiredThreadClosedBody": "Divine Moderation ወደ አዲስ መለያ አዛውረናል። ይህን መለያ የሚያነበው የለም።",
     "dmRetiredThreadOpenSupport": "Divine Moderation ላይ መልእክት ይላኩ",
     "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",
+    "dmResendFailedMessage": "አሁንም መላክ አልተሳካም",
     "dmSendFailedSubtitle": "አሁን እንደገና ላክ ወይም መሞከር አቁም።",
     "dmSendFailedRetry": "እንደገና ይሞክሩ",
     "dmSendPartialMessage": "ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም",

@@ -335,6 +335,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 (current.sendStatus == SendStatus.sentPartial ||
                     current.sendStatus == SendStatus.blocked ||
                     current.sendStatus == SendStatus.noRecipient ||
+                    current.sendStatus == SendStatus.resendFailed ||
                     current.sendStatus == SendStatus.failed),
             listener: _onSendOutcome,
             child: Column(
@@ -483,14 +484,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       final message = isRetiredModerationAccount(_otherPubkey)
           ? l10n.dmSendBlockedRetiredMessage
           : l10n.dmSendBlockedMessage;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        message,
-        Directionality.of(context),
-      );
+      _showErrorToastAndAnnounce(context, message);
       return;
     }
 
@@ -501,14 +495,18 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // participant list.
     if (state.sendStatus == SendStatus.noRecipient) {
       final message = l10n.dmSendNoRecipientMessage;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-      SemanticsService.sendAnnouncement(
-        View.of(context),
-        message,
-        Directionality.of(context),
-      );
+      _showErrorToastAndAnnounce(context, message);
+      return;
+    }
+
+    // A resend that failed again (#8461). The bubble was already red when the
+    // user tapped it, so — unlike the first-send case below — turning it red
+    // is not a state change and the tap would otherwise produce no visible
+    // result at all. Toast it so the attempt is legible; the bubble stays red
+    // and re-tappable, and `resetRetryBudget` has re-armed the sweep.
+    if (state.sendStatus == SendStatus.resendFailed) {
+      final message = l10n.dmResendFailedMessage;
+      _showErrorToastAndAnnounce(context, message);
       return;
     }
 
@@ -559,6 +557,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // Per `accessibility.md`, async visible state changes must announce
     // explicitly — Material's default SnackBar semantics are weaker than the
     // written rule and not guaranteed across platforms.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+  }
+
+  void _showErrorToastAndAnnounce(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,

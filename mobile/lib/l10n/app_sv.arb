@@ -2162,6 +2162,7 @@
     "dmRetiredThreadClosedBody": "Vi har flyttat Divine Moderation till ett nytt konto. Det här kontot läser ingen längre.",
     "dmRetiredThreadOpenSupport": "Skriv till Divine Moderation",
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
+    "dmResendFailedMessage": "Kunde fortfarande inte skickas",
     "dmSendFailedSubtitle": "Skicka det igen nu, eller sluta försöka.",
     "dmSendFailedRetry": "Försök igen",
     "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",

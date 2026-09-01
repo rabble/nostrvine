@@ -5372,6 +5372,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmSendFailedMessage => '消息发送失败';
 
   @override
+  String get dmResendFailedMessage => '仍然发送失败';
+
+  @override
   String get dmSendFailedSubtitle => '立即重发，或放弃发送。';
 
   @override

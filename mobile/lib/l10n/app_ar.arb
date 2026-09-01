@@ -2152,6 +2152,7 @@
     "dmRetiredThreadClosedBody": "نقلنا Divine Moderation إلى حساب جديد. لم يعد أحد يقرأ هذا الحساب.",
     "dmRetiredThreadOpenSupport": "راسل Divine Moderation",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
+    "dmResendFailedMessage": "ما زال الإرسال متعذّرًا",
     "dmSendFailedSubtitle": "أعد إرسالها الآن، أو أوقف المحاولة.",
     "dmSendFailedRetry": "إعادة المحاولة",
     "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",

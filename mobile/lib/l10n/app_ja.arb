@@ -2152,6 +2152,7 @@
     "dmRetiredThreadClosedBody": "Divine Moderation は新しいアカウントに移りました。こちらはもう誰も読んでいません。",
     "dmRetiredThreadOpenSupport": "Divine Moderation にメッセージを送る",
     "dmSendFailedMessage": "メッセージを送信できなかった",
+    "dmResendFailedMessage": "まだ送信できなかった",
     "dmSendFailedSubtitle": "今すぐ再送するか、送信を中止してね。",
     "dmSendFailedRetry": "もう一回",
     "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",

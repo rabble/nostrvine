@@ -5862,6 +5862,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmSendFailedMessage => 'Nie udało się wysłać wiadomości';
 
   @override
+  String get dmResendFailedMessage => 'Nadal nie udało się wysłać';
+
+  @override
   String get dmSendFailedSubtitle =>
       'Wyślij ją ponownie teraz albo przestań próbować.';
 

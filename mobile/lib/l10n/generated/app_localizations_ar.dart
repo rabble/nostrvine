@@ -5669,6 +5669,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmSendFailedMessage => 'تعذّر إرسال الرسالة';
 
   @override
+  String get dmResendFailedMessage => 'ما زال الإرسال متعذّرًا';
+
+  @override
   String get dmSendFailedSubtitle => 'أعد إرسالها الآن، أو أوقف المحاولة.';
 
   @override
