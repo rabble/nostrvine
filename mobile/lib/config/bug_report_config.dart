@@ -67,7 +67,7 @@ const _credentialValue =
 ///
 /// Quote-specific rules run first and, when the path sits inside quotes (the
 /// dominant exception form,
-/// `path = '/Users/name/My Song.m4a'`), consumes to the closing quote so a
+/// `path = '/Users/name/My Song.m4a'`), consume to the closing quote so a
 /// basename containing spaces or brackets is redacted whole. Redacting only the
 /// account name and leaving the filename beside a `[REDACTED]` marker would be
 /// the partial leak this file elsewhere calls worse than none.
