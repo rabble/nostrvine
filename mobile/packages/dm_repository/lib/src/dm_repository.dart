@@ -256,6 +256,36 @@ enum DmInboxResolution {
   unreadable,
 }
 
+/// A recipient's resolved NIP-17 DM inbox: the relays to route a gift wrap to,
+/// and why the lookup returned what it did.
+///
+/// `relays` is `null` for both [DmInboxResolution.absent] and
+/// [DmInboxResolution.unreadable]; `state` is what lets a caller that reports
+/// delivery tell the two apart (#7317, #8443).
+typedef DmInboxLookup = ({List<String>? relays, DmInboxResolution state});
+
+/// Re-classifies a publish that a relay confirmed but which was routed to the
+/// default pool because the recipient's inbox could not be read.
+///
+/// [DmInboxResolution.absent] is left alone: the recipient advertises no
+/// inbox, so the pool is where they read and the `OK` is real delivery.
+/// [DmInboxResolution.unreadable] is a fact about our own read — the wrap may
+/// be sitting on relays the recipient never queries, so it is reported
+/// soft-unconfirmed and the durable row is kept for the sweep to re-resolve
+/// (#7317). Shared by every gift-wrap publisher that also reports delivery —
+/// the 1:1 send, its retry, and the reaction fan-out (#8443) — so no sweep can
+/// undo what the send path preserved.
+NIP17SendResult downgradeFallbackPoolDelivery(
+  NIP17SendResult result,
+  DmInboxResolution state,
+) {
+  if (!result.success || state != DmInboxResolution.unreadable) return result;
+  return const NIP17SendResult.failure(
+    'Recipient DM inbox unreadable; published to the fallback pool',
+    retryablePending: true,
+  );
+}
+
 /// Who authored the kind-10050 a relay list is being read out of.
 ///
 /// The two are admitted on different terms. Our own list may name the local
@@ -3368,31 +3398,10 @@ class DmRepository {
   /// Routing only needs the relays, so this signature stays. A caller that
   /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
   /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
-  /// #7317. `sendGroupMessage` is the last caller here that still needs the
-  /// upgrade (#8434).
+  /// #7317. `sendGroupMessage` (#8434) and `_fanOutDeletion` still resolve
+  /// through here and inherit that collapse.
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
     return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
-  }
-
-  /// Re-classifies a publish that a relay confirmed but which was routed to
-  /// the default pool because the recipient's inbox could not be read.
-  ///
-  /// [DmInboxResolution.absent] is left alone: the recipient advertises no
-  /// inbox, so the pool is where they read and the `OK` is real delivery.
-  /// [DmInboxResolution.unreadable] is a fact about our own read — the wrap
-  /// may be sitting on relays the recipient never queries, so it is reported
-  /// soft-unconfirmed and the durable row is kept for the sweep to re-resolve
-  /// (#7317). Shared by the initial send and the retry so the sweep cannot
-  /// undo what the send path preserved.
-  NIP17SendResult _downgradeFallbackPoolDelivery(
-    NIP17SendResult result,
-    DmInboxResolution state,
-  ) {
-    if (!result.success || state != DmInboxResolution.unreadable) return result;
-    return const NIP17SendResult.failure(
-      'Recipient DM inbox unreadable; published to the fallback pool',
-      retryablePending: true,
-    );
   }
 
   /// [resolveDmInboxRelays], plus why it returned what it did.
@@ -3402,8 +3411,7 @@ class DmRepository {
   /// and from [DmInboxResolution.unreadable] send to the same place, but only
   /// the first means the default pool is where the recipient reads — so only
   /// the first may be scored as delivered (#7317).
-  Future<({List<String>? relays, DmInboxResolution state})>
-  resolveDmInboxRelaysDetailed(String pubkey) async {
+  Future<DmInboxLookup> resolveDmInboxRelaysDetailed(String pubkey) async {
     final resolved = await _queryOwnDmInbox(
       pubkey,
       requireAuthoritative: false,
@@ -4065,7 +4073,7 @@ class DmRepository {
     // from the conversation.
     final result = outgoingDao == null
         ? publishResult
-        : _downgradeFallbackPoolDelivery(publishResult, inbox.state);
+        : downgradeFallbackPoolDelivery(publishResult, inbox.state);
 
     if (result.success) {
       // Persist our own sent message locally so it appears immediately
@@ -4778,7 +4786,7 @@ class DmRepository {
     //
     // `dao` is non-null here (guarded above), so unlike `sendMessage` there is
     // always a row to preserve.
-    final result = _downgradeFallbackPoolDelivery(publishResult, inbox.state);
+    final result = downgradeFallbackPoolDelivery(publishResult, inbox.state);
 
     if (result.success) {
       // Mirror sendMessage's happy-path transaction: persist

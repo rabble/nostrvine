@@ -101,7 +101,8 @@ class DmReactionRetryTarget {
   final int createdAt;
 }
 
-/// Resolves [pubkey]'s NIP-17 kind-10050 DM inbox relays.
+/// Resolves [pubkey]'s NIP-17 kind-10050 DM inbox relays, and says why the
+/// lookup returned what it did.
 ///
 /// A function port rather than a `DmRepository` reference: `dmRepository`'s
 /// provider already watches `dmReactionsRepositoryProvider`
@@ -109,11 +110,19 @@ class DmReactionRetryTarget {
 /// Riverpod dependency cycle — and `ref.read` trips that guard at call time,
 /// not only during build.
 ///
-/// Contract: **must not throw**. Resolution failures degrade to `null`, and
-/// `null` means "publish to the default relay pool", which is the behaviour
-/// that shipped before #7321. `DmRepository.resolveDmInboxRelays` satisfies
-/// this — its whole body is wrapped in `on Object catch`.
-typedef DmInboxRelayResolver = Future<List<String>?> Function(String pubkey);
+/// The state travels with the relays because `null` relays mean two different
+/// things: [DmInboxResolution.absent] (the recipient reads the default pool,
+/// so a pool `OK` is delivery) and [DmInboxResolution.unreadable] (we never
+/// read their inbox, so a pool `OK` proves nothing). The narrower
+/// `DmRepository.resolveDmInboxRelays` flattens both to `null` and must not be
+/// wired here — that flattening is #8443.
+///
+/// Contract: **must not throw**. `DmRepository.resolveDmInboxRelaysDetailed`
+/// satisfies this — its whole body is wrapped in `on Object catch`. A resolver
+/// that throws anyway is treated as [DmInboxResolution.unreadable]: the wrap
+/// still goes to the default pool, and the pool's `OK` is not scored as
+/// delivery.
+typedef DmInboxRelayResolver = Future<DmInboxLookup> Function(String pubkey);
 
 /// Repository for DM emoji reactions.
 ///
@@ -190,8 +199,10 @@ class DmReactionsRepository {
   }
 
   /// Resolves a recipient's kind-10050 DM inbox so a reaction gift wrap is
-  /// published where they actually read (#7321). Null until wired, and a null
-  /// result routes to the default pool — both are the pre-#7321 behaviour.
+  /// published where they actually read (#7321), and reports whether that
+  /// inbox was read at all (#8443). Null until wired — the pre-#7321
+  /// behaviour, where every wrap goes to the default pool and a pool `OK` is
+  /// delivery.
   DmInboxRelayResolver? _resolveDmInboxRelays;
 
   /// Wire the kind-10050 resolver.
@@ -506,9 +517,10 @@ class DmReactionsRepository {
   ///    cubit rebuild / hot-restart.
   /// 2. Wraps the underlying `sendRumor` in a 15 s timeout so a hung
   ///    relay socket can't lock the user out of further retries.
-  /// 3. On any non-success outcome (timeout, NIP17SendFailure, throw)
-  ///    flips the DAO row back to `'failed'` so the chip is tappable
-  ///    again immediately.
+  /// 3. A confirmed rejection or throw flips the DAO row back to `'failed'`
+  ///    so the chip is tappable again immediately. A soft outcome — a lost
+  ///    `OK`, or an inbox we could not read (#8443) — leaves the pre-send
+  ///    `'pending'` so the sweep keeps re-driving it.
   Future<DmReactionPublishResult> retry({
     required String rumorId,
     required String targetMessageAuthor,
@@ -689,7 +701,7 @@ class DmReactionsRepository {
     required List<String> recipients,
     required NIP17MessageService messageService,
     required String reportSite,
-    Future<Map<String, List<String>?>>? inboxes,
+    Future<Map<String, DmInboxLookup>>? inboxes,
   }) async {
     if (recipients.isEmpty) return;
     final deletion = messageService.buildRumor(
@@ -846,7 +858,7 @@ class DmReactionsRepository {
     required Event deletion,
     required List<String> recipients,
     required NIP17MessageService messageService,
-    Future<Map<String, List<String>?>>? inboxes,
+    Future<Map<String, DmInboxLookup>>? inboxes,
   }) async {
     try {
       final inboxByRecipient = await inboxes;
@@ -1127,30 +1139,35 @@ class DmReactionsRepository {
   /// would cost N sequential waits before the last wrap is even attempted.
   ///
   /// Every lookup is isolated. [DmInboxRelayResolver]'s contract forbids
-  /// throwing and `DmRepository.resolveDmInboxRelays` honours it, but the
-  /// resolver is an injected port rather than a method this class owns — and an
-  /// unguarded `Future.wait` fails *whole* on a single rejection, which would
-  /// turn one bad lookup into a failed fan-out instead of one recipient falling
-  /// back to the default pool.
+  /// throwing and `DmRepository.resolveDmInboxRelaysDetailed` honours it, but
+  /// the resolver is an injected port rather than a method this class owns —
+  /// and an unguarded `Future.wait` fails *whole* on a single rejection, which
+  /// would turn one bad lookup into a failed fan-out instead of one recipient
+  /// falling back to the default pool. A lookup that threw is recorded as
+  /// [DmInboxResolution.unreadable]: we did not read that inbox, so the pool
+  /// `OK` it falls back to cannot be scored as delivery (#8443).
   ///
   /// Returns an empty map when no resolver is wired, so every recipient reads
   /// back `null` and routing is byte-identical to the pre-#7321 behaviour.
-  Future<Map<String, List<String>?>> _resolveInboxes(
+  Future<Map<String, DmInboxLookup>> _resolveInboxes(
     List<String> recipients,
   ) async {
     final resolve = _resolveDmInboxRelays;
-    if (resolve == null) return const <String, List<String>?>{};
-    final inboxes = <String, List<String>?>{};
-    // try/catch rather than `.catchError((_) => null)`: on a
-    // `Future<List<String>?>` that handler is only type-checked at runtime, and
-    // Dart rejects it with "The error handler of Future.catchError must return
-    // a value of the future's type" — turning the guard into the very crash it
-    // exists to prevent. Caught by the throwing-resolver test below.
+    if (resolve == null) return const <String, DmInboxLookup>{};
+    final inboxes = <String, DmInboxLookup>{};
+    // try/catch rather than `.catchError(...)`: on a typed `Future` that
+    // handler is only type-checked at runtime, and Dart rejects it with "The
+    // error handler of Future.catchError must return a value of the future's
+    // type" — turning the guard into the very crash it exists to prevent.
+    // Caught by the throwing-resolver test.
     Future<void> resolveOne(String recipient) async {
       try {
         inboxes[recipient] = await resolve(recipient);
       } on Object {
-        inboxes[recipient] = null;
+        inboxes[recipient] = (
+          relays: null,
+          state: DmInboxResolution.unreadable,
+        );
       }
     }
 
@@ -1177,18 +1194,29 @@ class DmReactionsRepository {
   /// flaky relay's frame-accept false positive can't mark an undelivered
   /// reaction as sent.
   ///
+  /// A recipient's wrap "lands" only when the relay it was sent to confirms
+  /// it AND that relay is one the recipient reads. When their kind-10050
+  /// could not be read the wrap falls back to the default pool, and the
+  /// pool's `OK` is downgraded to a soft failure — the same rule the 1:1
+  /// send and its retry apply through [downgradeFallbackPoolDelivery]
+  /// (#7317). Scoring it as landed here is #8443: the row goes `sent`, its
+  /// stored rumor is cleared, and a reaction the recipient never saw becomes
+  /// unrecoverable. A recipient with no lookup at all (no resolver wired)
+  /// keeps the pre-#7321 contract, where a pool `OK` is delivery.
+  ///
   /// Aggregate failure classification:
   /// - every failure is a policy [NIP17SendResult.blocked] → aggregate blocked
   ///   (terminal, non-retryable — the non-blocked members all confirmed).
   /// - otherwise → a retryable failure whose `retryablePending` is `true` only
-  ///   when every failure is itself soft (`retryablePending`); a single hard
-  ///   rejection/offline member makes the whole fan-out hard-failed so the
-  ///   sweep re-drives it without the in-flight min-age hold.
+  ///   when every failure is itself soft (`retryablePending`, which the
+  ///   unreadable-inbox downgrade is); a single hard rejection/offline member
+  ///   makes the whole fan-out hard-failed so the sweep re-drives it without
+  ///   the in-flight min-age hold.
   Future<NIP17SendResult> _fanOutRumor({
     required NIP17MessageService messageService,
     required Event rumor,
     required List<String> recipients,
-    Map<String, List<String>?>? inboxByRecipient,
+    Map<String, DmInboxLookup>? inboxByRecipient,
     bool awaitRecipientOk = false,
   }) async {
     if (recipients.isEmpty) {
@@ -1198,13 +1226,17 @@ class DmReactionsRepository {
     NIP17SendSuccess? lastSuccess;
     final failures = <NIP17SendFailure>[];
     for (final recipient in recipients) {
-      final result = await _sendRumorWithTimeout(
+      final inbox = inboxes[recipient];
+      final published = await _sendRumorWithTimeout(
         messageService: messageService,
         rumor: rumor,
         recipientPubkey: recipient,
-        targetRelays: inboxes[recipient],
+        targetRelays: inbox?.relays,
         awaitRecipientOk: awaitRecipientOk,
       );
+      final result = inbox == null
+          ? published
+          : downgradeFallbackPoolDelivery(published, inbox.state);
       switch (result) {
         case NIP17SendSuccess():
           lastSuccess = result;
