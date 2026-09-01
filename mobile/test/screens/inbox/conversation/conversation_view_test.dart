@@ -646,13 +646,9 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             previousState: const ConversationState(
-              retractionStatus: RetractionStatus.blocked,
               awaitingRetraction: {'first', 'second'},
             ),
-            state: const ConversationState(
-              retractionStatus: RetractionStatus.blocked,
-              awaitingRetraction: {'second'},
-            ),
+            state: const ConversationState(awaitingRetraction: {'second'}),
           ),
         );
         await tester.pump();
@@ -669,12 +665,10 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             previousState: ConversationState(
-              retractionStatus: RetractionStatus.blocked,
               awaitingRetraction: previousAwaiting,
             ),
             state: ConversationState(
               sendStatus: SendStatus.blocked,
-              retractionStatus: RetractionStatus.blocked,
               awaitingRetraction: currentAwaiting,
             ),
           ),
@@ -785,10 +779,10 @@ void main() {
       testWidgets('a refused retraction announces the failure', (tester) async {
         await tester.pumpWidget(
           buildSubject(
-            previousState: const ConversationState(),
-            state: const ConversationState(
-              retractionStatus: RetractionStatus.blocked,
+            previousState: const ConversationState(
+              awaitingRetraction: {'message'},
             ),
+            state: const ConversationState(),
           ),
         );
         await tester.pump();

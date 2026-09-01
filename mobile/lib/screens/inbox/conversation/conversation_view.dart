@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart' show DmRepository;
-import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -345,15 +344,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 listener: _onSendOutcome,
               ),
               BlocListener<ConversationBloc, ConversationState>(
-                // Two deletions can be refused on consecutive stream ticks,
-                // so identify each refusal by the pending set shrinking rather
-                // than by an idle -> blocked status transition.
-                listenWhen: (previous, current) =>
-                    current.retractionStatus == RetractionStatus.blocked &&
-                    !setEquals(
-                      previous.awaitingRetraction,
-                      current.awaitingRetraction,
-                    ),
+                // The bloc removes an id from the pending set only when its
+                // retraction comes back refused, so the shrink IS the
+                // refusal — and two refusals on consecutive ticks each fire.
+                listenWhen: (previous, current) => previous.awaitingRetraction
+                    .difference(current.awaitingRetraction)
+                    .isNotEmpty,
                 listener: _onRetractionRefused,
               ),
             ],

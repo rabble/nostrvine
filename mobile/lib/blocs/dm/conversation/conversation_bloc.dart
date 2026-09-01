@@ -143,28 +143,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!_sameMessages(tick.messages, state.messages)) {
           unawaited(_dmRepository.markConversationAsRead(_conversationId));
         }
-        // Arm on disappearance first, so the row we asked to retract cannot
-        // answer for an attempt that has not happened yet (see
-        // `ConversationState.retractionWentHidden`).
-        final present = {for (final message in tick.messages) message.id};
-        final wentHidden = {
-          ...state.retractionWentHidden,
-          ...state.awaitingRetraction.where((id) => !present.contains(id)),
-        };
-        final refused = _refusedRetractions(tick.messages, wentHidden);
+        final refused = _refusedRetractions(tick.messages);
         return state.copyWith(
           status: ConversationStatus.loaded,
           messages: tick.messages,
           pendingOutgoing: tick.pendingOutgoing,
-          retractionStatus: refused.isEmpty
-              ? RetractionStatus.idle
-              : RetractionStatus.blocked,
           awaitingRetraction: refused.isEmpty
               ? state.awaitingRetraction
               : state.awaitingRetraction.difference(refused),
-          retractionWentHidden: refused.isEmpty
-              ? wentHidden
-              : wentHidden.difference(refused),
         );
       },
       onError: (error, stackTrace) {
@@ -188,26 +174,24 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     return true;
   }
 
-  /// Retractions this screen asked for that came back refused (#8201).
+  /// Retractions that came back refused on this tick (#8201): messages in
+  /// [next] carrying `retractionBlocked` that were absent from the previous
+  /// tick. Restricting them to what this screen asked for is the set
+  /// difference at the call site.
   ///
-  /// Matched against what we asked for rather than against the previous tick,
-  /// because the message is HIDDEN in between: `markMessageDeletionPending`
-  /// soft-deletes it, so the row leaves the thread and the refused message
-  /// that reappears looks new rather than changed. Comparing consecutive ticks
-  /// therefore never sees the transition and the toast never fires — measured
-  /// on device, which is what this shape exists to fix.
-  ///
-  /// [wentHidden] is the half that keeps this honest on a RETRY, where the
-  /// bubble is already on screen carrying the previous refusal: an id counts
-  /// only once it has been seen leaving the thread.
-  Set<String> _refusedRetractions(
-    List<DmMessage> next,
-    Set<String> wentHidden,
-  ) {
-    if (wentHidden.isEmpty) return const {};
+  /// The absence is load-bearing: `markMessageDeletionPending` soft-deletes
+  /// the row, so the thread ticks without it between the tap and the outcome,
+  /// and only a refusal brings it back. Diffing consecutive ticks alone never
+  /// sees that transition (measured on device), and matching presence alone
+  /// would fire on the tap itself for a RETRY, whose bubble is still on
+  /// screen carrying the previous refusal.
+  Set<String> _refusedRetractions(List<DmMessage> next) {
+    if (state.awaitingRetraction.isEmpty) return const {};
+    final previouslyVisible = {for (final m in state.messages) m.id};
     return {
       for (final message in next)
-        if (message.retractionBlocked && wentHidden.contains(message.id))
+        if (message.retractionBlocked &&
+            !previouslyVisible.contains(message.id))
           message.id,
     };
   }
@@ -220,7 +204,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // the refusal can be matched across the tick where it is absent (#8201).
     emit(
       state.copyWith(
-        retractionStatus: RetractionStatus.idle,
         awaitingRetraction: {...state.awaitingRetraction, event.rumorId},
       ),
     );
