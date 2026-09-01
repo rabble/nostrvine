@@ -870,6 +870,67 @@ void main() {
         verifyNever(() => mockReactionsCubit.add(any()));
       });
 
+      testWidgets('a failed own reaction announces no retry action on a '
+          'closed thread', (tester) async {
+        const emoji = '\u{2764}\u{FE0F}';
+        const ownReaction = DmReaction(
+          id: 'r-own-retired-failed',
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: emoji,
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: DmReactionPublishStatus.failed,
+        );
+        const reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [ownReaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(emoji));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The sheet rendered the own reaction row (so the retry-label check
+        // below is not trivially satisfied by an absent row)...
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+        // ...but the trailing collapses to a bare emoji, so the row must not
+        // tell a screen reader to "double tap to retry" a retraction it cannot
+        // make. The label falls back to the plain descriptive own-reaction one.
+        expect(
+          find.bySemanticsLabel(
+            RegExp(RegExp.escape(l10n.dmReactionChipFailedA11yLabel)),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsLabel(RegExp(RegExp.escape('Your reaction'))),
+          findsWidgets,
+        );
+        handle.dispose();
+      });
+
       testWidgets('a failed own bubble cannot be resent', (tester) async {
         const content = 'a message that never got through';
         final failedRow = OutgoingDm(

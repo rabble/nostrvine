@@ -184,20 +184,29 @@ class _ReactorRow extends ConsumerWidget {
     final isFailed = reaction.publishStatus == DmReactionPublishStatus.failed;
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
 
-    final label = isOwn
-        ? switch (reaction.publishStatus) {
-            DmReactionPublishStatus.pending =>
-              context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
-            DmReactionPublishStatus.failed =>
-              context.l10n.dmReactionChipFailedA11yLabel,
-            _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
-          }
-        : context.l10n.dmReactionChipOtherA11yLabel(
-            isIdentityResolving ? context.l10n.commonLoading : name,
-            reaction.emoji,
-          );
-
     final canRetract = isOwn && removalEnabled;
+
+    // The pending/failed labels announce a spinner or "double tap to retry"
+    // that only render while the row is retractable. On a closed thread the
+    // trailing collapses to a bare emoji, so an own reaction keeps the plain
+    // descriptive label rather than promising an action wired to nothing.
+    final String label;
+    if (!isOwn) {
+      label = context.l10n.dmReactionChipOtherA11yLabel(
+        isIdentityResolving ? context.l10n.commonLoading : name,
+        reaction.emoji,
+      );
+    } else if (!canRetract) {
+      label = context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji);
+    } else {
+      label = switch (reaction.publishStatus) {
+        DmReactionPublishStatus.pending =>
+          context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
+        DmReactionPublishStatus.failed =>
+          context.l10n.dmReactionChipFailedA11yLabel,
+        _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
+      };
+    }
     return Semantics(
       button: canRetract && !isPending,
       label: label,
