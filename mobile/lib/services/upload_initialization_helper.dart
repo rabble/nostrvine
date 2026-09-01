@@ -27,6 +27,12 @@ class UploadInitializationHelper {
   static DateTime? _lastFailureTime;
   static Box<PendingUpload>? _cachedBox;
 
+  /// Owns the initialization-wait timers. This holder is entirely static, so
+  /// its lifecycle boundary is [reset] rather than a dispose (#8457).
+  static final AsyncScope _async = AsyncScope(
+    debugName: 'UploadInitializationHelper',
+  );
+
   /// Check if error is a permanent permission error (don't retry these)
   static bool _isPermanentPermissionError(dynamic error) {
     if (kIsWeb) {
@@ -248,7 +254,7 @@ class UploadInitializationHelper {
   /// Wait for ongoing initialization
   static Future<Box<PendingUpload>> _waitForInitialization() async {
     // Use proper async waiting instead of polling with Future.delayed
-    final success = await AsyncUtils.waitForCondition(
+    final success = await _async.waitForCondition(
       condition: () =>
           !_isInitializing && _cachedBox != null && _cachedBox!.isOpen,
       timeout: const Duration(seconds: 30),
@@ -386,6 +392,10 @@ class UploadInitializationHelper {
 
   /// Reset all state (useful for testing)
   static void reset() {
+    // Abandon any in-flight initialization wait before clearing the state it
+    // polls, so a pending waiter fails fast instead of polling a cleared box
+    // for the rest of its timeout.
+    _async.cancelAll();
     _isInitializing = false;
     _failureCount = 0;
     _lastFailureTime = null;

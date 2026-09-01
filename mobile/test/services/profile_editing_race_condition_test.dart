@@ -1,4 +1,4 @@
-// ABOUTME: Unit tests for profile editing race condition fix using AsyncUtils.retryWithBackoff
+// ABOUTME: Unit tests for profile editing race condition fix using AsyncScope.retryWithBackoff
 // ABOUTME: Tests the retry logic that waits for relay to process profile updates before refreshing cache
 
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +13,11 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   group('Profile Editing Race Condition Fix', () {
+    late AsyncScope asyncScope;
+
+    setUp(() => asyncScope = AsyncScope(debugName: 'ProfileEditingTest'));
+    tearDown(() => asyncScope.dispose());
+
     late _MockProfileRepository mockProfileRepository;
     late String testPubkey;
     late String testEventId;
@@ -63,7 +68,7 @@ void main() {
       });
 
       // Execute the retry logic
-      final result = await AsyncUtils.retryWithBackoff(
+      final result = await asyncScope.retryWithBackoff(
         operation: () async {
           mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
           final profile = await mockProfileRepository.fetchFreshProfile(
@@ -112,7 +117,7 @@ void main() {
         ).thenAnswer((_) async => updatedProfile);
 
         // Execute
-        final result = await AsyncUtils.retryWithBackoff(
+        final result = await asyncScope.retryWithBackoff(
           operation: () async {
             mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
             final profile = await mockProfileRepository.fetchFreshProfile(
@@ -158,7 +163,7 @@ void main() {
 
       // Execute and expect failure
       expect(
-        AsyncUtils.retryWithBackoff(
+        asyncScope.retryWithBackoff(
           operation: () async {
             mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
             final profile = await mockProfileRepository.fetchFreshProfile(
@@ -195,7 +200,7 @@ void main() {
 
       // Execute and expect failure
       expect(
-        AsyncUtils.retryWithBackoff(
+        asyncScope.retryWithBackoff(
           operation: () async {
             mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
             final profile = await mockProfileRepository.fetchFreshProfile(
@@ -238,7 +243,7 @@ void main() {
         () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
       ).thenAnswer((_) async => profileWithMatchingId);
 
-      final result = await AsyncUtils.retryWithBackoff(
+      final result = await asyncScope.retryWithBackoff(
         operation: () async {
           mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
           final profile = await mockProfileRepository.fetchFreshProfile(
@@ -283,7 +288,7 @@ void main() {
         () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
       ).thenAnswer((_) async => profileWithNewerTimestamp);
 
-      final result = await AsyncUtils.retryWithBackoff(
+      final result = await asyncScope.retryWithBackoff(
         operation: () async {
           mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
           final profile = await mockProfileRepository.fetchFreshProfile(

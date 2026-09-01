@@ -64,6 +64,11 @@ class PendingActionService extends ChangeNotifier {
   StreamSubscription<List<PendingAction>>? _dbSubscription;
   Timer? _syncRetryTimer;
 
+  /// Owns the retry backoff timers so [dispose] can cancel them. Without an
+  /// owner the backoff keeps running after teardown and re-invokes the
+  /// executor against a disposed service (#8457).
+  final AsyncScope _async = AsyncScope(debugName: 'PendingActionService');
+
   /// Executors for different action types
   final Map<PendingActionType, ActionExecutor> _executors = {};
 
@@ -357,6 +362,10 @@ class PendingActionService extends ChangeNotifier {
   /// Dispose resources
   @override
   void dispose() {
+    // Cancel the in-flight retry backoff first: it is the one piece of work
+    // that outlives this method otherwise, and its continuation would touch
+    // every resource torn down below.
+    _async.dispose();
     _cancelSyncRetry();
     _connectionStatusService.removeListener(_onConnectivityChange);
     _dbSubscription?.cancel();
@@ -455,7 +464,7 @@ class PendingActionService extends ChangeNotifier {
     await _dao.updateStatus(action.id, PendingActionStatus.syncing);
 
     try {
-      await AsyncUtils.retryWithBackoff(
+      await _async.retryWithBackoff(
         operation: () => executor(action),
         maxRetries: _retryConfig.maxRetries,
         baseDelay: _retryConfig.initialDelay,
@@ -473,6 +482,11 @@ class PendingActionService extends ChangeNotifier {
         name: 'PendingActionService',
         category: LogCategory.system,
       );
+    } on AsyncCancelledException {
+      // Disposed mid-backoff. Leave the row in `syncing`: initialize()'s
+      // resetSyncingToPending already recovers those next session, and writing
+      // a status here would be a DAO write on behalf of a torn-down owner.
+      rethrow;
     } on TerminalSocialActionException catch (e) {
       await _dao.updateStatus(
         action.id,
