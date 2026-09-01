@@ -216,7 +216,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   useMasonryLayout: true,
                   // Edge-to-edge like the Explore grids: the 4px column gap
                   // comes from the grid's spacing, not outer side padding.
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  // No top padding, so the first row sits flush on the
+                  // panel's rounded top edge.
+                  padding: const EdgeInsets.only(bottom: 4),
                   topOuterRadius: VineTheme.shellInnerCornerRadius,
                   backgroundColor: context.vineColors.surfaceContainerHigh,
                   showSubscribedListBadge: false,
@@ -234,8 +236,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               videos: videos,
               useMasonryLayout: true,
               // Edge-to-edge like the Explore grids: the 4px column gap comes
-              // from the grid's spacing, not outer side padding.
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              // from the grid's spacing, not outer side padding. No top
+              // padding, so the first row sits flush on the panel's rounded
+              // top edge.
+              padding: const EdgeInsets.only(bottom: 4),
               topOuterRadius: VineTheme.shellInnerCornerRadius,
               backgroundColor: context.vineColors.surfaceContainerHigh,
               showSubscribedListBadge: false,

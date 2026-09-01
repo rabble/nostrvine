@@ -647,6 +647,9 @@ void main() {
           grid.backgroundColor,
           VineTheme.darkColors.surfaceContainerHigh,
         );
+        // No top padding: the first row sits flush on the panel's rounded
+        // edge instead of floating on a strip of panel color.
+        expect(grid.padding, const EdgeInsets.only(bottom: 4));
       });
     });
 
