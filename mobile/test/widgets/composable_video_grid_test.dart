@@ -747,23 +747,38 @@ void main() {
     });
 
     group('top outer radius', () {
-      BorderRadius tileRadius(WidgetTester tester, int index) =>
-          tester
-                  .widget<ClipRRect>(
-                    find
-                        .descendant(
-                          of: find.byWidgetPredicate(
-                            (widget) =>
-                                widget is Semantics &&
-                                widget.properties.identifier ==
-                                    'video_thumbnail_$index',
-                          ),
-                          matching: find.byType(ClipRRect),
-                        )
-                        .first,
-                  )
-                  .borderRadius
-              as BorderRadius;
+      // Resolved to physical corners per direction: the grid hands the tile
+      // a directional radius so RTL mirrors it with the mirrored columns.
+      BorderRadius tileRadius(
+        WidgetTester tester,
+        int index, {
+        TextDirection direction = TextDirection.ltr,
+      }) => tester
+          .widget<ClipRRect>(
+            find
+                .descendant(
+                  of: find.byWidgetPredicate(
+                    (widget) =>
+                        widget is Semantics &&
+                        widget.properties.identifier ==
+                            'video_thumbnail_$index',
+                  ),
+                  matching: find.byType(ClipRRect),
+                )
+                .first,
+          )
+          .borderRadius
+          .resolve(direction);
+
+      double tileDx(WidgetTester tester, int index) => tester
+          .getTopLeft(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.identifier == 'video_thumbnail_$index',
+            ),
+          )
+          .dx;
 
       testWidgets("enlarges only the first row's outer top corners", (
         tester,
@@ -815,6 +830,63 @@ void main() {
         );
         // Second row keeps the default small radius on every corner.
         expect(tileRadius(tester, 2), const BorderRadius.all(inner));
+      });
+
+      testWidgets('mirrors the outer corners with the columns under RTL', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Scaffold(
+                  body: ComposableVideoGrid(
+                    videos: testVideos,
+                    useMasonryLayout: true,
+                    topOuterRadius: 32,
+                    onVideoTap: (videos, index) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The masonry render object mirrors columns under RTL: tile 0 paints
+        // on the right. Its enlarged corner must follow it there — a physical
+        // topLeft would bite mid-edge instead (#8453 review).
+        expect(tileDx(tester, 0), greaterThan(tileDx(tester, 1)));
+
+        const inner = Radius.circular(4);
+        const outer = Radius.circular(32);
+        final rtl = TextDirection.rtl;
+        expect(
+          tileRadius(tester, 0, direction: rtl),
+          const BorderRadius.only(
+            topRight: outer,
+            topLeft: inner,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        expect(
+          tileRadius(tester, 1, direction: rtl),
+          const BorderRadius.only(
+            topRight: inner,
+            topLeft: outer,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
       });
 
       testWidgets('keeps every corner small when not set', (tester) async {

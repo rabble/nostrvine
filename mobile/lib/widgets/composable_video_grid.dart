@@ -237,21 +237,24 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         widget.isLoadingMore ||
         (widget.hasMoreContent && widget.onLoadMore != null);
 
-    // Masonry fills the shortest column left to right, so the first
+    // Masonry fills the shortest column start to end, so the first
     // [responsiveCrossAxisCount] items are the top row in column order.
-    BorderRadius tileRadiusFor(int index) {
+    // Directional, not physical: under RTL the render object mirrors the
+    // columns, so index 0 paints at the right — topStart follows it there,
+    // while a physical topLeft would round mid-edge (#8453 review).
+    BorderRadiusGeometry tileRadiusFor(int index) {
       const inner = Radius.circular(4);
       final outer = widget.topOuterRadius;
       if (outer == null || index >= responsiveCrossAxisCount) {
         return const BorderRadius.all(inner);
       }
-      return BorderRadius.only(
-        topLeft: index == 0 ? Radius.circular(outer) : inner,
-        topRight: index == responsiveCrossAxisCount - 1
+      return BorderRadiusDirectional.only(
+        topStart: index == 0 ? Radius.circular(outer) : inner,
+        topEnd: index == responsiveCrossAxisCount - 1
             ? Radius.circular(outer)
             : inner,
-        bottomLeft: inner,
-        bottomRight: inner,
+        bottomStart: inner,
+        bottomEnd: inner,
       );
     }
 
@@ -440,7 +443,7 @@ class _VideoItem extends StatelessWidget {
 
   /// Clip radius for this tile; the grid enlarges the outer top corners of
   /// the first row when [ComposableVideoGrid.topOuterRadius] is set.
-  final BorderRadius borderRadius;
+  final BorderRadiusGeometry borderRadius;
 
   @override
   Widget build(BuildContext context) {
