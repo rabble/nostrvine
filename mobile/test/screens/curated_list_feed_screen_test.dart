@@ -112,14 +112,15 @@ void main() {
           // branch, so resolve it with an empty grid instead of leaving the
           // screen on the loading spinner. Callers that override the same
           // providers themselves win via extraOverrides (last one applies).
-          if (overrideVideoEvents && videoIds != null)
-            videoEventsByIdsProvider(
-              videoIds,
-            ).overrideWith((ref) => Stream.value(videoEvents))
-          else if (overrideVideoEvents)
+          if (overrideVideoEvents) ...[
+            if (videoIds != null)
+              videoEventsByIdsProvider(
+                videoIds,
+              ).overrideWith((ref) => Stream.value(videoEvents)),
             curatedListVideoEventsProvider(
               listId,
             ).overrideWith((ref) => Stream.value(videoEvents)),
+          ],
           ...extraOverrides,
         ],
         child: MaterialApp(
@@ -842,6 +843,64 @@ void main() {
         expect(find.text('A cat video'), findsNothing);
         expect(find.text(l10n.curatedListEmptyTitle), findsOneWidget);
       });
+
+      testWidgets(
+        'removal refreshes the grid when navigated with frozen ids (feed chip)',
+        (tester) async {
+          stubOwnedList();
+          when(
+            () => mockService.removeVideoFromList('owned-list', any()),
+          ).thenAnswer((_) async => true);
+
+          final video = _videoEvent(id: 'a' * 64);
+
+          // The feed chip and search rows navigate with videoIds frozen at
+          // navigation time. The frozen-ids provider always serves the video,
+          // so the tile only disappears if the screen leaves that path for
+          // the invalidatable local-list providers (#8453 review).
+          var idReads = 0;
+          await tester.pumpWidget(
+            buildSubject(
+              listId: 'owned-list',
+              listName: 'Owned List',
+              videoIds: [video.id],
+              overrideVideoEvents: false,
+              extraOverrides: [
+                videoEventsByIdsProvider(
+                  [video.id],
+                ).overrideWith((ref) => Stream.value([video])),
+                curatedListVideosProvider('owned-list').overrideWith((
+                  ref,
+                ) async {
+                  idReads++;
+                  return idReads == 1 ? [video.id] : const <String>[];
+                }),
+                curatedListVideoEventsProvider('owned-list').overrideWith((
+                  ref,
+                ) async* {
+                  final ids = await ref.watch(
+                    curatedListVideosProvider('owned-list').future,
+                  );
+                  yield [for (final _ in ids) video];
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('A cat video'), findsOneWidget);
+
+          await enterManageMode(tester);
+          await tester.tap(find.text('A cat video'));
+          await tester.pump();
+          await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+          await tester.pumpAndSettle();
+
+          expect(find.text('A cat video'), findsNothing);
+          expect(find.text(l10n.curatedListEmptyTitle), findsOneWidget);
+        },
+      );
 
       testWidgets('back exits manage mode instead of popping the route', (
         tester,

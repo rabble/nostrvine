@@ -95,9 +95,13 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use direct video IDs if provided (for discovered lists not in local storage)
-    // Otherwise look up by list ID from local storage
-    final videosAsync = widget.videoIds != null
+    // Frozen navigation-time ids are only for lists the local store cannot
+    // resolve. Once the list is local (owned, or followed), the store is the
+    // source of truth — otherwise removal and refresh invalidate providers
+    // this screen never watches, and tiles stick (#8453 review).
+    final localList = _localList();
+    final useFrozenIds = widget.videoIds != null && localList == null;
+    final videosAsync = useFrozenIds
         ? ref.watch(videoEventsByIdsProvider(widget.videoIds!))
         : ref.watch(curatedListVideoEventsProvider(widget.listId));
 
@@ -120,7 +124,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           data: (_) => service?.isSubscribedToList(widget.listId),
         ) ??
         false;
-    final list = _localList() ?? widget.discoveredList;
+    final list = localList ?? widget.discoveredList;
     final isShareable = (list?.isPublic ?? false) && list?.pubkey != null;
 
     final PreferredSizeWidget? appBar;
@@ -257,8 +261,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   child: _ListHeroHeader(
                     name: list?.name ?? widget.listName,
                     videoCount:
-                        widget.videoIds?.length ??
                         list?.videoEventIds.length ??
+                        widget.videoIds?.length ??
                         0,
                     description: list?.description,
                     authorPubkey: isOwned
@@ -371,6 +375,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     ref
       ..invalidate(curatedListVideosProvider(widget.listId))
       ..invalidate(curatedListVideoEventsProvider(widget.listId));
+    // The discovered-list path watches the frozen-ids provider instead, and
+    // Retry after a fetch error has to re-run that one.
+    if (widget.videoIds case final ids?) {
+      ref.invalidate(videoEventsByIdsProvider(ids));
+    }
   }
 
   void _onRemovalFinished(
