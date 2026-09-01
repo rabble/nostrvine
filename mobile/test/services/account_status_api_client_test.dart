@@ -136,6 +136,35 @@ void main() {
       }
     });
 
+    // Guards the trust boundary PR #7839 established and PR #8161 removed as
+    // collateral of moving the source of truth from Keycast to Funnelcake. The
+    // rationale outlived that move and is not specific to either backend: a
+    // moderation reason is free text written by whatever called an admin API,
+    // so it must never reach state that copy or logging could render
+    // (support-trust-safety#200 R-7). Funnelcake omits it today and asserts
+    // that omission in its own suite; this pins the client side, so a server
+    // that starts sending one cannot silently become renderable here.
+    test('ignores moderation metadata a 200 response might carry', () async {
+      Future<FunnelcakeAccountStatus> statusFor(String body) {
+        return _client(
+          handler: (_) async => http.Response(body, 200),
+        ).fetchStatus(expectedPubkey: _pubkey);
+      }
+
+      const plain = '{"pubkey":"$_pubkey","status":"suspended"}';
+      const withReason =
+          '{"pubkey":"$_pubkey","status":"suspended",'
+          '"reason":"moderation","suspended_at":"2026-08-24T00:00:00Z",'
+          '"suspended_by":"a-moderator"}';
+      const withOtherReason =
+          '{"pubkey":"$_pubkey","status":"suspended",'
+          '"reason":"policy_violation"}';
+
+      expect(await statusFor(withReason), await statusFor(plain));
+      expect(await statusFor(withOtherReason), await statusFor(plain));
+      expect(await statusFor(withReason), FunnelcakeAccountStatus.suspended);
+    });
+
     test('reports missing signer, transport failure, and timeout', () async {
       final unsigned = _client(
         auth: ({required url, required method}) async => null,
