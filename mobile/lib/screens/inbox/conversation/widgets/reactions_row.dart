@@ -28,6 +28,7 @@ class ReactionsRow extends StatefulWidget {
     required this.ownerPubkey,
     required this.isSentByMe,
     this.blockedPubkeys = const <String>{},
+    this.removalEnabled = true,
     super.key,
   });
 
@@ -48,6 +49,13 @@ class ReactionsRow extends StatefulWidget {
 
   /// Pubkeys whose reactions should be hidden.
   final Set<String> blockedPubkeys;
+
+  /// Whether the own-reaction row in the detail sheet may retract the
+  /// reaction. False on a closed thread: the kind-5 is refused by
+  /// `DmSendPolicy`, so tapping it would only drop the local copy of a
+  /// reaction the recipient still holds. The sheet still opens — reading who
+  /// reacted is not a write.
+  final bool removalEnabled;
 
   @override
   State<ReactionsRow> createState() => _ReactionsRowState();
@@ -127,6 +135,7 @@ class _ReactionsRowState extends State<ReactionsRow> {
                   messageAuthorPubkey: widget.messageAuthorPubkey,
                   ownerPubkey: widget.ownerPubkey,
                   blockedPubkeys: widget.blockedPubkeys,
+                  removalEnabled: widget.removalEnabled,
                 ),
               ),
             ),

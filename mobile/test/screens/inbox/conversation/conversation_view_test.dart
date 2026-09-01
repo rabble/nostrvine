@@ -743,6 +743,176 @@ void main() {
         expect(find.text(l10n.dmSendBlockedRetiredMessage), findsOneWidget);
         expect(find.text(l10n.dmSendBlockedMessage), findsNothing);
       });
+
+      // Closing the composer is not the whole of "closed". Every retraction
+      // below publishes a kind-5 through the same send path, so `DmSendPolicy`
+      // refuses it for a retired recipient — but each one drops the local row
+      // first. The viewer sees the thing disappear; the copy the recipient
+      // received before the rotation stays exactly where it was.
+      const ownMessageId =
+          '1212121212121212121212121212121212121212121212121212121212121212';
+      const ownConversationId =
+          '3434343434343434343434343434343434343434343434343434343434343434';
+
+      DmMessage ownMessage() => DmMessage(
+        id: ownMessageId,
+        conversationId: ownConversationId,
+        senderPubkey: currentPubkey,
+        content: 'something I sent before the rotation',
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        giftWrapId:
+            'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+      );
+
+      testWidgets('an own bubble offers no delete-for-everyone', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.text(ownMessage().content));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.dmMessageActionDeleteForEveryone),
+          findsNothing,
+          reason:
+              'the kind-5 is refused by the send policy, so the tile would '
+              'only drop the local copy of a message the recipient still has',
+        );
+        // The read affordances stay: a closed thread is an archive.
+        expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+      });
+
+      testWidgets('a live thread still offers delete-for-everyone', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.text(ownMessage().content));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.dmMessageActionDeleteForEveryone),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('an own reaction cannot be retracted from the '
+          'who-reacted sheet', (tester) async {
+        const ownReaction = DmReaction(
+          id: 'r-own-retired',
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: '\u{2764}\u{FE0F}',
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: DmReactionPublishStatus.received,
+        );
+        const reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [ownReaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('\u{2764}\u{FE0F}'));
+        // Avoid pumpAndSettle: the view's async profile providers can schedule
+        // continuous micro-tasks. Pump the bottom-sheet enter animation.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The sheet still opens — reading who reacted is not a write.
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+        expect(
+          find.text(l10n.dmReactionRemoveAction),
+          findsNothing,
+          reason: 'the retraction is refused by the send policy',
+        );
+
+        // And the row is inert rather than merely unlabelled.
+        await tester.tap(find.text(l10n.dmReactionsSheetTitle));
+        await tester.pump();
+        verifyNever(() => mockReactionsCubit.add(any()));
+      });
+
+      testWidgets('a failed own bubble cannot be resent', (tester) async {
+        const content = 'a message that never got through';
+        final failedRow = OutgoingDm(
+          id: 'rumor-failed-retired',
+          conversationId: ownConversationId,
+          recipientPubkey: retired,
+          content: content,
+          createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          rumorEventJson: '{}',
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          queuedAt: DateTime(2026),
+          ownerPubkey: currentPubkey,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              pendingOutgoing: [failedRow],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The bubble stays: it is the viewer's own record of the exchange.
+        expect(find.text(content), findsOneWidget);
+
+        await tester.tap(find.text(content));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.dmMessageActionRetrySend),
+          findsNothing,
+          reason: 'the recovery sheet must not open in a closed thread',
+        );
+        verifyNever(
+          () => mockBloc.add(
+            any(that: isA<ConversationFullSendRecoveryRequested>()),
+          ),
+        );
+      });
     });
 
     group('renders', () {

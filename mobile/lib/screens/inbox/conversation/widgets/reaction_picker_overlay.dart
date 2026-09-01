@@ -54,6 +54,7 @@ class ReactionPickerOverlay {
     required BuildContext context,
     required bool isSent,
     bool showPicker = true,
+    bool showDelete = true,
     bool isVideoShare = false,
     List<String> emojis = kDefaultDmReactionEmojis,
   }) async {
@@ -91,6 +92,7 @@ class ReactionPickerOverlay {
                 if (showPicker) const SizedBox(height: 8),
                 _ActionList(
                   isSent: isSent,
+                  showDelete: showDelete,
                   isVideoShare: isVideoShare,
                   onSelected: (action) => sheetContext.popModalIfMounted(
                     ReactionPickerResult(action: action),
@@ -219,11 +221,17 @@ class _MoreButton extends StatelessWidget {
 class _ActionList extends StatelessWidget {
   const _ActionList({
     required this.isSent,
+    required this.showDelete,
     required this.isVideoShare,
     required this.onSelected,
   });
 
   final bool isSent;
+
+  /// Whether "Delete for everyone" is offered on an own message. False on a
+  /// closed thread, where the kind-5 cannot be published and the tile would
+  /// only drop the local copy.
+  final bool showDelete;
   final bool isVideoShare;
   final ValueChanged<MessageAction> onSelected;
 
@@ -248,7 +256,7 @@ class _ActionList extends StatelessWidget {
           label: l10n.shareSheetSaveVideo,
           onTap: () => onSelected(MessageAction.saveVideo),
         ),
-      if (isSent)
+      if (isSent && showDelete)
         _ActionTile(
           icon: DivineIconName.trash,
           label: l10n.dmMessageActionDeleteForEveryone,

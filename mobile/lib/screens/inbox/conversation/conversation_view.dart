@@ -399,7 +399,11 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,
-                                  sendRecoveryEnabled: !isBlockedByUs,
+                                  retractionsEnabled:
+                                      !isRetiredModerationThread,
+                                  sendRecoveryEnabled:
+                                      !isRetiredModerationThread &&
+                                      !isBlockedByUs,
                                   imageUrl: isDeleted ? null : profile?.picture,
                                   nip05: isDeleted
                                       ? null
@@ -739,6 +743,7 @@ class _ConversationContent extends StatelessWidget {
     required this.displayName,
     required this.isResolving,
     required this.reactionsEnabled,
+    required this.retractionsEnabled,
     required this.sendRecoveryEnabled,
     this.imageUrl,
     this.nip05,
@@ -754,6 +759,9 @@ class _ConversationContent extends StatelessWidget {
   final String displayName;
   final bool isResolving;
   final bool reactionsEnabled;
+
+  /// Whether the viewer may retract something already delivered here.
+  final bool retractionsEnabled;
 
   /// Whether tapping a failed own bubble may offer to resend it.
   final bool sendRecoveryEnabled;
@@ -807,6 +815,7 @@ class _ConversationContent extends StatelessWidget {
                     blockedPubkeys: blockedPubkeys,
                     senderDisplayName: displayName,
                     reactionsEnabled: reactionsEnabled,
+                    retractionsEnabled: retractionsEnabled,
                     sendRecoveryEnabled: sendRecoveryEnabled,
                   ),
         };
@@ -853,6 +862,7 @@ class _MessageList extends StatelessWidget {
     required this.blockedPubkeys,
     required this.senderDisplayName,
     required this.reactionsEnabled,
+    required this.retractionsEnabled,
     required this.sendRecoveryEnabled,
   });
 
@@ -864,6 +874,24 @@ class _MessageList extends StatelessWidget {
   final Set<String> blockedPubkeys;
   final String senderDisplayName;
   final bool reactionsEnabled;
+
+  /// Whether the viewer may retract something this thread already delivered:
+  /// "Delete for everyone" on an own bubble, and "Remove" on an own reaction
+  /// in the reactions detail sheet.
+  ///
+  /// False on a retired moderation thread. Both retractions publish a NIP-09
+  /// kind-5 through the same send path the composer uses, so `DmSendPolicy`
+  /// refuses them for a retired recipient — but each one has *already* dropped
+  /// the local row by then, so the message or reaction disappears for the
+  /// viewer while the copy the recipient received before the rotation stays
+  /// exactly where it was. A button reading "Delete for everyone" that deletes
+  /// for one person is the same false success `[_ClosedThreadNotice]` removes
+  /// the composer to avoid.
+  ///
+  /// Only the write goes. The bubble, the pill, and the detail sheet all stay
+  /// readable — a closed thread is an archive, and the viewer keeps their own
+  /// copy of an enforcement notice either way.
+  final bool retractionsEnabled;
 
   /// Whether tapping a failed own bubble may offer to resend it (#7025).
   ///
@@ -904,6 +932,7 @@ class _MessageList extends StatelessWidget {
       isSent: isSent,
       isVideoShare: videoTarget != null,
       showPicker: showPicker,
+      showDelete: retractionsEnabled,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -1158,6 +1187,7 @@ class _MessageList extends StatelessWidget {
                 ownerPubkey: currentPubkey,
                 isSentByMe: isSent,
                 blockedPubkeys: blockedPubkeys,
+                removalEnabled: retractionsEnabled,
               ),
             ],
           );
