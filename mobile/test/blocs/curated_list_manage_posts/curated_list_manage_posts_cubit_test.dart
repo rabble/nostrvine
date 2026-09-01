@@ -6,10 +6,19 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/curated_list_manage_posts/curated_list_manage_posts_cubit.dart';
 import 'package:openvine/services/curated_list_service.dart';
 
 class _MockCuratedListService extends Mock implements CuratedListService {}
+
+CuratedList _listWith(List<String> videoEventIds) => CuratedList(
+  id: 'list-1',
+  name: 'List One',
+  videoEventIds: videoEventIds,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 void main() {
   group(CuratedListManagePostsCubit, () {
@@ -67,6 +76,7 @@ void main() {
           when(
             () => service.removeVideoFromList('list-1', any()),
           ).thenAnswer((_) async => true);
+          when(() => service.getListById('list-1')).thenReturn(_listWith([]));
         },
         seed: () => const CuratedListManagePostsState(
           selectedVideoIds: {'a', 'b'},
@@ -89,7 +99,38 @@ void main() {
       );
 
       blocTest<CuratedListManagePostsCubit, CuratedListManagePostsState>(
-        'reports failure with counts when one removal returns false',
+        'counts a queued-republish removal as removed, not failed',
+        build: buildCubit,
+        setUp: () {
+          when(
+            () => service.removeVideoFromList('list-1', 'a'),
+          ).thenAnswer((_) async => true);
+          // False with the post gone: the service commits the removal
+          // locally before publishing and queues a republish on failure,
+          // so the grid no longer shows the post (#8453 review).
+          when(
+            () => service.removeVideoFromList('list-1', 'b'),
+          ).thenAnswer((_) async => false);
+          when(() => service.getListById('list-1')).thenReturn(_listWith([]));
+        },
+        seed: () => const CuratedListManagePostsState(
+          selectedVideoIds: {'a', 'b'},
+        ),
+        act: (cubit) => cubit.removeSelected(),
+        expect: () => const [
+          CuratedListManagePostsState(
+            status: CuratedListManagePostsStatus.removing,
+            selectedVideoIds: {'a', 'b'},
+          ),
+          CuratedListManagePostsState(
+            status: CuratedListManagePostsStatus.success,
+            removedCount: 2,
+          ),
+        ],
+      );
+
+      blocTest<CuratedListManagePostsCubit, CuratedListManagePostsState>(
+        'reports failure for a post that is still in the list',
         build: buildCubit,
         setUp: () {
           when(
@@ -98,6 +139,9 @@ void main() {
           when(
             () => service.removeVideoFromList('list-1', 'b'),
           ).thenAnswer((_) async => false);
+          when(
+            () => service.getListById('list-1'),
+          ).thenReturn(_listWith(['b']));
         },
         seed: () => const CuratedListManagePostsState(
           selectedVideoIds: {'a', 'b'},
@@ -126,6 +170,9 @@ void main() {
           when(
             () => service.removeVideoFromList('list-1', 'b'),
           ).thenAnswer((_) async => true);
+          when(
+            () => service.getListById('list-1'),
+          ).thenReturn(_listWith(['a']));
         },
         seed: () => const CuratedListManagePostsState(
           selectedVideoIds: {'a', 'b'},

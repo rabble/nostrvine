@@ -48,8 +48,8 @@ class CuratedListManagePostsCubit extends Cubit<CuratedListManagePostsState>
   ///
   /// [CuratedListService.removeVideoFromList] serializes mutations per list,
   /// so the loop awaits each call rather than firing them concurrently. Ends
-  /// in [CuratedListManagePostsStatus.success] when every removal succeeded,
-  /// or [CuratedListManagePostsStatus.failure] when any did not.
+  /// in [CuratedListManagePostsStatus.success] when no selected post remains
+  /// in the list, or [CuratedListManagePostsStatus.failure] when any does.
   Future<void> removeSelected() async {
     if (state.status != CuratedListManagePostsStatus.selecting ||
         state.selectedVideoIds.isEmpty) {
@@ -58,22 +58,27 @@ class CuratedListManagePostsCubit extends Cubit<CuratedListManagePostsState>
 
     emit(state.copyWith(status: CuratedListManagePostsStatus.removing));
 
-    var removed = 0;
-    var failed = 0;
-    for (final videoEventId in Set<String>.from(state.selectedVideoIds)) {
+    final selected = Set<String>.from(state.selectedVideoIds);
+    for (final videoEventId in selected) {
       try {
-        final didRemove = await _service.removeVideoFromList(
-          _listId,
-          videoEventId,
-        );
-        didRemove ? removed++ : failed++;
+        await _service.removeVideoFromList(_listId, videoEventId);
       } catch (e, stackTrace) {
         // Expected domain/network failure — surfaced via status, not
         // Crashlytics, per the reportable-error decision matrix.
         addError(e, stackTrace);
-        failed++;
       }
     }
+
+    // The returned bool is ambiguous: a failed publish has already committed
+    // the removal locally and queued a republish, so counting it as failed
+    // would contradict the refreshed grid. Membership after the batch is the
+    // truth the user sees — derive the counts from it. A missing list means
+    // nothing is left to hold the posts.
+    final remaining =
+        _service.getListById(_listId)?.videoEventIds.toSet() ??
+        const <String>{};
+    final failed = selected.where(remaining.contains).length;
+    final removed = selected.length - failed;
 
     emitIfOpen(
       state.copyWith(
