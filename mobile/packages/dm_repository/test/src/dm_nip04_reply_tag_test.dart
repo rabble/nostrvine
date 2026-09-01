@@ -153,10 +153,11 @@ void main() {
     Future<void> storeMessage({
       required String id,
       required String giftWrapId,
+      String senderPubkey = _peer,
     }) => messagesDao.insertMessage(
       id: id,
       conversationId: conversationId,
-      senderPubkey: _peer,
+      senderPubkey: senderPubkey,
       content: 'earlier message',
       createdAt: _baseCreatedAt,
       giftWrapId: giftWrapId,
@@ -210,6 +211,26 @@ void main() {
         await storeMessage(id: _rumorId, giftWrapId: _wrapId);
 
         await send(replyToId: _rumorId);
+
+        expect(await publishedKind4Tags(), [
+          ['p', _peer],
+        ]);
+      },
+    );
+
+    test(
+      'does NOT expose a legacy-shaped self-authored NIP-17 wrap id',
+      () async {
+        await seedLatchedThread();
+        // Before #2654, own NIP-17 sends stored the gift-wrap id in both
+        // columns. The shape alone therefore cannot prove this was kind 4.
+        await storeMessage(
+          id: _wrapId,
+          giftWrapId: _wrapId,
+          senderPubkey: _owner,
+        );
+
+        await send(replyToId: _wrapId);
 
         expect(await publishedKind4Tags(), [
           ['p', _peer],
