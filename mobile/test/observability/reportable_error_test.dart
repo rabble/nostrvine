@@ -69,6 +69,17 @@ void main() {
       expect(wrapped.toString(), contains('nsec1<redacted>'));
       expect(wrapped.toString(), isNot(contains(nsec)));
     });
+
+    test('toString sanitizes ncryptsec identifiers in the inner message', () {
+      const ncryptsec =
+          'ncryptsec1qgtt2vq2vezy5xkdz6h2r3n3zqk3z0lqjx2vy7c8y9rfa2q6l3sh0';
+      final wrapped = Reportable(
+        StateError('Signer leaked $ncryptsec to logs'),
+      );
+
+      expect(wrapped.toString(), contains('ncryptsec1<redacted>'));
+      expect(wrapped.toString(), isNot(contains(ncryptsec)));
+    });
   });
 
   group('sanitizeForCrashReport', () {
@@ -86,6 +97,20 @@ void main() {
       const input = 'leaked nsec1qwertyuiopasdfghjklzxcvbnm0123456789abcdef';
 
       expect(sanitizeForCrashReport(input), 'leaked nsec1<redacted>');
+    });
+
+    test('replaces a single ncryptsec with the redaction marker', () {
+      // ncryptsec (NIP-49 encrypted private key) is the same class of
+      // private-key material as nsec and must not reach the third-party
+      // crash reporter. It is not a substring of nsec, so the two rules do
+      // not overlap.
+      const input =
+          'failed to decrypt ncryptsec1qgtt2vq2vezy5xkdz6h2r3n3zqk3z0lqjx';
+
+      expect(
+        sanitizeForCrashReport(input),
+        'failed to decrypt ncryptsec1<redacted>',
+      );
     });
 
     test('replaces multiple identifiers in the same string', () {
