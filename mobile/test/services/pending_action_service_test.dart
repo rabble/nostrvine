@@ -603,6 +603,11 @@ void main() {
         );
       });
 
+      // Note: _scheduleSyncRetry's own `_disposed` guard and the finally
+      // block's guard are redundant by design, so removing either one alone
+      // leaves behaviour unchanged and this test green. It pins the pair.
+      // Detecting one redundant guard would need white-box assertions, which
+      // .claude/rules/testing.md steers away from.
       test('does not reschedule itself after dispose', () async {
         // The resurrected timer re-enters syncPendingActions every
         // resyncDelay. Once the AsyncScope is disposed the retry
@@ -641,11 +646,18 @@ void main() {
             unawaited(service.syncPendingActions());
             await firstExecutorCall.future.timeout(const Duration(seconds: 2));
             service.dispose();
-            await Future<void>.delayed(const Duration(milliseconds: 30));
           },
           (error, _) => escapedErrors.add(error),
         );
 
+        // Snapshot immediately after dispose, before any wait. A resurrected
+        // timer fires one resyncDelay later, so any window opened before this
+        // line absorbs the very read the assertion is looking for.
+        //
+        // The resurrected loop is bounded to a single pass here: the cancelled
+        // _syncAction rethrows before updating status, leaving the row
+        // `syncing`, which getPendingActions excludes — so the next pass sees
+        // no work and stops. One extra read is the whole signal.
         final readsAtDispose = countingDao.getPendingActionsCalls;
 
         // 100ms is five turns of the 20ms resync loop if it is resurrected.
