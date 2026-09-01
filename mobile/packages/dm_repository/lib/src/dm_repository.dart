@@ -77,28 +77,6 @@ typedef Nip04Decryptor =
 typedef DmRepositoryErrorReporter =
     void Function(Object error, StackTrace stackTrace, {required String site});
 
-/// Reports that this install has entered the state in which a late-delivered
-/// gift wrap is lost for good (#8439).
-///
-/// The condition is that a relay has entered the set the DM subscription asks,
-/// on an install whose history drain has already latched complete and whose
-/// live window already has a floor. That relay was never asked about anything
-/// below `since:`, and now nothing ever will be: the wire boundary only rises
-/// and the drain returns before issuing a query.
-///
-/// This measures **exposure, not loss**. The newly-asked relay may hold
-/// nothing below the band. The count is an upper bound on affected installs
-/// and must not be read as a count of lost messages.
-///
-/// Deliberately carries no pubkey and no relay URLs — a relay URL identifies
-/// the infrastructure a user chose, which is identifying on its own.
-typedef DmSyncExposureReporter =
-    void Function({
-      required int newRelayCount,
-      required int knownRelayCount,
-      required int bandSeconds,
-    });
-
 /// Supported NIP-17 rumor event kinds.
 const Set<int> _supportedDmKinds = {
   EventKind.privateDirectMessage, // 14
@@ -371,7 +349,6 @@ class DmRepository {
     DmDecryptIsolateSpawner? decryptIsolateSpawner,
     DmVerifyIsolateSpawner? verifyIsolateSpawner,
     DmRepositoryErrorReporter? errorReporter,
-    DmSyncExposureReporter? exposureReporter,
     DmReactionsRepository? reactionsRepository,
     DmConversationRemovalPolicy? removalPolicy,
     String? dmInboxRelayUrl,
@@ -396,7 +373,6 @@ class DmRepository {
        _decryptIsolateSpawner = decryptIsolateSpawner ?? DmDecryptIsolate.spawn,
        _verifyIsolateSpawner = verifyIsolateSpawner ?? DmVerifyIsolate.spawn,
        _errorReporter = errorReporter,
-       _exposureReporter = exposureReporter,
        _reactionsRepository = reactionsRepository,
        _removalPolicy = removalPolicy ?? allowAllConversationRemoval,
        _dmInboxRelayUrl = dmInboxRelayUrl,
@@ -455,7 +431,6 @@ class DmRepository {
   final DmDecryptIsolateSpawner _decryptIsolateSpawner;
   final DmVerifyIsolateSpawner _verifyIsolateSpawner;
   final DmRepositoryErrorReporter? _errorReporter;
-  final DmSyncExposureReporter? _exposureReporter;
 
   /// Optional sibling repository for NIP-25 reactions on DMs. When wired,
   /// [_handleGiftWrapEvent] routes kind-7 rumors to it instead of
@@ -1075,17 +1050,6 @@ class DmRepository {
           }
         },
       );
-
-      // Measurement only (#8439): note whether this subscription just began
-      // asking a relay it had never asked before, on an install whose drain
-      // has already latched. Runs after the guards so it describes a
-      // subscription that actually opened, and after repairPoisonedBoundaries
-      // so it measures a healed boundary rather than a poisoned one.
-      await _reportDmSyncExposure(
-        pubkey: _userPubkey,
-        ownInbox: ownInbox,
-        since: filter.since,
-      );
     } finally {
       _subscribing = false;
     }
@@ -1094,74 +1058,6 @@ class DmRepository {
     // source for the entire authenticated session. Poller was removed
     // because it re-fetched duplicate events every 10s forever on the UI
     // isolate. See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
-  }
-
-  /// Folds the relays this subscription asks — the configured pool plus
-  /// [ownInbox] — into the persisted read-relay fingerprint, and reports when
-  /// that turns up one this account has never asked before, because that is
-  /// the state #8439 describes.
-  ///
-  /// The three conditions are the defect's own preconditions:
-  ///
-  /// * a relay just entered the asked set, so it was never asked about the
-  ///   band below `since:`;
-  /// * `historyDrainComplete`, so the one path that reaches below the live
-  ///   window returns before issuing a query;
-  /// * a wire boundary exists, so there is a floor for a wrap to fall under.
-  ///
-  /// Conditions two and three hold on nearly every established install; the
-  /// first is what makes the signal mean anything.
-  ///
-  /// Fires at most once per relay per account, and that is a property of the
-  /// storage rather than of a flag: [DmSyncState.recordReadRelays] persists
-  /// the union before returning the delta, so a relay is new exactly once.
-  /// `startListening` runs again on every reconnect, so a suppression flag
-  /// would have to survive a race this cannot lose.
-  ///
-  /// Uses the relays we ASK, not the relay an event arrived from —
-  /// `NostrClient.subscribe` merges the pool and temp-relay arms into one
-  /// stream, so nothing downstream can attribute an event to a relay. Asking
-  /// is the thing that matters here anyway: a relay never asked about a window
-  /// cannot have answered for it.
-  Future<void> _reportDmSyncExposure({
-    required String pubkey,
-    required List<String>? ownInbox,
-    required int? since,
-  }) async {
-    final syncState = _syncState;
-    if (syncState == null || since == null) return;
-    try {
-      // Built inside the guard on purpose: everything this measurement reads
-      // is best-effort, and none of it may reach the caller. `startListening`
-      // opening the subscription is the job; counting is not.
-      final askedRelays = <String>{
-        ..._nostrClient.configuredRelays,
-        ...?ownInbox,
-      };
-      final knownBefore = syncState.readRelayFingerprint(pubkey).length;
-      final newRelays = await syncState.recordReadRelays(pubkey, askedRelays);
-      if (newRelays.isEmpty) return;
-      // A fresh install has no fingerprint to compare against, so every relay
-      // reads as new. It also has no latched drain, which is what the guard
-      // below turns away — stated here because the two are easy to conflate.
-      if (!syncState.historyDrainComplete(pubkey)) return;
-      if (syncState.newestWireSyncedAt(pubkey) == null) return;
-
-      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      _exposureReporter?.call(
-        newRelayCount: newRelays.length,
-        knownRelayCount: knownBefore,
-        bandSeconds: nowSec - since,
-      );
-    } on Object catch (e, stackTrace) {
-      // Measurement must never take the inbox down with it.
-      Log.warning(
-        'DM sync exposure measurement failed: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Resolves and memoizes the CURRENT user's own kind-10050 DM inbox

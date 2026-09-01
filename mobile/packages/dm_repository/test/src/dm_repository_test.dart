@@ -452,13 +452,6 @@ class _FakeDmSyncState implements DmSyncState {
   final List<int> persistedDrainCursors = <int>[];
   final List<String> upgradedPubkeys = <String>[];
   final List<String> repairedPubkeys = <String>[];
-
-  /// Relay identities recorded per pubkey, mirroring the real store so a
-  /// second `startListening` sees the union the first one persisted.
-  final Map<String, Set<String>> readRelays = <String, Set<String>>{};
-
-  /// Every `recordReadRelays` call's returned delta, in order.
-  final List<Set<String>> readRelayDeltas = <Set<String>>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
   final List<({String pubkey, int createdAt})> recordedWire =
@@ -508,31 +501,6 @@ class _FakeDmSyncState implements DmSyncState {
       drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     }
     drainVersionOverride = DmSyncState.currentDrainVersion;
-  }
-
-  @override
-  List<String> readRelayFingerprint(String pubkey) =>
-      readRelays[pubkey]?.toList() ?? const <String>[];
-
-  @override
-  Future<Set<String>> recordReadRelays(
-    String pubkey,
-    Iterable<String> relays,
-  ) async {
-    final known = readRelays.putIfAbsent(pubkey, () => <String>{});
-    final fresh = <String>{};
-    for (final relay in relays) {
-      final identity = normalizeRelayUrl(relay);
-      if (identity == null || known.contains(identity)) continue;
-      fresh.add(identity);
-    }
-    final room = DmSyncState.maxTrackedReadRelays - known.length;
-    final admitted = room <= 0
-        ? <String>{}
-        : (fresh.length <= room ? fresh : fresh.take(room).toSet());
-    known.addAll(admitted);
-    readRelayDeltas.add(admitted);
-    return admitted;
   }
 
   @override
@@ -881,7 +849,6 @@ void main() {
       List<String> dmInboxTaggedRelays = const <String>[],
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
       String Function()? sendBatchIdGenerator,
-      DmSyncExposureReporter? exposureReporter,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -913,7 +880,6 @@ void main() {
         errorReporter: (error, stackTrace, {required site}) {
           reporterCalls.add(_ReporterCall(error, stackTrace, site));
         },
-        exposureReporter: exposureReporter,
       );
     }
 
@@ -4425,187 +4391,6 @@ void main() {
 
           await repository.stopListening();
           await relay.close();
-        },
-      );
-    });
-
-    group('DM sync exposure measurement (#8439)', () {
-      const relayA = 'wss://relay.divine.video';
-      const relayB = 'wss://relay.example.com';
-      const wireNewest = 1700000000;
-
-      late List<({int newRelayCount, int knownRelayCount, int bandSeconds})>
-      reports;
-      late StreamController<Event> controller;
-
-      setUp(() {
-        reports =
-            <({int newRelayCount, int knownRelayCount, int bandSeconds})>[];
-        controller = StreamController<Event>.broadcast();
-      });
-
-      tearDown(() async {
-        await controller.close();
-      });
-
-      void stubSubscribe(List<String> configured) {
-        when(() => mockNostrClient.configuredRelays).thenReturn(configured);
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
-      }
-
-      DmRepository repositoryFor(_FakeDmSyncState syncState) =>
-          createRepository(
-            syncState: syncState,
-            exposureReporter:
-                ({
-                  required newRelayCount,
-                  required knownRelayCount,
-                  required bandSeconds,
-                }) => reports.add((
-                  newRelayCount: newRelayCount,
-                  knownRelayCount: knownRelayCount,
-                  bandSeconds: bandSeconds,
-                )),
-          );
-
-      _FakeDmSyncState exposedState() => _FakeDmSyncState()
-        ..newestOverride = wireNewest
-        ..newestWireOverride = wireNewest
-        ..drainCompleteOverride = true;
-
-      test(
-        'reports when a relay joins the asked set on an install whose drain '
-        'has already latched',
-        () async {
-          final syncState = exposedState()
-            ..readRelays[_validPubkeyA] = <String>{relayA};
-          stubSubscribe([relayA, relayB]);
-          final repository = repositoryFor(syncState);
-
-          await repository.startListening();
-
-          expect(reports, hasLength(1));
-          expect(reports.single.newRelayCount, 1);
-          expect(reports.single.knownRelayCount, 1);
-
-          await repository.stopListening();
-        },
-      );
-
-      test('the reported band is the width of the window nothing will ask '
-          'about again', () async {
-        final syncState = exposedState()
-          ..readRelays[_validPubkeyA] = <String>{relayA};
-        stubSubscribe([relayA, relayB]);
-        final repository = repositoryFor(syncState);
-
-        final before = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        await repository.startListening();
-        final after = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-        const since = wireNewest - 2 * 86400;
-        expect(
-          reports.single.bandSeconds,
-          inInclusiveRange(before - since, after - since),
-        );
-
-        await repository.stopListening();
-      });
-
-      test('does NOT report when the history drain has not latched — the '
-          'drain can still reach below the window', () async {
-        final syncState = exposedState()
-          ..drainCompleteOverride = false
-          ..readRelays[_validPubkeyA] = <String>{relayA};
-        stubSubscribe([relayA, relayB]);
-        final repository = repositoryFor(syncState);
-
-        await repository.startListening();
-
-        expect(reports, isEmpty);
-
-        await repository.stopListening();
-      });
-
-      test('does NOT report when no wire boundary exists — there is no floor '
-          'for a wrap to fall under', () async {
-        final syncState = exposedState()
-          ..newestWireOverride = null
-          ..readRelays[_validPubkeyA] = <String>{relayA};
-        stubSubscribe([relayA, relayB]);
-        final repository = repositoryFor(syncState);
-
-        await repository.startListening();
-
-        expect(reports, isEmpty);
-
-        await repository.stopListening();
-      });
-
-      test('does NOT report on a fresh install, whose first subscription '
-          'legitimately asks every relay for the first time', () async {
-        // No drain latch and no fingerprint: every relay reads as new, which
-        // is exactly the case the guards have to turn away.
-        final syncState = _FakeDmSyncState();
-        stubSubscribe([relayA, relayB]);
-        final repository = repositoryFor(syncState);
-
-        await repository.startListening();
-
-        expect(reports, isEmpty);
-
-        await repository.stopListening();
-      });
-
-      test(
-        'reports once per relay, so a reconnect cannot re-fire it',
-        () async {
-          final syncState = exposedState()
-            ..readRelays[_validPubkeyA] = <String>{relayA};
-          stubSubscribe([relayA, relayB]);
-          final repository = repositoryFor(syncState);
-
-          await repository.startListening();
-          await repository.stopListening();
-          await repository.startListening();
-
-          expect(reports, hasLength(1));
-
-          await repository.stopListening();
-        },
-      );
-
-      test(
-        'a throwing reporter does not take the subscription down with it',
-        () async {
-          final syncState = exposedState()
-            ..readRelays[_validPubkeyA] = <String>{relayA};
-          stubSubscribe([relayA, relayB]);
-          final repository = createRepository(
-            syncState: syncState,
-            exposureReporter:
-                ({
-                  required newRelayCount,
-                  required knownRelayCount,
-                  required bandSeconds,
-                }) => throw StateError('reporter blew up'),
-          );
-
-          await repository.startListening();
-
-          verify(
-            () => mockNostrClient.subscribe(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-            ),
-          ).called(1);
-
-          await repository.stopListening();
         },
       );
     });
