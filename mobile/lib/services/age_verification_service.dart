@@ -138,7 +138,8 @@ class AgeVerificationService {
   /// Adopts each global value for the current account when the account has no
   /// scoped value yet, then removes the global keys so a second account can
   /// never inherit them. No-op while unauthenticated, leaving the globals in
-  /// place until an account claims them (#7816).
+  /// place until an account claims them (#7816). Adopt-if-absent plus an
+  /// idempotent delete makes a repeated run for the same account harmless.
   Future<void> _migrateGlobalKeys(SharedPreferences prefs) async {
     final pubkey = _currentPubkeyHex();
     if (pubkey == null || pubkey.isEmpty) return;

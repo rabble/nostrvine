@@ -3166,9 +3166,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // Account deletion purges the leaving account's per-account
       // age/adult-content verification. A non-destructive switch keeps it so
-      // the account resumes its own verification on return (#7816).
-      if (deleteLocalUserData && currentPubkey != null) {
-        await AgeVerificationService.purgeAccount(prefs, currentPubkey);
+      // the account resumes its own verification on return (#7816). Key it on
+      // currentPublicKeyHex — the same accessor the service scopes writes with —
+      // so the purge target always matches the stored keys.
+      final ageVerificationPubkey = currentPublicKeyHex;
+      if (deleteLocalUserData && ageVerificationPubkey != null) {
+        await AgeVerificationService.purgeAccount(prefs, ageVerificationPubkey);
       }
 
       // Clear user-specific cached data on explicit logout.

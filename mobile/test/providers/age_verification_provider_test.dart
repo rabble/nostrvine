@@ -14,6 +14,8 @@ class _MockAuthService extends Mock implements AuthService {}
 void main() {
   const pubkey =
       '1111111111111111111111111111111111111111111111111111111111111111';
+  const pubkeyB =
+      '2222222222222222222222222222222222222222222222222222222222222222';
 
   group('ageVerificationServiceProvider', () {
     setUp(() {
@@ -145,6 +147,55 @@ void main() {
           reason: 'Verification should persist across reads (iteration $i)',
         );
       }
+    });
+
+    test('rebuilds and re-scopes the service when the account switches', () async {
+      // Guards the #7816 invariant: because the service caches verification in
+      // memory, a keepAlive instance must be rebuilt on account swap so the
+      // switched-in account does not inherit the previous account's value.
+      // Removing `ref.watch(currentAuthStateProvider)` from the provider makes
+      // this test fail (serviceB would be the same instance, still reporting A's
+      // verification).
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final serviceA = container.read(ageVerificationServiceProvider);
+      await serviceA.initialize();
+      await serviceA.setAdultContentVerified(true);
+      expect(serviceA.isAdultContentVerified, isTrue);
+
+      // Account swap: new pubkey, and the auth state transits a non-authenticated
+      // value (every real swap does), which must rebuild the keepAlive service.
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkeyB);
+      container.updateOverrides([
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        authServiceProvider.overrideWithValue(authService),
+        currentAuthStateProvider.overrideWithValue(AuthState.authenticating),
+      ]);
+
+      final serviceB = container.read(ageVerificationServiceProvider);
+      await serviceB.initialize();
+
+      expect(
+        identical(serviceA, serviceB),
+        isFalse,
+        reason: 'account swap must rebuild the service, not reuse the cache',
+      );
+      expect(
+        serviceB.isAdultContentVerified,
+        isFalse,
+        reason: 'the switched-in account must not inherit prior verification',
+      );
     });
   });
 }
