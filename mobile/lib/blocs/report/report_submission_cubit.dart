@@ -328,6 +328,18 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
             );
       if (isClosed) return;
 
+      if (result.isSilentSuccess && result.delivery == ReportDelivery.refused) {
+        // A deliberate refusal — a self-report (#8352). Nothing was built,
+        // published, or recorded, and nothing should be sent: not the
+        // kind-1984 event, and NOT the moderation DM. Unlike `localOnly`
+        // below (a real report that couldn't reach a channel and is handed to
+        // the retrying DM), `refused` must never touch the DM path, or a
+        // self-naming report leaves the device privately. Silent success —
+        // show the normal confirmation.
+        _update(status: ReportSubmissionStatus.submitted);
+        return;
+      }
+
       if (result.success && result.delivery == ReportDelivery.localOnly) {
         // Nothing left the device — every channel refused, which usually
         // means no connectivity. The confirmation screen would be false in

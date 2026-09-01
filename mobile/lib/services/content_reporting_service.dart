@@ -30,6 +30,13 @@ enum ReportDelivery {
   /// which nothing in the app ever replays — so it is a dead letter
   /// unless the user submits again.
   localOnly,
+
+  /// The report was deliberately refused before anything was built,
+  /// published, or recorded — e.g. a self-report (#8352). Distinct from
+  /// [localOnly]: there is no local record, and callers must treat it as a
+  /// silent no-op, never as a failed delivery to retry or hand to a fallback
+  /// channel such as the moderation DM.
+  refused,
 }
 
 /// Report submission result
@@ -54,6 +61,15 @@ class ReportResult {
   /// claimed success, so a caller that forgets to say must not inherit
   /// the optimistic answer.
   final ReportDelivery delivery;
+
+  /// Whether callers should present this result as a successful submission.
+  ///
+  /// A refusal is intentionally silent, so it has the same user-facing
+  /// outcome as a delivered report even though nothing left the device.
+  bool get isSilentSuccess =>
+      success &&
+      (delivery == ReportDelivery.reached ||
+          delivery == ReportDelivery.refused);
 
   factory ReportResult.createSuccess(
     String reportId, {
@@ -208,6 +224,31 @@ class ContentReportingService {
 
       // Generate report ID
       final reportId = 'report_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Self-report guard (#8352). A bare user report carries only a `p` tag,
+      // so when reporter and target are the same pubkey the published kind-1984
+      // event names the report's own author as the reported party — a permanent,
+      // public record with no signal to a moderator that they are the same
+      // person. Refuse it before any report payload or event is built or
+      // published. Silent, like
+      // the follow/unfollow/mute self-guards: a user who reaches this is not
+      // doing it deliberately, so we return success and simply publish nothing.
+      final reporterPubkey = _authService.currentPublicKeyHex;
+      // Authentication normally guarantees a current public key. If that
+      // invariant is temporarily broken, fail open here so unrelated reports
+      // are not all mistaken for self-reports and refused.
+      if (reporterPubkey != null &&
+          reporterPubkey.toLowerCase() == authorPubkey.toLowerCase()) {
+        Log.info(
+          'Refused a self-report before publishing (target == reporter)',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+        return ReportResult.createSuccess(
+          reportId,
+          delivery: ReportDelivery.refused,
+        );
+      }
 
       // Redact once, here, so every projection of this report inherits it.
       // The kind-1984 event is published to relays in plaintext and the

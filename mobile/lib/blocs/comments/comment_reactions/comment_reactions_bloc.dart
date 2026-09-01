@@ -359,7 +359,10 @@ class CommentReactionsBloc
       // or an unbuildable event, and a `success` report can still have
       // reached no channel off this device (#6387). Neither throws, so
       // discarding the result showed the user a silent success (#6595).
-      if (!result.success || result.delivery != ReportDelivery.reached) {
+      // A deliberately refused report (a self-report, #8352) is a silent
+      // success like `reached` — it must not surface as a failure the user
+      // could "retry", since it will always refuse identically.
+      if (!result.isSilentSuccess) {
         Log.warning(
           'Comment report not delivered '
           '(success=${result.success}, delivery=${result.delivery}): '
