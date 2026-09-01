@@ -876,6 +876,33 @@ void main() {
         expect(badgeFinder(), findsNWidgets(2));
       });
 
+      testWidgets('defaults to showing the badge when the flag is omitted', (
+        tester,
+      ) async {
+        // Pins the constructor default — the production path for every
+        // discovery surface, none of which pass the flag.
+        final cache = _MockSubscribedListVideoCache();
+        when(() => cache.getListsForVideo(any())).thenReturn({'some-list'});
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker, subscribedListCache: cache),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(badgeFinder(), findsNWidgets(2));
+      });
+
       testWidgets('shows no badge when the caller turns it off', (
         tester,
       ) async {

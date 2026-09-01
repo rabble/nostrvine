@@ -387,6 +387,32 @@ void main() {
         expect(find.text(l10n.listDeleteAction), findsOneWidget);
       });
 
+      testWidgets('sheet tiles activate through the semantics owner', (
+        tester,
+      ) async {
+        // The tiles exclude their child semantics, so the tap action must
+        // live on the Semantics node itself — a pointer tap stays green on
+        // the broken shape, only owner activation proves it (#7950).
+        stubOwnedList();
+        final semantics = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await openOwnerSheet(tester);
+
+        tester.semantics.tap(
+          find.semantics.byPredicate(
+            (node) => node.identifier == 'list_manage_posts_option',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.listRemovePostsButton(0)), findsOneWidget);
+        semantics.dispose();
+      });
+
       testWidgets('sheet hides share for a list without an author', (
         tester,
       ) async {
