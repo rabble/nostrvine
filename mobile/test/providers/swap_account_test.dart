@@ -615,6 +615,39 @@ void main() {
       expect(pushSyncActivations, isZero);
     });
 
+    testWidgets('does not activate incoming push sync when swap fails', (
+      tester,
+    ) async {
+      var pushSyncActivations = 0;
+      deviceScope = DeviceScope(
+        database: database,
+        sharedPreferences: deviceScope.sharedPreferences,
+        switchController: controller,
+        appVersion: 'test',
+        documentsPath: '/documents',
+        accountOverrides: [
+          secureKeyStorageProvider.overrideWithValue(keyStorage),
+          pushNotificationSyncProvider.overrideWith((ref) {
+            pushSyncActivations += 1;
+            return _MockPushNotificationSessionCoordinator();
+          }),
+        ],
+      );
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async {},
+        ),
+        throwsStateError,
+      );
+
+      expect(pushSyncActivations, isZero);
+    });
+
     testWidgets('keeps the target live when incoming push activation fails', (
       tester,
     ) async {
