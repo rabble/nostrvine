@@ -42,6 +42,18 @@ class _ThrowOncePendingActionsDao extends PendingActionsDao {
   }
 }
 
+class _CountingPendingActionsDao extends PendingActionsDao {
+  _CountingPendingActionsDao(super.attachedDatabase);
+
+  int getPendingActionsCalls = 0;
+
+  @override
+  Future<List<PendingAction>> getPendingActions(String userPubkey) {
+    getPendingActionsCalls++;
+    return super.getPendingActions(userPubkey);
+  }
+}
+
 class _TerminalActionException implements TerminalSocialActionException {
   const _TerminalActionException();
 }
@@ -525,6 +537,123 @@ void main() {
         expect(service.pendingActions, isEmpty);
         expect(service.allActions.single.status, PendingActionStatus.failed);
         expect(service.allActions.single.retryCount, 0);
+      });
+    });
+
+    group('dispose during an in-flight sync', () {
+      // The service is owned by a keepAlive Riverpod provider that watches auth
+      // state, so any sign-out or account switch disposes it. When a retry
+      // backoff is in flight at that moment the sync method is suspended inside
+      // AsyncScope and its continuation runs after dispose (#8457).
+      late PendingActionService disposableService;
+
+      Future<void> setUpDisposableService({
+        required ActionExecutor executor,
+      }) async {
+        disposableService = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: dao,
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 3,
+            initialDelay: Duration(milliseconds: 200),
+            maxDelay: Duration(milliseconds: 400),
+            resyncDelay: Duration(milliseconds: 200),
+          ),
+        );
+        await disposableService.initialize();
+        disposableService.registerExecutor(PendingActionType.like, executor);
+        await disposableService.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event_dispose',
+          authorPubkey: 'author_dispose',
+        );
+      }
+
+      test('stops invoking the executor once disposed mid-backoff', () async {
+        var executorCalls = 0;
+        var disposed = false;
+        var callsAfterDispose = 0;
+
+        await setUpDisposableService(
+          executor: (_) async {
+            executorCalls++;
+            if (disposed) callsAfterDispose++;
+            throw Exception('connection refused');
+          },
+        );
+
+        unawaited(disposableService.syncPendingActions());
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+        expect(executorCalls, 1, reason: 'first attempt ran before dispose');
+
+        disposableService.dispose();
+        disposed = true;
+
+        // Long enough for the whole 200/400/400ms ladder to have fired.
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        expect(
+          callsAfterDispose,
+          0,
+          reason: 'a disposed service must not publish to relays',
+        );
+      });
+
+      test('does not reschedule itself after dispose', () async {
+        // The resurrected timer re-enters syncPendingActions every
+        // resyncDelay. Once the AsyncScope is disposed the retry
+        // short-circuits before the executor, so the only visible trace of the
+        // loop is the DAO read at the top of each pass.
+        final countingDao = _CountingPendingActionsDao(database);
+        final service = PendingActionService(
+          connectionStatusService: mockConnectionService,
+          pendingActionsDao: countingDao,
+          userPubkey: testUserPubkey,
+          retryConfig: const PendingActionRetryConfig(
+            maxRetries: 3,
+            initialDelay: Duration(milliseconds: 200),
+            maxDelay: Duration(milliseconds: 400),
+            resyncDelay: Duration(milliseconds: 200),
+          ),
+        );
+        await service.initialize();
+        service.registerExecutor(
+          PendingActionType.like,
+          (_) async => throw Exception('connection refused'),
+        );
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event_dispose',
+          authorPubkey: 'author_dispose',
+        );
+
+        final escapedErrors = <Object>[];
+        await runZonedGuarded(
+          () async {
+            unawaited(service.syncPendingActions());
+            await Future<void>.delayed(const Duration(milliseconds: 80));
+            service.dispose();
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          },
+          (error, _) => escapedErrors.add(error),
+        );
+
+        final readsAtDispose = countingDao.getPendingActionsCalls;
+
+        // 2s is ~10 turns of the 200ms resync loop.
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        expect(
+          countingDao.getPendingActionsCalls,
+          readsAtDispose,
+          reason: 'the finally block must not resurrect the sync retry timer',
+        );
+        expect(
+          escapedErrors,
+          isEmpty,
+          reason: 'notifyListeners must not fire through a disposed notifier',
+        );
       });
     });
 
