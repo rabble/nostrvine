@@ -121,6 +121,7 @@ class LanguagePreferenceService {
     'nl': 'Dutch',
     'pl': 'Polish',
     'sv': 'Swedish',
+    'te': 'Telugu',
     'th': 'Thai',
     'vi': 'Vietnamese',
     'id': 'Indonesian',

@@ -100,6 +100,7 @@ class LocalePreferenceService {
     'pt': 'Português',
     'ro': 'Română',
     'sv': 'Svenska',
+    'te': 'తెలుగు',
     'tr': 'Türkçe',
     'ur': 'اردو',
     'vi': 'Tiếng Việt',

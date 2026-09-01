@@ -36,6 +36,10 @@ void main() {
       expect(appLocaleCodes, contains('ms'));
     });
 
+    test('includes Telugu in app-supported locales', () {
+      expect(appLocaleCodes, contains('te'));
+    });
+
     test('Android per-app language config includes all app locales', () {
       final androidConfig = File(
         'android/app/src/main/res/xml/locales_config.xml',

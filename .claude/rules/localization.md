@@ -61,7 +61,7 @@ Nothing in the ordinary toolchain notices:
 
 | Guard | Why it stays green on an orphan |
 |---|---|
-| `arb_consistency_test` | Proves a key exists in **every** locale. An orphan passes trivially, in all 22. |
+| `arb_consistency_test` | Proves a key exists in **every** locale. An orphan passes trivially, in all 23. |
 | `flutter gen-l10n` | Has no notion of an unused message; it emits the getter regardless. |
 | `flutter analyze` | Cannot report an unused public getter on a generated class. |
 

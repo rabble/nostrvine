@@ -231,6 +231,10 @@ void main() {
           equals('Bulgarian'),
         );
         expect(
+          LanguagePreferenceService.displayNameFor('te'),
+          equals('Telugu'),
+        );
+        expect(
           LanguagePreferenceService.displayNameFor('am'),
           equals('Amharic'),
         );

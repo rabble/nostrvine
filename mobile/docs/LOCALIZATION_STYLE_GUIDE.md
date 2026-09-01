@@ -1,8 +1,8 @@
 # Localization Style Guide
 
 Status: Current
-Validated against: `mobile/lib/l10n/app_*.arb` (21 non-English locales) and the
-l10n guards under `mobile/test/l10n/` on 2026-08-20.
+Validated against: `mobile/lib/l10n/app_*.arb` (22 non-English locales) and the
+l10n guards under `mobile/test/l10n/` on 2026-08-31.
 
 This is the source of truth for **what translated copy should sound like**:
 how to address the reader in each locale, which variety of a pluricentric
@@ -20,7 +20,7 @@ The English voice this guide extends is
 
 ## Why this exists
 
-Divine ships 22 locales — English plus 21 translations — from one app. Almost
+Divine ships 23 locales — English plus 22 translations — from one app. Almost
 nobody who reviews a translation PR reads the language it changes, so review
 defaults to "the ARB parity guard is green", which proves a key exists, not
 that it sounds like Divine.
@@ -122,6 +122,7 @@ How to *refer* to people, as opposed to addressing them, is
 | `pt` Portuguese | `você` | **split** | Brazilian always — that is where our Portuguese-reading users are, and there is no `pt-PT` to send anyone to. At least 16 keys carry European forms — `tu`-imperatives (`Verifica a tua ligação`), `utilizador`, and the chroma-key and people-lists screens; `userPickerConfirmSemanticLabel` says `utilizadores` beside `userPickerUnavailable`'s `usuários`, on one screen. Those are drift to fix, not a precedent. See [Variety and dialect](#variety-and-dialect). |
 | `ro` Romanian | `tu` | mostly consistent | `dumneavoastră` is absent, but Romanian politeness also lives in the verb: at least 7 keys use polite 2nd-person plural (`încercați`, `vă rugăm`), again clustered in the video editor. |
 | `sv` Swedish | `du` | consistent | Sweden is du-reformed; `ni` reads as archaic. |
+| `te` Telugu | Polite-neutral `మీరు`; prefer respectful plural verb forms | **first pass** | The initial complete locale is machine-assisted. #8473 tracks fluent-speaker linguistic and visual review and is the release-quality gate. |
 | `tr` Turkish | `sen` | **split** | Register lives in the suffix, not the pronoun. At least 26 keys use formal 2nd-person plural forms, clustered in the video editor, sound-sync, database-failure and auth copy. Direct collision for the same action: `publishErrorServerUnreachable` = `...tekrar dene`, `videoEditorSplitFailed` = `...tekrar deneyin`. |
 | `ur` Urdu | `آپ` | consistent | `آپ` is the neutral form. `تم` reads as brusque, not friendly. |
 | `vi` Vietnamese | `bạn` | consistent | |
@@ -672,7 +673,7 @@ neither is.
 **A partly-translated value passes every guard.** It has the key, the
 placeholders and the right script, so nothing fires.
 `collaboratorInviteDmBody` still ends in the English sentence
-`Open diVine to review and accept.` in 19 of the 21 non-English locales. The
+`Open diVine to review and accept.` in 19 of the 22 non-English locales. The
 translation pass is tracked in
 [#7905](https://github.com/divinevideo/divine-mobile/issues/7905).
 
