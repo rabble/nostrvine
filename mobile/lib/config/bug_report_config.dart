@@ -55,6 +55,62 @@ const _credentialValue =
     r"""|'(?:''|\\.|[^'\\\n])*'"""
     r'''|["']?(?:(?:bearer|basic|token)\s+)?[^\s"',;}]+)''';
 
+/// A filesystem path rooted at a user or app-sandbox directory.
+///
+/// The whole path is redacted, not one segment: the report already carries the
+/// platform in its device info, so the root marker (`/Users`, an iOS
+/// container, an Android data dir) adds no triage value worth a partial leak.
+/// The tail that gets consumed is where the PII lives, a desktop account name
+/// (`/Users/<name>`) and the user-chosen basename of an imported file, which
+/// `local_audio_import_service` preserves verbatim into the stored path and so
+/// into any `FileSystemException` about it.
+///
+/// Quote-specific rules run first and, when the path sits inside quotes (the
+/// dominant exception form,
+/// `path = '/Users/name/My Song.m4a'`), consume to the closing quote so a
+/// basename containing spaces or brackets is redacted whole. Redacting only the
+/// account name and leaving the filename beside a `[REDACTED]` marker would be
+/// the partial leak this file elsewhere calls worse than none.
+/// [_filesystemPathTail] then handles an unquoted path, stopping at the next
+/// whitespace or delimiter so it does not swallow the surrounding log line.
+///
+/// The lowercase `/home/` branch requires the account name to be followed by a
+/// further separator, so a real path (`/home/<name>/<file>`) matches while the
+/// terminal `/home/<index>` video-feed route (`RoutePaths.videoFeedForIndex`)
+/// does not; that separator is a correctness device, not a performance one.
+/// `/Users` (macOS/Windows) and `/Volumes` (external drives) collide with no
+/// route, so they need no such guard and also redact a bare `/Users/<name>`;
+/// the app-sandbox roots collide with no route either.
+///
+/// URLs, GoRouter routes, and `package:` / `dart:` references carry no account
+/// name and are triage-critical, so they are left intact - with one safe
+/// exception: the root is unanchored, so a URL whose *path* contains a covered
+/// segment (a capital `/Users/`, `/home/<seg>/`, `/Volumes/`, or a sandbox
+/// root) is over-redacted from that segment on. That is over-redaction, never a
+/// leak, and it does not touch Divine's own triage URLs - content-addressed
+/// media, host-only relay, and the terminal `/home/<index>` route all survive,
+/// and the match is case-sensitive so lowercase web routes like `/users/` are
+/// untouched. URL secrets (userinfo, `?token=`) are handled by the credential
+/// rules above and by `redactUriStringForLogs` at the structured log sites.
+///
+/// Linearity comes from the bounds: every segment is a single character class
+/// with a `{1,255}` or `{0,4000}` cap and no nested quantifier, so matching
+/// cannot backtrack superlinearly and one match cannot run past the bound on
+/// the UI thread. Known residuals, accepted like the credential rule's own: a
+/// basename containing whitespace (when unquoted), a path tail beyond 4000
+/// characters keeps its end, and purely internal roots (`/data/media`, `/mnt`,
+/// `/var/mobile/Media`) are not matched. The deanonymizing account name is
+/// redacted in every case.
+const _filesystemPathRoot =
+    r'''(?:[/\\]Users[/\\]'''
+    r'''|[/\\]home[/\\][^\s'",;)\]}/\\]{1,255}[/\\]'''
+    r'''|(?:/private)?/var/mobile/Containers/|/data/user/\d{1,4}/|/data/data/'''
+    r'''|/storage/emulated/\d{1,4}/|/Volumes/)''';
+
+/// Tail for an unquoted path: stops at the first whitespace or delimiter so it
+/// does not consume the surrounding log line.
+const _filesystemPathTail = r'''[^\s'",;)\]}]{0,4000}''';
+
 /// Configuration for bug report system
 class BugReportConfig {
   /// Maximum log entries to include in bug report
@@ -172,6 +228,21 @@ class BugReportConfig {
       r'\b[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
       caseSensitive: false,
     ),
+    // Filesystem paths rooted at a user or app-sandbox directory. See
+    // [_filesystemPathRoot]. Quote-specific rules run first so a quoted path
+    // with a spaced basename is redacted whole before the unquoted rule can
+    // stop at the space and strand the filename beside the marker. Requiring
+    // the matching closing quote keeps malformed input from consuming the rest
+    // of its diagnostic line.
+    RegExp(
+      "(?<=')$_filesystemPathRoot"
+      r"[^'\n]{0,4000}(?=')",
+    ),
+    RegExp(
+      '(?<=")$_filesystemPathRoot'
+      r'[^"\n]{0,4000}(?=")',
+    ),
+    RegExp('$_filesystemPathRoot$_filesystemPathTail'),
   ];
 
   /// Log levels to include in bug reports (all by default)
