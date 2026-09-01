@@ -922,29 +922,35 @@ class _EmptyListMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The design's empty-state component: title/medium over body/medium,
+    // both on on-surface-muted, centered with 48px side margins and an 8px
+    // gap. The icon and copy stay ours; the component's button is omitted.
+    final muted = context.vineColors.onSurfaceMuted;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        spacing: 8,
-        children: [
-          DivineIcon(
-            icon: DivineIconName.filmSlate,
-            size: 64,
-            color: context.vineColors.secondaryText,
-          ),
-          Text(
-            context.l10n.curatedListEmptyTitle,
-            style: VineTheme.titleMediumFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-          Text(
-            context.l10n.curatedListEmptySubtitle,
-            style: VineTheme.bodyMediumFont(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 8,
+          children: [
+            DivineIcon(
+              icon: DivineIconName.filmSlate,
+              size: 64,
               color: context.vineColors.secondaryText,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.curatedListEmptyTitle,
+              style: VineTheme.titleMediumFont(color: muted),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              context.l10n.curatedListEmptySubtitle,
+              style: VineTheme.bodyMediumFont(color: muted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
