@@ -556,9 +556,9 @@ void main() {
           userPubkey: testUserPubkey,
           retryConfig: const PendingActionRetryConfig(
             maxRetries: 3,
-            initialDelay: Duration(milliseconds: 200),
-            maxDelay: Duration(milliseconds: 400),
-            resyncDelay: Duration(milliseconds: 200),
+            initialDelay: Duration(milliseconds: 20),
+            maxDelay: Duration(milliseconds: 40),
+            resyncDelay: Duration(milliseconds: 20),
           ),
         );
         await disposableService.initialize();
@@ -574,24 +574,27 @@ void main() {
         var executorCalls = 0;
         var disposed = false;
         var callsAfterDispose = 0;
+        final firstExecutorCall = Completer<void>();
 
         await setUpDisposableService(
           executor: (_) async {
             executorCalls++;
+            if (!firstExecutorCall.isCompleted) firstExecutorCall.complete();
             if (disposed) callsAfterDispose++;
             throw Exception('connection refused');
           },
         );
 
         unawaited(disposableService.syncPendingActions());
-        await Future<void>.delayed(const Duration(milliseconds: 80));
+        await firstExecutorCall.future.timeout(const Duration(seconds: 2));
         expect(executorCalls, 1, reason: 'first attempt ran before dispose');
 
         disposableService.dispose();
         disposed = true;
 
-        // Long enough for the whole 200/400/400ms ladder to have fired.
-        await Future<void>.delayed(const Duration(seconds: 2));
+        // Long enough for the whole retry ladder to have fired if cancellation
+        // regresses; the executor signal above, not this window, gates dispose.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
 
         expect(
           callsAfterDispose,
@@ -606,21 +609,25 @@ void main() {
         // short-circuits before the executor, so the only visible trace of the
         // loop is the DAO read at the top of each pass.
         final countingDao = _CountingPendingActionsDao(database);
+        final firstExecutorCall = Completer<void>();
         final service = PendingActionService(
           connectionStatusService: mockConnectionService,
           pendingActionsDao: countingDao,
           userPubkey: testUserPubkey,
           retryConfig: const PendingActionRetryConfig(
             maxRetries: 3,
-            initialDelay: Duration(milliseconds: 200),
-            maxDelay: Duration(milliseconds: 400),
-            resyncDelay: Duration(milliseconds: 200),
+            initialDelay: Duration(milliseconds: 20),
+            maxDelay: Duration(milliseconds: 40),
+            resyncDelay: Duration(milliseconds: 20),
           ),
         );
         await service.initialize();
         service.registerExecutor(
           PendingActionType.like,
-          (_) async => throw Exception('connection refused'),
+          (_) async {
+            if (!firstExecutorCall.isCompleted) firstExecutorCall.complete();
+            throw Exception('connection refused');
+          },
         );
         await service.queueAction(
           type: PendingActionType.like,
@@ -632,17 +639,17 @@ void main() {
         await runZonedGuarded(
           () async {
             unawaited(service.syncPendingActions());
-            await Future<void>.delayed(const Duration(milliseconds: 80));
+            await firstExecutorCall.future.timeout(const Duration(seconds: 2));
             service.dispose();
-            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 30));
           },
           (error, _) => escapedErrors.add(error),
         );
 
         final readsAtDispose = countingDao.getPendingActionsCalls;
 
-        // 2s is ~10 turns of the 200ms resync loop.
-        await Future<void>.delayed(const Duration(seconds: 2));
+        // 100ms is five turns of the 20ms resync loop if it is resurrected.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(
           countingDao.getPendingActionsCalls,

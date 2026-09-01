@@ -85,6 +85,36 @@ void wait() {
         expect(sites, hasLength(1));
         expect(sites.single.line, 2);
       });
+
+      test('flags a named callback that completes a completer', () {
+        final sites = scan('''
+Future<void> wait(Duration delay) {
+  final completer = Completer<void>();
+  void completeWait() => completer.complete();
+  Timer(delay, completeWait);
+  return completer.future;
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 4);
+      });
+
+      test('flags a closure that settles through a same-file helper', () {
+        final sites = scan('''
+Future<void> wait(Duration delay) {
+  final completer = Completer<void>();
+  void tryComplete() => completer.complete();
+  Timer(delay, () {
+    if (!completer.isCompleted) tryComplete();
+  });
+  return completer.future;
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 4);
+      });
     });
 
     group('not counted', () {
@@ -197,6 +227,42 @@ Future<void> rateLimit() async {
 
         expect(sites.map((s) => s.line), [6, 13]);
       });
+    });
+  });
+
+  group('shouldScanUncancellableTimerWaitFile', () {
+    test('includes app and package production libraries', () {
+      expect(
+        shouldScanUncancellableTimerWaitFile('lib/services/example.dart'),
+        isTrue,
+      );
+      expect(
+        shouldScanUncancellableTimerWaitFile(
+          'packages/nostr_sdk/lib/relay/example.dart',
+        ),
+        isTrue,
+      );
+    });
+
+    test('excludes package tests and integration tests', () {
+      expect(
+        shouldScanUncancellableTimerWaitFile(
+          'packages/nostr_sdk/test/relay/example_test.dart',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldScanUncancellableTimerWaitFile(
+          'packages/nostr_sdk/integration_test/example_test.dart',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldScanUncancellableTimerWaitFile(
+          'packages/nostr_sdk/tool/generate_fixture.dart',
+        ),
+        isFalse,
+      );
     });
   });
 }

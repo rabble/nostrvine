@@ -2975,9 +2975,11 @@ class RelayPool {
     final timeoutDuration = timeout ?? const Duration(seconds: 5);
     final completer = Completer<List<Event>>();
     String? subscriptionId;
+    Timer? timeoutTimer;
 
     void completeSearch() {
       if (completer.isCompleted) return;
+      timeoutTimer?.cancel();
       if (subscriptionId != null) {
         unsubscribe(subscriptionId);
       }
@@ -2996,7 +2998,9 @@ class RelayPool {
     );
 
     // Timeout fallback in case not all relays send EOSE
-    Timer(timeoutDuration, completeSearch);
+    if (!completer.isCompleted) {
+      timeoutTimer = Timer(timeoutDuration, completeSearch);
+    }
 
     return completer.future;
   }

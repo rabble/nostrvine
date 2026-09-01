@@ -172,8 +172,8 @@ class AsyncScope {
       settle(() => completer.complete(false));
     });
 
-    // Check once before arming the poll, so an already-true condition costs no
-    // timer at all.
+    // Check once before arming the poll, so an already-true condition avoids
+    // the periodic timer and immediately cancels the timeout timer above.
     checkCondition();
     if (!completer.isCompleted) {
       checkTimer = Timer.periodic(checkInterval, (_) => checkCondition());

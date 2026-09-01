@@ -71,9 +71,11 @@ class ImmediateCompletionHelper {
     final receivedItemIds = <String>{};
     late StreamSubscription<Event> subscription;
     final completer = Completer<void>();
+    Timer? fallbackTimer;
 
     void tryComplete({required bool isEarly}) {
       if (completer.isCompleted) return;
+      fallbackTimer?.cancel();
 
       final result = CompletionResult(
         items: List.unmodifiable(receivedItems),
@@ -140,6 +142,7 @@ class ImmediateCompletionHelper {
         );
         onError?.call(error);
         if (!completer.isCompleted) {
+          fallbackTimer?.cancel();
           subscription.cancel();
           completer.complete();
         }
@@ -156,16 +159,21 @@ class ImmediateCompletionHelper {
     );
 
     // Fallback timeout for extreme edge cases
-    Timer(Duration(seconds: config.fallbackTimeoutSeconds), () {
-      if (!completer.isCompleted) {
-        Log.debug(
-          '⏰ Fallback timeout reached (${config.fallbackTimeoutSeconds}s)',
-          name: config.serviceName,
-          category: config.logCategory,
-        );
-        tryComplete(isEarly: false);
-      }
-    });
+    if (!completer.isCompleted) {
+      fallbackTimer = Timer(
+        Duration(seconds: config.fallbackTimeoutSeconds),
+        () {
+          if (!completer.isCompleted) {
+            Log.debug(
+              '⏰ Fallback timeout reached (${config.fallbackTimeoutSeconds}s)',
+              name: config.serviceName,
+              category: config.logCategory,
+            );
+            tryComplete(isEarly: false);
+          }
+        },
+      );
+    }
 
     return subscription;
   }

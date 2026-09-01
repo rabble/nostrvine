@@ -128,6 +128,10 @@ Composition and style:
   [`code_style.md`](code_style.md).
 - [ ] No `Future.delayed()` for UI timing. Use `AnimatedSwitcher`,
   animation controllers, stream listeners.
+- [ ] No discarded `Timer` settles a `Completer`, including through a named
+  same-file callback. Hold and cancel the timer or use lifecycle-owned
+  `AsyncScope`; `check_uncancellable_timer_wait.sh` freezes production sites at
+  zero (#8457).
 - [ ] Build methods stay small — a high-level composition of widget
   classes.
 - [ ] Check `context.mounted` after every `await` before using

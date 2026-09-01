@@ -66,6 +66,29 @@ import 'package:analyzer/source/line_info.dart';
 /// Members of `Completer` that settle it, and therefore release an awaiter.
 const _completerSettlers = {'complete', 'completeError'};
 
+/// Whether [path] belongs to a production library scanned by this ratchet.
+///
+/// The command receives the broad `lib` and `packages` roots, so this predicate
+/// is the boundary that keeps package tests and integration tests out of the
+/// production-only zero floor.
+bool shouldScanUncancellableTimerWaitFile(String path) {
+  final normalized = path.replaceAll(r'\', '/');
+  final segments = normalized
+      .split('/')
+      .where((segment) => segment.isNotEmpty)
+      .toList();
+  if (segments.contains('test') || segments.contains('integration_test')) {
+    return false;
+  }
+  final packagesIndex = segments.indexOf('packages');
+  if (packagesIndex >= 0 &&
+      (segments.length <= packagesIndex + 2 ||
+          segments[packagesIndex + 2] != 'lib')) {
+    return false;
+  }
+  return normalized.endsWith('.dart') && !_isGenerated(normalized);
+}
+
 /// Generated files carry no hand-written waits and are never edited by hand.
 bool _isGenerated(String path) =>
     path.endsWith('.g.dart') ||
@@ -110,15 +133,16 @@ List<UncancellableTimerWait> findUncancellableTimerWaitsInSource(
   } on Object {
     return const [];
   }
-  final visitor = _Visitor(parsed.lineInfo);
+  final visitor = _Visitor(parsed.lineInfo, _SameFileFunctions(parsed.unit));
   parsed.unit.accept(visitor);
   return visitor.sites;
 }
 
 class _Visitor extends RecursiveAstVisitor<void> {
-  _Visitor(this._lineInfo);
+  _Visitor(this._lineInfo, this._functions);
 
   final LineInfo _lineInfo;
+  final _SameFileFunctions _functions;
   final List<UncancellableTimerWait> sites = [];
 
   @override
@@ -179,8 +203,17 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
       // Closure: `() => completer.complete()` / `(_) { completer.complete(); }`
       if (expression is FunctionExpression) {
-        final finder = _SettlerFinder();
+        final finder = _SettlerFinder(_functions);
         expression.body.accept(finder);
+        if (finder.found) return true;
+      }
+
+      // Same-file callback: `Timer(delay, completeSearch)`. Following the
+      // declaration is essential because named callbacks are the natural form
+      // when a timeout shares its completion path with EOSE or another signal.
+      if (expression is SimpleIdentifier) {
+        final finder = _SettlerFinder(_functions);
+        finder.follow(expression.name, expression);
         if (finder.found) return true;
       }
     }
@@ -190,7 +223,19 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
 /// Finds a `…complete(…)` / `…completeError(…)` call inside a callback body.
 class _SettlerFinder extends RecursiveAstVisitor<void> {
+  _SettlerFinder(this._functions, [Set<FunctionBody>? activeHelpers])
+    : _activeHelpers = activeHelpers ?? <FunctionBody>{};
+
+  final _SameFileFunctions _functions;
+  final Set<FunctionBody> _activeHelpers;
   bool found = false;
+
+  void follow(String name, AstNode callSite) {
+    final helper = _functions.resolve(name, callSite);
+    if (helper == null || !_activeHelpers.add(helper.body)) return;
+    helper.body.accept(this);
+    _activeHelpers.remove(helper.body);
+  }
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
@@ -198,7 +243,82 @@ class _SettlerFinder extends RecursiveAstVisitor<void> {
         _completerSettlers.contains(node.methodName.name)) {
       found = true;
     }
+    if (!found && node.target == null) follow(node.methodName.name, node);
     super.visitMethodInvocation(node);
+  }
+}
+
+/// Directly callable top-level and lexically-visible local functions.
+class _SameFileFunctions {
+  _SameFileFunctions(CompilationUnit unit) {
+    unit.accept(_FunctionDeclarationCollector(_byName));
+  }
+
+  final _byName = <String, List<_FunctionBody>>{};
+
+  _FunctionBody? resolve(String name, AstNode callSite) {
+    final candidates = _byName[name];
+    if (candidates == null) return null;
+    final visible = candidates.where((candidate) {
+      final scope = candidate.scope;
+      return scope == null || _isAncestorOf(scope, callSite);
+    }).toList();
+    if (visible.isEmpty) return null;
+    visible.sort(
+      (a, b) => _ancestorDepth(b.scope).compareTo(_ancestorDepth(a.scope)),
+    );
+    return visible.first;
+  }
+
+  static bool _isAncestorOf(AstNode ancestor, AstNode node) {
+    for (AstNode? current = node; current != null; current = current.parent) {
+      if (identical(current, ancestor)) return true;
+    }
+    return false;
+  }
+
+  static int _ancestorDepth(AstNode? node) {
+    var depth = 0;
+    for (var current = node; current != null; current = current.parent) {
+      depth++;
+    }
+    return depth;
+  }
+}
+
+class _FunctionBody {
+  const _FunctionBody(this.body, this.scope);
+
+  final FunctionBody body;
+  final AstNode? scope;
+}
+
+class _FunctionDeclarationCollector extends RecursiveAstVisitor<void> {
+  _FunctionDeclarationCollector(this.byName);
+
+  final Map<String, List<_FunctionBody>> byName;
+
+  void _add(String name, FunctionBody body, AstNode? scope) {
+    byName.putIfAbsent(name, () => []).add(_FunctionBody(body, scope));
+  }
+
+  @override
+  void visitFunctionDeclaration(FunctionDeclaration node) {
+    if (node.parent is CompilationUnit) {
+      _add(node.name.lexeme, node.functionExpression.body, null);
+    }
+    super.visitFunctionDeclaration(node);
+  }
+
+  @override
+  void visitFunctionDeclarationStatement(FunctionDeclarationStatement node) {
+    final declaration = node.functionDeclaration;
+    _add(
+      declaration.name.lexeme,
+      declaration.functionExpression.body,
+      node.parent,
+    );
+    super.visitFunctionDeclarationStatement(node);
   }
 }
 
@@ -237,7 +357,7 @@ void main(List<String> args) {
         directory
             .listSync(recursive: true, followLinks: false)
             .whereType<File>()
-            .where((f) => f.path.endsWith('.dart') && !_isGenerated(f.path))
+            .where((f) => shouldScanUncancellableTimerWaitFile(f.path))
             .toList()
           ..sort((a, b) => a.path.compareTo(b.path));
 
