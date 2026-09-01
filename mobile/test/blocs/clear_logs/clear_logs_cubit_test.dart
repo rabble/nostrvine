@@ -59,6 +59,24 @@ void main() {
         ],
       );
 
+      blocTest<ClearLogsCubit, ClearLogsState>(
+        'ignores a second clear while one is in flight',
+        setUp: () => when(
+          () => bugReportService.clearCapturedLogs(),
+        ).thenAnswer((_) => Completer<void>().future),
+        build: build,
+        act: (cubit) {
+          unawaited(cubit.clear());
+          unawaited(cubit.clear());
+        },
+        expect: () => const [
+          ClearLogsState(status: ClearLogsStatus.clearing),
+        ],
+        verify: (_) {
+          verify(() => bugReportService.clearCapturedLogs()).called(1);
+        },
+      );
+
       // close() does not cancel an in-flight clear; the resumed emit would
       // throw without the guard (#7370).
       test('drops the outcome when closed mid-clear', () async {

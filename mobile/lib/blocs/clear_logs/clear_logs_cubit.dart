@@ -19,8 +19,10 @@ class ClearLogsCubit extends Cubit<ClearLogsState>
   /// Empties the in-memory log capture buffer.
   ///
   /// Emits [ClearLogsStatus.clearing] then [ClearLogsStatus.cleared] so a
-  /// repeat clear still produces a transition the UI can react to.
+  /// repeat clear still produces a transition the UI can react to. A second
+  /// call while one is in flight is ignored, mirroring the export cubit.
   Future<void> clear() async {
+    if (state.status == ClearLogsStatus.clearing) return;
     emitIfOpen(const ClearLogsState(status: ClearLogsStatus.clearing));
     await _bugReportService.clearCapturedLogs();
     emitIfOpen(const ClearLogsState(status: ClearLogsStatus.cleared));

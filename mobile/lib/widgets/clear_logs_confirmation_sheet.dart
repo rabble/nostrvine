@@ -19,6 +19,7 @@ Future<bool?> showClearLogsConfirmation(BuildContext context) {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Row(
+          spacing: 16,
           children: [
             Expanded(
               child: DivineButton(
@@ -27,7 +28,6 @@ Future<bool?> showClearLogsConfirmation(BuildContext context) {
                 onPressed: () => Navigator.of(context).pop(false),
               ),
             ),
-            const SizedBox(width: 16),
             Expanded(
               child: DivineButton(
                 label: l10n.supportClearLogsConfirmButton,
