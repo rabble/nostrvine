@@ -78,6 +78,7 @@ void main() {
       List<Override> extraOverrides = const [],
       bool overrideVideoEvents = true,
       List<VideoEvent> videoEvents = const [],
+      CuratedList? discoveredList,
     }) {
       final list = CuratedList(
         id: listId,
@@ -94,6 +95,7 @@ void main() {
         listName: listName,
         videoIds: videoIds,
         authorPubkey: authorPubkey,
+        discoveredList: discoveredList,
       );
 
       final app = ProviderScope(
@@ -321,6 +323,81 @@ void main() {
 
         expect(find.text(l10n.listFollowingButton), findsOneWidget);
         expect(find.text(l10n.listFollowButton), findsNothing);
+      });
+
+      testWidgets(
+        'shows share and description for a deep-linked discovered list',
+        (tester) async {
+          // The local store has never seen the list; only the relay-resolved
+          // record carries its shareability and description (#8453 review).
+          final discovered = CuratedList(
+            id: 'external-list',
+            name: 'External List',
+            pubkey: 'external-pubkey',
+            description: 'From the relay.',
+            videoEventIds: const [],
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          );
+
+          await tester.pumpWidget(buildSubject(discoveredList: discovered));
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byTooltip(l10n.listShareAction), findsOneWidget);
+          expect(find.text('From the relay.'), findsOneWidget);
+        },
+      );
+
+      testWidgets('keeps share hidden when the discovered list is private', (
+        tester,
+      ) async {
+        final discovered = CuratedList(
+          id: 'external-list',
+          name: 'External List',
+          pubkey: 'external-pubkey',
+          isPublic: false,
+          videoEventIds: const [],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
+
+        await tester.pumpWidget(buildSubject(discoveredList: discovered));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byTooltip(l10n.listShareAction), findsNothing);
+      });
+
+      testWidgets('subscribing caches the relay-resolved list', (
+        tester,
+      ) async {
+        isSubscribed = false;
+        final discovered = CuratedList(
+          id: 'external-list',
+          name: 'External List',
+          pubkey: 'external-pubkey',
+          description: 'From the relay.',
+          videoEventIds: const [],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
+        when(
+          () => mockService.subscribeToList('external-list', discovered),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(buildSubject(discoveredList: discovered));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.listFollowButton));
+        await tester.pumpAndSettle();
+
+        // The full record, not the lossy synthetic fallback, is what the
+        // cache serves from then on.
+        verify(
+          () => mockService.subscribeToList('external-list', discovered),
+        ).called(1);
       });
 
       testWidgets('hides the share action for a private or unknown list', (

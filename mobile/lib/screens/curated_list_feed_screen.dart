@@ -51,6 +51,7 @@ class CuratedListFeedScreen extends ConsumerStatefulWidget {
     required this.listName,
     this.videoIds,
     this.authorPubkey,
+    this.discoveredList,
     super.key,
   });
 
@@ -62,6 +63,14 @@ class CuratedListFeedScreen extends ConsumerStatefulWidget {
 
   /// Optional author pubkey to display who created the list
   final String? authorPubkey;
+
+  /// The relay-resolved list for a deep link the local store doesn't hold.
+  ///
+  /// Share and the hero's description/visibility read the list record, and
+  /// without this they would stay hidden until a Follow caches it — which
+  /// breaks re-sharing the share URL itself. Local storage still wins when
+  /// the list is there.
+  final CuratedList? discoveredList;
 
   @override
   ConsumerState<CuratedListFeedScreen> createState() =>
@@ -111,7 +120,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           data: (_) => service?.isSubscribedToList(widget.listId),
         ) ??
         false;
-    final list = _localList();
+    final list = _localList() ?? widget.discoveredList;
     final isShareable = (list?.isPublic ?? false) && list?.pubkey != null;
 
     final PreferredSizeWidget? appBar;
@@ -458,7 +467,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
   }
 
   Future<void> _shareList() async {
-    final list = _localList();
+    final list = _localList() ?? widget.discoveredList;
     final authorPubkey = list?.pubkey;
     if (list == null || !list.isPublic || authorPubkey == null) return;
 
@@ -587,8 +596,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           category: LogCategory.ui,
         );
       } else {
+        // Prefer the relay-resolved record: the synthetic fallback has no
+        // description or image, and whatever subscribes here is what the
+        // cache serves from then on.
         final list =
             service.getListById(widget.listId) ??
+            widget.discoveredList ??
             CuratedList(
               id: widget.listId,
               name: widget.listName,
