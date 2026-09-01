@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
@@ -426,8 +427,11 @@ void main() {
         goRouterProvider.overrideWithValue(router),
         authServiceProvider.overrideWithValue(auth),
       ],
-      childBuilder: (container) =>
-          MaterialApp.router(routerConfig: container.read(goRouterProvider)),
+      childBuilder: (container) => MaterialApp.router(
+        routerConfig: container.read(goRouterProvider),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     );
 
     String? seeded;
@@ -466,110 +470,114 @@ void main() {
     );
   });
 
-  testWidgets('deregisters outgoing push after target swap succeeds', (
-    tester,
-  ) async {
-    ProviderContainer? signedInto;
-    final events = <String>[];
-    final cleanupCompleter = Completer<void>();
-    final pushCoordinator = _MockPushNotificationSessionCoordinator();
-    when(
-      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
-    ).thenAnswer((
-      _,
+  group('push lifecycle', () {
+    testWidgets('deregisters outgoing push after target swap succeeds', (
+      tester,
     ) async {
-      expect(controller.currentContainer, same(signedInto));
-      events.add('deregister outgoing');
-      await cleanupCompleter.future;
-    });
-    overridePushSync(pushCoordinator);
-    final initial = await pumpHost(tester);
-    initial.read(pushNotificationSyncProvider);
-
-    await swapAccount(
-      deviceScope: deviceScope,
-      controller: controller,
-      currentAuthService: currentAuthService,
-      account: account,
-      signIn: (container, acct) async {
-        signedInto = container;
-        events.add('sign in target');
-        expect(acct, equals(account));
-      },
-    );
-    await tester.pump();
-
-    // Signed into a freshly-built container, not the initial one.
-    expect(signedInto, isNotNull);
-    expect(signedInto, isNot(same(initial)));
-    // The target is live, but the old container still owns the signer needed by
-    // the outgoing cleanup and cannot be disposed until that work settles.
-    expect(_isDisposed(signedInto!), isFalse);
-    expect(_isDisposed(initial), isFalse);
-    expect(events, ['sign in target', 'deregister outgoing']);
-
-    cleanupCompleter.complete();
-    await tester.pump();
-
-    expect(_isDisposed(initial), isTrue);
-  });
-
-  testWidgets(
-    'activates incoming push sync when switching from a top-level route',
-    (tester) async {
-      var pushSyncActivations = 0;
-      final incomingPushCoordinator = _MockPushNotificationSessionCoordinator();
-      deviceScope = DeviceScope(
-        database: database,
-        sharedPreferences: deviceScope.sharedPreferences,
-        switchController: controller,
-        appVersion: 'test',
-        documentsPath: '/documents',
-        accountOverrides: [
-          secureKeyStorageProvider.overrideWithValue(keyStorage),
-          pushNotificationSyncProvider.overrideWith((ref) {
-            pushSyncActivations += 1;
-            return incomingPushCoordinator;
-          }),
-        ],
-      );
-      final currentAuth = _MockAuthService();
-      when(() => currentAuth.currentPublicKeyHex).thenReturn(leavingHex);
-      final router = GoRouter(
-        initialLocation: '/settings',
-        routes: [
-          GoRoute(path: '/settings', builder: (_, _) => const SizedBox()),
-        ],
-      );
-      addTearDown(router.dispose);
-
-      await pumpHost(
-        tester,
-        accountOverrides: [
-          goRouterProvider.overrideWithValue(router),
-          authServiceProvider.overrideWithValue(currentAuth),
-        ],
-        childBuilder: (container) =>
-            MaterialApp.router(routerConfig: container.read(goRouterProvider)),
-      );
-      expect(pushSyncActivations, isZero);
+      ProviderContainer? signedInto;
+      final events = <String>[];
+      final cleanupCompleter = Completer<void>();
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((
+        _,
+      ) async {
+        expect(controller.currentContainer, same(signedInto));
+        events.add('deregister outgoing');
+        await cleanupCompleter.future;
+      });
+      overridePushSync(pushCoordinator);
+      final initial = await pumpHost(tester);
+      initial.read(pushNotificationSyncProvider);
 
       await swapAccount(
         deviceScope: deviceScope,
         controller: controller,
         currentAuthService: currentAuthService,
         account: account,
-        signIn: (_, _) async {},
+        signIn: (container, acct) async {
+          signedInto = container;
+          events.add('sign in target');
+          expect(acct, equals(account));
+        },
       );
       await tester.pump();
 
-      expect(pushSyncActivations, 1);
-      expect(
-        controller.currentContainer!.read(pushNotificationSyncProvider),
-        same(incomingPushCoordinator),
-      );
-    },
-  );
+      // Signed into a freshly-built container, not the initial one.
+      expect(signedInto, isNotNull);
+      expect(signedInto, isNot(same(initial)));
+      // The target is live, but the old container still owns the signer needed by
+      // the outgoing cleanup and cannot be disposed until that work settles.
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isFalse);
+      expect(events, ['sign in target', 'deregister outgoing']);
+
+      cleanupCompleter.complete();
+      await tester.pump();
+
+      expect(_isDisposed(initial), isTrue);
+    });
+
+    testWidgets(
+      'activates incoming push sync when switching from a top-level route',
+      (tester) async {
+        var pushSyncActivations = 0;
+        final incomingPushCoordinator =
+            _MockPushNotificationSessionCoordinator();
+        deviceScope = DeviceScope(
+          database: database,
+          sharedPreferences: deviceScope.sharedPreferences,
+          switchController: controller,
+          appVersion: 'test',
+          documentsPath: '/documents',
+          accountOverrides: [
+            secureKeyStorageProvider.overrideWithValue(keyStorage),
+            pushNotificationSyncProvider.overrideWith((ref) {
+              pushSyncActivations += 1;
+              return incomingPushCoordinator;
+            }),
+          ],
+        );
+        final currentAuth = _MockAuthService();
+        when(() => currentAuth.currentPublicKeyHex).thenReturn(leavingHex);
+        final router = GoRouter(
+          initialLocation: '/settings',
+          routes: [
+            GoRoute(path: '/settings', builder: (_, _) => const SizedBox()),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await pumpHost(
+          tester,
+          accountOverrides: [
+            goRouterProvider.overrideWithValue(router),
+            authServiceProvider.overrideWithValue(currentAuth),
+          ],
+          childBuilder: (container) => MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        );
+        expect(pushSyncActivations, isZero);
+
+        await swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async {},
+        );
+        await tester.pump();
+
+        expect(pushSyncActivations, 1);
+        expect(
+          controller.currentContainer!.read(pushNotificationSyncProvider),
+          same(incomingPushCoordinator),
+        );
+      },
+    );
+  });
 
   group('account swap failure boundaries', () {
     testWidgets('keeps the target account live when push cleanup fails', (
