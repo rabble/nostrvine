@@ -220,6 +220,58 @@ class _InMemoryRemovedConversationsDao extends Mock
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+/// Serves a stored event set through a subscription the way a relay does:
+/// only the events the REQ's `since:` / `until:` admit ever reach the stream.
+///
+/// Every other `subscribe` stub in this file hands the test a bare
+/// `StreamController` and lets it push whatever it likes, so none of them can
+/// express "the relay declined to return this event". That is the whole
+/// subject of #8439: the loss is invisible because the relay answers
+/// normally and simply omits the wrap — no error, no `CLOSED`, no short page.
+///
+/// The bounds are NIP-01's, inclusive on both ends ("an event matches a
+/// filter if `since <= created_at <= until` holds"). Measured against
+/// funnelcake on a real kind-1059 before this was written: `since ==
+/// created_at` returns the event and `since == created_at + 1` returns
+/// nothing.
+class _SinceEnforcingRelay {
+  _SinceEnforcingRelay(this.stored);
+
+  /// Everything the relay holds, whatever any filter says.
+  final List<Event> stored;
+
+  /// Filters of the most recent REQ, in the order the repository sent them.
+  List<nostr_filter.Filter>? lastFilters;
+
+  /// The events the relay actually served — i.e. those a filter admitted.
+  final List<Event> served = <Event>[];
+
+  final StreamController<Event> _controller = StreamController<Event>();
+
+  Stream<Event> subscribe(List<nostr_filter.Filter> filters) {
+    lastFilters = filters;
+    for (final event in stored) {
+      if (filters.any((filter) => _admits(filter, event))) {
+        served.add(event);
+        _controller.add(event);
+      }
+    }
+    return _controller.stream;
+  }
+
+  Future<void> close() => _controller.close();
+
+  static bool _admits(nostr_filter.Filter filter, Event event) {
+    final since = filter.since;
+    if (since != null && event.createdAt < since) return false;
+    final until = filter.until;
+    if (until != null && event.createdAt > until) return false;
+    final kinds = filter.kinds;
+    if (kinds != null && !kinds.contains(event.kind)) return false;
+    return true;
+  }
+}
+
 /// Shapes a `queryEventsDetailed` answer to a kind-10050 lookup that the relays
 /// actually gave: an empty [events] is genuine absence, which is the only thing
 /// the RC3 publisher may act on (#8212).
@@ -4253,6 +4305,92 @@ void main() {
 
           await repository.stopListening();
           await controller.close();
+        },
+      );
+
+      test(
+        'a wrap the relay holds below the window is never served, while a '
+        'newer one on the same relay is (#8439)',
+        () async {
+          // Both wraps sit on the SAME relay and arrive through the SAME REQ.
+          // The only thing separating them is which side of `since:` their
+          // OUTER stamp falls on, so any handling that reached one would have
+          // reached the other. That is what makes the control load-bearing:
+          // it rules out "the relay was never read", which is the obvious
+          // rival explanation and the one an assertion on the victim alone
+          // cannot exclude.
+          //
+          // Scope: this pins the window and what the relay does with it. The
+          // receive pipeline downstream has its own tests, and
+          // `recordWireSeen`'s monotonicity is pinned in dm_sync_state_test —
+          // together they are what make the loss permanent rather than merely
+          // late.
+          const wireNewest = 1700000000;
+          const since = wireNewest - 2 * 86400;
+          // Published earlier than our newest processed wrap and delivered
+          // late. #8361's invariant does not reach it: that argument binds
+          // only wraps published at or after `wireNewest`, because it needs
+          // `outer >= P - 2d` together with `W <= P`.
+          const victimOuter = since - 1;
+          const controlOuter = wireNewest - 3600;
+
+          Event wrapAt(int createdAt, String id) => Event.fromJson({
+            'id': id,
+            'pubkey': _validPubkeyC,
+            'created_at': createdAt,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'encrypted-content',
+            'sig': '',
+          });
+
+          final victim = wrapAt(victimOuter, _giftWrapEventId);
+          final control = wrapAt(controlOuter, _giftWrapEventId2);
+          final relay = _SinceEnforcingRelay([victim, control]);
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer(
+            (invocation) => relay.subscribe(
+              invocation.positionalArguments.first as List<nostr_filter.Filter>,
+            ),
+          );
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+
+          final syncState = _FakeDmSyncState()
+            ..newestOverride = wireNewest
+            ..newestWireOverride = wireNewest;
+          final repository = createRepository(
+            // Undecryptable on purpose: this test is about which events the
+            // relay hands over, not what the pipeline then does with them.
+            rumorDecryptor: (_, _) async => null,
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          await Future<void>.delayed(Duration.zero);
+
+          expect(relay.lastFilters!.single.since, since);
+          // The relay answered normally and simply omitted the older wrap —
+          // no error, no `CLOSED`, no short page. That silence is why the
+          // loss cannot be noticed from the client without a separate probe.
+          expect(
+            relay.served.map((event) => event.id),
+            [control.id],
+            reason:
+                'the victim wrap is below since:, so the relay never serves '
+                'it and nothing downstream can know it exists',
+          );
+
+          await repository.stopListening();
+          await relay.close();
         },
       );
     });
