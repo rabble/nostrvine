@@ -19,7 +19,6 @@ test/helpers/scroll_test.dart	1
 test/mixins/codec_heavy_surface_guard_test.dart	1
 test/mixins/scroll_pagination_mixin_test.dart	1
 test/notifications/widgets/notification_leading_type_icon_test.dart	1
-test/providers/swap_account_test.dart	1
 test/providers/video_publish_provider_test.dart	3
 test/router/app_router_divine_scheme_gating_test.dart	1
 test/router/app_router_test.dart	1

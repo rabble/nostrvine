@@ -250,7 +250,16 @@ Future<void> swapAccount({
       // /settings, where AppShellSideEffects is not mounted. Activate the
       // keep-alive coordinator after commit so the incoming account registers
       // without making a failed switch take ownership of the device token.
-      container.read(pushNotificationSyncProvider);
+      try {
+        container.read(pushNotificationSyncProvider);
+      } catch (error) {
+        // The target container is already mounted, so push startup is
+        // best-effort and cannot roll the account switch back.
+        Log.warning(
+          'Incoming account push registration failed: $error',
+          name: 'swapAccount',
+        );
+      }
       try {
         await container
             .read(authServiceProvider)

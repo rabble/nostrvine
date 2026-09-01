@@ -557,6 +557,8 @@ void main() {
           ],
           childBuilder: (container) => MaterialApp.router(
             routerConfig: container.read(goRouterProvider),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
           ),
         );
         expect(pushSyncActivations, isZero);
@@ -570,13 +572,91 @@ void main() {
         );
         await tester.pump();
 
-        expect(pushSyncActivations, 1);
         expect(
           controller.currentContainer!.read(pushNotificationSyncProvider),
           same(incomingPushCoordinator),
         );
+        expect(pushSyncActivations, 1);
       },
     );
+
+    testWidgets('does not activate incoming push sync when sign-in fails', (
+      tester,
+    ) async {
+      var pushSyncActivations = 0;
+      deviceScope = DeviceScope(
+        database: database,
+        sharedPreferences: deviceScope.sharedPreferences,
+        switchController: controller,
+        appVersion: 'test',
+        documentsPath: '/documents',
+        accountOverrides: [
+          secureKeyStorageProvider.overrideWithValue(keyStorage),
+          pushNotificationSyncProvider.overrideWith((ref) {
+            pushSyncActivations += 1;
+            return _MockPushNotificationSessionCoordinator();
+          }),
+        ],
+      );
+      await pumpHost(tester);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async => throw Exception('sign-in failed'),
+        ),
+        throwsException,
+      );
+      await tester.pump();
+
+      expect(pushSyncActivations, isZero);
+    });
+
+    testWidgets('keeps the target live when incoming push activation fails', (
+      tester,
+    ) async {
+      var pushSyncActivations = 0;
+      final targetAuthService = _MockAuthService();
+      when(
+        targetAuthService.claimLegacyRowsForCurrentUser,
+      ).thenAnswer((_) async {});
+      deviceScope = DeviceScope(
+        database: database,
+        sharedPreferences: deviceScope.sharedPreferences,
+        switchController: controller,
+        appVersion: 'test',
+        documentsPath: '/documents',
+        accountOverrides: [
+          secureKeyStorageProvider.overrideWithValue(keyStorage),
+          authServiceProvider.overrideWithValue(targetAuthService),
+          pushNotificationSyncProvider.overrideWith((ref) {
+            pushSyncActivations += 1;
+            throw Exception('push unavailable');
+          }),
+        ],
+      );
+      final initial = await pumpHost(tester);
+      ProviderContainer? signedInto;
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, _) async => signedInto = container,
+      );
+      await tester.pump();
+
+      expect(pushSyncActivations, 1);
+      expect(controller.currentContainer, same(signedInto));
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isTrue);
+      expect(currentAuthService.calls, equals(['archive']));
+      verify(targetAuthService.claimLegacyRowsForCurrentUser).called(1);
+    });
   });
 
   group('account swap failure boundaries', () {
