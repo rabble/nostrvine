@@ -704,7 +704,7 @@ class _ListHeroHeader extends StatelessWidget {
           ),
           Text(
             context.l10n.listVideoCount(videoCount),
-            style: VineTheme.titleSmallFont(
+            style: VineTheme.labelLargeFont(
               color: context.vineColors.primaryText,
             ),
           ),
