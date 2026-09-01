@@ -218,6 +218,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   // comes from the grid's spacing, not outer side padding.
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   topOuterRadius: VineTheme.shellInnerCornerRadius,
+                  backgroundColor: context.vineColors.surfaceContainerHigh,
                   showSubscribedListBadge: false,
                   selectedVideoIds: selectedVideoIds,
                   onVideoTap: (videoList, index) =>
@@ -236,6 +237,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               // from the grid's spacing, not outer side padding.
               padding: const EdgeInsets.symmetric(vertical: 4),
               topOuterRadius: VineTheme.shellInnerCornerRadius,
+              backgroundColor: context.vineColors.surfaceContainerHigh,
               showSubscribedListBadge: false,
               headerSlivers: [
                 SliverToBoxAdapter(

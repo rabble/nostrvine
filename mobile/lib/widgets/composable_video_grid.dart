@@ -55,6 +55,7 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
     this.selectedVideoIds,
     this.topOuterRadius,
     this.showSubscribedListBadge = true,
+    this.backgroundColor,
   });
 
   final List<VideoEvent> videos;
@@ -96,6 +97,12 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
   /// the viewer's subscribed lists. A list detail screen turns this off —
   /// there the badge is true for every tile and says nothing.
   final bool showSubscribedListBadge;
+
+  /// Panel color painted behind the grid content — and behind the empty
+  /// state — below any [headerSlivers], with its top corners rounded by
+  /// [topOuterRadius]. The panel extends to the bottom of the viewport when
+  /// the content is shorter. `null` keeps the surface transparent.
+  final Color? backgroundColor;
 
   /// Rounds the grid block's outer top corners by clipping the first row's
   /// outermost tiles (first tile's top-left, last first-row tile's
@@ -305,19 +312,54 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         ...widget.headerSlivers,
-        SliverPadding(padding: gridPadding, sliver: gridSliver),
-        if (showLoadingIndicator)
-          SliverToBoxAdapter(
-            child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+        if (widget.backgroundColor case final panelColor?) ...[
+          DecoratedSliver(
+            decoration: _panelDecoration(panelColor),
+            sliver: SliverPadding(padding: gridPadding, sliver: gridSliver),
           ),
+          if (showLoadingIndicator)
+            SliverToBoxAdapter(
+              child: ColoredBox(
+                color: panelColor,
+                child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+              ),
+            ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            fillOverscroll: true,
+            child: ColoredBox(color: panelColor),
+          ),
+        ] else ...[
+          SliverPadding(padding: gridPadding, sliver: gridSliver),
+          if (showLoadingIndicator)
+            SliverToBoxAdapter(
+              child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+            ),
+        ],
       ],
     );
 
     return _wrapWithRefreshIndicator(context, scrollView);
   }
 
+  BoxDecoration _panelDecoration(Color color) => BoxDecoration(
+    color: color,
+    borderRadius: widget.topOuterRadius == null
+        ? null
+        : BorderRadius.vertical(
+            top: Radius.circular(widget.topOuterRadius!),
+          ),
+  );
+
   Widget _buildEmptyState(BuildContext context) {
-    final emptyState = widget.emptyBuilder!();
+    final bareEmptyState = widget.emptyBuilder!();
+    final panelColor = widget.backgroundColor;
+    final emptyState = panelColor == null
+        ? bareEmptyState
+        : DecoratedBox(
+            decoration: _panelDecoration(panelColor),
+            child: bareEmptyState,
+          );
 
     // Nothing to scroll for: no header above and no pull-to-refresh.
     if (widget.onRefresh == null && widget.headerSlivers.isEmpty) {
@@ -329,7 +371,11 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         ...widget.headerSlivers,
-        SliverFillRemaining(hasScrollBody: false, child: emptyState),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          fillOverscroll: panelColor != null,
+          child: emptyState,
+        ),
       ],
     );
 

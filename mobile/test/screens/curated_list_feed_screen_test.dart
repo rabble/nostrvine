@@ -630,6 +630,26 @@ void main() {
       });
     });
 
+    group('grid panel', () {
+      testWidgets('feeds surface-container-high to the grid', (tester) async {
+        stubOwnedList();
+
+        await tester.pumpWidget(
+          buildSubject(listId: 'owned-list', listName: 'Owned List'),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final grid = tester.widget<ComposableVideoGrid>(
+          find.byType(ComposableVideoGrid),
+        );
+        expect(
+          grid.backgroundColor,
+          VineTheme.darkColors.surfaceContainerHigh,
+        );
+      });
+    });
+
     group('manage posts mode', () {
       Future<void> enterManageMode(WidgetTester tester) async {
         await openOwnerSheet(tester);
@@ -666,6 +686,14 @@ void main() {
         expect(button.onPressed, isNull);
         // Hero header is hidden while managing.
         expect(find.text(l10n.listVideoCount(0)), findsNothing);
+        // The manage-mode grid keeps the design panel.
+        final grid = tester.widget<ComposableVideoGrid>(
+          find.byType(ComposableVideoGrid),
+        );
+        expect(
+          grid.backgroundColor,
+          VineTheme.darkColors.surfaceContainerHigh,
+        );
       });
 
       testWidgets('removal refreshes the id provider so the tile disappears', (

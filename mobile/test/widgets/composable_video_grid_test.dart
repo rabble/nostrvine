@@ -966,6 +966,99 @@ void main() {
       });
     });
 
+    group('background panel', () {
+      Widget buildGrid({
+        List<VideoEvent> videos = const [],
+        Color? backgroundColor,
+        double? topOuterRadius,
+        Widget Function()? emptyBuilder,
+        List<Widget> headerSlivers = const [],
+      }) {
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: videos,
+                backgroundColor: backgroundColor,
+                topOuterRadius: topOuterRadius,
+                emptyBuilder: emptyBuilder,
+                headerSlivers: headerSlivers,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('paints a rounded panel behind the grid and fills below it', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildGrid(
+            videos: testVideos.take(2).toList(),
+            backgroundColor: const Color(0xFF112233),
+            topOuterRadius: 32,
+          ),
+        );
+        await tester.pump();
+
+        final panel = tester.widget<DecoratedSliver>(
+          find.byType(DecoratedSliver),
+        );
+        final decoration = panel.decoration as BoxDecoration;
+        expect(decoration.color, const Color(0xFF112233));
+        expect(
+          decoration.borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(32)),
+        );
+        // The panel continues to the bottom of the viewport when the grid
+        // content is shorter than the screen.
+        final filler = tester.widget<SliverFillRemaining>(
+          find.byType(SliverFillRemaining),
+        );
+        expect((filler.child! as ColoredBox).color, const Color(0xFF112233));
+      });
+
+      testWidgets('defaults to no panel', (tester) async {
+        await tester.pumpWidget(
+          buildGrid(videos: testVideos.take(2).toList()),
+        );
+        await tester.pump();
+
+        expect(find.byType(DecoratedSliver), findsNothing);
+      });
+
+      testWidgets('paints the panel behind the empty state', (tester) async {
+        await tester.pumpWidget(
+          buildGrid(
+            backgroundColor: const Color(0xFF112233),
+            topOuterRadius: 32,
+            headerSlivers: const [SliverToBoxAdapter(child: Text('HEADER'))],
+            emptyBuilder: () => const Text('EMPTY'),
+          ),
+        );
+        await tester.pump();
+
+        final box = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.text('EMPTY'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final decoration = box.decoration as BoxDecoration;
+        expect(decoration.color, const Color(0xFF112233));
+        expect(
+          decoration.borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(32)),
+        );
+      });
+    });
+
     group('load-more footer', () {
       // Renders the grid path with no tiles (empty list + no emptyBuilder) so
       // the footer can be exercised without the video-tile Nostr/network chain.
