@@ -652,6 +652,24 @@ class DmReactionsRepository {
         .toList(growable: false);
   }
 
+  /// Flip an own reaction that has stayed `'pending'` past the retry sweep's
+  /// terminal age to `'failed'`, so the chip stops reading as in flight and
+  /// offers Retry instead (#8443).
+  ///
+  /// The write is conditional on the row still being live and `'pending'`: a
+  /// row that has since landed, hard-failed, been blocked or been soft-deleted
+  /// is left alone, so a manual retry racing the sweep is never overwritten.
+  /// The stored rumor JSON is kept — the row stays retryable. Returns whether
+  /// a row changed; `false` when credentials have not been wired.
+  Future<bool> expirePendingReaction({required String rumorId}) async {
+    if (_userPubkey.isEmpty) return false;
+    final changed = await _reactionsDao.expirePending(
+      id: rumorId,
+      ownerPubkey: _userPubkey,
+    );
+    return changed > 0;
+  }
+
   /// Soft-delete an own reaction locally and durably (re)deliver its NIP-09
   /// kind-5 deletion on the wire. Returns after the local update; the wire
   /// publish is durable — a failed/offline attempt is re-driven by the retry

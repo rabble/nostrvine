@@ -178,6 +178,30 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
         );
   }
 
+  /// Flip a live own reaction that is still `'pending'` to `'failed'`, keeping
+  /// `rumorEventJson` so it stays retryable. Returns the rows changed, 0 or 1.
+  ///
+  /// Guarded on the current status where [markFailed] writes blind: the retry
+  /// sweep calls this for a row whose publish has stayed unconfirmed past its
+  /// terminal age (#8443), and a manual retry may have landed it (`'sent'`,
+  /// JSON cleared) between the sweep's read and this write. Overwriting that
+  /// would leave a red chip whose Retry has nothing to replay.
+  Future<int> expirePending({
+    required String id,
+    required String ownerPubkey,
+  }) {
+    return (update(dmMessageReactions)..where(
+          (t) =>
+              t.id.equals(id) &
+              t.ownerPubkey.equals(ownerPubkey) &
+              t.isDeleted.equals(false) &
+              t.publishStatus.equals('pending'),
+        ))
+        .write(
+          const DmMessageReactionsCompanion(publishStatus: Value('failed')),
+        );
+  }
+
   /// Mark an outgoing row as `'pending'` — used by retry to surface
   /// in-flight state in the persistent layer so a cubit rebuild
   /// (auth flip, hot-restart, navigation) recovers the correct UI.

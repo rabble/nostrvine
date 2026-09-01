@@ -547,5 +547,194 @@ void main() {
         ).called(1);
       },
     );
+
+    group('pendingTerminalAge (#8443)', () {
+      final now = DateTime.utc(2026, 5, 10, 12);
+      int createdAgo(Duration age) =>
+          now.subtract(age).millisecondsSinceEpoch ~/ 1000;
+
+      test(
+        'flips a pending reaction older than pendingTerminalAge to failed '
+        'instead of re-driving it',
+        () async {
+          // A row that has stayed `pending` this long has been re-driven and
+          // left unconfirmed by every sweep since (an inbox we cannot read).
+          // `failed` is otherwise only written on a confirmed rejection, so
+          // without this the chip would stay dimmed indefinitely.
+          when(repository.retryableReactions).thenAnswer(
+            (_) async => [
+              _target(
+                rumorId: 'stale',
+                publishStatus: 'pending',
+                createdAt: createdAgo(const Duration(hours: 25)),
+              ),
+            ],
+          );
+          when(
+            () => repository.expirePendingReaction(rumorId: 'stale'),
+          ).thenAnswer((_) async => true);
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => repository.expirePendingReaction(rumorId: 'stale'),
+          ).called(1);
+          verifyNever(
+            () => repository.retry(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'a pending reaction past the min-age guard but inside '
+        'pendingTerminalAge is re-driven, not expired',
+        () async {
+          when(repository.retryableReactions).thenAnswer(
+            (_) async => [
+              _target(
+                rumorId: 'young',
+                publishStatus: 'pending',
+                createdAt: createdAgo(const Duration(hours: 1)),
+              ),
+            ],
+          );
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => repository.retry(
+              rumorId: 'young',
+              targetMessageAuthor: _authorPubkey,
+            ),
+          ).called(1);
+          verifyNever(
+            () => repository.expirePendingReaction(
+              rumorId: any(named: 'rumorId'),
+            ),
+          );
+        },
+      );
+
+      test('a failed reaction is re-driven however old it is', () async {
+        // Expiry exists to end a `pending` that cannot otherwise terminalize;
+        // a `failed` row already renders the retry chip and stays retryable.
+        when(repository.retryableReactions).thenAnswer(
+          (_) async => [
+            _target(
+              rumorId: 'old-failed',
+              createdAt: createdAgo(const Duration(hours: 48)),
+            ),
+          ],
+        );
+
+        await buildService(now: () => now).sweep();
+
+        verify(
+          () => repository.retry(
+            rumorId: 'old-failed',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(1);
+        verifyNever(
+          () =>
+              repository.expirePendingReaction(rumorId: any(named: 'rumorId')),
+        );
+      });
+
+      test(
+        'expiry is checked before the exhausted-budget skip, so an exhausted '
+        'pending row still terminalizes',
+        () async {
+          // The budget lives in memory and re-arms only on a cold start. If
+          // exhaustion were checked first, a row that burned its budget while
+          // still young would sit dimmed until the next process, however old
+          // it grew.
+          var clock = now;
+          when(repository.retryableReactions).thenAnswer(
+            (_) async => [
+              _target(
+                rumorId: 'x',
+                publishStatus: 'pending',
+                createdAt: createdAgo(const Duration(hours: 1)),
+              ),
+            ],
+          );
+          when(
+            () => repository.retry(
+              rumorId: 'x',
+              targetMessageAuthor: _authorPubkey,
+            ),
+          ).thenAnswer((_) async => _fail('x'));
+          when(
+            () => repository.expirePendingReaction(rumorId: 'x'),
+          ).thenAnswer((_) async => true);
+          final service = buildService(
+            retryConfig: const DmReactionRetryConfig(
+              maxRetries: 2,
+              initialDelay: Duration(milliseconds: 1),
+            ),
+            now: () => clock,
+          );
+
+          await service.sweep();
+          clock = clock.add(const Duration(seconds: 10));
+          await service.sweep();
+          clock = clock.add(const Duration(seconds: 10));
+          await service.sweep();
+
+          // Two attempts, then exhausted — and nothing expired while the row
+          // was still inside pendingTerminalAge.
+          verify(
+            () => repository.retry(
+              rumorId: 'x',
+              targetMessageAuthor: _authorPubkey,
+            ),
+          ).called(2);
+          verifyNever(
+            () => repository.expirePendingReaction(
+              rumorId: any(named: 'rumorId'),
+            ),
+          );
+
+          clock = now.add(const Duration(hours: 24));
+          await service.sweep();
+
+          verify(
+            () => repository.expirePendingReaction(rumorId: 'x'),
+          ).called(1);
+        },
+      );
+
+      test('a pending removal is never expired, however old', () async {
+        // A `deletion_pending` row is already hidden from the thread; flipping
+        // it to `failed` would resurrect it as a live chip. Its terminal
+        // state is #8390's question, not this one.
+        when(repository.retryableDeletions).thenAnswer(
+          (_) async => [
+            _target(
+              rumorId: 'd-old',
+              publishStatus: 'deletion_pending',
+              createdAt: createdAgo(const Duration(hours: 48)),
+            ),
+          ],
+        );
+
+        await buildService(now: () => now).sweep();
+
+        verify(
+          () => repository.retryDeletion(
+            rumorId: 'd-old',
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(1);
+        verifyNever(
+          () =>
+              repository.expirePendingReaction(rumorId: any(named: 'rumorId')),
+        );
+      });
+    });
   });
 }

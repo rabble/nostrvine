@@ -22,6 +22,11 @@ abstract class DmReactionRetryServiceReportableSites {
   /// Top-level sweep catch — the sweep loop or repository call raised before
   /// per-reaction dispatch completed.
   static const String sweepTopLevel = 'DmReactionRetryService.sweepTopLevel';
+
+  /// Expiring a stale `'pending'` reaction threw — a DAO surprise, since the
+  /// repository's write is a single guarded UPDATE.
+  static const String expirePendingThrow =
+      'DmReactionRetryService.expirePendingThrow';
 }
 
 /// Backoff + budget configuration for [DmReactionRetryService].
@@ -29,7 +34,9 @@ abstract class DmReactionRetryServiceReportableSites {
 /// Mirrors `OutgoingDmRetryConfig` (5 retries, 2 s → 5 min, 2× backoff) so
 /// reaction and message retries behave the same. Retry accounting is kept in
 /// memory rather than on the `dm_message_reactions` row, so the budget resets
-/// on a cold start — bounded further by the foreground-only trigger.
+/// on a cold start — bounded further by the foreground-only trigger. That is
+/// why a `'pending'` row's terminal transition is bounded by its age
+/// ([pendingTerminalAge]) rather than by that budget.
 class DmReactionRetryConfig {
   /// Construct a retry config.
   const DmReactionRetryConfig({
@@ -38,6 +45,7 @@ class DmReactionRetryConfig {
     this.maxDelay = const Duration(minutes: 5),
     this.backoffMultiplier = 2.0,
     this.interruptedPendingMinAge = const Duration(seconds: 30),
+    this.pendingTerminalAge = const Duration(hours: 24),
   });
 
   /// Attempts a single reaction gets before the sweep drops it (a manual
@@ -58,6 +66,16 @@ class DmReactionRetryConfig {
   /// now would race the in-flight attempt's own DAO write. Older `'pending'`
   /// rows are app-killed-mid-send survivors, safe to replay.
   final Duration interruptedPendingMinAge;
+
+  /// A `'pending'` row older than this is expired to `'failed'` instead of
+  /// being re-driven. Long past [interruptedPendingMinAge] it is no longer in
+  /// flight: every sweep since has re-driven it and left it unconfirmed — an
+  /// inbox we cannot read (#8443), a relay that never answers. `'failed'` is
+  /// otherwise written only on a confirmed rejection, and the attempt budget
+  /// re-arms on every cold start, so without this bound a soft-pending row
+  /// dims its chip indefinitely. Expiring it hands the user the existing red
+  /// chip and its Retry. Must exceed [interruptedPendingMinAge].
+  final Duration pendingTerminalAge;
 
   /// Minimum gap required before re-attempting a reaction whose previous
   /// attempt count is [retryCount]. Clamped at [maxDelay].
@@ -96,6 +114,13 @@ class DmReactionRetryConfig {
 /// the sweep once it hits [DmReactionRetryConfig.maxRetries] (a manual re-tap
 /// still works). Entries for reactions that are no longer retryable (sent,
 /// deleted) are pruned each pass so the maps stay bounded to the live set.
+///
+/// **Expiry:** a `'pending'` add older than
+/// [DmReactionRetryConfig.pendingTerminalAge] is flipped to `'failed'` rather
+/// than re-driven, so a reaction whose delivery never confirmed cannot stay
+/// dimmed indefinitely (#8443). Removals are not expired — a
+/// `'deletion_pending'` row is already hidden, and its terminal state is
+/// #8390's question.
 class DmReactionRetryService {
   /// Construct the service. [reactionsRepository] must be the same instance
   /// the UI publishes through, so retried rows share its DAO and credentials.
@@ -262,6 +287,7 @@ class DmReactionRetryService {
       Log.info(
         'sweep complete: '
         'reactions(recovered=${r.recovered} failed=${r.failed} '
+        'expired=${r.expired} '
         'skipped-backoff=${r.skippedBackoff} '
         'skipped-exhausted=${r.skippedExhausted} '
         'skipped-too-young=${r.skippedTooYoung}) '
@@ -299,6 +325,7 @@ class DmReactionRetryService {
     ({
       int recovered,
       int failed,
+      int expired,
       int skippedBackoff,
       int skippedExhausted,
       int skippedTooYoung,
@@ -313,6 +340,7 @@ class DmReactionRetryService {
   }) async {
     var recovered = 0;
     var failed = 0;
+    var expired = 0;
     var skippedBackoff = 0;
     var skippedExhausted = 0;
     var skippedTooYoung = 0;
@@ -320,6 +348,22 @@ class DmReactionRetryService {
     for (final target in targets) {
       final id = '$phase:${target.rumorId}';
       final attempts = _attempts[id] ?? 0;
+
+      // Age rules belong to the add phase alone: a `'pending'` add may be in
+      // flight, or may have gone stale; a `'deletion_pending'` row is neither.
+      final pendingAge = applyPendingMinAge && target.publishStatus == 'pending'
+          ? _now().difference(
+              DateTime.fromMillisecondsSinceEpoch(target.createdAt * 1000),
+            )
+          : null;
+
+      // Before the budget and backoff skips on purpose: the budget re-arms
+      // only on a cold start, so a row that exhausted it while young would
+      // otherwise sit dimmed for the rest of the process however old it grew.
+      if (pendingAge != null && pendingAge >= _config.pendingTerminalAge) {
+        if (await _expire(target)) expired++;
+        continue;
+      }
 
       if (attempts >= _config.maxRetries) {
         skippedExhausted++;
@@ -338,14 +382,9 @@ class DmReactionRetryService {
       // A still-`pending` reaction may have an in-flight publish (a reaction
       // publish caps at 15 s); only treat it as interrupted once it's older
       // than the guard, so the sweep never races an in-flight attempt.
-      if (applyPendingMinAge && target.publishStatus == 'pending') {
-        final age = _now().difference(
-          DateTime.fromMillisecondsSinceEpoch(target.createdAt * 1000),
-        );
-        if (age < _config.interruptedPendingMinAge) {
-          skippedTooYoung++;
-          continue;
-        }
+      if (pendingAge != null && pendingAge < _config.interruptedPendingMinAge) {
+        skippedTooYoung++;
+        continue;
       }
 
       try {
@@ -384,10 +423,39 @@ class DmReactionRetryService {
     return (
       recovered: recovered,
       failed: failed,
+      expired: expired,
       skippedBackoff: skippedBackoff,
       skippedExhausted: skippedExhausted,
       skippedTooYoung: skippedTooYoung,
     );
+  }
+
+  /// Flip a stale `'pending'` add to `'failed'` through the repository.
+  ///
+  /// Returns whether a row changed. `false` also covers the row having landed
+  /// or hard-failed since the sweep read it (the repository's write is
+  /// conditional) and a DAO throw, which is logged and reported rather than
+  /// allowed to abort the pass — the remaining targets still get their drive.
+  Future<bool> _expire(DmReactionRetryTarget target) async {
+    try {
+      return await _repository.expirePendingReaction(rumorId: target.rumorId);
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'expiring stale pending reaction ${target.rumorId} threw: $e',
+        name: 'DmReactionRetryService',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      unawaited(
+        _crashReporting.recordError(
+          e,
+          stackTrace,
+          reason: DmReactionRetryServiceReportableSites.expirePendingThrow,
+        ),
+      );
+      return false;
+    }
   }
 
   /// Probe connectivity, treating a broken probe as online.
