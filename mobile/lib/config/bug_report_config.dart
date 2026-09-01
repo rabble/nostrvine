@@ -65,8 +65,8 @@ const _credentialValue =
 /// `local_audio_import_service` preserves verbatim into the stored path and so
 /// into any `FileSystemException` about it.
 ///
-/// Two tails cover the two renders. [_filesystemPathQuotedTail] runs first and,
-/// when the path sits inside quotes (the dominant exception form,
+/// Quote-specific rules run first and, when the path sits inside quotes (the
+/// dominant exception form,
 /// `path = '/Users/name/My Song.m4a'`), consumes to the closing quote so a
 /// basename containing spaces or brackets is redacted whole. Redacting only the
 /// account name and leaving the filename beside a `[REDACTED]` marker would be
@@ -97,10 +97,10 @@ const _credentialValue =
 /// with a `{1,255}` or `{0,4000}` cap and no nested quantifier, so matching
 /// cannot backtrack superlinearly and one match cannot run past the bound on
 /// the UI thread. Known residuals, accepted like the credential rule's own: a
-/// basename containing whitespace (when unquoted) or an unescaped quote leaks
-/// the fragment after it, a path tail beyond 4000 characters keeps its end, and
-/// purely internal roots (`/data/media`, `/mnt`, `/var/mobile/Media`) are not
-/// matched. The deanonymizing account name is redacted in every case.
+/// basename containing whitespace (when unquoted), a path tail beyond 4000
+/// characters keeps its end, and purely internal roots (`/data/media`, `/mnt`,
+/// `/var/mobile/Media`) are not matched. The deanonymizing account name is
+/// redacted in every case.
 const _filesystemPathRoot =
     r'''(?:[/\\]Users[/\\]'''
     r'''|[/\\]home[/\\][^\s'",;)\]}/\\]{1,255}[/\\]'''
@@ -110,10 +110,6 @@ const _filesystemPathRoot =
 /// Tail for an unquoted path: stops at the first whitespace or delimiter so it
 /// does not consume the surrounding log line.
 const _filesystemPathTail = r'''[^\s'",;)\]}]{0,4000}''';
-
-/// Tail for a quoted path: consumes to the closing quote or newline, so a
-/// basename with spaces or brackets is redacted whole.
-const _filesystemPathQuotedTail = r'''[^'"\n]{0,4000}''';
 
 /// Configuration for bug report system
 class BugReportConfig {
@@ -233,10 +229,19 @@ class BugReportConfig {
       caseSensitive: false,
     ),
     // Filesystem paths rooted at a user or app-sandbox directory. See
-    // [_filesystemPathRoot]. The quoted rule runs first so a quoted path with a
-    // spaced basename is redacted whole before the unquoted rule can stop at
-    // the space and strand the filename beside the marker.
-    RegExp('''(?<=['"])$_filesystemPathRoot$_filesystemPathQuotedTail'''),
+    // [_filesystemPathRoot]. Quote-specific rules run first so a quoted path
+    // with a spaced basename is redacted whole before the unquoted rule can
+    // stop at the space and strand the filename beside the marker. Requiring
+    // the matching closing quote keeps malformed input from consuming the rest
+    // of its diagnostic line.
+    RegExp(
+      "(?<=')$_filesystemPathRoot"
+      r"[^'\n]{0,4000}(?=')",
+    ),
+    RegExp(
+      '(?<=")$_filesystemPathRoot'
+      r'[^"\n]{0,4000}(?=")',
+    ),
     RegExp('$_filesystemPathRoot$_filesystemPathTail'),
   ];
 

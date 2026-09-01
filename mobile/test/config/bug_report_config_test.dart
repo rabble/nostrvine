@@ -240,6 +240,48 @@ void main() {
           );
         });
       }
+
+      test('quoted path preserves surrounding diagnostic context', () {
+        const input =
+            "FileSystemException: path = '/Users/mjbradley/Music/My Song.m4a' "
+            '(OS Error: No such file, errno = 2)';
+
+        expect(
+          sanitizeDiagnosticText(input),
+          equals(
+            "FileSystemException: path = '[REDACTED]' "
+            '(OS Error: No such file, errno = 2)',
+          ),
+        );
+      });
+
+      test('unbalanced path quote preserves later diagnostic context', () {
+        const input =
+            "path = '/Users/mjbradley/song.m4a then relay "
+            'wss://relay.divine.video and event abc123';
+
+        expect(
+          sanitizeDiagnosticText(input),
+          equals(
+            "path = '[REDACTED] then relay "
+            'wss://relay.divine.video and event abc123',
+          ),
+        );
+      });
+
+      test('apostrophe in a double-quoted path is redacted whole', () {
+        const input =
+            'path = "/Users/mjbradley/Music/it\'s here.m4a" next '
+            'https://media.divine.video/a.mp4';
+
+        expect(
+          sanitizeDiagnosticText(input),
+          equals(
+            'path = "[REDACTED]" next '
+            'https://media.divine.video/a.mp4',
+          ),
+        );
+      });
     });
 
     test('an unbalanced quote costs one word, not the rest of the report', () {
