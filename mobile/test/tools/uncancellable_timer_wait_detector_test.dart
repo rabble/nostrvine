@@ -115,6 +115,38 @@ Future<void> wait(Duration delay) {
         expect(sites, hasLength(1));
         expect(sites.single.line, 4);
       });
+
+      test('flags a class-method tear-off that completes a completer', () {
+        final sites = scan('''
+class Owner {
+  final Completer<void> _c = Completer<void>();
+  void _fire() => _c.complete();
+  Future<void> wait(Duration delay) {
+    Timer(delay, _fire);
+    return _c.future;
+  }
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 5);
+      });
+
+      test('flags a closure that settles through a class method', () {
+        final sites = scan('''
+class Owner {
+  final Completer<void> _c = Completer<void>();
+  void _fire() => _c.complete();
+  Future<void> wait(Duration delay) {
+    Timer(delay, () => _fire());
+    return _c.future;
+  }
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 5);
+      });
     });
 
     group('not counted', () {
@@ -162,6 +194,30 @@ Timer wait() {
 
         expect(sites, isEmpty);
       });
+
+      test(
+        'ignores a discarded Timer that only calls a method with arguments',
+        () {
+          // Fire-and-forget reconnect: the callback invokes real work, and that
+          // work may mention `x.complete()` elsewhere in the class. Following
+          // every method would make the zero floor unattainable.
+          final sites = scan('''
+class Owner {
+  void reconnect() {
+    Timer(delay, () {
+      subscribeToFeed(limit: 50);
+    });
+  }
+  Future<void> subscribeToFeed({int? limit}) async {
+    final c = Completer<void>();
+    c.complete();
+  }
+}
+''');
+
+          expect(sites, isEmpty);
+        },
+      );
 
       test('ignores a discarded Timer that settles no completer', () {
         // Ordinary fire-and-forget deferral. It cannot strand an awaiting

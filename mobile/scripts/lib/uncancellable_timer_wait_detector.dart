@@ -208,9 +208,10 @@ class _Visitor extends RecursiveAstVisitor<void> {
         if (finder.found) return true;
       }
 
-      // Same-file callback: `Timer(delay, completeSearch)`. Following the
-      // declaration is essential because named callbacks are the natural form
-      // when a timeout shares its completion path with EOSE or another signal.
+      // Same-file callback: `Timer(delay, completeSearch)` or a class method
+      // tear-off `Timer(delay, _fire)`. Following the declaration is essential
+      // because named callbacks are the natural form when a timeout shares its
+      // completion path with EOSE or another signal.
       if (expression is SimpleIdentifier) {
         final finder = _SettlerFinder(_functions);
         finder.follow(expression.name, expression);
@@ -230,9 +231,18 @@ class _SettlerFinder extends RecursiveAstVisitor<void> {
   final Set<FunctionBody> _activeHelpers;
   bool found = false;
 
-  void follow(String name, AstNode callSite) {
+  void follow(String name, AstNode callSite, {int? argumentCount}) {
     final helper = _functions.resolve(name, callSite);
     if (helper == null || !_activeHelpers.add(helper.body)) return;
+    // Methods with arguments are ordinary work (`subscribeToVideoFeed(...)`),
+    // not completion helpers. Following them walks the class and false-positives
+    // fire-and-forget timers whose callback happens to call a method that
+    // contains an unrelated `x.complete()`. Empty-arg methods and tear-offs
+    // (`Timer(d, _fire)`, `() => _fire()`) stay in scope.
+    if (helper.isMethod && argumentCount != null && argumentCount > 0) {
+      _activeHelpers.remove(helper.body);
+      return;
+    }
     helper.body.accept(this);
     _activeHelpers.remove(helper.body);
   }
@@ -243,7 +253,13 @@ class _SettlerFinder extends RecursiveAstVisitor<void> {
         _completerSettlers.contains(node.methodName.name)) {
       found = true;
     }
-    if (!found && node.target == null) follow(node.methodName.name, node);
+    if (!found && node.target == null) {
+      follow(
+        node.methodName.name,
+        node,
+        argumentCount: node.argumentList.arguments.length,
+      );
+    }
     super.visitMethodInvocation(node);
   }
 }
@@ -287,10 +303,11 @@ class _SameFileFunctions {
 }
 
 class _FunctionBody {
-  const _FunctionBody(this.body, this.scope);
+  const _FunctionBody(this.body, this.scope, {this.isMethod = false});
 
   final FunctionBody body;
   final AstNode? scope;
+  final bool isMethod;
 }
 
 class _FunctionDeclarationCollector extends RecursiveAstVisitor<void> {
@@ -298,8 +315,15 @@ class _FunctionDeclarationCollector extends RecursiveAstVisitor<void> {
 
   final Map<String, List<_FunctionBody>> byName;
 
-  void _add(String name, FunctionBody body, AstNode? scope) {
-    byName.putIfAbsent(name, () => []).add(_FunctionBody(body, scope));
+  void _add(
+    String name,
+    FunctionBody body,
+    AstNode? scope, {
+    bool isMethod = false,
+  }) {
+    byName
+        .putIfAbsent(name, () => [])
+        .add(_FunctionBody(body, scope, isMethod: isMethod));
   }
 
   @override
@@ -319,6 +343,16 @@ class _FunctionDeclarationCollector extends RecursiveAstVisitor<void> {
       node.parent,
     );
     super.visitFunctionDeclarationStatement(node);
+  }
+
+  @override
+  void visitMethodDeclaration(MethodDeclaration node) {
+    // Instance/static methods are the ordinary callback shape on the owners
+    // this ratchet is for. A local function is already collected above;
+    // without this visit, `Timer(d, _fire)` and `Timer(d, () => _fire())`
+    // where `_fire` is a class method are invisible.
+    _add(node.name.lexeme, node.body, node.parent, isMethod: true);
+    super.visitMethodDeclaration(node);
   }
 }
 
