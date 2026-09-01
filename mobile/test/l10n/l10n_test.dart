@@ -69,6 +69,27 @@ void main() {
       expect(l10n.settingsAppLanguageTitle, equals('Език на приложението'));
     });
 
+    testWidgets('supports Telugu locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('te'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('సెట్టింగ్‌లు'));
+      expect(l10n.settingsAppLanguageTitle, equals('యాప్ భాష'));
+    });
+
     testWidgets('supports Amharic locale', (tester) async {
       late AppLocalizations l10n;
 

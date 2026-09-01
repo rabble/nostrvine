@@ -101,6 +101,7 @@ void main() {
             'pt',
             'ro',
             'sv',
+            'te',
             'tr',
             'ur',
             'vi',
@@ -116,6 +117,7 @@ void main() {
         expect(LocalePreferenceService.supportedLocales['ur'], 'اردو');
         expect(LocalePreferenceService.supportedLocales['zh'], '简体中文');
         expect(LocalePreferenceService.supportedLocales['ms'], 'Bahasa Melayu');
+        expect(LocalePreferenceService.supportedLocales['te'], 'తెలుగు');
       });
     });
 
