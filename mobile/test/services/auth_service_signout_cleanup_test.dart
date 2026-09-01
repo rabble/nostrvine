@@ -163,10 +163,9 @@ void main() {
     });
 
     test('signOut clears configured and user-removed relays', () async {
-      await prefs.setStringList(
-        SharedPreferencesRelayStorage.defaultKey,
-        ['wss://relay.divine.video'],
-      );
+      await prefs.setStringList(SharedPreferencesRelayStorage.defaultKey, [
+        'wss://relay.divine.video',
+      ]);
       await prefs.setStringList(
         SharedPreferencesRelayStorage.defaultRemovedRelaysKey,
         ['wss://relay.divine.video'],
@@ -345,22 +344,19 @@ void main() {
       },
     );
 
-    test(
-      'non-destructive signOut without a current pubkey skips cache '
-      'invalidation',
-      () async {
-        await cacheDao.write(
-          key: 'aa11:my_followers',
-          payload: '{"pubkeys":["a"],"count":1}',
-        );
-        when(() => mockKeyStorage.clearCache()).thenReturn(null);
+    test('non-destructive signOut without a current pubkey skips cache '
+        'invalidation', () async {
+      await cacheDao.write(
+        key: 'aa11:my_followers',
+        payload: '{"pubkeys":["a"],"count":1}',
+      );
+      when(() => mockKeyStorage.clearCache()).thenReturn(null);
 
-        await authService.signOut();
+      await authService.signOut();
 
-        expect(cacheDao.deletePrefixCalls, isEmpty);
-        expect(cacheDao.store, isNotEmpty);
-      },
-    );
+      expect(cacheDao.deletePrefixCalls, isEmpty);
+      expect(cacheDao.store, isNotEmpty);
+    });
 
     group('account-scoped CacheSync invalidation (multi-account)', () {
       const pubkeyA =
@@ -422,32 +418,29 @@ void main() {
         },
       );
 
-      test(
-        'signOut completes despite a throwing invalidatePrefix',
-        () async {
-          // The cache-layer failure must NOT abort the rest of signOut.
-          // Without the try/catch around CacheSync.invalidatePrefix, a
-          // disk error would short-circuit key cleanup, signer
-          // teardown, and the auth-state transition.
-          cacheDao.throwOnDeletePrefix = StateError(
-            'cache layer simulated failure',
-          );
+      test('signOut completes despite a throwing invalidatePrefix', () async {
+        // The cache-layer failure must NOT abort the rest of signOut.
+        // Without the try/catch around CacheSync.invalidatePrefix, a
+        // disk error would short-circuit key cleanup, signer
+        // teardown, and the auth-state transition.
+        cacheDao.throwOnDeletePrefix = StateError(
+          'cache layer simulated failure',
+        );
 
-          await authService.signOut();
+        await authService.signOut();
 
-          // The invalidation was attempted with the right prefix...
-          expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
-          // ...the throw was swallowed and signOut still completed...
-          expect(authService.authState, equals(AuthState.unauthenticated));
-          // ...and because the fake throws before any rows are removed,
-          // every seeded entry (A's and B's) is still on disk. This pins
-          // the contract that a failed invalidation leaves the cache in
-          // its pre-call state — no partial cleanup.
-          expect(cacheDao.store['$pubkeyA:my_followers'], isNotNull);
-          expect(cacheDao.store['$pubkeyA:my_following'], isNotNull);
-          expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
-        },
-      );
+        // The invalidation was attempted with the right prefix...
+        expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
+        // ...the throw was swallowed and signOut still completed...
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        // ...and because the fake throws before any rows are removed,
+        // every seeded entry (A's and B's) is still on disk. This pins
+        // the contract that a failed invalidation leaves the cache in
+        // its pre-call state — no partial cleanup.
+        expect(cacheDao.store['$pubkeyA:my_followers'], isNotNull);
+        expect(cacheDao.store['$pubkeyA:my_following'], isNotNull);
+        expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
+      });
     });
 
     test('signOut should set auth state to unauthenticated', () async {
@@ -714,6 +707,46 @@ void main() {
         // deleteKeys() called only once (pre-flight), not twice
         verify(() => mockKeyStorage.deleteKeys()).called(1);
       });
+    });
+
+    group('age verification per-account cleanup (#7816)', () {
+      test(
+        'destructive account deletion purges the account age keys',
+        () async {
+          final keyContainer = SecureKeyContainer.fromNsec(testNsec);
+          final pubkey = keyContainer.publicKeyHex;
+          authService.debugSetCurrentKeyContainer(keyContainer);
+          await prefs.setBool('adult_content_verified_$pubkey', true);
+          await prefs.setBool('age_verified_$pubkey', true);
+
+          when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+          await authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          );
+
+          expect(prefs.containsKey('adult_content_verified_$pubkey'), isFalse);
+          expect(prefs.containsKey('age_verified_$pubkey'), isFalse);
+        },
+      );
+
+      test(
+        'non-destructive account switch keeps the account age keys',
+        () async {
+          final keyContainer = SecureKeyContainer.fromNsec(testNsec);
+          final pubkey = keyContainer.publicKeyHex;
+          authService.debugSetCurrentKeyContainer(keyContainer);
+          await prefs.setBool('adult_content_verified_$pubkey', true);
+
+          when(() => mockKeyStorage.clearCache()).thenReturn(null);
+
+          await authService.signOut();
+
+          expect(prefs.getBool('adult_content_verified_$pubkey'), isTrue);
+        },
+      );
     });
   });
 }

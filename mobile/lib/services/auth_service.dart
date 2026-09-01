@@ -23,6 +23,7 @@ import 'package:openvine/models/auth_user_profile.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/models/signer_readiness.dart';
+import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
@@ -3162,6 +3163,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // initialize() can reconnect to the same external signer.
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
+
+      // Account deletion purges the leaving account's per-account
+      // age/adult-content verification. A non-destructive switch keeps it so
+      // the account resumes its own verification on return (#7816).
+      if (deleteLocalUserData && currentPubkey != null) {
+        await AgeVerificationService.purgeAccount(prefs, currentPubkey);
+      }
 
       // Clear user-specific cached data on explicit logout.
       // Owner-scoped local rows (drafts, clips, uploads, etc.) are only

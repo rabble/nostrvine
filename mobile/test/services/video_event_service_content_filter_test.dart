@@ -102,7 +102,10 @@ void main() {
       '1111111111111111111111111111111111111111111111111111111111111111',
     );
 
-    ageVerificationService = AgeVerificationService();
+    ageVerificationService = AgeVerificationService(
+      currentPubkeyHex: () =>
+          '1111111111111111111111111111111111111111111111111111111111111111',
+    );
     await ageVerificationService.initialize();
     contentFilterService = ContentFilterService(
       ageVerificationService: ageVerificationService,

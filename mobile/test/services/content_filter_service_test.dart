@@ -6,6 +6,9 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _testPubkey =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
 void main() {
   group(ContentFilterService, () {
     late ContentFilterService service;
@@ -13,7 +16,7 @@ void main() {
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
-      ageService = AgeVerificationService();
+      ageService = AgeVerificationService(currentPubkeyHex: () => _testPubkey);
       service = ContentFilterService(ageVerificationService: ageService);
     });
 
@@ -490,7 +493,9 @@ void main() {
 
         await service.unlockAdultCategories();
 
-        final newAgeService = AgeVerificationService();
+        final newAgeService = AgeVerificationService(
+          currentPubkeyHex: () => _testPubkey,
+        );
         await newAgeService.initialize();
         final newService = ContentFilterService(
           ageVerificationService: newAgeService,
@@ -602,33 +607,30 @@ void main() {
         },
       );
 
-      test(
-        'returns warn when opted-in adult categories have mixed non-hide '
-        'preferences',
-        () async {
-          await ageService.initialize();
-          await ageService.setAdultContentVerified(true);
-          await service.initialize();
+      test('returns warn when opted-in adult categories have mixed non-hide '
+          'preferences', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
 
-          await service.setPreference(
-            ContentLabel.nudity,
-            ContentFilterPreference.show,
-          );
-          await service.setPreference(
-            ContentLabel.sexual,
-            ContentFilterPreference.warn,
-          );
-          await service.setPreference(
-            ContentLabel.porn,
-            ContentFilterPreference.hide,
-          );
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.show,
+        );
+        await service.setPreference(
+          ContentLabel.sexual,
+          ContentFilterPreference.warn,
+        );
+        await service.setPreference(
+          ContentLabel.porn,
+          ContentFilterPreference.hide,
+        );
 
-          expect(
-            service.adultPlaybackPreference,
-            equals(ContentFilterPreference.warn),
-          );
-        },
-      );
+        expect(
+          service.adultPlaybackPreference,
+          equals(ContentFilterPreference.warn),
+        );
+      });
 
       test(
         'returns hide when any configurable adult category remains hidden',
@@ -683,7 +685,9 @@ void main() {
         'clears caches when passive adult thumbnail access is revoked',
         () async {
           var clearCount = 0;
-          ageService = AgeVerificationService();
+          ageService = AgeVerificationService(
+            currentPubkeyHex: () => _testPubkey,
+          );
           service = ContentFilterService(
             ageVerificationService: ageService,
             onAdultMediaAccessRevoked: () async {
@@ -812,7 +816,9 @@ void main() {
         );
         await migrationService.initialize();
 
-        final restartedAgeService = AgeVerificationService();
+        final restartedAgeService = AgeVerificationService(
+          currentPubkeyHex: () => _testPubkey,
+        );
         await restartedAgeService.initialize();
         final restartedService = ContentFilterService(
           ageVerificationService: restartedAgeService,

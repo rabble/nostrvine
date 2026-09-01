@@ -3,26 +3,36 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
+  const pubkey =
+      '1111111111111111111111111111111111111111111111111111111111111111';
+
   group('ageVerificationServiceProvider', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    // ageVerificationServiceProvider now consults isProtectedMinorProvider,
-    // which needs sharedPreferencesProvider and an auth state. Pin auth to
-    // unauthenticated so the protected-minor signal resolves to false, leaving
-    // these tests' adult-content assertions unaffected.
+    // ageVerificationServiceProvider consults isProtectedMinorProvider (needs
+    // sharedPreferencesProvider and an auth state) and scopes verification to
+    // the active account's pubkey (#7816). Pin auth to unauthenticated so the
+    // protected-minor signal resolves to false without a network fetch, and
+    // supply a mock AuthService pubkey so per-account writes persist.
     Future<ProviderContainer> buildContainer() async {
       final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
         ],
       );

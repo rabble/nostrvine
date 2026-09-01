@@ -6,6 +6,9 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  const pubkey =
+      '1111111111111111111111111111111111111111111111111111111111111111';
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group(AgeVerificationService, () {
@@ -35,14 +38,17 @@ void main() {
     );
 
     test('non-protected account behaves normally', () async {
-      final service = AgeVerificationService(isProtectedMinor: () => false);
+      final service = AgeVerificationService(
+        isProtectedMinor: () => false,
+        currentPubkeyHex: () => pubkey,
+      );
       await service.initialize();
       await service.setAdultContentVerified(true);
       expect(service.isAdultContentVerified, true);
     });
 
     test('defaults to not-protected when no callback supplied', () async {
-      final service = AgeVerificationService();
+      final service = AgeVerificationService(currentPubkeyHex: () => pubkey);
       await service.initialize();
       await service.setAdultContentVerified(true);
       expect(service.isAdultContentVerified, true);

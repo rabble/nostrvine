@@ -244,7 +244,7 @@ final class AgeVerificationServiceProvider
 }
 
 String _$ageVerificationServiceHash() =>
-    r'95d51cda0ad3f784cc0aee7eec46478bd4e6139c';
+    r'52f4f2e1fff38afe62316445dcd3fab39f794bc6';
 
 /// Content filter service for per-category Show/Warn/Hide preferences.
 /// keepAlive ensures preferences persist and are consistent across the app.
