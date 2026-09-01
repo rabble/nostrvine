@@ -426,6 +426,7 @@
   },
   "profileLinkCopied": "Pautan profil disalin",
   "profileSetupEditProfileTitle": "Sunting Profil",
+  "nostrSettingsNip05ProfileRequired": "Sediakan profil anda sebelum menambah alamat NIP-05.",
   "profileSetupBackLabel": "Kembali",
   "profileSetupAboutNostr": "Perihal Nostr",
   "profileSetupProfilePublished": "Profil berjaya diterbitkan!",

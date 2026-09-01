@@ -333,6 +333,7 @@
     "profileSignInButton": "Zaloguj się",
     "profileLinkCopied": "Link do profilu skopiowany",
     "profileSetupEditProfileTitle": "Edytuj profil",
+    "nostrSettingsNip05ProfileRequired": "Skonfiguruj profil, zanim dodasz adres NIP-05.",
     "profileSetupBackLabel": "Wstecz",
     "profileSetupAboutNostr": "O Nostr",
     "profileSetupProfilePublished": "Profil opublikowany pomyślnie!",

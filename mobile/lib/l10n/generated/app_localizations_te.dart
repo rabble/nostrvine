@@ -886,6 +886,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'ప్రొఫైల్‌ను సవరించండి';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'NIP-05 చిరునామాను జోడించే ముందు మీ ప్రొఫైల్‌ను సెటప్ చేయండి.';
+
+  @override
   String get profileSetupBackLabel => 'వెనుకకు';
 
   @override

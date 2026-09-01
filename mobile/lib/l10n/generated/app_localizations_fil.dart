@@ -844,6 +844,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'I-edit ang Profile';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'I-set up ang profile mo bago magdagdag ng NIP-05 address.';
+
+  @override
   String get profileSetupBackLabel => 'Bumalik';
 
   @override

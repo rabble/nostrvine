@@ -873,6 +873,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Editar perfil';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Configura tu perfil antes de añadir una dirección NIP-05.';
+
+  @override
   String get profileSetupBackLabel => 'Atrás';
 
   @override

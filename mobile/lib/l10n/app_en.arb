@@ -578,6 +578,10 @@
   },
   "profileLinkCopied": "Profile link copied",
   "profileSetupEditProfileTitle": "Edit Profile",
+  "nostrSettingsNip05ProfileRequired": "Set up your profile before adding a NIP-05 address.",
+  "@nostrSettingsNip05ProfileRequired": {
+    "description": "Empty-state message on NIP-05 settings when the account has not published a profile yet."
+  },
   "profileSetupBackLabel": "Back",
   "profileSetupAboutNostr": "About Nostr",
   "profileSetupProfilePublished": "Profile published successfully!",

@@ -867,6 +867,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'پروفائل میں ترمیم کریں';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'NIP-05 پتہ شامل کرنے سے پہلے اپنا پروفائل ترتیب دیں۔';
+
+  @override
   String get profileSetupBackLabel => 'واپس';
 
   @override

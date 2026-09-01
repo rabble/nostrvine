@@ -333,6 +333,7 @@
     "profileSignInButton": "サインイン",
     "profileLinkCopied": "プロフィールのリンクをコピーしたよ",
     "profileSetupEditProfileTitle": "プロフィールを編集",
+    "nostrSettingsNip05ProfileRequired": "NIP-05アドレスを追加する前にプロフィールを設定してください。",
     "profileSetupBackLabel": "戻る",
     "profileSetupAboutNostr": "Nostr について",
     "profileSetupProfilePublished": "プロフィールを公開したよ！",

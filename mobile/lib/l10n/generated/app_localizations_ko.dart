@@ -768,6 +768,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupEditProfileTitle => '프로필 편집';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'NIP-05 주소를 추가하기 전에 프로필을 설정하세요.';
+
+  @override
   String get profileSetupBackLabel => '뒤로';
 
   @override

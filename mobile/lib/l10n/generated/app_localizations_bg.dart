@@ -874,6 +874,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Редактиране на профил';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Настрой профила си, преди да добавиш NIP-05 адрес.';
+
+  @override
   String get profileSetupBackLabel => 'Назад';
 
   @override
