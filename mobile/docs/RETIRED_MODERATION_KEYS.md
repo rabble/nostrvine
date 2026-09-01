@@ -108,9 +108,10 @@ retired-key-aware at the two delivery seams that matter: the injected
 `DmSendPolicy` blocks every outbound publisher at the lowest send primitive,
 and pinned-support extraction avoids adopting a pre-rotation thread whose
 participants would route replies to the retired key. Whether a *newly
-discovered* event from a retired key should be trusted on its claimed
-`created_at` is a retirement question, not a recognition one, and it belongs to
-the burn protocol in `divinevideo/support-trust-safety#199`.
+discovered* event from a retired key should keep Divine's official name and
+wordmark is a separate recognition decision, tracked in
+`divinevideo/support-trust-safety#211`. The retirement and custody protocol it
+depends on is tracked in `divinevideo/support-trust-safety#199`.
 
 ## Rotating the moderation key
 
@@ -177,7 +178,10 @@ ready to receive messages", so the protocol and the client agree.
 
 No moderation key material has ever been committed to this repo, and none is
 recoverable from it. Custody of live signing keys is owned by Trust & Safety
-and is deliberately not described here.
+and is deliberately not described here. For a future register entry, obtain
+the custody status from Trust & Safety or the operator responsible for the
+rotation and record only the public-safe result here; do not infer it from this
+repo.
 
 One custody fact does belong in the register, because a shipped client
 behaviour rests on it and looked provisional without it.
@@ -202,14 +206,17 @@ turns up, reopen the thread" branch that
   [What a rotation cannot fix](#what-a-rotation-cannot-fix).
 - Recognition is therefore the only control this key still has behind it, and
   recognition is what `kLegacyModerationPubkeys` provides. Every other role it
-  held was revoked server-side — see the roles table above.
+  held was revoked either operationally or by the client's subscription
+  migration — see the roles table above.
 
 Do not re-litigate the composer for this key. A future retirement is a
 different question: what makes a key retired, how access is revoked, where
 remaining private material lives, how a retired identity is proved
 unreactivatable, and how a replacement is announced. That protocol is owned by
 `divinevideo/support-trust-safety#199`, and the mobile behaviour that follows
-from it by `divinevideo/divine-mobile#7851`.
+from it by `divinevideo/divine-mobile#7851`. This custody result does not settle
+whether newly discovered events from this retired key should retain official
+Divine branding; `divinevideo/support-trust-safety#211` owns that decision.
 
 ## Open items
 
@@ -218,8 +225,14 @@ from it by `divinevideo/divine-mobile#7851`.
   held, how a retired identity is proved unreactivatable, and how a
   replacement is announced and verified. The custody branch is already closed
   for `121b915b…`; this is for the next one.
+- `divinevideo/support-trust-safety#211` — decide whether newly discovered
+  events signed by a retired moderation key should retain Divine's official
+  name and wordmark. Custody is settled for the current register entry, but
+  that inbound recognition decision remains open.
 - `divinevideo/divine-mobile#7851` — the mobile behaviour that follows from
-  that protocol. Nothing is pending for the entry currently in the register.
+  the retirement protocol. Its send predicate and closed composer are settled
+  for the entry currently in the register; the recognition question is tracked
+  separately in `divinevideo/support-trust-safety#211`.
 - `divinevideo/divine-mobile#8253` — resolve the moderation identity through
   NIP-05 rather than a shipped pubkey, and reconcile Funnelcake's trusted
   labeler with the user-facing support identity.
