@@ -4578,6 +4578,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yalnızca metin — buraya fotoğraf veya GIF eklenemez.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override

@@ -8,6 +8,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -2620,6 +2621,153 @@ void main() {
         ).hasMatch(ModerationLabelService.fallbackModerationPubkeyHex),
         isTrue,
       );
+    });
+  });
+
+  group('$ReportContentDialog image insertion (#8210)', () {
+    Widget buildSubject() => ProviderScope(
+      overrides: [
+        contentReportingServiceProvider.overrideWith(
+          (ref) async => mockReportingService,
+        ),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ReportContentDialog(video: testVideo)),
+      ),
+    );
+
+    // Simulates a keyboard committing rich content (a GIF/image) into the
+    // focused field, exactly as Gboard does. Mirrors the framework's own
+    // content-insertion test in editable_text_test.dart: a
+    // `TextInputClient.performAction` / `TextInputAction.commitContent`
+    // platform message. Client id -1 is the debug-mode magic id that bypasses
+    // the connection-id check.
+    Future<void> commitKeyboardImage(
+      WidgetTester tester, {
+      String mimeType = 'image/gif',
+    }) {
+      const uri =
+          'content://com.google.android.inputmethod.latin.fileprovider/report.gif';
+      final message = const JSONMessageCodec().encodeMessage(<String, dynamic>{
+        'method': 'TextInputClient.performAction',
+        'args': <dynamic>[
+          -1,
+          'TextInputAction.commitContent',
+          <String, dynamic>{
+            'mimeType': mimeType,
+            'data': <int>[0, 1, 0, 1, 0, 1],
+            'uri': uri,
+          },
+        ],
+      });
+      return tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.textInput.name,
+        message,
+        (ByteData? _) {},
+      );
+    }
+
+    Future<void> openDetailsField(WidgetTester tester) async {
+      await setLargeSurface(tester);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.reportReasonOther));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'drops a keyboard-inserted image and shows an honest notice '
+      'instead of silently discarding it',
+      (tester) async {
+        await openDetailsField(tester);
+
+        const reporterWords = 'see the clip I am reporting';
+        await tester.enterText(find.byType(TextField), reporterWords);
+        await tester.pumpAndSettle();
+
+        await commitKeyboardImage(tester);
+        await tester.pumpAndSettle();
+
+        // The image never enters the field: the typed words are untouched and
+        // nothing from the inserted content leaks into the report.
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          reporterWords,
+        );
+        // And the reporter is told, on-surface, that it was not attached.
+        expect(find.text(l10n.reportDetailsImageNotAttached), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not show the not-attached notice until an image is inserted',
+      (tester) async {
+        await openDetailsField(tester);
+
+        expect(find.text(l10n.reportDetailsImageNotAttached), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'announces to screen readers that the inserted image was not attached',
+      (tester) async {
+        final announcements = <Map<Object?, Object?>>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (Object? message) async {
+                if (message is Map) announcements.add(message);
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+
+        await openDetailsField(tester);
+        await tester.enterText(find.byType(TextField), 'x');
+        await tester.pumpAndSettle();
+
+        await commitKeyboardImage(tester);
+        await tester.pumpAndSettle();
+
+        final announced = announcements
+            .where((m) => m['type'] == 'announce')
+            .map((m) => (m['data'] as Map?)?['message']);
+        expect(
+          announced,
+          contains(l10n.reportDetailsImageNotAttached),
+          reason:
+              'a dropped image must be announced to screen readers, not only '
+              'shown on screen',
+        );
+      },
+    );
+
+    testWidgets('clears the not-attached notice once the reporter types', (
+      tester,
+    ) async {
+      await openDetailsField(tester);
+
+      await tester.enterText(find.byType(TextField), 'x');
+      await tester.pumpAndSettle();
+      await commitKeyboardImage(tester);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.reportDetailsImageNotAttached), findsOneWidget);
+
+      await tester.enterText(
+        find.byType(TextField),
+        'the reported clip shows harassment',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.reportDetailsImageNotAttached), findsNothing);
     });
   });
 }

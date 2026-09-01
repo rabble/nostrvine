@@ -4377,6 +4377,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '텍스트만 입력할 수 있습니다. 여기에는 사진이나 GIF를 첨부할 수 없습니다.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override

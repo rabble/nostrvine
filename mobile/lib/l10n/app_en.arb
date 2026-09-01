@@ -2899,6 +2899,10 @@
   "@reportDetailsTextOnly": {
     "description": "Shown above the content report details field to warn that photos, screenshots, and GIFs cannot be attached."
   },
+  "reportDetailsImageNotAttached": "That wasn’t attached. Reports are text only, so describe it in words.",
+  "@reportDetailsImageNotAttached": {
+    "description": "Shown in the content report details field the moment the user tries to insert a photo or GIF from the keyboard. Reports carry no attachments, so the image is intentionally dropped; this confirms it was not attached and redirects the reporter to describing the issue in words."
+  },
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonSpamSubtitle": "Unwanted or repetitive content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",

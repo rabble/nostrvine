@@ -4341,6 +4341,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportDetailsTextOnly => '仅限文字——无法在此附加照片或 GIF。';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => '垃圾或不受欢迎的内容';
 
   @override

@@ -4362,6 +4362,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportDetailsTextOnly => 'テキストのみです。ここには写真やGIFを添付できません。';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'スパムや迷惑なコンテンツ';
 
   @override

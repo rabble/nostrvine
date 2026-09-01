@@ -4777,6 +4777,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Doar text — fotografiile și GIF-urile nu pot fi atașate aici.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam sau conținut nedorit';
 
   @override

@@ -735,6 +735,7 @@ class _CappedDetailsField extends StatefulWidget {
 
 class _CappedDetailsFieldState extends State<_CappedDetailsField> {
   bool _truncated = false;
+  bool _imageInsertionRejected = false;
 
   void _onTruncated() {
     if (_truncated || !mounted) return;
@@ -746,11 +747,32 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
     );
   }
 
+  void _onContentInserted(KeyboardInsertedContent content) {
+    // Reports are text only; there is no attachment path, so a keyboard-
+    // inserted image is intentionally dropped and never touches the field or
+    // any report state. Without this handler the framework drops it silently
+    // (#8210). Surface the drop instead so the reporter knows to use words.
+    if (!mounted) return;
+    if (!_imageInsertionRejected) {
+      setState(() => _imageInsertionRejected = true);
+    }
+    // Announce on every attempt, not once: each commit is a discrete,
+    // deliberate action worth confirming to a screen reader.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.reportDetailsImageNotAttached,
+      Directionality.of(context),
+    );
+  }
+
   void _onChanged(String value) {
     widget.onChanged();
     if (_truncated &&
         value.characters.length < BugReportConfig.maxFreeTextFieldLength) {
       setState(() => _truncated = false);
+    }
+    if (_imageInsertionRejected) {
+      setState(() => _imageInsertionRejected = false);
     }
   }
 
@@ -769,6 +791,12 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           textInputAction: TextInputAction.newline,
           textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
+          // The default config advertises the standard image types, so the
+          // keyboard still offers insertion (#8223 keeps the affordance
+          // visible); the handler rejects them honestly, not silently.
+          contentInsertionConfiguration: ContentInsertionConfiguration(
+            onContentInserted: _onContentInserted,
+          ),
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
           maxLines: 5,
@@ -788,6 +816,13 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
             context.l10n.supportFieldLimitReached,
             style: VineTheme.labelSmallFont(
               color: context.vineColors.onSurfaceVariant,
+            ),
+          ),
+        if (_imageInsertionRejected)
+          Text(
+            context.l10n.reportDetailsImageNotAttached,
+            style: VineTheme.labelSmallFont(
+              color: VineTheme.onSurfaceVariant,
             ),
           ),
       ],

@@ -4636,6 +4636,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Endast text – foton och GIF-bilder kan inte bifogas här.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Skräppost eller ovälkommet innehåll';
 
   @override

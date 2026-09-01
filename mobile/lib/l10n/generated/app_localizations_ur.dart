@@ -4647,6 +4647,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'صرف متن — یہاں تصاویر یا GIF منسلک نہیں کیے جا سکتے۔';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'اسپیم یا ناپسندیدہ مواد';
 
   @override

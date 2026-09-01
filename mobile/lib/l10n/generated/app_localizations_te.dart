@@ -4809,6 +4809,10 @@ class AppLocalizationsTe extends AppLocalizations {
       'వచనం మాత్రమే — ఫోటోలు మరియు GIFలు ఇక్కడ జోడించబడవు.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'స్పామ్ లేదా అవాంఛిత కంటెంట్';
 
   @override

@@ -4570,6 +4570,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Hanya teks — foto dan GIF tidak dapat dilampirkan di sini.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';
 
   @override

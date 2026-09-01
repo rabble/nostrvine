@@ -4688,6 +4688,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Само текст — тук не могат да се прикачват снимки или GIF файлове.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override

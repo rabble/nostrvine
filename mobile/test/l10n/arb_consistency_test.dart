@@ -434,6 +434,12 @@ const _knownUntranslatedDebt = <String>{
   // per-locale verb for "delete for everyone", and this label has to match
   // whichever one that locale picked.
   'dmDeletePendingLabel',
+  // Content-report image-rejection notice (#8210). The translated sibling
+  // reportDetailsTextOnly already ships per locale; this reactive notice is
+  // left in English until the same human translation pass picks it up, rather
+  // than machine-translating moderation copy that has to say exactly what it
+  // means.
+  'reportDetailsImageNotAttached',
   // Deletion prep-failure copy (feature #6126). Deferred to the l10n
   // translation-debt pass (#7632) rather than machine-translating a
   // safety-critical "nothing was deleted" message. Mirror the translated
