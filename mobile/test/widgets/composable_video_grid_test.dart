@@ -868,7 +868,7 @@ void main() {
 
         const inner = Radius.circular(4);
         const outer = Radius.circular(32);
-        final rtl = TextDirection.rtl;
+        const rtl = TextDirection.rtl;
         expect(
           tileRadius(tester, 0, direction: rtl),
           const BorderRadius.only(

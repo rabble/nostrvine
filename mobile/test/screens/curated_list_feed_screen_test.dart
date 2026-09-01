@@ -479,7 +479,7 @@ void main() {
         await openOwnerSheet(tester);
 
         expect(find.text(l10n.listEditInfoAction), findsOneWidget);
-        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
+        expect(find.text(l10n.listManageVideosAction), findsOneWidget);
         expect(find.text(l10n.listShareAction), findsOneWidget);
         expect(find.text(l10n.listDeleteAction), findsOneWidget);
       });
@@ -510,7 +510,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.listRemovePostsButton(0)), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosButton(0)), findsOneWidget);
         semantics.dispose();
       });
 
@@ -534,12 +534,12 @@ void main() {
             .single;
         expect(node, isSemantics(hasEnabledState: true, isEnabled: false));
 
-        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.tap(find.text(l10n.listManageVideosAction));
         await tester.pumpAndSettle();
 
         // The tap is inert: no manage mode, and the sheet stays up.
-        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
-        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosButton(0)), findsNothing);
+        expect(find.text(l10n.listManageVideosAction), findsOneWidget);
         semantics.dispose();
       });
 
@@ -566,11 +566,11 @@ void main() {
         await tester.pump();
         await openOwnerSheet(tester);
 
-        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.tap(find.text(l10n.listManageVideosAction));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
-        expect(find.text(l10n.listManagePostsAction), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosButton(0)), findsNothing);
+        expect(find.text(l10n.listManageVideosAction), findsOneWidget);
       });
 
       testWidgets('sheet hides share for a list without an author', (
@@ -736,7 +736,7 @@ void main() {
     group('manage posts mode', () {
       Future<void> enterManageMode(WidgetTester tester) async {
         await openOwnerSheet(tester);
-        await tester.tap(find.text(l10n.listManagePostsAction));
+        await tester.tap(find.text(l10n.listManageVideosAction));
         await tester.pumpAndSettle();
       }
 
@@ -759,10 +759,10 @@ void main() {
         // Title moves from the hero into the app bar; with the hero hidden
         // the name renders exactly once.
         expect(find.text('Owned List'), findsOneWidget);
-        expect(find.text(l10n.listRemovePostsButton(0)), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosButton(0)), findsOneWidget);
         final button = tester.widget<DivineButton>(
           find.ancestor(
-            of: find.text(l10n.listRemovePostsButton(0)),
+            of: find.text(l10n.listRemoveVideosButton(0)),
             matching: find.byType(DivineButton),
           ),
         );
@@ -835,13 +835,13 @@ void main() {
         await enterManageMode(tester);
         await tester.tap(find.text('A cat video'));
         await tester.pump();
-        await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+        await tester.tap(find.text(l10n.listRemoveVideosButton(1)));
         await tester.pumpAndSettle();
 
         verify(
           () => mockService.removeVideoFromList('owned-list', video.id),
         ).called(1);
-        expect(find.text(l10n.listRemovePostsSuccess(1)), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosSuccess(1)), findsOneWidget);
         expect(find.text('A cat video'), findsNothing);
         expect(find.text(l10n.curatedListEmptyTitle), findsOneWidget);
       });
@@ -896,7 +896,7 @@ void main() {
           await enterManageMode(tester);
           await tester.tap(find.text('A cat video'));
           await tester.pump();
-          await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+          await tester.tap(find.text(l10n.listRemoveVideosButton(1)));
           await tester.pumpAndSettle();
 
           expect(find.text('A cat video'), findsNothing);
@@ -928,7 +928,7 @@ void main() {
 
         await tester.tap(find.text('A cat video'));
         await tester.pump();
-        await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+        await tester.tap(find.text(l10n.listRemoveVideosButton(1)));
         await tester.pump();
 
         // Both exit routes are inert while the batch runs: the removals
@@ -949,7 +949,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // The batch settled: completion ran (snackbar) and the mode exited.
-        expect(find.text(l10n.listRemovePostsSuccess(1)), findsOneWidget);
+        expect(find.text(l10n.listRemoveVideosSuccess(1)), findsOneWidget);
         expect(find.byTooltip(l10n.curatedListActionsTooltip), findsOneWidget);
       });
 
@@ -977,7 +977,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verifyNever(() => goRouter.pop<Object?>());
-        expect(find.text(l10n.listRemovePostsButton(0)), findsNothing);
+        expect(find.text(l10n.listRemoveVideosButton(0)), findsNothing);
         expect(find.byTooltip(l10n.curatedListActionsTooltip), findsOneWidget);
       });
     });

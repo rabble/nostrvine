@@ -8263,11 +8263,11 @@ abstract class AppLocalizations {
   /// **'Edit list info'**
   String get listEditInfoAction;
 
-  /// No description provided for @listManagePostsAction.
+  /// No description provided for @listManageVideosAction.
   ///
   /// In en, this message translates to:
-  /// **'Manage posts'**
-  String get listManagePostsAction;
+  /// **'Manage videos'**
+  String get listManageVideosAction;
 
   /// Button to follow (subscribe to) a curated video list. Not a person-follow — some locales translate the two differently.
   ///
@@ -8281,23 +8281,23 @@ abstract class AppLocalizations {
   /// **'Following'**
   String get listFollowingButton;
 
-  /// Manage-posts action button. Zero keeps the singular label on the disabled button.
+  /// Manage-videos action button. Zero keeps the singular label on the disabled button.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Remove post} =1{Remove post} other{Remove {count} posts}}'**
-  String listRemovePostsButton(int count);
+  /// **'{count, plural, =0{Remove video} =1{Remove video} other{Remove {count} videos}}'**
+  String listRemoveVideosButton(int count);
 
-  /// No description provided for @listRemovePostsSuccess.
+  /// Snackbar after removing videos from a list in manage mode.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Removed 1 post} other{Removed {count} posts}}'**
-  String listRemovePostsSuccess(int count);
+  /// **'{count, plural, =1{Removed 1 video} other{Removed {count} videos}}'**
+  String listRemoveVideosSuccess(int count);
 
-  /// No description provided for @listRemovePostsFailure.
+  /// Snackbar when selected videos are still in the list after a removal batch.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Couldn\'t remove 1 post. Try again.} other{Couldn\'t remove {count} posts. Try again.}}'**
-  String listRemovePostsFailure(int count);
+  /// **'{count, plural, =1{Couldn\'t remove 1 video. Try again.} other{Couldn\'t remove {count} videos. Try again.}}'**
+  String listRemoveVideosFailure(int count);
 
   /// No description provided for @listShareAction.
   ///

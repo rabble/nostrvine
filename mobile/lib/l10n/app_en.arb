@@ -2976,7 +2976,7 @@
   "profileListsEmpty": "No lists yet. Make one for the loops you want to keep together.",
   "listEditTitle": "Edit list",
   "listEditInfoAction": "Edit list info",
-  "listManagePostsAction": "Manage posts",
+  "listManageVideosAction": "Manage videos",
   "listFollowButton": "Follow",
   "@listFollowButton": {
     "description": "Button to follow (subscribe to) a curated video list. Not a person-follow — some locales translate the two differently."
@@ -2985,17 +2985,19 @@
   "@listFollowingButton": {
     "description": "State of the list follow button once the viewer follows the list. Tapping it unfollows."
   },
-  "listRemovePostsButton": "{count, plural, =0{Remove post} =1{Remove post} other{Remove {count} posts}}",
-  "@listRemovePostsButton": {
-    "description": "Manage-posts action button. Zero keeps the singular label on the disabled button.",
+  "listRemoveVideosButton": "{count, plural, =0{Remove video} =1{Remove video} other{Remove {count} videos}}",
+  "@listRemoveVideosButton": {
+    "description": "Manage-videos action button. Zero keeps the singular label on the disabled button.",
     "placeholders": { "count": { "type": "int" } }
   },
-  "listRemovePostsSuccess": "{count, plural, =1{Removed 1 post} other{Removed {count} posts}}",
-  "@listRemovePostsSuccess": {
+  "listRemoveVideosSuccess": "{count, plural, =1{Removed 1 video} other{Removed {count} videos}}",
+  "@listRemoveVideosSuccess": {
+    "description": "Snackbar after removing videos from a list in manage mode.",
     "placeholders": { "count": { "type": "int" } }
   },
-  "listRemovePostsFailure": "{count, plural, =1{Couldn't remove 1 post. Try again.} other{Couldn't remove {count} posts. Try again.}}",
-  "@listRemovePostsFailure": {
+  "listRemoveVideosFailure": "{count, plural, =1{Couldn't remove 1 video. Try again.} other{Couldn't remove {count} videos. Try again.}}",
+  "@listRemoveVideosFailure": {
+    "description": "Snackbar when selected videos are still in the list after a removal batch.",
     "placeholders": { "count": { "type": "int" } }
   },
   "listShareAction": "Share list",

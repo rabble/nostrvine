@@ -4844,7 +4844,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listEditInfoAction => 'Edit list info';
 
   @override
-  String get listManagePostsAction => 'Manage posts';
+  String get listManageVideosAction => 'Manage videos';
 
   @override
   String get listFollowButton => 'Follow';
@@ -4853,35 +4853,35 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listFollowingButton => 'Following';
 
   @override
-  String listRemovePostsButton(int count) {
+  String listRemoveVideosButton(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Remove $count posts',
-      one: 'Remove post',
-      zero: 'Remove post',
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
     );
     return '$_temp0';
   }
 
   @override
-  String listRemovePostsSuccess(int count) {
+  String listRemoveVideosSuccess(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Removed $count posts',
-      one: 'Removed 1 post',
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
     );
     return '$_temp0';
   }
 
   @override
-  String listRemovePostsFailure(int count) {
+  String listRemoveVideosFailure(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Couldn\'t remove $count posts. Try again.',
-      one: 'Couldn\'t remove 1 post. Try again.',
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
     );
     return '$_temp0';
   }

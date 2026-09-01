@@ -351,7 +351,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     });
     SemanticsService.sendAnnouncement(
       View.of(context),
-      context.l10n.listManagePostsAction,
+      context.l10n.listManageVideosAction,
       Directionality.of(context),
     );
   }
@@ -396,8 +396,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // On failure some removals may still have landed, so refresh either way.
     _refreshListVideos();
     final message = failed
-        ? context.l10n.listRemovePostsFailure(state.failedCount)
-        : context.l10n.listRemovePostsSuccess(state.removedCount);
+        ? context.l10n.listRemoveVideosFailure(state.failedCount)
+        : context.l10n.listRemoveVideosSuccess(state.removedCount);
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -436,7 +436,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ),
         _OwnerActionTile(
           identifier: 'list_manage_posts_option',
-          label: context.l10n.listManagePostsAction,
+          label: context.l10n.listManageVideosAction,
           icon: DivineIconName.pencilSimple,
           action: _CuratedListAction.managePosts,
           enabled: canManagePosts,
@@ -909,7 +909,7 @@ class _ManageRemoveBar extends StatelessWidget {
               final removing =
                   state.status == CuratedListManagePostsStatus.removing;
               return DivineButton(
-                label: context.l10n.listRemovePostsButton(count),
+                label: context.l10n.listRemoveVideosButton(count),
                 type: DivineButtonType.secondary,
                 expanded: true,
                 isLoading: removing,

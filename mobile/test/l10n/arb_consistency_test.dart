@@ -438,12 +438,12 @@ const _knownUntranslatedDebt = <String>{
   // translation pass; the list-follow verb needs per-locale judgment
   // (person-follow vs list-subscribe differ in several locales).
   'listEditInfoAction',
-  'listManagePostsAction',
+  'listManageVideosAction',
   'listFollowButton',
   'listFollowingButton',
-  'listRemovePostsButton',
-  'listRemovePostsSuccess',
-  'listRemovePostsFailure',
+  'listRemoveVideosButton',
+  'listRemoveVideosSuccess',
+  'listRemoveVideosFailure',
   // Log-export copy (#8112 / #8113 / #8114). Left in English until a human
   // translation pass; machine-translating a diagnostic instruction the user
   // has to follow exactly is how it stops meaning what it says.
