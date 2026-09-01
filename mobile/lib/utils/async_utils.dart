@@ -42,7 +42,7 @@ class AsyncCancelledException implements Exception {
 /// Give the owner a scope and dispose it alongside everything else it owns:
 ///
 /// ```dart
-/// class PendingActionService extends ChangeNotifier {
+/// class PendingActionService {
 ///   final _async = AsyncScope(debugName: 'PendingActionService');
 ///
 ///   Future<void> _sync(PendingAction action) => _async.retryWithBackoff(
@@ -50,7 +50,6 @@ class AsyncCancelledException implements Exception {
 ///         debugName: 'Sync-${action.type}',
 ///       );
 ///
-///   @override
 ///   void dispose() {
 ///     _async.dispose(); // pending backoff aborts; no further operation() runs
 ///     super.dispose();
