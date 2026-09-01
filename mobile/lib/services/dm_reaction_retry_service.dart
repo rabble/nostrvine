@@ -438,7 +438,18 @@ class DmReactionRetryService {
   /// allowed to abort the pass — the remaining targets still get their drive.
   Future<bool> _expire(DmReactionRetryTarget target) async {
     try {
-      return await _repository.expirePendingReaction(rumorId: target.rumorId);
+      final expired = await _repository.expirePendingReaction(
+        rumorId: target.rumorId,
+      );
+      if (expired) {
+        Log.info(
+          'expired pending reaction ${target.rumorId} to failed: unconfirmed '
+          'for longer than ${_config.pendingTerminalAge.inMinutes} min',
+          name: 'DmReactionRetryService',
+          category: LogCategory.system,
+        );
+      }
+      return expired;
     } on Object catch (e, stackTrace) {
       Log.error(
         'expiring stale pending reaction ${target.rumorId} threw: $e',

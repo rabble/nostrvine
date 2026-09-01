@@ -275,11 +275,26 @@ typedef DmInboxLookup = ({List<String>? relays, DmInboxResolution state});
 /// (#7317). Shared by every gift-wrap publisher that also reports delivery —
 /// the 1:1 send, its retry, and the reaction fan-out (#8443) — so no sweep can
 /// undo what the send path preserved.
+///
+/// Logs the hold. The message service has already logged `Successfully
+/// published` for this wrap — the relay did confirm it — so without this line
+/// a support log reads as a delivered send with no trace of why the row is
+/// still pending. Both ids are logged whole: the wrap id is what a relay
+/// read-back finds, the rumor id is what the durable row is keyed by.
 NIP17SendResult downgradeFallbackPoolDelivery(
   NIP17SendResult result,
   DmInboxResolution state,
 ) {
-  if (!result.success || state != DmInboxResolution.unreadable) return result;
+  if (result is! NIP17SendSuccess || state != DmInboxResolution.unreadable) {
+    return result;
+  }
+  Log.info(
+    'NIP-17 wrap ${result.messageEventId} (rumor ${result.rumorEventId}) to '
+    '${pubkeyForLogs(result.recipientPubkey)} was confirmed only by the '
+    'fallback pool while their inbox was unreadable — holding it pending, not '
+    'scoring it delivered (#7317, #8443)',
+    category: LogCategory.system,
+  );
   return const NIP17SendResult.failure(
     'Recipient DM inbox unreadable; published to the fallback pool',
     retryablePending: true,
