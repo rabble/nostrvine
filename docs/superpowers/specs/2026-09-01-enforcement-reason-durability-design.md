@@ -1,7 +1,9 @@
 # A durable home for the enforcement reason
 
-Design for [#8304](https://github.com/divinevideo/divine-mobile/issues/8304).
-Product half: `support-trust-safety#200`. Status: **design only — no implementation.**
+Decision record for [#8304](https://github.com/divinevideo/divine-mobile/issues/8304).
+Product basis: `support-trust-safety#200`. Content-category follow-up:
+`support-trust-safety#214`. Status: **account-level policy decided; content-level
+policy remains open.**
 
 Written 2026-09-01 against `origin/main` `5d4d5a46fa`.
 
@@ -15,10 +17,12 @@ problem where there are two, and that they have opposite shapes:
 |---|---|---|
 | Does a reason exist? | **No** | **Yes** — a reviewed six-category taxonomy |
 | Where does it live? | nowhere user-presentable | **only** in the DM |
-| Recommended action | confirm the omission; restore the guard | give the category a durable home |
+| Recommended action | disclose state and effects, never a stored reason | decide whether to give the category a durable home |
 
-The account-level half needs a decision and no code. The content-level half is
-the real gap, and it is not the one the issue's proposal addresses.
+The account-level decision is to tell users the enforcement state and its
+effects, provide appeal and portability paths, and never expose a stored
+moderation reason. The content-level half is a separate policy question and is
+not the one the issue's proposal addresses.
 
 ## Finding that drives the split
 
@@ -39,16 +43,13 @@ place.
 
 ## Why no existing stored field can be surfaced
 
-Three independent stores hold something called a "reason". None is fit to send.
+Three independent stores hold something called a "reason". None is approved
+user-facing copy.
 
-1. **Keycast `users.suspended_reason`** — its admin API accepts arbitrary
-   caller-supplied text (sanitised for control characters and truncated, but
-   validated against no set), while Divine's only production writer constrains
-   it to four internal tags. Untrusted by contract; an untranslated token in
-   practice.
-2. **Funnelcake's enforcement tables** — free text supplied by whoever performed
-   the action, with a default that carries operator context when none is given.
-   Tracked separately as a disclosure risk; not usable as user-facing copy.
+1. **Keycast's account-status reason** — internal operational metadata, not
+   reviewed or localised user copy.
+2. **Funnelcake's enforcement reason** — internal operational metadata, not a
+   user-facing explanation.
 3. **The moderation service's sent-message log** — holds the rendered DM body,
    so for account actions it holds the same generic sentence, and for content
    actions it holds the category copy. This is the one store whose contents are
@@ -60,12 +61,11 @@ no amount of plumbing makes one into the other.
 
 ## Recommendation
 
-### Part 1 — account level: confirm, do not build
+### Part 1 — account level: disclose the state, not a stored reason
 
-Recommend T&S confirm that account-level enforcement carries no per-account
-reason, because none exists to carry. This is the exit #8304's author offered
-("If the answer is 'the reason stays private', say so and this closes"), and the
-evidence supports it more strongly than the issue assumed.
+The policy decision is that account-level enforcement carries no per-account
+reason. The notice identifies the enforcement state and its effects, provides
+appeal and portability paths, and exposes no stored moderation reason.
 
 Two consequences, both already true and worth stating:
 
@@ -74,15 +74,15 @@ Two consequences, both already true and worth stating:
 - Because the DM is the only carrier of the appeal instruction, the guards that
   keep it from being destroyed remain load-bearing rather than defensive.
 
-If T&S instead wants account actions to carry a category, that is **new product
-work**: assigning a category at enforcement time, which nothing does today. It
-is not exposure of an existing field.
+Introducing an account-level category would be **new product work**: assigning
+a reviewed category at enforcement time, which nothing does today. It would not
+be exposure of an existing field and is outside this decision.
 
-### Part 2 — content level: give the category a durable home
+### Part 2 — content level: decide whether to give the category a durable home
 
-Surface the per-content moderation **category** — a closed enum drawn from the
-existing six — on a self-authenticated, owner-scoped surface, next to the
-content it describes.
+`support-trust-safety#214` tracks the policy decision on whether to surface a
+per-content moderation **category** on a self-authenticated, owner-scoped
+surface next to the content it describes.
 
 The natural anchor already exists: funnelcake's owner-export path is
 self-authenticated, carries a per-event moderation annotation today, and is
@@ -111,9 +111,9 @@ exactly as `AccountEnforcementKind` is mapped today.
 
 ## Risks and open decisions
 
-- **OQ-1 (T&S, blocking Part 2).** Publishing the category tells a user which
-  classification tripped. That is the substance of s-t-s#200's "how much reason
-  do we give", and it is a policy call, not an engineering one.
+- **OQ-1 (T&S, tracked in `support-trust-safety#214`).** Publishing a category
+  tells a user which classification applied. That remains a policy call, not an
+  engineering one.
 - **OQ-2 (owner needed).** Part 2 is a funnelcake schema and API change; it
   needs an owner in that repo.
 - **A ban purges content.** The per-event annotation may have nothing left to
@@ -136,9 +136,9 @@ exactly as `AccountEnforcementKind` is mapped today.
 
 Two commits, neither of which requires the decision above:
 
-- Restored the client-side guard that a moderation reason cannot influence
-  enforcement state — a rationale and test that existed, then were removed as
-  collateral of a source change rather than by re-decision.
+- Restored the client-side guard that a stored moderation reason cannot
+  influence enforcement state — a rationale and test that existed, then were
+  removed as collateral of a source change rather than by re-decision.
 - Documented why Keycast's `suspendedReason` is parsed and deliberately never
   read, so it is neither deleted as dead code nor wired up as "the reason we
   already have".

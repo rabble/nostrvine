@@ -66,10 +66,8 @@ void main() {
 
     test('keeps an unknown future status indeterminate', () async {
       final client = _client(
-        handler: (_) async => http.Response(
-          '{"pubkey":"$_pubkey","status":"future"}',
-          200,
-        ),
+        handler: (_) async =>
+            http.Response('{"pubkey":"$_pubkey","status":"future"}', 200),
       );
       await expectLater(
         client.fetchStatus(expectedPubkey: _pubkey),
@@ -139,11 +137,12 @@ void main() {
     // Guards the trust boundary PR #7839 established and PR #8161 removed as
     // collateral of moving the source of truth from Keycast to Funnelcake. The
     // rationale outlived that move and is not specific to either backend: a
-    // moderation reason is free text written by whatever called an admin API,
-    // so it must never reach state that copy or logging could render
-    // (support-trust-safety#200 R-7). Funnelcake omits it today and asserts
-    // that omission in its own suite; this pins the client side, so a server
-    // that starts sending one cannot silently become renderable here.
+    // stored moderation reasons are internal operational metadata, not reviewed
+    // or localised user copy, so they must never reach state that copy or
+    // logging could render (support-trust-safety#200 R-7). Funnelcake omits a
+    // reason today and asserts that omission in its own suite; this pins the
+    // client side, so a server that starts sending one cannot silently make it
+    // renderable here.
     test('ignores moderation metadata a 200 response might carry', () async {
       Future<FunnelcakeAccountStatus> statusFor(String body) {
         return _client(
