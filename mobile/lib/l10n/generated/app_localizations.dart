@@ -7771,6 +7771,36 @@ abstract class AppLocalizations {
   /// **'Export logs to file for manual sending'**
   String get supportSaveLogsSubtitle;
 
+  /// No description provided for @supportClearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Logs'**
+  String get supportClearLogs;
+
+  /// No description provided for @supportClearLogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wipe captured logs and start fresh'**
+  String get supportClearLogsSubtitle;
+
+  /// Title of the confirmation sheet shown before clearing the in-memory log buffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear captured logs?'**
+  String get supportClearLogsConfirmTitle;
+
+  /// Confirm button on the clear-logs confirmation sheet, under the title 'Clear captured logs?'.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get supportClearLogsConfirmButton;
+
+  /// Snackbar shown after the in-memory log buffer is cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs cleared'**
+  String get supportLogsCleared;
+
   /// No description provided for @supportFaq.
   ///
   /// In en, this message translates to:

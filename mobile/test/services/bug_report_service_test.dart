@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 const _rawNsec =
     'nsec1qqqsyrhq4p4d8hf40q7tlujzw87hqhz9axhfnm35s2a3u3rrnwsq9sp5p6';
@@ -450,5 +451,24 @@ void main() {
           ? 'Only runs on iOS/Android'
           : null,
     );
+
+    group('clearCapturedLogs', () {
+      test('empties the in-memory capture buffer', () async {
+        final capture = LogCaptureService();
+        await capture.clearAllLogs();
+        capture.captureLog(
+          LogEntry(
+            timestamp: DateTime.now(),
+            level: LogLevel.info,
+            message: 'before clear',
+          ),
+        );
+        expect(capture.isEmpty, isFalse);
+
+        await service.clearCapturedLogs();
+
+        expect(capture.isEmpty, isTrue);
+      });
+    });
   });
 }

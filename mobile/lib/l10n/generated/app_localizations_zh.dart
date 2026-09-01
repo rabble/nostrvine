@@ -4244,6 +4244,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportSaveLogsSubtitle => '导出日志到文件，手动发送';
 
   @override
+  String get supportClearLogs => 'Clear Logs';
+
+  @override
+  String get supportClearLogsSubtitle => 'Wipe captured logs and start fresh';
+
+  @override
+  String get supportClearLogsConfirmTitle => 'Clear captured logs?';
+
+  @override
+  String get supportClearLogsConfirmButton => 'Clear';
+
+  @override
+  String get supportLogsCleared => 'Logs cleared';
+
+  @override
   String get supportFaq => '常见问题';
 
   @override

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/clear_logs/clear_logs_cubit.dart';
 import 'package:openvine/blocs/export_logs/export_logs_cubit.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/clear_logs_confirmation_sheet.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -78,6 +80,7 @@ class SupportCenterScreen extends ConsumerWidget {
                   onTap: () => _showFeatureRequest(context),
                 ),
               const _ExportLogsTile(),
+              const _ClearLogsTile(),
               // #6335 was filed from here by someone who could not find
               // deletion, so it has to be reachable from here too. It sits
               // above the outbound links rather than last so it stays on
@@ -398,5 +401,55 @@ class _ExportLogsTileView extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Clears the in-memory log capture buffer, behind a confirmation.
+///
+/// Goes through [ClearLogsCubit] rather than calling `BugReportService`
+/// from here, so the widget layer never sees the service type.
+class _ClearLogsTile extends ConsumerWidget {
+  const _ClearLogsTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bugReportService = ref.watch(bugReportServiceProvider);
+    return BlocProvider<ClearLogsCubit>(
+      key: ValueKey(bugReportService),
+      create: (_) => ClearLogsCubit(bugReportService: bugReportService),
+      child: const _ClearLogsTileView(),
+    );
+  }
+}
+
+class _ClearLogsTileView extends StatelessWidget {
+  const _ClearLogsTileView();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return BlocListener<ClearLogsCubit, ClearLogsState>(
+      listenWhen: (previous, current) => previous.status != current.status,
+      listener: (context, state) {
+        if (state.status != ClearLogsStatus.cleared) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            DivineSnackbarContainer.snackBar(context.l10n.supportLogsCleared),
+          );
+      },
+      child: _SupportTile(
+        icon: DivineIconName.trashSimple,
+        title: l10n.supportClearLogs,
+        subtitle: l10n.supportClearLogsSubtitle,
+        onTap: () => _confirmAndClear(context),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndClear(BuildContext context) async {
+    final confirmed = await showClearLogsConfirmation(context);
+    if (confirmed != true || !context.mounted) return;
+    context.read<ClearLogsCubit>().clear();
   }
 }

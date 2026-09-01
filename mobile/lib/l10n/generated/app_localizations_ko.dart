@@ -4279,6 +4279,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportSaveLogsSubtitle => '수동 전송을 위해 로그를 파일로 내보내요';
 
   @override
+  String get supportClearLogs => 'Clear Logs';
+
+  @override
+  String get supportClearLogsSubtitle => 'Wipe captured logs and start fresh';
+
+  @override
+  String get supportClearLogsConfirmTitle => 'Clear captured logs?';
+
+  @override
+  String get supportClearLogsConfirmButton => 'Clear';
+
+  @override
+  String get supportLogsCleared => 'Logs cleared';
+
+  @override
   String get supportFaq => '자주 묻는 질문';
 
   @override

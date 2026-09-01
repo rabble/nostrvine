@@ -449,6 +449,13 @@ const _knownUntranslatedDebt = <String>{
   // has to follow exactly is how it stops meaning what it says.
   'supportNoLogsToExport',
   'supportExportLogsUnconfirmed',
+  // Clear-logs copy (#8114). New UI strings left in English until the same
+  // human translation pass rather than machine-translated into 21 locales.
+  'supportClearLogs',
+  'supportClearLogsSubtitle',
+  'supportClearLogsConfirmTitle',
+  'supportClearLogsConfirmButton',
+  'supportLogsCleared',
   // Account-enforcement translation remains tracked in #7765. The policy copy
   // is deliberately left in English until its human translation pass.
   'accountStatusTitle',

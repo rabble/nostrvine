@@ -225,6 +225,51 @@ void main() {
       });
     });
 
+    group('clear logs', () {
+      setUp(() {
+        when(
+          () => bugReportService.clearCapturedLogs(),
+        ).thenAnswer((_) async {});
+      });
+
+      testWidgets('reads its title and subtitle from l10n', (tester) async {
+        await pump(tester);
+
+        expect(find.text(en.supportClearLogs), findsOneWidget);
+        expect(find.text(en.supportClearLogsSubtitle), findsOneWidget);
+      });
+
+      testWidgets('confirms first, then clears and reports', (tester) async {
+        await pump(tester);
+        await tester.tap(find.text(en.supportClearLogs));
+        await tester.pumpAndSettle();
+
+        // A confirmation gate, not an immediate clear.
+        expect(find.text(en.supportClearLogsConfirmTitle), findsOneWidget);
+        verifyNever(() => bugReportService.clearCapturedLogs());
+
+        await tester.tap(find.text(en.supportClearLogsConfirmButton));
+        await tester.pumpAndSettle();
+
+        verify(() => bugReportService.clearCapturedLogs()).called(1);
+        expect(find.text(en.supportLogsCleared), findsOneWidget);
+      });
+
+      testWidgets('does nothing when the confirmation is cancelled', (
+        tester,
+      ) async {
+        await pump(tester);
+        await tester.tap(find.text(en.supportClearLogs));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(en.commonCancel));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => bugReportService.clearCapturedLogs());
+        expect(find.text(en.supportLogsCleared), findsNothing);
+      });
+    });
+
     // #6335 was filed from this screen by a user who could not find how to
     // delete their account. Deletion has to be reachable from here.
     testWidgets('shows the delete-account entry when authenticated', (
