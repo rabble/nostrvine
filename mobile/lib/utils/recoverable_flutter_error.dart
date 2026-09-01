@@ -8,6 +8,8 @@ import 'package:openvine/utils/expected_network_error.dart';
 
 const _recoverableMediaLoadReason = 'Recoverable media load failure';
 const _recoverableHeroFlightReason = 'Recoverable hero flight layout failure';
+const _imageDecodeAllocationReason =
+    'Recoverable image decode allocation failure';
 const _expectedNetworkFailureReason = 'Expected network failure';
 const _recoverableMediaHosts = <String>{
   'media.divine.video',
@@ -131,6 +133,37 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
       isMissingHttpHost ||
       isInvalidImageData) {
     return (reason: _recoverableMediaLoadReason, report: true);
+  }
+
+  // The image pipeline could not allocate memory for a decoded frame, so the
+  // decode failed on a device that was out of room. Flutter catches this in
+  // MultiFrameImageStreamCompleter._decodeNextFrameAndSchedule, reports it
+  // with `silent: true` — its own marker for "expected in release builds" —
+  // and returns; the frame never arrives and the widget keeps its placeholder,
+  // so nothing crashes. It only reaches a handler at all when no
+  // ImageStreamListener was still attached, which is the scrolled-away case:
+  // VineCachedImage and VideoThumbnailWidget both register onError, and
+  // ImageStreamCompleter.reportError escalates to FlutterError only in its
+  // `if (!handled)` branch.
+  //
+  // Kept reportable, unlike a 404 or a dropped connection. An allocation
+  // failure is not a dead URL — it is evidence of device memory pressure, and
+  // that signal is the whole point of still seeing it.
+  //
+  // The message comes from the engine verbatim (dart:ui's Codec.getNextFrame
+  // rethrows the decoder's string as `Exception(decodeError)`), so match the
+  // allocation-failure family rather than the one wording observed in the
+  // field ('Could not allocate scaled bitmap for image decompression.').
+  final isImageDecodeAllocationFailure =
+      (library == 'image resource service' ||
+          context.contains('image codec') ||
+          context.contains('image frame')) &&
+      (error.contains('Could not allocate') ||
+          error.contains('Failed to allocate') ||
+          error.contains('Unable to allocate'));
+
+  if (isImageDecodeAllocationFailure) {
+    return (reason: _imageDecodeAllocationReason, report: true);
   }
 
   // A hero flight measures its destination hero in a post-frame callback, and
