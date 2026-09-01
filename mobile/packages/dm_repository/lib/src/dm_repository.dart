@@ -2543,7 +2543,52 @@ class DmRepository {
         );
       }
       if (isDuplicate) {
+        // A twin from the PEER is proof they speak NIP-17, and it is the only
+        // place that proof ever appears: the rumor is about to be dropped as a
+        // duplicate, so without this the evidence is discarded and the thread
+        // stays latched to 'nip04' forever. That latch is what makes the
+        // legacy dual-send the steady state rather than an edge case — every
+        // later pair hits this same early return, so the decision the first
+        // arrival race made is never revisited (#8499).
+        //
+        // `!isSentByMe` is load-bearing, not defensive. This `else` branch is
+        // reached by a peer's rumor AND by a self-authored 1:1 rumor with no
+        // send batch token, so clearing unconditionally would sometimes clear
+        // on our OWN self-wrap — inverting the rule into "clear when *I*
+        // speak NIP-17" and cutting a genuine legacy peer off from the only
+        // copy they can read.
+        // Ledger first, unlatch second, and the unlatch can never throw out of
+        // here. It is an opportunistic upgrade on evidence we happen to be
+        // holding; the dedup bookkeeping below it is what stops this wrap
+        // being decrypted again on every redelivery. Ordering them the other
+        // way round made a failed unlatch abort `_recordProcessedWrap`, so a
+        // transient DB error would have cost a signer round trip per replay,
+        // forever. A dropped unlatch costs nothing — the next message from the
+        // peer presents the same evidence again.
         await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
+        if (!isSentByMe) {
+          try {
+            final cleared = await _conversationsDao.clearNip04ProtocolLatch(
+              conversationId,
+              ownerPubkey: ownerPubkey,
+            );
+            if (cleared) {
+              Log.info(
+                'Cleared the nip04 protocol latch on conversation '
+                '$conversationId: ${pubkeyForLogs(rumor.pubkey)} sent NIP-17, '
+                'so the legacy kind-4 copy is no longer published to them',
+                category: LogCategory.system,
+              );
+            }
+          } on Object catch (e) {
+            Log.warning(
+              'Could not clear the nip04 protocol latch on conversation '
+              '$conversationId: $e — the thread keeps dual-sending until the '
+              'next NIP-17 message from the peer',
+              category: LogCategory.system,
+            );
+          }
+        }
         Log.debug(
           'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
           '$conversationId from ${pubkeyForLogs(rumor.pubkey)}: matching '
