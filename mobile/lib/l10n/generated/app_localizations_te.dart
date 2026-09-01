@@ -4998,7 +4998,50 @@ class AppLocalizationsTe extends AppLocalizations {
   String get listEditTitle => 'జాబితాను సవరించండి';
 
   @override
-  String get listEditAction => 'జాబితాను సవరించండి';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManagePostsAction => 'Manage posts';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemovePostsButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count posts',
+      one: 'Remove post',
+      zero: 'Remove post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count posts',
+      one: 'Removed 1 post',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemovePostsFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count posts. Try again.',
+      one: 'Couldn\'t remove 1 post. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'షేర్ జాబితా';
@@ -6139,22 +6182,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get curatedListFailedToLoad => 'జాబితాను లోడ్ చేయడంలో విఫలమైంది';
 
   @override
-  String get curatedListNoVideosAvailable => 'వీడియోలు అందుబాటులో లేవు';
-
-  @override
   String get curatedListVideoNotAvailable => 'వీడియో అందుబాటులో లేదు';
 
   @override
   String get curatedListActionsTooltip => 'జాబితా చర్యలు';
-
-  @override
-  String get curatedListUnfollowAction => 'జాబితాను అనుసరించవద్దు';
-
-  @override
-  String get curatedListUnfollowedSnack => 'అనుసరించని జాబితా';
-
-  @override
-  String get curatedListUnfollowFailed => 'జాబితాను అన్‌ఫాలో చేయడం సాధ్యపడలేదు';
 
   @override
   String get curatedListDeleteConfirmTitle => 'జాబితాను తొలగించాలా?';
