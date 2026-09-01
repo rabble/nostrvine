@@ -39,6 +39,10 @@ class AsyncCancelledException implements Exception {
 /// helpers: an "explicit owner" is a field somebody disposes, not a call
 /// convention somebody has to remember.
 ///
+/// The owner **must** call [dispose] when its lifecycle ends. The scope cannot
+/// infer that its owner went away, and an undisposed scope deliberately keeps
+/// its active waits alive until they settle.
+///
 /// Give the owner a scope and dispose it alongside everything else it owns:
 ///
 /// ```dart

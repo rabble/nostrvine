@@ -438,6 +438,10 @@ class PendingActionService extends ChangeNotifier {
   }
 
   void _scheduleSyncRetry() {
+    // Keep the lifecycle check at the resource-creation boundary. Most callers
+    // guard before reaching here, but queueAction resumes across DAO awaits and
+    // can race teardown independently of syncPendingActions' finally block.
+    if (_disposed) return;
     if (_syncRetryTimer?.isActive ?? false) return;
     _syncRetryTimer = Timer(_retryConfig.resyncDelay, () {
       _syncRetryTimer = null;
