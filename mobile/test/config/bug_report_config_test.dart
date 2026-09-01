@@ -157,6 +157,91 @@ void main() {
       }
     });
 
+    group('redacts filesystem paths that carry PII', () {
+      // Each case pairs a path shape that reaches the log buffer through an
+      // exception toString() with the PII fragment that must not survive: a
+      // desktop account name, an install UUID, or a user-chosen imported-file
+      // basename. The whole path is redacted rather than one segment: the
+      // platform is already in the report's device info, so the FS root marker
+      // adds no triage value worth the risk of a partial leak.
+      const cases = <String, ({String input, String forbidden})>{
+        'macos home account name': (
+          input:
+              "PathNotFoundException: path = '/Users/mjbradley/Library/Preferences/app.plist'",
+          forbidden: 'mjbradley',
+        ),
+        'macos home directory terminal': (
+          input: "FileSystemException: directory '/Users/mjbradley' is gone",
+          forbidden: 'mjbradley',
+        ),
+        // A quoted path (the dominant exception render) whose basename holds a
+        // space must redact whole. Stopping at the space would leave the
+        // filename fragment beside the marker, a partial leak.
+        'macos home spaced filename quoted': (
+          input:
+              "FileSystemException: path = '/Users/mjbradley/Music/My Song.m4a'",
+          forbidden: 'Song',
+        ),
+        'ios container spaced filename quoted': (
+          input:
+              "FileSystemException: path = '/var/mobile/Containers/Data/Application/1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D/tmp/My Song.m4a'",
+          forbidden: 'Song',
+        ),
+        'macos external volume spaced filename quoted': (
+          input:
+              "FileSystemException: path = '/Volumes/Backup Drive/Music/My Song.m4a'",
+          forbidden: 'My Song',
+        ),
+        'linux home account name': (
+          input:
+              "FileSystemException: Cannot open, path = '/home/mbradley/notes.txt'",
+          forbidden: 'mbradley',
+        ),
+        'windows home account name': (
+          input: r'PathNotFoundException: C:\Users\mbradley\AppData\Local\Temp',
+          forbidden: 'mbradley',
+        ),
+        'ios container user filename': (
+          input:
+              "FileSystemException: path = '/var/mobile/Containers/Data/Application/1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D/Documents/draft_audio_imports/d1/1699999999000_My_Song.m4a'",
+          forbidden: 'My_Song',
+        ),
+        'ios container install uuid': (
+          input:
+              "FileSystemException: path = '/var/mobile/Containers/Data/Application/1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D/Documents/x.m4a'",
+          forbidden: '1A2B3C4D',
+        ),
+        'android app-data user filename': (
+          input:
+              '/data/user/0/video.divine.app/cache/1699999999000_My_Song.m4a (No such file)',
+          forbidden: 'My_Song',
+        ),
+        'android shared-storage user filename': (
+          input: '/storage/emulated/0/Download/1699999999000_My_Song.m4a',
+          forbidden: 'My_Song',
+        ),
+        'macos container user filename via home root': (
+          input:
+              "path = '/Users/mjbradley/Library/Containers/video.divine.app/Data/Documents/draft_audio_imports/d1/1699999999000_My_Song.m4a'",
+          forbidden: 'My_Song',
+        ),
+      };
+
+      for (final entry in cases.entries) {
+        test(entry.key, () {
+          final sanitized = sanitizeDiagnosticText(entry.value.input);
+
+          expect(sanitized, contains('[REDACTED]'));
+          expect(
+            sanitized,
+            isNot(contains(entry.value.forbidden)),
+            reason:
+                'leaked "${entry.value.forbidden}" from ${entry.value.input}',
+          );
+        });
+      }
+    });
+
     test('an unbalanced quote costs one word, not the rest of the report', () {
       // A quoted branch that tolerated a missing closing quote would run to
       // the end of the payload, so a user typing `password: "test1` into
@@ -355,6 +440,34 @@ void main() {
         'the login token expired instantly and I got logged out',
         'Secret DMs are not decrypting',
         'Token refresh scheduled',
+        // Triage-critical URLs and routes must survive. The team keeps hosts
+        // and routes by design (see redactUriStringForLogs), and a media or
+        // relay URL is often the whole point of a report.
+        'https://media.divine.video/abcdef0123456789.mp4',
+        'wss://relay.divine.video',
+        'GoRouterState: /video/abcdef0123',
+        '/invite',
+        // `/home/<index>` is the video-feed route (RoutePaths.videoFeedForIndex),
+        // not a Unix home directory. A home-dir path always has content below
+        // the account name; the route is terminal, so it must survive.
+        'navigated to /home/3',
+        'GoRouterState: /home/12',
+        // The quoted-path rule must not fire on a quoted value that is not a
+        // path rooted at a covered directory.
+        "error detail: 'connection reset by peer'",
+        "resource url: 'https://media.divine.video/abcdef0123456789.mp4'",
+        // The root is case-sensitive, so a lowercase `/users/` web-route
+        // segment in a URL is not mistaken for a macOS home directory. This
+        // guards against a regression that made the pattern case-insensitive.
+        'https://example.com/users/profile/123',
+        // Package and SDK references in stack frames are not PII.
+        'package:openvine/services/local_audio_import_service.dart:54:11',
+        'dart:async/zone.dart 1234:5',
+        // Absolute system paths carry no account name or user file.
+        '/usr/local/bin/dart',
+        '/System/Library/Frameworks/Foundation.framework',
+        // A relative asset path is not user data.
+        'assets/images/logo.png',
       ];
 
       for (final input in cases) {
