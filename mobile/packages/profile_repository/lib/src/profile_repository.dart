@@ -2526,9 +2526,10 @@ class ProfileRepository implements ProfileReader {
               await _applyVanish(pubkey);
               remaining.remove(pubkey);
             case UserProfileNotPublished():
-              // User exists in Funnelcake but has no Kind 0. Skip relay
-              // fallback — the profile genuinely does not exist yet.
+              // Funnelcake explicitly established that the user has no Kind 0.
+              // Record that evidence and skip the unnecessary relay fallback.
               await _clearVanish(pubkey);
+              _confirmedMissing.add(pubkey);
               remaining.remove(pubkey);
             case UserProfileFound():
               await _clearVanish(pubkey);
@@ -2635,20 +2636,23 @@ class ProfileRepository implements ProfileReader {
 
     // Step 4: Batch-write all freshly fetched to Drift.
     //
-    // Writes to the DAO directly rather than through cacheProfile, so the
-    // vanish guard has to be applied here too — otherwise a relay copy of an
-    // erased account slips back into the cache via the batch path.
+    // Writes to the DAO directly rather than through cacheProfile, so both of
+    // that method's in-memory guards have to be applied here too. The vanish
+    // check, or a relay copy of an erased account slips back into the cache
+    // via the batch path. The confirmed-missing clear, or a pubkey an earlier
+    // batch recorded as having no Kind 0 keeps that verdict after this batch
+    // resolved a profile for it.
     toCache.removeWhere((profile) => _vanished.contains(profile.pubkey));
     if (toCache.isNotEmpty) {
-      _knownCached.addAll(toCache.map((p) => p.pubkey));
+      final resolved = toCache.map((profile) => profile.pubkey).toList();
+      _knownCached.addAll(resolved);
+      _confirmedMissing.removeAll(resolved);
       await _userProfilesDao.upsertProfiles(toCache);
     }
 
-    // Mark any still-remaining pubkeys as confirmed missing so future
-    // single-profile fetches skip the relay/indexer cascade.
-    if (remaining.isNotEmpty) {
-      _confirmedMissing.addAll(remaining);
-    }
+    // Still-remaining pubkeys are indeterminate: an empty result cannot
+    // distinguish absence from a failed, timed-out, or incomplete source.
+    // Only an explicit server sentinel establishes confirmed absence.
 
     filteredResults();
 
