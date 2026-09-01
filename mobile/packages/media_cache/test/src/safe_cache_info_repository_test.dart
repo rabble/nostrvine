@@ -242,9 +242,7 @@ void main() {
           final secondOpen = Completer<bool>();
           final secondRepository = MockCacheInfoRepository();
           when(() => mockRepository.open()).thenAnswer((_) => firstOpen.future);
-          when(
-            () => secondRepository.open(),
-          ).thenAnswer((_) => secondOpen.future);
+          when(secondRepository.open).thenAnswer((_) => secondOpen.future);
 
           final previousHandler = FlutterError.onError;
           void sentinel(FlutterErrorDetails details) {}
