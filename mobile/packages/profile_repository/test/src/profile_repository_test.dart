@@ -247,8 +247,7 @@ void main() {
         expect(profileRepository.hasProfile(testPubkey), isTrue);
       });
 
-      test('clears pubkey from confirmed missing set', () async {
-        // First make the pubkey confirmed missing
+      test('does not infer confirmed missing from relay absence', () async {
         when(
           () => mockNostrClient.fetchProfile(testPubkey),
         ).thenAnswer((_) async => null);
@@ -260,12 +259,6 @@ void main() {
           ),
         ).thenAnswer((_) async => <Event>[]);
         await profileRepository.fetchFreshProfile(pubkey: testPubkey);
-        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
-
-        // Now cache a profile for it
-        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
-        await profileRepository.cacheProfile(profile);
-
         expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
       });
     });
@@ -597,25 +590,28 @@ void main() {
         verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
       });
 
-      test('marks pubkey as confirmed missing when all sources miss', () async {
-        stubAllSourcesMiss();
-
-        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
-
-        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
-      });
-
       test(
-        'rechecks sources on explicit fetch after confirmed missing',
+        'leaves missing indeterminate when all relay sources miss',
         () async {
           stubAllSourcesMiss();
 
-          // First call — hits all sources, marks missing
+          await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
+        },
+      );
+
+      test(
+        'rechecks sources after an indeterminate miss',
+        () async {
+          stubAllSourcesMiss();
+
+          // First call hits all sources without treating absence as proof.
           final firstResult = await profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
           );
           expect(firstResult, isNull);
-          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
 
           // Second call — explicit fetch should clear the stale marker
           // and try the sources again.
@@ -1785,7 +1781,7 @@ void main() {
           verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
         });
 
-        test('marks missing when indexer also returns nothing', () async {
+        test('does not confirm missing from empty relay results', () async {
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
           ).thenAnswer((_) async => null);
@@ -1802,7 +1798,7 @@ void main() {
           );
 
           expect(result, isNull);
-          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
         });
 
         test('handles indexer relay timeout gracefully', () async {
@@ -1822,7 +1818,7 @@ void main() {
           );
 
           expect(result, isNull);
-          expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+          expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
         });
 
         test(

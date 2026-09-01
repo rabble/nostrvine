@@ -97,7 +97,11 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         );
         add(const VerifiedClaimsRequested());
       } else {
-        emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
+        emit(
+          MyProfileError(
+            errorType: _missingProfileErrorType(),
+          ),
+        );
       }
     } on Exception {
       if (isClosed) return;
@@ -216,7 +220,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         );
         add(const VerifiedClaimsRequested());
       } else {
-        emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
+        emit(MyProfileError(errorType: _missingProfileErrorType()));
       }
     } on Exception catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -368,6 +372,11 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
 
   String _identityKeyOf(IdentityClaim claim) =>
       '${claim.platform.toLowerCase()}:${claim.identity.toLowerCase()}';
+
+  MyProfileErrorType _missingProfileErrorType() =>
+      _profileRepository.isConfirmedMissing(pubkey)
+      ? MyProfileErrorType.notFound
+      : MyProfileErrorType.networkError;
 
   UserProfile? _profileFromState(MyProfileState state) {
     final profile = switch (state) {

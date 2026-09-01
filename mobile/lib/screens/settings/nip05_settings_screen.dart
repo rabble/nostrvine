@@ -491,7 +491,13 @@ class _Nip05SettingsMissingProfile extends StatelessWidget {
             DivineButton(
               size: DivineButtonSize.small,
               label: context.l10n.profileSetupEditProfileTitle,
-              onPressed: () => context.go(ProfileSetupScreen.editPath),
+              onPressed: () async {
+                await context.push(ProfileSetupScreen.editPath);
+                if (!context.mounted) return;
+                context.read<MyProfileBloc>().add(
+                  const MyProfileLoadRequested(),
+                );
+              },
             ),
           ],
         ),

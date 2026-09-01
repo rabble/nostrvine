@@ -332,6 +332,9 @@ void main() {
         when(
           () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.isConfirmedMissing(testPubkey),
+        ).thenReturn(true);
 
         final router = GoRouter(
           initialLocation: '/nip05',
@@ -360,7 +363,10 @@ void main() {
             ),
             GoRoute(
               path: ProfileSetupScreen.editPath,
-              builder: (context, state) => const Text('edit-profile-route'),
+              builder: (context, state) => TextButton(
+                onPressed: context.pop,
+                child: const Text('edit-profile-route'),
+              ),
             ),
           ],
         );
@@ -386,6 +392,17 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('edit-profile-route'), findsOneWidget);
+
+        await tester.tap(find.text('edit-profile-route'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.nostrSettingsNip05ProfileRequired),
+          findsOneWidget,
+        );
+        verify(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).called(2);
       },
     );
 
@@ -397,7 +414,10 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-        ).thenThrow(Exception('network failed'));
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.isConfirmedMissing(testPubkey),
+        ).thenReturn(false);
 
         await tester.pumpWidget(
           MaterialApp(

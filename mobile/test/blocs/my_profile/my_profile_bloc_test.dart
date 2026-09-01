@@ -387,7 +387,7 @@ void main() {
 
         blocTest<MyProfileBloc, MyProfileState>(
           'emits [loading null, error notFound] '
-          'when fresh fetch returns null',
+          'when fresh fetch is authoritatively missing',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
@@ -395,6 +395,9 @@ void main() {
             when(
               () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.isConfirmedMissing(testPubkey),
+            ).thenReturn(true);
           },
           build: createBloc,
           act: (bloc) => bloc.add(const MyProfileLoadRequested()),
@@ -404,6 +407,32 @@ void main() {
               (s) => s.errorType,
               'errorType',
               MyProfileErrorType.notFound,
+            ),
+          ],
+        );
+
+        blocTest<MyProfileBloc, MyProfileState>(
+          'emits [loading null, error networkError] '
+          'when fresh fetch is indeterminate',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.isConfirmedMissing(testPubkey),
+            ).thenReturn(false);
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const MyProfileLoadRequested()),
+          expect: () => [
+            isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
+            isA<MyProfileError>().having(
+              (s) => s.errorType,
+              'errorType',
+              MyProfileErrorType.networkError,
             ),
           ],
         );
@@ -1018,6 +1047,9 @@ void main() {
           when(
             () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.isConfirmedMissing(testPubkey),
+          ).thenReturn(true);
         },
         build: createBloc,
         act: (bloc) async {
@@ -1193,6 +1225,9 @@ void main() {
           when(
             () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.isConfirmedMissing(testPubkey),
+          ).thenReturn(false);
         },
         build: createBloc,
         act: (bloc) async {
@@ -1205,7 +1240,7 @@ void main() {
           isA<MyProfileError>().having(
             (s) => s.errorType,
             'errorType',
-            MyProfileErrorType.notFound,
+            MyProfileErrorType.networkError,
           ),
         ],
       );
