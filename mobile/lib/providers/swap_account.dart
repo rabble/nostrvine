@@ -246,6 +246,11 @@ Future<void> swapAccount({
                 }
               },
       );
+      // The replacement router can remain on a top-level route such as
+      // /settings, where AppShellSideEffects is not mounted. Activate the
+      // keep-alive coordinator after commit so the incoming account registers
+      // without making a failed switch take ownership of the device token.
+      container.read(pushNotificationSyncProvider);
       try {
         await container
             .read(authServiceProvider)
