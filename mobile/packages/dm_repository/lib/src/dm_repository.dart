@@ -3358,10 +3358,7 @@ class DmRepository {
       // decrypt and transaction return: this handler has no generation guard
       // to abandon on, and a switch inside that window would import this
       // stamp into the next account's maximum, narrowing its `since:`.
-      await _syncState?.recordSeen(
-        ownerPubkey,
-        createdAt: persistedCreatedAt,
-      );
+      await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
       await _syncState?.recordWireSeen(
         ownerPubkey,
         createdAt: nip04Event.createdAt,
@@ -4200,6 +4197,7 @@ class DmRepository {
             _sendNip04Message(
               recipientPubkey: recipientPubkey,
               content: content,
+              replyToId: replyToId,
             ).catchError((Object e) {
               // Thrown failures only — a signer that reports by THROWING
               // (Keycast's RPC layer raises RpcException on 401/403/504, and a
@@ -6517,6 +6515,34 @@ class DmRepository {
   // Send - NIP-04 fallback (Kind 4)
   // -------------------------------------------------------------------------
 
+  /// The event id to put in a kind-4 `e` tag for a reply, or `null` when the
+  /// reply target is not one the legacy recipient can resolve.
+  ///
+  /// Returns the id only when the replied-to message arrived over NIP-04, so
+  /// the reference names an event that is already public and that the
+  /// recipient has actually seen. See the call site for why a NIP-17 rumor id
+  /// must not be published here.
+  Future<String?> _resolveNip04ReplyTag(String? replyToId) async {
+    if (replyToId == null) return null;
+    try {
+      final row = await _directMessagesDao.getMessageById(
+        replyToId,
+        ownerPubkey: _userPubkey,
+      );
+      if (row == null) return null;
+      return row.id == row.giftWrapId ? row.id : null;
+    } on Object catch (e) {
+      // Best-effort threading must never cost the message. A lookup failure
+      // sends the copy untagged rather than not at all.
+      Log.warning(
+        'Could not resolve a NIP-04 reply tag for $replyToId: $e — sending '
+        'the legacy kind-4 copy unthreaded',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Sends a NIP-04 encrypted direct message (kind 4) for legacy client
   /// interoperability.
   ///
@@ -6525,6 +6551,7 @@ class DmRepository {
   Future<NIP17SendResult> _sendNip04Message({
     required String recipientPubkey,
     required String content,
+    String? replyToId,
   }) async {
     // Reuses NIP17SendResult for simplicity — this is an internal helper.
     //
@@ -6556,8 +6583,30 @@ class DmRepository {
       return const NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
+    // NIP-04 allows an `e` tag naming the message being replied to, "such that
+    // contextual, more organized conversations may happen" (04.md:17). Without
+    // it a legacy recipient — whose only readable copy is this kind 4 — gets
+    // every reply unthreaded.
+    //
+    // It is only added when the replied-to message ITSELF arrived over NIP-04,
+    // for two independent reasons:
+    //
+    //   * Resolvable. A row that arrived over NIP-17 is stored under its RUMOR
+    //     id, which the recipient never saw — the reference would dangle.
+    //   * Private. A rumor id is not published anywhere in NIP-17: the wrap and
+    //     the seal each carry their own id and the rumor's is not derivable
+    //     from them. Putting one in a cleartext tag would publish a stable
+    //     identifier for a private message next to the sender, the recipient
+    //     and the true timestamp.
+    //
+    // `id == giftWrapId` is the arrival-shape derivation from #8169. Our own
+    // sends are excluded by it too, and correctly so: they are stored under a
+    // rumor id, and the kind-4 twin we published had a different event id that
+    // is never persisted, so no resolvable reference to it exists.
+    final replyTag = await _resolveNip04ReplyTag(replyToId);
     final event = Event(_userPubkey, EventKind.directMessage, [
       ['p', recipientPubkey],
+      if (replyTag != null) ['e', replyTag],
     ], ciphertext);
 
     final signed = await signer.signEvent(event);
@@ -7551,12 +7600,8 @@ class DmRepository {
     );
     if (removedAt != null) return false;
 
-    final newest = bucket.reduce(
-      (a, b) => b.createdAt >= a.createdAt ? b : a,
-    );
-    final oldest = bucket.reduce(
-      (a, b) => b.createdAt < a.createdAt ? b : a,
-    );
+    final newest = bucket.reduce((a, b) => b.createdAt >= a.createdAt ? b : a);
+    final oldest = bucket.reduce((a, b) => b.createdAt < a.createdAt ? b : a);
     final messageIds = [for (final m in bucket) m.id];
 
     await _conversationsDao.runInTransaction(() async {
