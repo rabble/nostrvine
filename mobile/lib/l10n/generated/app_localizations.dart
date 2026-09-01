@@ -1478,6 +1478,12 @@ abstract class AppLocalizations {
   /// **'Edit Profile'**
   String get profileSetupEditProfileTitle;
 
+  /// Empty-state message on NIP-05 settings when the account has not published a profile yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your profile before adding a NIP-05 address.'**
+  String get nostrSettingsNip05ProfileRequired;
+
   /// No description provided for @profileSetupBackLabel.
   ///
   /// In en, this message translates to:

@@ -200,8 +200,7 @@ class ProfileRepository implements ProfileReader {
   /// same pubkey share the same future instead of firing duplicate requests.
   final _inFlightFetches = <String, Future<UserProfile?>>{};
 
-  /// Pubkeys confirmed to have no Kind 0 profile (FunnelCake returned
-  /// the `_noProfile` sentinel or relay + indexer returned nothing).
+  /// Pubkeys confirmed to have no Kind 0 profile by an authoritative source.
   /// Session-scoped — cleared on app restart.
   final _confirmedMissing = <String>{};
 
@@ -277,8 +276,9 @@ class ProfileRepository implements ProfileReader {
 
   /// Whether the given pubkey is known to have no Kind 0 profile.
   ///
-  /// Returns `true` if FunnelCake or relay fetches previously confirmed
-  /// this pubkey has no profile. Session-scoped.
+  /// Empty relay results are indeterminate because timeout and participation
+  /// details are not preserved by the current relay query API.
+  @override
   bool isConfirmedMissing(String pubkey) => _confirmedMissing.contains(pubkey);
 
   /// Synchronous check for whether a profile is cached.
@@ -989,11 +989,11 @@ class ProfileRepository implements ProfileReader {
     final fallback = await _userProfilesDao.getProfile(pubkey);
     if (fallback != null) return fallback;
 
-    // All sources exhausted — mark as confirmed missing.
-    _confirmedMissing.add(pubkey);
+    // Empty relay/indexer results are indeterminate: queryEvents discards
+    // timeout and participation details, so only an explicit server sentinel
+    // can establish that no Kind 0 has been published.
     Log.debug(
-      'No profile found for ${pubkeyForLogs(pubkey)} across all sources, '
-      'marked missing',
+      'No profile resolved for ${pubkeyForLogs(pubkey)} across all sources',
       name: 'ProfileRepository.fetchFreshProfile',
       category: LogCategory.relay,
     );

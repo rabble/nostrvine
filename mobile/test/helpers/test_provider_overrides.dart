@@ -280,6 +280,7 @@ MockProfileRepository createMockProfileRepository() {
   when(
     () => mockRepo.fetchFreshProfile(pubkey: any(named: 'pubkey')),
   ).thenAnswer((_) async => null);
+  when(() => mockRepo.isConfirmedMissing(any())).thenReturn(false);
   when(
     () => mockRepo.watchProfile(pubkey: any(named: 'pubkey')),
   ).thenAnswer((_) => Stream.value(null));

@@ -53,6 +53,10 @@ class _ExhaustiveReader implements ProfileReader {
     List<Duration> rawKind0RetryDelays = const [],
   }) async => null;
 
+  // Widened consciously: this reads session-local fetch classification only.
+  @override
+  bool isConfirmedMissing(String pubkey) => false;
+
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,

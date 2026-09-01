@@ -766,6 +766,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'プロフィールを編集';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'NIP-05アドレスを追加する前にプロフィールを設定してください。';
+
+  @override
   String get profileSetupBackLabel => '戻る';
 
   @override

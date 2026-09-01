@@ -836,6 +836,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Chỉnh sửa hồ sơ';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Hãy thiết lập hồ sơ trước khi thêm địa chỉ NIP-05.';
+
+  @override
   String get profileSetupBackLabel => 'Quay lại';
 
   @override

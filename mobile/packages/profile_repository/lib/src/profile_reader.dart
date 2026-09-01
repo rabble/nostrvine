@@ -61,12 +61,21 @@ abstract interface class ProfileReader {
   /// Fetches the freshest profile for [pubkey] and caches it locally.
   ///
   /// Reads only — the relay query and the funnelcake REST fallback are both
-  /// unauthenticated. Returns `null` when no profile exists anywhere.
+  /// unauthenticated. A `null` result can mean either authoritative absence
+  /// or an indeterminate relay/API result; use [isConfirmedMissing] to
+  /// distinguish them.
   Future<UserProfile?> fetchFreshProfile({
     required String pubkey,
     bool requireRawKind0,
     List<Duration> rawKind0RetryDelays,
   });
+
+  /// Whether the latest fetch positively established that [pubkey] has no
+  /// published profile.
+  ///
+  /// Empty or failed relay queries are not authoritative absence. This is
+  /// true only for sources that explicitly report a missing Kind 0 profile.
+  bool isConfirmedMissing(String pubkey);
 
   /// Resolves many profiles at once, preferring the Drift cache.
   ///

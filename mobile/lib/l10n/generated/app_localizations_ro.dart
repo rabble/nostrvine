@@ -903,6 +903,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Editează profilul';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Configurează-ți profilul înainte de a adăuga o adresă NIP-05.';
+
+  @override
   String get profileSetupBackLabel => 'Înapoi';
 
   @override

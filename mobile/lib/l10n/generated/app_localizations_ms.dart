@@ -836,6 +836,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Sunting Profil';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Sediakan profil anda sebelum menambah alamat NIP-05.';
+
+  @override
   String get profileSetupBackLabel => 'Kembali';
 
   @override

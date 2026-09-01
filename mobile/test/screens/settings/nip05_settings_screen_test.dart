@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -323,6 +324,89 @@ void main() {
     );
 
     testWidgets(
+      'sends a profile-less user to Edit Profile instead of showing Retry',
+      (tester) async {
+        when(
+          () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.isConfirmedMissing(testPubkey),
+        ).thenReturn(true);
+
+        final router = GoRouter(
+          initialLocation: '/nip05',
+          routes: [
+            GoRoute(
+              path: '/nip05',
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => ProfileEditorBloc(
+                      profileRepository: mockProfileRepository,
+                      blossomUploadService: mockBlossomUploadService,
+                      hasExistingProfile: false,
+                      currentUserPubkey: testPubkey,
+                    ),
+                  ),
+                  BlocProvider(
+                    create: (_) => MyProfileBloc(
+                      profileRepository: mockProfileRepository,
+                      pubkey: testPubkey,
+                    )..add(const MyProfileLoadRequested()),
+                  ),
+                ],
+                child: const Nip05SettingsView(),
+              ),
+            ),
+            GoRoute(
+              path: ProfileSetupScreen.editPath,
+              builder: (context, state) => TextButton(
+                onPressed: context.pop,
+                child: const Text('edit-profile-route'),
+              ),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            routerConfig: router,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.nostrSettingsNip05ProfileRequired),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.profileRetryButton), findsNothing);
+
+        await tester.tap(find.text(l10n.profileSetupEditProfileTitle));
+        await tester.pumpAndSettle();
+
+        expect(find.text('edit-profile-route'), findsOneWidget);
+
+        await tester.tap(find.text('edit-profile-route'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.nostrSettingsNip05ProfileRequired),
+          findsOneWidget,
+        );
+        verify(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).called(2);
+      },
+    );
+
+    testWidgets(
       'shows retry UI instead of spinning forever when profile load fails',
       (tester) async {
         when(
@@ -330,7 +414,10 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-        ).thenThrow(Exception('network failed'));
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.isConfirmedMissing(testPubkey),
+        ).thenReturn(false);
 
         await tester.pumpWidget(
           MaterialApp(

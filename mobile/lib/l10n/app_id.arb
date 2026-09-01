@@ -333,6 +333,7 @@
     "profileSignInButton": "Masuk",
     "profileLinkCopied": "Tautan profil disalin",
     "profileSetupEditProfileTitle": "Ubah Profil",
+    "nostrSettingsNip05ProfileRequired": "Siapkan profilmu sebelum menambahkan alamat NIP-05.",
     "profileSetupBackLabel": "Kembali",
     "profileSetupAboutNostr": "Tentang Nostr",
     "profileSetupProfilePublished": "Profil berhasil dipublikasikan!",

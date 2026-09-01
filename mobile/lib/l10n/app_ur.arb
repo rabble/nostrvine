@@ -426,6 +426,7 @@
   },
   "profileLinkCopied": "پروفائل لنک کاپی ہو گیا",
   "profileSetupEditProfileTitle": "پروفائل میں ترمیم کریں",
+  "nostrSettingsNip05ProfileRequired": "NIP-05 پتہ شامل کرنے سے پہلے اپنا پروفائل ترتیب دیں۔",
   "profileSetupBackLabel": "واپس",
   "profileSetupAboutNostr": "Nostr کے بارے میں",
   "profileSetupProfilePublished": "پروفائل کامیابی سے شائع ہو گیا!",

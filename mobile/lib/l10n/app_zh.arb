@@ -426,6 +426,7 @@
   },
   "profileLinkCopied": "主页链接已复制",
   "profileSetupEditProfileTitle": "编辑资料",
+  "nostrSettingsNip05ProfileRequired": "添加 NIP-05 地址前，请先设置个人资料。",
   "profileSetupBackLabel": "返回",
   "profileSetupAboutNostr": "关于 Nostr",
   "profileSetupProfilePublished": "资料发布成功！",

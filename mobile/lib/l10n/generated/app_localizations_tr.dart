@@ -803,6 +803,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Profili Düzenle';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'NIP-05 adresi eklemeden önce profilini oluştur.';
+
+  @override
   String get profileSetupBackLabel => 'Geri';
 
   @override

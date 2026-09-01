@@ -371,6 +371,7 @@
     },
     "profileLinkCopied": "Връзката към профила е копирана",
     "profileSetupEditProfileTitle": "Редактиране на профил",
+    "nostrSettingsNip05ProfileRequired": "Настрой профила си, преди да добавиш NIP-05 адрес.",
     "profileSetupBackLabel": "Назад",
     "profileSetupAboutNostr": "Относно Nostr",
     "profileSetupProfilePublished": "Профилът е публикуван успешно!",

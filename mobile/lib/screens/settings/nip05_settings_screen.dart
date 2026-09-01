@@ -14,6 +14,7 @@ import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
@@ -72,9 +73,7 @@ class _Nip05SettingsLoadingScreen extends StatelessWidget {
         onBackPressed: context.pop,
       ),
       backgroundColor: context.vineColors.background,
-      body: const Center(
-        child: BrandedLoadingIndicator(size: 60),
-      ),
+      body: const Center(child: BrandedLoadingIndicator(size: 60)),
     );
   }
 }
@@ -149,8 +148,13 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             final currentProfile = _profileFromState(myProfileState);
             return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
               builder: (context, editorState) {
-                if (myProfileState is MyProfileError) {
-                  return const _Nip05SettingsLoadError();
+                if (myProfileState case MyProfileError(:final errorType)) {
+                  return switch (errorType) {
+                    MyProfileErrorType.notFound =>
+                      const _Nip05SettingsMissingProfile(),
+                    MyProfileErrorType.networkError =>
+                      const _Nip05SettingsLoadError(),
+                  };
                 }
 
                 return Align(
@@ -348,10 +352,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
     _didSeedInitialValues = true;
   }
 
-  void _onSaveStatusChanged(
-    BuildContext context,
-    ProfileEditorState state,
-  ) {
+  void _onSaveStatusChanged(BuildContext context, ProfileEditorState state) {
     if (state.status == ProfileEditorStatus.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(context.l10n.nostrSettingsNip05Saved),
@@ -439,10 +440,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
     return result ?? false;
   }
 
-  void _onSavePressed(
-    BuildContext context,
-    UserProfile currentProfile,
-  ) {
+  void _onSavePressed(BuildContext context, UserProfile currentProfile) {
     context.read<ProfileEditorBloc>().add(
       ProfileNip05Saved(currentProfile: currentProfile),
     );
@@ -463,6 +461,48 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
         normalizedExternal != initialExternal ||
             editorState.initialUsername != null,
     };
+  }
+}
+
+class _Nip05SettingsMissingProfile extends StatelessWidget {
+  const _Nip05SettingsMissingProfile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 16,
+          children: [
+            DivineIcon(
+              icon: DivineIconName.userCircle,
+              color: context.vineColors.secondaryText,
+              size: 48,
+            ),
+            Text(
+              context.l10n.nostrSettingsNip05ProfileRequired,
+              textAlign: TextAlign.center,
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
+            DivineButton(
+              size: DivineButtonSize.small,
+              label: context.l10n.profileSetupEditProfileTitle,
+              onPressed: () async {
+                await context.push(ProfileSetupScreen.editPath);
+                if (!context.mounted) return;
+                context.read<MyProfileBloc>().add(
+                  const MyProfileLoadRequested(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -807,6 +807,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupEditProfileTitle => 'Ubah Profil';
 
   @override
+  String get nostrSettingsNip05ProfileRequired =>
+      'Siapkan profilmu sebelum menambahkan alamat NIP-05.';
+
+  @override
   String get profileSetupBackLabel => 'Kembali';
 
   @override
