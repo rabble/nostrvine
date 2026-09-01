@@ -19350,6 +19350,14 @@ void main() {
             content: 'deleted mid-flight',
           );
 
+          // Drain the unawaited NIP-04 leg BEFORE asserting it never
+          // published. Without this the `verifyNever` below runs while the
+          // fallback future is still suspended, so it passes whether or not
+          // the cancel interlock works — proven by mutation: dropping
+          // `persistedLocally &&` from the gate left this test green while
+          // the leg demonstrably reached `publishEventAwaitOk` (#8262).
+          await pumpEventQueue();
+
           // The wire copy went out — the send itself still succeeded.
           expect(result.success, isTrue);
           verifyNever(
@@ -23031,6 +23039,31 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
+
+          // The recovery must not stamp the thread 'nip04'. Nothing asserted
+          // this before: flipping the recover path's `?? 'nip17'` default to
+          // `'nip04'` left the whole suite green (#8262). A regression there
+          // would latch every recovered conversation, and per the latch
+          // mechanics that decision then freezes — so every later send in the
+          // thread would publish a cleartext kind-4 twin.
+          final upserted = verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: captureAny(named: 'dmProtocol'),
+            ),
+          ).captured;
+          expect(upserted, isNotEmpty);
+          expect(upserted.last, 'nip17');
         },
       );
 
