@@ -502,15 +502,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   /// Delete action on that bubble, not a button on this toast. A mixed
   /// outcome stays hidden and never reaches this listener.
   void _onRetractionRefused(BuildContext context, ConversationState state) {
-    final message = context.l10n.dmDeleteRefusedMessage;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      message,
-      Directionality.of(context),
-    );
+    _showErrorToastAndAnnounce(context, context.l10n.dmDeleteRefusedMessage);
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {
