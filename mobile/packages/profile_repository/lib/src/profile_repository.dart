@@ -2526,9 +2526,10 @@ class ProfileRepository implements ProfileReader {
               await _applyVanish(pubkey);
               remaining.remove(pubkey);
             case UserProfileNotPublished():
-              // User exists in Funnelcake but has no Kind 0. Skip relay
-              // fallback — the profile genuinely does not exist yet.
+              // Funnelcake explicitly established that the user has no Kind 0.
+              // Record that evidence and skip the unnecessary relay fallback.
               await _clearVanish(pubkey);
+              _confirmedMissing.add(pubkey);
               remaining.remove(pubkey);
             case UserProfileFound():
               await _clearVanish(pubkey);
@@ -2644,11 +2645,9 @@ class ProfileRepository implements ProfileReader {
       await _userProfilesDao.upsertProfiles(toCache);
     }
 
-    // Mark any still-remaining pubkeys as confirmed missing so future
-    // single-profile fetches skip the relay/indexer cascade.
-    if (remaining.isNotEmpty) {
-      _confirmedMissing.addAll(remaining);
-    }
+    // Still-remaining pubkeys are indeterminate: an empty result cannot
+    // distinguish absence from a failed, timed-out, or incomplete source.
+    // Only an explicit server sentinel establishes confirmed absence.
 
     filteredResults();
 

@@ -7125,6 +7125,7 @@ void main() {
         );
 
         expect(result, isEmpty);
+        expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
       });
 
       test(
@@ -7227,6 +7228,7 @@ void main() {
         );
 
         expect(result, isEmpty);
+        expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
       });
 
       test(
@@ -7256,6 +7258,7 @@ void main() {
           );
 
           expect(result, isEmpty);
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
           verifyNever(() => mockNostrClient.fetchProfile(any()));
           verifyNever(
             () => mockNostrClient.queryEvents(
@@ -7265,6 +7268,48 @@ void main() {
             ),
           );
           verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+        },
+      );
+
+      test(
+        'distinguishes confirmed absence from an omitted bulk result',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileNotPublished(pubkey: testPubkey),
+              },
+            ),
+          );
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey2),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey, testPubkey2],
+          );
+
+          expect(result, isEmpty);
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey2), isFalse);
         },
       );
 
@@ -7344,6 +7389,7 @@ void main() {
 
         expect(result, isEmpty);
         expect(repoWithFunnelcake.isVanished(testPubkey), isTrue);
+        expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
         verify(() => mockVanishedDao.markVanished(testPubkey)).called(1);
         verify(() => mockUserProfilesDao.deleteProfile(testPubkey)).called(1);
         verifyNever(() => mockNostrClient.fetchProfile(any()));
