@@ -37,6 +37,21 @@ class KeycastAccountStatus {
 
   /// Present only when the account is not active (suspended/banned/etc.).
   final String? accountStatus;
+
+  /// Keycast's internal reason for a non-active status. **Deliberately not
+  /// consumed anywhere, and not safe to render to the user.**
+  ///
+  /// This is operational metadata, not reviewed or localised user copy. The
+  /// account-level policy deliberately derives copy from the enforcement state
+  /// and its effects rather than from any stored reason field.
+  ///
+  /// It is also not the enforcement authority: divine-mobile reads account
+  /// status from Funnelcake, not from here. Parsed only so this model matches
+  /// the whole `GET /api/user/account` payload.
+  ///
+  /// #8304 records that account-level notices do not expose a stored reason.
+  /// Any separately approved content-level explanation will use a closed
+  /// category with reviewed copy, not this field.
   final String? suspendedReason;
 
   /// Durable approved-minor (13-15) flag. Independent of [accountStatus] —

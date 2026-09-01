@@ -31,8 +31,20 @@ enum AccountEnforcementKind {
 /// Enforcement state for the authenticated account, as reported by
 /// Funnelcake's self-authenticated status endpoint.
 ///
-/// Deliberately carries no reason or moderation metadata. The self-status API
-/// returns only the public enforcement state, and copy is chosen from [kind].
+/// Deliberately carries no reason or moderation metadata, for two reasons that
+/// are worth keeping apart because only the first survives a change of backend:
+///
+/// 1. Stored moderation reasons are internal operational metadata, not
+///    reviewed or localised user copy. Account-level notices describe the
+///    state and its effects without rendering that metadata
+///    (support-trust-safety#200 R-7).
+/// 2. Funnelcake's self-status API happens not to return one today, and asserts
+///    that in its own suite. This is why the omission is currently free.
+///
+/// Reason (2) arrived with the move from Keycast to Funnelcake and reads like
+/// the whole story; it is not. Copy is chosen from [kind] alone. See #8304 for
+/// the account-level policy decision and `account_status_api_client_test.dart`
+/// for the client-side guard.
 class AccountEnforcementStatus {
   const AccountEnforcementStatus({required this.kind});
 
