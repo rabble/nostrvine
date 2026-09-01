@@ -136,7 +136,7 @@ void main() {
 
     // Guards the trust boundary PR #7839 established and PR #8161 removed as
     // collateral of moving the source of truth from Keycast to Funnelcake. The
-    // rationale outlived that move and is not specific to either backend: a
+    // rationale outlived that move and is not specific to either backend:
     // stored moderation reasons are internal operational metadata, not reviewed
     // or localised user copy, so they must never reach state that copy or
     // logging could render (support-trust-safety#200 R-7). Funnelcake omits a
