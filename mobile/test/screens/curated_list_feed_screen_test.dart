@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the curated list detail screen: hero header, viewer
 // ABOUTME: follow/share actions, owner actions sheet, and manage-posts mode.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -901,6 +903,55 @@ void main() {
           expect(find.text(l10n.curatedListEmptyTitle), findsOneWidget);
         },
       );
+
+      testWidgets('back is held while a removal is in flight', (
+        tester,
+      ) async {
+        stubOwnedList();
+        // Completer-gated so the test holds the racer at the race instead of
+        // depending on wall-clock timing.
+        final removal = Completer<bool>();
+        when(
+          () => mockService.removeVideoFromList('owned-list', any()),
+        ).thenAnswer((_) => removal.future);
+
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            videoEvents: [_videoEvent()],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await enterManageMode(tester);
+
+        await tester.tap(find.text('A cat video'));
+        await tester.pump();
+        await tester.tap(find.text(l10n.listRemovePostsButton(1)));
+        await tester.pump();
+
+        // Both exit routes are inert while the batch runs: the removals
+        // would keep publishing after close() with their completion dropped.
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pump();
+        final popScope =
+            tester.widget(
+                  find.byWidgetPredicate((widget) => widget is PopScope).first,
+                )
+                as PopScope;
+        popScope.onPopInvokedWithResult!(false, null);
+        await tester.pump();
+        expect(find.text('Owned List'), findsOneWidget);
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+
+        removal.complete(true);
+        await tester.pumpAndSettle();
+
+        // The batch settled: completion ran (snackbar) and the mode exited.
+        expect(find.text(l10n.listRemovePostsSuccess(1)), findsOneWidget);
+        expect(find.byTooltip(l10n.curatedListActionsTooltip), findsOneWidget);
+      });
 
       testWidgets('back exits manage mode instead of popping the route', (
         tester,

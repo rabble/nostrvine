@@ -361,6 +361,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     if (cubit == null) {
       return;
     }
+    // Closing mid-removal drops the terminal emit while the publishes keep
+    // going: no refresh, no snackbar, stale grid. Hold the mode until the
+    // batch settles — the remove bar is already showing its progress.
+    if (cubit.state.status == CuratedListManagePostsStatus.removing) {
+      return;
+    }
     setState(() {
       _manageCubit = null;
     });
