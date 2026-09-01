@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -148,100 +150,168 @@ void main() {
         expect(cacheFile.existsSync(), false);
       });
 
+      test('deletes a corrupt index before the repository opens it', () async {
+        // The real-world shape: upstream swallows the parse failure and
+        // reports it, so the wrapper has to resolve the corruption before
+        // delegating rather than react to it afterwards.
+        var openCallCount = 0;
+        when(() => mockRepository.open()).thenAnswer((_) async {
+          openCallCount++;
+          return true;
+        });
+
+        final cacheFile = File('$testSupportPath/test_corrupt_index.json');
+        await cacheFile.writeAsString('{"truncated":');
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_corrupt_index',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        expect(await repo.open(), isTrue);
+        expect(cacheFile.existsSync(), isFalse);
+        // Once, not twice: the repository never sees the corrupt file, so
+        // there is nothing to recover from and no retry to make.
+        expect(openCallCount, equals(1));
+      });
+
+      test('deletes an index whose entries cannot be mapped', () async {
+        // Well-formed JSON that CacheObject.fromMap still rejects. Upstream
+        // treats this exactly like a syntax error, so this must too.
+        when(() => mockRepository.open()).thenAnswer((_) async => true);
+
+        final cacheFile = File('$testSupportPath/test_bad_entries.json');
+        await cacheFile.writeAsString(
+          jsonEncode([
+            {'url': 'https://example.com/a.jpg'},
+          ]),
+        );
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_bad_entries',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        await repo.open();
+
+        expect(cacheFile.existsSync(), isFalse);
+      });
+
+      test('keeps a readable index', () async {
+        when(() => mockRepository.open()).thenAnswer((_) async => true);
+
+        final cacheFile = File('$testSupportPath/test_valid_index.json');
+        await cacheFile.writeAsString(
+          jsonEncode([
+            CacheObject(
+              'https://example.com/a.jpg',
+              relativePath: 'a.jpg',
+              validTill: DateTime.now().add(const Duration(days: 1)),
+              id: 1,
+            ).toMap(),
+          ]),
+        );
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_valid_index',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        await repo.open();
+
+        expect(cacheFile.existsSync(), isTrue);
+      });
+
       test(
-        'recovers when upstream reports via FlutterError instead of throwing',
+        'leaves FlutterError.onError untouched across concurrent opens',
         () async {
-          // This tests the real-world scenario: JsonCacheInfoRepository
-          // catches exceptions internally and reports via
-          // FlutterError.reportError instead of rethrowing.
-          var openCallCount = 0;
-          when(() => mockRepository.open()).thenAnswer((_) async {
-            openCallCount++;
-            if (openCallCount == 1) {
-              // Simulate upstream behavior: report via FlutterError, not throw
-              FlutterError.reportError(
-                FlutterErrorDetails(
-                  exception: const FormatException('Unexpected end of input'),
-                  library: 'flutter cache manager',
-                  context: ErrorDescription('Reading cache info file'),
-                ),
-              );
-              return true; // Upstream returns normally after reporting
-            }
-            return true;
-          });
+          // The regression this guards: open() used to swap the process-global
+          // FlutterError.onError and restore it by assignment. CacheStore's
+          // constructor fires repo.open() eagerly and unawaited, and the app
+          // builds two managers, so those windows overlap.
+          //
+          // Restore-by-assignment is only correct when the opens finish LIFO.
+          // The completers below force the other order — the repository that
+          // installed first also finishes first — which dropped the second
+          // handler and then permanently reinstalled the first, stale one. A
+          // production stack showed three of these chained together.
+          final firstOpen = Completer<bool>();
+          final secondOpen = Completer<bool>();
+          final secondRepository = MockCacheInfoRepository();
+          when(() => mockRepository.open()).thenAnswer((_) => firstOpen.future);
+          when(
+            () => secondRepository.open(),
+          ).thenAnswer((_) => secondOpen.future);
 
-          final cacheFile = File('$testSupportPath/test_flutter_error.json');
-          await cacheFile.writeAsString('{"truncated":');
-
-          FlutterErrorDetails? capturedError;
           final previousHandler = FlutterError.onError;
-          FlutterError.onError = (details) {
-            capturedError = details;
-          };
+          void sentinel(FlutterErrorDetails details) {}
+          FlutterError.onError = sentinel;
+          addTearDown(() => FlutterError.onError = previousHandler);
 
-          try {
-            final repo = SafeCacheInfoRepository(
-              databaseName: 'test_flutter_error',
-              repository: mockRepository,
-              directoryProvider: () async => testDirectory,
-            );
+          final first = SafeCacheInfoRepository(
+            databaseName: 'test_concurrent_a',
+            repository: mockRepository,
+            directoryProvider: () async => testDirectory,
+          );
+          final second = SafeCacheInfoRepository(
+            databaseName: 'test_concurrent_b',
+            repository: secondRepository,
+            directoryProvider: () async => testDirectory,
+          );
 
-            await repo.open();
+          final firstFuture = first.open();
+          final secondFuture = second.open();
 
-            // File should be deleted
-            expect(cacheFile.existsSync(), isFalse);
-            // FlutterError should NOT have leaked to outer handler
-            expect(capturedError, isNull);
-            // open called twice: first detects corruption, second is retry
-            expect(openCallCount, equals(2));
-          } finally {
-            FlutterError.onError = previousHandler;
-          }
+          firstOpen.complete(true);
+          await firstFuture;
+          secondOpen.complete(true);
+          await secondFuture;
+
+          expect(FlutterError.onError, same(sentinel));
         },
       );
 
-      test(
-        'forwards non-cache FlutterErrors to previous handler during open',
-        () async {
-          when(() => mockRepository.open()).thenAnswer((_) async {
-            // Simulate a non-cache FlutterError during open
-            FlutterError.reportError(
-              FlutterErrorDetails(
-                exception: Exception('some rendering error'),
-                library: 'rendering library',
-                context: ErrorDescription('during layout'),
-              ),
-            );
-            return true;
-          });
+      test('a corrupt index for one database leaves another intact', () async {
+        // The old interception keyed only on library: 'flutter cache manager',
+        // which carries no file identity, so an overlapping open could
+        // attribute one cache's corruption to the other and delete a
+        // healthy index.
+        when(() => mockRepository.open()).thenAnswer((_) async => true);
 
-          FlutterErrorDetails? forwardedError;
-          final previousHandler = FlutterError.onError;
-          FlutterError.onError = (details) {
-            forwardedError = details;
-          };
+        final corrupt = File('$testSupportPath/test_isolation_corrupt.json');
+        await corrupt.writeAsString('not json at all');
+        final healthy = File('$testSupportPath/test_isolation_healthy.json');
+        await healthy.writeAsString(
+          jsonEncode([
+            CacheObject(
+              'https://example.com/b.jpg',
+              relativePath: 'b.jpg',
+              validTill: DateTime.now().add(const Duration(days: 1)),
+              id: 1,
+            ).toMap(),
+          ]),
+        );
 
-          try {
-            final repo = SafeCacheInfoRepository(
-              databaseName: 'test_forward',
-              repository: mockRepository,
-              directoryProvider: () async => testDirectory,
-            );
+        final corruptRepo = SafeCacheInfoRepository(
+          databaseName: 'test_isolation_corrupt',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+        final healthyRepo = SafeCacheInfoRepository(
+          databaseName: 'test_isolation_healthy',
+          repository: MockCacheInfoRepository(),
+          directoryProvider: () async => testDirectory,
+        );
+        when(() => healthyRepo.repository.open()).thenAnswer((_) async => true);
 
-            await repo.open();
+        await Future.wait([corruptRepo.open(), healthyRepo.open()]);
 
-            // Non-cache error should have been forwarded to previous handler
-            expect(forwardedError, isNotNull);
-            expect(
-              forwardedError!.library,
-              equals('rendering library'),
-            );
-          } finally {
-            FlutterError.onError = previousHandler;
-          }
-        },
-      );
+        expect(corrupt.existsSync(), isFalse);
+        expect(healthy.existsSync(), isTrue);
+      });
 
       test(
         'propagates a retry failure instead of deleting and reopening again',
@@ -249,25 +319,8 @@ void main() {
           var openCallCount = 0;
           when(() => mockRepository.open()).thenAnswer((_) async {
             openCallCount++;
-            if (openCallCount == 1) {
-              FlutterError.reportError(
-                FlutterErrorDetails(
-                  exception: const FormatException('Unexpected end of input'),
-                  library: 'flutter cache manager',
-                  context: ErrorDescription('Reading cache info file'),
-                ),
-              );
-              return true;
-            }
             throw const FormatException('still unreadable');
           });
-
-          final cacheFile = File('$testSupportPath/test_retry_failure.json');
-          await cacheFile.writeAsString('{"truncated":');
-
-          final previousHandler = FlutterError.onError;
-          FlutterError.onError = (_) {};
-          addTearDown(() => FlutterError.onError = previousHandler);
 
           final repo = SafeCacheInfoRepository(
             databaseName: 'test_retry_failure',
@@ -277,10 +330,9 @@ void main() {
 
           await expectLater(repo.open(), throwsA(isA<FormatException>()));
 
-          // The corrupted file is already gone, so the retry is the last
-          // attempt — it must not re-enter the delete-and-retry handlers.
+          // One delete-and-retry, then the failure is the caller's. It must
+          // not re-enter the recovery path a second time.
           expect(openCallCount, equals(2));
-          expect(cacheFile.existsSync(), isFalse);
         },
       );
 
