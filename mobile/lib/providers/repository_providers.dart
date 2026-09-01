@@ -24,6 +24,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/hive_box_names.dart';
+import 'package:openvine/observability/dm_sync_exposure.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/bookmark_signer_adapter.dart';
@@ -730,6 +731,26 @@ DmRepository dmRepository(Ref ref) {
         ),
       );
     },
+    // Sizes how many installs are in the state #8439 describes. Exposure, not
+    // loss — see DmSyncExposure.
+    exposureReporter:
+        ({
+          required newRelayCount,
+          required knownRelayCount,
+          required bandSeconds,
+        }) {
+          unawaited(
+            CrashReportingService.instance.recordError(
+              DmSyncExposure(
+                newRelayCount: newRelayCount,
+                knownRelayCount: knownRelayCount,
+                bandSeconds: bandSeconds,
+              ),
+              StackTrace.current,
+              reason: 'DmRepository.dmSyncExposure',
+            ),
+          );
+        },
   );
 
   ref.onDispose(repository.stopListening);

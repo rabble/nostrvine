@@ -8,12 +8,15 @@
 //   - oldestSyncedAt: lowest rumor `created_at` successfully processed
 //   - historyDrainComplete: whether the one-time full-history drain is done
 //   - historyDrainCursor: the drain's resumable pagination boundary
+//   - readRelays: relay identities the DM subscription has ever asked,
+//     used to notice when a relay enters the read set for the first time
 //
 // Timestamps are unix seconds matching Nostr event timestamps. Used by
 // DmRepository to bound subscription and pagination queries so cost is
 // proportional to recent activity, not lifetime message count.
 // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists per-pubkey DM sync boundaries in SharedPreferences.
@@ -30,6 +33,7 @@ class DmSyncState {
   static const _drainVersionPrefix = 'dm.historyDrainVersion.';
   static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
   static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
+  static const _readRelaysPrefix = 'dm.readRelays.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -350,6 +354,62 @@ class DmSyncState {
     await _prefs.setInt('$_groupRecoveryVersionPrefix$pubkey', version);
   }
 
+  /// Upper bound on how many relay identities [readRelayFingerprint] keeps.
+  ///
+  /// Sits far above any real pool plus kind-10050 inbox list, so it is a
+  /// backstop against unbounded growth rather than a working limit. At the cap
+  /// the set stops growing instead of evicting: an evicting set would forget a
+  /// relay and then report it as new again on the next rotation, turning a
+  /// one-shot signal into a recurring one.
+  static const int maxTrackedReadRelays = 32;
+
+  /// Relay identities the DM subscription has asked at least once for
+  /// [pubkey], or `[]` when none have been recorded.
+  ///
+  /// Empty is the correct answer for a fresh install: with nothing to compare
+  /// against, the first subscription must not read as "a relay just appeared".
+  List<String> readRelayFingerprint(String pubkey) =>
+      _prefs.getStringList('$_readRelaysPrefix$pubkey') ?? const <String>[];
+
+  /// Folds [relays] into [readRelayFingerprint] for [pubkey] and returns the
+  /// identities that were **not** already there.
+  ///
+  /// The union is persisted before the delta is returned, so a relay can be
+  /// new exactly once. That makes "report only on a transition" a property of
+  /// the storage rather than of a separate suppression flag a reconnect loop
+  /// could race — `startListening` runs again on every reconnect.
+  ///
+  /// Identities come from [normalizeRelayUrl], the same canonical form
+  /// `RelayPool` keys its own relays on. Re-deriving it here instead would
+  /// reproduce #8377, where one side stripped a trailing slash and the other
+  /// added one, so equal relays compared unequal — here that would report the
+  /// same relay as new on every subscription, forever. Values it rejects are
+  /// dropped rather than stored raw.
+  Future<Set<String>> recordReadRelays(
+    String pubkey,
+    Iterable<String> relays,
+  ) async {
+    final known = readRelayFingerprint(pubkey).toSet();
+    final fresh = <String>{};
+    for (final relay in relays) {
+      final identity = normalizeRelayUrl(relay);
+      if (identity == null) continue;
+      if (known.contains(identity) || fresh.contains(identity)) continue;
+      fresh.add(identity);
+    }
+    if (fresh.isEmpty) return const <String>{};
+
+    final room = maxTrackedReadRelays - known.length;
+    if (room <= 0) return const <String>{};
+    final admitted = fresh.length <= room ? fresh : fresh.take(room).toSet();
+
+    await _prefs.setStringList('$_readRelaysPrefix$pubkey', [
+      ...known,
+      ...admitted,
+    ]);
+    return admitted;
+  }
+
   /// Removes all sync state for [pubkey]. Called on account switch.
   Future<void> clear(String pubkey) async {
     await _prefs.remove('$_newestPrefix$pubkey');
@@ -360,6 +420,7 @@ class DmSyncState {
     await _prefs.remove('$_drainVersionPrefix$pubkey');
     await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
     await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
+    await _prefs.remove('$_readRelaysPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -378,7 +439,8 @@ class DmSyncState {
               key.startsWith(_drainCursorPrefix) ||
               key.startsWith(_drainVersionPrefix) ||
               key.startsWith(_dmRelayListPublishedPrefix) ||
-              key.startsWith(_groupRecoveryVersionPrefix),
+              key.startsWith(_groupRecoveryVersionPrefix) ||
+              key.startsWith(_readRelaysPrefix),
         )
         .toList();
     for (final key in keysToRemove) {
