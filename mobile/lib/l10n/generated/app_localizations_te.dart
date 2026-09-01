@@ -5949,6 +5949,10 @@ class AppLocalizationsTe extends AppLocalizations {
       'ఈ సంభాషణను ఎవరూ చదవడం లేదు. బదులుగా Divine మోడరేషన్ అని సందేశం పంపండి.';
 
   @override
+  String get dmDeleteRefusedMessage =>
+      'అందరి కోసం తొలగించడం సాధ్యపడలేదు. మీ సందేశం ఇంకా అక్కడే ఉంది — మళ్లీ ప్రయత్నించండి.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'ఈ సంభాషణ మూసివేయబడింది.';
 
   @override
