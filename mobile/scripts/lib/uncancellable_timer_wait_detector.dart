@@ -234,12 +234,16 @@ class _SettlerFinder extends RecursiveAstVisitor<void> {
   void follow(String name, AstNode callSite, {int? argumentCount}) {
     final helper = _functions.resolve(name, callSite);
     if (helper == null || !_activeHelpers.add(helper.body)) return;
-    // Methods with arguments are ordinary work (`subscribeToVideoFeed(...)`),
-    // not completion helpers. Following them walks the class and false-positives
-    // fire-and-forget timers whose callback happens to call a method that
-    // contains an unrelated `x.complete()`. Empty-arg methods and tear-offs
-    // (`Timer(d, _fire)`, `() => _fire()`) stay in scope.
-    if (helper.isMethod && argumentCount != null && argumentCount > 0) {
+    // An *async* method with arguments is ordinary work
+    // (`subscribeToVideoFeed(...)`). Following it walks the class and
+    // false-positives fire-and-forget timers whose callback happens to call a
+    // method that contains an unrelated `x.complete()`. Sync methods, even
+    // with arguments, are the completion-helper shape (`_finish(c)`,
+    // `_settle(ok: true)`). Empty-arg methods and tear-offs stay in scope.
+    if (helper.isMethod &&
+        argumentCount != null &&
+        argumentCount > 0 &&
+        helper.body.isAsynchronous) {
       _activeHelpers.remove(helper.body);
       return;
     }

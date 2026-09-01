@@ -132,6 +132,38 @@ class Owner {
         expect(sites.single.line, 5);
       });
 
+      test('flags a class method that takes the completer as an argument', () {
+        final sites = scan('''
+class Owner {
+  void _finish(Completer<void> c) => c.complete();
+  Future<void> wait(Duration delay) {
+    final c = Completer<void>();
+    Timer(delay, () => _finish(c));
+    return c.future;
+  }
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 5);
+      });
+
+      test('flags a class method invoked with only a named argument', () {
+        final sites = scan('''
+class Owner {
+  final Completer<void> _c = Completer<void>();
+  void _settle({bool ok = true}) => _c.complete();
+  Future<void> wait(Duration delay) {
+    Timer(delay, () => _settle(ok: true));
+    return _c.future;
+  }
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.line, 5);
+      });
+
       test('flags a closure that settles through a class method', () {
         final sites = scan('''
 class Owner {
