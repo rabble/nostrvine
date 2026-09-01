@@ -294,7 +294,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         status: _deletionSent,
         // Delivered, so there is nothing left to replay.
         retainRumor: false,
-        // Delivered: leave `is_deleted` alone, so the row stays retracted.
+        // Delivered: keep the row retracted.
         restoreToThread: false,
         ownerPubkey: ownerPubkey,
       );
@@ -309,50 +309,28 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// block took effect — calling it sent would misreport a message the peer
   /// still holds.
   ///
-  /// The rumor is **kept**. Some blocked sources lift while the build is
-  /// running: the minor restriction reads live remote state, and Keycast's
-  /// server-side `verified_minor` gate clears from that same state. Others
-  /// cannot — the retired-moderation-account list is a compile-time `const`, so
-  /// lifting it needs a new build.
+  /// The rumor is **kept** (#8226). It is the retraction's event identity: a
+  /// replay would keep every attempt one kind-5, where rebuilding mints a
+  /// fresh id per attempt. Some blocked sources also lift at runtime (the
+  /// minor restriction and Keycast's `verified_minor` gate read live state),
+  /// so the payload can become deliverable. Nothing replays it yet: the sweep
+  /// ([getRetryableOwnMessageDeletions]) requires `deletion_pending`, and a
+  /// user re-tap goes through `deleteMessageForEveryone`, which builds a fresh
+  /// rumor. Whether an explicit retry should replay it is the retry-UX
+  /// decision on #8201.
   ///
-  /// What retention buys is the retraction's event **identity**, not its
-  /// recoverability. Replaying the stored JSON would keep every attempt one
-  /// kind-5; rebuilding mints a fresh id per attempt and puts N distinct
-  /// retractions on the wire for one user action. Nothing on the receive side
-  /// collapses them — dedup is keyed on gift-wrap id, and NIP-59 gives every
-  /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
-  /// wrap; what makes it safe is that re-applying a deletion is a no-op.
+  /// [restoreToThread] returns the message to the thread (#8201): nothing was
+  /// retracted, and the bubble is the only thing the user can act on to try
+  /// again. The caller passes `false` for a **mixed** outcome, where
+  /// recipients outside the block already applied the retraction — un-hiding
+  /// there would claim the message "is still there" for a thread that mostly
+  /// dropped it, and a retry would mint a second kind-5 for them. Until a
+  /// partial-retraction UX exists that row stays hidden, with only the status
+  /// recording what happened.
   ///
-  /// Recoverability comes from `restoreToThread` instead. On main, dropping
-  /// the rumor left the row unrepairable, because all three repair routes were
-  /// shut (#8226). Un-hiding reopens one: `deleteMessageForEveryone` guards
-  /// on `is_deleted` alone and then builds a fresh rumor without reading this
-  /// one, so a restored row is repairable whether or not the payload survived.
-  /// The stored rumor is therefore groundwork — nothing replays it yet, and the
-  /// sweep ([getRetryableOwnMessageDeletions]) excludes a blocked row twice
-  /// over, on both its `deletion_pending` and its `is_deleted` predicate.
-  /// Making it load-bearing means routing an explicit retry through
-  /// `retryMessageDeletion` so the replay carries a byte-identical id; that is
-  /// gated on the retry UX decision on #8201.
-  ///
-  /// [restoreToThread] returns the message to the thread (#8201). It was
-  /// hidden optimistically when the deletion was enqueued; leaving it hidden
-  /// once the send is wholly refused repeats the #8165 lie in a new place —
-  /// nothing was retracted, and the row is the only thing the user can act on
-  /// to try again.
-  ///
-  /// The caller passes `false` for a **mixed** outcome, where recipients
-  /// outside the block already applied the retraction. Un-hiding there would
-  /// claim the message "is still there" for a thread that mostly dropped it,
-  /// and the retry it invites mints a second kind-5 for those recipients.
-  /// A partial retraction needs its own UX; until it has one, the row stays
-  /// hidden and only the status records what happened.
-  ///
-  /// Blocked also fires beyond a policy refusal: the marker this status is
-  /// derived from is a bare substring match with several Keycast sources, so
-  /// #7337's scope-denied signer 403 reaches this branch once an authorization
-  /// without kind-13 signing scope is in play — a row recorded blocked was not
-  /// necessarily refused by send policy at all.
+  /// "Blocked" is not always a send-policy verdict: the marker it derives from
+  /// is a substring match with several Keycast sources, so #7337's
+  /// scope-denied signer 403 lands here too.
   Future<bool> markMessageDeletionBlocked(
     String rumorId, {
     required bool restoreToThread,
@@ -372,13 +350,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// whole difference between the two terminal states, so a future third
   /// caller has to decide both deliberately.
   ///
-  /// `is_deleted` is written in both directions rather than left absent. A
-  /// terminal status used to be reachable only from `deletion_pending`, where
-  /// the row was already hidden, so "leave it alone" and "hide it" coincided.
-  /// A restored blocked row is the first state where they do not: it is
-  /// visible AND holds a rumor, which is exactly what `retryMessageDeletion`
-  /// accepts, so a later confirmed retraction reaching
-  /// [markMessageDeletionSent] would otherwise leave the message on screen.
+  /// `is_deleted` is written in both directions rather than left absent: a
+  /// restored blocked row is visible AND still holds a rumor, so a later
+  /// confirmed retraction of it reaching [markMessageDeletionSent] has to hide
+  /// it again rather than leave it on screen.
   Future<bool> _settleMessageDeletion(
     String rumorId, {
     required String status,

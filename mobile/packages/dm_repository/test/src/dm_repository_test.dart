@@ -8844,7 +8844,7 @@ void main() {
               messageKind: 14,
               isDeleted: false,
               twinCollapsed: false,
-              deletionPublishStatus: 'deletion_blocked',
+              deletionPublishStatus: DirectMessagesDao.deletionBlocked,
             ),
           ]),
         );
@@ -13866,7 +13866,7 @@ void main() {
       });
 
       test('keeps a partially delivered retraction hidden', () async {
-        // #8206 review, item 1. `_fanOutDeletion` records blocked whenever
+        // #8201. `_fanOutDeletion` records blocked whenever
         // every FAILED recipient was blocked, so a group where one member
         // accepted the kind-5 and another refused lands here. The retraction
         // really happened for the member that accepted, so the sender's copy

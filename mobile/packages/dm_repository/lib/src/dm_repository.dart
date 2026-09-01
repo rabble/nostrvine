@@ -6285,7 +6285,7 @@ class DmRepository {
             // there" and offer a retry that mints a second kind-5 for people
             // who already applied the first. That mixed outcome needs its own
             // partial-retraction UX, and stays hidden until it has one
-            // (#8206 review, item 1).
+            // (#8201).
             final restored = !anyRecipientAccepted;
             await _directMessagesDao.markMessageDeletionBlocked(
               rumorId,
@@ -6433,7 +6433,9 @@ class DmRepository {
   /// Unlike `_fanOutRumor`, the aggregate failure does NOT carry
   /// `retryablePending`. Nothing can observe it here: this result is consumed
   /// only by [_driveMessageDeletion], which branches on `blocked` alone and
-  /// returns a [DmMessageDeletionOutcome], so the flag would be dead weight.
+  /// returns a [DmMessageDeletionOutcome]. The record also reports whether
+  /// any post-downgrade recipient result was accepted, so the caller can
+  /// distinguish wholly refused from partly delivered fan-outs (#8201).
   Future<({NIP17SendResult result, bool anyRecipientAccepted})>
   _fanOutDeletion({
     required Event deletion,
@@ -6511,7 +6513,7 @@ class DmRepository {
     // a refusal. A mixed outcome is still recorded blocked rather than sent,
     // because `sent` is the claim that would be false. `anyRecipientAccepted`
     // is what separates the two for the caller, which must not un-hide a
-    // message some recipients have already dropped (#8206 review, item 1).
+    // message some recipients have already dropped (#8201).
     return (
       result: failures.every((f) => f.blocked)
           ? NIP17SendResult.blocked(summary)

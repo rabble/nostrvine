@@ -466,10 +466,11 @@ void main() {
     final conversationId = 'd' * 64;
     const rumorJson = '{"kind":5,"content":""}';
 
+    // [participantPubkeys] null inserts no conversation row at all.
     Future<void> runRepair({
-      required String participantPubkeys,
-      required Value<int> isGroup,
+      required String? participantPubkeys,
       required Value<String?> deletionPublishStatus,
+      Value<int> isGroup = const Value(0),
       required Future<void> Function(v12.DirectMessagesData row) validate,
       Value<String?> deletionRumorJson = const Value(rumorJson),
     }) async {
@@ -480,16 +481,18 @@ void main() {
         createNew: v12.DatabaseAtV12.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
-          batch.insert(
-            oldDb.conversations,
-            v11.ConversationsCompanion.insert(
-              id: conversationId,
-              participantPubkeys: participantPubkeys,
-              isGroup: isGroup,
-              createdAt: 1700000000,
-              ownerPubkey: Value(sender),
-            ),
-          );
+          if (participantPubkeys != null) {
+            batch.insert(
+              oldDb.conversations,
+              v11.ConversationsCompanion.insert(
+                id: conversationId,
+                participantPubkeys: participantPubkeys,
+                isGroup: isGroup,
+                createdAt: 1700000000,
+                ownerPubkey: Value(sender),
+              ),
+            );
+          }
           batch.insert(
             oldDb.directMessages,
             v11.DirectMessagesCompanion.insert(
@@ -523,7 +526,7 @@ void main() {
         validate: (row) async {
           expect(row.isDeleted, 0);
           // The refusal stays on the record: it keeps the row off the retry
-          // sweep and is what marks the restored bubble.
+          // sweep and is what the conversation bloc reads to raise the toast.
           expect(row.deletionPublishStatus, 'deletion_blocked');
           expect(row.deletionRumorJson, rumorJson);
         },
@@ -549,30 +552,12 @@ void main() {
       // Nothing proves one-to-one when the conversation row is absent, so the
       // count comes back zero and the row is left alone rather than restored
       // on an assumption.
-      await verifier.testWithDataIntegrity(
-        oldVersion: 11,
-        newVersion: 12,
-        createOld: v11.DatabaseAtV11.new,
-        createNew: v12.DatabaseAtV12.new,
-        openTestedDatabase: AppDatabase.new,
-        createItems: (batch, oldDb) => batch.insert(
-          oldDb.directMessages,
-          v11.DirectMessagesCompanion.insert(
-            id: 'e' * 64,
-            conversationId: conversationId,
-            senderPubkey: sender,
-            content: 'a message whose conversation row is gone',
-            createdAt: 1700000000,
-            giftWrapId: 'f' * 64,
-            isDeleted: const Value(1),
-            ownerPubkey: Value(sender),
-            deletionRumorJson: const Value(rumorJson),
-            deletionPublishStatus: const Value('deletion_blocked'),
-          ),
-        ),
-        validateItems: (newDb) async {
-          final row = await newDb.select(newDb.directMessages).getSingle();
+      await runRepair(
+        participantPubkeys: null,
+        deletionPublishStatus: const Value('deletion_blocked'),
+        validate: (row) async {
           expect(row.isDeleted, 1);
+          expect(row.deletionPublishStatus, 'deletion_blocked');
         },
       );
     });

@@ -263,51 +263,33 @@ class AppDatabase extends _$AppDatabase {
   /// Returns a wholly-refused one-to-one delete-for-everyone to the thread
   /// (#8284).
   ///
-  /// A retraction the recipient's send policy refused settles as
-  /// `deletion_publish_status = 'deletion_blocked'` while the row stays
-  /// soft-deleted from `markMessageDeletionPending`. That combination is
-  /// terminal in three directions at once: the sweep's worklist requires
-  /// `deletion_pending`, `retryMessageDeletion` is only ever reached from that
-  /// worklist, and `deleteMessageForEveryone` returns early on `is_deleted`.
-  /// Nothing wrote `is_deleted` back, so the sender went on believing a
-  /// message was retracted that the recipient still holds — permanently, and
-  /// with no bubble left to act on. Clearing `is_deleted` restores both the
-  /// message and the re-tap that re-drives its deletion.
+  /// Before #8201 a refused retraction settled as `deletion_blocked` while the
+  /// row stayed soft-deleted from `markMessageDeletionPending`, and nothing
+  /// ever wrote `is_deleted` back: the sweep's worklist wants
+  /// `deletion_pending`, and `deleteMessageForEveryone` returns early on
+  /// `is_deleted`. The sender was left believing a message was retracted that
+  /// the recipient still holds, with no bubble left to act on. Only
+  /// `is_deleted` moves here. The status stays as the durable record of the
+  /// refusal: it keeps the row off the retry sweep and is what the
+  /// conversation bloc reads (`DmMessage.retractionBlocked`) to raise the
+  /// refusal toast — the same state a fresh refusal now writes.
   ///
-  /// The status stays `deletion_blocked`. It is the durable record of what
-  /// happened, it is what keeps the row off the retry sweep, and it is what
-  /// `DmMessage.retractionBlocked` reads to mark the restored bubble. Only
-  /// `is_deleted` moves, which lands the row on exactly the state a fresh
-  /// refusal now writes.
+  /// One-to-one only. A row does not record whether its fan-out was wholly or
+  /// partly refused (`_fanOutDeletion` classifies on
+  /// `failures.every((f) => f.blocked)` and never persists whether anyone
+  /// accepted), but a one-to-one has exactly one recipient once
+  /// `_deletionWrapRecipients` drops the sender, so `deletion_blocked` there
+  /// is wholly refused by construction. A group row stays hidden until a
+  /// partial-retraction UX exists. `is_group = 0` is required on top of the
+  /// participant count so a legacy conversation inflated to a group and since
+  /// collapsed to one participant stays out.
   ///
-  /// **One-to-one only, deliberately.** The row does not record whether the
-  /// fan-out was wholly or partly refused: `_fanOutDeletion` classifies on
-  /// `failures.every((f) => f.blocked)`, so a group where one member accepted
-  /// the kind-5 and another refused settles on the same status, and the
-  /// `anyRecipientAccepted` that separates the two at runtime is never
-  /// persisted. In a one-to-one the question cannot arise —
-  /// `_deletionWrapRecipients` drops the sender, leaving exactly one
-  /// recipient, and a lone accepting recipient would have left no failure to
-  /// classify. So `deletion_blocked` there is wholly refused by construction.
-  /// A group row stays hidden until a partial-retraction UX exists; un-hiding
-  /// it would claim the message is still there for a thread that mostly
-  /// dropped it.
-  ///
-  /// `is_group = 0` is required on top of the participant count, so a legacy
-  /// conversation inflated to a group but since collapsed to one participant
-  /// stays out. Both guards fail closed: a row whose conversation is missing,
-  /// whose participants are unreadable, or which cannot be proven one-to-one
-  /// is left hidden.
-  ///
-  /// Idempotent — `is_deleted = 1` stops matching once a row is restored.
-  ///
-  /// The denormalized inbox preview is not rebuilt here. `setCredentials`
-  /// fires `_runPostAuthMaintenance` on every sign-in, whose
-  /// `_backfillConversationPreviews` step recomputes previews from the visible
-  /// message set. That pass is unawaited, so a restored message can be in its
-  /// thread a moment before it reaches the inbox row; it converges within the
-  /// same launch, and duplicating the owner-scoped preview SQL here to close
-  /// that window would be the more dangerous change.
+  /// Every guard fails closed: a missing conversation, unreadable
+  /// participants, or a row that cannot be proven one-to-one is left hidden.
+  /// Idempotent — `is_deleted = 1` stops matching once a row is restored. The
+  /// denormalized inbox preview is not rebuilt here;
+  /// `_backfillConversationPreviews` recomputes it from the visible set on the
+  /// next sign-in.
   Future<void> _repairSchemaV12() async {
     await customStatement('''
       UPDATE direct_messages

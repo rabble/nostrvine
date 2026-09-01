@@ -855,7 +855,7 @@ void main() {
         // recorded blocked too, but must NOT come back: the message really is
         // retracted for the recipients that accepted, so un-hiding it would
         // claim it "is still there" for a thread that mostly dropped it
-        // (#8206 review, item 1).
+        // (#8201).
         test('keeps a partially delivered retraction hidden', () async {
           await insertOwnMessage();
           await dao.markMessageDeletionPending(
