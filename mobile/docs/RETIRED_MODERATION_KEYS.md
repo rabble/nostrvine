@@ -13,9 +13,9 @@ Read this before adding an entry.
 
 ## The register
 
-| Pubkey | Retired | Rotated by |
-|---|---|---|
-| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-12 | An operational secret change, carrying no PR of its own — see below |
+| Pubkey | Retired | Rotated by | Private key |
+|---|---|---|---|
+| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-12 | An operational secret change, carrying no PR of its own — see below | Unrecovered — see [Key custody](#key-custody) |
 
 ### `121b915b…`
 
@@ -107,9 +107,10 @@ arrived relative to the rotation. The repository layer is nevertheless
 retired-key-aware at the two delivery seams that matter: the injected
 `DmSendPolicy` blocks every outbound publisher at the lowest send primitive,
 and pinned-support extraction avoids adopting a pre-rotation thread whose
-participants would route replies to the retired key. The medium- and long-term
-policy for recognising newly discovered events from a retired shared identity
-is tracked in `divinevideo/divine-mobile#8355`.
+participants would route replies to the retired key. Whether a *newly
+discovered* event from a retired key should be trusted on its claimed
+`created_at` is a retirement question, not a recognition one, and it belongs to
+the burn protocol in `divinevideo/support-trust-safety#199`.
 
 ## Rotating the moderation key
 
@@ -127,9 +128,17 @@ The client half is small and belongs in one PR:
    row destination, protected-minor gate anchor, unread partition, retired
    thread redirect target, and `ModerationLabelService`'s NIP-05 fallback. A
    stale value silently routes support traffic to the retired account even
-   when live NIP-05 resolution succeeds elsewhere.
+   when live NIP-05 resolution succeeds elsewhere. Treat this step as
+   transitional: `divinevideo/divine-mobile#8355` decided on 2026-08-31 that
+   the client should resolve the moderation identity through NIP-05 instead of
+   a shipped pubkey, so that rotation no longer needs an app release.
+   `divinevideo/divine-mobile#8253` owns that change; until it lands, a
+   rotation still needs one.
 4. Confirm `ModerationLabelService._migrateLegacyPubkey` covers the new entry
    — it reads the list, so it does, but the test should say so.
+5. Record the outgoing key's [custody status](#key-custody). Unrecovered means
+   the closed composer is permanent for it; archived means the reader could in
+   principle be pointed at it, and the decision is then a real one.
 
 The service and infrastructure half — rotating the signing key, updating
 Funnelcake's `RELAY_PUBKEY` and its `ADMIN_PUBKEYS` allowlist (replacing only
@@ -138,17 +147,28 @@ repointing NIP-05, and auditing Funnelcake's `nostr.trusted_labelers` and
 `nostr.moderation_sources` — lives outside this repo. Do not assume those trust
 tables must use the user-facing support key: reconcile them with the approved
 human-support and automated-labeler roles in `divinevideo/divine-mobile#8253`.
-No step-by-step service procedure is written down; the policy and procedure
-requirements are tracked in `divinevideo/divine-mobile#8355`.
+No step-by-step service procedure is written down. The *current*-identity model
+was settled on 2026-08-31 (`divinevideo/divine-mobile#8355`); what a retirement
+has to do is still open at `divinevideo/support-trust-safety#199`.
 
 ### What a rotation cannot fix
 
-Messages already sent to the outgoing key are unreachable. The DM reader
-derives its subscription from its own signing key
+Messages already sent to the outgoing key are unreachable, for two independent
+reasons — which matters, because only the second one is permanent.
+
+The DM reader derives its subscription from its own signing key
 (`divine-moderation-service`, `src/nostr/dm-reader.mjs`), so it watches exactly
 one pubkey and cannot be configured to watch a second. Anything addressed to a
 retired key is accepted by the relay and read by nobody — it does not error,
-bounce, or queue. This is why the composer is closed rather than optimistic.
+bounce, or queue. That much is a code limitation, and someone could lift it.
+
+What cannot be lifted is custody. Reading those messages needs the retired
+private key, because a gift wrap is encrypted to its recipient; a watched-set
+in the reader would deliver ciphertext nobody can open. So for a key whose
+private half is unrecovered — which is the status of the only entry in this
+register — the composer is closed permanently rather than pending a backlog
+item. Record each new entry's [custody status](#key-custody) so the next
+rotation does not have to rediscover which of the two reasons applies.
 
 Retired keys also publish no kind-10050. Under NIP-17 that already signals "not
 ready to receive messages", so the protocol and the client agree.
@@ -156,14 +176,55 @@ ready to receive messages", so the protocol and the client agree.
 ## Key custody
 
 No moderation key material has ever been committed to this repo, and none is
-recoverable from it. Custody of the signing keys themselves is owned by Trust &
-Safety and tracked on their private issue tracker, not here — including for
-retired keys. If you need the custody status of an entry in the register, ask
-there rather than inferring it from this repo.
+recoverable from it. Custody of live signing keys is owned by Trust & Safety
+and is deliberately not described here.
+
+One custody fact does belong in the register, because a shipped client
+behaviour rests on it and looked provisional without it.
+
+**`121b915b…` has no known private-key holder. Treat it as unrecovered, not as
+archived somewhere.** It is an early key from Divine's initial setup — it
+enters this repo on 2026-02-25 in `divinevideo/divine-mobile#1797`
+(`ba51840a2`), as `ModerationLabelService.divineModerationPubkeyHex`, 15 days
+before the rotation — and the operator who later rotated it out was not the one
+who created it. Established on the 2026-08-31 support call and confirmed by the
+rotating operator on `divinevideo/divine-mobile#7851`.
+
+That is not a gap to be closed later. It is what makes the closed composer
+correct **by fact rather than by policy**, and it retires the "if the nsec
+turns up, reopen the thread" branch that
+`divinevideo/support-trust-safety#199` had been holding open for this key:
+
+- Gift wraps addressed to a retired key are NIP-44-encrypted to it. Without
+  that private key nobody can read them — not Trust & Safety, not a future
+  DM reader, not us. So watching the key is impossible rather than merely
+  unimplemented, which is the stronger half of the argument in
+  [What a rotation cannot fix](#what-a-rotation-cannot-fix).
+- Recognition is therefore the only control this key still has behind it, and
+  recognition is what `kLegacyModerationPubkeys` provides. Every other role it
+  held was revoked server-side — see the roles table above.
+
+Do not re-litigate the composer for this key. A future retirement is a
+different question: what makes a key retired, how access is revoked, where
+remaining private material lives, how a retired identity is proved
+unreactivatable, and how a replacement is announced. That protocol is owned by
+`divinevideo/support-trust-safety#199`, and the mobile behaviour that follows
+from it by `divinevideo/divine-mobile#7851`.
 
 ## Open items
 
-- `divinevideo/divine-mobile#8355` — codify and validate the medium- and
-  long-term shared moderation identity, custody, and rotation policy.
-- `divinevideo/divine-mobile#8253` — decide whether the user-facing support
-  identity and Funnelcake's trusted labeler are intentionally separate roles.
+- `divinevideo/support-trust-safety#199` — the retirement protocol: what makes
+  a key retired, how access is revoked, where remaining private material is
+  held, how a retired identity is proved unreactivatable, and how a
+  replacement is announced and verified. The custody branch is already closed
+  for `121b915b…`; this is for the next one.
+- `divinevideo/divine-mobile#7851` — the mobile behaviour that follows from
+  that protocol. Nothing is pending for the entry currently in the register.
+- `divinevideo/divine-mobile#8253` — resolve the moderation identity through
+  NIP-05 rather than a shipped pubkey, and reconcile Funnelcake's trusted
+  labeler with the user-facing support identity.
+
+Settled, kept here because the register used to cite it as open:
+`divinevideo/divine-mobile#8355` decided on 2026-08-31 that shared access to
+the current moderation identity stays acceptable, and that the client should
+resolve that identity through NIP-05. It did not cover retirement.

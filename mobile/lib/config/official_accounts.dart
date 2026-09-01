@@ -152,6 +152,12 @@ const List<String> kLegacyModerationPubkeys = [
   // dates for something else: divinevideo/divine-moderation-service#31
   // (2026-03-15) is the cleanup after it, and divinevideo/divine-mobile#2321
   // (2026-03-20) is this client catching up eight days late.
+  //
+  // Private key UNRECOVERED — no known holder (2026-08-31 support call,
+  // confirmed on #7851). Not an open question: gift wraps are encrypted to
+  // the recipient, so messages sent here are unreadable by anyone forever,
+  // and the closed composer is permanent for this key rather than pending a
+  // custody answer. See mobile/docs/RETIRED_MODERATION_KEYS.md#key-custody.
   '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
 ];
 
@@ -177,5 +183,12 @@ bool isModerationAccount(String pubkeyHex) =>
 /// DM surface refuses the send and closes the composer instead of reporting a
 /// success. Keyed on set membership rather than one literal so the next
 /// rotation inherits the behaviour.
+///
+/// The reader is only the reversible half of that. The entry currently in
+/// [kLegacyModerationPubkeys] has no known private-key holder, and a gift wrap
+/// is encrypted to its recipient — so pointing a reader at it would deliver
+/// ciphertext nobody can open. Do not reopen this on the theory that the
+/// service could grow a watched set. A future retired key may differ, which is
+/// why `mobile/docs/RETIRED_MODERATION_KEYS.md` records custody per entry.
 bool isRetiredModerationAccount(String pubkeyHex) =>
     kLegacyModerationPubkeys.contains(pubkeyHex);
