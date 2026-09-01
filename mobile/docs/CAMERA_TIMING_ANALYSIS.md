@@ -60,18 +60,32 @@ try {
 
 **Alternative Approaches:**
 
-#### Option A: Use AsyncUtils.waitForCondition()
+#### Option A: Use AsyncScope.waitForCondition()
 ```dart
-await AsyncUtils.waitForCondition(
+// The scope is a field on the owner, disposed with it. That ownership is the
+// point — a wait nobody owns keeps polling after the camera controller is gone.
+final _async = AsyncScope(debugName: 'CameraService');
+
+await _async.waitForCondition(
   condition: () => !_operationInProgress,
   timeout: Duration(milliseconds: 5000),
   checkInterval: Duration(milliseconds: 10),
   debugName: 'Camera operation lock',
 );
+
+@override
+void dispose() {
+  _async.dispose(); // pending polls abort with AsyncCancelledException
+  ...
+}
 ```
 
-**Pros:** Cleaner, more explicit, better logging, same behavior
-**Cons:** Still polling (just nicer polling)
+**Pros:** Cleaner, more explicit, better logging, same behavior, and the poll
+stops when the owner does.
+**Cons:** Still polling. Cancellability is what makes it acceptable, not
+tidiness — a timer-backed wait with no owner is the same defect as
+`Future.delayed` wearing a different name, and is frozen at zero by
+`check_uncancellable_timer_wait.sh` (#8457). Option B is still better.
 
 #### Option B: Use Completer pattern (BEST)
 ```dart
@@ -164,16 +178,19 @@ await Future.delayed(waitTime);
 
 ## Recommendations
 
-### OPTION 1: Minimal Change (Use AsyncUtils)
+### OPTION 1: Minimal Change (Use AsyncScope)
 **Change lines 190, 240, 297 only:**
 ```dart
-await AsyncUtils.waitForCondition(
+await _async.waitForCondition(
   condition: () => !_operationInProgress,
   timeout: Duration(milliseconds: 5000),
   checkInterval: Duration(milliseconds: 10),
   debugName: 'Camera operation lock',
 );
 ```
+
+Requires an `AsyncScope` field on the owner, disposed in its `dispose()`. Do
+not reach for a static helper here: the wait must stop when the camera does.
 
 **Keep line 1197 as-is** (legitimate hardware timing)
 
@@ -254,11 +271,11 @@ const ALLOWED_DELAYS = [
 
 ## My Recommendation
 
-**Option 1 (Minimal Change)** - Use AsyncUtils.waitForCondition() for the mutex polling (lines 190, 240, 297).
+**Option 1 (Minimal Change)** - Use `AsyncScope.waitForCondition()` for the mutex polling (lines 190, 240, 297), with the scope owned and disposed by the camera service.
 
 **Why:**
 1. **Low risk** - Same behavior, just cleaner implementation
-2. **Better error messages** - AsyncUtils provides better logging
+2. **Better error messages** - `AsyncScope` provides better logging, and cancels its polling when the owner is disposed
 3. **Respects working code** - You just fixed a critical race condition (Nov 12), don't want to break it
 4. **Improves standards compliance** - Moves toward proper async patterns
 5. **Easy to test** - Can verify behavior matches current implementation
