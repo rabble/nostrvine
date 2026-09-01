@@ -931,6 +931,51 @@ void main() {
         handle.dispose();
       });
 
+      testWidgets('a live thread still offers to remove an own reaction', (
+        tester,
+      ) async {
+        const emoji = '\u{2764}\u{FE0F}';
+        const ownReaction = DmReaction(
+          id: 'r-own-live',
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: emoji,
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: DmReactionPublishStatus.received,
+        );
+        const reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [ownReaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(emoji));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+        expect(find.text(l10n.dmReactionRemoveAction), findsOneWidget);
+      });
+
       testWidgets('a failed own bubble cannot be resent', (tester) async {
         const content = 'a message that never got through';
         final failedRow = OutgoingDm(
