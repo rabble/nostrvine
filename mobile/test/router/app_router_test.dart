@@ -649,6 +649,10 @@ void main() {
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
 
+      // Credentialed: the conversation bloc holds its loading state while the
+      // repository owner is unknown (#8187), so the route under test would
+      // never reach its loaded content.
+      when(() => mockDmRepository.userPubkey).thenReturn(currentPubkey);
       when(mockDmRepository.backfillHistoryIfNeeded).thenAnswer((_) async {});
       when(
         () => mockDmRepository.markConversationAsRead(any()),

@@ -224,6 +224,13 @@ void main() {
 
     test('does NOT open subscription before Nostr session is ready', () async {
       // ARRANGE — pre-auth or initialization-pending state
+      await database.conversationsDao.upsertConversation(
+        id: 'identity-known-conversation',
+        participantPubkeys: '["$testPubkey","$_ordinaryPeerPubkey"]',
+        isGroup: false,
+        createdAt: 1,
+        ownerPubkey: testPubkey,
+      );
       final container = createContainer(
         readiness: const NostrSessionReadiness.identityKnown(
           pubkey: testPubkey,
@@ -243,6 +250,28 @@ void main() {
           subscriptionId: any(named: 'subscriptionId'),
         ),
       );
+      expect(repository.isInitialized, isFalse);
+      expect(
+        repository.userPubkey,
+        equals(testPubkey),
+        reason: 'identityKnown scopes local storage before signing is ready',
+      );
+      expect(
+        await repository.getConversation('identity-known-conversation'),
+        isNotNull,
+        reason: 'local history must not wait for signer/client initialization',
+      );
+    });
+
+    test('drops the storage owner while the session is tearing down', () {
+      final container = createContainer(
+        readiness: const NostrSessionReadiness.tearingDown(pubkey: testPubkey),
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(dmRepositoryProvider);
+
+      expect(repository.userPubkey, isEmpty);
       expect(repository.isInitialized, isFalse);
     });
 

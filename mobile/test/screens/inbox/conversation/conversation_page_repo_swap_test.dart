@@ -77,6 +77,10 @@ void main() {
       // (ConversationStarted) and marks the conversation as read.
       // Stub both mocks so the bloc can run without throwing.
       for (final repo in [mockRepoA, mockRepoB]) {
+        // Both stand in for credentialed repositories: the bloc holds its
+        // loading state while the owner is unknown (#8187), which would
+        // otherwise mask the re-keying this file exists to pin.
+        when(() => repo.userPubkey).thenReturn(testPubkey);
         when(() => repo.markConversationAsRead(any())).thenAnswer((_) async {});
         when(repo.backfillHistoryIfNeeded).thenAnswer((_) async {});
         when(
@@ -148,6 +152,61 @@ void main() {
               'rows under a different ownerPubkey), causing watchMessages '
               'to return nothing and sent messages to "disappear".',
         );
+      },
+    );
+
+    testWidgets(
+      'holds loading on the owner-unknown repository and subscribes only '
+      'once a credentialed repository arrives (#8187)',
+      (tester) async {
+        // repoA stands in for the uncredentialed instance
+        // dmRepositoryProvider serves while signed out or tearing down:
+        // owner unknown, so ConversationBloc must hold
+        // loading and never reach the owner-scoped reads (which would
+        // otherwise return every account's rows at the DAO). repoB is the
+        // credentialed instance that arrives at nostrReady.
+        when(() => mockRepoA.userPubkey).thenReturn('');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
+              dmRepositoryProvider.overrideWith((ref) {
+                final v = ref.watch(_dmRepoSwap);
+                return v == 0 ? mockRepoA : mockRepoB;
+              }),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: const ConversationPage(
+              conversationId: testConversationId,
+              participantPubkeys: [otherPubkey],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The uncredentialed bloc stayed in loading: it never subscribed to
+        // messages and never advanced a read cursor on the owner-unknown
+        // repository. Removing the bloc's owner guard reddens this line.
+        verifyNever(() => mockRepoA.watchMessages(any()));
+        verifyNever(() => mockRepoA.markConversationAsRead(any()));
+
+        // Credentials arrive: dmRepositoryProvider rebuilds, the composite
+        // ValueKey flips, and the recreated bloc re-dispatches
+        // ConversationStarted against the credentialed repository.
+        final providerScope = ProviderScope.containerOf(
+          tester.element(find.byType(ConversationPage)),
+        );
+        providerScope.read(_dmRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        // Recovery: the credentialed repository is now subscribed. Without
+        // the re-key the bloc would keep the owner-unknown repository and
+        // spin in loading forever.
+        verify(() => mockRepoB.watchMessages(any())).called(1);
       },
     );
 
@@ -291,6 +350,7 @@ void main() {
       mockResponseSvcA = _MockCollaboratorResponseService();
       mockResponseSvcB = _MockCollaboratorResponseService();
 
+      when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
       ).thenAnswer((_) async {});

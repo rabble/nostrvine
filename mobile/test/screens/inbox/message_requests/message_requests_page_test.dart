@@ -179,9 +179,10 @@ void main() {
     });
 
     // Same defect as InboxPage: the keepAlive `dmRepositoryProvider` rebuilds a
-    // fresh DmRepository on the identityKnown -> nostrReady transition, and only
-    // the ready instance's userPubkeyStream ever delivers a pubkey. A keyless
-    // BlocProvider strands the requests list on the orphaned not-ready repo.
+    // fresh DmRepository on the identityKnown -> nostrReady transition. The
+    // identity-known instance can read scoped local history, but only the ready
+    // instance receives credentials, maintenance, and newly ingested DMs. A
+    // keyless BlocProvider strands the requests list on the superseded repo.
     // Pins the ValueKey rebind fix in message_requests_page.dart.
     testWidgets(
       'recreates ConversationListBloc when dmRepositoryProvider hands over '
@@ -244,7 +245,7 @@ void main() {
           isNot(same(blocA)),
           reason:
               'a keyless BlocProvider strands the requests list on the '
-              'orphaned not-ready DmRepository; the ValueKey must rebuild it '
+              'superseded DmRepository; the ValueKey must rebuild it '
               'bound to the ready instance',
         );
       },

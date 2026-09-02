@@ -86,6 +86,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     emit(state.copyWith(status: ConversationStatus.loading));
 
+    // Stay in loading until the repository knows whose messages to read.
+    // Signed-out and teardown repositories have no storage owner, and since
+    // #8187 owner-scoped reads correctly return nothing there rather than
+    // every account's rows. Subscribing anyway would tick immediately empty
+    // list and render the "new conversation" card over a thread that has
+    // history — `mayBeIncomplete` fails open to false while uncredentialed,
+    // so nothing would even qualify it. `ConversationPage` re-keys this bloc
+    // on `(dmRepository, currentPubkey)`, so a later authenticated identity
+    // rebuilds it and re-dispatches this event against an owner-scoped instance.
+    if (_dmRepository.userPubkey.isEmpty) return;
+
     // Arm the one-time history drain here too, not just on inbox open.
     // Profile → Message reaches a thread without ever passing through
     // Messages, so on a reinstall this can be the first DM surface the user
