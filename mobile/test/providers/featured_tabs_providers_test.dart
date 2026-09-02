@@ -15,6 +15,7 @@ import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/protected_minor_sticky_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -111,6 +112,30 @@ void main() {
         );
 
         expect(container.read(featuredTabViewerIsMinorProvider), isFalse);
+      },
+    );
+
+    test(
+      'gates an unresolved check on a previously-Keycast self-custody account '
+      '(tabs hidden)',
+      () async {
+        // A self-held key that was Keycast-custodial on this device can still
+        // receive a verdict, so an unresolved check must fail closed here. This
+        // pins the sticky wasKeycastAccountFor branch, distinct from the OAuth
+        // branch above — and shares the importedKeys source with the permissive
+        // test, proving the gate keys off the Keycast marker, not the source.
+        await ProtectedMinorStickyStore(
+          prefs: prefs,
+        ).markKeycastAccount(pubkey);
+        when(
+          () => authService.authenticationSource,
+        ).thenReturn(AuthenticationSource.importedKeys);
+        final container = containerWith(
+          authState: AuthState.authenticated,
+          status: () => Completer<ProtectedMinorStatus>().future,
+        );
+
+        expect(container.read(featuredTabViewerIsMinorProvider), isTrue);
       },
     );
   });
