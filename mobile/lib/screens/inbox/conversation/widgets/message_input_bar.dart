@@ -61,17 +61,28 @@ Widget? _buildCounter(
 /// Features a text field with surfaceContainer background, 20px radius,
 /// and a green send button that appears when text is entered.
 class MessageInputBar extends StatefulWidget {
-  const MessageInputBar({required this.onSend, super.key});
+  const MessageInputBar({required this.onSend, this.controller, super.key});
 
   final ValueChanged<String> onSend;
+
+  /// Optional externally-owned controller.
+  ///
+  /// The bar clears the field the moment [onSend] fires, before any outcome is
+  /// known. A caller that can learn the send was refused — an oversized rumor
+  /// leaves no queue row and so no failed bubble (#7331) — passes its own
+  /// controller so it can put the text back rather than lose it.
+  final TextEditingController? controller;
 
   @override
   State<MessageInputBar> createState() => _MessageInputBarState();
 }
 
 class _MessageInputBarState extends State<MessageInputBar> {
-  final _controller = TextEditingController();
+  TextEditingController? _internalController;
   bool _hasText = false;
+
+  TextEditingController get _controller =>
+      widget.controller ?? (_internalController ??= TextEditingController());
 
   @override
   void initState() {
@@ -81,9 +92,10 @@ class _MessageInputBarState extends State<MessageInputBar> {
 
   @override
   void dispose() {
-    _controller
-      ..removeListener(_onTextChanged)
-      ..dispose();
+    // Only the internally-created controller is ours to dispose; an external
+    // one outlives this widget.
+    _controller.removeListener(_onTextChanged);
+    _internalController?.dispose();
     super.dispose();
   }
 

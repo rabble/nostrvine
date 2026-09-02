@@ -9919,6 +9919,12 @@ abstract class AppLocalizations {
   /// **'Message Divine Moderation'**
   String get dmRetiredThreadOpenSupport;
 
+  /// Shown when a DM is refused because the encrypted rumor would exceed the NIP-44 size limit. The message stays in the composer, so the copy asks the user to shorten it rather than warning that it was lost.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is too long to send. Shorten it and try again.'**
+  String get dmSendTooLongMessage;
+
   /// Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions.
   ///
   /// In en, this message translates to:

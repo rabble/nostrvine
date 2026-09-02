@@ -3578,6 +3578,10 @@
   "@dmRetiredThreadOpenSupport": {
     "description": "Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
   },
+  "dmSendTooLongMessage": "That message is too long to send. Shorten it and try again.",
+  "@dmSendTooLongMessage": {
+    "description": "Shown when a DM is refused because the encrypted rumor would exceed the NIP-44 size limit. The message stays in the composer, so the copy asks the user to shorten it rather than warning that it was lost."
+  },
   "dmSendFailedMessage": "Message couldn't be sent",
   "@dmSendFailedMessage": {
     "description": "Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions."

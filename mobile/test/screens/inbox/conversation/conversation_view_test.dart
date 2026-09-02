@@ -1924,6 +1924,27 @@ void main() {
         expect(find.text(l10n.dmSendNoRecipientMessage), findsOneWidget);
       });
 
+      // #7331. Same shape as the no-recipient case above: an oversized rumor
+      // is refused before the enqueue, so no queue row and no red bubble ever
+      // exist. Verified on device — without this the message vanished with no
+      // feedback at all.
+      testWidgets('shows a toast when the message was too long', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(),
+            state: const ConversationState(sendStatus: SendStatus.tooLong),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmSendTooLongMessage), findsOneWidget);
+        // Not the generic failure copy: retrying an oversized message cannot
+        // succeed, so the user needs the reason, not a retry prompt.
+        expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+      });
+
       // #8461. A resend that fails again is the one failure the red bubble
       // cannot express: the bubble was ALREADY red when the user tapped it,
       // so re-raising `failed` leaves the before and after states identical

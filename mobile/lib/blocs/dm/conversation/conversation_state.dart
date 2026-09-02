@@ -39,6 +39,13 @@ enum SendStatus {
   /// Dispatched with an empty recipient list (#7335). Refused before the
   /// repository, so nothing is enqueued and nothing is retriable.
   noRecipient,
+
+  /// The rumor exceeds what NIP-44 can encrypt (#7331). Refused before the
+  /// enqueue, so — unlike [failed] — there is NO queue row and therefore no
+  /// bubble to carry the red "Not delivered" affordance. The UI must surface
+  /// this itself, and must keep the composer's text: the message is the only
+  /// copy the user has.
+  tooLong,
 }
 
 /// Per-bubble delivery status, derived from the durable `outgoing_dms`

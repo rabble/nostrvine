@@ -336,6 +336,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                     current.sendStatus == SendStatus.blocked ||
                     current.sendStatus == SendStatus.noRecipient ||
                     current.sendStatus == SendStatus.resendFailed ||
+                    current.sendStatus == SendStatus.tooLong ||
                     current.sendStatus == SendStatus.failed),
             listener: _onSendOutcome,
             child: Column(
@@ -503,6 +504,16 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       return;
     }
 
+    // Oversized rumor (#7331). Refused before the enqueue for the same reason
+    // as the two above — a hard-failed row would be re-driven by the retry
+    // sweep against content that can never succeed — so there is no bubble to
+    // carry it. `_SendBar` puts the text back in the composer, and this names
+    // the reason so the user knows shortening is the fix.
+    if (state.sendStatus == SendStatus.tooLong) {
+      _showErrorToastAndAnnounce(context, l10n.dmSendTooLongMessage);
+      return;
+    }
+
     // A resend that failed again (#8461). The bubble was already red when the
     // user tapped it, so — unlike the first-send case below — turning it red
     // is not a state change and the tap would otherwise produce no visible
@@ -586,24 +597,58 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 /// OK-confirmed publish can legitimately run for tens of seconds on a slow
 /// relay or remote signer — freezing the composer for that window swallowed
 /// every follow-up message the user tried to type.
-class _SendBar extends StatelessWidget {
+class _SendBar extends StatefulWidget {
   const _SendBar({required this.participantPubkeys});
 
   final List<String> participantPubkeys;
 
   @override
+  State<_SendBar> createState() => _SendBarState();
+}
+
+class _SendBarState extends State<_SendBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MessageInputBar(
-      onSend: (text) {
-        context.read<ConversationBloc>().add(
-          ConversationMessageSent(
-            recipientPubkeys: participantPubkeys,
-            content: text,
-          ),
+    // An oversized rumor is refused before the enqueue, so it leaves no queue
+    // row and no bubble to carry the failure (#7331). The bar has already
+    // cleared itself by then, so put the text back: it is the only copy the
+    // user has, and the fix they need is to shorten it.
+    return BlocListener<ConversationBloc, ConversationState>(
+      listenWhen: (previous, current) =>
+          previous.sendStatus != current.sendStatus &&
+          current.sendStatus == SendStatus.tooLong,
+      listener: (context, state) {
+        final rejected = _lastSubmitted;
+        if (rejected == null || _controller.text.isNotEmpty) return;
+        _controller.value = TextEditingValue(
+          text: rejected,
+          selection: TextSelection.collapsed(offset: rejected.length),
         );
       },
+      child: MessageInputBar(
+        controller: _controller,
+        onSend: (text) {
+          _lastSubmitted = text;
+          context.read<ConversationBloc>().add(
+            ConversationMessageSent(
+              recipientPubkeys: widget.participantPubkeys,
+              content: text,
+            ),
+          );
+        },
+      ),
     );
   }
+
+  String? _lastSubmitted;
 }
 
 /// Takes the composer's place in a thread keyed on a retired moderation

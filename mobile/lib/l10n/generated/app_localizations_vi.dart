@@ -5731,6 +5731,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dmRetiredThreadOpenSupport => 'Nhắn tin cho Divine Moderation';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'Tin nhắn không gửi được';
 
   @override

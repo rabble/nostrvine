@@ -5768,6 +5768,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get dmRetiredThreadOpenSupport => 'Divine Moderation کو پیغام بھیجیں';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'پیغام نہیں بھیجا جا سکا';
 
   @override

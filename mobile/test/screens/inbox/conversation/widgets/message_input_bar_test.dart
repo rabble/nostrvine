@@ -395,6 +395,69 @@ void main() {
       });
     });
 
+    group('external controller', () {
+      testWidgets('uses a caller-provided controller and does not dispose it', (
+        tester,
+      ) async {
+        // The bar clears itself the moment onSend fires, before the outcome is
+        // known. A caller that learns the send was refused restores the draft
+        // through this controller, so the bar must neither own nor dispose it
+        // (#7331).
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (_) {}, controller: controller),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'draft');
+        await tester.pump();
+        expect(controller.text, equals('draft'));
+
+        // Replace the bar with something else; the controller must survive.
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: SizedBox.shrink()),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          () => controller.text,
+          returnsNormally,
+          reason: 'the bar must not dispose a controller it does not own',
+        );
+      });
+
+      testWidgets('a restored draft reappears in the field', (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (_) {}, controller: controller),
+            ),
+          ),
+        );
+
+        controller.text = 'restored after refusal';
+        await tester.pump();
+
+        expect(find.text('restored after refusal'), findsOneWidget);
+      });
+    });
+
     group('length limit', () {
       Future<void> pumpBar(WidgetTester tester) => tester.pumpWidget(
         MaterialApp(

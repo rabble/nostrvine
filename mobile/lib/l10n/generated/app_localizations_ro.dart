@@ -5922,6 +5922,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmRetiredThreadOpenSupport => 'Scrie către Divine Moderation';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'Mesajul nu a putut fi trimis';
 
   @override

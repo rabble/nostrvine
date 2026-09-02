@@ -5419,6 +5419,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmRetiredThreadOpenSupport => '给 Divine Moderation 发私信';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => '消息发送失败';
 
   @override

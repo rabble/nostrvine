@@ -5628,6 +5628,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmRetiredThreadOpenSupport => 'Divine Moderation ላይ መልእክት ይላኩ';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
 
   @override

@@ -273,6 +273,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.sent));
             return;
           }
+          if (result.tooLong) {
+            // Refused before the enqueue, so no queue row and no bubble will
+            // exist to show the failure. Emit a distinct status the view can
+            // turn into a visible message and a preserved draft (#7331).
+            emit(state.copyWith(sendStatus: SendStatus.tooLong));
+            return;
+          }
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {

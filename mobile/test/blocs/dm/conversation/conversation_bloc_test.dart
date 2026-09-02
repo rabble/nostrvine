@@ -415,6 +415,44 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, tooLong] on an oversized rumor, never failed (#7331)',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => const NIP17SendResult.tooLong(
+                'message is too large to send',
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            // Must NOT be `failed`: that status relies on the queue row's red
+            // "Not delivered" bubble as its only visual affordance, and an
+            // oversized send is refused before the enqueue so no row exists.
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.tooLong,
+            ),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
           'emits [sending, blocked] with no retry payload on a policy-blocked send (#176)',
           setUp: () {
             when(

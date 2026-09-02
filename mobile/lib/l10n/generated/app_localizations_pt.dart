@@ -5803,6 +5803,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Enviar mensagem para a Divine Moderation';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'Falha ao enviar a mensagem';
 
   @override

@@ -5790,6 +5790,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bericht sturen naar Divine Moderation';
 
   @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
+
+  @override
   String get dmSendFailedMessage => 'Bericht kon niet worden verzonden';
 
   @override
