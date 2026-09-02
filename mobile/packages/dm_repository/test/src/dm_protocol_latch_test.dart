@@ -174,29 +174,22 @@ void main() {
         ))?.dmProtocol;
 
     test(
-      'kind-4 first latches the thread, and the NIP-17 twin cannot clear it',
+      'kind-4 first latches the thread',
       () async {
-        // The ordering that creates the dual-send steady state. Both copies
-        // are the SAME message, dual-sent by a peer on a pre-#7664 build.
+        // The ordering that creates the dual-send steady state: an inbound
+        // legacy copy decides the thread before any NIP-17 message lands.
         await deliverNip04(id: 'a' * 64, content: 'hello');
         expect(await storedProtocol(), 'nip04');
-
-        await deliverNip17(
-          wrapId: 'b' * 64,
-          rumorId: 'c' * 64,
-          content: 'hello',
-        );
-
-        // The twin is collapsed onto the stored kind-4 and the handler returns
-        // BEFORE its unconditional `dmProtocol: 'nip17'` upsert. So the peer
-        // speaking NIP-17 perfectly well does not undo the latch.
-        expect(
-          await storedProtocol(),
-          'nip04',
-          reason: 'a collapsed twin must not reach the clearing upsert',
-        );
       },
     );
+
+    // What CLEARS that latch is asserted in `dm_protocol_unlatch_test.dart`.
+    // Until #8499 the answer was "almost nothing": the peer's NIP-17 twin was
+    // collapsed onto the stored kind-4 and the handler returned before its
+    // `dmProtocol: 'nip17'` upsert, so a peer speaking NIP-17 perfectly well
+    // could not undo the latch and two dual-sending sides deadlocked. That
+    // case used to be asserted here and now lives, inverted and split by
+    // sender, alongside the change that fixed it.
 
     test(
       'NIP-17 first leaves the thread nip17, and the kind-4 twin cannot '
