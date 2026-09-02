@@ -13,8 +13,11 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vanished_account_identity.dart';
 
 /// Filter mode for user search in [UserPickerSheet].
 enum UserPickerFilterMode {
@@ -125,6 +128,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   // For mutualFollowsOnly: local follow list search
   List<UserProfile> _followProfiles = [];
   List<UserProfile> _filteredFollowProfiles = [];
+
+  /// Pubkeys carrying a NIP-62 vanish tombstone, mirrored from
+  /// [vanishedProfilePubkeysProvider].
+  ///
+  /// Held rather than sampled per row so the sort and the filter resolve
+  /// against the same set, and so one subscription covers a list of any
+  /// length. It can arrive after the list is already sorted, which is what
+  /// [_onVanishedPubkeysChanged] re-derives against.
+  Set<String> _vanishedPubkeys = const {};
   bool _followListLoaded = false;
   StreamSubscription<List<String>>? _followersSubscription;
   final _selectedProfiles = <UserProfile>[];
@@ -201,18 +213,24 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       final cached = await profileRepo.getCachedProfiles(
         pubkeys: followingPubkeys,
       );
-      candidates =
-          cached
-              .where(
-                (profile) =>
-                    !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
-              )
-              .toList()
-            ..sort(
-              (a, b) => a.bestDisplayName.toLowerCase().compareTo(
-                b.bestDisplayName.toLowerCase(),
-              ),
-            );
+      if (!mounted) return;
+      // Seed from the current value rather than waiting for the listener:
+      // `ref.listen` fires on change only, so a set that already arrived
+      // before this widget mounted would never reach the first sort.
+      _vanishedPubkeys =
+          ref.read(vanishedProfilePubkeysProvider).value ?? const {};
+      // Sorted after the await, never before: `_deletedAccountLabel` is an
+      // inherited-widget read and this method is kicked off from initState. A
+      // vanished row sorts where "Deleted account" puts it, not where the name
+      // it no longer shows would.
+      candidates = _sortedByRenderedName(
+        cached
+            .where(
+              (profile) =>
+                  !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
+            )
+            .toList(),
+      );
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -243,11 +261,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         // state before the slower ones answer would flash "you follow nobody".
         if (mutuals.isEmpty && !_followListLoaded) return;
 
+        // Sorted here rather than once at load: this listener re-assigns the
+        // list on every follower source, so a re-sort triggered by a late
+        // vanish set would otherwise be overwritten by the next emission.
+        final ordered = _sortedByRenderedName(mutuals);
         setState(() {
-          _followProfiles = mutuals;
+          _followProfiles = ordered;
           _filteredFollowProfiles = _matchingFollowProfiles(
             _searchController.text,
-            mutuals,
+            ordered,
           );
           _followListLoaded = true;
         });
@@ -256,11 +278,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       // usable instead of hanging in loading.
       onError: (Object _) {
         if (!mounted) return;
+        final ordered = _sortedByRenderedName(candidates);
         setState(() {
-          _followProfiles = candidates;
+          _followProfiles = ordered;
           _filteredFollowProfiles = _matchingFollowProfiles(
             _searchController.text,
-            candidates,
+            ordered,
           );
           _followListLoaded = true;
         });
@@ -320,10 +343,53 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     if (trimmed.isEmpty) return profiles;
 
     return profiles.where((profile) {
-      final name = profile.bestDisplayName.toLowerCase();
-      final nip05 = (profile.nip05 ?? '').toLowerCase();
+      final isVanished = _vanishedPubkeys.contains(profile.pubkey);
+      final name = _renderedName(profile).toLowerCase();
+      // A vanished account's NIP-05 identifies it as surely as its name, so it
+      // is neither rendered nor matchable — otherwise the row stays findable by
+      // a string it no longer shows.
+      final nip05 = isVanished ? '' : (profile.nip05 ?? '').toLowerCase();
       return name.contains(trimmed) || nip05.contains(trimmed);
     }).toList();
+  }
+
+  /// The substitute a vanished row shows in place of its name.
+  ///
+  /// An inherited-widget read, so it is unavailable until `initState` has
+  /// returned — every caller below runs after that point.
+  String get _deletedAccountLabel => context.l10n.profileDeletedAccountName;
+
+  /// The name the row for [profile] renders.
+  String _renderedName(UserProfile profile) => vanishedAccountNameFrom(
+    isVanished: _vanishedPubkeys.contains(profile.pubkey),
+    deletedAccountLabel: _deletedAccountLabel,
+    fallbackName: profile.bestDisplayName,
+  );
+
+  /// [profiles] ordered by the name each row renders.
+  List<UserProfile> _sortedByRenderedName(List<UserProfile> profiles) {
+    String key(UserProfile p) => _renderedName(p).toLowerCase();
+    return profiles.toList()..sort((a, b) => key(a).compareTo(key(b)));
+  }
+
+  /// Re-derives the follow list against a newly delivered vanished set.
+  ///
+  /// The tombstone stream emits after the first frame, so a list sorted at load
+  /// time is keyed on the pre-substitution names until this runs.
+  void _onVanishedPubkeysChanged(Set<String> pubkeys) {
+    if (!mounted) return;
+    if (pubkeys.length == _vanishedPubkeys.length &&
+        pubkeys.containsAll(_vanishedPubkeys)) {
+      return;
+    }
+    setState(() {
+      _vanishedPubkeys = pubkeys;
+      _followProfiles = _sortedByRenderedName(_followProfiles);
+      _filteredFollowProfiles = _matchingFollowProfiles(
+        _searchController.text,
+        _followProfiles,
+      );
+    });
   }
 
   void _onUserSelected(UserProfile profile) {
@@ -365,6 +431,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     if (_profileRepoMissing) {
       return const _ProfileRepoUnavailable();
     }
+
+    // One subscription for the whole sheet rather than one per row: the rows
+    // are unbounded and every one of them asks the same question.
+    // The sort and the filter need the whole set; each row watches its own
+    // pubkey through profileVanishedProvider, which derives from this same
+    // stream — the shape every inbox row already uses.
+    ref.listen(vanishedProfilePubkeysProvider, (_, next) {
+      _onVanishedPubkeysChanged(next.value ?? const {});
+    });
 
     final hintText =
         widget.searchHint ??
@@ -545,7 +620,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 }
 
 /// A tile displaying a user profile in the search results.
-class _UserSearchTile extends StatelessWidget {
+/// One candidate row.
+///
+/// A NIP-62 vanished account must not be named or pictured here: this picker
+/// feeds badge awards (kind 8, which NIP-58 calls "immutable and
+/// non-transferable"), people lists (kind 30000) and video `p` tags (kind
+/// 34236), so a wrong identity is published permanently and in public. The
+/// `allUsers` mode reaches third-party NIP-50 relays that a vanish addressed
+/// elsewhere never obliged to forget, so the pre-vanish kind 0 does come back.
+class _UserSearchTile extends ConsumerWidget {
   const _UserSearchTile({
     required this.profile,
     required this.onTap,
@@ -560,12 +643,23 @@ class _UserSearchTile extends StatelessWidget {
   final bool isSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textColor = context.vineColors.onSurface;
+    final isVanished = ref.watch(profileVanishedProvider(profile.pubkey));
+    final displayName = vanishedAccountName(
+      context,
+      isVanished: isVanished,
+      fallbackName: profile.bestDisplayName,
+    );
     final action = isDisabled
-        ? context.l10n.userPickerAlreadyAddedSemantics(profile.bestDisplayName)
-        : context.l10n.userPickerSelectSemantics(profile.bestDisplayName);
-    final nip05 = profile.nip05;
+        ? context.l10n.userPickerAlreadyAddedSemantics(displayName)
+        : context.l10n.userPickerSelectSemantics(displayName);
+    // `shortDisplayNip05`, not the raw field: every other identity string here
+    // is sanitized, and this one arrives from relay search results. An unpaired
+    // UTF-16 surrogate in a kind 0 crashes the paragraph builder, which is what
+    // `text_sanitizer` exists to prevent. It also renders `@rabble` rather than
+    // the `_@rabble.divine.video` long form every other row avoids.
+    final nip05 = isVanished ? null : profile.shortDisplayNip05;
 
     return Semantics(
       button: true,
@@ -585,8 +679,11 @@ class _UserSearchTile extends StatelessWidget {
                 Opacity(
                   opacity: isDisabled ? 0.5 : 1.0,
                   child: UserAvatar(
-                    imageUrl: profile.picture,
-                    name: profile.bestDisplayName,
+                    imageUrl: vanishedAccountPictureUrl(
+                      isVanished: isVanished,
+                      pictureUrl: profile.picture,
+                    ),
+                    name: displayName,
                     placeholderSeed: profile.pubkey,
                     size: 40,
                   ),
@@ -596,14 +693,14 @@ class _UserSearchTile extends StatelessWidget {
                     crossAxisAlignment: .start,
                     children: [
                       Text(
-                        profile.bestDisplayName,
+                        displayName,
                         maxLines: 1,
                         overflow: .ellipsis,
                         style: VineTheme.titleMediumFont(color: textColor),
                       ),
-                      if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                      if (nip05 != null && nip05.isNotEmpty)
                         Text(
-                          profile.nip05!,
+                          nip05,
                           maxLines: 1,
                           overflow: .ellipsis,
                           style: VineTheme.bodyMediumFont(color: textColor),
@@ -987,14 +1084,14 @@ class _UserPickerTitle extends StatelessWidget {
   }
 }
 
-class _SelectedChipsRow extends StatelessWidget {
+class _SelectedChipsRow extends ConsumerWidget {
   const _SelectedChipsRow({required this.profiles, required this.onRemove});
 
   final List<UserProfile> profiles;
   final ValueChanged<UserProfile> onRemove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Wrap(
@@ -1004,7 +1101,13 @@ class _SelectedChipsRow extends StatelessWidget {
           for (final profile in profiles)
             _SelectionChip(
               key: ValueKey(profile.pubkey),
-              label: profile.bestDisplayName,
+              label: vanishedAccountName(
+                context,
+                isVanished: ref.watch(
+                  profileVanishedProvider(profile.pubkey),
+                ),
+                fallbackName: profile.bestDisplayName,
+              ),
               onRemove: () => onRemove(profile),
             ),
         ],

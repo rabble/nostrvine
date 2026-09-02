@@ -4,12 +4,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
+import 'package:openvine/widgets/vanished_account_identity.dart';
 
 /// Shows the "New people list" bottom sheet.
 ///
@@ -156,7 +159,14 @@ class _NewPeopleListSheetBodyState extends State<_NewPeopleListSheetBody> {
   }
 }
 
-class _CollaboratorsRow extends StatelessWidget {
+/// The picked collaborators, summarised on one line.
+///
+/// Resolves each name rather than reading `bestDisplayName` off the profile
+/// the picker handed back. `UserPickerSheet` substitutes at render time, so a
+/// consumer that keeps the `UserProfile` and formats its own text — as this
+/// one does — does not inherit that and would name a deleted account here
+/// after the picker itself stopped.
+class _CollaboratorsRow extends ConsumerWidget {
   const _CollaboratorsRow({
     required this.collaborators,
     required this.onTap,
@@ -168,8 +178,16 @@ class _CollaboratorsRow extends StatelessWidget {
   final AppLocalizations l10n;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasCollaborators = collaborators.isNotEmpty;
+    final names = [
+      for (final profile in collaborators)
+        vanishedAccountName(
+          context,
+          isVanished: ref.watch(profileVanishedProvider(profile.pubkey)),
+          fallbackName: profile.bestDisplayName,
+        ),
+    ].join(', ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,9 +209,7 @@ class _CollaboratorsRow extends StatelessWidget {
                 Expanded(
                   child: hasCollaborators
                       ? Text(
-                          collaborators
-                              .map((p) => p.bestDisplayName)
-                              .join(', '),
+                          names,
                           style: VineTheme.titleMediumFont(
                             color: context.vineColors.primaryText,
                           ),

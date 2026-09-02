@@ -566,7 +566,7 @@
     "description": "Remove-conversation confirmation for a direct-message peer whose account was deleted. Complete copy without a display-name placeholder so each locale controls its grammar."
   },
   "@profileDeletedAccountName": {
-    "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
+    "description": "Stands in for the display name of an account that requested deletion. A noun phrase used wherever a person's name would normally appear, in DM and non-DM surfaces alike — the inbox row, the conversation header, the following bar, the profile screen and header, the people picker, and the shared people row."
   },
   "inboxConversationDeletedAccountSubtitle": "This account was deleted",
   "@inboxConversationDeletedAccountSubtitle": {

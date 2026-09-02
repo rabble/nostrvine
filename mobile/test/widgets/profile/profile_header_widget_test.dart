@@ -719,6 +719,55 @@ void main() {
       expect(find.byType(OgBetaBadge), findsNothing);
     });
 
+    testWidgets('hides the verified checkmark on a vanished account', (
+      tester,
+    ) async {
+      final teamPubkey = kDivineTeamPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: teamPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Team Member',
+            pubkey: teamPubkey,
+          ),
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Same reasoning as the OG Beta chit above, and the same kind of
+      // roster: `kDivineTeamPubkeys` is compiled in, so it cannot drop a
+      // member who vanishes after release.
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+    });
+
+    testWidgets('hides the OG Viner chit on a vanished account', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        ogVinerPubkeysCacheKey: jsonEncode([testUserHex]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(displayName: 'OG User'),
+          sharedPreferences: prefs,
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Same reasoning as the OG Beta chit and the checkmark above: a vanished
+      // account renders profileDeletedAccountName, and the OG Viner roster is a
+      // cached set that cannot drop someone who vanishes after release.
+      expect(find.byType(OgVinerBadge), findsNothing);
+    });
+
     testWidgets('opens checkmark explainer from profile header target', (
       tester,
     ) async {
