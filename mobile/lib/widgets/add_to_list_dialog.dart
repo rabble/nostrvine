@@ -1,6 +1,7 @@
 // ABOUTME: Dialogs for adding videos to curated lists
 // ABOUTME: SelectListDialog and CreateListDialog for curated video lists
 
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -149,7 +150,7 @@ class SelectListDialog extends StatelessWidget {
       // does not ask the user to try again.
       final atSizeLimit =
           !isCurrentlyInList &&
-          listService.wouldExceedPrivateItemLimit(list.id, video.id);
+          CuratedListConverter.wouldExceedPrivateItemLimit(list, video.id);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -435,25 +435,6 @@ class CuratedListService extends ChangeNotifier {
   }
 
   /// Add video to a list
-  /// Whether adding [videoEventId] to [listId] would push the list's private
-  /// item payload past what NIP-44 can encrypt, so the add cannot succeed
-  /// however many times it is retried.
-  ///
-  /// A private list is sealed with a single NIP-44 encryption, and this
-  /// client writes only the 2-byte u16 length prefix, so the sealed plaintext
-  /// cannot exceed 65,535 bytes. [_commitListMutation] refuses past that and
-  /// returns `false` — indistinguishable from a transient failure without
-  /// this, which is why the UI showed nothing at all (#7331).
-  bool wouldExceedPrivateItemLimit(String listId, String videoEventId) {
-    final list = getListById(listId);
-    if (list == null || list.isPublic) return false;
-    if (list.videoEventIds.contains(videoEventId)) return false;
-    final prospective = list.copyWith(
-      videoEventIds: [...list.videoEventIds, videoEventId],
-    );
-    return !_relayGateway.privateItemPayloadFits(prospective);
-  }
-
   Future<bool> addVideoToList(String listId, String videoEventId) {
     return _serializeListOperation(
       listId,

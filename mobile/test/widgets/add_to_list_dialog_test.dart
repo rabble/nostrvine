@@ -227,7 +227,12 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My List',
-          videoEventIds: const [],
+          isPublic: false,
+          // Enough references that one more cannot fit in a single NIP-44
+          // plaintext, so the converter's real arithmetic decides.
+          videoEventIds: [
+            for (var i = 0; i < 1000; i++) i.toString().padLeft(64, '0'),
+          ],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -236,9 +241,6 @@ void main() {
       when(
         () => mockListService.addVideoToList(any(), any()),
       ).thenAnswer((_) async => false);
-      when(
-        () => mockListService.wouldExceedPrivateItemLimit(any(), any()),
-      ).thenReturn(true);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -271,9 +273,6 @@ void main() {
       when(
         () => mockListService.addVideoToList(any(), any()),
       ).thenAnswer((_) async => false);
-      when(
-        () => mockListService.wouldExceedPrivateItemLimit(any(), any()),
-      ).thenReturn(false);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
