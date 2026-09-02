@@ -7,6 +7,7 @@ import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -236,6 +237,60 @@ void main() {
       );
 
       expect(find.text('lookup required'), findsOneWidget);
+    });
+  });
+
+  group('dmPeerAvatar', () {
+    const picture = 'https://example.invalid/peer.png';
+
+    test("keeps a live peer's picture and adds no override", () {
+      final avatar = dmPeerAvatar(
+        pubkeyHex: pubkey,
+        isVanished: false,
+        pictureUrl: picture,
+      );
+
+      expect(avatar.imageUrl, picture);
+      expect(avatar.contentOverride, isNull);
+    });
+
+    test("drops a vanished peer's picture", () {
+      final avatar = dmPeerAvatar(
+        pubkeyHex: pubkey,
+        isVanished: true,
+        pictureUrl: picture,
+      );
+
+      expect(avatar.imageUrl, isNull);
+    });
+
+    test('substitutes the bundled wordmark for the moderation account', () {
+      final avatar = dmPeerAvatar(
+        pubkeyHex: kModerationPubkeyHex,
+        isVanished: false,
+        pictureUrl: picture,
+      );
+
+      expect(avatar.contentOverride, isA<ModerationAvatar>());
+    });
+
+    test('substitutes the wordmark for a retired moderation key too', () {
+      final avatar = dmPeerAvatar(
+        pubkeyHex: kLegacyModerationPubkeys.first,
+        isVanished: false,
+      );
+
+      expect(avatar.contentOverride, isA<ModerationAvatar>());
+    });
+
+    test('a vanish drops the picture even for the moderation account', () {
+      final avatar = dmPeerAvatar(
+        pubkeyHex: kModerationPubkeyHex,
+        isVanished: true,
+        pictureUrl: picture,
+      );
+
+      expect(avatar.imageUrl, isNull);
     });
   });
 }

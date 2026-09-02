@@ -7,6 +7,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 
 /// The peer's name when it resolves without a profile lookup.
 ///
@@ -102,4 +103,33 @@ String dmPeerDisplayName(
   },
   displayNameOverride: displayNameOverride,
   isResolving: isResolving,
+);
+
+/// The avatar artwork a DM peer surface shows, resolved the same way
+/// [dmPeerDisplayName] resolves the name beside it.
+///
+/// The two halves have to agree or a row contradicts itself — a vanished peer
+/// named "Deleted account" over their own photo still identifies them, and the
+/// moderation account named "Divine Moderation" beside a generic placeholder
+/// reads as an impersonator. Both substitutions were already written out by
+/// hand at every inbox row ([ConversationTile] is the reference); this is that
+/// pair in one place so a new surface cannot ship with the name step and
+/// without the picture step, which is exactly how #8421's send-target pickers
+/// diverged.
+///
+/// [contentOverride] carries the bundled moderation wordmark because the
+/// account's kind-0 `picture` is a hosted SVG whose `<style>` block
+/// `vector_graphics_compiler` discards — see [ModerationAvatar]. Pass the
+/// record straight into [UserAvatar]'s matching parameters.
+({String? imageUrl, Widget? contentOverride}) dmPeerAvatar({
+  required String pubkeyHex,
+  required bool isVanished,
+  String? pictureUrl,
+}) => (
+  // A vanish is the one branch that must also drop the artwork: the name
+  // substitution alone would leave the account recognisable by its face.
+  imageUrl: isVanished ? null : pictureUrl,
+  contentOverride: isModerationAccount(pubkeyHex)
+      ? const ModerationAvatar()
+      : null,
 );
