@@ -1,6 +1,8 @@
 // ABOUTME: #8519 — a peer advertising a kind-10050 proves NIP-17 capability
 // ABOUTME: without sending anything, which unlatches a one-way thread.
 
+import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';
@@ -94,9 +96,7 @@ void main() {
           noResponseFrom: <String>[],
         ),
       );
-      when(
-        () => messageService.canSendTo(any()),
-      ).thenAnswer((_) async => true);
+      when(() => messageService.canSendTo(any())).thenAnswer((_) async => true);
       // Real rumor construction: the NIP-17 leg's tags are not what this file
       // asserts, but a null rumor stops `sendMessage` before the kind-4 twin.
       when(
@@ -188,11 +188,7 @@ void main() {
               noRelays: false,
             );
           case DmInboxResolution.absent:
-            return (
-              events: const <Event>[],
-              timedOut: false,
-              noRelays: false,
-            );
+            return (events: const <Event>[], timedOut: false, noRelays: false);
           case DmInboxResolution.unreadable:
             // A failed read, not an answer.
             return (events: const <Event>[], timedOut: true, noRelays: false);
@@ -239,22 +235,19 @@ void main() {
       await pumpEventQueue();
     }
 
-    test(
-      'an advertised kind-10050 clears the latch, and the SAME send already '
-      'skips its kind-4 twin',
-      () async {
-        await seedLatchedThread();
-        stubInboxResolution(DmInboxResolution.found);
+    test('an advertised kind-10050 clears the latch, and the SAME send already '
+        'skips its kind-4 twin', () async {
+      await seedLatchedThread();
+      stubInboxResolution(DmInboxResolution.found);
 
-        await send();
+      await send();
 
-        expect(await storedProtocol(), 'nip17');
-        // The unlatch runs before the persist transaction, so the gate — which
-        // reads the protocol that transaction loads — is already closed. A
-        // later-only fix would have published one more cleartext copy.
-        verifyKind4Published(expected: false);
-      },
-    );
+      expect(await storedProtocol(), 'nip17');
+      // The unlatch runs before the persist transaction, so the gate — which
+      // reads the protocol that transaction loads — is already closed. A
+      // later-only fix would have published one more cleartext copy.
+      verifyKind4Published(expected: false);
+    });
 
     test(
       'no advertised inbox leaves the thread latched and still dual-sends',
@@ -285,6 +278,182 @@ void main() {
         // other is the absence of one.
         expect(await storedProtocol(), 'nip04');
         verifyKind4Published(expected: true);
+      },
+    );
+  });
+
+  // A sibling group, deliberately not nested inside the one above: a nested
+  // group would make that group's `setUp` a shared one and start it counting
+  // against the #8399 stub ratchet.
+  group('the retry sweep unlatches on the same evidence (#8519)', () {
+    late AppDatabase db;
+    late ConversationsDao conversationsDao;
+    late DirectMessagesDao messagesDao;
+    late ProcessedGiftWrapsDao processedDao;
+    late OutgoingDmsDao outgoingDao;
+    late _MockNostrClient nostrClient;
+    late _MockMessageService messageService;
+    late DmRepository repository;
+
+    final participants = [_owner, _peer]..sort();
+    late String conversationId;
+
+    setUp(() async {
+      db = AppDatabase.test(NativeDatabase.memory());
+      conversationsDao = ConversationsDao(db);
+      messagesDao = DirectMessagesDao(db);
+      processedDao = ProcessedGiftWrapsDao(db);
+      outgoingDao = OutgoingDmsDao(db);
+      nostrClient = _MockNostrClient();
+      messageService = _MockMessageService();
+      conversationId = DmRepository.computeConversationId(participants);
+
+      when(() => nostrClient.connectedRelayCount).thenReturn(1);
+      when(() => nostrClient.configuredRelayCount).thenReturn(1);
+      when(() => messageService.canSendTo(any())).thenAnswer((_) async => true);
+      // The sweep republishes the stored rumor; the unlatch runs before this,
+      // so the outcome does not decide the assertion either way.
+      when(
+        () => messageService.sendRumor(
+          rumorEvent: any(named: 'rumorEvent'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          targetRelays: any(named: 'targetRelays'),
+          selfWrapTargetRelays: any(named: 'selfWrapTargetRelays'),
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
+          recipientWrapBuildTimeout: any(named: 'recipientWrapBuildTimeout'),
+          selfWrapBuildTimeout: any(named: 'selfWrapBuildTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: _rumorId,
+          messageEventId: _wrapId,
+          recipientPubkey: _peer,
+        ),
+      );
+
+      repository = DmRepository(
+        nostrClient: nostrClient,
+        messageService: messageService,
+        directMessagesDao: messagesDao,
+        conversationsDao: conversationsDao,
+        processedGiftWrapsDao: processedDao,
+        outgoingDmsDao: outgoingDao,
+        userPubkey: _owner,
+        signer: LocalNostrSigner(_privateKey),
+      );
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    void stubInboxResolution(DmInboxResolution state) {
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async {
+        switch (state) {
+          case DmInboxResolution.found:
+            return (
+              events: [
+                Event.fromJson({
+                  'id': 'a' * 64,
+                  'pubkey': _peer,
+                  'created_at': _baseCreatedAt,
+                  'kind': EventKind.dmRelaysList,
+                  'tags': [
+                    ['relay', 'wss://inbox.example.com'],
+                  ],
+                  'content': '',
+                  'sig': '',
+                }),
+              ],
+              timedOut: false,
+              noRelays: false,
+            );
+          case DmInboxResolution.absent:
+            return (events: const <Event>[], timedOut: false, noRelays: false);
+          case DmInboxResolution.unreadable:
+            return (events: const <Event>[], timedOut: true, noRelays: false);
+        }
+      });
+    }
+
+    /// A latched thread with one queued rumor for the sweep to drive.
+    Future<void> seedLatchedThreadWithQueuedSend() async {
+      await conversationsDao.upsertConversation(
+        id: conversationId,
+        participantPubkeys: participants.join(','),
+        isGroup: false,
+        createdAt: _baseCreatedAt,
+        lastMessageTimestamp: _baseCreatedAt,
+        ownerPubkey: _owner,
+        dmProtocol: 'nip04',
+      );
+      final rumor = Event.fromJson({
+        'id': _rumorId,
+        'pubkey': _owner,
+        'created_at': _baseCreatedAt,
+        'kind': EventKind.privateDirectMessage,
+        'tags': [
+          ['p', _peer],
+        ],
+        'content': 'hello',
+        'sig': '',
+      });
+      await outgoingDao.enqueue(
+        OutgoingDm(
+          id: _rumorId,
+          conversationId: conversationId,
+          recipientPubkey: _peer,
+          content: 'hello',
+          createdAt: _baseCreatedAt,
+          rumorEventJson: jsonEncode(rumor.toJson()),
+          recipientWrapStatus: OutgoingWrapStatus.pending,
+          selfWrapStatus: OutgoingWrapStatus.pending,
+          queuedAt: DateTime.now(),
+          ownerPubkey: _owner,
+        ),
+      );
+    }
+
+    Future<String?> storedProtocol() async =>
+        (await conversationsDao.getConversation(
+          conversationId,
+          ownerPubkey: _owner,
+        ))?.dmProtocol;
+
+    test(
+      'a sweep pass that reads an advertised kind-10050 clears the latch',
+      () async {
+        await seedLatchedThreadWithQueuedSend();
+        stubInboxResolution(DmInboxResolution.found);
+
+        final _ = await repository.recoverFullSend(rumorId: _rumorId);
+
+        // Without this the sweep could re-read the peer's inbox on every pass
+        // and still leave the next foreground send publishing a cleartext
+        // twin it already had the evidence to skip.
+        expect(await storedProtocol(), 'nip17');
+      },
+    );
+
+    test(
+      'a sweep pass on an unreadable lookup leaves the thread latched',
+      () async {
+        await seedLatchedThreadWithQueuedSend();
+        stubInboxResolution(DmInboxResolution.unreadable);
+
+        final _ = await repository.recoverFullSend(rumorId: _rumorId);
+
+        expect(await storedProtocol(), 'nip04');
       },
     );
   });

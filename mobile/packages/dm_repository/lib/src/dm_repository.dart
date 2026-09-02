@@ -4898,6 +4898,14 @@ class DmRepository {
       _selfWrapTargetRelays(),
     ).wait;
 
+    // The sweep resolves the same inbox the send path does, so it holds the
+    // same evidence and must reach the same conclusion. A thread whose only
+    // traffic is a queued message the sweep drives would otherwise stay
+    // latched no matter how many times we re-read the peer's kind-10050, and
+    // the next foreground send would publish the twin this pass already knew
+    // was unnecessary (#8519).
+    await _clearLatchOnAdvertisedInbox(row.conversationId, inbox.state);
+
     final publishResult = await _sendRumorWithTimeout(
       rumor: rumor,
       recipientPubkey: row.recipientPubkey,
