@@ -339,6 +339,44 @@ void main() {
       );
     });
 
+    test('does not retry an oversized moderation DM on resubmit', () async {
+      when(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const NIP17SendResult.tooLong('moderation DM is too large'),
+      );
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await submit(cubit);
+      await submit(cubit);
+
+      expect(cubit.state.moderationDmFailed, isTrue);
+      expect(cubit.state.moderationDm.outcome, ModerationDmOutcome.tooLong);
+      verify(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => dmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      );
+    });
+
     test('re-drives the parked row rather than minting a second DM', () async {
       when(
         () => dmRepository.sendMessage(

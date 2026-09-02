@@ -14,6 +14,10 @@ enum InlineReelReplyStatus {
   /// The most recent reply send failed (queued for retry).
   failure,
 
+  /// Refused before enqueue because the rumor was too large. There is no
+  /// durable row to re-drive, and retrying unchanged content cannot succeed.
+  tooLong,
+
   /// A retry found its parked row gone, and delivery can be neither confirmed
   /// nor re-driven.
   ///

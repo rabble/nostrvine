@@ -608,6 +608,43 @@ void main() {
           errors: () => [isA<Exception>()],
         );
 
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, tooLong] when every group recipient refuses the '
+          'oversized rumor (#7331)',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => const [
+                NIP17SendResult.tooLong('message is too large to send'),
+                NIP17SendResult.tooLong('message is too large to send'),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.tooLong,
+            ),
+          ],
+        );
+
         late StreamController<List<DmMessage>> failMsgCtrl;
         late StreamController<List<OutgoingDm>> failOutCtrl;
         blocTest<ConversationBloc, ConversationState>(

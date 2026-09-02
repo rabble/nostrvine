@@ -296,6 +296,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.blocked));
             return;
           }
+          if (results.isNotEmpty && results.every((r) => r.tooLong)) {
+            // Every sibling was refused before enqueueing the shared rumor.
+            // No queue row or failure bubble exists, so preserve the draft
+            // through the same terminal outcome as the 1:1 path (#7331).
+            emit(state.copyWith(sendStatus: SendStatus.tooLong));
+            return;
+          }
           // No recipient confirmed. If every unconfirmed recipient is soft
           // (frame written, OK pending) with no hard failure, treat the group
           // send as optimistically sent — the durable queue re-drives each

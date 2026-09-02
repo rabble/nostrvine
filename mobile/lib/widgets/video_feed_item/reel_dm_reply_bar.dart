@@ -354,6 +354,8 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
         // never dismissed by a later success, which can only close a visible
         // one — and by then `state.queuedRumorIds` describes some other send.
         _showReplyFailed(draft, cubit, state.queuedRumorIds);
+      case InlineReelReplyStatus.tooLong:
+        _showReplyTooLong(draft);
       case InlineReelReplyStatus.unverifiable:
         _showReplyUnverified();
       case InlineReelReplyStatus.success:
@@ -363,6 +365,21 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
         return;
     }
     cubit.acknowledge();
+  }
+
+  void _showReplyTooLong(String draft) {
+    if (draft.isNotEmpty && _controller.text.isEmpty) {
+      _controller.text = draft;
+      _controller.selection = TextSelection.collapsed(offset: draft.length);
+    }
+    _announce(context.l10n.dmSendTooLongMessage);
+    _closeRetrySnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.dmSendTooLongMessage),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _showReplyFailed(
@@ -520,6 +537,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
               prev.status != curr.status &&
               (curr.status == InlineReelReplyStatus.success ||
                   curr.status == InlineReelReplyStatus.failure ||
+                  curr.status == InlineReelReplyStatus.tooLong ||
                   curr.status == InlineReelReplyStatus.unverifiable),
           listener: (context, state) => _onReplyOutcome(state),
         ),
