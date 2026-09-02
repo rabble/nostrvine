@@ -901,11 +901,16 @@ class _MessageList extends StatelessWidget {
   /// as a red bubble, and its tap opens a recovery sheet whose primary action
   /// republishes the rumor. On a blocked thread that delivers a DM to the
   /// account the viewer blocked, from the one screen built to make that
-  /// impossible. On a retired thread the send policy refuses the kind-14 and
-  /// the failed row is dropped, so the bubble vanishes as if it had sent.
-  /// The bubble stays rendered; only the affordance goes, so the evidence is
-  /// intact and nothing is force-deleted. Unblocking (or the current
-  /// moderation key) restores the sheet along with the composer.
+  /// impossible. On a retired thread the send policy refuses the kind-14, so
+  /// the resend is a dead affordance either way.
+  ///
+  /// This flag removes the affordance only — the bubble itself stays rendered,
+  /// so the evidence is intact and nothing is force-deleted here. On a blocked
+  /// thread that holds end to end, and unblocking restores the sheet along with
+  /// the composer. On a retired thread it does not: the first retry sweep after
+  /// the rotation deletes the queue row outright, so the bubble disappears on
+  /// its own. That is a separate defect in the terminal-blocked queue
+  /// transition, tracked in #8492, not something this flag can reach.
   ///
   /// This closes the user-initiated path only. TODO(#7047): Decide whether a
   /// block cancels queued outgoing sends; the reconnect sweep still re-drives
