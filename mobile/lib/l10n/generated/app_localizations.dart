@@ -1406,7 +1406,7 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get profileMessageLabel;
 
-  /// Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar.
+  /// Stands in for the display name of an account that requested deletion. A noun phrase used wherever a person's name would normally appear, in DM and non-DM surfaces alike — the inbox row, the conversation header, the following bar, the profile screen and header, the people picker, and the shared people row.
   ///
   /// In en, this message translates to:
   /// **'Deleted account'**
