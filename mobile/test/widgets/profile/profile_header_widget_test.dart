@@ -743,6 +743,31 @@ void main() {
       expect(find.byType(SpecialProfileCheckmark), findsNothing);
     });
 
+    testWidgets('hides the OG Viner chit on a vanished account', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        ogVinerPubkeysCacheKey: jsonEncode([testUserHex]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(displayName: 'OG User'),
+          sharedPreferences: prefs,
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Same reasoning as the OG Beta chit and the checkmark above: a vanished
+      // account renders profileDeletedAccountName, and the OG Viner roster is a
+      // cached set that cannot drop someone who vanishes after release.
+      expect(find.byType(OgVinerBadge), findsNothing);
+    });
+
     testWidgets('opens checkmark explainer from profile header target', (
       tester,
     ) async {
