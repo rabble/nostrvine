@@ -15,7 +15,6 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
-import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
@@ -236,10 +235,6 @@ void main() {
               exploreTabVideosProvider.overrideWith((ref) => null),
               classicVinesAvailableProvider.overrideWith((ref) async => false),
               forYouAvailableProvider.overrideWithValue(false),
-              allListsProvider.overrideWith(
-                (ref) async =>
-                    (userLists: <UserList>[], curatedLists: <CuratedList>[]),
-              ),
               curatedListsStateProvider.overrideWith(
                 _FakeCuratedListsState.new,
               ),
@@ -282,10 +277,6 @@ void main() {
             exploreTabVideosProvider.overrideWith((ref) => null),
             classicVinesAvailableProvider.overrideWith((ref) async => false),
             forYouAvailableProvider.overrideWithValue(false),
-            allListsProvider.overrideWith(
-              (ref) async =>
-                  (userLists: <UserList>[], curatedLists: <CuratedList>[]),
-            ),
             curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
             isFeatureEnabledProvider(
               FeatureFlag.integratedApps,
