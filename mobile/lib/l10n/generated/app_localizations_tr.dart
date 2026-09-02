@@ -4822,6 +4822,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listContinue => 'Devam';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'Bu liste güncellenemedi. Tekrar dene.';
 
   @override

@@ -4570,6 +4570,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listContinue => '继续';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => '无法更新此列表，请重试。';
 
   @override

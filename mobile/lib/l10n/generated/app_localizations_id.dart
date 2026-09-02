@@ -4815,6 +4815,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get listContinue => 'Lanjut';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'Daftar ini gagal diperbarui. Coba lagi.';
 
   @override

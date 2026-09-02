@@ -128,7 +128,9 @@ class SelectListDialog extends StatelessWidget {
         success = await listService.addVideoToList(list.id, video.id);
       }
 
-      if (success && context.mounted) {
+      if (!context.mounted) return;
+
+      if (success) {
         final message = isCurrentlyInList
             ? context.l10n.listRemovedFrom(list.name)
             : context.l10n.listAddedTo(list.name);
@@ -138,7 +140,25 @@ class SelectListDialog extends StatelessWidget {
             duration: const Duration(seconds: 1),
           ),
         );
+        return;
       }
+
+      // A failed toggle used to render nothing at all, so a private list that
+      // had reached the NIP-44 size ceiling silently swallowed every add
+      // (#7331). Retrying that case can never succeed, so it gets copy that
+      // does not ask the user to try again.
+      final atSizeLimit =
+          !isCurrentlyInList &&
+          listService.wouldExceedPrivateItemLimit(list.id, video.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            atSizeLimit
+                ? context.l10n.listPrivateFull
+                : context.l10n.listUpdateFailed,
+          ),
+        ),
+      );
     } catch (e) {
       Log.error(
         'Failed to toggle video in list: $e',

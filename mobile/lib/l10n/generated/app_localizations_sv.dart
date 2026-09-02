@@ -4879,6 +4879,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get listContinue => 'Fortsätt';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'Kunde inte uppdatera listan. Försök igen.';
 
   @override

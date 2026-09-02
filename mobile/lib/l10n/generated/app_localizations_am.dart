@@ -4762,6 +4762,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listContinue => 'ቀጥል';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።';
 
   @override

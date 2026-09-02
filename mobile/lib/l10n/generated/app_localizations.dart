@@ -8329,6 +8329,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get listContinue;
 
+  /// Shown when a video cannot be added to a private list because its encrypted payload would exceed the NIP-44 size limit. Retrying cannot succeed, so the copy must not suggest trying again.
+  ///
+  /// In en, this message translates to:
+  /// **'This private list is full. Remove something to add more.'**
+  String get listPrivateFull;
+
   /// No description provided for @listUpdateFailed.
   ///
   /// In en, this message translates to:

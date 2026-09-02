@@ -437,6 +437,10 @@ const _knownUntranslatedDebt = <String>{
   // actions sheet, and manage-posts mode. Deferred to the next human
   // translation pass; the list-follow verb needs per-locale judgment
   // (person-follow vs list-subscribe differ in several locales).
+  // Private-list size ceiling (#7331). Deferred to the next human translation
+  // pass: "full" here means an encryption size limit rather than a item-count
+  // limit, and several locales need a different noun for that distinction.
+  'listPrivateFull',
   'listEditInfoAction',
   'listManageVideosAction',
   'listFollowButton',

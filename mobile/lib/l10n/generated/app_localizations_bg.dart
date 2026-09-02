@@ -4935,6 +4935,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listContinue => 'Продължи';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Списъкът не можа да бъде обновен. Опитай пак.';
 

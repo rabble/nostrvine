@@ -4886,6 +4886,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get listContinue => 'جاری رکھیں';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'یہ فہرست اپ ڈیٹ نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
 

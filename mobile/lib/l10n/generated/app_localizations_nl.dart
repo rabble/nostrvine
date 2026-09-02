@@ -4904,6 +4904,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listContinue => 'Doorgaan';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Kon deze lijst niet bijwerken. Probeer het opnieuw.';
 

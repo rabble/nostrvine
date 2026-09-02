@@ -5061,6 +5061,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get listContinue => 'కొనసాగించండి';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'ఈ జాబితాను నవీకరించడం సాధ్యపడలేదు. మళ్లీ ప్రయత్నించండి.';
 

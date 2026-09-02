@@ -4886,6 +4886,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get listContinue => 'Teruskan';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Senarai ini tidak dapat dikemas kini. Cuba lagi.';
 

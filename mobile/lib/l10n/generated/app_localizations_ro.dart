@@ -5029,6 +5029,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listContinue => 'Continuă';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'N-am putut actualiza lista. Mai încearcă.';
 
   @override

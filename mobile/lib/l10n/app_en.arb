@@ -3008,6 +3008,10 @@
   "listShareFailed": "Couldn't share this list. Try again.",
   "listSave": "Save",
   "listContinue": "Continue",
+  "listPrivateFull": "This private list is full. Remove something to add more.",
+  "@listPrivateFull": {
+    "description": "Shown when a video cannot be added to a private list because its encrypted payload would exceed the NIP-44 size limit. Retrying cannot succeed, so the copy must not suggest trying again."
+  },
   "listUpdateFailed": "Couldn't update this list. Try again.",
   "listMakePrivateTitle": "Make this list private?",
   "listMakePrivateWarning": "Its videos get encrypted so only you can see them. The name, description, tags, and cover stay visible, and copies shared before now may persist.",

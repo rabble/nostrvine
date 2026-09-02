@@ -4851,6 +4851,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get listContinue => 'Tiếp tục';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Không cập nhật được danh sách này. Thử lại nhé.';
 

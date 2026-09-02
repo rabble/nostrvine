@@ -4937,6 +4937,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get listContinue => 'Continua';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Impossibile aggiornare questa lista. Riprova.';
 

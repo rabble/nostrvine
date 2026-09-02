@@ -4843,6 +4843,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get listContinue => 'متابعة';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'تعذّر تحديث هذه القائمة. حاول مرة أخرى.';
 
   @override
