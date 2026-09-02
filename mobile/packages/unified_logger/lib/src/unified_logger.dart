@@ -176,7 +176,9 @@ class UnifiedLogger {
     // Memory capture must be comprehensive for debugging remote user issues
     try {
       final logEntry = LogEntry(
-        timestamp: DateTime.now(),
+        // UTC so exported logs correlate with relay, funnelcake and
+        // ClickHouse rows without guessing the reporter's timezone.
+        timestamp: DateTime.now().toUtc(),
         level: level,
         message: message,
         category: category,

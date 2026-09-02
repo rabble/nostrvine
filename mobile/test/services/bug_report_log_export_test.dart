@@ -73,6 +73,26 @@ void main() {
     });
   });
 
+  group('log export timestamp', () {
+    test('formats the export time as UTC', () {
+      final localTime = DateTime.parse('2026-09-02T13:00:00.000+05:00');
+
+      expect(
+        BugReportService.formatLogExportTimestamp(localTime),
+        '2026-09-02T08:00:00.000Z',
+      );
+    });
+
+    test('uses the same UTC timestamp in the export filename', () {
+      final localTime = DateTime.parse('2026-09-02T13:00:00.000+05:00');
+
+      expect(
+        BugReportService.buildLogExportFileName(localTime),
+        'openvine_full_logs_2026-09-02T08-00-00.000Z.txt',
+      );
+    });
+  });
+
   group('buildDeviceDescription', () {
     const channel = MethodChannel('dev.fluttercommunity.plus/device_info');
     final messenger =

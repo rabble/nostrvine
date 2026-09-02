@@ -269,4 +269,55 @@ void main() {
       },
     );
   });
+
+  group('UnifiedLogger timestamp encoding', () {
+    late LogCaptureService logService;
+    late Set<LogCategory> enabledCategories;
+    late LogLevel logLevel;
+
+    setUp(() async {
+      logService = LogCaptureService();
+      await logService.clearAllLogs();
+      enabledCategories = UnifiedLogger.enabledCategories;
+      logLevel = UnifiedLogger.currentLevel;
+      UnifiedLogger.enableCategories({LogCategory.system});
+      UnifiedLogger.setLogLevel(LogLevel.info);
+    });
+
+    tearDown(() {
+      UnifiedLogger.enableCategories(enabledCategories);
+      UnifiedLogger.setLogLevel(logLevel);
+    });
+
+    test('captures the entry timestamp in UTC', () {
+      Log.info('utc probe', category: LogCategory.system);
+
+      final entry = logService.getRecentLogs().lastWhere(
+        (log) => log.message == 'utc probe',
+      );
+
+      expect(
+        entry.timestamp.isUtc,
+        isTrue,
+        reason:
+            'A local timestamp exports without an offset, so support '
+            'cannot align it with relay or funnelcake rows.',
+      );
+    });
+
+    test('exports a Z-suffixed timestamp', () async {
+      Log.info('export probe', category: LogCategory.system);
+
+      final line = (await logService.getAllLogsAsText()).firstWhere(
+        (text) => text.contains('export probe'),
+      );
+
+      expect(
+        line,
+        matches(
+          RegExp(r'^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z\] '),
+        ),
+      );
+    });
+  });
 }
