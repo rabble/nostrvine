@@ -394,5 +394,79 @@ void main() {
         ]);
       });
     });
+
+    group('length limit', () {
+      Future<void> pumpBar(WidgetTester tester) => tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+        ),
+      );
+
+      testWidgets('truncates a paste longer than the limit', (tester) async {
+        await pumpBar(tester);
+
+        await tester.enterText(
+          find.byType(TextField),
+          'a' * (dmComposerMaxCharacters + 500),
+        );
+        await tester.pump();
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller!.text.length, equals(dmComposerMaxCharacters));
+      });
+
+      testWidgets('hides the counter well below the limit', (tester) async {
+        await pumpBar(tester);
+
+        await tester.enterText(find.byType(TextField), 'hello');
+        await tester.pump();
+
+        // Anything left over the threshold is noise in a chat composer.
+        const remaining = dmComposerMaxCharacters - 5;
+        expect(find.text('$remaining'), findsNothing);
+      });
+
+      testWidgets('shows the remaining count near the limit', (tester) async {
+        await pumpBar(tester);
+
+        const typed = dmComposerMaxCharacters - dmComposerCounterThreshold + 1;
+        await tester.enterText(find.byType(TextField), 'a' * typed);
+        await tester.pump();
+
+        expect(
+          find.text('${dmComposerMaxCharacters - typed}'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('sends the truncated text, never the full paste', (
+        tester,
+      ) async {
+        String? sentText;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (text) => sentText = text),
+            ),
+          ),
+        );
+
+        await tester.enterText(
+          find.byType(TextField),
+          'b' * (dmComposerMaxCharacters * 2),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(findSendButton(l10n));
+        await tester.pump();
+
+        expect(sentText!.length, equals(dmComposerMaxCharacters));
+      });
+    });
   });
 }

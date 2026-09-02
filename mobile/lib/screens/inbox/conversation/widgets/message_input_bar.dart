@@ -19,6 +19,42 @@ const String strikeDelimiter = '~~';
 @visibleForTesting
 const String codeDelimiter = '`';
 
+/// Longest message the composer accepts, in characters.
+///
+/// This is an affordance, not the correctness bound. `maxLength` truncates by
+/// grapheme cluster, and one cluster can be many bytes — a ZWJ emoji sequence
+/// runs past 25 — so a character limit cannot bound the UTF-8 size that NIP-44
+/// actually constrains. `maxDmMessageContentBytes` in `dm_repository` is what
+/// guarantees the send can be built; this stops the ordinary long paste at the
+/// keyboard instead of letting it fail after the fact (#7331).
+@visibleForTesting
+const int dmComposerMaxCharacters = 10000;
+
+/// How close to [dmComposerMaxCharacters] the counter starts showing.
+///
+/// A chat composer with a permanent counter reads as a form, and the number is
+/// noise until it is nearly actionable.
+@visibleForTesting
+const int dmComposerCounterThreshold = 500;
+
+/// Hides the character counter until the message is within
+/// [dmComposerCounterThreshold] of the limit.
+///
+/// A builder is Flutter's own contract for `TextField.buildCounter`, and
+/// returning `null` is how the counter is hidden — the widget itself is a
+/// class, per the widgets-over-methods rule.
+Widget? _buildCounter(
+  BuildContext context, {
+  required int currentLength,
+  required int? maxLength,
+  required bool isFocused,
+}) {
+  if (maxLength == null) return null;
+  final remaining = maxLength - currentLength;
+  if (remaining > dmComposerCounterThreshold) return null;
+  return _RemainingCounter(remaining: remaining);
+}
+
 /// Message input bar at the bottom of the conversation screen.
 ///
 /// Features a text field with surfaceContainer background, 20px radius,
@@ -95,6 +131,8 @@ class _MessageInputBarState extends State<MessageInputBar> {
                   textInputAction: TextInputAction.newline,
                   minLines: 1,
                   maxLines: 5,
+                  maxLength: dmComposerMaxCharacters,
+                  buildCounter: _buildCounter,
                   contextMenuBuilder: _buildContextMenu,
                   decoration: InputDecoration(
                     hintText: context.l10n.dmMessageInputHint,
@@ -239,5 +277,29 @@ class _MessageInputBarState extends State<MessageInputBar> {
     state
       ..userUpdateTextEditingValue(newValue, SelectionChangedCause.toolbar)
       ..hideToolbar();
+  }
+}
+
+/// Characters left before the composer stops accepting input.
+///
+/// Numerals only, so it needs no ARB key and reads the same in every locale.
+class _RemainingCounter extends StatelessWidget {
+  const _RemainingCounter({required this.remaining});
+
+  final int remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: 4, end: 4),
+      child: Text(
+        '$remaining',
+        style: VineTheme.labelSmallFont(
+          color: remaining <= 0
+              ? context.vineColors.onErrorContainer
+              : context.vineColors.onSurfaceMuted,
+        ),
+      ),
+    );
   }
 }
