@@ -357,5 +357,59 @@ void main() {
         expect(failure, isNot(equals(success)));
       });
     });
+
+    group('tooLong factory', () {
+      test('is a non-retriable failure distinct from blocked', () {
+        const result = NIP17SendResult.tooLong('too big');
+
+        expect(result.success, isFalse);
+        expect(result.tooLong, isTrue);
+        expect(result.blocked, isFalse);
+        expect(result.retryablePending, isFalse);
+      });
+
+      test('carries no queue row, so the retry sweep cannot re-drive it', () {
+        // The size check runs before the enqueue on purpose: a hard-failed row
+        // is re-driven by OutgoingDmRetryService.sweep(), and an oversized
+        // send fails identically every time (#7331).
+        const result = NIP17SendResult.tooLong('too big');
+
+        expect(result.queuedRumorId, isNull);
+        expect(result.selfWrapPublished, isNull);
+      });
+
+      test('does not equal a blocked failure carrying the same error', () {
+        const tooLong = NIP17SendResult.tooLong('same');
+        const blocked = NIP17SendResult.blocked('same');
+
+        expect(tooLong, isNot(equals(blocked)));
+        expect(blocked, isNot(equals(tooLong)));
+      });
+
+      test('does not equal a plain failure carrying the same error', () {
+        const tooLong = NIP17SendResult.tooLong('same');
+        const plain = NIP17SendResult.failure('same');
+
+        expect(tooLong, isNot(equals(plain)));
+      });
+
+      test('toString surfaces tooLong so a report is unambiguous', () {
+        const result = NIP17SendResult.tooLong('over the limit');
+
+        expect(result.toString(), contains('tooLong: true'));
+      });
+
+      test('blocked, plain failure and success are never tooLong', () {
+        final success = NIP17SendResult.success(
+          rumorEventId: 'r',
+          messageEventId: 'm',
+          recipientPubkey: 'p',
+        );
+
+        expect(const NIP17SendResult.blocked('x').tooLong, isFalse);
+        expect(const NIP17SendResult.failure('x').tooLong, isFalse);
+        expect(success.tooLong, isFalse);
+      });
+    });
   });
 }

@@ -18,6 +18,7 @@ import 'package:dm_repository/src/dm_batch_send_budget.dart';
 import 'package:dm_repository/src/dm_clock.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_message_size.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_removal_policy.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
@@ -4005,6 +4006,31 @@ class DmRepository {
     if (_isSelf(recipientPubkey)) {
       return const NIP17SendResult.failure(
         'refused: a message cannot be addressed to its own sender',
+      );
+    }
+
+    // Refuse an oversized body BEFORE the enqueue below (#7331). NIP-44's u16
+    // length prefix caps what the NIP-17 double encryption can carry, and the
+    // throw it raises is deterministic: the same content fails identically
+    // every time. A hard-failed row is re-driven by
+    // `OutgoingDmRetryService.sweep()` on every foreground and reconnect, so
+    // enqueuing first would spend the whole retry budget re-running a crypto
+    // chain that cannot succeed. Returned rather than thrown for the same
+    // reason as the self-send refusal above: `CollaboratorInviteService`
+    // loops without a catch, and a throw would abort the remaining sends.
+    //
+    // Ordered after the self-send refusal so an oversized note-to-self still
+    // reports the more fundamental reason it can never be delivered.
+    final contentBytes = utf8.encode(content).length;
+    if (contentBytes > maxDmMessageContentBytes) {
+      Log.info(
+        'DM refused: body is $contentBytes bytes, over the '
+        '$maxDmMessageContentBytes-byte limit',
+        category: LogCategory.system,
+      );
+      return NIP17SendResult.tooLong(
+        'message is $contentBytes bytes, over the '
+        '$maxDmMessageContentBytes-byte limit',
       );
     }
 
