@@ -129,7 +129,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
       onResume: () => context.read<FeaturedTabsCubit>().refresh(),
     );
     _minorStatusSubscription = ref.listenManual<bool>(
-      featuredTabViewerIsMinorProvider,
+      featuredTabAgeGateProvider,
       (previous, next) {
         if (previous != null && previous != next) {
           context.read<FeaturedTabsCubit>().refresh();

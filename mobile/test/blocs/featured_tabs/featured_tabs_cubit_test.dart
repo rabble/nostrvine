@@ -34,14 +34,16 @@ void main() {
 
     void stubSnapshot(FeaturedTabsSnapshot snapshot) {
       when(
-        () => repository.refresh(viewerIsMinor: any(named: 'viewerIsMinor')),
+        () => repository.refresh(
+          gateAgeRestrictedContent: any(named: 'gateAgeRestrictedContent'),
+        ),
       ).thenAnswer((_) async => snapshot);
     }
 
-    FeaturedTabsCubit buildCubit({bool viewerIsMinor = false}) {
+    FeaturedTabsCubit buildCubit({bool gateAgeRestrictedContent = false}) {
       return FeaturedTabsCubit(
         repository: repository,
-        viewerIsMinor: () => viewerIsMinor,
+        gateAgeRestrictedContent: () => gateAgeRestrictedContent,
       );
     }
 
@@ -86,12 +88,14 @@ void main() {
 
     test('passes the current viewer age gate to the repository', () async {
       stubSnapshot(const FeaturedTabsSnapshot());
-      final cubit = buildCubit(viewerIsMinor: true);
+      final cubit = buildCubit(gateAgeRestrictedContent: true);
       addTearDown(cubit.close);
 
       await cubit.refresh();
 
-      verify(() => repository.refresh(viewerIsMinor: true)).called(1);
+      verify(
+        () => repository.refresh(gateAgeRestrictedContent: true),
+      ).called(1);
     });
 
     test('surfaces the server poll interval on the state', () async {
@@ -139,7 +143,9 @@ void main() {
         async.flushMicrotasks();
 
         verify(
-          () => repository.refresh(viewerIsMinor: any(named: 'viewerIsMinor')),
+          () => repository.refresh(
+            gateAgeRestrictedContent: any(named: 'gateAgeRestrictedContent'),
+          ),
         ).called(1);
 
         unawaited(cubit.close());
@@ -167,7 +173,9 @@ void main() {
         async.flushMicrotasks();
 
         verifyNever(
-          () => repository.refresh(viewerIsMinor: any(named: 'viewerIsMinor')),
+          () => repository.refresh(
+            gateAgeRestrictedContent: any(named: 'gateAgeRestrictedContent'),
+          ),
         );
       });
     });
@@ -181,7 +189,9 @@ void main() {
       final afterKill = Completer<FeaturedTabsSnapshot>();
       var call = 0;
       when(
-        () => repository.refresh(viewerIsMinor: any(named: 'viewerIsMinor')),
+        () => repository.refresh(
+          gateAgeRestrictedContent: any(named: 'gateAgeRestrictedContent'),
+        ),
       ).thenAnswer((_) {
         call++;
         return call == 1 ? beforeKill.future : afterKill.future;

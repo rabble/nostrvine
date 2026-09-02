@@ -31,9 +31,8 @@ final featuredTabsRepositoryProvider = Provider<FeaturedTabsRepository>((ref) {
 /// which Keycast can never produce a verdict for, stay permissive so adults are
 /// not blocked by an unanswerable check.
 ///
-/// The value therefore means "treat as minor-gated for this surface", not
-/// strictly "is a minor" — matching the unknown-is-restricted posture #176/#182
-/// already use.
-final featuredTabViewerIsMinorProvider = Provider<bool>((ref) {
+/// True for unknown and still-loading states too, not only a confirmed
+/// minor — the unknown-is-gated posture #176/#182 already use.
+final featuredTabAgeGateProvider = Provider<bool>((ref) {
   return ref.watch(isDmRestrictedProvider);
 });

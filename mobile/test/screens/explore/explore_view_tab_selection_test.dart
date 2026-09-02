@@ -68,7 +68,9 @@ class _StagedFeaturedTabsRepository implements FeaturedTabsRepository {
   int refreshCount = 0;
 
   @override
-  Future<FeaturedTabsSnapshot> refresh({required bool viewerIsMinor}) async {
+  Future<FeaturedTabsSnapshot> refresh({
+    required bool gateAgeRestrictedContent,
+  }) async {
     refreshCount++;
     return refreshCount == 1
         ? const FeaturedTabsSnapshot(pollInterval: _pollInterval)
@@ -146,7 +148,7 @@ void main() {
             FeatureFlag.integratedApps,
           ).overrideWithValue(false),
           featuredTabsRepositoryProvider.overrideWithValue(repository),
-          featuredTabViewerIsMinorProvider.overrideWithValue(false),
+          featuredTabAgeGateProvider.overrideWithValue(false),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -1,4 +1,4 @@
-// ABOUTME: Tests featuredTabViewerIsMinorProvider (#7675) — the middle-path gate
+// ABOUTME: Tests featuredTabAgeGateProvider (#7675) — the middle-path gate
 // ABOUTME: for age-restricted featured tabs. Mirrors the #176/#182 fail-CLOSED
 // ABOUTME: posture: an unresolved Keycast check hides age-restricted tabs only
 // ABOUTME: where a Keycast verdict could apply, staying permissive for pure
@@ -55,7 +55,7 @@ void main() {
     return container;
   }
 
-  group('featuredTabViewerIsMinorProvider', () {
+  group('featuredTabAgeGateProvider', () {
     test('gates a trusted protected-minor verdict (tabs hidden)', () async {
       final container = containerWith(
         authState: AuthState.authenticated,
@@ -63,7 +63,7 @@ void main() {
       );
       await container.read(protectedMinorStatusProvider.future);
 
-      expect(container.read(featuredTabViewerIsMinorProvider), isTrue);
+      expect(container.read(featuredTabAgeGateProvider), isTrue);
     });
 
     test(
@@ -75,7 +75,7 @@ void main() {
         );
         await container.read(protectedMinorStatusProvider.future);
 
-        expect(container.read(featuredTabViewerIsMinorProvider), isFalse);
+        expect(container.read(featuredTabAgeGateProvider), isFalse);
       },
     );
 
@@ -92,7 +92,7 @@ void main() {
           status: () => Completer<ProtectedMinorStatus>().future,
         );
 
-        expect(container.read(featuredTabViewerIsMinorProvider), isTrue);
+        expect(container.read(featuredTabAgeGateProvider), isTrue);
       },
     );
 
@@ -111,7 +111,7 @@ void main() {
           status: () => Completer<ProtectedMinorStatus>().future,
         );
 
-        expect(container.read(featuredTabViewerIsMinorProvider), isFalse);
+        expect(container.read(featuredTabAgeGateProvider), isFalse);
       },
     );
 
@@ -135,7 +135,7 @@ void main() {
           status: () => Completer<ProtectedMinorStatus>().future,
         );
 
-        expect(container.read(featuredTabViewerIsMinorProvider), isTrue);
+        expect(container.read(featuredTabAgeGateProvider), isTrue);
       },
     );
   });

@@ -96,7 +96,8 @@ class ExploreScreen extends ConsumerWidget {
           key: ValueKey(featuredTabsRepository),
           create: (_) => FeaturedTabsCubit(
             repository: featuredTabsRepository,
-            viewerIsMinor: () => ref.read(featuredTabViewerIsMinorProvider),
+            gateAgeRestrictedContent: () =>
+                ref.read(featuredTabAgeGateProvider),
           )..refresh(),
         ),
       ],
