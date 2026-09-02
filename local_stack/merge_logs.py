@@ -16,10 +16,9 @@ DOCKER_RE = re.compile(
     r'(.*)'                     # content
 )
 
-# App log with full timestamp: "[2026-03-04T15:30:00.100Z] ..."
-# The Z is optional: builds before the UTC export fix emit none.
+# App log with full timestamp: "[2026-03-04T15:30:00.100] ..."
 APP_TS_FULL_RE = re.compile(
-    r'^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\]\s*(.*)'
+    r'^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]\s*(.*)'
 )
 
 # App log with time-only: "[11:06:55.268] ..."

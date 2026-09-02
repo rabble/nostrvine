@@ -272,18 +272,25 @@ void main() {
 
   group('UnifiedLogger timestamp encoding', () {
     late LogCaptureService logService;
+    late Set<LogCategory> enabledCategories;
+    late LogLevel logLevel;
 
     setUp(() async {
       logService = LogCaptureService();
       await logService.clearAllLogs();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      enabledCategories = UnifiedLogger.enabledCategories;
+      logLevel = UnifiedLogger.currentLevel;
       UnifiedLogger.enableCategories({LogCategory.system});
       UnifiedLogger.setLogLevel(LogLevel.info);
     });
 
-    test('captures the entry timestamp in UTC', () async {
+    tearDown(() {
+      UnifiedLogger.enableCategories(enabledCategories);
+      UnifiedLogger.setLogLevel(logLevel);
+    });
+
+    test('captures the entry timestamp in UTC', () {
       Log.info('utc probe', category: LogCategory.system);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final entry = logService.getRecentLogs().lastWhere(
         (log) => log.message == 'utc probe',
@@ -300,7 +307,6 @@ void main() {
 
     test('exports a Z-suffixed timestamp', () async {
       Log.info('export probe', category: LogCategory.system);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final line = (await logService.getAllLogsAsText()).firstWhere(
         (text) => text.contains('export probe'),

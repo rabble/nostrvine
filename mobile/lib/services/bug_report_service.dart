@@ -40,6 +40,15 @@ class BugReportService {
 
   static const _uuid = Uuid();
 
+  @visibleForTesting
+  static String formatLogExportTimestamp(DateTime timestamp) =>
+      timestamp.toUtc().toIso8601String();
+
+  @visibleForTesting
+  static String buildLogExportFileName(DateTime timestamp) =>
+      'openvine_full_logs_'
+      '${formatLogExportTimestamp(timestamp).replaceAll(':', '-')}.txt';
+
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
   final Future<PackageInfo> Function() _packageInfoLoader;
@@ -292,11 +301,13 @@ class BugReportService {
         return const LogExportResult.noLogs();
       }
 
+      final exportTime = DateTime.now().toUtc();
       final buffer = StringBuffer()
         ..write(
           await _buildLogHeader(
             stats: stats,
             lineCount: allLogLines.length,
+            exportTime: exportTime,
             currentScreen: currentScreen,
             userPubkey: userPubkey,
           ),
@@ -309,8 +320,7 @@ class BugReportService {
       }
 
       final content = buffer.toString();
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final fileName = 'openvine_full_logs_$timestamp.txt';
+      final fileName = buildLogExportFileName(exportTime);
 
       if (kIsWeb) {
         return _exportLogsWeb(content, fileName, allLogLines.length);
@@ -628,6 +638,7 @@ class BugReportService {
   Future<String> _buildLogHeader({
     required Map<String, dynamic> stats,
     required int lineCount,
+    required DateTime exportTime,
     String? currentScreen,
     String? userPubkey,
   }) async {
@@ -635,7 +646,7 @@ class BugReportService {
     final buffer = StringBuffer()
       ..writeln('OpenVine Comprehensive Log Export')
       ..writeln('═' * 80)
-      ..writeln('Export Time: ${DateTime.now().toIso8601String()}')
+      ..writeln('Export Time: ${formatLogExportTimestamp(exportTime)}')
       ..writeln(
         'App Version: ${packageInfo.version}+${packageInfo.buildNumber}',
       )
