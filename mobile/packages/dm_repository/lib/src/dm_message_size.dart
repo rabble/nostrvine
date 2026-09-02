@@ -1,7 +1,7 @@
-// ABOUTME: Size ceiling for a NIP-17 message body, derived from the NIP-44
-// ABOUTME: u16 length prefix and the double encryption NIP-17 performs.
+// ABOUTME: Size ceiling for a NIP-17 rumor, derived from the NIP-44 u16 length
+// ABOUTME: prefix and the double encryption NIP-17 performs.
 
-/// How large a NIP-17 message body may be before the send is refused.
+/// How large a NIP-17 rumor may serialize to before the send is refused.
 ///
 /// ## Where the hard ceiling comes from
 ///
@@ -12,25 +12,21 @@
 /// `content` is the seal's base64 payload. Base64 costs 4/3, so the outer
 /// encrypt meets the u16 wall long before the inner one does.
 ///
-/// Measured against the production wrap builder rather than derived: a 1:1
-/// kind-14 send with a single `p` tag succeeds at 40,682 bytes of content and
-/// throws at 40,683, and no larger size fits — `calcPaddedLen` jumps the inner
-/// padded size from 40,960 to 49,152 at that boundary, which alone pushes the
-/// outer plaintext past 65,535 (#7331).
+/// Measured against the production wrap builder rather than derived: a rumor
+/// serializing to 40,969 bytes wraps, 40,970 throws, and that boundary is
+/// **invariant in the rumor's size** — it lands identically with 0, 50 or 200
+/// extra `p` tags (#7331).
 ///
-/// ## Why this constant is well below that
+/// ## Why the bound is on the rumor, not on the message body
 ///
-/// 40,682 is the ceiling for the *smallest possible* rumor. Every additional
-/// `p` tag on a group rumor, and any reply or subject tag, enlarges the sealed
-/// JSON and lowers the real ceiling, so a limit set at the 1:1 maximum would
-/// still fail for a group send. 32 KiB leaves roughly 7,900 bytes of headroom —
-/// on the order of a hundred extra recipients — while staying far above any
-/// message a person composes.
+/// The NIP-44 plaintext is `jsonEncode(rumor)`, not the body: tags count. The
+/// content ceiling therefore moves with the tag set — 40,682 bytes for a 1:1
+/// send, but 26,082 with 200 recipients — while the rumor ceiling does not.
+/// Bounding the rumor is both the correct quantity and the one that needs no
+/// per-shape adjustment, so a group send, a reply with an `e` tag, and a
+/// future tag addition are all covered without changing this number.
 ///
-/// ## Why bytes rather than characters
-///
-/// The composer's `maxLength` truncates by grapheme cluster, and one cluster
-/// can be many bytes (a ZWJ emoji sequence runs past 25). A character limit is
-/// a useful affordance but not a bound, so the byte check here is what actually
-/// prevents the failure.
-const int maxDmMessageContentBytes = 32 * 1024;
+/// The remaining 969 bytes of headroom cover rounding rather than growth:
+/// the guard measures the exact rumor that is handed to the wrap builder, and
+/// nothing adds tags between the two.
+const int maxDmRumorBytes = 40000;

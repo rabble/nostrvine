@@ -3954,29 +3954,33 @@ class DmRepository {
     }
   }
 
-  /// Refuses a body the NIP-17 double encryption cannot carry, or `null` when
+  /// Refuses a rumor the NIP-17 double encryption cannot carry, or `null` when
   /// it fits.
   ///
-  /// NIP-44's u16 length prefix caps what the chain can encrypt, and the throw
-  /// it raises is deterministic: the same content fails identically every
-  /// time. Callers invoke this BEFORE enqueuing, because a hard-failed row is
-  /// re-driven by `OutgoingDmRetryService.sweep()` on every foreground and
-  /// reconnect, so a parked row would spend the whole retry budget re-running
-  /// a crypto chain that cannot succeed.
+  /// The NIP-44 plaintext is `jsonEncode(rumor)`, so tags count as much as the
+  /// body — which is why this measures the rumor rather than the message text.
+  /// The rumor ceiling is invariant in the tag set where a content ceiling is
+  /// not, so one number covers a 1:1 send, a group fan-out and a reply alike.
+  ///
+  /// Callers invoke this BEFORE enqueuing, because NIP-44's throw is
+  /// deterministic — the same rumor fails identically every time — and a
+  /// hard-failed row is re-driven by `OutgoingDmRetryService.sweep()` on every
+  /// foreground and reconnect, so a parked row would spend the whole retry
+  /// budget on work that cannot succeed.
   ///
   /// Returns rather than throws so a caller that loops over recipients — such
   /// as `CollaboratorInviteService.sendInvites` — is not aborted mid-fan-out.
-  NIP17SendResult? _refuseIfOversized(String content) {
-    final contentBytes = utf8.encode(content).length;
-    if (contentBytes <= maxDmMessageContentBytes) return null;
+  NIP17SendResult? _refuseIfOversized(Event rumor) {
+    final rumorBytes = utf8.encode(jsonEncode(rumor.toJson())).length;
+    if (rumorBytes <= maxDmRumorBytes) return null;
     Log.info(
-      'DM refused: body is $contentBytes bytes, over the '
-      '$maxDmMessageContentBytes-byte limit',
+      'DM refused: rumor serializes to $rumorBytes bytes, over the '
+      '$maxDmRumorBytes-byte limit',
       category: LogCategory.system,
     );
     return NIP17SendResult.tooLong(
-      'message is $contentBytes bytes, over the '
-      '$maxDmMessageContentBytes-byte limit',
+      'message is too large to send: the rumor is $rumorBytes bytes, over '
+      'the $maxDmRumorBytes-byte limit',
     );
   }
 
@@ -3988,6 +3992,9 @@ class DmRepository {
   ///
   /// Returns a failure result, publishing nothing, when [recipientPubkey] is
   /// the sender — see the refusal below.
+  ///
+  /// Returns [NIP17SendResult.tooLong], publishing nothing and leaving no
+  /// queue row, when the built rumor exceeds [maxDmRumorBytes].
   ///
   /// When an [OutgoingDmsDao] is injected, the send goes through the
   /// durable queue: build the rumor, enqueue a `pending`/`pending` row
@@ -4034,9 +4041,6 @@ class DmRepository {
         'refused: a message cannot be addressed to its own sender',
       );
     }
-
-    final oversized = _refuseIfOversized(content);
-    if (oversized != null) return oversized;
 
     // Send gate (#176): block before building or enqueuing a doomed intent.
     // NIP17MessageService.sendRumor is the authoritative choke point (it also
@@ -4091,6 +4095,9 @@ class DmRepository {
         [_sendBatchTagKey, sendBatchId],
       ],
     );
+
+    final oversized = _refuseIfOversized(rumor);
+    if (oversized != null) return oversized;
 
     // Enqueue before publish so an app crash mid-send leaves a
     // recoverable trace. No-op when the queue dao isn't wired in
@@ -5650,11 +5657,6 @@ class DmRepository {
     // fans one rumor out to N recipients, so an oversized body would park N
     // retry-swept rows rather than one — and the extra `p` tags make the real
     // NIP-44 ceiling lower here, not higher.
-    final oversized = _refuseIfOversized(content);
-    if (oversized != null) {
-      return [for (final _ in recipientPubkeys) oversized];
-    }
-
     // Send gate (#176) — group all-or-nothing: a restricted sender (protected
     // minor) may only message a group where EVERY recipient is approved.
     // Per-recipient gating in sendRumor alone would still deliver to the
@@ -5756,6 +5758,15 @@ class DmRepository {
       ],
       createdAt: batchCreatedAt,
     );
+    // Same pre-enqueue refusal as [sendMessage] (#7331), and the reason the
+    // bound is on the rumor rather than the body: a group rumor carries one
+    // `p` tag per recipient, so its usable body shrinks as the group grows
+    // while this ceiling stays put.
+    final oversized = _refuseIfOversized(groupRumor);
+    if (oversized != null) {
+      return [for (final _ in recipientPubkeys) oversized];
+    }
+
     for (final recipient in recipientPubkeys) {
       queueIds.add(_groupQueueId(groupRumor.id, recipient));
     }
