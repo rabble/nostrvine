@@ -79,6 +79,10 @@ run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
 description = "Generate localization files from ARB"
 run = "flutter gen-l10n"
 
+[tasks.lnav_setup]
+description = "Install Divine lnav log formats (requires: brew install lnav)"
+run = "lnav -i ../scripts/lnav/*.json"
+
 [tasks.setup_hooks]
 description = "Install git hooks (pre-commit + pre-push) for local CI checks"
 run = "bash ../scripts/install-hooks.sh"
