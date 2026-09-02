@@ -29,6 +29,8 @@ const _ownerPubkey =
     'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
 const _recipientPubkey =
     'b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012a1';
+const _otherRecipientPubkey =
+    'c3d4e5f6789012345678901234567890abcdef1234567890123456789012a1b2';
 const _privateKey =
     'd4e5f6789012345678901234567890abcdef1234567890123456789012ab12c3';
 
@@ -142,6 +144,23 @@ void main() {
       );
 
       expect(result.tooLong, isTrue);
+    });
+
+    test('refuses an oversized GROUP send, one result per recipient', () async {
+      // A group send fans one rumor out to N recipients, so an unguarded
+      // oversized body parks N retry-swept rows instead of one — and the extra
+      // `p` tags lower the real NIP-44 ceiling rather than raising it.
+      final repository = buildRepository();
+      final recipients = [_recipientPubkey, _otherRecipientPubkey];
+
+      final results = await repository.sendGroupMessage(
+        recipientPubkeys: recipients,
+        content: 'a' * (maxDmMessageContentBytes + 1),
+      );
+
+      expect(results, hasLength(recipients.length));
+      expect(results.every((r) => r.tooLong), isTrue);
+      verifyNever(() => outgoingDao.enqueue(any()));
     });
 
     test('an oversized self-send reports the self-send refusal', () async {

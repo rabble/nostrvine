@@ -3954,6 +3954,32 @@ class DmRepository {
     }
   }
 
+  /// Refuses a body the NIP-17 double encryption cannot carry, or `null` when
+  /// it fits.
+  ///
+  /// NIP-44's u16 length prefix caps what the chain can encrypt, and the throw
+  /// it raises is deterministic: the same content fails identically every
+  /// time. Callers invoke this BEFORE enqueuing, because a hard-failed row is
+  /// re-driven by `OutgoingDmRetryService.sweep()` on every foreground and
+  /// reconnect, so a parked row would spend the whole retry budget re-running
+  /// a crypto chain that cannot succeed.
+  ///
+  /// Returns rather than throws so a caller that loops over recipients — such
+  /// as `CollaboratorInviteService.sendInvites` — is not aborted mid-fan-out.
+  NIP17SendResult? _refuseIfOversized(String content) {
+    final contentBytes = utf8.encode(content).length;
+    if (contentBytes <= maxDmMessageContentBytes) return null;
+    Log.info(
+      'DM refused: body is $contentBytes bytes, over the '
+      '$maxDmMessageContentBytes-byte limit',
+      category: LogCategory.system,
+    );
+    return NIP17SendResult.tooLong(
+      'message is $contentBytes bytes, over the '
+      '$maxDmMessageContentBytes-byte limit',
+    );
+  }
+
   /// Send a text message to a 1:1 conversation.
   ///
   /// Throws [StateError] if the repository has not been initialized.
@@ -4009,30 +4035,8 @@ class DmRepository {
       );
     }
 
-    // Refuse an oversized body BEFORE the enqueue below (#7331). NIP-44's u16
-    // length prefix caps what the NIP-17 double encryption can carry, and the
-    // throw it raises is deterministic: the same content fails identically
-    // every time. A hard-failed row is re-driven by
-    // `OutgoingDmRetryService.sweep()` on every foreground and reconnect, so
-    // enqueuing first would spend the whole retry budget re-running a crypto
-    // chain that cannot succeed. Returned rather than thrown for the same
-    // reason as the self-send refusal above: `CollaboratorInviteService`
-    // loops without a catch, and a throw would abort the remaining sends.
-    //
-    // Ordered after the self-send refusal so an oversized note-to-self still
-    // reports the more fundamental reason it can never be delivered.
-    final contentBytes = utf8.encode(content).length;
-    if (contentBytes > maxDmMessageContentBytes) {
-      Log.info(
-        'DM refused: body is $contentBytes bytes, over the '
-        '$maxDmMessageContentBytes-byte limit',
-        category: LogCategory.system,
-      );
-      return NIP17SendResult.tooLong(
-        'message is $contentBytes bytes, over the '
-        '$maxDmMessageContentBytes-byte limit',
-      );
-    }
+    final oversized = _refuseIfOversized(content);
+    if (oversized != null) return oversized;
 
     // Send gate (#176): block before building or enqueuing a doomed intent.
     // NIP17MessageService.sendRumor is the authoritative choke point (it also
@@ -5640,6 +5644,15 @@ class DmRepository {
     recipientPubkeys.forEach(validatePubkey);
     if (content.trim().isEmpty) {
       throw ArgumentError.value(content, 'content', 'must not be empty');
+    }
+
+    // Same pre-enqueue size refusal as [sendMessage] (#7331). A group send
+    // fans one rumor out to N recipients, so an oversized body would park N
+    // retry-swept rows rather than one — and the extra `p` tags make the real
+    // NIP-44 ceiling lower here, not higher.
+    final oversized = _refuseIfOversized(content);
+    if (oversized != null) {
+      return [for (final _ in recipientPubkeys) oversized];
     }
 
     // Send gate (#176) — group all-or-nothing: a restricted sender (protected
