@@ -84,13 +84,13 @@ sealed class NIP17SendResult {
   const factory NIP17SendResult.blocked(String error) =
       NIP17SendFailure.blocked;
 
-  /// Build an oversized-message result (#7331): the body is larger than the
-  /// NIP-44 double-encryption chain can carry, so no wrap could be built.
+  /// Build an oversized-message result (#7331): the rumor serializes to more
+  /// than the NIP-44 double encryption can carry, so no wrap could be built.
   ///
-  /// Like [blocked] this must NOT be retried and leaves no queue row — the
-  /// size is a property of the message, so every retry fails identically. It
-  /// is distinct from [blocked] because the user can act on it by shortening
-  /// the message, which needs its own copy.
+  /// The size is a property of the rumor — its tags as much as its body — so
+  /// every retry fails identically. Like [blocked] it must NOT be retried and
+  /// leaves no queue row, and it is distinct from [blocked] because the user
+  /// can act on it by shortening the message, which needs its own copy.
   const factory NIP17SendResult.tooLong(String error) =
       NIP17SendFailure.tooLong;
 
@@ -103,7 +103,7 @@ sealed class NIP17SendResult {
   bool get blocked => false;
 
   /// Whether this failure is an oversized message (#7331), refused before any
-  /// wrap was built. Not retriable — the size is a property of the message, so
+  /// wrap was built. Not retriable — the size is a property of the rumor, so
   /// every retry fails identically. Always `false` for success.
   bool get tooLong => false;
 

@@ -124,7 +124,7 @@ void main() {
       });
     });
 
-    test('refuses a body over the byte limit with a tooLong result', () async {
+    test('refuses a rumor over the byte limit with a tooLong result', () async {
       final repository = buildRepository();
 
       final result = await repository.sendMessage(

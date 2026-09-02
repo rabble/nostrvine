@@ -5653,10 +5653,6 @@ class DmRepository {
       throw ArgumentError.value(content, 'content', 'must not be empty');
     }
 
-    // Same pre-enqueue size refusal as [sendMessage] (#7331). A group send
-    // fans one rumor out to N recipients, so an oversized body would park N
-    // retry-swept rows rather than one — and the extra `p` tags make the real
-    // NIP-44 ceiling lower here, not higher.
     // Send gate (#176) — group all-or-nothing: a restricted sender (protected
     // minor) may only message a group where EVERY recipient is approved.
     // Per-recipient gating in sendRumor alone would still deliver to the
