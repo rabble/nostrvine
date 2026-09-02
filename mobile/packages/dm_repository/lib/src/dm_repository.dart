@@ -775,11 +775,11 @@ class DmRepository {
     return future.whenComplete(() => _recoveriesInFlight.remove(key));
   }
 
-  /// Broadcasts the user's pubkey whenever credentials change.
+  /// Broadcasts the user's pubkey whenever credentials are attached.
   ///
   /// Consumers that classify rows by identity (e.g. the conversation-list
   /// "Message requests" split) must re-run when this fires, otherwise a cold
-  /// start can classify with the pre-auth empty pubkey — which fails to filter
+  /// start can classify with a signed-out empty pubkey — which fails to filter
   /// self out of a conversation's participants, making every 1:1 look like a
   /// group and land in Message Requests. See #5374.
   final StreamController<String> _userPubkeyController =
@@ -789,7 +789,8 @@ class DmRepository {
   /// rebuilds during auth transitions (old unsubscribe won't kill new sub).
   String _subscriptionId = 'dm_inbox';
 
-  /// The current user's pubkey for DAO scoping, or `null` if uninitialized.
+  /// The current identity's pubkey for DAO scoping, or `null` if signed out or
+  /// tearing down.
   ///
   /// Passes through to `_ownedOrLegacy` in DAO queries, where `null` means
   /// "return all rows" (legacy/unscoped mode).
@@ -806,8 +807,10 @@ class DmRepository {
 
   /// Set auth credentials on the repository.
   ///
-  /// Called by `dmRepositoryProvider` when the user's keys become
-  /// available. Read methods work before this; send requires it.
+  /// Called by `dmRepositoryProvider` when the current identity's signer and
+  /// client become ready. Owner-scoped local operations only need the identity
+  /// supplied at construction; signing, publishing, and relay work need these
+  /// credentials.
   ///
   /// This wires credentials only — the gift-wrap subscription is opened
   /// separately by the provider via [startListening] right after this
@@ -5279,6 +5282,7 @@ class DmRepository {
   /// [deleteMessageForEveryone]'s sender-only contract enforced upstream).
   Future<int> cancelOutgoingBatch({required String rumorId}) async {
     _assertInitialized();
+    final owner = _ownerPubkey!;
     final dao = _outgoingDmsDao;
     if (dao == null) {
       throw StateError(
@@ -5318,7 +5322,7 @@ class DmRepository {
       // persisted message instead.
       final message = await _directMessagesDao.getMessageById(
         rumorId,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: owner,
       );
       if (message != null) {
         if (message.senderPubkey != _userPubkey) return 0;
@@ -6069,10 +6073,11 @@ class DmRepository {
   /// deliver to.
   Future<void> deleteMessageForEveryone(String rumorId) async {
     _assertInitialized();
+    final owner = _ownerPubkey!;
 
     final row = await _directMessagesDao.getMessageById(
       rumorId,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     if (row == null) {
       throw ArgumentError.value(rumorId, 'rumorId', 'message not found');
@@ -6128,7 +6133,7 @@ class DmRepository {
     await _directMessagesDao.markMessageDeletionPending(
       rumorId,
       deletionRumorJson: jsonEncode(deletion.toJson()),
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     _notifyRetryableWork();
 
@@ -6264,9 +6269,10 @@ class DmRepository {
     if (_messageService == null || _userPubkey.isEmpty) {
       return DmMessageDeletionOutcome.unavailable;
     }
+    final owner = _ownerPubkey!;
     final row = await _directMessagesDao.getMessageById(
       rumorId,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     final storedRumor = row?.deletionRumorJson;
     if (row == null || storedRumor == null) {
@@ -6699,10 +6705,12 @@ class DmRepository {
   /// When [limit] is provided, only the top [limit] conversations are
   /// watched. Omit for all conversations.
   Stream<List<DmConversation>> watchConversations({int? limit}) {
+    final owner = _ownerPubkey;
+    if (owner == null) return Stream.value(const <DmConversation>[]);
     return _watchConversationRows(
       () => _conversationsDao.watchAllConversations(
         limit: limit,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: owner,
       ),
     );
   }
@@ -6710,8 +6718,8 @@ class DmRepository {
   /// Get a single conversation by ID.
   ///
   /// Returns `null` if no conversation with the given ID exists, or if no
-  /// owner is known yet — see [watchOutgoing] for why an unknown owner reads
-  /// as nothing rather than as everything.
+  /// owner is known. Ownerless reads fail closed because the DAO's legacy
+  /// null-owner contract otherwise widens them to every row.
   Future<DmConversation?> getConversation(String conversationId) async {
     final owner = _ownerPubkey;
     if (owner == null) return null;
@@ -6725,9 +6733,11 @@ class DmRepository {
 
   /// Get all conversations.
   Future<List<DmConversation>> getConversations() async {
+    final owner = _ownerPubkey;
+    if (owner == null) return const [];
     await _awaitInitialConversationMaintenance();
     final rows = await _conversationsDao.getAllConversations(
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     return rows.map(_conversationFromRow).toList();
   }
@@ -6737,10 +6747,12 @@ class DmRepository {
   /// Supports pagination via [limit]. These conversations are never
   /// message requests.
   Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
+    final owner = _ownerPubkey;
+    if (owner == null) return Stream.value(const <DmConversation>[]);
     return _watchConversationRows(
       () => _conversationsDao.watchAcceptedConversations(
         limit: limit,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: owner,
       ),
     );
   }
@@ -6751,9 +6763,11 @@ class DmRepository {
   /// follow state) is applied by [classifyPotentialRequests]. Returned
   /// without pagination since the list is typically small and needed in full.
   Stream<List<DmConversation>> watchPotentialRequests() {
+    final owner = _ownerPubkey;
+    if (owner == null) return Stream.value(const <DmConversation>[]);
     return _watchConversationRows(
       () => _conversationsDao.watchPotentialRequestConversations(
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: owner,
       ),
     );
   }
@@ -6909,14 +6923,16 @@ class DmRepository {
 
   /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() {
-    return _conversationsDao.watchUnreadCount(ownerPubkey: _ownerPubkey);
+    final owner = _ownerPubkey;
+    if (owner == null) return Stream.value(0);
+    return _conversationsDao.watchUnreadCount(ownerPubkey: owner);
   }
 
   /// Watch unread count for accepted conversations only (excludes requests).
   Stream<int> watchUnreadAcceptedCount() {
-    return _conversationsDao.watchUnreadAcceptedCount(
-      ownerPubkey: _ownerPubkey,
-    );
+    final owner = _ownerPubkey;
+    if (owner == null) return Stream.value(0);
+    return _conversationsDao.watchUnreadAcceptedCount(ownerPubkey: owner);
   }
 
   /// Mark a conversation as read.
@@ -7190,14 +7206,16 @@ class DmRepository {
   Future<ConversationRemovalOutcome> removeConversation(
     String conversationId,
   ) async {
+    final owner = _ownerPubkey;
+    if (owner == null) {
+      throw StateError('Cannot remove a conversation without a known owner.');
+    }
     if (await _isRemovalProtectedById(conversationId)) {
       return ConversationRemovalOutcome.refused;
     }
     await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
       // mid-flight must not mix one account's reads with another's writes.
-      final owner = _userPubkey;
-      final ownerOrNull = owner.isEmpty ? null : owner;
       final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await _removedConversationsDao?.record(
         conversationId: conversationId,
@@ -7206,11 +7224,11 @@ class DmRepository {
       );
       await _directMessagesDao.deleteConversationMessages(
         conversationId,
-        ownerPubkey: ownerOrNull,
+        ownerPubkey: owner,
       );
       await _conversationsDao.deleteConversation(
         conversationId,
-        ownerPubkey: ownerOrNull,
+        ownerPubkey: owner,
       );
       await _outgoingDmsDao?.deleteForConversation(
         conversationId: conversationId,
@@ -7242,6 +7260,10 @@ class DmRepository {
     List<String> conversationIds,
   ) async {
     if (conversationIds.isEmpty) return (removed: 0, refused: 0);
+    final owner = _ownerPubkey;
+    if (owner == null) {
+      throw StateError('Cannot remove conversations without a known owner.');
+    }
 
     final removable = <String>[];
     var refused = 0;
@@ -7257,8 +7279,6 @@ class DmRepository {
     await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
       // mid-flight must not mix one account's reads with another's writes.
-      final owner = _userPubkey;
-      final ownerOrNull = owner.isEmpty ? null : owner;
       final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await _removedConversationsDao?.recordAll(
         conversationIds: removable,
@@ -7267,11 +7287,11 @@ class DmRepository {
       );
       await _directMessagesDao.deleteMultipleConversationMessages(
         removable,
-        ownerPubkey: ownerOrNull,
+        ownerPubkey: owner,
       );
       removed = await _conversationsDao.deleteMultiple(
         removable,
-        ownerPubkey: ownerOrNull,
+        ownerPubkey: owner,
       );
       await _outgoingDmsDao?.deleteForConversations(
         conversationIds: removable,
@@ -7287,14 +7307,12 @@ class DmRepository {
 
   /// Count the total number of messages in a conversation.
   ///
-  /// Returns `0` when no owner is known — see [watchOutgoing].
+  /// Returns `0` when no owner is known. Ownerless reads fail closed because
+  /// the DAO's legacy null-owner contract otherwise widens them to every row.
   Future<int> countMessagesInConversation(String conversationId) async {
     final owner = _ownerPubkey;
     if (owner == null) return 0;
-    return _directMessagesDao.countMessages(
-      conversationId,
-      ownerPubkey: owner,
-    );
+    return _directMessagesDao.countMessages(conversationId, ownerPubkey: owner);
   }
 
   // -------------------------------------------------------------------------
@@ -7303,7 +7321,9 @@ class DmRepository {
 
   /// Watch messages in a conversation (reactive stream).
   ///
-  /// Emits a single empty list when no owner is known — see [watchOutgoing].
+  /// Emits a single empty list when no owner is known. Ownerless reads fail
+  /// closed because the DAO's legacy null-owner contract otherwise widens them
+  /// to every row.
   /// It emits rather than staying silent so a consumer combining this with
   /// another stream still ticks; `ConversationBloc` holds its own loading
   /// state over that window rather than rendering an empty thread.
@@ -7364,7 +7384,8 @@ class DmRepository {
 
   /// Get messages in a conversation.
   ///
-  /// Returns `[]` when no owner is known — see [watchOutgoing].
+  /// Returns `[]` when no owner is known. Ownerless reads fail closed because
+  /// the DAO's legacy null-owner contract otherwise widens them to every row.
   Future<List<DmMessage>> getMessages(
     String conversationId, {
     int? limit,
@@ -7811,10 +7832,11 @@ class DmRepository {
 
   /// The current user's public key.
   ///
-  /// Returns an empty string if the repository has not been initialized.
+  /// Returns an empty string if no storage owner is known. This is independent
+  /// of signer/client readiness; use [isInitialized] for publish capability.
   String get userPubkey => _userPubkey;
 
-  /// Emits the user's pubkey each time credentials are set (see
+  /// Emits the user's pubkey each time credentials are attached (see
   /// [setCredentials]). Seed a listener with the current [userPubkey] via
   /// `userPubkeyStream.startWith(repo.userPubkey)` so it has a value before the
   /// first credential change. Drives re-classification of identity-scoped

@@ -87,15 +87,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     emit(state.copyWith(status: ConversationStatus.loading));
 
     // Stay in loading until the repository knows whose messages to read.
-    // `dmRepositoryProvider` hands out an uncredentialed repository for the
-    // whole `identityKnown` phase of an account switch, and since #8187 the
-    // owner-scoped reads correctly return nothing there rather than every
-    // account's rows. Subscribing anyway would tick immediately with an empty
+    // Signed-out and teardown repositories have no storage owner, and since
+    // #8187 owner-scoped reads correctly return nothing there rather than
+    // every account's rows. Subscribing anyway would tick immediately empty
     // list and render the "new conversation" card over a thread that has
     // history — `mayBeIncomplete` fails open to false while uncredentialed,
     // so nothing would even qualify it. `ConversationPage` re-keys this bloc
-    // on `(dmRepository, currentPubkey)`, so credentials arriving rebuild it
-    // and re-dispatch this event against the credentialed instance.
+    // on `(dmRepository, currentPubkey)`, so a later authenticated identity
+    // rebuilds it and re-dispatches this event against an owner-scoped instance.
     if (_dmRepository.userPubkey.isEmpty) return;
 
     // Arm the one-time history drain here too, not just on inbox open.

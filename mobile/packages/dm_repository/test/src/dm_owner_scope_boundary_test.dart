@@ -102,6 +102,12 @@ void main() {
     test('an uninitialized repository reads nothing, not everything', () async {
       final repository = buildRepository(userPubkey: '');
 
+      expect(await repository.watchConversations().first, isEmpty);
+      expect(await repository.getConversations(), isEmpty);
+      expect(await repository.watchAcceptedConversations().first, isEmpty);
+      expect(await repository.watchPotentialRequests().first, isEmpty);
+      expect(await repository.watchUnreadCount().first, 0);
+      expect(await repository.watchUnreadAcceptedCount().first, 0);
       expect(await repository.getMessages(conversationId), isEmpty);
       expect(await repository.countMessagesInConversation(conversationId), 0);
       expect(await repository.watchMessages(conversationId).first, isEmpty);
@@ -124,6 +130,29 @@ void main() {
       );
       expect(row, isNotNull);
       expect(row!.isRead, isFalse);
+    });
+
+    test('an uninitialized repository removes nobody', () async {
+      final repository = buildRepository(userPubkey: '');
+
+      await expectLater(
+        repository.removeConversation(conversationId),
+        throwsStateError,
+      );
+      await expectLater(
+        repository.removeConversations([conversationId]),
+        throwsStateError,
+      );
+
+      final conversation = await conversationsDao.getConversation(
+        conversationId,
+        ownerPubkey: _ownerA,
+      );
+      final messages = await messagesDao.getMessagesForConversation(
+        conversationId,
+      );
+      expect(conversation, isNotNull);
+      expect(messages, hasLength(2));
     });
   });
 }

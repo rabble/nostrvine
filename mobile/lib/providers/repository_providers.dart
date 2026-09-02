@@ -695,6 +695,7 @@ FeedTuningRepository feedTuningRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 DmRepository dmRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
+  final session = ref.watch(nostrSessionProvider);
   final db = ref.watch(databaseProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
@@ -713,6 +714,15 @@ DmRepository dmRepository(Ref ref) {
     removedConversationsDao: db.removedConversationsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
+    // Identity is sufficient to scope local storage. Signing, publishing, and
+    // relay work remain gated below on the stronger nostrReady contract.
+    // Tearing down deliberately drops the owner so no new local operation can
+    // race the account-switch cleanup under the departing identity.
+    userPubkey:
+        session.phase == NostrSessionPhase.identityKnown ||
+            session.phase == NostrSessionPhase.nostrReady
+        ? session.pubkey
+        : null,
     // The single chokepoint for "this thread may not be deleted". Both the
     // message-request cubit and the inbox long-press reach removal through
     // this repository, so putting the policy here is what stops a caller
@@ -753,7 +763,7 @@ DmRepository dmRepository(Ref ref) {
   // signer is ready. The subscription is auth-session-scoped (not inbox-
   // scoped) so DMs are ingested even when the user never visits /inbox.
   // See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
-  if (ref.watch(nostrSessionProvider).isReadyForActiveClient) {
+  if (session.isReadyForActiveClient) {
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
       final signer = nostrService.signer;

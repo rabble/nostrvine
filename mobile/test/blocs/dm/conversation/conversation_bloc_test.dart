@@ -144,11 +144,9 @@ void main() {
         'stays loading while the repository owner is unknown, rather than '
         'reporting the thread as empty',
         setUp: () {
-          // #8187: `dmRepositoryProvider` serves an uncredentialed repository
-          // for the whole `identityKnown` phase of an account switch, where
-          // the owner-scoped reads return nothing. Emitting `loaded` there
-          // would render the "new conversation" card over a thread that has
-          // history.
+          // #8187: signed-out and teardown repositories have no storage owner,
+          // so owner-scoped reads return nothing. Emitting `loaded` there would
+          // render the "new conversation" card over a thread that has history.
           when(() => mockDmRepository.userPubkey).thenReturn('');
         },
         build: buildBloc,

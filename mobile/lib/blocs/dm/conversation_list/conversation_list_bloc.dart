@@ -204,7 +204,7 @@ class ConversationListBloc
         ),
       ).debounceTime(_recomputeDebounce),
       onData: (data) {
-        // Until credentials are set, the pubkey is empty and self cannot be
+        // Without an authenticated identity, the pubkey is empty and self cannot be
         // filtered out of a conversation's participants — classifying now would
         // make every 1:1 look like a group and land in Message requests. Hold
         // the current (loading) state; stream 5 re-fires this once the real

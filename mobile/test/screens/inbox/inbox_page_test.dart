@@ -195,12 +195,12 @@ void main() {
     });
 
     // The keepAlive `dmRepositoryProvider` rebuilds a brand-new DmRepository
-    // on the identityKnown -> nostrReady transition, and only the *ready*
-    // instance ever gets setCredentials() — so only its userPubkeyStream
-    // delivers a pubkey. A keyless BlocProvider strands the bloc on the
-    // orphaned not-ready instance and the inbox spins forever while DMs
-    // ingest on the fresh one. These pin the ValueKey rebind fix in
-    // inbox_page.dart. See .claude/rules/state_management.md.
+    // on the identityKnown -> nostrReady transition. The first instance can
+    // read owner-scoped local history, but only the ready instance receives
+    // credentials, post-auth maintenance, and newly ingested DMs. A keyless
+    // BlocProvider strands the bloc on the superseded instance. These pin the
+    // ValueKey rebind fix in inbox_page.dart. See
+    // .claude/rules/state_management.md.
     group('rebinds ConversationListBloc when dmRepositoryProvider flips', () {
       void stubInbox(_MockDmRepository repo, {required String userPubkey}) {
         when(
@@ -279,7 +279,7 @@ void main() {
         'over a fresh instance',
         (tester) async {
           final readyRepo = _MockDmRepository();
-          // Bloc mounts against the not-ready instance (empty pubkey).
+          // Model the signed-out/teardown instance (empty pubkey).
           stubInbox(mockDmRepository, userPubkey: '');
           stubInbox(readyRepo, userPubkey: testPubkey);
 

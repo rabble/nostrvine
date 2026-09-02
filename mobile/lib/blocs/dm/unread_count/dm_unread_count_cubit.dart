@@ -110,10 +110,9 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
   /// (#7330). This cubit lives above `MaterialApp` and survives an in-app
   /// sign-out/sign-in-as-a-different-account, so without the reset the badge
   /// keeps rendering the *previous* account's number: `dmRepositoryProvider`
-  /// hands over an uncredentialed [DmRepository] while `nostrSession` is only
-  /// `identityKnown`, its `userPubkey` is empty, and [_countUnread]'s
-  /// deliberate empty-pubkey hold re-emits the value already on screen — which
-  /// `Cubit.emit` then suppresses as unchanged.
+  /// hands over an ownerless [DmRepository] while the prior session tears down,
+  /// and [_countUnread]'s deliberate empty-pubkey hold would re-emit the value
+  /// already on screen — which `Cubit.emit` then suppresses as unchanged.
   ///
   /// This is the only place the reset belongs, because a swap is the only way
   /// an empty pubkey reaches [_countUnread]: `_userPubkeyController` is fed
@@ -121,7 +120,7 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
   /// the stream never emits `''`. The empty value can only arrive as the
   /// `startWith(dmRepository.userPubkey)` seed at subscribe time. Leaving the
   /// hold in [_countUnread] keeps #5374 working: at cold start the seed is
-  /// also empty, and holding a `0` there is what stops the classifier
+  /// also empty when signed out, and holding a `0` there stops the classifier
   /// misreading every followed 1:1 as a group before the identity lands.
   void setRepositories({
     required DmRepository dmRepository,
@@ -239,7 +238,7 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
     final followRepository = _followRepository;
     if (dmRepository == null || followRepository == null) return 0;
 
-    // Until credentials are set the pubkey is empty and self cannot be filtered
+    // Without an authenticated identity the pubkey is empty and self cannot be filtered
     // from a conversation's participants — classifying now drops every followed
     // 1:1 from the count. Keep the current count; the identity stream re-fires
     // this once the real pubkey arrives. See #5374.

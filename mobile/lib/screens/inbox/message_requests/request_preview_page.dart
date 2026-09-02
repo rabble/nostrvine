@@ -42,6 +42,13 @@ class RequestPreviewPage extends ConsumerWidget {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
+    final inviteStateStore = ref.watch(collaboratorInviteStateStoreProvider);
+    final inviteResponseService = ref.watch(
+      collaboratorResponseServiceProvider,
+    );
+    final confirmationRepository = ref.watch(
+      collaboratorConfirmationRepositoryProvider,
+    );
 
     return MultiBlocProvider(
       providers: [
@@ -49,8 +56,9 @@ class RequestPreviewPage extends ConsumerWidget {
           // Re-key on the captured auth-flippable repository, as the actions
           // cubit below already does. `load()` runs once at construction, so
           // without this the preview keeps whichever repository existed at
-          // first build — including the uncredentialed one the provider
-          // returns for the whole `identityKnown` phase of an account switch.
+          // first build. The `identityKnown` repository can read local rows,
+          // but the `nostrReady` replacement runs post-auth maintenance and
+          // receives newly ingested rows.
           // See .claude/rules/state_management.md ("Bridging Riverpod-provided
           // dependencies into BlocProvider").
           key: ValueKey(dmRepository),
@@ -78,13 +86,17 @@ class RequestPreviewPage extends ConsumerWidget {
           ),
         ),
         BlocProvider(
+          key: ValueKey((
+            inviteStateStore,
+            inviteResponseService,
+            confirmationRepository,
+            currentPubkey,
+          )),
           create: (_) => CollaboratorInviteActionsCubit(
-            stateStore: ref.watch(collaboratorInviteStateStoreProvider),
-            responseService: ref.watch(collaboratorResponseServiceProvider),
+            stateStore: inviteStateStore,
+            responseService: inviteResponseService,
             currentUserPubkey: currentPubkey,
-            confirmationRepository: ref.watch(
-              collaboratorConfirmationRepositoryProvider,
-            ),
+            confirmationRepository: confirmationRepository,
           ),
         ),
       ],

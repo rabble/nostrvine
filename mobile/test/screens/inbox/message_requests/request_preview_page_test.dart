@@ -221,9 +221,9 @@ void main() {
         'rebuilds $RequestPreviewCubit when the DM repository identity '
         'changes',
         (tester) async {
-          // `dmRepositoryProvider` returns a brand-new, uncredentialed
-          // repository for the whole `identityKnown` phase of an account
-          // switch, and a credentialed one once the session is ready. The
+          // `dmRepositoryProvider` returns a brand-new owner-scoped repository
+          // for `identityKnown`, then a credentialed one once the session is
+          // ready. The
           // preview's `load()` runs once at construction, so the provider
           // must be re-keyed or it keeps reading through the first instance
           // forever. See #8187.

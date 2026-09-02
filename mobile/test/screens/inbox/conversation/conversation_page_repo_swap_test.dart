@@ -160,8 +160,8 @@ void main() {
       'once a credentialed repository arrives (#8187)',
       (tester) async {
         // repoA stands in for the uncredentialed instance
-        // dmRepositoryProvider serves for the whole identityKnown phase of
-        // an account switch: owner unknown, so ConversationBloc must hold
+        // dmRepositoryProvider serves while signed out or tearing down:
+        // owner unknown, so ConversationBloc must hold
         // loading and never reach the owner-scoped reads (which would
         // otherwise return every account's rows at the DAO). repoB is the
         // credentialed instance that arrives at nostrReady.
