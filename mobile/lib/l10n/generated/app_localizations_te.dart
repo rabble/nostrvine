@@ -4705,6 +4705,21 @@ class AppLocalizationsTe extends AppLocalizations {
       'మాన్యువల్ పంపడం కోసం ఫైల్‌కి లాగ్‌లను ఎగుమతి చేయండి';
 
   @override
+  String get supportClearLogs => 'Clear Logs';
+
+  @override
+  String get supportClearLogsSubtitle => 'Wipe captured logs and start fresh';
+
+  @override
+  String get supportClearLogsConfirmTitle => 'Clear captured logs?';
+
+  @override
+  String get supportClearLogsConfirmButton => 'Clear';
+
+  @override
+  String get supportLogsCleared => 'Logs cleared';
+
+  @override
   String get supportFaq => 'తరచుగా అడిగే ప్రశ్నలు';
 
   @override
