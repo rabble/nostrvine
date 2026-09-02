@@ -4,6 +4,7 @@
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/modal_pop_extension.dart';
@@ -151,14 +152,18 @@ class SelectListDialog extends StatelessWidget {
       final atSizeLimit =
           !isCurrentlyInList &&
           CuratedListConverter.wouldExceedPrivateItemLimit(list, video.id);
+      final failureMessage = atSizeLimit
+          ? context.l10n.listPrivateFull
+          : context.l10n.listUpdateFailed;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            atSizeLimit
-                ? context.l10n.listPrivateFull
-                : context.l10n.listUpdateFailed,
-          ),
-        ),
+        SnackBar(content: Text(failureMessage)),
+      );
+      // A failure shown only in a SnackBar is invisible to screen readers.
+      // Announce it, matching the DM oversized-send path this PR added (#7331).
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        failureMessage,
+        Directionality.of(context),
       );
     } catch (e) {
       Log.error(
