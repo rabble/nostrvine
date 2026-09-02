@@ -24,9 +24,10 @@ const String codeDelimiter = '`';
 /// This is an affordance, not the correctness bound. `maxLength` truncates by
 /// grapheme cluster, and one cluster can be many bytes — a ZWJ emoji sequence
 /// runs past 25 — so a character limit cannot bound the UTF-8 size that NIP-44
-/// actually constrains. `maxDmMessageContentBytes` in `dm_repository` is what
-/// guarantees the send can be built; this stops the ordinary long paste at the
-/// keyboard instead of letting it fail after the fact (#7331).
+/// actually constrains. `maxDmRumorBytes` in `dm_repository` is what guarantees
+/// the send can be built, and it bounds the serialized rumor so tags count too;
+/// this stops the ordinary long paste at the keyboard instead of letting it
+/// fail after the fact (#7331).
 @visibleForTesting
 const int dmComposerMaxCharacters = 10000;
 
