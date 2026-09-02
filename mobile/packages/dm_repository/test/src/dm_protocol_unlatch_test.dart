@@ -1,5 +1,5 @@
-// ABOUTME: Proves what decides a conversation's dm_protocol latch. Twin
-// ABOUTME: clearing lives in dm_protocol_unlatch_test.dart (#8499).
+// ABOUTME: #8499 — a peer's NIP-17 twin clears the nip04 protocol latch;
+// ABOUTME: a self-authored twin must not, as only the peer's capability counts.
 
 import 'dart:async';
 
@@ -29,11 +29,10 @@ void main() {
     registerFallbackValue(Duration.zero);
   });
 
-  // Real DirectMessagesDao and ConversationsDao against a real database. The
-  // mock suite stubs the dedup predicates in a shared setUp, so the ordering
-  // this file is about is invisible there (#8170) — and `dmProtocol` is
-  // asserted nowhere else in the package.
-  group('the dm_protocol latch', () {
+  // Real DAOs on a real database. The claim, the early return and the upsert
+  // all have to run for the unlatch to be observable at all, and the mock
+  // suite stubs the dedup predicates in a shared setUp (#8170).
+  group('clearing the nip04 latch on a peer NIP-17 twin (#8499)', () {
     late AppDatabase db;
     late ConversationsDao conversationsDao;
     late DirectMessagesDao messagesDao;
@@ -113,19 +112,48 @@ void main() {
       }
     }
 
-    Future<void> deliverNip17({
+    /// Seeds a latched thread holding one kind-4-shaped row from [sender].
+    /// The NIP-04 receive path writes the wire id into BOTH columns, and that
+    /// is what marks a row as the twin a NIP-17 rumor may collapse onto.
+    Future<void> seedLatchedThreadWithKind4({
+      required String id,
+      required String sender,
+      required String content,
+    }) async {
+      await conversationsDao.upsertConversation(
+        id: conversationId,
+        participantPubkeys: participants.join(','),
+        isGroup: false,
+        createdAt: _baseCreatedAt,
+        lastMessageTimestamp: _baseCreatedAt,
+        ownerPubkey: _owner,
+        dmProtocol: 'nip04',
+      );
+      await messagesDao.insertMessage(
+        id: id,
+        conversationId: conversationId,
+        senderPubkey: sender,
+        content: content,
+        createdAt: _baseCreatedAt,
+        giftWrapId: id,
+        ownerPubkey: _owner,
+      );
+    }
+
+    Future<void> deliverGiftWrap({
       required String wrapId,
       required String rumorId,
+      required String author,
       required String content,
-      int createdAt = _baseCreatedAt,
     }) async {
+      final recipient = author == _owner ? _peer : _owner;
       rumors[wrapId] = Event.fromJson({
         'id': rumorId,
-        'pubkey': _peer,
-        'created_at': createdAt,
+        'pubkey': author,
+        'created_at': _baseCreatedAt,
         'kind': EventKind.privateDirectMessage,
         'tags': [
-          ['p', _owner],
+          ['p', recipient],
         ],
         'content': content,
         'sig': '',
@@ -133,34 +161,13 @@ void main() {
       relay.add(
         Event.fromJson({
           'id': wrapId,
-          'pubkey': _peer,
-          'created_at': createdAt,
+          'pubkey': author,
+          'created_at': _baseCreatedAt,
           'kind': EventKind.giftWrap,
           'tags': [
             ['p', _owner],
           ],
           'content': 'wrapped',
-          'sig': '',
-        }),
-      );
-      await settle();
-    }
-
-    Future<void> deliverNip04({
-      required String id,
-      required String content,
-      int createdAt = _baseCreatedAt,
-    }) async {
-      relay.add(
-        Event.fromJson({
-          'id': id,
-          'pubkey': _peer,
-          'created_at': createdAt,
-          'kind': EventKind.directMessage,
-          'tags': [
-            ['p', _owner],
-          ],
-          'content': content,
           'sig': '',
         }),
       );
@@ -174,69 +181,80 @@ void main() {
         ))?.dmProtocol;
 
     test(
-      'kind-4 first latches the thread',
+      "a peer's twin clears the latch, even though the rumor itself is "
+      'dropped as a duplicate',
       () async {
-        // The ordering that creates the dual-send steady state: an inbound
-        // legacy copy decides the thread before any NIP-17 message lands.
-        await deliverNip04(id: 'a' * 64, content: 'hello');
+        await seedLatchedThreadWithKind4(
+          id: 'a' * 64,
+          sender: _peer,
+          content: 'hello',
+        );
+        expect(await storedProtocol(), 'nip04');
+
+        await deliverGiftWrap(
+          wrapId: 'b' * 64,
+          rumorId: 'c' * 64,
+          author: _peer,
+          content: 'hello',
+        );
+
+        // The twin is the ONLY place this evidence appears — the rumor is
+        // discarded, so before #8499 the proof went with it.
+        expect(await storedProtocol(), 'nip17');
+      },
+    );
+
+    test(
+      'a self-authored twin does NOT clear the latch — only the peer '
+      'speaking NIP-17 is evidence about the peer',
+      () async {
+        // The branch that claims the twin is an `else`: it catches a peer's
+        // rumor AND a self-authored 1:1 rumor with no send batch token. Without
+        // the `!isSentByMe` gate this path would clear on our own self-wrap.
+        await seedLatchedThreadWithKind4(
+          id: 'd' * 64,
+          sender: _owner,
+          content: 'my own message',
+        );
+        expect(await storedProtocol(), 'nip04');
+
+        await deliverGiftWrap(
+          wrapId: 'e' * 64,
+          rumorId: 'f' * 64,
+          author: _owner,
+          content: 'my own message',
+        );
+
         expect(await storedProtocol(), 'nip04');
       },
     );
 
-    // What CLEARS that latch is asserted in `dm_protocol_unlatch_test.dart`.
-    // Until #8499 the answer was "almost nothing": the peer's NIP-17 twin was
-    // collapsed onto the stored kind-4 and the handler returned before its
-    // `dmProtocol: 'nip17'` upsert, so a peer speaking NIP-17 perfectly well
-    // could not undo the latch and two dual-sending sides deadlocked. That
-    // case used to be asserted here and now lives, inverted and split by
-    // sender, alongside the change that fixed it.
-
     test(
-      'NIP-17 first leaves the thread nip17, and the kind-4 twin cannot '
-      'downgrade it',
+      'a later peer NIP-17 after the unlatch leaves the thread nip17',
       () async {
-        // The mirror ordering. Same two events, opposite arrival order.
-        await deliverNip17(
-          wrapId: 'd' * 64,
-          rumorId: 'e' * 64,
+        // The first wrap claims the kind-4 twin and clears. The second wrap
+        // is not a twin (`claimCrossProtocolTwin` already consumed it) so it
+        // persists; this pins that later path must not downgrade the thread.
+        await seedLatchedThreadWithKind4(
+          id: '1' * 64,
+          sender: _peer,
+          content: 'hello',
+        );
+        await deliverGiftWrap(
+          wrapId: '2' * 64,
+          rumorId: '3' * 64,
+          author: _peer,
           content: 'hello',
         );
         expect(await storedProtocol(), 'nip17');
 
-        await deliverNip04(id: 'f' * 64, content: 'hello');
-
-        expect(
-          await storedProtocol(),
-          'nip17',
-          reason:
-              'the kind-4 handler dedups against the stored NIP-17 copy '
-              'and returns before its own `?? nip04` upsert',
+        await deliverGiftWrap(
+          wrapId: '4' * 64,
+          rumorId: '5' * 64,
+          author: _peer,
+          content: 'hello',
         );
-      },
-    );
-
-    test(
-      'a latched thread is also cleared by a NIP-17 message with no kind-4 '
-      'twin',
-      () async {
-        await deliverNip04(id: '1' * 64, content: 'hello');
-        expect(await storedProtocol(), 'nip04');
-
-        // A genuinely new message from the peer — different text, so it is not
-        // the twin of anything stored. The persist path still writes nip17.
-        // Twin clearing lives in dm_protocol_unlatch_test.dart.
-        await deliverNip17(
-          wrapId: '2' * 64,
-          rumorId: '3' * 64,
-          content: 'a genuinely new message',
-          createdAt: _baseCreatedAt + 600,
-        );
-
-        expect(
-          await storedProtocol(),
-          'nip17',
-          reason: 'a non-twin rumor persists and reaches the clearing upsert',
-        );
+        expect(await storedProtocol(), 'nip17');
       },
     );
   });
