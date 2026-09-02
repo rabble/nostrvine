@@ -1926,73 +1926,85 @@ void main() {
     // setup ratchet does not baseline this file, and a decision stub is only
     // legible next to the tests it governs.
     // ------------------------------------------------------------------
-    group('kind-10050 inbox routing (#7321)', () {
-      const inbox = ['wss://inbox.example'];
+    const inbox = ['wss://inbox.example'];
+    const DmInboxLookup inboxFound = (
+      relays: inbox,
+      state: DmInboxResolution.found,
+    );
+    const DmInboxLookup inboxAbsent = (
+      relays: null,
+      state: DmInboxResolution.absent,
+    );
+    const DmInboxLookup inboxUnreadable = (
+      relays: null,
+      state: DmInboxResolution.unreadable,
+    );
 
-      /// Stubs the optimistic insert + placeholder swap a `publish` needs, and
-      /// returns the rumor it will send.
-      Event stubPublishPath({List<String> superseded = const []}) {
-        final rumor = reactionRumor();
-        when(
-          () => mockMessageService.buildRumor(
-            recipientPubkey: _otherPubkey,
-            content: '🔥',
-            eventKind: EventKind.reaction,
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenReturn(rumor);
-        when(
-          () => mockDao.insertOwnReactionSuperseding(
-            placeholderId: rumor.id,
-            conversationId: _conversationId,
-            targetMessageId: _targetMessageId,
-            targetMessageAuthor: _otherPubkey,
-            reactorPubkey: _ownerPubkey,
-            emoji: '🔥',
-            createdAt: rumor.createdAt,
-            ownerPubkey: _ownerPubkey,
-            rumorEventJson: jsonEncode(rumor.toJson()),
-          ),
-        ).thenAnswer((_) async => superseded);
-        when(
-          () => mockDao.swapPlaceholderId(
-            placeholderId: rumor.id,
-            realRumorId: rumor.id,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: rumor.id,
-            messageEventId: _giftWrapId,
-            recipientPubkey: _otherPubkey,
-          ),
-        );
-        return rumor;
-      }
-
-      Future<DmReactionPublishResult> publishReaction(
-        DmReactionsRepository repository,
-      ) => repository.publish(
-        conversationId: _conversationId,
-        targetMessageId: _targetMessageId,
-        targetMessageAuthor: _otherPubkey,
-        emoji: '🔥',
+    /// Stubs the optimistic insert + placeholder swap a `publish` needs, and
+    /// returns the rumor it will send.
+    Event stubPublishPath({List<String> superseded = const []}) {
+      final rumor = reactionRumor();
+      when(
+        () => mockMessageService.buildRumor(
+          recipientPubkey: _otherPubkey,
+          content: '🔥',
+          eventKind: EventKind.reaction,
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenReturn(rumor);
+      when(
+        () => mockDao.insertOwnReactionSuperseding(
+          placeholderId: rumor.id,
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _otherPubkey,
+          reactorPubkey: _ownerPubkey,
+          emoji: '🔥',
+          createdAt: rumor.createdAt,
+          ownerPubkey: _ownerPubkey,
+          rumorEventJson: jsonEncode(rumor.toJson()),
+        ),
+      ).thenAnswer((_) async => superseded);
+      when(
+        () => mockDao.swapPlaceholderId(
+          placeholderId: rumor.id,
+          realRumorId: rumor.id,
+          ownerPubkey: _ownerPubkey,
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMessageService.sendRumor(
+          rumorEvent: any(named: 'rumorEvent'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: rumor.id,
+          messageEventId: _giftWrapId,
+          recipientPubkey: _otherPubkey,
+        ),
       );
+      return rumor;
+    }
 
+    Future<DmReactionPublishResult> publishReaction(
+      DmReactionsRepository repository,
+    ) => repository.publish(
+      conversationId: _conversationId,
+      targetMessageId: _targetMessageId,
+      targetMessageAuthor: _otherPubkey,
+      emoji: '🔥',
+    );
+
+    group('kind-10050 inbox routing (#7321)', () {
       test(
         'routes the reaction wrap to the resolved kind-10050 inbox',
         () async {
           final rumor = stubPublishPath();
           final repository = createRepository()
-            ..setDmInboxRelayResolver((_) async => inbox);
+            ..setDmInboxRelayResolver((_) async => inboxFound);
 
           await publishReaction(repository);
 
@@ -2015,7 +2027,7 @@ void main() {
         () async {
           final rumor = stubPublishPath();
           final repository = createRepository()
-            ..setDmInboxRelayResolver((_) async => null);
+            ..setDmInboxRelayResolver((_) async => inboxAbsent);
 
           await publishReaction(repository);
 
@@ -2038,8 +2050,11 @@ void main() {
         final rumor = stubPublishPath();
         final repository = createRepository();
 
-        await publishReaction(repository);
+        final result = await publishReaction(repository);
 
+        // Legacy/test wiring with no resolver never attempted an inbox read,
+        // so it keeps the pre-#7321 contract: a pool OK is delivery.
+        expect(result.success, isTrue);
         verify(
           () => mockMessageService.sendRumor(
             rumorEvent: rumor,
@@ -2051,10 +2066,13 @@ void main() {
       });
 
       test(
-        'a throwing resolver degrades that recipient to the pool, '
-        'it does not fail the fan-out',
+        'a throwing resolver still publishes that recipient to the pool, '
+        'but an inbox we never read cannot score the OK as delivered',
         () async {
           final rumor = stubPublishPath();
+          when(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).thenAnswer((_) async {});
           final repository = createRepository()
             ..setDmInboxRelayResolver(
               (_) async => throw StateError('resolver blew up'),
@@ -2062,7 +2080,17 @@ void main() {
 
           final result = await publishReaction(repository);
 
-          expect(result.success, isTrue);
+          // Publishing to the pool is right — a broken resolver must not drop
+          // the reaction — but a lookup that threw is an inbox we did not
+          // read, so the pool OK is soft-pending (#8443), never `sent`.
+          expect(result.success, isFalse);
+          verifyNever(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: any(named: 'placeholderId'),
+              realRumorId: any(named: 'realRumorId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
           verify(
             () => mockMessageService.sendRumor(
               rumorEvent: rumor,
@@ -2113,7 +2141,7 @@ void main() {
         ).thenAnswer((_) async => const NIP17SendResult.failure('offline'));
 
         final repository = createRepository()
-          ..setDmInboxRelayResolver((_) async => inbox);
+          ..setDmInboxRelayResolver((_) async => inboxFound);
         await repository.removeOwn(
           rumorId: _reactionRumorId,
           targetMessageAuthor: _otherPubkey,
@@ -2174,7 +2202,7 @@ void main() {
           final repository = createRepository()
             ..setDmInboxRelayResolver((_) async {
               resolveCalls++;
-              return inbox;
+              return inboxFound;
             });
 
           await publishReaction(repository);
@@ -2222,9 +2250,11 @@ void main() {
             ),
           ).thenAnswer((_) async {});
 
-          final inboxResolution = Completer<List<String>?>();
+          final inboxResolution = Completer<DmInboxLookup>();
           addTearDown(() {
-            if (!inboxResolution.isCompleted) inboxResolution.complete(inbox);
+            if (!inboxResolution.isCompleted) {
+              inboxResolution.complete(inboxFound);
+            }
           });
           final repository = createRepository()
             ..setDmInboxRelayResolver((_) => inboxResolution.future);
@@ -2240,8 +2270,323 @@ void main() {
             ),
           ).called(1);
 
-          inboxResolution.complete(inbox);
+          inboxResolution.complete(inboxFound);
           await publish;
+        },
+      );
+    });
+
+    group('unreadable inbox is not delivery (#8443)', () {
+      const thirdPubkey =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const groupConversationId = 'group-convo-id';
+
+      /// The relay a wrap was sent to — the default pool, when the inbox did
+      /// not resolve — OK-confirms every recipient wrap.
+      void stubSendRumorConfirmed(Event rumor) {
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: rumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+      }
+
+      Event deletionRumor() => reactionRumor(
+        id: _giftWrapId,
+        content: '',
+        kind: EventKind.eventDeletion,
+        tags: [
+          ['e', _reactionRumorId],
+          ['k', EventKind.reaction.toString()],
+        ],
+      );
+
+      test(
+        'publish holds the reaction pending when the recipient inbox could '
+        'not be read, even though the fallback pool confirmed the wrap',
+        () async {
+          final rumor = stubPublishPath();
+          when(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).thenAnswer((_) async {});
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inboxUnreadable);
+
+          final result = await publishReaction(repository);
+
+          // Routing is unchanged: the wrap still went to the pool.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: rumor,
+              recipientPubkey: _otherPubkey,
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+          // But the pool's OK is not delivery to an inbox we never read. The
+          // row stays `pending` with its rumor JSON so the sweep can
+          // re-resolve; `swapPlaceholderId` clears that JSON and would make
+          // the row unrecoverable, so it must never run here.
+          expect(result.success, isFalse);
+          verify(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).called(1);
+          verifyNever(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: any(named: 'placeholderId'),
+              realRumorId: any(named: 'realRumorId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockDao.markFailed(
+              placeholderId: any(named: 'placeholderId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'publish still scores a fallback-pool OK as sent when the recipient '
+        'genuinely advertises no inbox',
+        () async {
+          final rumor = stubPublishPath();
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inboxAbsent);
+
+          final result = await publishReaction(repository);
+
+          // Absent is a fact about the recipient: the pool is where they
+          // read, so the OK is real delivery and reachability holds (#570).
+          expect(result.success, isTrue);
+          verify(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: rumor.id,
+              realRumorId: rumor.id,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'retry leaves the row pending and never swaps it to sent when the '
+        'inbox is unreadable',
+        () async {
+          final rumor = reactionRumor();
+          when(
+            () => mockDao.getRumorJson(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).thenAnswer((_) async => jsonEncode(rumor.toJson()));
+          when(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).thenAnswer((_) async {});
+          stubSendRumorConfirmed(rumor);
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inboxUnreadable);
+
+          final result = await repository.retry(
+            rumorId: rumor.id,
+            targetMessageAuthor: _otherPubkey,
+          );
+
+          // Without this the sweep undoes the publish path: it re-resolves
+          // to the same unreadable inbox, republishes to the pool, and would
+          // score that OK as sent one sweep later — #7317's retry half.
+          expect(result.success, isFalse);
+          verifyNever(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: any(named: 'placeholderId'),
+              realRumorId: any(named: 'realRumorId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockDao.markFailed(
+              placeholderId: any(named: 'placeholderId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'removeOwn keeps the kind-5 deletion_pending when the inbox is '
+        'unreadable, so the removal is re-driven rather than assumed seen',
+        () async {
+          final deletion = deletionRumor();
+          when(
+            () => mockDao.markOwnDeletionPending(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: _otherPubkey,
+              content: '',
+              eventKind: EventKind.eventDeletion,
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenReturn(deletion);
+          stubSendRumorConfirmed(deletion);
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inboxUnreadable);
+
+          await repository.removeOwn(
+            rumorId: _reactionRumorId,
+            targetMessageAuthor: _otherPubkey,
+          );
+          // _driveDeletion fires via unawaited; let it run.
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: deletion,
+              recipientPubkey: _otherPubkey,
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+            ),
+          ).called(1);
+          // A falsely `deletion_sent` row is worse than a falsely `sent` one:
+          // it is already hidden (is_deleted = 1) and the terminal status
+          // clears the stored kind-5, so nothing could ever re-drive the
+          // removal the recipient may still be looking at.
+          verifyNever(
+            () => mockDao.markDeletionSent(
+              id: any(named: 'id'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'retryDeletion does not mark the removal deletion_sent when the '
+        'inbox is unreadable',
+        () async {
+          final deletion = deletionRumor();
+          when(
+            () => mockDao.getById(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => makeRow(
+              isDeleted: true,
+              publishStatus: 'deletion_pending',
+              rumorEventJson: jsonEncode(deletion.toJson()),
+            ),
+          );
+          stubSendRumorConfirmed(deletion);
+          final repository = createRepository()
+            ..setDmInboxRelayResolver((_) async => inboxUnreadable);
+
+          final result = await repository.retryDeletion(
+            rumorId: _reactionRumorId,
+            targetMessageAuthor: _otherPubkey,
+          );
+
+          expect(result.success, isFalse);
+          verifyNever(
+            () => mockDao.markDeletionSent(
+              id: any(named: 'id'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'one unreadable member holds the whole group reaction pending, even '
+        'though every other member confirmed',
+        () async {
+          final mockConversationsDao = _MockConversationsDao();
+          when(
+            () => mockConversationsDao.getConversation(
+              groupConversationId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupConversationId,
+              participantPubkeys: jsonEncode([
+                _ownerPubkey,
+                _otherPubkey,
+                thirdPubkey,
+              ]),
+              isGroup: true,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+              ownerPubkey: _ownerPubkey,
+            ),
+          );
+          final rumor = reactionRumor();
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: _otherPubkey,
+              content: '🔥',
+              eventKind: EventKind.reaction,
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenReturn(rumor);
+          when(
+            () => mockDao.insertOwnReactionSuperseding(
+              placeholderId: any(named: 'placeholderId'),
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              reactorPubkey: any(named: 'reactorPubkey'),
+              emoji: any(named: 'emoji'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rumorEventJson: any(named: 'rumorEventJson'),
+            ),
+          ).thenAnswer((_) async => <String>[]);
+          when(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).thenAnswer((_) async {});
+          stubSendRumorConfirmed(rumor);
+          final repository =
+              createRepository(conversationsDao: mockConversationsDao)
+                ..setDmInboxRelayResolver(
+                  (pubkey) async =>
+                      pubkey == thirdPubkey ? inboxUnreadable : inboxFound,
+                );
+
+          final result = await repository.publish(
+            conversationId: groupConversationId,
+            targetMessageId: _targetMessageId,
+            targetMessageAuthor: _otherPubkey,
+            emoji: '🔥',
+          );
+
+          // One row tracks the whole fan-out, so a member whose inbox we
+          // could not read holds it — the same all-or-nothing rule as a
+          // partial fan-out failure. The confirmed member's copy dedups on
+          // the rumor id when the sweep re-drives.
+          expect(result.success, isFalse);
+          verify(
+            () => mockDao.markPending(id: rumor.id, ownerPubkey: _ownerPubkey),
+          ).called(1);
+          verifyNever(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: any(named: 'placeholderId'),
+              realRumorId: any(named: 'realRumorId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
         },
       );
     });

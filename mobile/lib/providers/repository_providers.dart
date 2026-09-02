@@ -736,14 +736,18 @@ DmRepository dmRepository(Ref ref) {
 
   // Hand the reactions repository this repository's kind-10050 resolver so a
   // gift-wrapped reaction routes to the recipient's advertised DM inbox rather
-  // than the default pool (#7321). Injected downward because the dependency
-  // edge already runs this way — this provider watches
-  // `dmReactionsRepositoryProvider` above, so reading it back from there would
-  // close a Riverpod cycle.
+  // than the default pool (#7321). The DETAILED resolver, not the flattening
+  // one: the reactions repository also reports delivery, and a default-pool OK
+  // on an inbox it could not read must stay pending rather than read as sent
+  // (#8443). Injected downward because the dependency edge already runs this
+  // way — this provider watches `dmReactionsRepositoryProvider` above, so
+  // reading it back from there would close a Riverpod cycle.
   //
   // The reaction retry provider also watches this provider explicitly, making
   // this wiring complete before its fire-immediately sweep can run.
-  reactionsRepository.setDmInboxRelayResolver(repository.resolveDmInboxRelays);
+  reactionsRepository.setDmInboxRelayResolver(
+    repository.resolveDmInboxRelaysDetailed,
+  );
 
   // Set credentials and open the gift-wrap subscription as soon as the
   // signer is ready. The subscription is auth-session-scoped (not inbox-
