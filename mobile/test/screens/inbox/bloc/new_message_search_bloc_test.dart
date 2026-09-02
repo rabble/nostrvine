@@ -572,6 +572,8 @@ void main() {
           'b75b9a3131f4263add94ba20beb352a11032684f2dac07a7e1af827c6f3c1505';
       const alice =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const aliceNpub =
+          'npub1424242424242424242424242424242424242424242424242424qamrcaj';
       const labels = DmPeerLabels(
         deletedAccount: 'Deleted account',
         moderation: 'Divine Moderation',
@@ -665,6 +667,51 @@ void main() {
         build: createBloc,
         act: (bloc) => loadThenSearch(bloc, 'Aeontropy'),
         verify: (bloc) => expect(bloc.state.results, isEmpty),
+      );
+
+      // The two below are the other half of that filter: it may only drop a
+      // peer Divine renames. `searchUsers` merges Funnelcake REST with NIP-50
+      // relay search and scores bio, npub prefix and fuzzy tokens, so a
+      // candidate whose rendered name does not literally spell the query is
+      // the normal case, not a mismatch.
+      void stubNetworkResult(String query, UserProfile profile) {
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: query,
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+          ),
+        ).thenAnswer((_) async => [profile]);
+      }
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'keeps a network result matched outside the name its row renders',
+        setUp: () {
+          stubVanished(const {});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          // Models a bio match: the repository returns Alice for a query
+          // her rendered name does not contain.
+          stubNetworkResult('photographer', createTestProfile(alice, 'Alice'));
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'photographer'),
+        verify: (bloc) =>
+            expect(bloc.state.results.map((p) => p.pubkey), [alice]),
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'keeps a network result found by the npub this sheet accepts',
+        setUp: () {
+          stubVanished(const {});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          stubNetworkResult(aliceNpub, createTestProfile(alice, 'Alice'));
+        },
+        build: createBloc,
+        // `NewMessageSheet` documents npub as a supported query and decodes
+        // nothing itself, so dropping this result removes the paste path.
+        act: (bloc) => loadThenSearch(bloc, aliceNpub),
+        verify: (bloc) =>
+            expect(bloc.state.results.map((p) => p.pubkey), [alice]),
       );
 
       test(

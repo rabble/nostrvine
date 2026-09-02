@@ -168,16 +168,65 @@ class NewMessageSearchBloc
     String query, {
     required Set<String> vanishedPubkeys,
     required DmPeerLabels? labels,
+  }) => contacts
+      .where(
+        (profile) => _matchesRenderedName(
+          profile,
+          query,
+          vanishedPubkeys: vanishedPubkeys,
+          labels: labels,
+        ),
+      )
+      .toList();
+
+  /// Whether [query] matches the name [profile]'s row renders, or its NIP-05.
+  static bool _matchesRenderedName(
+    UserProfile profile,
+    String query, {
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? labels,
   }) {
     final lower = query.toLowerCase();
-    return contacts.where((profile) {
-      final name = _peerNameFor(
+    final name = _peerNameFor(
+      profile,
+      vanishedPubkeys: vanishedPubkeys,
+      labels: labels,
+    ).toLowerCase();
+    final nip05 = (profile.nip05 ?? '').toLowerCase();
+    return name.contains(lower) || nip05.contains(lower);
+  }
+
+  /// [networkResults] minus the peers the viewer would only meet under a
+  /// substitute name.
+  ///
+  /// These candidates arrive already matched, by a search this filter cannot
+  /// reproduce: `searchUsers` merges Funnelcake REST with NIP-50 relay search,
+  /// and the house matcher scores bio, an `npub` prefix and fuzzy tokens, none
+  /// of which the local substring pass can see. Re-running that pass over
+  /// every candidate drops each result the query did not literally spell —
+  /// including the npub paste `NewMessageSheet` documents as a supported
+  /// query. So only a peer Divine renames is re-checked, which is where the
+  /// backend really did match a name the row will never show (#8421).
+  static List<UserProfile> _visibleNetworkResults(
+    List<UserProfile> networkResults,
+    String query, {
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? labels,
+  }) {
+    if (labels == null) return networkResults;
+    return networkResults.where((profile) {
+      final substitute = dmPeerSubstituteName(
+        isVanished: vanishedPubkeys.contains(profile.pubkey),
+        isModeration: isModerationAccount(profile.pubkey),
+        labels: labels,
+      );
+      if (substitute == null) return true;
+      return _matchesRenderedName(
         profile,
+        query,
         vanishedPubkeys: vanishedPubkeys,
         labels: labels,
-      ).toLowerCase();
-      final nip05 = (profile.nip05 ?? '').toLowerCase();
-      return name.contains(lower) || nip05.contains(lower);
+      );
     }).toList();
   }
 
@@ -228,18 +277,21 @@ class NewMessageSearchBloc
     );
     if (!next.isSearchActive) return next.copyWith(contacts: contacts);
 
-    List<UserProfile> matching(List<UserProfile> candidates) => _filterContacts(
-      candidates,
-      next.query,
-      vanishedPubkeys: next.vanishedPubkeys,
-      labels: next.peerLabels,
-    );
-
     return next.copyWith(
       contacts: contacts,
       results: _mergeWithLocal(
-        matching(next.networkResults),
-        matching(contacts),
+        _visibleNetworkResults(
+          next.networkResults,
+          next.query,
+          vanishedPubkeys: next.vanishedPubkeys,
+          labels: next.peerLabels,
+        ),
+        _filterContacts(
+          contacts,
+          next.query,
+          vanishedPubkeys: next.vanishedPubkeys,
+          labels: next.peerLabels,
+        ),
       ),
     );
   }
@@ -267,13 +319,10 @@ class NewMessageSearchBloc
     }
     emit(
       _withRecomputedSearch(
-        state.copyWith(
-          vanishedPubkeys: event.pubkeys,
-          // Both inputs land asynchronously — the tombstone stream on its first
-          // Drift emission, the labels on the first didChangeDependencies — and
-          // either can arrive after the contact list is already sorted. Without
-          // this the order stays keyed on the raw names.
-        ),
+        // Both naming inputs land asynchronously — the tombstone stream on its
+        // first Drift emission, the labels on the first didChangeDependencies
+        // — so either can arrive after the list is sorted and matched.
+        state.copyWith(vanishedPubkeys: event.pubkeys),
       ),
     );
   }
@@ -284,11 +333,7 @@ class NewMessageSearchBloc
   ) {
     if (event.labels == state.peerLabels) return;
     emit(
-      _withRecomputedSearch(
-        state.copyWith(
-          peerLabels: event.labels,
-        ),
-      ),
+      _withRecomputedSearch(state.copyWith(peerLabels: event.labels)),
     );
   }
 
