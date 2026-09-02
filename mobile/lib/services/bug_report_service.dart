@@ -335,6 +335,13 @@ class BugReportService {
     }
   }
 
+  /// Clears the in-memory log capture buffer.
+  ///
+  /// The buffer is memory-only, so it also empties on the next launch; this
+  /// lets the user reset it without restarting — for a clean reproduction
+  /// before exporting.
+  Future<void> clearCapturedLogs() => LogCaptureService().clearAllLogs();
+
   /// Environment diagnostics for the export header: network connectivity,
   /// text scale, active accessibility features, app uptime, device memory
   /// tier, and cache usage.

@@ -4554,6 +4554,21 @@ class AppLocalizationsNl extends AppLocalizations {
       'Exporteer logs naar bestand om handmatig te versturen';
 
   @override
+  String get supportClearLogs => 'Clear Logs';
+
+  @override
+  String get supportClearLogsSubtitle => 'Wipe captured logs and start fresh';
+
+  @override
+  String get supportClearLogsConfirmTitle => 'Clear captured logs?';
+
+  @override
+  String get supportClearLogsConfirmButton => 'Clear';
+
+  @override
+  String get supportLogsCleared => 'Logs cleared';
+
+  @override
   String get supportFaq => 'Veelgestelde vragen';
 
   @override

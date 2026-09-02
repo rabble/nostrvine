@@ -2821,6 +2821,20 @@
   "supportRequestFeatureSubtitle": "Suggest an improvement or new feature",
   "supportSaveLogs": "Save Logs",
   "supportSaveLogsSubtitle": "Export logs to file for manual sending",
+  "supportClearLogs": "Clear Logs",
+  "supportClearLogsSubtitle": "Wipe captured logs and start fresh",
+  "supportClearLogsConfirmTitle": "Clear captured logs?",
+  "@supportClearLogsConfirmTitle": {
+    "description": "Title of the confirmation sheet shown before clearing the in-memory log buffer."
+  },
+  "supportClearLogsConfirmButton": "Clear",
+  "@supportClearLogsConfirmButton": {
+    "description": "Confirm button on the clear-logs confirmation sheet, under the title 'Clear captured logs?'."
+  },
+  "supportLogsCleared": "Logs cleared",
+  "@supportLogsCleared": {
+    "description": "Snackbar shown after the in-memory log buffer is cleared."
+  },
   "supportFaq": "FAQ",
   "supportFaqSubtitle": "Common questions & answers",
   "supportFamily": "Divine Family",

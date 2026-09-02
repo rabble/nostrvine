@@ -4503,6 +4503,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportSaveLogsSubtitle => 'Xuất nhật ký ra tệp để gửi thủ công';
 
   @override
+  String get supportClearLogs => 'Clear Logs';
+
+  @override
+  String get supportClearLogsSubtitle => 'Wipe captured logs and start fresh';
+
+  @override
+  String get supportClearLogsConfirmTitle => 'Clear captured logs?';
+
+  @override
+  String get supportClearLogsConfirmButton => 'Clear';
+
+  @override
+  String get supportLogsCleared => 'Logs cleared';
+
+  @override
   String get supportFaq => 'Câu hỏi thường gặp';
 
   @override
