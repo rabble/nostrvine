@@ -822,7 +822,7 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           Text(
             context.l10n.reportDetailsImageNotAttached,
             style: VineTheme.labelSmallFont(
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
           ),
       ],

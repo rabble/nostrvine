@@ -2625,13 +2625,14 @@ void main() {
   });
 
   group('$ReportContentDialog image insertion (#8210)', () {
-    Widget buildSubject() => ProviderScope(
+    Widget buildSubject({ThemeData? theme}) => ProviderScope(
       overrides: [
         contentReportingServiceProvider.overrideWith(
           (ref) async => mockReportingService,
         ),
       ],
       child: MaterialApp(
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ReportContentDialog(video: testVideo)),
@@ -2669,9 +2670,12 @@ void main() {
       );
     }
 
-    Future<void> openDetailsField(WidgetTester tester) async {
+    Future<void> openDetailsField(
+      WidgetTester tester, {
+      ThemeData? theme,
+    }) async {
       await setLargeSurface(tester);
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(theme: theme));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.reportReasonOther));
       await tester.pumpAndSettle();
@@ -2769,5 +2773,29 @@ void main() {
 
       expect(find.text(l10n.reportDetailsImageNotAttached), findsNothing);
     });
+
+    testWidgets(
+      'paints the not-attached notice in the light palette so a light-mode '
+      'reporter can actually read it',
+      (tester) async {
+        await openDetailsField(tester, theme: VineTheme.lightTheme);
+
+        await commitKeyboardImage(tester);
+        await tester.pumpAndSettle();
+
+        final notice = tester.widget<Text>(
+          find.text(l10n.reportDetailsImageNotAttached),
+        );
+        expect(
+          notice.style?.color,
+          VineTheme.lightColors.onSurfaceVariant,
+          reason:
+              'The notice is the whole point of the fix. Painted with the '
+              'static dark constant it composites to white-on-white on the '
+              'light sheet, so a light-mode reporter sees the same silent '
+              'drop #8210 set out to end.',
+        );
+      },
+    );
   });
 }
