@@ -254,7 +254,6 @@ List<RouteBase> settingsRoutes(Ref ref) {
     GoRoute(
       path: DmInboxTabsPrototypeScreen.path,
       name: DmInboxTabsPrototypeScreen.routeName,
-      parentNavigatorKey: NavigatorKeys.root,
       builder: (_, _) => const DmInboxTabsPrototypeScreen(),
     ),
     GoRoute(
