@@ -1,5 +1,5 @@
-// ABOUTME: Proves what decides a conversation's dm_protocol latch, and why a
-// ABOUTME: dual-sent thread cannot escape it — the blast radius behind #8262.
+// ABOUTME: Proves what decides a conversation's dm_protocol latch. Twin
+// ABOUTME: clearing lives in dm_protocol_unlatch_test.dart (#8499).
 
 import 'dart:async';
 

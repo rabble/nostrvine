@@ -210,8 +210,7 @@ void main() {
       () async {
         // The branch that claims the twin is an `else`: it catches a peer's
         // rumor AND a self-authored 1:1 rumor with no send batch token. Without
-        // the `!isSentByMe` gate this case would clear the latch on our own
-        // capability and cut a genuine legacy peer off from their only copy.
+        // the `!isSentByMe` gate this path would clear on our own self-wrap.
         await seedLatchedThreadWithKind4(
           id: 'd' * 64,
           sender: _owner,
