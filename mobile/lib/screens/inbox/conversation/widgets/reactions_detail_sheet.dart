@@ -33,6 +33,7 @@ abstract class ReactionsDetailSheet {
     required String messageAuthorPubkey,
     required String ownerPubkey,
     Set<String> blockedPubkeys = const <String>{},
+    bool removalEnabled = true,
   }) {
     return VineBottomSheet.show<void>(
       context: context,
@@ -54,6 +55,7 @@ abstract class ReactionsDetailSheet {
         messageAuthorPubkey: messageAuthorPubkey,
         ownerPubkey: ownerPubkey,
         blockedPubkeys: blockedPubkeys,
+        removalEnabled: removalEnabled,
       ),
     );
   }
@@ -67,6 +69,7 @@ class _ReactionsDetailBody extends StatelessWidget {
     required this.messageAuthorPubkey,
     required this.ownerPubkey,
     required this.blockedPubkeys,
+    required this.removalEnabled,
   });
 
   final ScrollController scrollController;
@@ -75,6 +78,10 @@ class _ReactionsDetailBody extends StatelessWidget {
   final String messageAuthorPubkey;
   final String ownerPubkey;
   final Set<String> blockedPubkeys;
+
+  /// Whether an own reaction may be retracted from here. See
+  /// [ReactionsRow.removalEnabled].
+  final bool removalEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +121,7 @@ class _ReactionsDetailBody extends StatelessWidget {
               isOwn: reaction.reactorPubkey == ownerPubkey,
               conversationId: conversationId,
               messageAuthorPubkey: messageAuthorPubkey,
+              removalEnabled: removalEnabled,
             );
           },
         );
@@ -128,10 +136,15 @@ class _ReactorRow extends ConsumerWidget {
     required this.isOwn,
     required this.conversationId,
     required this.messageAuthorPubkey,
+    required this.removalEnabled,
   });
 
   final DmReaction reaction;
   final bool isOwn;
+
+  /// Whether this row's own-reaction retraction is offered. See
+  /// [ReactionsRow.removalEnabled].
+  final bool removalEnabled;
   final String conversationId;
   final String messageAuthorPubkey;
 
@@ -171,21 +184,31 @@ class _ReactorRow extends ConsumerWidget {
     final isFailed = reaction.publishStatus == DmReactionPublishStatus.failed;
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
 
-    final label = isOwn
-        ? switch (reaction.publishStatus) {
-            DmReactionPublishStatus.pending =>
-              context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
-            DmReactionPublishStatus.failed =>
-              context.l10n.dmReactionChipFailedA11yLabel,
-            _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
-          }
-        : context.l10n.dmReactionChipOtherA11yLabel(
-            isIdentityResolving ? context.l10n.commonLoading : name,
-            reaction.emoji,
-          );
+    final canRetract = isOwn && removalEnabled;
 
+    // The pending/failed labels announce a spinner or "double tap to retry"
+    // that only render while the row is retractable. On a closed thread the
+    // trailing collapses to a bare emoji, so an own reaction keeps the plain
+    // descriptive label rather than promising an action wired to nothing.
+    final String label;
+    if (!isOwn) {
+      label = context.l10n.dmReactionChipOtherA11yLabel(
+        isIdentityResolving ? context.l10n.commonLoading : name,
+        reaction.emoji,
+      );
+    } else if (!canRetract) {
+      label = context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji);
+    } else {
+      label = switch (reaction.publishStatus) {
+        DmReactionPublishStatus.pending =>
+          context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
+        DmReactionPublishStatus.failed =>
+          context.l10n.dmReactionChipFailedA11yLabel,
+        _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
+      };
+    }
     return Semantics(
-      button: isOwn && !isPending,
+      button: canRetract && !isPending,
       label: label,
       child: Material(
         type: MaterialType.transparency,
@@ -223,11 +246,11 @@ class _ReactorRow extends ConsumerWidget {
           ),
           trailing: _Trailing(
             emoji: reaction.emoji,
-            isOwn: isOwn,
+            showAction: canRetract,
             isFailed: isFailed,
             isPending: isPending,
           ),
-          onTap: (isOwn && !isPending)
+          onTap: (canRetract && !isPending)
               ? () => _onOwnTap(context, isFailed: isFailed)
               : null,
         ),
@@ -268,13 +291,16 @@ class _ReactorRow extends ConsumerWidget {
 class _Trailing extends StatelessWidget {
   const _Trailing({
     required this.emoji,
-    required this.isOwn,
+    required this.showAction,
     required this.isFailed,
     required this.isPending,
   });
 
   final String emoji;
-  final bool isOwn;
+
+  /// Whether to render the trailing Remove/Retry affordance. False for another
+  /// reactor's row, and for the viewer's own on a closed thread.
+  final bool showAction;
   final bool isFailed;
   final bool isPending;
 
@@ -286,7 +312,7 @@ class _Trailing extends StatelessWidget {
       emoji,
       style: const TextStyle(fontSize: 18),
     );
-    if (!isOwn) return emojiText;
+    if (!showAction) return emojiText;
 
     final Widget action;
     if (isPending) {
