@@ -797,9 +797,11 @@ class DmRepository {
 
   /// Whether the repository has been initialized with auth credentials.
   ///
-  /// Read-only operations (watchConversations, watchMessages, etc.) work
-  /// regardless of initialization. Write operations (send) and the relay
-  /// subscription require initialization.
+  /// Write operations (send) and the relay subscription require this. It is
+  /// strictly stronger than "an owner is known", because it also needs a
+  /// signer — the owner-scoped reads and writes ([watchMessages],
+  /// [getConversation], [markConversationAsRead], …) gate on
+  /// [_ownerPubkey] instead, so they still serve a signer-less identity.
   bool get isInitialized => _signer != null && _userPubkey.isNotEmpty;
 
   /// Set auth credentials on the repository.
@@ -6707,12 +6709,16 @@ class DmRepository {
 
   /// Get a single conversation by ID.
   ///
-  /// Returns `null` if no conversation with the given ID exists.
+  /// Returns `null` if no conversation with the given ID exists, or if no
+  /// owner is known yet — see [watchOutgoing] for why an unknown owner reads
+  /// as nothing rather than as everything.
   Future<DmConversation?> getConversation(String conversationId) async {
+    final owner = _ownerPubkey;
+    if (owner == null) return null;
     await _awaitInitialConversationMaintenance();
     final row = await _conversationsDao.getConversation(
       conversationId,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     return row == null ? null : _conversationFromRow(row);
   }
@@ -6918,23 +6924,28 @@ class DmRepository {
   /// Advances the conversation's read cursor (see
   /// [ConversationsDao.markAsRead]) and schedules a debounced cross-device
   /// read-state marker publish (#4977).
+  /// No-op when no owner is known: [ConversationsDao.markAsRead] drops its
+  /// owner clause entirely for a null owner, leaving a bare
+  /// `UPDATE ... WHERE id = ?` that would advance any account's cursor.
   Future<void> markConversationAsRead(String conversationId) async {
-    await _conversationsDao.markAsRead(
-      conversationId,
-      ownerPubkey: _ownerPubkey,
-    );
+    final owner = _ownerPubkey;
+    if (owner == null) return;
+    await _conversationsDao.markAsRead(conversationId, ownerPubkey: owner);
     _scheduleReadMarkerPublish();
   }
 
   /// Mark multiple conversations as read in a single batch.
   ///
-  /// No-op when [conversationIds] is empty. Advances each cursor and schedules
-  /// a single debounced read-state marker publish (#4977).
+  /// No-op when [conversationIds] is empty, or when no owner is known — see
+  /// [markConversationAsRead]. Advances each cursor and schedules a single
+  /// debounced read-state marker publish (#4977).
   Future<void> markConversationsAsRead(List<String> conversationIds) async {
     if (conversationIds.isEmpty) return;
+    final owner = _ownerPubkey;
+    if (owner == null) return;
     await _conversationsDao.markMultipleAsRead(
       conversationIds,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     _scheduleReadMarkerPublish();
   }
@@ -7275,10 +7286,14 @@ class DmRepository {
   }
 
   /// Count the total number of messages in a conversation.
-  Future<int> countMessagesInConversation(String conversationId) {
+  ///
+  /// Returns `0` when no owner is known — see [watchOutgoing].
+  Future<int> countMessagesInConversation(String conversationId) async {
+    final owner = _ownerPubkey;
+    if (owner == null) return 0;
     return _directMessagesDao.countMessages(
       conversationId,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
   }
 
@@ -7287,9 +7302,18 @@ class DmRepository {
   // -------------------------------------------------------------------------
 
   /// Watch messages in a conversation (reactive stream).
+  ///
+  /// Emits a single empty list when no owner is known — see [watchOutgoing].
+  /// It emits rather than staying silent so a consumer combining this with
+  /// another stream still ticks; `ConversationBloc` holds its own loading
+  /// state over that window rather than rendering an empty thread.
   Stream<List<DmMessage>> watchMessages(String conversationId) {
+    final owner = _ownerPubkey;
+    if (owner == null) {
+      return Stream<List<DmMessage>>.value(const []);
+    }
     return _directMessagesDao
-        .watchMessagesForConversation(conversationId, ownerPubkey: _ownerPubkey)
+        .watchMessagesForConversation(conversationId, ownerPubkey: owner)
         .map((rows) => rows.map(_messageFromRow).toList());
   }
 
@@ -7339,14 +7363,18 @@ class DmRepository {
   }
 
   /// Get messages in a conversation.
+  ///
+  /// Returns `[]` when no owner is known — see [watchOutgoing].
   Future<List<DmMessage>> getMessages(
     String conversationId, {
     int? limit,
   }) async {
+    final owner = _ownerPubkey;
+    if (owner == null) return const [];
     final rows = await _directMessagesDao.getMessagesForConversation(
       conversationId,
       limit: limit,
-      ownerPubkey: _ownerPubkey,
+      ownerPubkey: owner,
     );
     return rows.map(_messageFromRow).toList();
   }

@@ -8999,6 +8999,23 @@ void main() {
     });
 
     group('getConversation', () {
+      test('returns null when uninitialized, not a stray row', () async {
+        // #8187: an uninitialized repository passes a null owner to the DAO,
+        // which reads it as `WHERE true` — every row, every account.
+        // Assert the DAO is never reached, not just that the result is
+        // empty: the shared stubs match `ownerPubkey: any(named: ...)`,
+        // and `any()` matches null too.
+        final repository = createRepository(userPubkey: '');
+
+        expect(await repository.getConversation('any-conv'), isNull);
+        verifyNever(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('returns $DmConversation when conversation exists', () async {
         final participants = [_validPubkeyA, _validPubkeyB]..sort();
         final convId = DmRepository.computeConversationId(participants);
@@ -9046,6 +9063,23 @@ void main() {
     });
 
     group('watchMessages', () {
+      test('emits an empty list when uninitialized', () async {
+        // #8187: an uninitialized repository passes a null owner to the DAO,
+        // which reads it as `WHERE true` — every row, every account.
+        // Assert the DAO is never reached, not just that the result is
+        // empty: the shared stubs match `ownerPubkey: any(named: ...)`,
+        // and `any()` matches null too.
+        final repository = createRepository(userPubkey: '');
+
+        expect(await repository.watchMessages('any-conv').first, isEmpty);
+        verifyNever(
+          () => mockDirectMessagesDao.watchMessagesForConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('maps $DirectMessageRow to $DmMessage', () async {
         final convId = DmRepository.computeConversationId(
           [_validPubkeyA, _validPubkeyB],
@@ -9132,6 +9166,22 @@ void main() {
     });
 
     group('markConversationAsRead', () {
+      test('is a no-op when uninitialized', () async {
+        // #8187: `ConversationsDao.markAsRead` drops its owner clause entirely
+        // for a null owner, leaving a bare `UPDATE ... WHERE id = ?` that would
+        // advance whichever account owns that conversation id.
+        final repository = createRepository(userPubkey: '');
+
+        await repository.markConversationAsRead('any-conv');
+
+        verifyNever(
+          () => mockConversationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('delegates to $ConversationsDao', () async {
         const convId = 'some-conversation-id';
         when(
@@ -10024,6 +10074,20 @@ void main() {
     });
 
     group('markConversationsAsRead', () {
+      test('is a no-op when uninitialized', () async {
+        // #8187: same unscoped `UPDATE` as the single-conversation write.
+        final repository = createRepository(userPubkey: '');
+
+        await repository.markConversationsAsRead(['a', 'b']);
+
+        verifyNever(
+          () => mockConversationsDao.markMultipleAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('delegates to conversationsDao.markMultipleAsRead', () async {
         const convIdA =
             'aabb00112233445566778899aabbccddeeff0011223344556677889900aabb00';
@@ -10051,6 +10115,23 @@ void main() {
     });
 
     group('countMessagesInConversation', () {
+      test('returns 0 when uninitialized, not a stray count', () async {
+        // #8187: an uninitialized repository passes a null owner to the DAO,
+        // which reads it as `WHERE true` — every row, every account.
+        // Assert the DAO is never reached, not just that the result is
+        // empty: the shared stubs match `ownerPubkey: any(named: ...)`,
+        // and `any()` matches null too.
+        final repository = createRepository(userPubkey: '');
+
+        expect(await repository.countMessagesInConversation('any-conv'), 0);
+        verifyNever(
+          () => mockDirectMessagesDao.countMessages(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('delegates to directMessagesDao.countMessages', () async {
         const convId =
             'aabb00112233445566778899aabbccddeeff0011223344556677889900aabb00';
@@ -15216,6 +15297,24 @@ void main() {
     });
 
     group('getMessages', () {
+      test('returns an empty list when uninitialized', () async {
+        // #8187: an uninitialized repository passes a null owner to the DAO,
+        // which reads it as `WHERE true` — every row, every account.
+        // Assert the DAO is never reached, not just that the result is
+        // empty: the shared stubs match `ownerPubkey: any(named: ...)`,
+        // and `any()` matches null too.
+        final repository = createRepository(userPubkey: '');
+
+        expect(await repository.getMessages('any-conv'), isEmpty);
+        verifyNever(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            any(),
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('returns mapped $DmMessage list from DAO', () async {
         final participants = [_validPubkeyA, _validPubkeyB]..sort();
         final convId = DmRepository.computeConversationId(participants);
