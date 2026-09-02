@@ -113,6 +113,9 @@ void main() {
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
       ).thenAnswer((_) async {});
+      // A credentialed repository is the ordinary fixture; the owner-unknown
+      // window has its own group below.
+      when(() => mockDmRepository.userPubkey).thenReturn(senderPubkey);
     });
 
     ConversationBloc buildBloc() => ConversationBloc(
@@ -137,6 +140,28 @@ void main() {
     });
 
     group('ConversationStarted', () {
+      blocTest<ConversationBloc, ConversationState>(
+        'stays loading while the repository owner is unknown, rather than '
+        'reporting the thread as empty',
+        setUp: () {
+          // #8187: `dmRepositoryProvider` serves an uncredentialed repository
+          // for the whole `identityKnown` phase of an account switch, where
+          // the owner-scoped reads return nothing. Emitting `loaded` there
+          // would render the "new conversation" card over a thread that has
+          // history.
+          when(() => mockDmRepository.userPubkey).thenReturn('');
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ConversationStarted()),
+        expect: () => [
+          const ConversationState(status: ConversationStatus.loading),
+        ],
+        verify: (_) {
+          verifyNever(() => mockDmRepository.watchMessages(any()));
+          verifyNever(() => mockDmRepository.markConversationAsRead(any()));
+        },
+      );
+
       blocTest<ConversationBloc, ConversationState>(
         'emits [loading, loaded] when messages stream emits successfully',
         setUp: () {

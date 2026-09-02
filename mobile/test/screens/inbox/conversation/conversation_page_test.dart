@@ -111,6 +111,14 @@ void main() {
     });
 
     group('renders', () {
+      // Only these tests pump the page and build a ConversationBloc, which
+      // holds its loading state while the repository owner is unknown
+      // (#8187). Declared here rather than in the shared setUp so the
+      // dependency sits beside the tests that have it.
+      setUp(() {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+      });
+
       testWidgets('renders $ConversationView', (tester) async {
         await tester.pumpWidget(
           testMaterialApp(

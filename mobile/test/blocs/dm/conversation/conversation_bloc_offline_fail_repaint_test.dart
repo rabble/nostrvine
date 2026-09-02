@@ -52,6 +52,9 @@ void main() {
     ).thenAnswer((_) async {});
     // Opening a conversation arms the one-time history drain.
     when(() => repo.backfillHistoryIfNeeded()).thenAnswer((_) async {});
+    // A credentialed repository: the bloc holds its loading state while the
+    // owner is unknown (#8187), which is not the scenario under test here.
+    when(() => repo.userPubkey).thenReturn(ownerPubkey);
     // Persisted-message stream stays empty and stable; the outgoing queue
     // drives every tick — exactly the open-conversation scenario in the bug.
     when(

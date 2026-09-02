@@ -77,6 +77,10 @@ void main() {
       // (ConversationStarted) and marks the conversation as read.
       // Stub both mocks so the bloc can run without throwing.
       for (final repo in [mockRepoA, mockRepoB]) {
+        // Both stand in for credentialed repositories: the bloc holds its
+        // loading state while the owner is unknown (#8187), which would
+        // otherwise mask the re-keying this file exists to pin.
+        when(() => repo.userPubkey).thenReturn(testPubkey);
         when(() => repo.markConversationAsRead(any())).thenAnswer((_) async {});
         when(repo.backfillHistoryIfNeeded).thenAnswer((_) async {});
         when(
@@ -291,6 +295,7 @@ void main() {
       mockResponseSvcA = _MockCollaboratorResponseService();
       mockResponseSvcB = _MockCollaboratorResponseService();
 
+      when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
       ).thenAnswer((_) async {});
