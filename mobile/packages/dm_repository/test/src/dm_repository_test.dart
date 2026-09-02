@@ -1526,7 +1526,7 @@ void main() {
 
         // Drain pending microtasks so an unawaited `_sendNip04Message`
         // — the only way the fallback can fire when `skipNip04Fallback`
-        // leaks — has the chance to call `publishEvent` before we
+        // leaks — has the chance to call `publishEventAwaitOk` before we
         // assert it never did. `pumpEventQueue` (default 20 ticks) is
         // the canonical drain in flutter_test.
         await pumpEventQueue();
@@ -12527,9 +12527,6 @@ void main() {
       test(
         'skips NIP-04 fallback when conversation is known NIP-17',
         () async {
-          final participants = [_validPubkeyA, _validPubkeyB]..sort();
-          final convId = DmRepository.computeConversationId(participants);
-
           stubSendRumor(
             (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
@@ -12539,21 +12536,48 @@ void main() {
           );
           stubDaoInserts();
 
-          // Return an existing conversation with dmProtocol: 'nip17'
+          // Production reads `getConversation(id, ownerPubkey: ...)`. A stub
+          // without `ownerPubkey` never matches, so this used to close the
+          // gate by MissingStubError (or a parent null row) rather than by
+          // protocol — and `verifyNever(publishEvent)` was vacuously true
+          // after the leg moved to `publishEventAwaitOk`.
           when(
-            () => mockConversationsDao.getConversation(convId),
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer(
             (_) async => ConversationRow(
-              id: convId,
-              participantPubkeys: jsonEncode(participants),
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
               isGroup: false,
+              createdAt: 1699999000,
               lastMessageContent: 'Previous',
               lastMessageTimestamp: 1700000000,
               lastMessageSenderPubkey: _validPubkeyB,
               isRead: true,
               currentUserHasSent: true,
-              createdAt: 1699999000,
+              ownerPubkey: _validPubkeyA,
               dmProtocol: 'nip17',
+            ),
+          );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
             ),
           );
 
@@ -12564,9 +12588,8 @@ void main() {
             content: 'Hello!',
           );
 
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
-          // NIP-17 was sent
           verify(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
@@ -12579,9 +12602,13 @@ void main() {
             ),
           ).called(1);
 
-          // NIP-04 fallback was NOT sent
           verifyNever(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
           );
         },
       );
