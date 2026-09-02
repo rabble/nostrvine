@@ -11640,6 +11640,55 @@ void main() {
         await repository.stopListening();
       });
 
+      test('persists the reply target from a NIP-04 e tag', () async {
+        final nip04Event = createNip04Event(
+          tags: [
+            ['p', _validPubkeyA],
+            ['e', _giftWrapEventId],
+          ],
+        );
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = createRepository(
+          nip04Decryptor: (_, _) async => 'Decrypted NIP-04 reply',
+        );
+
+        await repository.startListening();
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.insertMessage(
+            id: _rumorEventId,
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: _validPubkeyB,
+            content: 'Decrypted NIP-04 reply',
+            createdAt: 1700000000,
+            giftWrapId: _rumorEventId,
+            messageKind: EventKind.directMessage,
+            replyToId: _giftWrapEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
+            sendBatchId: any(named: 'sendBatchId'),
+          ),
+        ).called(1);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
       test(
         'skips conversation and sync updates when a NIP-04 insert is ignored',
         () async {

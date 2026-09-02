@@ -3156,13 +3156,14 @@ class DmRepository {
         );
       }
 
-      // Extract recipient from p tag
+      // Extract the recipient and optional reply target from their NIP-04
+      // wire tags. Preserve only the first value for each tag type.
       String? recipientPubkey;
+      String? replyToId;
       for (final tag in nip04Event.tags) {
-        if (tag.length >= 2 && tag[0] == 'p') {
-          recipientPubkey = tag[1];
-          break;
-        }
+        if (tag.length < 2) continue;
+        if (tag[0] == 'p') recipientPubkey ??= tag[1];
+        if (tag[0] == 'e') replyToId ??= tag[1];
       }
       // A missing recipient is rejected before decryption, so recording it in
       // the processed ledger would not avoid cryptographic work on replay.
@@ -3282,6 +3283,7 @@ class DmRepository {
           createdAt: persistedCreatedAt,
           giftWrapId: nip04Event.id,
           messageKind: EventKind.directMessage,
+          replyToId: replyToId,
           ownerPubkey: ownerPubkey,
         );
         if (!inserted) return;
@@ -4200,6 +4202,7 @@ class DmRepository {
             _sendNip04Message(
               recipientPubkey: recipientPubkey,
               content: content,
+              replyToId: replyToId,
             ).catchError((Object e) {
               // Thrown failures only — a signer that reports by THROWING
               // (Keycast's RPC layer raises RpcException on 401/403/504, and a
@@ -6517,6 +6520,36 @@ class DmRepository {
   // Send - NIP-04 fallback (Kind 4)
   // -------------------------------------------------------------------------
 
+  /// The event id to put in a kind-4 `e` tag for a reply, or `null` when the
+  /// reply target is not one the legacy recipient can resolve.
+  ///
+  /// Returns the id only for a peer-authored row with the NIP-04 arrival shape,
+  /// so the reference names a public event the recipient has seen. Own NIP-17
+  /// sends before #2654 also have `id == giftWrapId` (#8211/#8216), so sender
+  /// identity is required to keep those private wrap ids out of public tags.
+  Future<String?> _resolveNip04ReplyTag(String? replyToId) async {
+    if (replyToId == null) return null;
+    try {
+      final row = await _directMessagesDao.getMessageById(
+        replyToId,
+        ownerPubkey: _userPubkey,
+      );
+      if (row == null) return null;
+      final arrivedFromPeerOverNip04 =
+          row.senderPubkey != _userPubkey && row.id == row.giftWrapId;
+      return arrivedFromPeerOverNip04 ? row.id : null;
+    } on Object catch (e) {
+      // Best-effort threading must never cost the message. A lookup failure
+      // sends the copy untagged rather than not at all.
+      Log.warning(
+        'Could not resolve a NIP-04 reply tag for $replyToId: $e — sending '
+        'the legacy kind-4 copy unthreaded',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Sends a NIP-04 encrypted direct message (kind 4) for legacy client
   /// interoperability.
   ///
@@ -6525,6 +6558,7 @@ class DmRepository {
   Future<NIP17SendResult> _sendNip04Message({
     required String recipientPubkey,
     required String content,
+    String? replyToId,
   }) async {
     // Reuses NIP17SendResult for simplicity — this is an internal helper.
     //
@@ -6556,8 +6590,12 @@ class DmRepository {
       return const NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
+    // NIP-04 reply tags are public. Resolve through the stored row so only a
+    // kind-4 id already visible to the peer can leave this private store.
+    final replyTag = await _resolveNip04ReplyTag(replyToId);
     final event = Event(_userPubkey, EventKind.directMessage, [
       ['p', recipientPubkey],
+      if (replyTag != null) ['e', replyTag],
     ], ciphertext);
 
     final signed = await signer.signEvent(event);
