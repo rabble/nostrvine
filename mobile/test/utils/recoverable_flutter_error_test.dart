@@ -404,5 +404,72 @@ void main() {
         expect(classifyRecoverableFlutterError(details), isNull);
       },
     );
+
+    // Crashlytics issue 198b20e4 (1.0.20+727, Android) filed this as a FATAL
+    // even though nothing crashed: Flutter catches the decode failure in
+    // MultiFrameImageStreamCompleter._decodeNextFrameAndSchedule, reports it
+    // with silent: true, and returns.
+    test('classifies image decode allocation failures as recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: Exception(
+          'Could not allocate scaled bitmap for image decompression.',
+        ),
+        context: ErrorDescription('resolving an image frame'),
+        library: 'image resource service',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable image decode allocation failure',
+        report: true,
+      ));
+    });
+
+    // The engine hands dart:ui the decoder's own string, which
+    // Codec.getNextFrame rethrows verbatim as Exception(decodeError). Matching
+    // the allocation-failure family rather than the single observed wording is
+    // deliberate, so a differently-worded engine message does not land back on
+    // the fatal path.
+    for (final message in const [
+      'Could not allocate scaled bitmap for image decompression.',
+      'Failed to allocate memory for the decoded frame.',
+      'Unable to allocate bitmap pixels.',
+    ]) {
+      test('treats "$message" as a recoverable allocation failure', () {
+        final details = FlutterErrorDetails(
+          exception: Exception(message),
+          context: ErrorDescription('resolving an image codec'),
+          library: 'image resource service',
+        );
+
+        expect(classifyRecoverableFlutterError(details), (
+          reason: 'Recoverable image decode allocation failure',
+          report: true,
+        ));
+      });
+    }
+
+    test('keeps allocation failures outside the image pipeline fatal', () {
+      // Same wording, different subsystem. An allocation failure is only
+      // recoverable because the image pipeline degrades to a placeholder;
+      // nothing here promises that for anyone else.
+      final details = FlutterErrorDetails(
+        exception: Exception('Could not allocate a buffer.'),
+        library: 'services library',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
+
+    test('keeps non-allocation image resource failures fatal', () {
+      // The branch must gate on the allocation wording, not on the library
+      // alone, or it would swallow every unclassified image-pipeline error.
+      final details = FlutterErrorDetails(
+        exception: Exception('Something else went wrong entirely.'),
+        context: ErrorDescription('resolving an image frame'),
+        library: 'image resource service',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
   });
 }
