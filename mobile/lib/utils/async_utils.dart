@@ -1,100 +1,184 @@
-// ABOUTME: Centralized utilities for proper asynchronous programming patterns
-// ABOUTME: Provides alternatives to Future.delayed and other timing hacks
+// ABOUTME: Lifecycle-owned async coordination primitives for timer-backed waits
+// ABOUTME: AsyncScope owns every timer it creates and cancels them on dispose
 
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart';
+
+import 'package:meta/meta.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Utilities for proper asynchronous programming patterns
-class AsyncUtils {
-  AsyncUtils._(); // Private constructor to prevent instantiation
+/// Thrown when a wait is abandoned because its owning [AsyncScope] was
+/// cancelled or disposed.
+///
+/// This is the signal that the *owner* went away, not that the work failed.
+/// Callers should treat it as "stop, nobody is listening any more" and return
+/// without touching owner state — see [AsyncScope] for why that matters.
+class AsyncCancelledException implements Exception {
+  /// Creates a cancellation signal, optionally naming the abandoned wait.
+  const AsyncCancelledException([this.debugName]);
 
-  /// Wait for a condition to become true with timeout
+  /// The `debugName` of the wait that was abandoned, when one was supplied.
+  final String? debugName;
+
+  @override
+  String toString() => debugName == null
+      ? 'AsyncCancelledException'
+      : 'AsyncCancelledException: $debugName';
+}
+
+/// A cancellation-aware owner for timer-backed waiting.
+///
+/// Every `Timer` this scope creates is tracked, and [cancelAll] / [dispose]
+/// cancels all of them. That ownership is the whole point: a bare
+/// `Timer(delay, completer.complete)` awaited by a caller keeps running after
+/// its owner is gone, and the awaiting code then resumes into a disposed
+/// object. `close()`/`dispose()` do not cancel in-flight work, so the wait has
+/// to be cancellable from the outside (#8457, epic #4339).
+///
+/// This is also why the scope is an object rather than a set of static
+/// helpers: an "explicit owner" is a field somebody disposes, not a call
+/// convention somebody has to remember.
+///
+/// The owner **must** call [dispose] when its lifecycle ends. The scope cannot
+/// infer that its owner went away, and an undisposed scope deliberately keeps
+/// its active waits alive until they settle.
+///
+/// Give the owner a scope and dispose it alongside everything else it owns:
+///
+/// ```dart
+/// class PendingActionService {
+///   final _async = AsyncScope(debugName: 'PendingActionService');
+///
+///   Future<void> _sync(PendingAction action) => _async.retryWithBackoff(
+///         operation: () => _executor(action),
+///         debugName: 'Sync-${action.type}',
+///       );
+///
+///   void dispose() {
+///     _async.dispose(); // pending backoff aborts; no further operation() runs
+///     super.dispose();
+///   }
+/// }
+/// ```
+///
+/// A cancelled wait completes with [AsyncCancelledException] rather than
+/// hanging, so an owner that forgets to handle it gets a loud async error
+/// instead of a silently pinned closure.
+class AsyncScope {
+  /// Creates a scope, optionally named for logging.
+  AsyncScope({String? debugName}) : _debugName = debugName;
+
+  final String? _debugName;
+  final Set<_Registration> _active = <_Registration>{};
+  bool _disposed = false;
+
+  /// Whether [dispose] has been called. A disposed scope starts no new waits.
+  bool get isDisposed => _disposed;
+
+  /// Number of waits currently outstanding. Test-only observability.
+  @visibleForTesting
+  int get pendingWaitCount => _active.length;
+
+  /// Cancels every outstanding wait; the scope stays usable afterwards.
   ///
-  /// Replaces polling loops with Future.delayed()
+  /// Use this for owners whose lifecycle resets rather than ends — a static
+  /// holder with a `reset()`, for example.
+  void cancelAll() {
+    if (_active.isEmpty) return;
+    final registrations = List<_Registration>.of(_active);
+    _active.clear();
+    for (final registration in registrations) {
+      registration.cancel();
+    }
+  }
+
+  /// Cancels every outstanding wait and permanently closes the scope.
   ///
-  /// Example:
-  /// ```dart
-  /// // ❌ OLD PATTERN
-  /// while (!isReady && attempts < 50) {
-  ///   await Future.delayed(Duration(milliseconds: 100));
-  ///   attempts++;
-  /// }
+  /// Call from the owner's `dispose()` / `close()`. Idempotent.
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    cancelAll();
+  }
+
+  /// Waits for [condition] to become true, polling every [checkInterval].
   ///
-  /// // ✅ NEW PATTERN
-  /// await AsyncUtils.waitForCondition(
-  ///   condition: () => isReady,
-  ///   timeout: Duration(seconds: 5),
-  ///   checkInterval: Duration(milliseconds: 100),
-  /// );
-  /// ```
-  static Future<bool> waitForCondition({
+  /// Returns `true` when the condition was met and `false` when [timeout]
+  /// elapsed first. Throws [AsyncCancelledException] if the scope is cancelled
+  /// or disposed while waiting, and rethrows anything [condition] throws.
+  ///
+  /// Both the timeout timer and the polling timer are owned by this scope, so
+  /// cancelling stops the polling immediately instead of letting it run out
+  /// the clock against a disposed owner.
+  Future<bool> waitForCondition({
     required bool Function() condition,
     Duration timeout = const Duration(seconds: 10),
     Duration checkInterval = const Duration(milliseconds: 100),
     String? debugName,
   }) async {
+    _throwIfDisposed(debugName);
+
     final completer = Completer<bool>();
     Timer? timeoutTimer;
     Timer? checkTimer;
 
-    void cleanup() {
+    final registration = _register(() {
       timeoutTimer?.cancel();
       checkTimer?.cancel();
-    }
-
-    // Set up timeout
-    timeoutTimer = Timer(timeout, () {
       if (!completer.isCompleted) {
-        cleanup();
-        if (debugName != null) {
-          Log.debug(
-            '⏰ AsyncUtils.waitForCondition timeout: $debugName',
-            name: 'AsyncUtils',
-            category: LogCategory.system,
-          );
-        }
-        completer.complete(false);
+        completer.completeError(AsyncCancelledException(debugName));
       }
     });
 
-    // Set up condition checking
-    void checkCondition() {
-      try {
-        if (condition()) {
-          if (!completer.isCompleted) {
-            cleanup();
-            if (debugName != null) {
-              Log.info(
-                'AsyncUtils.waitForCondition success: $debugName',
-                name: 'AsyncUtils',
-                category: LogCategory.system,
-              );
-            }
-            completer.complete(true);
-          }
-        }
-      } catch (e) {
-        if (!completer.isCompleted) {
-          cleanup();
-          if (debugName != null) {
-            Log.error(
-              'AsyncUtils.waitForCondition error: $debugName - $e',
-              name: 'AsyncUtils',
-              category: LogCategory.system,
-            );
-          }
-          completer.completeError(e);
-        }
-      }
+    void settle(void Function() complete) {
+      timeoutTimer?.cancel();
+      checkTimer?.cancel();
+      _unregister(registration);
+      complete();
     }
 
-    // Check immediately
-    checkCondition();
+    void checkCondition() {
+      if (completer.isCompleted) return;
+      final bool met;
+      try {
+        met = condition();
+      } catch (error, stackTrace) {
+        if (debugName != null) {
+          Log.error(
+            'AsyncScope.waitForCondition error: $debugName - $error',
+            name: 'AsyncScope',
+            category: LogCategory.system,
+          );
+        }
+        settle(() => completer.completeError(error, stackTrace));
+        return;
+      }
+      if (!met) return;
+      if (debugName != null) {
+        Log.info(
+          'AsyncScope.waitForCondition success: $debugName',
+          name: 'AsyncScope',
+          category: LogCategory.system,
+        );
+      }
+      settle(() => completer.complete(true));
+    }
 
-    // If not completed, start periodic checking
+    timeoutTimer = Timer(timeout, () {
+      if (completer.isCompleted) return;
+      if (debugName != null) {
+        Log.debug(
+          '⏰ AsyncScope.waitForCondition timeout: $debugName',
+          name: 'AsyncScope',
+          category: LogCategory.system,
+        );
+      }
+      settle(() => completer.complete(false));
+    });
+
+    // Check once before arming the poll, so an already-true condition avoids
+    // the periodic timer and immediately cancels the timeout timer above.
+    checkCondition();
     if (!completer.isCompleted) {
       checkTimer = Timer.periodic(checkInterval, (_) => checkCondition());
     }
@@ -102,39 +186,22 @@ class AsyncUtils {
     return completer.future;
   }
 
-  /// Create a completer that can be completed by external events
+  /// Runs [operation], retrying with exponential backoff on failure.
   ///
-  /// Replaces arbitrary delays for operation completion
+  /// Retries up to [maxRetries] times (so up to `maxRetries + 1` invocations),
+  /// waiting `baseDelay * backoffMultiplier^(attempt - 1)` between attempts,
+  /// clamped to [maxDelay]. [retryWhen] can veto a retry for a given error;
+  /// vetoed and exhausted errors are rethrown unchanged.
   ///
-  /// Example:
-  /// ```dart
-  /// // ❌ OLD PATTERN
-  /// await Future.delayed(Duration(milliseconds: 500));
-  ///
-  /// // ✅ NEW PATTERN
-  /// final operationCompleter = AsyncUtils.createCompletionHandler<String>();
-  /// someService.onComplete = operationCompleter.complete;
-  /// final result = await operationCompleter.future.timeout(Duration(seconds: 5));
-  /// ```
-  static Completer<T> createCompletionHandler<T>() => Completer<T>();
-
-  /// Enhanced retry mechanism with exponential backoff
-  ///
-  /// Replaces fixed delays in retry logic
-  ///
-  /// Example:
-  /// ```dart
-  /// // ❌ OLD PATTERN
-  /// await Future.delayed(config.retryDelay);
-  ///
-  /// // ✅ NEW PATTERN
-  /// await AsyncUtils.retryWithBackoff(
-  ///   operation: () => performOperation(),
-  ///   maxRetries: 3,
-  ///   baseDelay: Duration(seconds: 1),
-  /// );
-  /// ```
-  static Future<T> retryWithBackoff<T>({
+  /// Cancellation contract: cancelling the scope aborts the pending backoff
+  /// immediately and guarantees [operation] is **never invoked again**. It does
+  /// **not** abort an invocation already in flight — an arbitrary `Future` is
+  /// not cancellable — so that call is allowed to finish and its result is
+  /// discarded, with [AsyncCancelledException] delivered to the caller instead.
+  /// Discarding a late success is deliberate: running the caller's success path
+  /// against a disposed owner is the failure this exists to prevent, and the
+  /// work is safe to repeat next session.
+  Future<T> retryWithBackoff<T>({
     required Future<T> Function() operation,
     int maxRetries = 3,
     Duration baseDelay = const Duration(seconds: 1),
@@ -144,346 +211,144 @@ class AsyncUtils {
     String? debugName,
     void Function(Duration delay)? onDelayStart,
   }) async {
-    var attempts = 0;
+    _throwIfDisposed(debugName);
 
-    while (attempts <= maxRetries) {
-      try {
-        final result = await operation();
-        if (debugName != null && attempts > 0) {
-          Log.warning(
-            'AsyncUtils.retryWithBackoff succeeded after $attempts retries: $debugName',
-            name: 'AsyncUtils',
-            category: LogCategory.system,
-          );
-        }
-        return result;
-      } catch (error) {
-        attempts++;
+    var cancelled = false;
+    final registration = _register(() => cancelled = true);
 
-        // Check if we should retry this error
-        if (retryWhen != null && !retryWhen(error)) {
-          if (debugName != null) {
-            Log.error(
-              'AsyncUtils.retryWithBackoff not retrying error: $debugName - $error',
-              name: 'AsyncUtils',
+    try {
+      var attempts = 0;
+
+      while (attempts <= maxRetries) {
+        try {
+          final result = await operation();
+          if (cancelled) throw AsyncCancelledException(debugName);
+          if (debugName != null && attempts > 0) {
+            Log.warning(
+              'AsyncScope.retryWithBackoff succeeded after $attempts '
+              'retries: $debugName',
+              name: 'AsyncScope',
               category: LogCategory.system,
             );
           }
+          return result;
+        } on AsyncCancelledException {
           rethrow;
-        }
+        } catch (error) {
+          // The owner went away while this attempt was in flight. Stop here
+          // rather than burning the rest of the ladder against a dead owner.
+          if (cancelled) throw AsyncCancelledException(debugName);
 
-        // If we've exceeded max retries, throw the error
-        if (attempts > maxRetries) {
+          attempts++;
+
+          if (retryWhen != null && !retryWhen(error)) {
+            if (debugName != null) {
+              Log.error(
+                'AsyncScope.retryWithBackoff not retrying error: '
+                '$debugName - $error',
+                name: 'AsyncScope',
+                category: LogCategory.system,
+              );
+            }
+            rethrow;
+          }
+
+          if (attempts > maxRetries) {
+            if (debugName != null) {
+              Log.error(
+                'AsyncScope.retryWithBackoff max retries exceeded: '
+                '$debugName - $error',
+                name: 'AsyncScope',
+                category: LogCategory.system,
+              );
+            }
+            rethrow;
+          }
+
+          final delay = _backoffDelay(
+            attempts: attempts,
+            baseDelay: baseDelay,
+            maxDelay: maxDelay,
+            backoffMultiplier: backoffMultiplier,
+          );
+
           if (debugName != null) {
             Log.error(
-              'AsyncUtils.retryWithBackoff max retries exceeded: $debugName - $error',
-              name: 'AsyncUtils',
+              'AsyncScope.retryWithBackoff attempt $attempts failed, retrying '
+              'in ${delay.inMilliseconds}ms: $debugName',
+              name: 'AsyncScope',
               category: LogCategory.system,
             );
           }
-          rethrow;
+
+          onDelayStart?.call(delay);
+
+          // Owned, cancellable sleep. Throws AsyncCancelledException if the
+          // scope is cancelled before it elapses.
+          await _sleep(delay, debugName);
         }
-
-        // Calculate delay with exponential backoff
-        final delayMs = math
-            .min(
-              baseDelay.inMilliseconds *
-                  math.pow(backoffMultiplier, attempts - 1),
-              maxDelay.inMilliseconds.toDouble(),
-            )
-            .round();
-        final delay = Duration(milliseconds: delayMs);
-
-        if (debugName != null) {
-          Log.error(
-            'AsyncUtils.retryWithBackoff attempt $attempts failed, retrying in ${delay.inMilliseconds}ms: $debugName',
-            name: 'AsyncUtils',
-            category: LogCategory.system,
-          );
-        }
-
-        // Use Timer-based delay instead of Future.delayed
-        final completer = Completer<void>();
-        Timer(delay, completer.complete);
-
-        // Notify test/debug code about delay start
-        onDelayStart?.call(delay);
-
-        await completer.future;
       }
-    }
 
-    throw StateError('Should never reach here');
+      throw StateError('retryWithBackoff loop exited without a result');
+    } finally {
+      _unregister(registration);
+    }
   }
 
-  /// Create a future that completes when a stream emits a specific value
-  ///
-  /// Useful for waiting on state changes
-  ///
-  /// Example:
-  /// ```dart
-  /// await AsyncUtils.waitForStreamValue(
-  ///   stream: controller.stream,
-  ///   predicate: (value) => value.isInitialized,
-  ///   timeout: Duration(seconds: 5),
-  /// );
-  /// ```
-  static Future<T> waitForStreamValue<T>({
-    required Stream<T> stream,
-    required bool Function(T value) predicate,
-    Duration timeout = const Duration(seconds: 10),
-    String? debugName,
-  }) async {
-    final completer = Completer<T>();
-    StreamSubscription<T>? subscription;
-    Timer? timeoutTimer;
+  /// A cancellable sleep owned by this scope.
+  Future<void> _sleep(Duration duration, String? debugName) {
+    final completer = Completer<void>();
+    Timer? timer;
 
-    void cleanup() {
-      subscription?.cancel();
-      timeoutTimer?.cancel();
-    }
-
-    // Set up timeout
-    timeoutTimer = Timer(timeout, () {
+    final registration = _register(() {
+      timer?.cancel();
       if (!completer.isCompleted) {
-        cleanup();
-        if (debugName != null) {
-          Log.debug(
-            '⏰ AsyncUtils.waitForStreamValue timeout: $debugName',
-            name: 'AsyncUtils',
-            category: LogCategory.system,
-          );
-        }
-        completer.completeError(
-          TimeoutException('Stream value timeout', timeout),
-        );
+        completer.completeError(AsyncCancelledException(debugName));
       }
     });
 
-    // Listen to stream
-    subscription = stream.listen(
-      (value) {
-        try {
-          if (predicate(value) && !completer.isCompleted) {
-            cleanup();
-            if (debugName != null) {
-              Log.info(
-                'AsyncUtils.waitForStreamValue success: $debugName',
-                name: 'AsyncUtils',
-                category: LogCategory.system,
-              );
-            }
-            completer.complete(value);
-          }
-        } catch (e) {
-          if (!completer.isCompleted) {
-            cleanup();
-            if (debugName != null) {
-              Log.error(
-                'AsyncUtils.waitForStreamValue predicate error: $debugName - $e',
-                name: 'AsyncUtils',
-                category: LogCategory.system,
-              );
-            }
-            completer.completeError(e);
-          }
-        }
-      },
-      onError: (Object error) {
-        if (!completer.isCompleted) {
-          cleanup();
-          if (debugName != null) {
-            Log.error(
-              'AsyncUtils.waitForStreamValue stream error: $debugName - $error',
-              name: 'AsyncUtils',
-              category: LogCategory.system,
-            );
-          }
-          completer.completeError(error);
-        }
-      },
-    );
+    timer = Timer(duration, () {
+      _unregister(registration);
+      if (!completer.isCompleted) completer.complete();
+    });
 
     return completer.future;
   }
 
-  /// Debounce multiple rapid calls to the same operation
-  ///
-  /// Useful for preventing excessive API calls or operations
-  ///
-  /// Example:
-  /// ```dart
-  /// final debouncedSave = AsyncUtils.debounce(
-  ///   operation: () => saveData(),
-  ///   delay: Duration(milliseconds: 500),
-  /// );
-  ///
-  /// // Multiple rapid calls will be debounced
-  /// debouncedSave();
-  /// debouncedSave();
-  /// debouncedSave(); // Only this one will execute after 500ms
-  /// ```
-  static VoidCallback debounce({
-    required VoidCallback operation,
-    Duration delay = const Duration(milliseconds: 300),
+  static Duration _backoffDelay({
+    required int attempts,
+    required Duration baseDelay,
+    required Duration maxDelay,
+    required double backoffMultiplier,
   }) {
-    Timer? timer;
-
-    return () {
-      timer?.cancel();
-      timer = Timer(delay, operation);
-    };
+    final delayMs = math
+        .min(
+          baseDelay.inMilliseconds * math.pow(backoffMultiplier, attempts - 1),
+          maxDelay.inMilliseconds.toDouble(),
+        )
+        .round();
+    return Duration(milliseconds: delayMs);
   }
 
-  /// Throttle calls to ensure operation doesn't execute more than once per interval
-  ///
-  /// Useful for rate limiting
-  ///
-  /// Example:
-  /// ```dart
-  /// final throttledUpdate = AsyncUtils.throttle(
-  ///   operation: () => updateUI(),
-  ///   interval: Duration(milliseconds: 100),
-  /// );
-  /// ```
-  static VoidCallback throttle({
-    required VoidCallback operation,
-    Duration interval = const Duration(milliseconds: 100),
-  }) {
-    DateTime? lastCall;
-
-    return () {
-      final now = clock.now();
-      if (lastCall == null || now.difference(lastCall!) >= interval) {
-        lastCall = now;
-        operation();
-      }
-    };
+  _Registration _register(void Function() cancel) {
+    final registration = _Registration(cancel);
+    _active.add(registration);
+    return registration;
   }
 
-  /// Execute a list of operations with rate limiting between each
-  ///
-  /// Replaces patterns like:
-  /// ```dart
-  /// for (final item in items) {
-  ///   await processItem(item);
-  ///   await Future.delayed(Duration(milliseconds: 100));
-  /// }
-  /// ```
-  ///
-  /// With:
-  /// ```dart
-  /// await AsyncUtils.executeWithRateLimit(
-  ///   operations: items.map((item) => () => processItem(item)).toList(),
-  ///   minInterval: Duration(milliseconds: 100),
-  /// );
-  /// ```
-  static Future<List<T?>> executeWithRateLimit<T>({
-    required List<Future<T> Function()> operations,
-    required Duration minInterval,
-    bool continueOnError = false,
-    String? debugName,
-  }) async {
-    if (operations.isEmpty) return [];
+  void _unregister(_Registration registration) => _active.remove(registration);
 
-    final results = <T?>[];
-    DateTime? lastExecutionTime;
-
-    for (var i = 0; i < operations.length; i++) {
-      // Calculate delay needed
-      if (lastExecutionTime != null) {
-        final elapsed = clock.now().difference(lastExecutionTime);
-        final remaining = minInterval - elapsed;
-
-        if (!remaining.isNegative && remaining.inMicroseconds > 0) {
-          // Use Timer-based delay instead of Future.delayed
-          final completer = Completer<void>();
-          Timer(remaining, completer.complete);
-          await completer.future;
-        }
-      }
-
-      // Execute operation
-      try {
-        lastExecutionTime = clock.now();
-        final result = await operations[i]();
-        results.add(result);
-
-        if (debugName != null) {
-          Log.debug(
-            'AsyncUtils.executeWithRateLimit: Operation ${i + 1}/${operations.length} completed',
-            name: 'AsyncUtils',
-            category: LogCategory.system,
-          );
-        }
-      } catch (e) {
-        if (continueOnError) {
-          results.add(null);
-          if (debugName != null) {
-            Log.error(
-              'AsyncUtils.executeWithRateLimit: Operation ${i + 1}/${operations.length} failed: $e',
-              name: 'AsyncUtils',
-              category: LogCategory.system,
-            );
-          }
-        } else {
-          rethrow;
-        }
-      }
+  void _throwIfDisposed(String? debugName) {
+    if (_disposed) {
+      throw AsyncCancelledException(debugName ?? _debugName);
     }
-
-    return results;
   }
 }
 
-/// Exception thrown when an async operation times out
-class AsyncTimeoutException extends TimeoutException {
-  AsyncTimeoutException(String super.message, Duration super.duration);
-}
+/// One outstanding wait's cancellation hook, kept identity-unique so a scope
+/// can hold several and remove exactly the one that finished.
+class _Registration {
+  _Registration(this.cancel);
 
-/// Mixin for classes that need proper async initialization patterns
-mixin AsyncInitialization {
-  Completer<void>? _initializationCompleter;
-  bool _isInitialized = false;
-
-  /// Whether the object is initialized
-  bool get isInitialized => _isInitialized;
-
-  /// Future that completes when initialization is done
-  Future<void> get initialized =>
-      _initializationCompleter?.future ?? Future.value();
-
-  /// Start the initialization process
-  @protected
-  void startInitialization() {
-    if (_initializationCompleter != null) return; // Already started
-    _initializationCompleter = Completer<void>();
-  }
-
-  /// Mark initialization as complete
-  @protected
-  void completeInitialization() {
-    if (_isInitialized) return; // Already completed
-    _isInitialized = true;
-    _initializationCompleter?.complete();
-  }
-
-  /// Mark initialization as failed
-  @protected
-  void failInitialization(Object error, [StackTrace? stackTrace]) {
-    _initializationCompleter?.completeError(error, stackTrace);
-  }
-
-  /// Wait for initialization with timeout
-  Future<void> waitForInitialization({
-    Duration timeout = const Duration(seconds: 10),
-  }) async {
-    if (_isInitialized) return;
-
-    if (_initializationCompleter == null) {
-      throw StateError('Initialization not started');
-    }
-
-    await _initializationCompleter!.future.timeout(timeout);
-  }
+  final void Function() cancel;
 }

@@ -61,8 +61,14 @@ class PendingActionService extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool _isSyncing = false;
+  bool _disposed = false;
   StreamSubscription<List<PendingAction>>? _dbSubscription;
   Timer? _syncRetryTimer;
+
+  /// Owns the retry backoff timers so [dispose] can cancel them. Without an
+  /// owner the backoff keeps running after teardown and re-invokes the
+  /// executor against a disposed service (#8457).
+  final AsyncScope _async = AsyncScope(debugName: 'PendingActionService');
 
   /// Executors for different action types
   final Map<PendingActionType, ActionExecutor> _executors = {};
@@ -125,7 +131,7 @@ class PendingActionService extends ChangeNotifier {
       _dbSubscription = _dao.watchPendingActions(_userPubkey).listen((actions) {
         _cachedPendingActions = actions;
         _emitPendingActions();
-        notifyListeners();
+        _notifyIfAlive();
       });
 
       // Listen for connectivity changes
@@ -283,7 +289,7 @@ class PendingActionService extends ChangeNotifier {
       }
 
       startedSync = true;
-      notifyListeners();
+      _notifyIfAlive();
 
       Log.info(
         'Starting sync of ${actions.length} pending actions',
@@ -313,14 +319,31 @@ class PendingActionService extends ChangeNotifier {
         name: 'PendingActionService',
         category: LogCategory.system,
       );
+    } on AsyncCancelledException {
+      // The service was disposed mid-sync. That is teardown, not failure: the
+      // in-flight rows stay `syncing` and initialize()'s resetSyncingToPending
+      // recovers them next session. Absorbing it here keeps a routine sign-out
+      // from surfacing as an error, and keeps it from escaping the
+      // fire-and-forget call in _syncPendingActionsUnawaited.
+      Log.debug(
+        'Sync abandoned - service disposed',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+      );
     } finally {
       _isSyncing = false;
-      if (shouldRetry && _connectionStatusService.isOnline) {
-        _scheduleSyncRetry();
-      } else {
-        _cancelSyncRetry();
+      // dispose() cannot cancel a sync already in flight, so this block can
+      // run after teardown. Rescheduling here would resurrect the timer
+      // dispose() just cancelled, and that retry re-enters this method and
+      // reschedules again — an unbounded loop nothing owns (#8457).
+      if (!_disposed) {
+        if (shouldRetry && _connectionStatusService.isOnline) {
+          _scheduleSyncRetry();
+        } else {
+          _cancelSyncRetry();
+        }
+        if (startedSync) _notifyIfAlive();
       }
-      if (startedSync) notifyListeners();
     }
   }
 
@@ -346,7 +369,7 @@ class PendingActionService extends ChangeNotifier {
     _cachedPendingActions = [];
     _cachedAllActions = [];
     _emitPendingActions();
-    notifyListeners();
+    _notifyIfAlive();
     Log.info(
       'Cleared all pending actions',
       name: 'PendingActionService',
@@ -357,6 +380,11 @@ class PendingActionService extends ChangeNotifier {
   /// Dispose resources
   @override
   void dispose() {
+    _disposed = true;
+    // Cancel the in-flight retry backoff first: it is the one piece of work
+    // that outlives this method otherwise, and its continuation would touch
+    // every resource torn down below.
+    _async.dispose();
     _cancelSyncRetry();
     _connectionStatusService.removeListener(_onConnectivityChange);
     _dbSubscription?.cancel();
@@ -410,6 +438,10 @@ class PendingActionService extends ChangeNotifier {
   }
 
   void _scheduleSyncRetry() {
+    // Keep the lifecycle check at the resource-creation boundary. Most callers
+    // guard before reaching here, but queueAction resumes across DAO awaits and
+    // can race teardown independently of syncPendingActions' finally block.
+    if (_disposed) return;
     if (_syncRetryTimer?.isActive ?? false) return;
     _syncRetryTimer = Timer(_retryConfig.resyncDelay, () {
       _syncRetryTimer = null;
@@ -435,6 +467,16 @@ class PendingActionService extends ChangeNotifier {
     }
   }
 
+  /// `notifyListeners` for call sites that can resume after [dispose].
+  ///
+  /// `ChangeNotifier.notifyListeners` throws `A PendingActionService was used
+  /// after being disposed` once disposed, and every caller here sits after an
+  /// await.
+  void _notifyIfAlive() {
+    if (_disposed) return;
+    notifyListeners();
+  }
+
   void _cancelSyncRetry() {
     _syncRetryTimer?.cancel();
     _syncRetryTimer = null;
@@ -455,7 +497,7 @@ class PendingActionService extends ChangeNotifier {
     await _dao.updateStatus(action.id, PendingActionStatus.syncing);
 
     try {
-      await AsyncUtils.retryWithBackoff(
+      await _async.retryWithBackoff(
         operation: () => executor(action),
         maxRetries: _retryConfig.maxRetries,
         baseDelay: _retryConfig.initialDelay,
@@ -473,6 +515,11 @@ class PendingActionService extends ChangeNotifier {
         name: 'PendingActionService',
         category: LogCategory.system,
       );
+    } on AsyncCancelledException {
+      // Disposed mid-backoff. Leave the row in `syncing`: initialize()'s
+      // resetSyncingToPending already recovers those next session, and writing
+      // a status here would be a DAO write on behalf of a torn-down owner.
+      rethrow;
     } on TerminalSocialActionException catch (e) {
       await _dao.updateStatus(
         action.id,

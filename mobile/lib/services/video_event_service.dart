@@ -4320,6 +4320,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     final eventStream = _nostrService.subscribe([filter]);
     late StreamSubscription subscription;
+    // Held so every path that settles the completer can cancel it. A discarded
+    // timer keeps its closure — and this subscription — alive for the full
+    // timeout even once the query has already answered (#8457).
+    Timer? timeoutTimer;
 
     subscription = eventStream.listen(
       (event) {
@@ -4338,6 +4342,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           if (!completer.isCompleted) {
             completer.complete(foundEvent);
           }
+          timeoutTimer?.cancel();
           subscription.cancel();
         } catch (e) {
           Log.error(
@@ -4356,6 +4361,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         if (!completer.isCompleted) {
           completer.completeError(error as Object);
         }
+        timeoutTimer?.cancel();
         subscription.cancel();
       },
       onDone: () {
@@ -4368,12 +4374,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         if (!completer.isCompleted) {
           completer.complete(foundEvent);
         }
+        timeoutTimer?.cancel();
         subscription.cancel();
       },
     );
 
     // Set timeout for the query - don't wait indefinitely
-    Timer(const Duration(seconds: 10), () {
+    timeoutTimer = Timer(const Duration(seconds: 10), () {
       if (!completer.isCompleted) {
         Log.debug(
           '⏰ Vine ID query timed out after 10 seconds',
