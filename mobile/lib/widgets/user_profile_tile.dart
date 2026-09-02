@@ -103,23 +103,30 @@ class UserProfileTile extends ConsumerWidget {
     // nulling it also skips the NIP-05 verification lookup — there is nothing
     // left to verify a claim against.
     final claimedNip05 = isVanished ? null : profile?.shortDisplayNip05;
+    // The whole second line goes with it. `resolveUserIdentifierLine` falls
+    // through to relationship and follower count when it has no handle, so
+    // dropping only the handle would have swapped "@alice" for "Follows you ·
+    // 5K followers" on a deleted account — quieter than the name, and still
+    // social proof about someone who asked to be erased.
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
               .watch(nip05VerificationProvider(pubkey))
               .whenOrNull(data: (status) => status)
         : null;
 
-    final uniqueIdentifier = resolveUserIdentifierLine(
-      l10n: context.l10n,
-      locale: Localizations.localeOf(context).toLanguageTag(),
-      handle: claimedNip05,
-      verificationStatus: verificationStatus,
-      isOwnProfile: isCurrentUser,
-      relationship:
-          ref.watch(followRelationshipProvider(pubkey)).value ??
-          FollowRelationship.none,
-      followerCount: profile?.restFollowerCount,
-    );
+    final uniqueIdentifier = isVanished
+        ? null
+        : resolveUserIdentifierLine(
+            l10n: context.l10n,
+            locale: Localizations.localeOf(context).toLanguageTag(),
+            handle: claimedNip05,
+            verificationStatus: verificationStatus,
+            isOwnProfile: isCurrentUser,
+            relationship:
+                ref.watch(followRelationshipProvider(pubkey)).value ??
+                FollowRelationship.none,
+            followerCount: profile?.restFollowerCount,
+          );
 
     return Semantics(
       identifier: 'user_profile_tile_$pubkey',

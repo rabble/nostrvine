@@ -5,8 +5,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/follow_relationship_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -38,6 +40,7 @@ void main() {
     WidgetTester tester, {
     required bool isVanished,
     UserProfile? profile,
+    FollowRelationship relationship = FollowRelationship.none,
   }) async {
     await tester.pumpWidget(
       testMaterialApp(
@@ -47,6 +50,9 @@ void main() {
           // `.value`, which is null until the source stream's first microtask,
           // and that window outlives the pump.
           profileVanishedProvider(pubkey).overrideWith((ref) => isVanished),
+          followRelationshipProvider(
+            pubkey,
+          ).overrideWith((ref) => Stream.value(relationship)),
           if (profile != null)
             userProfileReactiveProvider(
               pubkey,
@@ -98,6 +104,41 @@ void main() {
         );
 
         expect(find.text('@aeontropy'), findsNothing);
+      });
+
+      testWidgets(
+        "drops the whole second line, not just a vanished account's NIP-05",
+        (tester) async {
+          // `resolveUserIdentifierLine` falls through to relationship and
+          // follower count when it has no handle, so nulling only the handle
+          // swaps "@aeontropy" for social proof about the deleted account
+          // rather than removing the line. The mutual relationship is what
+          // makes that fall-through reachable here.
+          await pumpTile(
+            tester,
+            isVanished: true,
+            profile: profileWith(nip05: '_@aeontropy.divine.video'),
+            relationship: FollowRelationship.mutual,
+          );
+
+          expect(find.text(l10n.socialProofMutual), findsNothing);
+          expect(find.text('@aeontropy'), findsNothing);
+        },
+      );
+
+      testWidgets('keeps the relationship line on a live account', (
+        tester,
+      ) async {
+        // The control: without it the assertion above could pass because the
+        // line never renders, rather than because the vanish branch drops it.
+        await pumpTile(
+          tester,
+          isVanished: false,
+          profile: profileWith(),
+          relationship: FollowRelationship.mutual,
+        );
+
+        expect(find.text(l10n.socialProofMutual), findsOneWidget);
       });
 
       testWidgets("keeps a live account's NIP-05", (tester) async {
