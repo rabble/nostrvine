@@ -329,8 +329,8 @@ void main() {
       );
 
       testWidgets(
-        'counts the incoming account own unread conversations once the '
-        'session reaches nostrReady',
+        'counts the incoming account own unread conversations as soon as the '
+        'identity is known',
         (tester) async {
           await seedUnreadConversation(
             id: 'a-convo',
@@ -354,9 +354,10 @@ void main() {
 
           await switchToAccountB(tester);
 
-          // Not-yet-credentialed window: account A's single unread is gone and
-          // account B's two are not counted yet either.
-          expect(find.text('badge=0'), findsOneWidget);
+          // Identity is enough to scope local storage. Account A's unread is
+          // gone and account B's two are visible without waiting for the
+          // signer/client to become ready.
+          expect(find.text('badge=2'), findsOneWidget);
 
           driveSessionTo(
             NostrSessionReadiness.nostrReady(
@@ -366,6 +367,8 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 250));
 
+          // Full client readiness must preserve the already-correct local
+          // count while it enables relay-backed work.
           expect(find.text('badge=2'), findsOneWidget);
 
           await disposeSession(tester);
