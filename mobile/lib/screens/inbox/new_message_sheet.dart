@@ -5,10 +5,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/bloc/bloc.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -61,9 +64,36 @@ class NewMessageSheet extends StatelessWidget {
         followRepository: followRepository,
         currentUserPubkey: currentUserPubkey,
       )..add(const NewMessageSearchStarted()),
-      child: const _NewMessageSheetView(),
+      child: const _PeerLabelSync(child: _NewMessageSheetView()),
     );
   }
+}
+
+/// Feeds the sheet's [DmPeerLabels] down to the BLoC that matches on them.
+///
+/// The sort and the search filter resolve peer names through [dmPeerName],
+/// which needs already-translated substitutes; only a widget can read them.
+/// Mirrors the inbox's own `_PeerLabelSync`.
+class _PeerLabelSync extends StatefulWidget {
+  const _PeerLabelSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PeerLabelSync> createState() => _PeerLabelSyncState();
+}
+
+class _PeerLabelSyncState extends State<_PeerLabelSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<NewMessageSearchBloc>().add(
+      NewMessageSearchPeerLabelsChanged(dmPeerLabels(context)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _NewMessageSheetView extends StatefulWidget {
@@ -290,14 +320,36 @@ class _UserProfileList extends StatelessWidget {
   }
 }
 
-class _UserTile extends StatelessWidget {
+/// One candidate recipient row.
+///
+/// A send-target picker names its peer through the same chain the inbox rows
+/// use, or the two disagree about who an account is: this row said
+/// "Aeontropy" over their photo while the thread with the same pubkey said
+/// "Deleted account", and gave Divine's own moderation account a generic
+/// placeholder avatar (#8421).
+class _UserTile extends ConsumerWidget {
   const _UserTile({required this.profile, required this.onTap});
 
   final UserProfile profile;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isVanished = ref.watch(profileVanishedProvider(profile.pubkey));
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: profile.pubkey,
+      isVanished: isVanished,
+      profile: profile,
+    );
+    final avatar = dmPeerAvatar(
+      pubkeyHex: profile.pubkey,
+      isVanished: isVanished,
+      pictureUrl: profile.picture,
+    );
+    // A vanished account's NIP-05 identifies it as surely as its name does.
+    final handle = isVanished ? '' : profile.handle;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -305,10 +357,11 @@ class _UserTile extends StatelessWidget {
         child: Row(
           children: [
             UserAvatar(
-              imageUrl: profile.picture,
-              name: profile.bestDisplayName,
+              imageUrl: avatar.imageUrl,
+              name: displayName,
               placeholderSeed: profile.pubkey,
               size: 40,
+              contentOverride: avatar.contentOverride,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -317,16 +370,16 @@ class _UserTile extends StatelessWidget {
                 spacing: 2,
                 children: [
                   Text(
-                    profile.bestDisplayName,
+                    displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.titleMediumFont(
                       color: context.vineColors.primaryText,
                     ),
                   ),
-                  if (profile.handle.isNotEmpty)
+                  if (handle.isNotEmpty)
                     Text(
-                      profile.handle,
+                      handle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.bodyMediumFont(

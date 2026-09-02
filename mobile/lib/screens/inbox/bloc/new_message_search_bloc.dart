@@ -1,11 +1,16 @@
 // ABOUTME: BLoC for the new message recipient search sheet.
 // ABOUTME: Loads followed contacts and merges them with network search results.
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
+import 'package:openvine/blocs/close_guard.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -31,11 +36,17 @@ class NewMessageSearchBloc
       transformer: debounceRestartable(),
     );
     on<NewMessageSearchCleared>(_onCleared);
+    on<NewMessageSearchPeerLabelsChanged>(_onPeerLabelsChanged);
+    on<_NewMessageSearchVanishedPubkeysChanged>(_onVanishedPubkeysChanged);
+    _subscribeToVanishedPubkeys();
   }
 
   final ProfileRepository _profileRepository;
   final FollowRepository _followRepository;
   final String _currentUserPubkey;
+
+  /// Live mirror of the durable `vanished_profiles` table.
+  StreamSubscription<Set<String>>? _vanishedSubscription;
 
   Future<void> _onStarted(
     NewMessageSearchStarted event,
@@ -48,12 +59,14 @@ class NewMessageSearchBloc
       (pk) => _profileRepository.getCachedProfile(pubkey: pk),
     );
     final results = await Future.wait(futures);
-    final profiles = results.whereType<UserProfile>().toList()
-      ..sort(
-        (a, b) => a.bestDisplayName.toLowerCase().compareTo(
-          b.bestDisplayName.toLowerCase(),
-        ),
-      );
+    // Ordered by the name the row renders, not the raw kind-0 one: a vanished
+    // peer sorts under "Deleted account" and the moderation account under
+    // "Divine Moderation", so the alphabetical run matches what is on screen.
+    final profiles = _sortedByPeerName(
+      results.whereType<UserProfile>().toList(),
+      vanishedPubkeys: state.vanishedPubkeys,
+      labels: state.peerLabels,
+    );
 
     emit(
       state.copyWith(status: NewMessageSearchStatus.idle, contacts: profiles),
@@ -140,17 +153,122 @@ class NewMessageSearchBloc
   /// client may be upper-case hex.
   bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
 
-  /// Filters contacts by display name or NIP-05.
-  static List<UserProfile> _filterContacts(
-    List<UserProfile> contacts,
-    String query,
-  ) {
+  /// Filters contacts by the name the row renders, or by NIP-05.
+  ///
+  /// Matching the raw `bestDisplayName` is the defect #8204 fixed in
+  /// `ConversationListBloc`: it lets a row be found by a string it does not
+  /// show — a vanished peer surfacing under a generated "Adjective Animal N"
+  /// the viewer has never seen — and hides it from the name it does show.
+  List<UserProfile> _filterContacts(List<UserProfile> contacts, String query) {
     final lower = query.toLowerCase();
     return contacts.where((profile) {
-      final name = profile.bestDisplayName.toLowerCase();
+      final name = _peerName(profile).toLowerCase();
       final nip05 = (profile.nip05 ?? '').toLowerCase();
       return name.contains(lower) || nip05.contains(lower);
     }).toList();
+  }
+
+  /// The name `_UserTile` renders for [profile], resolved the same way.
+  ///
+  /// Takes its inputs rather than reading `state`, so an ordering can be
+  /// recomputed against a state that has not been emitted yet.
+  ///
+  /// Falls back to the profile-or-generated value while [labels] is null,
+  /// which is the pre-delivery window only.
+  static String _peerNameFor(
+    UserProfile profile, {
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? labels,
+  }) {
+    if (labels == null) return profile.bestDisplayName;
+    return dmPeerName(
+      pubkeyHex: profile.pubkey,
+      isVanished: vanishedPubkeys.contains(profile.pubkey),
+      isModeration: isModerationAccount(profile.pubkey),
+      labels: labels,
+      profileName: profile.bestDisplayName,
+    );
+  }
+
+  /// [contacts] ordered by the name each row renders.
+  static List<UserProfile> _sortedByPeerName(
+    List<UserProfile> contacts, {
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? labels,
+  }) {
+    String key(UserProfile p) => _peerNameFor(
+      p,
+      vanishedPubkeys: vanishedPubkeys,
+      labels: labels,
+    ).toLowerCase();
+    return contacts.toList()..sort((a, b) => key(a).compareTo(key(b)));
+  }
+
+  /// The name `_UserTile` renders for [profile], against the current state.
+  String _peerName(UserProfile profile) => _peerNameFor(
+    profile,
+    vanishedPubkeys: state.vanishedPubkeys,
+    labels: state.peerLabels,
+  );
+
+  /// (Re)points the vanished-set subscription at the profile repository.
+  void _subscribeToVanishedPubkeys() {
+    _vanishedSubscription = _profileRepository.watchVanishedPubkeys().listen(
+      // A stream callback resumes outside the handler that started it, so the
+      // add has to be guarded — `close()` does not cancel it.
+      (pubkeys) => addIfOpen(_NewMessageSearchVanishedPubkeysChanged(pubkeys)),
+      onError: (Object error, StackTrace stackTrace) {
+        // Drift / IO failures are expected here and are not Reportable.
+        addError(error, stackTrace);
+      },
+    );
+  }
+
+  void _onVanishedPubkeysChanged(
+    _NewMessageSearchVanishedPubkeysChanged event,
+    Emitter<NewMessageSearchState> emit,
+  ) {
+    if (event.pubkeys.length == state.vanishedPubkeys.length &&
+        event.pubkeys.containsAll(state.vanishedPubkeys)) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        vanishedPubkeys: event.pubkeys,
+        // Both inputs land asynchronously — the tombstone stream on its first
+        // Drift emission, the labels on the first didChangeDependencies — and
+        // either can arrive after the contact list is already sorted. Without
+        // this the order stays keyed on the raw names.
+        contacts: _sortedByPeerName(
+          state.contacts,
+          vanishedPubkeys: event.pubkeys,
+          labels: state.peerLabels,
+        ),
+      ),
+    );
+  }
+
+  void _onPeerLabelsChanged(
+    NewMessageSearchPeerLabelsChanged event,
+    Emitter<NewMessageSearchState> emit,
+  ) {
+    if (event.labels == state.peerLabels) return;
+    emit(
+      state.copyWith(
+        peerLabels: event.labels,
+        contacts: _sortedByPeerName(
+          state.contacts,
+          vanishedPubkeys: state.vanishedPubkeys,
+          labels: event.labels,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    unawaited(_vanishedSubscription?.cancel());
+    return super.close();
   }
 
   /// Merges network results with local contacts, deduplicating by pubkey.

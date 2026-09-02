@@ -30,3 +30,30 @@ final class NewMessageSearchQueryChanged extends NewMessageSearchEvent {
 final class NewMessageSearchCleared extends NewMessageSearchEvent {
   const NewMessageSearchCleared();
 }
+
+/// The localized [DmPeerLabels] the sheet resolved from its `BuildContext`.
+///
+/// Pushed down rather than read here, for the same reason
+/// `ConversationListPeerLabelsChanged` exists: the substitutes are ARB
+/// strings, the matcher is a BLoC, and only one of them can see a
+/// `BuildContext`.
+final class NewMessageSearchPeerLabelsChanged extends NewMessageSearchEvent {
+  const NewMessageSearchPeerLabelsChanged(this.labels);
+
+  final DmPeerLabels labels;
+
+  @override
+  List<Object?> get props => [labels];
+}
+
+/// The live vanished set changed. Private: only this BLoC's own subscription
+/// to `ProfileRepository.watchVanishedPubkeys()` raises it.
+final class _NewMessageSearchVanishedPubkeysChanged
+    extends NewMessageSearchEvent {
+  const _NewMessageSearchVanishedPubkeysChanged(this.pubkeys);
+
+  final Set<String> pubkeys;
+
+  @override
+  List<Object?> get props => [pubkeys];
+}
