@@ -46,6 +46,14 @@ class RequestPreviewPage extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
+          // Re-key on the captured auth-flippable repository, as the actions
+          // cubit below already does. `load()` runs once at construction, so
+          // without this the preview keeps whichever repository existed at
+          // first build — including the uncredentialed one the provider
+          // returns for the whole `identityKnown` phase of an account switch.
+          // See .claude/rules/state_management.md ("Bridging Riverpod-provided
+          // dependencies into BlocProvider").
+          key: ValueKey(dmRepository),
           create: (_) => RequestPreviewCubit(
             dmRepository: dmRepository,
             conversationId: conversationId,

@@ -3,8 +3,11 @@
 // ABOUTME: with RequestPreviewCubit and MessageRequestActionsCubit provided.
 
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
@@ -209,6 +212,72 @@ void main() {
 
           expect(find.byType(RequestPreviewView), findsOneWidget);
           verifyNever(() => mockGoRouter.go(any()));
+        },
+      );
+    });
+
+    group('repository identity', () {
+      testWidgets(
+        'rebuilds $RequestPreviewCubit when the DM repository identity '
+        'changes',
+        (tester) async {
+          // `dmRepositoryProvider` returns a brand-new, uncredentialed
+          // repository for the whole `identityKnown` phase of an account
+          // switch, and a credentialed one once the session is ready. The
+          // preview's `load()` runs once at construction, so the provider
+          // must be re-keyed or it keeps reading through the first instance
+          // forever. See #8187.
+          final readyRepository = _MockDmRepository();
+          when(() => readyRepository.userPubkey).thenReturn(testPubkey);
+          when(
+            () => readyRepository.countMessagesInConversation(any()),
+          ).thenAnswer((_) async => 7);
+          when(
+            () =>
+                readyRepository.getMessages(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => readyRepository.getConversation(any()),
+          ).thenAnswer((_) async => null);
+
+          final activeRepository = StateProvider<DmRepository>(
+            (ref) => mockDmRepository,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const RequestPreviewPage(
+                conversationId: conversationId,
+                participantPubkeys: [otherPubkey],
+              ),
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                dmRepositoryProvider.overrideWith(
+                  (ref) => ref.watch(activeRepository),
+                ),
+                goRouterProvider.overrideWithValue(mockGoRouter),
+                isDmRestrictedProvider.overrideWithValue(false),
+                officialAccountsServiceProvider.overrideWithValue(
+                  mockOfficials,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockDmRepository.countMessagesInConversation(conversationId),
+          ).called(1);
+
+          ProviderScope.containerOf(
+            tester.element(find.byType(RequestPreviewView)),
+          ).read(activeRepository.notifier).state = readyRepository;
+          await tester.pump();
+          await tester.pump();
+
+          verify(
+            () => readyRepository.countMessagesInConversation(conversationId),
+          ).called(1);
         },
       );
     });
