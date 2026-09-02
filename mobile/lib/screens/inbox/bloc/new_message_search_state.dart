@@ -28,6 +28,7 @@ final class NewMessageSearchState extends Equatable {
     this.contacts = const [],
     this.query = '',
     this.results = const [],
+    this.networkResults = const [],
     this.vanishedPubkeys = const {},
     this.peerLabels,
   });
@@ -43,6 +44,12 @@ final class NewMessageSearchState extends Equatable {
 
   /// Search results: filtered contacts merged with network results.
   final List<UserProfile> results;
+
+  /// Unfiltered candidates returned by the current network query.
+  ///
+  /// Retained separately so a late tombstone or locale change can re-run the
+  /// rendered-name match instead of leaving [results] keyed on stale labels.
+  final List<UserProfile> networkResults;
 
   /// Pubkeys carrying a NIP-62 vanish tombstone, mirrored live from
   /// `ProfileRepository.watchVanishedPubkeys()`.
@@ -67,6 +74,7 @@ final class NewMessageSearchState extends Equatable {
     List<UserProfile>? contacts,
     String? query,
     List<UserProfile>? results,
+    List<UserProfile>? networkResults,
     Set<String>? vanishedPubkeys,
     DmPeerLabels? peerLabels,
   }) {
@@ -75,6 +83,7 @@ final class NewMessageSearchState extends Equatable {
       contacts: contacts ?? this.contacts,
       query: query ?? this.query,
       results: results ?? this.results,
+      networkResults: networkResults ?? this.networkResults,
       vanishedPubkeys: vanishedPubkeys ?? this.vanishedPubkeys,
       peerLabels: peerLabels ?? this.peerLabels,
     );
@@ -86,6 +95,7 @@ final class NewMessageSearchState extends Equatable {
     contacts,
     query,
     results,
+    networkResults,
     vanishedPubkeys,
     peerLabels,
   ];

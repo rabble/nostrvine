@@ -1,6 +1,8 @@
 // ABOUTME: Tests for NewMessageSearchBloc — contact loading, filtering,
 // ABOUTME: network search, and merge behavior.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -116,10 +118,7 @@ void main() {
         },
         wait: debounceDuration,
         verify: (bloc) {
-          expect(
-            bloc.state.results.map((r) => r.pubkey),
-            ['a' * 64],
-          );
+          expect(bloc.state.results.map((r) => r.pubkey), ['a' * 64]);
         },
       );
 
@@ -646,6 +645,95 @@ void main() {
         build: createBloc,
         act: (bloc) => loadThenSearch(bloc, 'Aeontropy'),
         verify: (bloc) => expect(bloc.state.results, isEmpty),
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'filters network results by the name their row renders',
+        setUp: () {
+          stubVanished({vanishedPubkey});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          when(
+            () => mockProfileRepo.searchUsers(
+              query: 'Aeontropy',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile(vanishedPubkey, 'Aeontropy')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'Aeontropy'),
+        verify: (bloc) => expect(bloc.state.results, isEmpty),
+      );
+
+      test(
+        're-filters an active search when a tombstone arrives later',
+        () async {
+          final vanished = StreamController<Set<String>>();
+          when(
+            mockProfileRepo.watchVanishedPubkeys,
+          ).thenAnswer((_) => vanished.stream);
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+          final bloc = createBloc();
+          addTearDown(() async {
+            await bloc.close();
+            await vanished.close();
+          });
+
+          bloc
+            ..add(const NewMessageSearchPeerLabelsChanged(labels))
+            ..add(const NewMessageSearchStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const NewMessageSearchQueryChanged('Aeontropy'));
+          await Future<void>.delayed(debounceDuration * 2);
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(vanishedPubkey),
+          );
+
+          vanished.add({vanishedPubkey});
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.results, isEmpty);
+        },
+      );
+
+      test(
+        're-filters an active search when localized labels change',
+        () async {
+          stubVanished({vanishedPubkey});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          await loadThenSearch(bloc, 'Removed');
+          expect(bloc.state.results, isEmpty);
+
+          bloc.add(
+            const NewMessageSearchPeerLabelsChanged(
+              DmPeerLabels(
+                deletedAccount: 'Removed account',
+                moderation: 'Divine Moderation',
+                retiredConversationClosed: 'Conversation closed',
+              ),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(vanishedPubkey),
+          );
+        },
       );
 
       blocTest<NewMessageSearchBloc, NewMessageSearchState>(

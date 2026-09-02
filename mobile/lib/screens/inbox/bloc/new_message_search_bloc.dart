@@ -69,7 +69,9 @@ class NewMessageSearchBloc
     );
 
     emit(
-      state.copyWith(status: NewMessageSearchStatus.idle, contacts: profiles),
+      _withRecomputedSearch(
+        state.copyWith(status: NewMessageSearchStatus.idle, contacts: profiles),
+      ),
     );
   }
 
@@ -85,19 +87,20 @@ class NewMessageSearchBloc
           status: NewMessageSearchStatus.idle,
           query: '',
           results: const [],
+          networkResults: const [],
         ),
       );
       return;
     }
 
     // Filter contacts locally for immediate display
-    final filtered = _filterContacts(state.contacts, query);
-
     emit(
-      state.copyWith(
-        status: NewMessageSearchStatus.searching,
-        query: query,
-        results: filtered,
+      _withRecomputedSearch(
+        state.copyWith(
+          status: NewMessageSearchStatus.searching,
+          query: query,
+          networkResults: const [],
+        ),
       ),
     );
 
@@ -114,12 +117,12 @@ class NewMessageSearchBloc
         category: LogCategory.api,
       );
 
-      final merged = _mergeWithLocal(networkResults, filtered);
-
       emit(
-        state.copyWith(
-          status: NewMessageSearchStatus.searchSuccess,
-          results: merged,
+        _withRecomputedSearch(
+          state.copyWith(
+            status: NewMessageSearchStatus.searchSuccess,
+            networkResults: networkResults,
+          ),
         ),
       );
     } on Exception {
@@ -137,6 +140,7 @@ class NewMessageSearchBloc
         status: NewMessageSearchStatus.idle,
         query: '',
         results: const [],
+        networkResults: const [],
       ),
     );
   }
@@ -159,10 +163,19 @@ class NewMessageSearchBloc
   /// `ConversationListBloc`: it lets a row be found by a string it does not
   /// show — a vanished peer surfacing under a generated "Adjective Animal N"
   /// the viewer has never seen — and hides it from the name it does show.
-  List<UserProfile> _filterContacts(List<UserProfile> contacts, String query) {
+  static List<UserProfile> _filterContacts(
+    List<UserProfile> contacts,
+    String query, {
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? labels,
+  }) {
     final lower = query.toLowerCase();
     return contacts.where((profile) {
-      final name = _peerName(profile).toLowerCase();
+      final name = _peerNameFor(
+        profile,
+        vanishedPubkeys: vanishedPubkeys,
+        labels: labels,
+      ).toLowerCase();
       final nip05 = (profile.nip05 ?? '').toLowerCase();
       return name.contains(lower) || nip05.contains(lower);
     }).toList();
@@ -204,12 +217,32 @@ class NewMessageSearchBloc
     return contacts.toList()..sort((a, b) => key(a).compareTo(key(b)));
   }
 
-  /// The name `_UserTile` renders for [profile], against the current state.
-  String _peerName(UserProfile profile) => _peerNameFor(
-    profile,
-    vanishedPubkeys: state.vanishedPubkeys,
-    labels: state.peerLabels,
-  );
+  /// Re-sorts contacts and re-runs the active rendered-name match against all
+  /// candidates. Both naming inputs arrive asynchronously, so every state
+  /// transition that changes either input must pass through here.
+  NewMessageSearchState _withRecomputedSearch(NewMessageSearchState next) {
+    final contacts = _sortedByPeerName(
+      next.contacts,
+      vanishedPubkeys: next.vanishedPubkeys,
+      labels: next.peerLabels,
+    );
+    if (!next.isSearchActive) return next.copyWith(contacts: contacts);
+
+    List<UserProfile> matching(List<UserProfile> candidates) => _filterContacts(
+      candidates,
+      next.query,
+      vanishedPubkeys: next.vanishedPubkeys,
+      labels: next.peerLabels,
+    );
+
+    return next.copyWith(
+      contacts: contacts,
+      results: _mergeWithLocal(
+        matching(next.networkResults),
+        matching(contacts),
+      ),
+    );
+  }
 
   /// (Re)points the vanished-set subscription at the profile repository.
   void _subscribeToVanishedPubkeys() {
@@ -233,16 +266,13 @@ class NewMessageSearchBloc
       return;
     }
     emit(
-      state.copyWith(
-        vanishedPubkeys: event.pubkeys,
-        // Both inputs land asynchronously — the tombstone stream on its first
-        // Drift emission, the labels on the first didChangeDependencies — and
-        // either can arrive after the contact list is already sorted. Without
-        // this the order stays keyed on the raw names.
-        contacts: _sortedByPeerName(
-          state.contacts,
+      _withRecomputedSearch(
+        state.copyWith(
           vanishedPubkeys: event.pubkeys,
-          labels: state.peerLabels,
+          // Both inputs land asynchronously — the tombstone stream on its first
+          // Drift emission, the labels on the first didChangeDependencies — and
+          // either can arrive after the contact list is already sorted. Without
+          // this the order stays keyed on the raw names.
         ),
       ),
     );
@@ -254,12 +284,9 @@ class NewMessageSearchBloc
   ) {
     if (event.labels == state.peerLabels) return;
     emit(
-      state.copyWith(
-        peerLabels: event.labels,
-        contacts: _sortedByPeerName(
-          state.contacts,
-          vanishedPubkeys: state.vanishedPubkeys,
-          labels: event.labels,
+      _withRecomputedSearch(
+        state.copyWith(
+          peerLabels: event.labels,
         ),
       ),
     );
