@@ -750,8 +750,8 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
   void _onContentInserted(KeyboardInsertedContent content) {
     // Reports are text only; there is no attachment path, so a keyboard-
     // inserted image is intentionally dropped and never touches the field or
-    // any report state. Without this handler the framework drops it silently
-    // (#8210). Surface the drop instead so the reporter knows to use words.
+    // any report state (#8210). Android-only: the engine implements
+    // commitContent nowhere else. Surface the drop so the reporter uses words.
     if (!mounted) return;
     if (!_imageInsertionRejected) {
       setState(() => _imageInsertionRejected = true);
@@ -791,9 +791,12 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           textInputAction: TextInputAction.newline,
           textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
-          // The default config advertises the standard image types, so the
-          // keyboard still offers insertion (#8223 keeps the affordance
-          // visible); the handler rejects them honestly, not silently.
+          // Without a configuration Flutter advertises an empty mime-type
+          // list, so Android refuses the insert itself and shows a system
+          // toast that vanishes and never mentions the report. Declaring the
+          // default image types moves that moment into the app, where the
+          // handler can answer it in our own words. #8223 chose not to hide
+          // the keyboard's image button, so it stays live.
           contentInsertionConfiguration: ContentInsertionConfiguration(
             onContentInserted: _onContentInserted,
           ),
