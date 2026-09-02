@@ -13906,6 +13906,184 @@ void main() {
           ),
         );
       });
+
+      group('#8515 an unreadable recipient inbox is not delivery', () {
+        void stubInboxLookup(
+          ({List<Event> events, bool timedOut, bool noRelays}) answer,
+        ) {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => answer);
+        }
+
+        void stubDeletionWrapConfirmed() {
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              selfWrapTargetRelays: any(named: 'selfWrapTargetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (invocation) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey:
+                  invocation.namedArguments[#recipientPubkey] as String,
+            ),
+          );
+        }
+
+        test(
+          'a fallback-pool OK on an unreadable inbox leaves the row pending '
+          'and its stored rumor intact, so the sweep can re-drive it',
+          () async {
+            // The recipient DOES advertise an inbox; our pool just could not
+            // read it. The wrap still lands on the default pool and the relay
+            // still says OK - which is exactly the false positive. Scoring it
+            // sent would ALSO null `deletionRumorJson`, taking the row off
+            // `getRetryableOwnMessageDeletions` for good.
+            stubPendingDeletion();
+            stubInboxLookup(unansweredList(noRelays: true));
+            stubDeletionWrapConfirmed();
+            final repo = createRepository();
+
+            final outcome = await repo.retryMessageDeletion(
+              rumorId: _rumorEventId,
+            );
+
+            expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
+            verifyNever(
+              () => mockDirectMessagesDao.markMessageDeletionSent(
+                _rumorEventId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            );
+          },
+        );
+
+        test(
+          'the wrap is still routed to the default pool - #8515 changes what '
+          'is REPORTED, never where an unreadable-inbox wrap is sent',
+          () async {
+            stubPendingDeletion();
+            stubInboxLookup(unansweredList(timedOut: true));
+            stubDeletionWrapConfirmed();
+            final repo = createRepository();
+
+            await repo.retryMessageDeletion(rumorId: _rumorEventId);
+
+            final captured = verify(
+              () => mockMessageService.sendRumor(
+                rumorEvent: any(named: 'rumorEvent'),
+                recipientPubkey: any(named: 'recipientPubkey'),
+                targetRelays: captureAny(named: 'targetRelays'),
+                selfWrapTargetRelays: any(named: 'selfWrapTargetRelays'),
+                awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              ),
+            ).captured;
+            expect(
+              captured.single,
+              isNull,
+              reason:
+                  'null targetRelays IS the default-pool fallback; '
+                  'reachability is preserved (#570) and only the delivery '
+                  'claim changes',
+            );
+          },
+        );
+
+        test(
+          'a recipient who genuinely advertises NO inbox is still retracted - '
+          'the pool is where they read, so that OK is real delivery',
+          () async {
+            // setUp stubs queryEventsDetailed -> answeredList([]): the relays
+            // answered and there is no kind-10050. Conclusive absence.
+            stubPendingDeletion();
+            stubInboxLookup(answeredList(const <Event>[]));
+            stubDeletionWrapConfirmed();
+            final repo = createRepository();
+
+            final outcome = await repo.retryMessageDeletion(
+              rumorId: _rumorEventId,
+            );
+
+            expect(outcome, equals(DmMessageDeletionOutcome.sent));
+            verify(
+              () => mockDirectMessagesDao.markMessageDeletionSent(
+                _rumorEventId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'one unreadable member holds the whole GROUP retraction pending - '
+          'one row cannot record a partial fan-out',
+          () async {
+            stubPendingDeletion();
+            when(
+              () => mockConversationsDao.getConversation(
+                conversationId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            ).thenAnswer(
+              (_) async => ConversationRow(
+                id: conversationId,
+                participantPubkeys:
+                    '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
+                isGroup: true,
+                createdAt: 1700000000,
+                isRead: true,
+                currentUserHasSent: true,
+              ),
+            );
+            // Readable for B, unreadable for C: the aggregate must follow the
+            // worst member, because settling the row would clear the one
+            // stored rumor both members share.
+            when(
+              () => mockNostrClient.queryEventsDetailed(
+                any(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: any(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+                timeout: any(named: 'timeout'),
+              ),
+            ).thenAnswer((invocation) async {
+              final filters = invocation.positionalArguments.first as List;
+              final authors =
+                  (filters.first as nostr_filter.Filter).authors ?? const [];
+              return authors.contains(_validPubkeyC)
+                  ? unansweredList(noRelays: true)
+                  : answeredList(const <Event>[]);
+            });
+            stubDeletionWrapConfirmed();
+            final repo = createRepository();
+
+            final outcome = await repo.retryMessageDeletion(
+              rumorId: _rumorEventId,
+            );
+
+            expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
+            verifyNever(
+              () => mockDirectMessagesDao.markMessageDeletionSent(
+                _rumorEventId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            );
+          },
+        );
+      });
     });
 
     group('retryableMessageDeletions', () {
