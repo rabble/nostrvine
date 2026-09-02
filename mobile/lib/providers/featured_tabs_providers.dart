@@ -18,12 +18,22 @@ final featuredTabsRepositoryProvider = Provider<FeaturedTabsRepository>((ref) {
   return repository;
 });
 
-/// Whether the current viewer is gated as a protected minor.
+/// Whether age-restricted featured tabs should be gated for the current viewer
+/// (#7675).
 ///
-/// Reuses the #175 content-lock seam rather than the fail-closed DM seam: a
-/// featured tab is ordinary discovery content, so an absent age signal should
-/// not withhold it. Tabs still default to hidden for a known minor unless the
-/// configuration explicitly opts in.
+/// Age-restricted tabs are curated tabs an operator did NOT mark minor-safe, so
+/// this seam takes the fail-CLOSED conditional posture of the #176 DM and #182
+/// key-management surfaces — [isDmRestrictedProvider] — rather than the
+/// fail-OPEN #175 content lock. An unresolved Keycast check therefore hides
+/// age-restricted tabs where a Keycast verdict could plausibly apply (OAuth
+/// accounts, previously-Keycast self-custody), closing the gap where a
+/// non-Keycast minor would otherwise be shown them. Pure self-custody accounts,
+/// which Keycast can never produce a verdict for, stay permissive so adults are
+/// not blocked by an unanswerable check.
+///
+/// The value therefore means "treat as minor-gated for this surface", not
+/// strictly "is a minor" — matching the unknown-is-restricted posture #176/#182
+/// already use.
 final featuredTabViewerIsMinorProvider = Provider<bool>((ref) {
-  return ref.watch(isProtectedMinorProvider);
+  return ref.watch(isDmRestrictedProvider);
 });
