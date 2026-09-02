@@ -18,6 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/user_identifier_line_resolver.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vanished_account_identity.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///
@@ -73,6 +74,10 @@ class UserProfileTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
+    // The picker that feeds the badge screens resolves this; so must the rows
+    // it hands off to, or awarding a badge to a deleted account shows their old
+    // name on the screen that confirms it (#8421 adjacent).
+    final isVanished = ref.watch(profileVanishedProvider(pubkey));
     final authService = ref.watch(authServiceProvider);
     final isCurrentUser = pubkey == authService.currentPublicKeyHex;
     final profileListFeaturesEnabled = ref.watch(
@@ -87,10 +92,17 @@ class UserProfileTile extends ConsumerWidget {
     final showAddToList =
         profileListFeaturesEnabled && curatedListsEnabled && !isCurrentUser;
 
-    final displayName =
-        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+    final displayName = vanishedAccountName(
+      context,
+      isVanished: isVanished,
+      fallbackName:
+          profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
+    );
 
-    final claimedNip05 = profile?.shortDisplayNip05;
+    // Dropped for a vanished account for the same reason as the name, and
+    // nulling it also skips the NIP-05 verification lookup — there is nothing
+    // left to verify a claim against.
+    final claimedNip05 = isVanished ? null : profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
               .watch(nip05VerificationProvider(pubkey))
@@ -122,7 +134,10 @@ class UserProfileTile extends ConsumerWidget {
             children: [
               // Avatar with border (matching video player style)
               UserAvatar(
-                imageUrl: profile?.picture,
+                imageUrl: vanishedAccountPictureUrl(
+                  isVanished: isVanished,
+                  pictureUrl: profile?.picture,
+                ),
                 name: displayName,
                 placeholderSeed: pubkey,
                 size: 48,
