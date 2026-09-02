@@ -4913,6 +4913,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listContinue => 'Doorgaan';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Kon deze lijst niet bijwerken. Probeer het opnieuw.';
 
@@ -5793,6 +5797,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get dmRetiredThreadOpenSupport =>
       'Bericht sturen naar Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Bericht kon niet worden verzonden';

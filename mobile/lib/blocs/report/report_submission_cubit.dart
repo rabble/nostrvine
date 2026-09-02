@@ -85,7 +85,8 @@ class ReportTarget extends Equatable {
 /// submit it makes.
 ///
 /// The DM is the report itself, so a second copy is a second report to
-/// triage (#6610). Only [pending] may dispatch; the other two are terminal.
+/// triage (#6610). Only [pending] may dispatch; every other outcome is
+/// terminal.
 enum ModerationDmOutcome {
   /// Nothing sent yet, or a send failed and left a row to re-drive.
   pending,
@@ -104,6 +105,11 @@ enum ModerationDmOutcome {
   /// retrying just re-hits the same policy, so resubmits keep the caveat and do
   /// not call `sendMessage` again.
   blocked,
+
+  /// The DM was refused before enqueue because its rumor was too large.
+  /// Resubmitting unchanged content cannot succeed and there is no row to
+  /// re-drive, so this is terminal like [blocked].
+  tooLong,
 }
 
 /// The moderation DM's progress across every submit this sheet makes.
@@ -461,7 +467,9 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
     final progress = state.moderationDm;
     if (progress.matchesDelivered(reason, details)) return Future.value(false);
     if (progress.outcome
-        case ModerationDmOutcome.unverifiable || ModerationDmOutcome.blocked) {
+        case ModerationDmOutcome.unverifiable ||
+            ModerationDmOutcome.blocked ||
+            ModerationDmOutcome.tooLong) {
       return Future.value(true);
     }
     return _dispatchModerationDm(reason, reasonTitle, details);
@@ -582,6 +590,9 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
         // A block is terminal: the send gate drops the row and re-driving
         // would only re-hit the same policy.
         NIP17SendFailure(blocked: true) => null,
+        // The size guard also refuses before enqueue. A retry has no row and
+        // unchanged content necessarily hits the same ceiling.
+        NIP17SendFailure(tooLong: true) => null,
         // A hard failure and a soft-unconfirmed both leave the row for the
         // sweep. `sendMessage` reports the row it just parked; a re-drive
         // reports nothing new and keeps the row it was given.
@@ -590,6 +601,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
       final outcome = switch (dmResult) {
         NIP17SendSuccess() => ModerationDmOutcome.delivered,
         NIP17SendFailure(blocked: true) => ModerationDmOutcome.blocked,
+        NIP17SendFailure(tooLong: true) => ModerationDmOutcome.tooLong,
         NIP17SendFailure() => ModerationDmOutcome.pending,
       };
       _update(

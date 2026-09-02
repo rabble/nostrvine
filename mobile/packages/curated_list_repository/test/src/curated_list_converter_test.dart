@@ -706,6 +706,92 @@ void main() {
       );
     });
 
+    group('private item size limit', () {
+      final now = DateTime(2026, 9);
+
+      CuratedList privateListWith(int videoCount) => CuratedList(
+        id: 'my-list',
+        name: 'My List',
+        isPublic: false,
+        videoEventIds: [
+          for (var i = 0; i < videoCount; i++) i.toString().padLeft(64, '0'),
+        ],
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      test('a small private list fits', () {
+        expect(
+          CuratedListConverter.privateItemPayloadFits(privateListWith(3)),
+          isTrue,
+        );
+      });
+
+      test('a private list past the u16 ceiling does not fit', () {
+        // A private list is sealed with ONE NIP-44 encryption, so its plaintext
+        // cannot exceed the u16 maximum (#7331).
+        final tooBig = privateListWith(1000);
+        final plaintextBytes = utf8
+            .encode(jsonEncode(CuratedListConverter.toItemTags(tooBig)))
+            .length;
+
+        expect(plaintextBytes, greaterThan(NIP44V2.maxU16PlaintextSize));
+        expect(CuratedListConverter.privateItemPayloadFits(tooBig), isFalse);
+      });
+
+      test('adding to a full private list would exceed the limit', () {
+        expect(
+          CuratedListConverter.wouldExceedPrivateItemLimit(
+            privateListWith(1000),
+            'a' * 64,
+          ),
+          isTrue,
+        );
+      });
+
+      test('adding to a small private list would not', () {
+        expect(
+          CuratedListConverter.wouldExceedPrivateItemLimit(
+            privateListWith(3),
+            'a' * 64,
+          ),
+          isFalse,
+        );
+      });
+
+      test('a public list is never limited — its items are not sealed', () {
+        final publicList = CuratedList(
+          id: 'my-list',
+          name: 'My List',
+          videoEventIds: [
+            for (var i = 0; i < 1000; i++) i.toString().padLeft(64, '0'),
+          ],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(
+          CuratedListConverter.wouldExceedPrivateItemLimit(
+            publicList,
+            'a' * 64,
+          ),
+          isFalse,
+        );
+      });
+
+      test('re-adding an item already present cannot exceed anything', () {
+        final list = privateListWith(1000);
+
+        expect(
+          CuratedListConverter.wouldExceedPrivateItemLimit(
+            list,
+            list.videoEventIds.first,
+          ),
+          isFalse,
+        );
+      });
+    });
+
     group('extractDTag', () {
       test('returns null when no d-tag is present', () {
         final event = _makeEvent(

@@ -8347,6 +8347,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get listContinue;
 
+  /// Shown when a video cannot be added to a private list because its encrypted payload would exceed the NIP-44 size limit. Retrying cannot succeed, so the copy must not suggest trying again.
+  ///
+  /// In en, this message translates to:
+  /// **'This private list is full. Remove something to add more.'**
+  String get listPrivateFull;
+
   /// No description provided for @listUpdateFailed.
   ///
   /// In en, this message translates to:
@@ -9930,6 +9936,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Message Divine Moderation'**
   String get dmRetiredThreadOpenSupport;
+
+  /// Shown when a DM is refused because the encrypted rumor would exceed the NIP-44 size limit. The message stays in the composer, so the copy asks the user to shorten it rather than warning that it was lost.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is too long to send. Shorten it and try again.'**
+  String get dmSendTooLongMessage;
 
   /// Accessibility announcement text, and the recovery bottom sheet's title, shown in a DM conversation when a send fails (relay error, signer error, network error). The bottom sheet pairs it with `dmSendFailedSubtitle` and the `dmMessageActionRetrySend` / `dmMessageActionCancelSend` actions.
   ///

@@ -2,6 +2,8 @@
 // ABOUTME: Handles NIP-51 kind 30005 parsing including e-tags and
 // ABOUTME: a-tags for addressable video references (NIP-71).
 
+import 'dart:convert';
+
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, NIP04, NIP44V2;
 
@@ -138,7 +140,16 @@ abstract final class CuratedListConverter {
   /// heuristics leaking into production behavior.
   static bool isNip44Payload(String content) {
     try {
-      NIP44V2.decodePayload(content);
+      // Bounded to the u16 ceiling rather than the decrypt-side default: this
+      // is a classifier run over relay-supplied event content, and a private
+      // item payload is itself capped at that size before publishing
+      // (`CuratedListRelayGateway.privateItemPayloadFits`). Without the bound
+      // an oversized event would be base64-decoded here just to answer a
+      // boolean, instead of being rejected by a length comparison (#7331).
+      NIP44V2.decodePayload(
+        content,
+        maxPlaintextSize: NIP44V2.maxU16PlaintextSize,
+      );
       return true;
     } on Object {
       return false;
@@ -213,6 +224,35 @@ abstract final class CuratedListConverter {
     tags.add(['playorder', list.playOrder.value]);
 
     return tags;
+  }
+
+  /// Whether [list]'s private item payload fits what NIP-44 can encrypt.
+  ///
+  /// A private list is sealed with a SINGLE NIP-44 encryption — unlike NIP-17,
+  /// which encrypts twice — and this client writes only the 2-byte u16 length
+  /// prefix, so the sealed plaintext cannot exceed
+  /// [NIP44V2.maxU16PlaintextSize]. Lives beside [toItemTags] because it
+  /// measures exactly what that produces (#7331).
+  static bool privateItemPayloadFits(CuratedList list) {
+    return utf8.encode(jsonEncode(toItemTags(list))).length <=
+        NIP44V2.maxU16PlaintextSize;
+  }
+
+  /// Whether adding [videoEventId] to [list] would push it past
+  /// [privateItemPayloadFits], so the add cannot succeed however often it is
+  /// retried.
+  ///
+  /// Public lists are unsealed and therefore unbounded here.
+  static bool wouldExceedPrivateItemLimit(
+    CuratedList list,
+    String videoEventId,
+  ) {
+    if (list.isPublic || list.videoEventIds.contains(videoEventId)) {
+      return false;
+    }
+    return !privateItemPayloadFits(
+      list.copyWith(videoEventIds: [...list.videoEventIds, videoEventId]),
+    );
   }
 
   /// The video-reference tags for [list].

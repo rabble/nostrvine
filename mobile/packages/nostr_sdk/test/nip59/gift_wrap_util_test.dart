@@ -46,6 +46,41 @@ class _RefusesToSignSigner implements NostrSigner {
   void close() => _delegate.close();
 }
 
+class _ScriptedDecryptSigner implements NostrSigner {
+  _ScriptedDecryptSigner(this._delegate, this._plaintexts);
+
+  final LocalNostrSigner _delegate;
+  final List<String> _plaintexts;
+
+  @override
+  Future<Event?> signEvent(Event event) => _delegate.signEvent(event);
+
+  @override
+  Future<String?> getPublicKey() => _delegate.getPublicKey();
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _delegate.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _delegate.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _delegate.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _delegate.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) async =>
+      _plaintexts.removeAt(0);
+
+  @override
+  void close() => _delegate.close();
+}
+
 void main() {
   Relay dummyRelay(String url) => RelayBase(url, RelayStatus(url));
 
@@ -163,6 +198,52 @@ void main() {
       expect(rumor, isNotNull);
       expect(rumor!.content, equals('secret message'));
       expect(rumor.pubkey, equals(senderPubkey));
+    });
+
+    test(
+      'rejects oversized remote-signer plaintext before JSON parsing',
+      () async {
+        final delegate = LocalNostrSigner(recipientPrivateKey);
+        final scriptedNostr = Nostr(
+          _ScriptedDecryptSigner(delegate, [
+            'x' * (maxNip17ReceivePlaintextBytes + 1),
+          ]),
+          const [],
+          dummyRelay,
+        );
+
+        final rumor = await GiftWrapUtil.getRumorEvent(
+          scriptedNostr,
+          await validWrap(),
+        );
+
+        expect(rumor, isNull);
+      },
+    );
+
+    test('rejects oversized remote-signer rumor before JSON parsing', () async {
+      final seal = Event(
+        senderPubkey,
+        EventKind.sealEventKind,
+        const <List<String>>[],
+        'scripted ciphertext',
+      )..sign(senderPrivateKey);
+      final delegate = LocalNostrSigner(recipientPrivateKey);
+      final scriptedNostr = Nostr(
+        _ScriptedDecryptSigner(delegate, [
+          jsonEncode(seal.toJson()),
+          'x' * (maxNip17ReceivePlaintextBytes + 1),
+        ]),
+        const [],
+        dummyRelay,
+      );
+
+      final rumor = await GiftWrapUtil.getRumorEvent(
+        scriptedNostr,
+        await validWrap(),
+      );
+
+      expect(rumor, isNull);
     });
 
     test(

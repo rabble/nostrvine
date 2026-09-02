@@ -534,6 +534,32 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('oversized reply restores the draft without a retry action', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.tooLong('reply is too large'),
+      );
+
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'keep this draft');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmSendTooLongMessage), findsOneWidget);
+      expect(find.text(l10n.dmSendFailedRetry), findsNothing);
+      expect(find.text('keep this draft'), findsOneWidget);
+    });
+
     // #7316. The retry action must re-drive the row the failed send parked. A
     // second `sendMessage` would mint a fresh rumor for the same text, and since
     // the receiver's only stable dedup key is the rumor id — gift-wrap ids are

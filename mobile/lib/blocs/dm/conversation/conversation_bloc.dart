@@ -284,6 +284,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             emit(state.copyWith(sendStatus: SendStatus.sent));
             return;
           }
+          if (result.tooLong) {
+            // Refused before the enqueue, so no queue row and no bubble will
+            // exist to show the failure. Emit a distinct status the view can
+            // turn into a visible message and a preserved draft (#7331).
+            emit(state.copyWith(sendStatus: SendStatus.tooLong));
+            return;
+          }
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
@@ -298,6 +305,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           if (results.isNotEmpty && results.every((r) => r.blocked)) {
             // Group all-or-nothing block (#176): refused, not retriable.
             emit(state.copyWith(sendStatus: SendStatus.blocked));
+            return;
+          }
+          if (results.isNotEmpty && results.every((r) => r.tooLong)) {
+            // Every sibling was refused before enqueueing the shared rumor.
+            // No queue row or failure bubble exists, so preserve the draft
+            // through the same terminal outcome as the 1:1 path (#7331).
+            emit(state.copyWith(sendStatus: SendStatus.tooLong));
             return;
           }
           // No recipient confirmed. If every unconfirmed recipient is soft

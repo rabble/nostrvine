@@ -4579,6 +4579,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listContinue => '继续';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => '无法更新此列表，请重试。';
 
   @override
@@ -5422,6 +5426,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => '给 Divine Moderation 发私信';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => '消息发送失败';

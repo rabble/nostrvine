@@ -123,9 +123,8 @@ class CuratedListRelayGateway {
     return jsonEncode(CuratedListConverter.toItemTags(list));
   }
 
-  bool privateItemPayloadFits(CuratedList list) {
-    return utf8.encode(_privateItemPlaintext(list)).length <= 65535;
-  }
+  bool privateItemPayloadFits(CuratedList list) =>
+      CuratedListConverter.privateItemPayloadFits(list);
 
   /// Stream public curated lists from Nostr relays for discovery.
   ///

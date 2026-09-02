@@ -49,6 +49,7 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
 
     try {
       final bool ok;
+      final bool tooLong;
       final List<String> parked;
       // When the reel has a structured video ref, the reply self-carries the
       // NIP-18 `q` citation so it stays linked to the video across devices and
@@ -74,6 +75,8 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
         ok =
             results.any((r) => r.success) ||
             (results.isNotEmpty && results.every((r) => r.retryablePending));
+        tooLong =
+            results.isNotEmpty && results.every((result) => result.tooLong);
         parked = [for (final r in results) ?r.queuedRumorId];
       } else {
         final result = videoRef != null
@@ -93,18 +96,21 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
                 replyToId: _replyContext.sharedReelMessageId,
               );
         ok = result.success || result.retryablePending;
+        tooLong = result.tooLong;
         parked = [?result.queuedRumorId];
       }
       if (!isClosed) {
         emit(
           state.copyWith(
-            status: ok
+            status: tooLong
+                ? InlineReelReplyStatus.tooLong
+                : ok
                 ? InlineReelReplyStatus.success
                 : InlineReelReplyStatus.failure,
             // Nothing left to re-drive on success: a fully delivered send
             // consumes its row, and a partially delivered group's surviving
             // siblings belong to the sweep, not to a user-facing retry.
-            queuedRumorIds: ok ? const [] : parked,
+            queuedRumorIds: ok || tooLong ? const [] : parked,
           ),
         );
       }

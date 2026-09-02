@@ -394,5 +394,142 @@ void main() {
         ]);
       });
     });
+
+    group('external controller', () {
+      testWidgets('uses a caller-provided controller and does not dispose it', (
+        tester,
+      ) async {
+        // The bar clears itself the moment onSend fires, before the outcome is
+        // known. A caller that learns the send was refused restores the draft
+        // through this controller, so the bar must neither own nor dispose it
+        // (#7331).
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (_) {}, controller: controller),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'draft');
+        await tester.pump();
+        expect(controller.text, equals('draft'));
+
+        // Replace the bar with something else; the controller must survive.
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: SizedBox.shrink()),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          () => controller.text,
+          returnsNormally,
+          reason: 'the bar must not dispose a controller it does not own',
+        );
+      });
+
+      testWidgets('a restored draft reappears in the field', (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (_) {}, controller: controller),
+            ),
+          ),
+        );
+
+        controller.text = 'restored after refusal';
+        await tester.pump();
+
+        expect(find.text('restored after refusal'), findsOneWidget);
+      });
+    });
+
+    group('length limit', () {
+      Future<void> pumpBar(WidgetTester tester) => tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+        ),
+      );
+
+      testWidgets('truncates a paste longer than the limit', (tester) async {
+        await pumpBar(tester);
+
+        await tester.enterText(
+          find.byType(TextField),
+          'a' * (dmComposerMaxCharacters + 500),
+        );
+        await tester.pump();
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller!.text.length, equals(dmComposerMaxCharacters));
+      });
+
+      testWidgets('hides the counter well below the limit', (tester) async {
+        await pumpBar(tester);
+
+        await tester.enterText(find.byType(TextField), 'hello');
+        await tester.pump();
+
+        // Anything left over the threshold is noise in a chat composer.
+        const remaining = dmComposerMaxCharacters - 5;
+        expect(find.text('$remaining'), findsNothing);
+      });
+
+      testWidgets('shows the remaining count near the limit', (tester) async {
+        await pumpBar(tester);
+
+        const typed = dmComposerMaxCharacters - dmComposerCounterThreshold + 1;
+        await tester.enterText(find.byType(TextField), 'a' * typed);
+        await tester.pump();
+
+        expect(
+          find.text('${dmComposerMaxCharacters - typed}'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('sends the truncated text, never the full paste', (
+        tester,
+      ) async {
+        String? sentText;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (text) => sentText = text),
+            ),
+          ),
+        );
+
+        await tester.enterText(
+          find.byType(TextField),
+          'b' * (dmComposerMaxCharacters * 2),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(findSendButton(l10n));
+        await tester.pump();
+
+        expect(sentText!.length, equals(dmComposerMaxCharacters));
+      });
+    });
   });
 }

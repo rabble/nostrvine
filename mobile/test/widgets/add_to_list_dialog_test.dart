@@ -214,6 +214,76 @@ void main() {
       expect(find.text('Removed from My List'), findsOneWidget);
     });
 
+    testWidgets('a failed add on a full private list explains why', (
+      tester,
+    ) async {
+      // Before #7331 a failed toggle rendered nothing at all, so a private
+      // list at the NIP-44 size ceiling swallowed every add silently.
+      const listId =
+          'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+      _fakeLists = [
+        CuratedList(
+          id: listId,
+          pubkey:
+              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          name: 'My List',
+          isPublic: false,
+          // Enough references that one more cannot fit in a single NIP-44
+          // plaintext, so the converter's real arithmetic decides.
+          videoEventIds: [
+            for (var i = 0; i < 1000; i++) i.toString().padLeft(64, '0'),
+          ],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+
+      when(
+        () => mockListService.addVideoToList(any(), any()),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('My List'));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.listPrivateFull), findsOneWidget);
+      // Retrying cannot succeed, so the generic "try again" copy is wrong here.
+      expect(find.text(l10n.listUpdateFailed), findsNothing);
+    });
+
+    testWidgets('a failed add for any other reason stays generic', (
+      tester,
+    ) async {
+      const listId =
+          'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+      _fakeLists = [
+        CuratedList(
+          id: listId,
+          pubkey:
+              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          name: 'My List',
+          videoEventIds: const [],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+
+      when(
+        () => mockListService.addVideoToList(any(), any()),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('My List'));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.listUpdateFailed), findsOneWidget);
+      expect(find.text(l10n.listPrivateFull), findsNothing);
+    });
+
     testWidgets('renders Done button', (tester) async {
       _fakeLists = [];
 

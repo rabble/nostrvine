@@ -4831,6 +4831,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listContinue => 'Devam';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'Bu liste güncellenemedi. Tekrar dene.';
 
   @override
@@ -5699,6 +5703,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Divine Moderation\'a mesaj gönder';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Mesaj gönderilemedi';

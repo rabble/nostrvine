@@ -3020,6 +3020,10 @@
   "listShareFailed": "Couldn't share this list. Try again.",
   "listSave": "Save",
   "listContinue": "Continue",
+  "listPrivateFull": "This private list is full. Remove something to add more.",
+  "@listPrivateFull": {
+    "description": "Shown when a video cannot be added to a private list because its encrypted payload would exceed the NIP-44 size limit. Retrying cannot succeed, so the copy must not suggest trying again."
+  },
   "listUpdateFailed": "Couldn't update this list. Try again.",
   "listMakePrivateTitle": "Make this list private?",
   "listMakePrivateWarning": "Its videos get encrypted so only you can see them. The name, description, tags, and cover stay visible, and copies shared before now may persist.",
@@ -3585,6 +3589,10 @@
   "dmRetiredThreadOpenSupport": "Message Divine Moderation",
   "@dmRetiredThreadOpenSupport": {
     "description": "Action on the closed-thread notice (#6416) that opens the current pinned Divine Moderation conversation. A redirect, not a promise of a response. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."
+  },
+  "dmSendTooLongMessage": "That message is too long to send. Shorten it and try again.",
+  "@dmSendTooLongMessage": {
+    "description": "Shown when a DM is refused because the encrypted rumor would exceed the NIP-44 size limit. The message stays in the composer, so the copy asks the user to shorten it rather than warning that it was lost."
   },
   "dmSendFailedMessage": "Message couldn't be sent",
   "@dmSendFailedMessage": {

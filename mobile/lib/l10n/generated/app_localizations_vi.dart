@@ -4860,6 +4860,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get listContinue => 'Tiếp tục';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Không cập nhật được danh sách này. Thử lại nhé.';
 
@@ -5734,6 +5738,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Nhắn tin cho Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Tin nhắn không gửi được';

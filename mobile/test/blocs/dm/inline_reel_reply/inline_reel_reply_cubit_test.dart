@@ -311,6 +311,30 @@ void main() {
     );
 
     blocTest<InlineReelReplyCubit, InlineReelReplyState>(
+      'oversized reply is terminal and does not offer a retry',
+      build: () {
+        when(
+          () => repo.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).thenAnswer(
+          (_) async => const NIP17SendResult.tooLong('reply is too large'),
+        );
+        return InlineReelReplyCubit(
+          dmRepository: repo,
+          replyContext: oneToOne(),
+        );
+      },
+      act: (cubit) => cubit.submit('hi'),
+      expect: () => const [
+        InlineReelReplyState(status: InlineReelReplyStatus.sending),
+        InlineReelReplyState(status: InlineReelReplyStatus.tooLong),
+      ],
+    );
+
+    blocTest<InlineReelReplyCubit, InlineReelReplyState>(
       'StateError from send is Reportable',
       build: () {
         when(

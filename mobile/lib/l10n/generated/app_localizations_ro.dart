@@ -5038,6 +5038,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listContinue => 'Continuă';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'N-am putut actualiza lista. Mai încearcă.';
 
   @override
@@ -5925,6 +5929,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Scrie către Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Mesajul nu a putut fi trimis';

@@ -5070,6 +5070,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get listContinue => 'కొనసాగించండి';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'ఈ జాబితాను నవీకరించడం సాధ్యపడలేదు. మళ్లీ ప్రయత్నించండి.';
 
@@ -5957,6 +5961,10 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'సందేశం Divine మోడరేషన్';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'సందేశాన్ని పంపడం సాధ్యపడలేదు';

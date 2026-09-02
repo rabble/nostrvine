@@ -4944,6 +4944,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listContinue => 'Продължи';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Списъкът не можа да бъде обновен. Опитай пак.';
 
@@ -5822,6 +5826,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Пишете на Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Съобщението не мина';

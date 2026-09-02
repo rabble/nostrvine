@@ -4946,6 +4946,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get listContinue => 'Continua';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Impossibile aggiornare questa lista. Riprova.';
 
@@ -5825,6 +5829,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Scrivi a Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Impossibile inviare il messaggio';

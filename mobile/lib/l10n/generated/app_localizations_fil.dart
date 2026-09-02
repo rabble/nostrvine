@@ -4925,6 +4925,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get listContinue => 'Magpatuloy';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed =>
       'Hindi na-update ang list na ito. Subukan ulit.';
 
@@ -5804,6 +5808,10 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'I-message ang Divine Moderation';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'Hindi naipadala ang message';

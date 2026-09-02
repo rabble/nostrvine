@@ -4617,6 +4617,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listContinue => '계속';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => '이 목록을 업데이트하지 못했어요. 다시 시도해 주세요.';
 
   @override
@@ -5472,6 +5476,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Divine Moderation에 메시지 보내기';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => '메시지를 보내지 못했어요';

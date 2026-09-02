@@ -4771,6 +4771,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listContinue => 'ቀጥል';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
@@ -5631,6 +5635,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Divine Moderation ላይ መልእክት ይላኩ';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';

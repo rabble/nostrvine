@@ -84,6 +84,16 @@ sealed class NIP17SendResult {
   const factory NIP17SendResult.blocked(String error) =
       NIP17SendFailure.blocked;
 
+  /// Build an oversized-message result (#7331): the rumor serializes to more
+  /// than the NIP-44 double encryption can carry, so no wrap could be built.
+  ///
+  /// The size is a property of the rumor — its tags as much as its body — so
+  /// every retry fails identically. Like [blocked] it must NOT be retried and
+  /// leaves no queue row, and it is distinct from [blocked] because the user
+  /// can act on it by shortening the message, which needs its own copy.
+  const factory NIP17SendResult.tooLong(String error) =
+      NIP17SendFailure.tooLong;
+
   /// Whether the recipient gift wrap (kind 1059, encrypted to the
   /// recipient) reached at least one relay. The headline send status.
   bool get success => this is NIP17SendSuccess;
@@ -91,6 +101,11 @@ sealed class NIP17SendResult {
   /// Whether this failure is a policy block (#176), not a transient/network
   /// error. Blocked sends are not retriable. Always `false` for success.
   bool get blocked => false;
+
+  /// Whether this failure is an oversized message (#7331), refused before any
+  /// wrap was built. Not retriable — the size is a property of the rumor, so
+  /// every retry fails identically. Always `false` for success.
+  bool get tooLong => false;
 
   /// Whether a failure should stay in a pending, sweep-retryable state instead
   /// of being marked failed. Covers inconclusive recipient publishes
@@ -223,7 +238,8 @@ final class NIP17SendFailure extends NIP17SendResult {
     this.error, {
     this.retryablePending = false,
     this.queuedRumorId,
-  }) : blocked = false;
+  }) : blocked = false,
+       tooLong = false;
 
   /// A policy block (#176): same non-delivery as a failure, but not retriable.
   ///
@@ -231,6 +247,19 @@ final class NIP17SendFailure extends NIP17SendResult {
   /// enqueue, so a block leaves no row behind to coalesce onto.
   const NIP17SendFailure.blocked(this.error)
     : blocked = true,
+      tooLong = false,
+      retryablePending = false,
+      queuedRumorId = null;
+
+  /// An oversized message (#7331): refused before any wrap build.
+  ///
+  /// Never carries a [queuedRumorId] — the size check runs before the enqueue,
+  /// deliberately. A hard-failed row IS re-driven by
+  /// `OutgoingDmRetryService.sweep()`, so leaving a row behind would spend the
+  /// whole retry budget re-running a crypto chain that cannot succeed.
+  const NIP17SendFailure.tooLong(this.error)
+    : blocked = false,
+      tooLong = true,
       retryablePending = false,
       queuedRumorId = null;
 
@@ -239,6 +268,9 @@ final class NIP17SendFailure extends NIP17SendResult {
 
   @override
   final bool blocked;
+
+  @override
+  final bool tooLong;
 
   @override
   final bool retryablePending;
@@ -267,17 +299,19 @@ final class NIP17SendFailure extends NIP17SendResult {
     return other is NIP17SendFailure &&
         other.error == error &&
         other.blocked == blocked &&
+        other.tooLong == tooLong &&
         other.retryablePending == retryablePending &&
         other.queuedRumorId == queuedRumorId;
   }
 
   @override
   int get hashCode =>
-      Object.hash(error, blocked, retryablePending, queuedRumorId);
+      Object.hash(error, blocked, tooLong, retryablePending, queuedRumorId);
 
   @override
   String toString() =>
       'NIP17SendFailure(error: $error, blocked: $blocked, '
+      'tooLong: $tooLong, '
       'retryablePending: $retryablePending, '
       'queuedRumorId: $queuedRumorId)';
 }

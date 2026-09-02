@@ -4601,6 +4601,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listContinue => '続ける';
 
   @override
+  String get listPrivateFull =>
+      'This private list is full. Remove something to add more.';
+
+  @override
   String get listUpdateFailed => 'リストを更新できなかった。もう一度試してね。';
 
   @override
@@ -5454,6 +5458,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get dmRetiredThreadOpenSupport => 'Divine Moderation にメッセージを送る';
+
+  @override
+  String get dmSendTooLongMessage =>
+      'That message is too long to send. Shorten it and try again.';
 
   @override
   String get dmSendFailedMessage => 'メッセージを送信できなかった';
