@@ -6827,6 +6827,18 @@ class DmRepository {
       );
     }
 
+    // Say so on SUCCESS too, not only on the failure paths #8262 instrumented.
+    // A cleartext kind 4 leaving the device is the event worth a line: the
+    // NIP-17 leg logs `Successfully published` either way, so without this a
+    // support log for a latched thread reads as an ordinary private send with
+    // no trace that a public-metadata copy went out beside it (#8519).
+    Log.info(
+      'NIP-04 fallback: published the legacy kind-4 copy for '
+      '${pubkeyForLogs(recipientPubkey)} (event ${signed.id}) — this thread is '
+      'still latched to nip04, so its metadata is public',
+      category: LogCategory.system,
+    );
+
     return NIP17SendResult.success(
       rumorEventId: signed.id,
       messageEventId: signed.id,
