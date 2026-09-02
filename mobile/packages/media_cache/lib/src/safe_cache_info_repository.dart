@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -12,14 +13,28 @@ typedef DirectoryProvider = Future<Directory> Function();
 /// A safe wrapper around [CacheInfoRepository] that handles corrupted
 /// JSON files.
 ///
-/// The upstream [JsonCacheInfoRepository._readFile] catches all exceptions
-/// internally (`on Object`) and reports them via [FlutterError.reportError]
-/// instead of rethrowing. This means a standard try/catch around [open] never
-/// sees the error. Instead, the error flows to [FlutterError.onError], which
-/// Crashlytics records as a fatal crash.
+/// Upstream's `JsonCacheInfoRepository._readFile` catches every exception
+/// internally (`on Object`) and reports it through [FlutterError.reportError]
+/// rather than rethrowing, so a plain try/catch around [open] never sees a
+/// corrupt index — the error goes straight to [FlutterError.onError], where
+/// Crashlytics files it as a crash and the cache silently comes up empty.
 ///
-/// This wrapper temporarily intercepts [FlutterError.onError] during [open] to
-/// detect corruption, deletes the bad file, and retries cleanly.
+/// So this wrapper reads the index itself before delegating, parsing it
+/// exactly the way upstream will, and deletes the file when that parse fails.
+/// Corruption is then resolved before upstream ever sees it. The direct-throw
+/// paths are still caught, for repositories that raise instead of reporting.
+///
+/// It deliberately does **not** intercept [FlutterError.onError]. That handler
+/// is a process-global, and the details upstream reports carry no file or
+/// database identity — only `library: 'flutter cache manager'` — so a handler
+/// installed by one repository cannot tell its own corruption from another's.
+/// Two managers exist in the app and `CacheStore`'s constructor fires
+/// `repo.open()` eagerly and unawaited, so those windows overlap: swapping the
+/// global and restoring it by assignment dropped one handler whenever they
+/// finished out of order and left the other permanently installed, and the
+/// captured error could be attributed to the wrong cache and delete a healthy
+/// index. Reading the file directly removes the global from the design instead
+/// of trying to sequence it.
 ///
 /// Uses composition to wrap a [CacheInfoRepository] (defaults to
 /// [JsonCacheInfoRepository]), making it fully testable via dependency
@@ -52,47 +67,58 @@ class SafeCacheInfoRepository implements CacheInfoRepository {
 
   @override
   Future<bool> open() async {
-    // The upstream JsonCacheInfoRepository._readFile catches all exceptions
-    // internally (`on Object`) and reports via FlutterError.reportError instead
-    // of rethrowing. We must intercept FlutterError.onError to detect this.
-    // We also keep a try/catch for repositories that throw directly.
-    Object? caughtException;
-    final previousHandler = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (details.library == 'flutter cache manager') {
-        caughtException = details.exception;
-        return;
-      }
-      previousHandler?.call(details);
-    };
+    await _deleteCacheFileIfUnreadable();
 
+    // Kept for repositories that raise instead of reporting. The upstream
+    // JSON repository is handled above, before it can swallow the error.
     try {
-      final result = await _repository.open();
-
-      if (caughtException == null) {
-        return result;
-      }
+      return await _repository.open();
     } on FormatException {
       await deleteCacheFile();
-      FlutterError.onError = previousHandler;
       return _repository.open();
     } on Exception catch (e) {
       if (e.toString().contains('Unexpected end of input') ||
           e.toString().contains("type 'Null'")) {
         await deleteCacheFile();
-        FlutterError.onError = previousHandler;
         return _repository.open();
       }
       rethrow;
-    } finally {
-      FlutterError.onError = previousHandler;
+    }
+  }
+
+  /// Deletes the cache index when it cannot be parsed.
+  ///
+  /// Mirrors `JsonCacheInfoRepository._readFile` deliberately: same path
+  /// (`<applicationSupport>/<databaseName>.json`, matching upstream's
+  /// `_getFile`), same `jsonDecode` to a `List`, same [CacheObject.fromMap]
+  /// over each map element, and the same `on Object` reach — so anything that
+  /// would leave upstream with an unusable index is caught here first.
+  ///
+  /// A file that survives this and still fails upstream is no worse off than
+  /// before: the app's own handler downgrades `flutter cache manager` reports
+  /// to non-fatal and the cache comes up empty, which is what already happened
+  /// for every corruption shape the old interception missed.
+  Future<void> _deleteCacheFileIfUnreadable() async {
+    final File file;
+    try {
+      final directory = await _directoryProvider();
+      file = File(path.join(directory.path, '$_databaseName.json'));
+      if (!file.existsSync()) return;
+    } on Object {
+      // No support directory yet, or it cannot be resolved. There is nothing
+      // to validate and nothing to delete; let the repository open normally.
+      return;
     }
 
-    // Corruption reported through FlutterError rather than thrown. The retry
-    // runs outside the try so a second failure reaches the caller instead of
-    // re-entering the handlers above and deleting-and-reopening again.
-    await deleteCacheFile();
-    return _repository.open();
+    try {
+      final decoded = jsonDecode(await file.readAsString()) as List<dynamic>;
+      for (final element in decoded) {
+        if (element is! Map<String, dynamic>) continue;
+        CacheObject.fromMap(element);
+      }
+    } on Object {
+      await deleteCacheFile();
+    }
   }
 
   /// Deletes the cache JSON file.
