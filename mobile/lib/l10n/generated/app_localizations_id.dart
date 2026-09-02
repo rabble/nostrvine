@@ -1694,12 +1694,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareSent => 'Terkirim';
 
   @override
-  String get shareContactFallback => 'Kontak';
-
-  @override
-  String get shareUserFallback => 'Pengguna';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name dipilih';
   }
@@ -6985,9 +6979,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Ini mengirim permintaan penghapusan untuk akun dan kontenmu, menghapus akun Divine-mu jika memungkinkan, dan mengeluarkanmu dari akun di perangkat ini. Beberapa relay, klien, dan indeks pencarian mungkin menyimpan salinan. Perangkat lain yang masih masuk tetap aktif sampai kamu menghapus kuncinya di sana.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonim';
 
   @override
   String get findPeopleNoContacts =>

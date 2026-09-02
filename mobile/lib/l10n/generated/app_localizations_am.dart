@@ -1719,12 +1719,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareSent => 'ተልኳል።';
 
   @override
-  String get shareContactFallback => 'ተገናኝ';
-
-  @override
-  String get shareUserFallback => 'ተጠቃሚ';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name ተመርጧል';
   }
@@ -6895,9 +6889,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።';
-
-  @override
-  String get findPeopleAnonymousUser => 'ስም-አልባ';
 
   @override
   String get findPeopleNoContacts =>

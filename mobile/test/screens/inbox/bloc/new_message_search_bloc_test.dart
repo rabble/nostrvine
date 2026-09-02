@@ -1,11 +1,15 @@
 // ABOUTME: Tests for NewMessageSearchBloc — contact loading, filtering,
 // ABOUTME: network search, and merge behavior.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/screens/inbox/bloc/new_message_search_bloc.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -26,6 +30,12 @@ void main() {
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
       mockFollowRepo = _MockFollowRepository();
+      // The BLoC mirrors the durable vanish tombstones so its sort and filter
+      // can resolve names the way the row renders them; every construction
+      // needs the stream to exist.
+      when(
+        mockProfileRepo.watchVanishedPubkeys,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
     });
 
     NewMessageSearchBloc createBloc() => NewMessageSearchBloc(
@@ -108,10 +118,7 @@ void main() {
         },
         wait: debounceDuration,
         verify: (bloc) {
-          expect(
-            bloc.state.results.map((r) => r.pubkey),
-            ['a' * 64],
-          );
+          expect(bloc.state.results.map((r) => r.pubkey), ['a' * 64]);
         },
       );
 
@@ -555,6 +562,273 @@ void main() {
         const state = NewMessageSearchState();
         expect(state.isSearchActive, isFalse);
       });
+    });
+
+    // #8421: a send-target picker that matches on the raw kind-0 name lets a
+    // row be found by a string it does not show, and hides it from the one it
+    // does — the same defect #8204 fixed in ConversationListBloc.
+    group('peer-name resolution', () {
+      const vanishedPubkey =
+          'b75b9a3131f4263add94ba20beb352a11032684f2dac07a7e1af827c6f3c1505';
+      const alice =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const aliceNpub =
+          'npub1424242424242424242424242424242424242424242424242424qamrcaj';
+      const labels = DmPeerLabels(
+        deletedAccount: 'Deleted account',
+        moderation: 'Divine Moderation',
+        retiredConversationClosed: 'Conversation closed',
+      );
+
+      void stubContact(String pubkey, String name) {
+        when(
+          () => mockProfileRepo.getCachedProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => createTestProfile(pubkey, name));
+      }
+
+      void stubNoNetworkResults() {
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+          ),
+        ).thenAnswer((_) async => []);
+      }
+
+      void stubVanished(Set<String> pubkeys) {
+        when(
+          mockProfileRepo.watchVanishedPubkeys,
+        ).thenAnswer((_) => Stream.value(pubkeys));
+      }
+
+      Future<void> loadThenSearch(
+        NewMessageSearchBloc bloc,
+        String query,
+      ) async {
+        bloc
+          ..add(const NewMessageSearchPeerLabelsChanged(labels))
+          ..add(const NewMessageSearchStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        bloc.add(NewMessageSearchQueryChanged(query));
+        await Future<void>.delayed(debounceDuration * 2);
+      }
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'finds a vanished peer by the substitute their row renders',
+        setUp: () {
+          stubVanished({vanishedPubkey});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'Deleted'),
+        verify: (bloc) {
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(vanishedPubkey),
+          );
+        },
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'does not surface a vanished peer under their own kind-0 name',
+        setUp: () {
+          stubVanished({vanishedPubkey});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'Aeontropy'),
+        verify: (bloc) => expect(bloc.state.results, isEmpty),
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'filters network results by the name their row renders',
+        setUp: () {
+          stubVanished({vanishedPubkey});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          when(
+            () => mockProfileRepo.searchUsers(
+              query: 'Aeontropy',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile(vanishedPubkey, 'Aeontropy')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'Aeontropy'),
+        verify: (bloc) => expect(bloc.state.results, isEmpty),
+      );
+
+      // The two below are the other half of that filter: it may only drop a
+      // peer Divine renames. `searchUsers` merges Funnelcake REST with NIP-50
+      // relay search and scores bio, npub prefix and fuzzy tokens, so a
+      // candidate whose rendered name does not literally spell the query is
+      // the normal case, not a mismatch.
+      void stubNetworkResult(String query, UserProfile profile) {
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: query,
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+          ),
+        ).thenAnswer((_) async => [profile]);
+      }
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'keeps a network result matched outside the name its row renders',
+        setUp: () {
+          stubVanished(const {});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          // Models a bio match: the repository returns Alice for a query
+          // her rendered name does not contain.
+          stubNetworkResult('photographer', createTestProfile(alice, 'Alice'));
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'photographer'),
+        verify: (bloc) =>
+            expect(bloc.state.results.map((p) => p.pubkey), [alice]),
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'keeps a network result found by the npub this sheet accepts',
+        setUp: () {
+          stubVanished(const {});
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          stubNetworkResult(aliceNpub, createTestProfile(alice, 'Alice'));
+        },
+        build: createBloc,
+        // `NewMessageSheet` documents npub as a supported query and decodes
+        // nothing itself, so dropping this result removes the paste path.
+        act: (bloc) => loadThenSearch(bloc, aliceNpub),
+        verify: (bloc) =>
+            expect(bloc.state.results.map((p) => p.pubkey), [alice]),
+      );
+
+      test(
+        're-filters an active search when a tombstone arrives later',
+        () async {
+          final vanished = StreamController<Set<String>>();
+          when(
+            mockProfileRepo.watchVanishedPubkeys,
+          ).thenAnswer((_) => vanished.stream);
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+          final bloc = createBloc();
+          addTearDown(() async {
+            await bloc.close();
+            await vanished.close();
+          });
+
+          bloc
+            ..add(const NewMessageSearchPeerLabelsChanged(labels))
+            ..add(const NewMessageSearchStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const NewMessageSearchQueryChanged('Aeontropy'));
+          await Future<void>.delayed(debounceDuration * 2);
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(vanishedPubkey),
+          );
+
+          vanished.add({vanishedPubkey});
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.results, isEmpty);
+        },
+      );
+
+      test(
+        're-filters an active search when localized labels change',
+        () async {
+          stubVanished({vanishedPubkey});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([vanishedPubkey]);
+          stubContact(vanishedPubkey, 'Aeontropy');
+          stubNoNetworkResults();
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          await loadThenSearch(bloc, 'Removed');
+          expect(bloc.state.results, isEmpty);
+
+          bloc.add(
+            const NewMessageSearchPeerLabelsChanged(
+              DmPeerLabels(
+                deletedAccount: 'Removed account',
+                moderation: 'Divine Moderation',
+                retiredConversationClosed: 'Conversation closed',
+              ),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(vanishedPubkey),
+          );
+        },
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'finds the moderation account by the name its row shows',
+        setUp: () {
+          stubVanished(const {});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([kModerationPubkeyHex]);
+          stubContact(kModerationPubkeyHex, 'moderation-bot-v2');
+          stubNoNetworkResults();
+        },
+        build: createBloc,
+        act: (bloc) => loadThenSearch(bloc, 'Divine Moderation'),
+        verify: (bloc) {
+          expect(
+            bloc.state.results.map((p) => p.pubkey),
+            contains(kModerationPubkeyHex),
+          );
+        },
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'orders contacts by the rendered name, not the raw one',
+        setUp: () {
+          stubVanished({vanishedPubkey});
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([alice, vanishedPubkey]);
+          stubContact(alice, 'Aaron');
+          // Raw, "Aardvark" sorts first; rendered, "Deleted account" sorts
+          // last. The two orders disagree, so only one of them can pass.
+          stubContact(vanishedPubkey, 'Aardvark');
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc
+            ..add(const NewMessageSearchPeerLabelsChanged(labels))
+            ..add(const NewMessageSearchStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        verify: (bloc) {
+          expect(
+            bloc.state.contacts.map((p) => p.displayName),
+            equals(['Aaron', 'Aardvark']),
+          );
+        },
+      );
     });
   });
 }

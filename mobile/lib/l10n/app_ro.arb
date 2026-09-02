@@ -602,8 +602,6 @@
     "shareFindPeople": "Găsește oameni",
     "shareFindPeopleMultiline": "Găsește\noameni",
     "shareSent": "Trimis",
-    "shareContactFallback": "Contact",
-    "shareUserFallback": "Utilizator",
     "shareSelectedRecipientAnnouncement": "{name} selectat",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.",
     "deleteAccountSuccessContentUnverified": "Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.",
     "deleteAccountWarningBody": "Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.",
-    "findPeopleAnonymousUser": "Anonim",
     "findPeopleNoContacts": "Niciun contact găsit.\nÎncepe să urmărești oameni ca să-i vezi aici.",
     "geoBlockedCityLabel": "Oraș",
     "geoBlockedCountryLabel": "Țară",

@@ -6,9 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -274,7 +278,7 @@ class _SearchResultsList extends StatelessWidget {
           results[index].pubkey,
           results[index],
         );
-        return _UserResultTile(user: user, onTap: () => onSelectUser(user));
+        return _UserResultTile(user: user, onTap: onSelectUser);
       },
     );
   }
@@ -315,33 +319,66 @@ class _ContactsList extends StatelessWidget {
       itemCount: contacts.length,
       itemBuilder: (context, index) {
         final contact = contacts[index];
-        return _UserResultTile(
-          user: contact,
-          onTap: () => onSelectUser(contact),
-        );
+        return _UserResultTile(user: contact, onTap: onSelectUser);
       },
     );
   }
 }
 
-class _UserResultTile extends StatelessWidget {
+/// One search result, as a DM send target.
+///
+/// Find People routes straight into `DmRepository.sendMessage`, so it names
+/// its peer through the same chain the inbox rows use. Its search reaches
+/// third-party NIP-50 relays, which a NIP-62 vanish addressed elsewhere never
+/// obliged to forget — so a deleted account's kind 0 can and does come back
+/// here under its real name (#8421).
+class _UserResultTile extends ConsumerWidget {
   const _UserResultTile({required this.user, required this.onTap});
 
   final ShareableUser user;
-  final VoidCallback onTap;
+  final ValueChanged<ShareableUser> onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final handle = user.handle;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isVanished = ref.watch(profileVanishedProvider(user.pubkey));
+    // `dmPeerName` rather than the `profile:`-shaped wrapper: a
+    // [ShareableUser] already carries the step-4 value (it is built from
+    // `UserProfile.bestDisplayName`), and it is NOT a `displayNameOverride` —
+    // that step outranks moderation, which would let the moderation account's
+    // own kind-0 name win over the shared label.
+    final displayName = dmPeerName(
+      pubkeyHex: user.pubkey,
+      isVanished: isVanished,
+      isModeration: isModerationAccount(user.pubkey),
+      labels: dmPeerLabels(context),
+      profileName: user.displayName,
+    );
+    final avatar = dmPeerAvatar(
+      pubkeyHex: user.pubkey,
+      isVanished: isVanished,
+      pictureUrl: user.picture,
+    );
+    // A vanished account's NIP-05 identifies it as surely as its name does.
+    final handle = isVanished ? null : user.handle;
+    // Hand the resolved identity on, so the share sheet's selection chip and
+    // its success snackbar name the peer the way this row did.
+    final resolved = ShareableUser(
+      pubkey: user.pubkey,
+      displayName: displayName,
+      handle: handle,
+      picture: avatar.imageUrl,
+    );
 
     return ListTile(
       leading: UserAvatar(
-        imageUrl: user.picture,
+        imageUrl: avatar.imageUrl,
+        name: displayName,
         placeholderSeed: user.pubkey,
         size: 48,
+        contentOverride: avatar.contentOverride,
       ),
       title: Text(
-        user.displayName ?? context.l10n.findPeopleAnonymousUser,
+        displayName,
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       // No npub fallback: a row without a nip05 or a name shows the name
@@ -355,7 +392,7 @@ class _UserResultTile extends StatelessWidget {
               ),
               overflow: TextOverflow.ellipsis,
             ),
-      onTap: onTap,
+      onTap: () => onTap(resolved),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }

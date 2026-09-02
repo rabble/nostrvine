@@ -1783,12 +1783,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareSent => 'Изпратено';
 
   @override
-  String get shareContactFallback => 'Контакт';
-
-  @override
-  String get shareUserFallback => 'Потребител';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return 'Избран е $name';
   }
@@ -7131,9 +7125,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Това изпраща заявки за изтриване на акаунта и съдържанието ти, изтрива акаунта ти в Divine, когато е възможно, и те отписва на това устройство. Някои релета, клиенти и индекси за търсене може да запазят копия. Другите устройства с вход остават активни, докато не премахнеш ключовете там.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Анонимен';
 
   @override
   String get findPeopleNoContacts =>

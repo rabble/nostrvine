@@ -1793,12 +1793,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareSent => 'Envoyé';
 
   @override
-  String get shareContactFallback => 'Contact';
-
-  @override
-  String get shareUserFallback => 'Utilisateur';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name sélectionné';
   }
@@ -7153,9 +7147,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Ça envoie des demandes de suppression pour ton compte et ton contenu, supprime ton compte Divine quand c\'est possible et te déconnecte sur cet appareil. Certains relays, clients et index de recherche peuvent garder des copies. Les autres appareils connectés restent actifs jusqu\'à ce que tu y retires les clés.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonyme';
 
   @override
   String get findPeopleNoContacts =>

@@ -1623,12 +1623,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareSent => '보냄';
 
   @override
-  String get shareContactFallback => '연락처';
-
-  @override
-  String get shareUserFallback => '사용자';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name님 선택됨';
   }
@@ -6714,9 +6708,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       '이건 계정과 콘텐츠의 삭제 요청을 보내고, 가능하면 Divine 계정을 삭제하고, 이 기기에서 로그아웃해요. 일부 릴레이, 클라이언트, 검색 색인에는 사본이 남을 수 있어요. 로그인된 다른 기기는 거기서 키를 제거할 때까지 계속 활성 상태예요.';
-
-  @override
-  String get findPeopleAnonymousUser => '익명';
 
   @override
   String get findPeopleNoContacts => '연락처를 찾을 수 없어요.\n사람들을 팔로우하면 여기에 나타나요.';

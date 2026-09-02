@@ -602,8 +602,6 @@
     "shareFindPeople": "ユーザーを検索",
     "shareFindPeopleMultiline": "ユーザーを\n検索",
     "shareSent": "送信済み",
-    "shareContactFallback": "連絡先",
-    "shareUserFallback": "ユーザー",
     "shareSelectedRecipientAnnouncement": "{name}を選択しました",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "削除リクエストを送信したよ。このデバイスからサインアウトしたよ。",
     "deleteAccountSuccessContentUnverified": "アカウントの削除をリクエストしたよ。既存の投稿の一部は、個別に削除を確認できなかったよ。",
     "deleteAccountWarningBody": "これはアカウントとコンテンツの削除リクエストを送信して、可能なら Divine アカウントを削除し、このデバイスからサインアウトするよ。一部のリレーやクライアント、検索インデックスにはコピーが残ることがあるよ。ほかのサインイン中のデバイスは、そこで鍵を削除するまで有効なままだよ。",
-    "findPeopleAnonymousUser": "匿名",
     "findPeopleNoContacts": "連絡先が見つからないよ。\n誰かをフォローすると、ここに表示されるよ。",
     "geoBlockedCityLabel": "市区町村",
     "geoBlockedCountryLabel": "国",

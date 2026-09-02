@@ -1730,12 +1730,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareSent => 'Đã gửi';
 
   @override
-  String get shareContactFallback => 'Liên hệ';
-
-  @override
-  String get shareUserFallback => 'Người dùng';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return 'Đã chọn $name';
   }
@@ -7030,9 +7024,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Thao tác này gửi yêu cầu xóa cho tài khoản và nội dung của bạn, xóa tài khoản Divine của bạn khi có thể, và đăng xuất bạn trên thiết bị này. Một số relay, ứng dụng và chỉ mục tìm kiếm có thể vẫn giữ bản sao. Các thiết bị đã đăng nhập khác vẫn hoạt động cho đến khi bạn gỡ khóa ở đó.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Ẩn danh';
 
   @override
   String get findPeopleNoContacts =>

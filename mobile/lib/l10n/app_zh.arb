@@ -839,8 +839,6 @@
   "shareFindPeople": "找人",
   "shareFindPeopleMultiline": "寻找\n朋友",
   "shareSent": "已发送",
-  "shareContactFallback": "联系人",
-  "shareUserFallback": "用户",
   "shareSelectedRecipientAnnouncement": "已选择 {name}",
   "@shareSelectedRecipientAnnouncement": {
     "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -3737,7 +3735,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "findPeopleAnonymousUser": "匿名用户",
   "findPeopleNoContacts": "没有找到联系人。\n开始关注一些人，他们就会出现在这里。",
   "geoBlockedCityLabel": "城市",
   "geoBlockedCountryLabel": "国家/地区",

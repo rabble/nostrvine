@@ -602,8 +602,6 @@
     "shareFindPeople": "Znajdź ludzi",
     "shareFindPeopleMultiline": "Znajdź\nludzi",
     "shareSent": "Wysłano",
-    "shareContactFallback": "Kontakt",
-    "shareUserFallback": "Użytkownik",
     "shareSelectedRecipientAnnouncement": "Wybrano {name}",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.",
     "deleteAccountSuccessContentUnverified": "Wysłano żądanie usunięcia konta. Usunięcia niektórych istniejących postów nie udało się potwierdzić osobno.",
     "deleteAccountWarningBody": "To wysyła żądania usunięcia twojego konta i treści, usuwa twoje konto Divine, gdy to możliwe, i wylogowuje cię na tym urządzeniu. Niektóre przekaźniki, klienty i indeksy wyszukiwania mogą zachować kopie. Inne zalogowane urządzenia pozostają aktywne, dopóki nie usuniesz na nich kluczy.",
-    "findPeopleAnonymousUser": "Anonim",
     "findPeopleNoContacts": "Nie znaleziono kontaktów.\nZacznij obserwować ludzi, aby zobaczyć ich tutaj.",
     "geoBlockedCityLabel": "Miasto",
     "geoBlockedCountryLabel": "Kraj",

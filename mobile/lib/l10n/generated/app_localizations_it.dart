@@ -1790,12 +1790,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareSent => 'Inviato';
 
   @override
-  String get shareContactFallback => 'Contatto';
-
-  @override
-  String get shareUserFallback => 'Utente';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name selezionato';
   }
@@ -7134,9 +7128,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Questo invia richieste di eliminazione per il tuo account e i tuoi contenuti, elimina il tuo account Divine quando possibile e ti disconnette su questo dispositivo. Alcuni relay, client e indici di ricerca potrebbero conservare copie. Gli altri dispositivi con l\'accesso effettuato restano attivi finché non rimuovi le chiavi lì.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonimo';
 
   @override
   String get findPeopleNoContacts =>

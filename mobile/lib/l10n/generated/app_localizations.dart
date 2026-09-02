@@ -3023,18 +3023,6 @@ abstract class AppLocalizations {
   /// **'Sent'**
   String get shareSent;
 
-  /// No description provided for @shareContactFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'Contact'**
-  String get shareContactFallback;
-
-  /// No description provided for @shareUserFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get shareUserFallback;
-
   /// Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.
   ///
   /// In en, this message translates to:
@@ -12075,12 +12063,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.'**
   String get deleteAccountWarningBody;
-
-  /// No description provided for @findPeopleAnonymousUser.
-  ///
-  /// In en, this message translates to:
-  /// **'Anonymous'**
-  String get findPeopleAnonymousUser;
 
   /// No description provided for @findPeopleNoContacts.
   ///

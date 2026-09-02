@@ -1809,12 +1809,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareSent => 'Trimis';
 
   @override
-  String get shareContactFallback => 'Contact';
-
-  @override
-  String get shareUserFallback => 'Utilizator';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name selectat';
   }
@@ -7235,9 +7229,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonim';
 
   @override
   String get findPeopleNoContacts =>

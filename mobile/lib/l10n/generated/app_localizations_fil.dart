@@ -1757,12 +1757,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareSent => 'Naipadala';
 
   @override
-  String get shareContactFallback => 'Contact';
-
-  @override
-  String get shareUserFallback => 'User';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return 'Napili si $name';
   }
@@ -7110,9 +7104,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Nagpapadala ito ng mga deletion request para sa account at content mo, binubura ang Divine account mo kapag posible, at nila-log out ka sa device na ito. Ang ilang relay, client, at search index ay maaaring may kopya pa rin. Ang iba pang naka-log in na device ay mananatiling aktibo hanggang alisin mo ang mga key doon.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonymous';
 
   @override
   String get findPeopleNoContacts =>

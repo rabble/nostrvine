@@ -602,8 +602,6 @@
     "shareFindPeople": "Kişi bul",
     "shareFindPeopleMultiline": "Kişi\nbul",
     "shareSent": "Gönderildi",
-    "shareContactFallback": "Kişi",
-    "shareUserFallback": "Kullanıcı",
     "shareSelectedRecipientAnnouncement": "{name} seçildi",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Silme istekleri gönderildi. Bu cihazda oturumun kapatıldı.",
     "deleteAccountSuccessContentUnverified": "Hesap silme isteği gönderildi. Mevcut bazı gönderilerin silinmesi tek tek doğrulanamadı.",
     "deleteAccountWarningBody": "Bu, hesabın ve içeriğin için silme istekleri gönderir, mümkün olduğunda Divine hesabını siler ve bu cihazda oturumunu kapatır. Bazı röleler, istemciler ve arama dizinleri kopyaları saklayabilir. Oturum açmış diğer cihazlar, oradaki anahtarları kaldırana kadar aktif kalır.",
-    "findPeopleAnonymousUser": "Anonim",
     "findPeopleNoContacts": "Kişi bulunamadı.\nBurada görmek için insanları takip etmeye başla.",
     "geoBlockedCityLabel": "Şehir",
     "geoBlockedCountryLabel": "Ülke",

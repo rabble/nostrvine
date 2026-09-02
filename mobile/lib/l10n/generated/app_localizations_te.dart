@@ -1800,12 +1800,6 @@ class AppLocalizationsTe extends AppLocalizations {
   String get shareSent => 'పంపబడింది';
 
   @override
-  String get shareContactFallback => 'సంప్రదించండి';
-
-  @override
-  String get shareUserFallback => 'వినియోగదారు';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return 'ఎంచుకోబడింది$name';
   }
@@ -7290,9 +7284,6 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'ఇది మీ ఖాతా మరియు కంటెంట్ కోసం తొలగింపు అభ్యర్థనలను పంపుతుంది, సాధ్యమైనప్పుడు మీ Divine ఖాతాను తొలగిస్తుంది మరియు ఈ పరికరంలో మిమ్మల్ని సైన్ అవుట్ చేస్తుంది. కొన్ని రిలేలు, క్లయింట్లు మరియు శోధన సూచికలు కాపీలను ఉంచవచ్చు. మీరు అక్కడ ఉన్న కీలను తీసివేసే వరకు ఇతర సైన్ ఇన్ చేసిన పరికరాలు సక్రియంగా ఉంటాయి.';
-
-  @override
-  String get findPeopleAnonymousUser => 'అజ్ఞాత';
 
   @override
   String get findPeopleNoContacts =>
