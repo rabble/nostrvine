@@ -719,6 +719,30 @@ void main() {
       expect(find.byType(OgBetaBadge), findsNothing);
     });
 
+    testWidgets('hides the verified checkmark on a vanished account', (
+      tester,
+    ) async {
+      final teamPubkey = kDivineTeamPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: teamPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Team Member',
+            pubkey: teamPubkey,
+          ),
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Same reasoning as the OG Beta chit above, and the same kind of
+      // roster: `kDivineTeamPubkeys` is compiled in, so it cannot drop a
+      // member who vanishes after release.
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+    });
+
     testWidgets('opens checkmark explainer from profile header target', (
       tester,
     ) async {

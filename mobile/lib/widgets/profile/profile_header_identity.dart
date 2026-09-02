@@ -136,12 +136,20 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
     final textStyle = VineTheme.titleLargeFont(
       color: context.vineColors.primaryText,
     );
-    final isOgViner = ref.watch(
-      ogVinerCacheServiceProvider.select(
-        (service) => service.isOgViner(userIdHex),
-      ),
-    );
-    final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
+    // Every chit beside the name is gated on !isVanished for the reason the
+    // comment below gives: all three rosters are compiled in, so none of them
+    // can drop an account that vanishes after release. Only the beta chit
+    // carried the gate until now, which left a vanished team pubkey rendering
+    // "Deleted account" with a checkmark beside it.
+    final isOgViner =
+        !isVanished &&
+        ref.watch(
+          ogVinerCacheServiceProvider.select(
+            (service) => service.isOgViner(userIdHex),
+          ),
+        );
+    final showCheckmark =
+        !isVanished && shouldShowSpecialProfileCheckmark(userIdHex);
     // The beta chit yields to both the checkmark and the OG Viner chit, so a
     // name never carries two of them. The Viner rosters are disjoint by
     // construction; many team accounts also appear on the beta roster, so the
