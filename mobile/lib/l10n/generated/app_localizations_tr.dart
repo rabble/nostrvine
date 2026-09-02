@@ -4764,7 +4764,50 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listEditTitle => 'Listeyi düzenle';
 
   @override
-  String get listEditAction => 'Listeyi düzenle';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Listeyi paylaş';
@@ -5874,22 +5917,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get curatedListFailedToLoad => 'Liste yüklenemedi';
 
   @override
-  String get curatedListNoVideosAvailable => 'Mevcut video yok';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video mevcut değil';
 
   @override
   String get curatedListActionsTooltip => 'Liste işlemleri';
-
-  @override
-  String get curatedListUnfollowAction => 'Listeyi takipten çık';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Listeyi takipten çıkıldı';
-
-  @override
-  String get curatedListUnfollowFailed => 'Liste takipten çıkılamadı';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Liste silinsin mi?';

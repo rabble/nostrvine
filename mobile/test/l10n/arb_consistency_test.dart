@@ -433,6 +433,17 @@ const _knownUntranslatedDebt = <String>{
   // safety-critical "nothing was deleted" message. Mirror the translated
   // sibling deleteAccountDeletionIncomplete per locale when the pass runs.
   'deleteAccountDeletionNotStarted',
+  // New Lists UX detail screen (#8198): hero header, follow pill, owner
+  // actions sheet, and manage-posts mode. Deferred to the next human
+  // translation pass; the list-follow verb needs per-locale judgment
+  // (person-follow vs list-subscribe differ in several locales).
+  'listEditInfoAction',
+  'listManageVideosAction',
+  'listFollowButton',
+  'listFollowingButton',
+  'listRemoveVideosButton',
+  'listRemoveVideosSuccess',
+  'listRemoveVideosFailure',
   // Log-export copy (#8112 / #8113 / #8114). Left in English until a human
   // translation pass; machine-translating a diagnostic instruction the user
   // has to follow exactly is how it stops meaning what it says.

@@ -4858,7 +4858,50 @@ class AppLocalizationsFil extends AppLocalizations {
   String get listEditTitle => 'I-edit ang list';
 
   @override
-  String get listEditAction => 'I-edit ang list';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'I-share ang list';
@@ -5982,22 +6025,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get curatedListFailedToLoad => 'Hindi na-load ang listahan';
 
   @override
-  String get curatedListNoVideosAvailable => 'Walang available na video';
-
-  @override
   String get curatedListVideoNotAvailable => 'Hindi available ang video';
 
   @override
   String get curatedListActionsTooltip => 'Mga aksyon sa list';
-
-  @override
-  String get curatedListUnfollowAction => 'I-unfollow ang list';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Na-unfollow ang list';
-
-  @override
-  String get curatedListUnfollowFailed => 'Hindi na-unfollow ang list';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Burahin ang list?';

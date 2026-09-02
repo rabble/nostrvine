@@ -23,6 +23,7 @@
 import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +40,7 @@ import 'package:openvine/repositories/creator_delete_enforcement_repository.dart
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -59,6 +61,9 @@ class _MockEnforcementRepository extends Mock
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _MockSubscribedListVideoCache extends Mock
+    implements SubscribedListVideoCache {}
+
 /// Provider overrides every scope in this file needs.
 ///
 /// [ComposableVideoGrid] renders `UserName`, which reaches the user-profile
@@ -70,6 +75,7 @@ List<Override> _gridOverrides(
   broken_tracker.BrokenVideoTracker tracker, {
   MockNostrClient? nostrService,
   MockAuthService? authService,
+  SubscribedListVideoCache? subscribedListCache,
   List<Override> extra = const [],
 }) => [
   sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
@@ -78,7 +84,7 @@ List<Override> _gridOverrides(
     nostrService ?? createMockNostrService(),
   ),
   brokenVideoTrackerProvider.overrideWith((ref) async => tracker),
-  subscribedListVideoCacheProvider.overrideWithValue(null),
+  subscribedListVideoCacheProvider.overrideWithValue(subscribedListCache),
   userProfileReactiveProvider.overrideWith((ref, pubkey) => Stream.value(null)),
   ...extra,
 ];
@@ -658,6 +664,470 @@ void main() {
           ),
         );
         expect(editTile.enabled, isTrue);
+      });
+    });
+
+    group('selection mode', () {
+      Widget buildGrid({required Set<String> selectedVideoIds}) {
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: testVideos.take(2).toList(),
+                selectedVideoIds: selectedVideoIds,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('shows a check only on the selected tile', (tester) async {
+        await tester.pumpWidget(buildGrid(selectedVideoIds: {'video1'}));
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.check,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('announces per-tile selection state to assistive tech', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(buildGrid(selectedVideoIds: {'video1'}));
+        await tester.pump();
+
+        expect(
+          tester.getSemantics(find.bySemanticsIdentifier('video_thumbnail_0')),
+          isSemantics(isSelected: true),
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsIdentifier('video_thumbnail_1')),
+          isSemantics(isSelected: false),
+        );
+        semantics.dispose();
+      });
+
+      testWidgets('shows no selection circles outside selection mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.check,
+          ),
+          findsNothing,
+        );
+      });
+    });
+
+    group('top outer radius', () {
+      // Resolved to physical corners per direction: the grid hands the tile
+      // a directional radius so RTL mirrors it with the mirrored columns.
+      BorderRadius tileRadius(
+        WidgetTester tester,
+        int index, {
+        TextDirection direction = TextDirection.ltr,
+      }) => tester
+          .widget<ClipRRect>(
+            find
+                .descendant(
+                  of: find.byWidgetPredicate(
+                    (widget) =>
+                        widget is Semantics &&
+                        widget.properties.identifier ==
+                            'video_thumbnail_$index',
+                  ),
+                  matching: find.byType(ClipRRect),
+                )
+                .first,
+          )
+          .borderRadius
+          .resolve(direction);
+
+      double tileDx(WidgetTester tester, int index) => tester
+          .getTopLeft(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.identifier == 'video_thumbnail_$index',
+            ),
+          )
+          .dx;
+
+      testWidgets("enlarges only the first row's outer top corners", (
+        tester,
+      ) async {
+        // Phone-width surface pins the responsive column count to 2, so the
+        // top row is exactly items 0 and 1.
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos,
+                  useMasonryLayout: true,
+                  topOuterRadius: 32,
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const inner = Radius.circular(4);
+        const outer = Radius.circular(32);
+        expect(
+          tileRadius(tester, 0),
+          const BorderRadius.only(
+            topLeft: outer,
+            topRight: inner,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        expect(
+          tileRadius(tester, 1),
+          const BorderRadius.only(
+            topLeft: inner,
+            topRight: outer,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        // Second row keeps the default small radius on every corner.
+        expect(tileRadius(tester, 2), const BorderRadius.all(inner));
+      });
+
+      testWidgets('mirrors the outer corners with the columns under RTL', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Scaffold(
+                  body: ComposableVideoGrid(
+                    videos: testVideos,
+                    useMasonryLayout: true,
+                    topOuterRadius: 32,
+                    onVideoTap: (videos, index) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The masonry render object mirrors columns under RTL: tile 0 paints
+        // on the right. Its enlarged corner must follow it there — a physical
+        // topLeft would bite mid-edge instead (#8453 review).
+        expect(tileDx(tester, 0), greaterThan(tileDx(tester, 1)));
+
+        const inner = Radius.circular(4);
+        const outer = Radius.circular(32);
+        const rtl = TextDirection.rtl;
+        expect(
+          tileRadius(tester, 0, direction: rtl),
+          const BorderRadius.only(
+            topRight: outer,
+            topLeft: inner,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+        expect(
+          tileRadius(tester, 1, direction: rtl),
+          const BorderRadius.only(
+            topRight: inner,
+            topLeft: outer,
+            bottomLeft: inner,
+            bottomRight: inner,
+          ),
+        );
+      });
+
+      testWidgets('keeps every corner small when not set', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  useMasonryLayout: true,
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const inner = Radius.circular(4);
+        expect(tileRadius(tester, 0), const BorderRadius.all(inner));
+        expect(tileRadius(tester, 1), const BorderRadius.all(inner));
+      });
+    });
+
+    group('subscribed-list badge', () {
+      Finder badgeFinder() => find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineIcon && widget.icon == DivineIconName.images,
+      );
+
+      Widget buildGrid({required bool showBadge}) {
+        final cache = _MockSubscribedListVideoCache();
+        when(() => cache.getListsForVideo(any())).thenReturn({'some-list'});
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker, subscribedListCache: cache),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: testVideos.take(2).toList(),
+                showSubscribedListBadge: showBadge,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('marks tiles whose video is in a subscribed list', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildGrid(showBadge: true));
+        await tester.pump();
+
+        expect(badgeFinder(), findsNWidgets(2));
+      });
+
+      testWidgets('defaults to showing the badge when the flag is omitted', (
+        tester,
+      ) async {
+        // Pins the constructor default — the production path for every
+        // discovery surface, none of which pass the flag.
+        final cache = _MockSubscribedListVideoCache();
+        when(() => cache.getListsForVideo(any())).thenReturn({'some-list'});
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker, subscribedListCache: cache),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(badgeFinder(), findsNWidgets(2));
+      });
+
+      testWidgets('shows no badge when the caller turns it off', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildGrid(showBadge: false));
+        await tester.pump();
+
+        expect(badgeFinder(), findsNothing);
+      });
+    });
+
+    group('header slivers', () {
+      testWidgets('renders header slivers above the grid', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: testVideos.take(2).toList(),
+                  headerSlivers: const [
+                    SliverToBoxAdapter(child: Text('HEADER')),
+                  ],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('HEADER'), findsOneWidget);
+        expect(find.byType(GestureDetector), findsNWidgets(2));
+      });
+
+      testWidgets('keeps header slivers above the empty state', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(mockTracker),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: const [],
+                  headerSlivers: const [
+                    SliverToBoxAdapter(child: Text('HEADER')),
+                  ],
+                  onVideoTap: (videos, index) {},
+                  emptyBuilder: () => const Text('EMPTY'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('HEADER'), findsOneWidget);
+        expect(find.text('EMPTY'), findsOneWidget);
+      });
+    });
+
+    group('background panel', () {
+      Widget buildGrid({
+        List<VideoEvent> videos = const [],
+        Color? backgroundColor,
+        double? topOuterRadius,
+        Widget Function()? emptyBuilder,
+        List<Widget> headerSlivers = const [],
+      }) {
+        return ProviderScope(
+          overrides: _gridOverrides(mockTracker),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: videos,
+                backgroundColor: backgroundColor,
+                topOuterRadius: topOuterRadius,
+                emptyBuilder: emptyBuilder,
+                headerSlivers: headerSlivers,
+                onVideoTap: (videos, index) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('paints a rounded panel behind the grid and fills below it', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildGrid(
+            videos: testVideos.take(2).toList(),
+            backgroundColor: const Color(0xFF112233),
+            topOuterRadius: 32,
+          ),
+        );
+        await tester.pump();
+
+        final panel = tester.widget<DecoratedSliver>(
+          find.byType(DecoratedSliver),
+        );
+        final decoration = panel.decoration as BoxDecoration;
+        expect(decoration.color, const Color(0xFF112233));
+        expect(
+          decoration.borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(32)),
+        );
+        // The panel continues to the bottom of the viewport when the grid
+        // content is shorter than the screen.
+        final filler = tester.widget<SliverFillRemaining>(
+          find.byType(SliverFillRemaining),
+        );
+        expect((filler.child! as ColoredBox).color, const Color(0xFF112233));
+      });
+
+      testWidgets('defaults to no panel', (tester) async {
+        await tester.pumpWidget(
+          buildGrid(videos: testVideos.take(2).toList()),
+        );
+        await tester.pump();
+
+        expect(find.byType(DecoratedSliver), findsNothing);
+      });
+
+      testWidgets('paints the panel behind the empty state', (tester) async {
+        await tester.pumpWidget(
+          buildGrid(
+            backgroundColor: const Color(0xFF112233),
+            topOuterRadius: 32,
+            headerSlivers: const [SliverToBoxAdapter(child: Text('HEADER'))],
+            emptyBuilder: () => const Text('EMPTY'),
+          ),
+        );
+        await tester.pump();
+
+        final box = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.text('EMPTY'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final decoration = box.decoration as BoxDecoration;
+        expect(decoration.color, const Color(0xFF112233));
+        expect(
+          decoration.borderRadius,
+          const BorderRadius.vertical(top: Radius.circular(32)),
+        );
       });
     });
 

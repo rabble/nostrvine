@@ -4957,7 +4957,50 @@ class AppLocalizationsPl extends AppLocalizations {
   String get listEditTitle => 'Edytuj listę';
 
   @override
-  String get listEditAction => 'Edytuj listę';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Udostępnij listę';
@@ -6090,23 +6133,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get curatedListFailedToLoad => 'Nie udało się wczytać listy';
 
   @override
-  String get curatedListNoVideosAvailable => 'Brak dostępnych filmów';
-
-  @override
   String get curatedListVideoNotAvailable => 'Film niedostępny';
 
   @override
   String get curatedListActionsTooltip => 'Akcje listy';
-
-  @override
-  String get curatedListUnfollowAction => 'Przestań obserwować listę';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Przestano obserwować listę';
-
-  @override
-  String get curatedListUnfollowFailed =>
-      'Nie udało się przestać obserwować listy';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Usunąć listę?';

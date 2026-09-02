@@ -4892,7 +4892,50 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listEditTitle => 'Modifier la liste';
 
   @override
-  String get listEditAction => 'Modifier la liste';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Partager la liste';
@@ -6016,23 +6059,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get curatedListFailedToLoad => 'Échec du chargement de la liste';
 
   @override
-  String get curatedListNoVideosAvailable => 'Aucune vidéo disponible';
-
-  @override
   String get curatedListVideoNotAvailable => 'Vidéo indisponible';
 
   @override
   String get curatedListActionsTooltip => 'Actions de la liste';
-
-  @override
-  String get curatedListUnfollowAction => 'Ne plus suivre la liste';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Liste plus suivie';
-
-  @override
-  String get curatedListUnfollowFailed =>
-      'Impossible de ne plus suivre la liste';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Supprimer la liste ?';

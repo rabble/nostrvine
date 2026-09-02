@@ -67,6 +67,7 @@ class CuratedListByAuthorScreen extends ConsumerWidget {
           listName: list.name,
           videoIds: list.videoEventIds,
           authorPubkey: list.pubkey ?? authorPubkey,
+          discoveredList: list,
         );
       },
       loading: () => const _ListLoadingView(),

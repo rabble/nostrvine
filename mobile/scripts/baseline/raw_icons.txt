@@ -7,7 +7,6 @@
 lib/screens/comments/comments_screen.dart	3
 lib/screens/comments/widgets/comments_empty_state.dart	1
 lib/screens/creator_analytics_screen.dart	5
-lib/screens/curated_list_feed_screen.dart	2
 lib/screens/discover_lists_screen.dart	1
 lib/screens/hashtag_feed_screen.dart	1
 lib/screens/original_sound_detail_screen.dart	1

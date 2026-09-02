@@ -51,6 +51,11 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
     this.isLoadingMore = false,
     this.hasMoreContent = false,
     this.loadMoreThreshold = 5,
+    this.headerSlivers = const [],
+    this.selectedVideoIds,
+    this.topOuterRadius,
+    this.showSubscribedListBadge = true,
+    this.backgroundColor,
   });
 
   final List<VideoEvent> videos;
@@ -76,6 +81,34 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
 
   /// Number of items from the bottom to trigger load more.
   final int loadMoreThreshold;
+
+  /// Slivers rendered above the grid inside its scroll view, so they scroll
+  /// away with the content (e.g. a list detail hero header). Also rendered
+  /// above the empty state so the header survives an empty list.
+  final List<Widget> headerSlivers;
+
+  /// When non-null the grid is in selection mode: every tile shows a
+  /// selection circle (checked for ids in this set), taps still go through
+  /// [onVideoTap] — the caller decides they toggle — and the own-video
+  /// long-press menu is suppressed.
+  final Set<String>? selectedVideoIds;
+
+  /// Whether tiles show the corner badge marking a video that is in one of
+  /// the viewer's subscribed lists. A list detail screen turns this off —
+  /// there the badge is true for every tile and says nothing.
+  final bool showSubscribedListBadge;
+
+  /// Panel color painted behind the grid content — and behind the empty
+  /// state — below any [headerSlivers], with its top corners rounded by
+  /// [topOuterRadius]. The panel extends to the bottom of the viewport when
+  /// the content is shorter. `null` keeps the surface transparent.
+  final Color? backgroundColor;
+
+  /// Rounds the grid block's outer top corners by clipping the first row's
+  /// outermost tiles (first tile's top-left, last first-row tile's
+  /// top-right), so the grid reads as one container rounding into the
+  /// surface above it. `null` keeps every tile on the default small radius.
+  final double? topOuterRadius;
 
   @override
   ConsumerState<ComposableVideoGrid> createState() =>
@@ -204,23 +237,50 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         widget.isLoadingMore ||
         (widget.hasMoreContent && widget.onLoadMore != null);
 
+    // Masonry fills the shortest column start to end, so the first
+    // [responsiveCrossAxisCount] items are the top row in column order.
+    // Directional, not physical: under RTL the render object mirrors the
+    // columns, so index 0 paints at the right — topStart follows it there,
+    // while a physical topLeft would round mid-edge (#8453 review).
+    BorderRadiusGeometry tileRadiusFor(int index) {
+      const inner = Radius.circular(4);
+      final outer = widget.topOuterRadius;
+      if (outer == null || index >= responsiveCrossAxisCount) {
+        return const BorderRadius.all(inner);
+      }
+      return BorderRadiusDirectional.only(
+        topStart: index == 0 ? Radius.circular(outer) : inner,
+        topEnd: index == responsiveCrossAxisCount - 1
+            ? Radius.circular(outer)
+            : inner,
+        bottomStart: inner,
+        bottomEnd: inner,
+      );
+    }
+
     Widget buildItem(BuildContext context, int index) {
       final video = videosToShow[index];
-      final listIds = subscribedListCache?.getListsForVideo(video.id);
+      final listIds = widget.showSubscribedListBadge
+          ? subscribedListCache?.getListsForVideo(video.id)
+          : null;
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
 
       final isOwnVideo = viewerPubkey != null && viewerPubkey == video.pubkey;
 
+      final selectedIds = widget.selectedVideoIds;
       return _VideoItem(
+        borderRadius: tileRadiusFor(index),
         video: video,
         aspectRatio: widget.thumbnailAspectRatio,
         onVideoTap: widget.onVideoTap,
         index: index,
         displayedVideos: videosToShow,
-        onLongPress: isOwnVideo
+        // In selection mode a long-press menu would fight the toggle gesture.
+        onLongPress: isOwnVideo && selectedIds == null
             ? () => _showVideoContextMenu(context, video)
             : null,
         isInSubscribedList: isInSubscribedList,
+        isSelected: selectedIds?.contains(video.id),
       );
     }
 
@@ -254,32 +314,75 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       scrollCacheExtent: ScrollCacheExtent.pixels(cacheExtent),
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        SliverPadding(padding: gridPadding, sliver: gridSliver),
-        if (showLoadingIndicator)
-          SliverToBoxAdapter(
-            child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+        ...widget.headerSlivers,
+        if (widget.backgroundColor case final panelColor?) ...[
+          DecoratedSliver(
+            decoration: _panelDecoration(panelColor),
+            sliver: SliverPadding(padding: gridPadding, sliver: gridSliver),
           ),
+          if (showLoadingIndicator)
+            SliverToBoxAdapter(
+              child: ColoredBox(
+                color: panelColor,
+                child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+              ),
+            ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            fillOverscroll: true,
+            child: ColoredBox(color: panelColor),
+          ),
+        ] else ...[
+          SliverPadding(padding: gridPadding, sliver: gridSliver),
+          if (showLoadingIndicator)
+            SliverToBoxAdapter(
+              child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+            ),
+        ],
       ],
     );
 
     return _wrapWithRefreshIndicator(context, scrollView);
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final emptyState = widget.emptyBuilder!();
+  BoxDecoration _panelDecoration(Color color) => BoxDecoration(
+    color: color,
+    borderRadius: widget.topOuterRadius == null
+        ? null
+        : BorderRadius.vertical(
+            top: Radius.circular(widget.topOuterRadius!),
+          ),
+  );
 
-    if (widget.onRefresh == null) {
+  Widget _buildEmptyState(BuildContext context) {
+    final bareEmptyState = widget.emptyBuilder!();
+    final panelColor = widget.backgroundColor;
+    final emptyState = panelColor == null
+        ? bareEmptyState
+        : DecoratedBox(
+            decoration: _panelDecoration(panelColor),
+            child: bareEmptyState,
+          );
+
+    // Nothing to scroll for: no header above and no pull-to-refresh.
+    if (widget.onRefresh == null && widget.headerSlivers.isEmpty) {
       return emptyState;
     }
 
-    return _wrapWithRefreshIndicator(
-      context,
-      CustomScrollView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [SliverFillRemaining(hasScrollBody: false, child: emptyState)],
-      ),
+    final scrollView = CustomScrollView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        ...widget.headerSlivers,
+        SliverFillRemaining(
+          hasScrollBody: false,
+          fillOverscroll: panelColor != null,
+          child: emptyState,
+        ),
+      ],
     );
+
+    return _wrapWithRefreshIndicator(context, scrollView);
   }
 
   Widget _wrapWithRefreshIndicator(BuildContext context, Widget child) {
@@ -319,6 +422,8 @@ class _VideoItem extends StatelessWidget {
     required this.displayedVideos,
     this.onLongPress,
     this.isInSubscribedList = false,
+    this.isSelected,
+    this.borderRadius = const BorderRadius.all(Radius.circular(4)),
   });
 
   final VideoEvent video;
@@ -332,12 +437,21 @@ class _VideoItem extends StatelessWidget {
   final List<VideoEvent> displayedVideos;
   final bool isInSubscribedList;
 
+  /// Selection-mode state: `null` outside selection mode, otherwise whether
+  /// this tile is currently selected.
+  final bool? isSelected;
+
+  /// Clip radius for this tile; the grid enlarges the outer top corners of
+  /// the first row when [ComposableVideoGrid.topOuterRadius] is set.
+  final BorderRadiusGeometry borderRadius;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'video_thumbnail_$index',
       label: context.l10n.profileVideoThumbnailLabel(index + 1),
       button: true,
+      selected: isSelected,
       onLongPress: onLongPress,
       onLongPressHint: onLongPress == null
           ? null
@@ -346,7 +460,7 @@ class _VideoItem extends StatelessWidget {
         onTap: () => onVideoTap(displayedVideos, index),
         onLongPress: onLongPress,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: borderRadius,
           child: Stack(
             children: [
               _VideoThumbnail(video: video),
@@ -373,9 +487,53 @@ class _VideoItem extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (isSelected case final isSelected?)
+                PositionedDirectional(
+                  top: 8,
+                  end: 8,
+                  child: _SelectionBadge(isSelected: isSelected),
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Selection-mode circle drawn on a tile: an outlined circle when
+/// unselected, a filled check when selected.
+///
+/// Sits on a video frame, so its colors are fixed media chrome
+/// ([VineTheme] constants), not adaptive tokens. The state is announced via
+/// the tile's `Semantics(selected:)`, so the badge itself stays decorative.
+class _SelectionBadge extends StatelessWidget {
+  const _SelectionBadge({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? VineTheme.vineGreen : VineTheme.scrim15,
+          border: isSelected
+              ? null
+              : Border.all(color: VineTheme.whiteText, width: 2),
+        ),
+        child: isSelected
+            ? const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.check,
+                  size: 14,
+                  color: VineTheme.whiteText,
+                ),
+              )
+            : null,
       ),
     );
   }

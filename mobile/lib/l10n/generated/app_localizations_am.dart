@@ -4704,7 +4704,50 @@ class AppLocalizationsAm extends AppLocalizations {
   String get listEditTitle => 'ዝርዝር አርትዕ';
 
   @override
-  String get listEditAction => 'ዝርዝር አርትዕ';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'ዝርዝር አጋራ';
@@ -5801,22 +5844,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get curatedListFailedToLoad => 'ዝርዝሩን መጫን አልተሳካም';
 
   @override
-  String get curatedListNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
-
-  @override
   String get curatedListVideoNotAvailable => 'ቪዲዮው አይገኝም';
 
   @override
   String get curatedListActionsTooltip => 'የዝርዝር እርምጃዎች';
-
-  @override
-  String get curatedListUnfollowAction => 'ዝርዝር አትከተል';
-
-  @override
-  String get curatedListUnfollowedSnack => 'ዝርዝሩን መከተል ተቋርጧል';
-
-  @override
-  String get curatedListUnfollowFailed => 'ዝርዝሩን መከተል ማቆም አልተቻለም';
 
   @override
   String get curatedListDeleteConfirmTitle => 'ዝርዝር ይሰረዝ?';

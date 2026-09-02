@@ -4845,7 +4845,50 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listEditTitle => 'Lijst bewerken';
 
   @override
-  String get listEditAction => 'Lijst bewerken';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'Lijst delen';
@@ -5969,22 +6012,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get curatedListFailedToLoad => 'Lijst laden mislukt';
 
   @override
-  String get curatedListNoVideosAvailable => 'Geen video\'s beschikbaar';
-
-  @override
   String get curatedListVideoNotAvailable => 'Video niet beschikbaar';
 
   @override
   String get curatedListActionsTooltip => 'Lijstacties';
-
-  @override
-  String get curatedListUnfollowAction => 'Lijst ontvolgen';
-
-  @override
-  String get curatedListUnfollowedSnack => 'Lijst ontvolgd';
-
-  @override
-  String get curatedListUnfollowFailed => 'Lijst ontvolgen mislukt';
 
   @override
   String get curatedListDeleteConfirmTitle => 'Lijst verwijderen?';

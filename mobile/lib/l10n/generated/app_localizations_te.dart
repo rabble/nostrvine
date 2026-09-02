@@ -5002,7 +5002,50 @@ class AppLocalizationsTe extends AppLocalizations {
   String get listEditTitle => 'జాబితాను సవరించండి';
 
   @override
-  String get listEditAction => 'జాబితాను సవరించండి';
+  String get listEditInfoAction => 'Edit list info';
+
+  @override
+  String get listManageVideosAction => 'Manage videos';
+
+  @override
+  String get listFollowButton => 'Follow';
+
+  @override
+  String get listFollowingButton => 'Following';
+
+  @override
+  String listRemoveVideosButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Remove $count videos',
+      one: 'Remove video',
+      zero: 'Remove video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Removed $count videos',
+      one: 'Removed 1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String listRemoveVideosFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Couldn\'t remove $count videos. Try again.',
+      one: 'Couldn\'t remove 1 video. Try again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listShareAction => 'షేర్ జాబితా';
@@ -6143,22 +6186,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get curatedListFailedToLoad => 'జాబితాను లోడ్ చేయడంలో విఫలమైంది';
 
   @override
-  String get curatedListNoVideosAvailable => 'వీడియోలు అందుబాటులో లేవు';
-
-  @override
   String get curatedListVideoNotAvailable => 'వీడియో అందుబాటులో లేదు';
 
   @override
   String get curatedListActionsTooltip => 'జాబితా చర్యలు';
-
-  @override
-  String get curatedListUnfollowAction => 'జాబితాను అనుసరించవద్దు';
-
-  @override
-  String get curatedListUnfollowedSnack => 'అనుసరించని జాబితా';
-
-  @override
-  String get curatedListUnfollowFailed => 'జాబితాను అన్‌ఫాలో చేయడం సాధ్యపడలేదు';
 
   @override
   String get curatedListDeleteConfirmTitle => 'జాబితాను తొలగించాలా?';
