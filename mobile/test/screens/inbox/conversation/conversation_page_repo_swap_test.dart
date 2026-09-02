@@ -156,6 +156,61 @@ void main() {
     );
 
     testWidgets(
+      'holds loading on the owner-unknown repository and subscribes only '
+      'once a credentialed repository arrives (#8187)',
+      (tester) async {
+        // repoA stands in for the uncredentialed instance
+        // dmRepositoryProvider serves for the whole identityKnown phase of
+        // an account switch: owner unknown, so ConversationBloc must hold
+        // loading and never reach the owner-scoped reads (which would
+        // otherwise return every account's rows at the DAO). repoB is the
+        // credentialed instance that arrives at nostrReady.
+        when(() => mockRepoA.userPubkey).thenReturn('');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
+              dmRepositoryProvider.overrideWith((ref) {
+                final v = ref.watch(_dmRepoSwap);
+                return v == 0 ? mockRepoA : mockRepoB;
+              }),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: const ConversationPage(
+              conversationId: testConversationId,
+              participantPubkeys: [otherPubkey],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The uncredentialed bloc stayed in loading: it never subscribed to
+        // messages and never advanced a read cursor on the owner-unknown
+        // repository. Removing the bloc's owner guard reddens this line.
+        verifyNever(() => mockRepoA.watchMessages(any()));
+        verifyNever(() => mockRepoA.markConversationAsRead(any()));
+
+        // Credentials arrive: dmRepositoryProvider rebuilds, the composite
+        // ValueKey flips, and the recreated bloc re-dispatches
+        // ConversationStarted against the credentialed repository.
+        final providerScope = ProviderScope.containerOf(
+          tester.element(find.byType(ConversationPage)),
+        );
+        providerScope.read(_dmRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        // Recovery: the credentialed repository is now subscribed. Without
+        // the re-key the bloc would keep the owner-unknown repository and
+        // spin in loading forever.
+        verify(() => mockRepoB.watchMessages(any())).called(1);
+      },
+    );
+
+    testWidgets(
       'preserves the same ConversationBloc when the dmRepository identity '
       'does not change across rebuilds',
       (tester) async {
