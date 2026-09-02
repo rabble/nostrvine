@@ -895,14 +895,17 @@ class _MessageList extends StatelessWidget {
 
   /// Whether tapping a failed own bubble may offer to resend it (#7025).
   ///
-  /// False in a thread with an account the viewer blocked. Removing the
-  /// composer is not enough on its own: a message that hard-failed before the
-  /// block is still on screen as a red bubble, and its tap opens a recovery
-  /// sheet whose primary action republishes the rumor — delivering a DM to the
+  /// False in a thread with an account the viewer blocked, and on a retired
+  /// moderation thread. Removing the composer is not enough on its own: a
+  /// message that hard-failed before the block or rotation is still on screen
+  /// as a red bubble, and its tap opens a recovery sheet whose primary action
+  /// republishes the rumor. On a blocked thread that delivers a DM to the
   /// account the viewer blocked, from the one screen built to make that
-  /// impossible. The bubble stays rendered; only the affordance goes, so the
-  /// evidence is intact and nothing is force-deleted. Unblocking restores the
-  /// sheet along with the composer.
+  /// impossible. On a retired thread the send policy refuses the kind-14 and
+  /// the failed row is dropped, so the bubble vanishes as if it had sent.
+  /// The bubble stays rendered; only the affordance goes, so the evidence is
+  /// intact and nothing is force-deleted. Unblocking (or the current
+  /// moderation key) restores the sheet along with the composer.
   ///
   /// This closes the user-initiated path only. TODO(#7047): Decide whether a
   /// block cancels queued outgoing sends; the reconnect sweep still re-drives
