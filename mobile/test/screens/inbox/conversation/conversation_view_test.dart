@@ -864,8 +864,10 @@ void main() {
           reason: 'the retraction is refused by the send policy',
         );
 
-        // And the row is inert rather than merely unlabelled.
-        await tester.tap(find.text(l10n.dmReactionsSheetTitle));
+        // The sheet header is not the row. Tap the reactor ListTile so
+        // this fails if onTap is still wired.
+        expect(find.byType(ListTile), findsOneWidget);
+        await tester.tap(find.byType(ListTile));
         await tester.pump();
         verifyNever(() => mockReactionsCubit.add(any()));
       });
