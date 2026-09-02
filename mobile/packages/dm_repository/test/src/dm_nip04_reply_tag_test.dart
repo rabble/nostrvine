@@ -10,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -77,9 +78,24 @@ void main() {
         (_) async =>
             (events: const <Event>[], timedOut: false, noRelays: false),
       );
+      // The leg OK-confirms its kind 4 (#8262), so it calls
+      // `publishEventAwaitOk`. Stubbing `publishEvent` here would leave the
+      // real call unstubbed and the capture below empty.
       when(
-        () => nostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => const PublishFailed());
+        () => nostrClient.publishEventAwaitOk(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+          timeout: any(named: 'timeout'),
+          diagnosticTag: any(named: 'diagnosticTag'),
+        ),
+      ).thenAnswer(
+        (_) async => const PublishOutcome(
+          eventId: 'nip04-reply-tag-probe',
+          acceptedBy: ['wss://relay.divine.video'],
+          rejectedBy: <String, String>{},
+          noResponseFrom: <String>[],
+        ),
+      );
       when(
         () => messageService.canSendTo(any()),
       ).thenAnswer((_) async => true);
@@ -166,7 +182,12 @@ void main() {
 
     Future<List<List<String>>?> publishedKind4Tags() async {
       final calls = verify(
-        () => nostrClient.publishEvent(captureAny()),
+        () => nostrClient.publishEventAwaitOk(
+          captureAny(),
+          targetRelays: any(named: 'targetRelays'),
+          timeout: any(named: 'timeout'),
+          diagnosticTag: any(named: 'diagnosticTag'),
+        ),
       ).captured;
       if (calls.isEmpty) return null;
       return (calls.last as Event).tags.map((t) => t.cast<String>()).toList();
