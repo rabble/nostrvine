@@ -78,13 +78,30 @@ class NIP44V2 {
   /// far above anything this app sends and stays safe on low-end devices.
   static const int maxDecryptPlaintextSize = 1024 * 1024;
 
+  /// Largest plaintext expressible with the 2-byte u16 length prefix.
+  ///
+  /// A caller that never produces the extended form — anything encrypting
+  /// once, rather than through NIP-17's two layers — can pass this to
+  /// [decodePayload] to keep its cheap pre-decode rejection tight.
+  static const int maxU16PlaintextSize = 65535;
+
   /// version(1) + nonce(32) + mac(32).
   static const int _payloadOverhead = 65;
 
-  static final int _maxPayloadBytes =
-      _payloadOverhead + 6 + calcPaddedLen(maxDecryptPlaintextSize);
+  /// Raw payload size for [plaintextSize], using the prefix form that size
+  /// actually takes.
+  ///
+  /// The prefix must be chosen by size, not fixed at 6: a bound derived for
+  /// [maxU16PlaintextSize] with a 6-byte prefix is four bytes too generous and
+  /// admits the smallest extended-prefix payload, which is exactly what a
+  /// u16-only caller is trying to exclude.
+  static int _payloadBytesFor(int plaintextSize) =>
+      _payloadOverhead +
+      (plaintextSize >= extendedPrefixThreshold ? 6 : 2) +
+      calcPaddedLen(plaintextSize);
 
-  static final int _maxPayloadChars = ((_maxPayloadBytes + 2) ~/ 3) * 4;
+  static int _payloadCharsFor(int payloadBytes) =>
+      ((payloadBytes + 2) ~/ 3) * 4;
 
   static Uint8List writeU16BE(int num) {
     if (num < 1 || num > 65535) {
@@ -171,8 +188,24 @@ class NIP44V2 {
     return hmac.process(combined);
   }
 
-  static Map<String, Uint8List> decodePayload(String payload) {
-    if (payload.length < 132 || payload.length > _maxPayloadChars) {
+  /// Decodes a NIP-44 v2 payload envelope.
+  ///
+  /// [maxPlaintextSize] bounds what this call will accept, defaulting to
+  /// [maxDecryptPlaintextSize]. The oversize check runs BEFORE base64
+  /// decoding, which NIP-44 asks for explicitly so an oversized payload costs
+  /// a length comparison rather than a decode. A caller that only ever sees
+  /// single-encryption payloads — or that is merely classifying a payload's
+  /// shape rather than decrypting it — should pass [maxU16PlaintextSize] so it
+  /// does not pay for a ceiling it cannot reach.
+  static Map<String, Uint8List> decodePayload(
+    String payload, {
+    int? maxPlaintextSize,
+  }) {
+    final maxPayloadBytes = _payloadBytesFor(
+      maxPlaintextSize ?? maxDecryptPlaintextSize,
+    );
+    final maxPayloadChars = _payloadCharsFor(maxPayloadBytes);
+    if (payload.length < 132 || payload.length > maxPayloadChars) {
       throw Exception('Invalid payload length: ${payload.length}');
     }
     if (payload.startsWith('#')) {
@@ -186,7 +219,7 @@ class NIP44V2 {
       throw Exception('Invalid base64: ${e.toString()}');
     }
 
-    if (data.length < 99 || data.length > _maxPayloadBytes) {
+    if (data.length < 99 || data.length > maxPayloadBytes) {
       throw Exception('Invalid data length: ${data.length}');
     }
 

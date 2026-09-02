@@ -173,6 +173,38 @@ void main() {
         expect(NIP44V2.decodePayload(payload), isNotEmpty);
       });
 
+      test('a caller-supplied bound rejects before base64 decoding', () {
+        // A classifier that only ever sees single-encryption payloads should
+        // not pay for the 1 MiB decrypt ceiling. Passing maxU16PlaintextSize
+        // restores the cheap pre-decode rejection (#7331).
+        final oversizedForU16 = 'A' * 90000;
+
+        expect(
+          () => NIP44V2.decodePayload(
+            oversizedForU16,
+            maxPlaintextSize: NIP44V2.maxU16PlaintextSize,
+          ),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test(
+        'the default bound still admits an extended-prefix payload',
+        () async {
+          final payload = await _specEncrypt('a' * 65536, convKey, nonce);
+
+          expect(NIP44V2.decodePayload(payload), isNotEmpty);
+          expect(
+            () => NIP44V2.decodePayload(
+              payload,
+              maxPlaintextSize: NIP44V2.maxU16PlaintextSize,
+            ),
+            throwsA(isA<Exception>()),
+            reason: 'a u16-bounded caller must not accept an extended payload',
+          );
+        },
+      );
+
       test('rejects a payload above the decrypt ceiling', () {
         final tooLong =
             'A' * (((NIP44V2.maxDecryptPlaintextSize) ~/ 3) * 4 * 2);

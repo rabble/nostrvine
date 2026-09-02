@@ -138,7 +138,16 @@ abstract final class CuratedListConverter {
   /// heuristics leaking into production behavior.
   static bool isNip44Payload(String content) {
     try {
-      NIP44V2.decodePayload(content);
+      // Bounded to the u16 ceiling rather than the decrypt-side default: this
+      // is a classifier run over relay-supplied event content, and a private
+      // item payload is itself capped at that size before publishing
+      // (`CuratedListRelayGateway.privateItemPayloadFits`). Without the bound
+      // an oversized event would be base64-decoded here just to answer a
+      // boolean, instead of being rejected by a length comparison (#7331).
+      NIP44V2.decodePayload(
+        content,
+        maxPlaintextSize: NIP44V2.maxU16PlaintextSize,
+      );
       return true;
     } on Object {
       return false;
