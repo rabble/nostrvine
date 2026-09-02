@@ -13,9 +13,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
+// Riverpod 3 exports `Override` from `misc.dart`, not the main entry point.
+import 'package:riverpod/misc.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Mock for ProfileRepository
@@ -111,6 +114,18 @@ _MockFollowRepository _createMockFollowRepository({
   return mock;
 }
 
+/// No account carries a NIP-62 tombstone.
+///
+/// Every scope needs it: `UserPickerSheet` resolves each row's name and avatar
+/// through `profileVanishedProvider`, which derives from this stream, and
+/// without an override that reaches the real database.
+// ignore: specify_nonobvious_property_types
+final _noVanishedProfiles = _vanishedProfiles(const {});
+
+/// [pubkeys] carry a tombstone; nothing else does.
+Override _vanishedProfiles(Set<String> pubkeys) =>
+    vanishedProfilePubkeysProvider.overrideWith((ref) => Stream.value(pubkeys));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -122,6 +137,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -160,6 +176,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -204,6 +221,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -236,6 +254,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -263,6 +282,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -297,6 +317,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -326,6 +347,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -381,6 +403,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
@@ -417,6 +440,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -452,6 +476,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -503,6 +528,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
@@ -553,6 +579,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(cachedProfiles: [profile]),
               ),
@@ -623,6 +650,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(cachedProfiles: profiles),
               ),
@@ -697,6 +725,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                _noVanishedProfiles,
                 profileRepositoryProvider.overrideWithValue(
                   _createMockProfileRepository(cachedProfiles: profiles),
                 ),
@@ -766,6 +795,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(cachedProfiles: [profile]),
               ),
@@ -833,6 +863,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
@@ -882,6 +913,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(cachedProfiles: profiles),
               ),
@@ -938,6 +970,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(cachedProfiles: [profile]),
               ),
@@ -1001,6 +1034,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
@@ -1053,6 +1087,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                _noVanishedProfiles,
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
                 profileReadRepositoryProvider.overrideWithValue(
                   mockProfileRepo,
@@ -1089,6 +1124,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -1119,6 +1155,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -1176,6 +1213,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(
@@ -1287,6 +1325,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                _noVanishedProfiles,
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
                 profileReadRepositoryProvider.overrideWithValue(
                   mockProfileRepo,
@@ -1330,6 +1369,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -1417,6 +1457,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(
@@ -1472,6 +1513,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -1501,6 +1543,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -1533,6 +1576,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                _noVanishedProfiles,
                 profileRepositoryProvider.overrideWithValue(null),
                 profileReadRepositoryProvider.overrideWithValue(null),
                 followRepositoryProvider.overrideWithValue(
@@ -1568,6 +1612,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(null),
               profileReadRepositoryProvider.overrideWithValue(null),
               followRepositoryProvider.overrideWithValue(
@@ -1602,6 +1647,174 @@ void main() {
     });
   });
 
+  // #8421 adjacent: this picker feeds badge awards (kind 8, which NIP-58
+  // calls "immutable and non-transferable"), people lists (kind 30000) and
+  // video `p` tags (kind 34236). A wrong identity here is published
+  // permanently and in public, and `allUsers` mode reaches third-party
+  // NIP-50 relays that a vanish addressed elsewhere never obliged to forget.
+  group('vanished accounts', () {
+    const vanishedPubkey =
+        'b75b9a3131f4263add94ba20beb352a1'
+        '1032684f2dac07a7e1af827c6f3c1505';
+    const livePubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    UserProfile profileFor(String pubkey, String name, {String? nip05}) =>
+        UserProfile(
+          pubkey: pubkey,
+          displayName: name,
+          nip05: nip05,
+          picture: 'https://example.invalid/$pubkey.png',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'e' * 64,
+        );
+
+    Future<void> pumpPicker(
+      WidgetTester tester, {
+      required List<UserProfile> profiles,
+      required Set<String> vanished,
+      UserPickerFilterMode filterMode = UserPickerFilterMode.mutualFollowsOnly,
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            _vanishedProfiles(vanished),
+            profileRepositoryProvider.overrideWithValue(
+              _createMockProfileRepository(
+                cachedProfiles: profiles,
+                searchResults: profiles,
+              ),
+            ),
+            followRepositoryProvider.overrideWithValue(
+              _createMockFollowRepository(
+                followingPubkeys: [for (final p in profiles) p.pubkey],
+              ),
+            ),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UserPickerSheet(title: 'Title', filterMode: filterMode),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('names a vanished follow "Deleted account"', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await pumpPicker(
+        tester,
+        profiles: [profileFor(vanishedPubkey, 'Aeontropy')],
+        vanished: {vanishedPubkey},
+      );
+
+      expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+      expect(find.text('Aeontropy'), findsNothing);
+    });
+
+    testWidgets("hides a vanished account's NIP-05, which identifies it too", (
+      tester,
+    ) async {
+      await pumpPicker(
+        tester,
+        profiles: [
+          profileFor(
+            vanishedPubkey,
+            'Aeontropy',
+            nip05: 'aeontropy@example.com',
+          ),
+        ],
+        vanished: {vanishedPubkey},
+      );
+
+      expect(find.text('aeontropy@example.com'), findsNothing);
+    });
+
+    testWidgets('announces the substitute, not the name it no longer shows', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await pumpPicker(
+        tester,
+        profiles: [profileFor(vanishedPubkey, 'Aeontropy')],
+        vanished: {vanishedPubkey},
+      );
+
+      expect(
+        find.bySemanticsLabel(
+          l10n.userPickerSelectSemantics(l10n.profileDeletedAccountName),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('leaves a live account untouched', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await pumpPicker(
+        tester,
+        profiles: [profileFor(livePubkey, 'Alice')],
+        vanished: const {},
+      );
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+    });
+
+    testWidgets('orders rows by the rendered name, not the raw one', (
+      tester,
+    ) async {
+      // Raw, "Aardvark" sorts first; rendered, "Deleted account" sorts last.
+      // The two orders disagree, so only one of them can pass.
+      await pumpPicker(
+        tester,
+        profiles: [
+          profileFor(vanishedPubkey, 'Aardvark'),
+          profileFor(livePubkey, 'Aaron'),
+        ],
+        vanished: {vanishedPubkey},
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final rendered = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data)
+          .whereType<String>()
+          .where(
+            (t) => t == 'Aaron' || t == l10n.profileDeletedAccountName,
+          )
+          .toList();
+      expect(rendered, ['Aaron', l10n.profileDeletedAccountName]);
+    });
+
+    testWidgets(
+      'renders a divine NIP-05 in the short form every other row uses',
+      (tester) async {
+        // The raw `nip05` field is the long form and skips the sanitizer;
+        // `shortDisplayNip05` is what the rest of the app renders and runs the
+        // value through `text_sanitizer` on the way. Relay search results are
+        // arbitrary kind-0 JSON, so this row is a display boundary.
+        await pumpPicker(
+          tester,
+          profiles: [
+            profileFor(livePubkey, 'Alice', nip05: '_@alice.divine.video'),
+          ],
+          vanished: const {},
+        );
+
+        expect(find.text('@alice'), findsOneWidget);
+        expect(find.text('_@alice.divine.video'), findsNothing);
+      },
+    );
+  });
+
   group('showUserPickerSheet', () {
     testWidgets('a short drag on the results keeps the picker and its picks', (
       tester,
@@ -1628,6 +1841,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            _noVanishedProfiles,
             profileRepositoryProvider.overrideWithValue(
               _createMockProfileRepository(cachedProfiles: profiles),
             ),
