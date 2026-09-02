@@ -12,9 +12,12 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -379,6 +382,86 @@ void main() {
           when(
             () => mockVideoSharingService.recentlySharedWith,
           ).thenReturn([alice, bob]);
+        });
+
+        // #8421: the "Share with" row is a DM send target — tapping a contact
+        // hands it to ShareSheetBloc, which routes to DmRepository.sendMessage
+        // — so it must name and picture its peer the way the inbox does.
+        group('DM peer identity', () {
+          const vanished = ShareableUser(
+            pubkey:
+                'b75b9a3131f4263add94ba20beb352a1'
+                '1032684f2dac07a7e1af827c6f3c1505',
+            displayName: 'Aeontropy',
+            picture: 'https://example.invalid/aeontropy.png',
+          );
+          const moderation = ShareableUser(
+            pubkey: kModerationPubkeyHex,
+            displayName: 'moderation-bot-v2',
+          );
+
+          Future<void> pumpWithContact(
+            WidgetTester tester,
+            ShareableUser contact, {
+            bool isVanished = false,
+          }) async {
+            when(
+              () => mockVideoSharingService.recentlySharedWith,
+            ).thenReturn([contact]);
+
+            await tester.pumpWidget(
+              testMaterialApp(
+                home: Scaffold(body: ShareActionButton(video: testVideo)),
+                additionalOverrides: [
+                  videoSharingServiceProvider.overrideWith(
+                    (ref) => mockVideoSharingService,
+                  ),
+                  profileVanishedProvider(
+                    contact.pubkey,
+                  ).overrideWith((ref) => isVanished),
+                ],
+                mockAuthService: createMockAuthService(),
+                mockProfileRepository: mockProfileRepository,
+                mockFollowRepository: mockFollowRepository,
+              ),
+            );
+            await tester.tap(find.byType(ShareActionButton));
+            await tester.pumpAndSettle();
+          }
+
+          testWidgets('names a vanished peer "Deleted account"', (
+            tester,
+          ) async {
+            await pumpWithContact(tester, vanished, isVanished: true);
+
+            expect(
+              find.text(l10n.profileDeletedAccountName),
+              findsOneWidget,
+            );
+            expect(find.text('Aeontropy'), findsNothing);
+          });
+
+          testWidgets('gives the moderation account its bundled wordmark and '
+              'shared name', (tester) async {
+            await pumpWithContact(tester, moderation);
+
+            expect(find.byType(ModerationAvatar), findsOneWidget);
+            expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+            expect(find.text('moderation-bot-v2'), findsNothing);
+          });
+
+          testWidgets('announces the resolved name when a peer is selected', (
+            tester,
+          ) async {
+            await pumpWithContact(tester, vanished, isVanished: true);
+
+            await tester.tap(find.text(l10n.profileDeletedAccountName));
+            await tester.pumpAndSettle();
+
+            // The selection chip in the composer header names the recipient
+            // the row named, not the kind-0 identity behind it.
+            expect(find.text('Aeontropy'), findsNothing);
+          });
         });
 
         Future<void> pumpOpenSheet(WidgetTester tester) async {

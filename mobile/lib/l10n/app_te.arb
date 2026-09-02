@@ -1119,8 +1119,6 @@
   "shareFindPeople": "వ్యక్తులను కనుగొనండి",
   "shareFindPeopleMultiline": "\nవ్యక్తులను కనుగొనండి",
   "shareSent": "పంపబడింది",
-  "shareContactFallback": "సంప్రదించండి",
-  "shareUserFallback": "వినియోగదారు",
   "shareSelectedRecipientAnnouncement": "ఎంచుకోబడింది{name}",
   "@shareSelectedRecipientAnnouncement": {
     "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4517,7 +4515,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "findPeopleAnonymousUser": "అజ్ఞాత",
   "findPeopleNoContacts": "పరిచయాలు ఏవీ కనుగొనబడలేదు.\nవ్యక్తులను ఇక్కడ చూడటానికి వారిని అనుసరించడం ప్రారంభించండి.",
   "geoBlockedCityLabel": "నగరం",
   "geoBlockedCountryLabel": "దేశం",

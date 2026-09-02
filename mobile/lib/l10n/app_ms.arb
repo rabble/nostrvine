@@ -839,8 +839,6 @@
   "shareFindPeople": "Cari orang",
   "shareFindPeopleMultiline": "Cari\norang",
   "shareSent": "Dihantar",
-  "shareContactFallback": "Kenalan",
-  "shareUserFallback": "Pengguna",
   "shareSelectedRecipientAnnouncement": "{name} dipilih",
   "@shareSelectedRecipientAnnouncement": {
     "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -3737,7 +3735,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "findPeopleAnonymousUser": "Tanpa nama",
   "findPeopleNoContacts": "Tiada kenalan ditemui.\nMula mengikuti orang untuk melihat mereka di sini.",
   "geoBlockedCityLabel": "Bandar",
   "geoBlockedCountryLabel": "Negara",

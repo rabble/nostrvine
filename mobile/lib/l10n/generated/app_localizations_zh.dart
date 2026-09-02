@@ -1629,12 +1629,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareSent => '已发送';
 
   @override
-  String get shareContactFallback => '联系人';
-
-  @override
-  String get shareUserFallback => '用户';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '已选择 $name';
   }
@@ -6629,9 +6623,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       '这会为你的账号和内容发送删除请求，尽可能删除你的 Divine 账号，并在此设备上退出登录。部分中继、客户端和搜索索引可能保留副本。其他已登录设备会保持登录，直到你在那些设备上移除密钥。';
-
-  @override
-  String get findPeopleAnonymousUser => '匿名用户';
 
   @override
   String get findPeopleNoContacts => '没有找到联系人。\n开始关注一些人，他们就会出现在这里。';

@@ -1755,12 +1755,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareSent => 'Skickat';
 
   @override
-  String get shareContactFallback => 'Kontakt';
-
-  @override
-  String get shareUserFallback => 'Användare';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name vald';
   }
@@ -7039,9 +7033,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Det här skickar raderingsförfrågningar för ditt konto och innehåll, tar bort ditt Divine-konto när det går och loggar ut dig på den här enheten. Vissa reläer, klienter och sökindex kan behålla kopior. Andra inloggade enheter förblir aktiva tills du tar bort nycklarna där.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonym';
 
   @override
   String get findPeopleNoContacts =>

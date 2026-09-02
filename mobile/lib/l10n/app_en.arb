@@ -1122,8 +1122,6 @@
   "shareFindPeople": "Find people",
   "shareFindPeopleMultiline": "Find\npeople",
   "shareSent": "Sent",
-  "shareContactFallback": "Contact",
-  "shareUserFallback": "User",
   "shareSelectedRecipientAnnouncement": "Selected {name}",
   "@shareSelectedRecipientAnnouncement": {
     "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4502,7 +4500,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "findPeopleAnonymousUser": "Anonymous",
   "findPeopleNoContacts": "No contacts found.\nStart following people to see them here.",
   "geoBlockedCityLabel": "City",
   "geoBlockedCountryLabel": "Country",

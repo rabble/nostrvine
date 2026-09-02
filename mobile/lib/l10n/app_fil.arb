@@ -470,8 +470,6 @@
     "shareFindPeople": "Maghanap ng tao",
     "shareFindPeopleMultiline": "Maghanap\nng tao",
     "shareSent": "Naipadala",
-    "shareContactFallback": "Contact",
-    "shareUserFallback": "User",
     "shareSelectedRecipientAnnouncement": "Napili si {name}",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -3239,7 +3237,6 @@
     "deleteAccountSuccess": "Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.",
     "deleteAccountSuccessContentUnverified": "Na-request na ang pag-delete ng account. May ilang existing na post na hindi makumpirma nang isa-isa para sa pag-delete.",
     "deleteAccountWarningBody": "Nagpapadala ito ng mga deletion request para sa account at content mo, binubura ang Divine account mo kapag posible, at nila-log out ka sa device na ito. Ang ilang relay, client, at search index ay maaaring may kopya pa rin. Ang iba pang naka-log in na device ay mananatiling aktibo hanggang alisin mo ang mga key doon.",
-    "findPeopleAnonymousUser": "Anonymous",
     "findPeopleNoContacts": "Walang nakitang contact.\nSimulang sundan ang mga tao para makita sila dito.",
     "geoBlockedCityLabel": "Lungsod",
     "geoBlockedCountryLabel": "Bansa",

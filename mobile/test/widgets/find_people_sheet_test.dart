@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -31,6 +34,7 @@ void main() {
     Widget createTestWidget({
       List<ShareableUser> contacts = const [],
       Duration? searchTimeout = const Duration(seconds: 20),
+      List<dynamic> extraOverrides = const [],
     }) {
       return testMaterialApp(
         home: Builder(
@@ -65,6 +69,7 @@ void main() {
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
           profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
+          ...extraOverrides,
         ],
       );
     }
@@ -583,6 +588,129 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    // #8421: Find People routes straight into DmRepository.sendMessage, and
+    // its search reaches third-party NIP-50 relays a NIP-62 vanish addressed
+    // elsewhere never obliged to forget. So a deleted account's kind 0 does
+    // come back here, and the row must not present it as an identity.
+    group('DM peer identity', () {
+      const vanishedPubkey =
+          'b75b9a3131f4263add94ba20beb352a11032684f2dac07a7e1af827c6f3c1505';
+
+      Future<void> openWith(
+        WidgetTester tester, {
+        required ShareableUser contact,
+        bool isVanished = false,
+      }) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            contacts: [contact],
+            searchTimeout: null,
+            extraOverrides: [
+              profileVanishedProvider(
+                contact.pubkey,
+              ).overrideWith((ref) => isVanished),
+            ],
+          ),
+        );
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('names a vanished peer "Deleted account"', (tester) async {
+        await openWith(
+          tester,
+          contact: const ShareableUser(
+            pubkey: vanishedPubkey,
+            displayName: 'Aeontropy',
+            handle: '@aeontropy',
+          ),
+          isVanished: true,
+        );
+
+        expect(find.text('Deleted account'), findsOneWidget);
+        expect(find.text('Aeontropy'), findsNothing);
+      });
+
+      testWidgets(
+        "hides a vanished peer's handle, which identifies them too",
+        (
+          tester,
+        ) async {
+          await openWith(
+            tester,
+            contact: const ShareableUser(
+              pubkey: vanishedPubkey,
+              displayName: 'Aeontropy',
+              handle: '@aeontropy',
+            ),
+            isVanished: true,
+          );
+
+          expect(find.text('@aeontropy'), findsNothing);
+        },
+      );
+
+      testWidgets('gives the moderation account its bundled wordmark and '
+          'shared name', (tester) async {
+        await openWith(
+          tester,
+          contact: const ShareableUser(
+            pubkey: kModerationPubkeyHex,
+            displayName: 'moderation-bot-v2',
+          ),
+        );
+
+        expect(find.byType(ModerationAvatar), findsOneWidget);
+        expect(find.text('Divine Moderation'), findsOneWidget);
+        expect(find.text('moderation-bot-v2'), findsNothing);
+      });
+
+      testWidgets('hands the resolved identity on, so the share sheet cannot '
+          'name the peer differently', (tester) async {
+        const contact = ShareableUser(
+          pubkey: vanishedPubkey,
+          displayName: 'Aeontropy',
+          handle: '@aeontropy',
+          picture: 'https://example.invalid/a.png',
+        );
+        ShareableUser? result;
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    result = await FindPeopleSheet.show(
+                      context,
+                      contacts: const [contact],
+                      currentUserPubkey: currentUserPubkey,
+                    );
+                  },
+                  child: const Text('Open Sheet'),
+                ),
+              ),
+            ),
+            additionalOverrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileVanishedProvider(
+                vanishedPubkey,
+              ).overrideWith((ref) => true),
+            ],
+          ),
+        );
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Deleted account'));
+        await tester.pumpAndSettle();
+
+        expect(result?.displayName, 'Deleted account');
+        expect(result?.handle, isNull);
+        expect(result?.picture, isNull);
+      });
     });
   });
 }

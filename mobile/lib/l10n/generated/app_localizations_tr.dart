@@ -1695,12 +1695,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareSent => 'Gönderildi';
 
   @override
-  String get shareContactFallback => 'Kişi';
-
-  @override
-  String get shareUserFallback => 'Kullanıcı';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name seçildi';
   }
@@ -6969,9 +6963,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'Bu, hesabın ve içeriğin için silme istekleri gönderir, mümkün olduğunda Divine hesabını siler ve bu cihazda oturumunu kapatır. Bazı röleler, istemciler ve arama dizinleri kopyaları saklayabilir. Oturum açmış diğer cihazlar, oradaki anahtarları kaldırana kadar aktif kalır.';
-
-  @override
-  String get findPeopleAnonymousUser => 'Anonim';
 
   @override
   String get findPeopleNoContacts =>

@@ -602,8 +602,6 @@
     "shareFindPeople": "Trouver des gens",
     "shareFindPeopleMultiline": "Trouver\ndes gens",
     "shareSent": "Envoyé",
-    "shareContactFallback": "Contact",
-    "shareUserFallback": "Utilisateur",
     "shareSelectedRecipientAnnouncement": "{name} sélectionné",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.",
     "deleteAccountSuccessContentUnverified": "Suppression du compte demandée. La suppression de certaines publications existantes n'a pas pu être confirmée individuellement.",
     "deleteAccountWarningBody": "Ça envoie des demandes de suppression pour ton compte et ton contenu, supprime ton compte Divine quand c'est possible et te déconnecte sur cet appareil. Certains relays, clients et index de recherche peuvent garder des copies. Les autres appareils connectés restent actifs jusqu'à ce que tu y retires les clés.",
-    "findPeopleAnonymousUser": "Anonyme",
     "findPeopleNoContacts": "Aucun contact trouvé.\nCommence à suivre des gens pour les voir ici.",
     "geoBlockedCityLabel": "Ville",
     "geoBlockedCountryLabel": "Pays",

@@ -1614,12 +1614,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareSent => '送信済み';
 
   @override
-  String get shareContactFallback => '連絡先';
-
-  @override
-  String get shareUserFallback => 'ユーザー';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$nameを選択しました';
   }
@@ -6682,9 +6676,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'これはアカウントとコンテンツの削除リクエストを送信して、可能なら Divine アカウントを削除し、このデバイスからサインアウトするよ。一部のリレーやクライアント、検索インデックスにはコピーが残ることがあるよ。ほかのサインイン中のデバイスは、そこで鍵を削除するまで有効なままだよ。';
-
-  @override
-  String get findPeopleAnonymousUser => '匿名';
 
   @override
   String get findPeopleNoContacts => '連絡先が見つからないよ。\n誰かをフォローすると、ここに表示されるよ。';

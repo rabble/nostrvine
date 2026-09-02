@@ -701,8 +701,6 @@
     "shareFindPeople": "ሰዎችን ያግኙ",
     "shareFindPeopleMultiline": "አግኝ\nሰዎች",
     "shareSent": "ተልኳል።",
-    "shareContactFallback": "ተገናኝ",
-    "shareUserFallback": "ተጠቃሚ",
     "shareSelectedRecipientAnnouncement": "{name} ተመርጧል",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4415,7 +4413,6 @@
     "deleteAccountSuccess": "የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።",
     "deleteAccountSuccessContentUnverified": "የመለያ ስረዛ ተጠይቋል። የአንዳንድ ነባር ልጥፎች ስረዛ በተናጠል ማረጋገጥ አልተቻለም።",
     "deleteAccountWarningBody": "ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።",
-    "findPeopleAnonymousUser": "ስም-አልባ",
     "findPeopleNoContacts": "ምንም እውቂያዎች አልተገኙም።\nእዚህ ለማየት ሰዎችን መከተል ይጀምሩ።",
     "geoBlockedCityLabel": "ከተማ",
     "geoBlockedCountryLabel": "ሀገር",

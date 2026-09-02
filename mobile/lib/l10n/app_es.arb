@@ -602,8 +602,6 @@
     "shareFindPeople": "Buscar personas",
     "shareFindPeopleMultiline": "Buscar\npersonas",
     "shareSent": "Enviado",
-    "shareContactFallback": "Contacto",
-    "shareUserFallback": "Usuario",
     "shareSelectedRecipientAnnouncement": "{name} seleccionado",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.",
     "deleteAccountSuccessContentUnverified": "Eliminación de cuenta solicitada. No se pudo confirmar de forma individual la eliminación de algunas publicaciones existentes.",
     "deleteAccountWarningBody": "Esto envía solicitudes de eliminación de tu cuenta y contenido, elimina tu cuenta de Divine cuando es posible y cierra tu sesión en este dispositivo. Algunos relays, clientes e índices de búsqueda pueden conservar copias. Otros dispositivos con la sesión iniciada siguen activos hasta que quites las claves ahí.",
-    "findPeopleAnonymousUser": "Anónimo",
     "findPeopleNoContacts": "No se encontraron contactos.\nEmpezá a seguir personas para verlas acá.",
     "geoBlockedCityLabel": "Ciudad",
     "geoBlockedCountryLabel": "País",

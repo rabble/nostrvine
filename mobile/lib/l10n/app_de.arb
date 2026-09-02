@@ -602,8 +602,6 @@
     "shareFindPeople": "Leute finden",
     "shareFindPeopleMultiline": "Leute\nfinden",
     "shareSent": "Gesendet",
-    "shareContactFallback": "Kontakt",
-    "shareUserFallback": "Nutzer",
     "shareSelectedRecipientAnnouncement": "{name} ausgewählt",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
@@ -4283,7 +4281,6 @@
     "deleteAccountSuccess": "Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.",
     "deleteAccountSuccessContentUnverified": "Kontolöschung angefragt. Für einige vorhandene Beiträge konnte die Löschung nicht einzeln bestätigt werden.",
     "deleteAccountWarningBody": "Das sendet Löschanfragen für dein Konto und deine Inhalte, löscht dein Divine-Konto wenn möglich und meldet dich auf diesem Gerät ab. Einige Relays, Clients und Suchindizes behalten möglicherweise Kopien. Andere angemeldete Geräte bleiben aktiv, bis du dort die Schlüssel entfernst.",
-    "findPeopleAnonymousUser": "Anonym",
     "findPeopleNoContacts": "Keine Kontakte gefunden.\nFolge Leuten, um sie hier zu sehen.",
     "geoBlockedCityLabel": "Stadt",
     "geoBlockedCountryLabel": "Land",

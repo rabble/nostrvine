@@ -93,7 +93,7 @@ class _ShareWithSection extends StatelessWidget {
                             child: _ContactItem(
                               user: _skeletonContact,
                               isSelected: false,
-                              onTap: () {},
+                              onTap: (_) {},
                             ),
                           ),
                         ),
@@ -105,7 +105,7 @@ class _ShareWithSection extends StatelessWidget {
                       child: _ContactItem(
                         user: contact,
                         isSelected: selectedPubkeys.contains(contact.pubkey),
-                        onTap: () => onContactTapped(contact),
+                        onTap: onContactTapped,
                       ),
                     );
                   },
@@ -172,7 +172,14 @@ class _FindPeopleItem extends StatelessWidget {
   }
 }
 
-class _ContactItem extends StatelessWidget {
+/// One contact in the "Share with" row.
+///
+/// The row is a DM send target — tapping it selects a recipient that
+/// `ShareSheetBloc` hands to `DmRepository.sendMessage` — so it resolves its
+/// peer through the same chain the inbox rows use, and hands the *resolved*
+/// [ShareableUser] to [onTap] so the selection chip, the screen-reader
+/// announcement and the success snackbar all name the same account (#8421).
+class _ContactItem extends ConsumerWidget {
   const _ContactItem({
     required this.user,
     required this.isSelected,
@@ -181,17 +188,43 @@ class _ContactItem extends StatelessWidget {
 
   final ShareableUser user;
   final bool isSelected;
-  final VoidCallback onTap;
+  final ValueChanged<ShareableUser> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isVanished = ref.watch(profileVanishedProvider(user.pubkey));
+    // `dmPeerName` rather than the `profile:`-shaped wrapper: a
+    // [ShareableUser] already carries the step-4 value (it is built from
+    // `UserProfile.bestDisplayName`), and it is NOT a `displayNameOverride` —
+    // that step outranks moderation, which would let the moderation account's
+    // own kind-0 name win over the shared label.
+    final displayName = dmPeerName(
+      pubkeyHex: user.pubkey,
+      isVanished: isVanished,
+      isModeration: isModerationAccount(user.pubkey),
+      labels: dmPeerLabels(context),
+      profileName: user.displayName,
+    );
+    final avatar = dmPeerAvatar(
+      pubkeyHex: user.pubkey,
+      isVanished: isVanished,
+      pictureUrl: user.picture,
+    );
+    final resolved = ShareableUser(
+      pubkey: user.pubkey,
+      displayName: displayName,
+      // A vanished account's NIP-05 identifies it as surely as its name does.
+      handle: isVanished ? null : user.handle,
+      picture: avatar.imageUrl,
+    );
+
     return Semantics(
       button: true,
       selected: isSelected,
-      label: user.displayName ?? context.l10n.shareContactFallback,
+      label: displayName,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () => onTap(resolved),
         child: SizedBox(
           width: _ShareWithSection._itemWidth,
           child: Column(
@@ -201,9 +234,10 @@ class _ContactItem extends StatelessWidget {
               Stack(
                 children: [
                   UserAvatar(
-                    imageUrl: user.picture,
-                    name: user.displayName,
+                    imageUrl: avatar.imageUrl,
+                    name: displayName,
                     size: _ShareWithSection._avatarSize,
+                    contentOverride: avatar.contentOverride,
                   ),
                   if (isSelected)
                     Positioned(
@@ -226,7 +260,7 @@ class _ContactItem extends StatelessWidget {
                 ],
               ),
               Text(
-                user.displayName ?? context.l10n.shareUserFallback,
+                displayName,
                 style: TextStyle(
                   color: isSelected
                       ? context.vineColors.accentPositive

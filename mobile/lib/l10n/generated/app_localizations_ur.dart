@@ -1760,12 +1760,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareSent => 'بھیج دیا';
 
   @override
-  String get shareContactFallback => 'رابطہ';
-
-  @override
-  String get shareUserFallback => 'صارف';
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name منتخب ہوئے';
   }
@@ -7043,9 +7037,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get deleteAccountWarningBody =>
       'یہ آپ کے اکاؤنٹ اور مواد کے لیے حذف کی درخواستیں بھیجتا ہے، ممکن ہونے پر آپ کا Divine اکاؤنٹ حذف کرتا ہے، اور اس ڈیوائس پر آپ کو سائن آؤٹ کرتا ہے۔ کچھ ریلے، کلائنٹس اور سرچ انڈیکسز کے پاس کاپیاں رہ سکتی ہیں۔ دیگر سائن اِن ڈیوائسز اس وقت تک فعال رہتی ہیں جب تک آپ وہاں کلیدیں نہ ہٹا دیں۔';
-
-  @override
-  String get findPeopleAnonymousUser => 'گمنام';
 
   @override
   String get findPeopleNoContacts =>

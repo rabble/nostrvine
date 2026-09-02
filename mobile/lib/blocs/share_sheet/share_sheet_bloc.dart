@@ -349,7 +349,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
             selectedRecipients: const [],
             actionResult: ShareSheetSendSuccess(
               recipientNames: [
-                for (final r in delivered) r.displayName ?? 'user',
+                // Non-null for every selectable row — both pickers resolve the
+                // name through `dmPeerDisplayName` before selection. The
+                // generated fallback is the naming chain's own floor for a
+                // peer with no profile, and unlike a bare 'user' it is neither
+                // English nor a second answer to "who is this".
+                for (final r in delivered)
+                  r.displayName ?? UserProfile.defaultDisplayNameFor(r.pubkey),
               ],
               recipientPubkey: single?.pubkey,
               conversationId: single == null

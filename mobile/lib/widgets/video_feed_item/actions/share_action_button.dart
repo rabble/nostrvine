@@ -12,9 +12,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/blocs/video_crosspost/video_crosspost_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -25,6 +27,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -257,8 +260,13 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
               SemanticsService.sendAnnouncement(
                 View.of(context),
                 context.l10n.shareSelectedRecipientAnnouncement(
+                  // Non-null for every selectable row: `_ContactItem` and
+                  // `FindPeopleSheet` both resolve the name through
+                  // `dmPeerDisplayName` before handing the recipient over.
                   state.selectedRecipients.last.displayName ??
-                      context.l10n.shareUserFallback,
+                      UserProfile.defaultDisplayNameFor(
+                        state.selectedRecipients.last.pubkey,
+                      ),
                 ),
                 Directionality.of(context),
               );
