@@ -314,9 +314,13 @@ class NIP44V2 {
 
   static Future<String> decrypt(
     String payload,
-    Uint8List conversationKey,
-  ) async {
-    var payloadData = decodePayload(payload);
+    Uint8List conversationKey, {
+    int? maxPlaintextSize,
+  }) async {
+    var payloadData = decodePayload(
+      payload,
+      maxPlaintextSize: maxPlaintextSize,
+    );
     var keys = getMessageKeys(conversationKey, payloadData['nonce']!);
     var calculatedMac = hmacAad(
       keys['hmac_key']!,

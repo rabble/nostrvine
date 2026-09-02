@@ -205,6 +205,19 @@ void main() {
         },
       );
 
+      test('decrypt forwards a caller-supplied plaintext bound', () async {
+        final payload = await _specEncrypt('a' * 65536, convKey, nonce);
+
+        expect(
+          () => NIP44V2.decrypt(
+            payload,
+            convKey,
+            maxPlaintextSize: NIP44V2.maxU16PlaintextSize,
+          ),
+          throwsA(isA<Exception>()),
+        );
+      });
+
       test('rejects a payload above the decrypt ceiling', () {
         final tooLong =
             'A' * (((NIP44V2.maxDecryptPlaintextSize) ~/ 3) * 4 * 2);

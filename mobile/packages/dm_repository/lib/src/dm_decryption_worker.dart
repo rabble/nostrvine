@@ -107,7 +107,11 @@ Future<DecryptedRumorResult> _decryptOne(
   final String sealJsonText;
   try {
     final giftKey = NIP44V2.shareSecret(privateKeyHex, giftWrap.pubkey);
-    sealJsonText = await NIP44V2.decrypt(giftWrap.content, giftKey);
+    sealJsonText = await NIP44V2.decrypt(
+      giftWrap.content,
+      giftKey,
+      maxPlaintextSize: maxNip17ReceivePlaintextBytes,
+    );
   } on Object catch (e) {
     return DecryptedRumorResult.failure(
       'gift wrap decrypt failed for ${giftWrap.id}: $e',
@@ -135,7 +139,11 @@ Future<DecryptedRumorResult> _decryptOne(
   final String rumorJsonText;
   try {
     final sealKey = NIP44V2.shareSecret(privateKeyHex, sealEvent.pubkey);
-    rumorJsonText = await NIP44V2.decrypt(sealEvent.content, sealKey);
+    rumorJsonText = await NIP44V2.decrypt(
+      sealEvent.content,
+      sealKey,
+      maxPlaintextSize: maxNip17ReceivePlaintextBytes,
+    );
   } on Object catch (e) {
     return DecryptedRumorResult.failure(
       'seal decrypt failed for ${giftWrap.id}: $e',

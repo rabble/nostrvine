@@ -37,6 +37,17 @@ bool verifyGiftWrapPartJson(Map<String, dynamic> eventJson) {
 /// `getRumorEvent` verifies inline on the calling isolate, unchanged.
 typedef GiftWrapPartVerifier = Future<bool> Function(Event event);
 
+/// Largest plaintext accepted at either NIP-17 decrypt layer.
+///
+/// Divine's production relay advertises a 100 KiB event-content ceiling, so
+/// a 1 MiB NIP-44 plaintext cannot arrive through it. 128 KiB keeps generous
+/// interoperability headroom for other relays while bounding the JSON and DM
+/// body handed to parsing, persistence, and repeated Flutter layout (#7331).
+const int maxNip17ReceivePlaintextBytes = 128 * 1024;
+
+bool _plaintextFits(String plaintext, int maxBytes) =>
+    utf8.encode(plaintext).length <= maxBytes;
+
 /// Rebuilds an unsigned NIP-59 rumor from its plaintext JSON using the
 /// authenticated seal pubkey as author.
 ///
@@ -92,6 +103,7 @@ class GiftWrapUtil {
     Nostr nostr,
     Event e, {
     GiftWrapPartVerifier? verifyPart,
+    int maxPlaintextSize = maxNip17ReceivePlaintextBytes,
   }) async {
     // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
     // decrypting. Defense-in-depth — Divine relays already verify, but an
@@ -106,6 +118,10 @@ class GiftWrapUtil {
 
     var rumorText = await nostr.nostrSigner.nip44Decrypt(e.pubkey, e.content);
     if (rumorText == null) {
+      return null;
+    }
+    if (!_plaintextFits(rumorText, maxPlaintextSize)) {
+      log('GiftWrap seal plaintext exceeds the receive limit, id: ${e.id}');
       return null;
     }
 
@@ -130,6 +146,10 @@ class GiftWrapUtil {
       rumorEvent.content,
     );
     if (sourceText == null) {
+      return null;
+    }
+    if (!_plaintextFits(sourceText, maxPlaintextSize)) {
+      log('GiftWrap rumor plaintext exceeds the receive limit, id: ${e.id}');
       return null;
     }
 

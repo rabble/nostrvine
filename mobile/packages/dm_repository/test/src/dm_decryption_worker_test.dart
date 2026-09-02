@@ -351,6 +351,30 @@ void main() {
       expect(results[0].error, contains('invalid gift wrap json'));
     });
 
+    test('rejects an oversized outer payload before base64 decoding', () async {
+      final recipientPriv = generatePrivateKey();
+      final recipientPub = getPublicKey(recipientPriv);
+      final ephemeralPriv = generatePrivateKey();
+      final giftWrap = Event(
+        getPublicKey(ephemeralPriv),
+        EventKind.giftWrap,
+        <List<String>>[
+          ['p', recipientPub],
+        ],
+        'A' * 300000,
+      )..sign(ephemeralPriv);
+
+      final results = await decryptGiftWrapBatch(
+        DecryptBatchRequest(
+          events: [giftWrap.toJson()],
+          privateKeyHex: recipientPriv,
+        ),
+      );
+
+      expect(results.single.isSuccess, isFalse);
+      expect(results.single.error, contains('Invalid payload length'));
+    });
+
     test(
       'returns failure when decrypted seal content is not valid JSON',
       () async {
