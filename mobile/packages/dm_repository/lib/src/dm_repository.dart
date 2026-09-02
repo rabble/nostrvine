@@ -4201,11 +4201,21 @@ class DmRepository {
               recipientPubkey: recipientPubkey,
               content: content,
             ).catchError((Object e) {
+              // Thrown failures only — a signer that reports by THROWING
+              // (Keycast's RPC layer raises RpcException on 401/403/504, and a
+              // bunker request raises TimeoutException) lands here. Signers
+              // that report by returning null, and every relay refusal, are
+              // logged inside `_sendNip04Message` instead, because a returned
+              // failure never reaches this handler (#8262).
               Log.error(
-                'NIP-04 fallback failed: $e',
+                'NIP-04 fallback threw — the legacy kind-4 copy was not '
+                'sent: $e',
                 category: LogCategory.system,
               );
-              // Reuse NIP17SendResult for simplicity
+              // The value is discarded by design: this leg is best-effort
+              // legacy interop and is deliberately kept off the send's
+              // critical path, so it stays `unawaited`. Every outcome is
+              // observable in the log rather than in this return.
               return NIP17SendResult.failure('NIP-04 fallback failed: $e');
             }),
           );
@@ -6517,13 +6527,32 @@ class DmRepository {
     required String content,
   }) async {
     // Reuses NIP17SendResult for simplicity — this is an internal helper.
+    //
+    // Every failure below is LOGGED as well as returned. The caller fires this
+    // leg unawaited, so a returned failure that logged nothing was invisible on
+    // both devices: the sender saw a delivered message and the legacy recipient
+    // never got one (#8262).
     final signer = _signer;
     if (signer == null) {
+      Log.warning(
+        'NIP-04 fallback: no signer for ${pubkeyForLogs(recipientPubkey)} — '
+        'the legacy kind-4 copy was not sent',
+        category: LogCategory.system,
+      );
       return const NIP17SendResult.failure('Signer not available');
     }
 
     final ciphertext = await signer.encrypt(recipientPubkey, content);
     if (ciphertext == null) {
+      // A signer can do NIP-44 (used by the NIP-17 leg) and still refuse or
+      // lack NIP-04: it is a separate capability, and a null here is the
+      // signer's silent refusal rather than an exception.
+      Log.warning(
+        'NIP-04 fallback: encrypt returned null for '
+        '${pubkeyForLogs(recipientPubkey)} — the legacy kind-4 copy was not '
+        'sent',
+        category: LogCategory.system,
+      );
       return const NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
@@ -6533,23 +6562,45 @@ class DmRepository {
 
     final signed = await signer.signEvent(event);
     if (signed == null) {
+      Log.warning(
+        'NIP-04 fallback: signEvent returned null for '
+        '${pubkeyForLogs(recipientPubkey)} — the legacy kind-4 copy was not '
+        'sent',
+        category: LogCategory.system,
+      );
       return const NIP17SendResult.failure('NIP-04 sign returned null');
     }
 
-    final publishResult = await _nostrClient.publishEvent(signed);
-    final failureReason = publishResult.failureReason;
-    if (failureReason != null) {
+    // OK-confirm the kind 4. `publishEvent` reports success on a WebSocket
+    // frame write, so a relay answering `OK false` — rate limited, blocked by
+    // policy, caught by a spam filter — came back as a delivered message.
+    // Branch on the OK boolean and never on the reason prefix: NIP-01 puts
+    // `duplicate:` and `pow:` on `true` (01.md:166-167).
+    final outcome = await _nostrClient.publishEventAwaitOk(signed);
+    if (!outcome.acceptedByAny) {
       Log.error(
-        'Failed to publish NIP-04 message: $failureReason',
+        'NIP-04 fallback: no relay accepted the legacy kind-4 copy for '
+        '${pubkeyForLogs(recipientPubkey)} (event ${signed.id}) — '
+        '${outcome.summary}',
         category: LogCategory.system,
       );
       return const NIP17SendResult.failure('NIP-04 publish failed');
     }
 
-    final sent = publishResult as PublishSuccess;
+    // Partial acceptance still counts as sent, but a relay that refused is
+    // worth a line: a policy or rate-limit refusal is invisible otherwise.
+    if (outcome.rejectedBy.isNotEmpty) {
+      Log.warning(
+        'NIP-04 fallback: legacy kind-4 copy (event ${signed.id}) refused by '
+        '${outcome.rejectedBy.length} relay(s) but accepted elsewhere — '
+        '${outcome.summary}',
+        category: LogCategory.system,
+      );
+    }
+
     return NIP17SendResult.success(
-      rumorEventId: sent.event.id,
-      messageEventId: sent.event.id,
+      rumorEventId: signed.id,
+      messageEventId: signed.id,
       recipientPubkey: recipientPubkey,
     );
   }

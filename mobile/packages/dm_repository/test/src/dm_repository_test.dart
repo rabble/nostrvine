@@ -1513,15 +1513,57 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).thenAnswer((_) async {});
+        // The conversation MUST already be latched to 'nip04', or the gate
+        // closes on protocol and this test cannot fail for its stated
+        // reason.
+        //
+        // It was written against `protocol = existingSend?.dmProtocol`,
+        // where a null row left `protocol` null and `null != 'nip17'`
+        // opened the gate — so `skipNip04Fallback` really was the only
+        // suppressor. #7664 then changed the derivation to `?? 'nip17'`
+        // (correctly, to stop a cleartext kind-4 on message #1 of a
+        // self-initiated thread), which silently made this fixture close
+        // the gate by protocol instead. The test stayed green for four
+        // months while asserting nothing. #8262.
         when(
           () => mockConversationsDao.getConversation(
             any(),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: DmRepository.computeConversationId(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            participantPubkeys: jsonEncode(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            isGroup: false,
+            createdAt: 1699999000,
+            lastMessageContent: 'Previous',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyB,
+            isRead: true,
+            currentUserHasSent: true,
+            ownerPubkey: _validPubkeyA,
+            dmProtocol: 'nip04',
+          ),
+        );
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
+          ),
+        ).thenAnswer(
+          (_) async => const PublishOutcome(
+            eventId: 'nip04-fallback-copy',
+            acceptedBy: <String>[],
+            rejectedBy: <String, String>{},
+            noResponseFrom: <String>[],
+          ),
+        );
 
         final repository = createRepository();
 
@@ -1536,13 +1578,20 @@ void main() {
 
         // Drain pending microtasks so an unawaited `_sendNip04Message`
         // — the only way the fallback can fire when `skipNip04Fallback`
-        // leaks — has the chance to call `publishEvent` before we
+        // leaks — has the chance to call `publishEventAwaitOk` before we
         // assert it never did. `pumpEventQueue` (default 20 ticks) is
         // the canonical drain in flutter_test.
         await pumpEventQueue();
 
         expect(result.success, isTrue);
-        verifyNever(() => mockNostrClient.publishEvent(any()));
+        verifyNever(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
+          ),
+        );
       });
 
       test(
@@ -1598,8 +1647,20 @@ void main() {
             ),
           ).thenAnswer((_) async {});
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => const PublishFailed());
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
 
           // First send: conversation does not exist yet, and this send is
           // the one that makes it NIP-17 — so no cleartext copy (#7342).
@@ -1617,7 +1678,14 @@ void main() {
           );
           await pumpEventQueue();
 
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
 
           // Capture the dmProtocol the repository wrote on first send.
           final upsertCall = verify(
@@ -1643,8 +1711,20 @@ void main() {
           // The fallback must NOT fire again.
           reset(mockNostrClient);
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => const PublishFailed());
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
           when(
             () => mockConversationsDao.getConversation(
               any(),
@@ -1674,7 +1754,14 @@ void main() {
           );
           await pumpEventQueue();
 
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
         },
       );
     });
@@ -12451,20 +12538,18 @@ void main() {
 
           // Stub publishEvent — NIP-04 fallback will call this
           when(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
           ).thenAnswer(
-            (_) async => PublishSuccess(
-              event: Event.fromJson({
-                'id': _giftWrapEventId,
-                'pubkey': _validPubkeyA,
-                'created_at': 1700000000,
-                'kind': EventKind.directMessage,
-                'tags': [
-                  ['p', _validPubkeyB],
-                ],
-                'content': 'encrypted',
-                'sig': 'sig',
-              }),
+            (_) async => const PublishOutcome(
+              eventId: _giftWrapEventId,
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
             ),
           );
 
@@ -12492,7 +12577,12 @@ void main() {
           ).called(1);
 
           verify(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
           ).called(1);
         },
       );
@@ -12522,20 +12612,18 @@ void main() {
           // recorded; the assertion below must fail on a real leak, not
           // on an exception swallowed by the fallback's catchError.
           when(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
           ).thenAnswer(
-            (_) async => PublishSuccess(
-              event: Event.fromJson({
-                'id': _giftWrapEventId,
-                'pubkey': _validPubkeyA,
-                'created_at': 1700000000,
-                'kind': EventKind.directMessage,
-                'tags': [
-                  ['p', _validPubkeyB],
-                ],
-                'content': 'encrypted',
-                'sig': 'sig',
-              }),
+            (_) async => const PublishOutcome(
+              eventId: _giftWrapEventId,
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
             ),
           );
 
@@ -12563,16 +12651,20 @@ void main() {
           ).called(1);
 
           // No cleartext kind-4 copy naming the recipient in a `p` tag.
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
         },
       );
 
       test(
         'skips NIP-04 fallback when conversation is known NIP-17',
         () async {
-          final participants = [_validPubkeyA, _validPubkeyB]..sort();
-          final convId = DmRepository.computeConversationId(participants);
-
           stubSendRumor(
             (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
@@ -12582,21 +12674,48 @@ void main() {
           );
           stubDaoInserts();
 
-          // Return an existing conversation with dmProtocol: 'nip17'
+          // Production reads `getConversation(id, ownerPubkey: ...)`. A stub
+          // without `ownerPubkey` never matches, so this used to close the
+          // gate by MissingStubError (or a parent null row) rather than by
+          // protocol — and `verifyNever(publishEvent)` was vacuously true
+          // after the leg moved to `publishEventAwaitOk`.
           when(
-            () => mockConversationsDao.getConversation(convId),
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer(
             (_) async => ConversationRow(
-              id: convId,
-              participantPubkeys: jsonEncode(participants),
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
               isGroup: false,
+              createdAt: 1699999000,
               lastMessageContent: 'Previous',
               lastMessageTimestamp: 1700000000,
               lastMessageSenderPubkey: _validPubkeyB,
               isRead: true,
               currentUserHasSent: true,
-              createdAt: 1699999000,
+              ownerPubkey: _validPubkeyA,
               dmProtocol: 'nip17',
+            ),
+          );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
             ),
           );
 
@@ -12607,9 +12726,8 @@ void main() {
             content: 'Hello!',
           );
 
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
-          // NIP-17 was sent
           verify(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
@@ -12622,9 +12740,273 @@ void main() {
             ),
           ).called(1);
 
-          // NIP-04 fallback was NOT sent
           verifyNever(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+        },
+      );
+
+      // ---------------------------------------------------------------
+      // #8262: every failure of this leg must be observable.
+      //
+      // The leg is fired `unawaited`, so a returned failure is discarded.
+      // Before #8262 three of its returns logged nothing at all and a relay
+      // answering `OK false` was counted as a delivered message. The sender
+      // saw a delivered bubble either way and the legacy recipient got
+      // nothing, with no record on either device.
+      // ---------------------------------------------------------------
+
+      /// Stubs the DAO writes and latches the conversation to 'nip04' so the
+      /// fallback gate is open, then returns a signer whose NIP-17 leg is
+      /// mocked out via [stubSendRumor].
+      void stubLatchedNip04Conversation() {
+        stubDaoInserts();
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: DmRepository.computeConversationId(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            participantPubkeys: jsonEncode(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            isGroup: false,
+            createdAt: 1699999000,
+            lastMessageContent: 'Previous',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyB,
+            isRead: true,
+            currentUserHasSent: true,
+            ownerPubkey: _validPubkeyA,
+            dmProtocol: 'nip04',
+          ),
+        );
+      }
+
+      List<String> logsContaining(String needle, {required LogLevel level}) =>
+          LogCaptureService()
+              .getRecentLogs()
+              .where((e) => e.level == level && e.message.contains(needle))
+              .map((e) => e.message)
+              .toList();
+
+      test(
+        'logs when the signer cannot NIP-04 encrypt, instead of dropping '
+        'the failure silently (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
+
+          // A signer can do NIP-44 (the NIP-17 leg) and still refuse NIP-04:
+          // it is a separate capability. Amber prompts for it separately and
+          // a nip44-only NIP-07 extension has no `window.nostr.nip04` at all.
+          // Both report the refusal by returning null, not by throwing — so
+          // the gate's `.catchError` never sees it.
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => null);
+
+          final repository = createRepository(signer: mockSigner);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
+
+          expect(result.success, isTrue);
+          // Nothing was published: the leg gave up before signing.
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+          // And it said so.
+          expect(
+            logsContaining(
+              'encrypt returned null',
+              level: LogLevel.warning,
+            ),
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'logs when the signer refuses to sign the kind 4 (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
+
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => 'ciphertext?iv=aXY=');
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          final repository = createRepository(signer: mockSigner);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
+
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+          expect(
+            logsContaining(
+              'signEvent returned null',
+              level: LogLevel.warning,
+            ),
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'a relay answering OK false is reported as a lost legacy copy, not '
+        'as a delivered one (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
+
+          // The whole point of OK-confirming this leg. `publishEvent` reports
+          // success on a WebSocket frame write, so this refusal used to come
+          // back as PublishSuccess with a null failureReason — a delivered
+          // message that no relay ever stored.
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-refused',
+              acceptedBy: <String>[],
+              rejectedBy: {
+                'wss://relay.divine.video':
+                    'rate-limited: slow down there chief',
+              },
+              noResponseFrom: <String>[],
+            ),
+          );
+
+          final repository = createRepository();
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
+
+          // The NIP-17 copy still governs what the user sees.
+          expect(result.success, isTrue);
+          // But the refusal is on the record.
+          expect(
+            logsContaining(
+              'no relay accepted the legacy kind-4 copy',
+              level: LogLevel.error,
+            ),
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'a partial refusal is logged while the copy still counts as sent '
+        '(#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
+
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-partial',
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: {'wss://nos.lol': 'blocked: kind 4 not accepted'},
+              noResponseFrom: <String>[],
+            ),
+          );
+
+          final repository = createRepository();
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
+
+          // Accepted somewhere, so not an error — but the refusing relay is
+          // named, because a kind-policy or rate-limit refusal is otherwise
+          // invisible.
+          expect(
+            logsContaining('refused by 1 relay', level: LogLevel.warning),
+            hasLength(1),
+          );
+          expect(
+            logsContaining(
+              'no relay accepted the legacy kind-4 copy',
+              level: LogLevel.error,
+            ),
+            isEmpty,
           );
         },
       );
@@ -17991,200 +18373,18 @@ void main() {
     group('_sendNip04Message failure paths', () {
       setUp(stubSendPolicyPermitsEveryone);
 
-      test(
-        'returns failure when signer is null',
-        () async {
-          // Create a repo, then call sendMessage where the NIP-04
-          // fallback is fired. The NIP-04 path checks _signer which
-          // is null when credentials are not set.
-          // To reach _sendNip04Message with null signer, we need a
-          // repo where _signer is null. However, createRepository
-          // always sets a signer. Instead, test via a mock signer
-          // that returns null from encrypt.
-          final mockSigner = _MockNostrSigner();
-          when(mockSigner.getPublicKey).thenAnswer(
-            (_) async => _validPubkeyA,
-          );
-          when(
-            () => mockSigner.encrypt(any(), any()),
-          ).thenAnswer((_) async => null);
-
-          stubSendRumor(
-            (_, recipientPubkey) async => NIP17SendResult.success(
-              rumorEventId: _rumorEventId,
-              messageEventId: _giftWrapEventId,
-              recipientPubkey: recipientPubkey,
-            ),
-          );
-
-          when(
-            () => mockDirectMessagesDao.insertMessage(
-              id: any(named: 'id'),
-              conversationId: any(named: 'conversationId'),
-              senderPubkey: any(named: 'senderPubkey'),
-              content: any(named: 'content'),
-              createdAt: any(named: 'createdAt'),
-              giftWrapId: any(named: 'giftWrapId'),
-              messageKind: any(named: 'messageKind'),
-              replyToId: any(named: 'replyToId'),
-              subject: any(named: 'subject'),
-              fileType: any(named: 'fileType'),
-              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-              decryptionKey: any(named: 'decryptionKey'),
-              decryptionNonce: any(named: 'decryptionNonce'),
-              fileHash: any(named: 'fileHash'),
-              originalFileHash: any(named: 'originalFileHash'),
-              fileSize: any(named: 'fileSize'),
-              dimensions: any(named: 'dimensions'),
-              blurhash: any(named: 'blurhash'),
-              thumbnailUrl: any(named: 'thumbnailUrl'),
-              ownerPubkey: any(named: 'ownerPubkey'),
-              tagsJson: any(named: 'tagsJson'),
-              sendBatchId: any(named: 'sendBatchId'),
-            ),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockConversationsDao.upsertConversation(
-              id: any(named: 'id'),
-              participantPubkeys: any(named: 'participantPubkeys'),
-              isGroup: any(named: 'isGroup'),
-              createdAt: any(named: 'createdAt'),
-              lastMessageContent: any(named: 'lastMessageContent'),
-              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-              subject: any(named: 'subject'),
-              isRead: any(named: 'isRead'),
-              currentUserHasSent: any(named: 'currentUserHasSent'),
-              ownerPubkey: any(named: 'ownerPubkey'),
-              dmProtocol: any(named: 'dmProtocol'),
-            ),
-          ).thenAnswer((_) async {});
-
-          when(
-            () => mockConversationsDao.getConversation(
-              any(),
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer((_) async => null);
-
-          when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => const PublishFailed());
-
-          final repo = DmRepository(
-            nostrClient: mockNostrClient,
-            messageService: mockMessageService,
-            directMessagesDao: mockDirectMessagesDao,
-            conversationsDao: mockConversationsDao,
-            userPubkey: _validPubkeyA,
-            signer: mockSigner,
-          );
-
-          final result = await repo.sendMessage(
-            recipientPubkey: _validPubkeyB,
-            content: 'Hello',
-          );
-
-          // NIP-17 succeeded, NIP-04 fallback silently failed.
-          expect(result.success, isTrue);
-
-          // Give unawaited NIP-04 fallback time to complete.
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-        },
-      );
-
-      test(
-        'returns failure when signEvent returns null',
-        () async {
-          final mockSigner = _MockNostrSigner();
-          when(mockSigner.getPublicKey).thenAnswer(
-            (_) async => _validPubkeyA,
-          );
-          when(
-            () => mockSigner.encrypt(any(), any()),
-          ).thenAnswer((_) async => 'encrypted-content');
-          when(
-            () => mockSigner.signEvent(any()),
-          ).thenAnswer((_) async => null);
-
-          stubSendRumor(
-            (_, recipientPubkey) async => NIP17SendResult.success(
-              rumorEventId: _rumorEventId,
-              messageEventId: _giftWrapEventId,
-              recipientPubkey: recipientPubkey,
-            ),
-          );
-
-          when(
-            () => mockDirectMessagesDao.insertMessage(
-              id: any(named: 'id'),
-              conversationId: any(named: 'conversationId'),
-              senderPubkey: any(named: 'senderPubkey'),
-              content: any(named: 'content'),
-              createdAt: any(named: 'createdAt'),
-              giftWrapId: any(named: 'giftWrapId'),
-              messageKind: any(named: 'messageKind'),
-              replyToId: any(named: 'replyToId'),
-              subject: any(named: 'subject'),
-              fileType: any(named: 'fileType'),
-              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-              decryptionKey: any(named: 'decryptionKey'),
-              decryptionNonce: any(named: 'decryptionNonce'),
-              fileHash: any(named: 'fileHash'),
-              originalFileHash: any(named: 'originalFileHash'),
-              fileSize: any(named: 'fileSize'),
-              dimensions: any(named: 'dimensions'),
-              blurhash: any(named: 'blurhash'),
-              thumbnailUrl: any(named: 'thumbnailUrl'),
-              ownerPubkey: any(named: 'ownerPubkey'),
-              tagsJson: any(named: 'tagsJson'),
-              sendBatchId: any(named: 'sendBatchId'),
-            ),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockConversationsDao.upsertConversation(
-              id: any(named: 'id'),
-              participantPubkeys: any(named: 'participantPubkeys'),
-              isGroup: any(named: 'isGroup'),
-              createdAt: any(named: 'createdAt'),
-              lastMessageContent: any(named: 'lastMessageContent'),
-              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-              subject: any(named: 'subject'),
-              isRead: any(named: 'isRead'),
-              currentUserHasSent: any(named: 'currentUserHasSent'),
-              ownerPubkey: any(named: 'ownerPubkey'),
-              dmProtocol: any(named: 'dmProtocol'),
-            ),
-          ).thenAnswer((_) async {});
-
-          when(
-            () => mockConversationsDao.getConversation(
-              any(),
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer((_) async => null);
-
-          final repo = DmRepository(
-            nostrClient: mockNostrClient,
-            messageService: mockMessageService,
-            directMessagesDao: mockDirectMessagesDao,
-            conversationsDao: mockConversationsDao,
-            userPubkey: _validPubkeyA,
-            signer: mockSigner,
-          );
-
-          final result = await repo.sendMessage(
-            recipientPubkey: _validPubkeyB,
-            content: 'Hello',
-          );
-
-          expect(result.success, isTrue);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-        },
-      );
+      // Two tests were removed here in #8262:
+      //   'returns failure when signer is null'
+      //   'returns failure when signEvent returns null'
+      //
+      // Both stubbed `getConversation -> null`, so after #7664 made `protocol`
+      // resolve to `'nip17'` the gate closed and neither reached the helper
+      // this group is named for. Repairing them would have produced exact
+      // duplicates of the mutation-verified pair in the `dual-send NIP-04
+      // fallback` group, which assert the same `result.success` and the same
+      // `verifyNever(publishEventAwaitOk)` AND that the failure is logged. The
+      // first was also misnamed: its own comment concedes it cannot null the
+      // signer, so it stubbed `encrypt -> null` instead.
 
       test(
         'NIP-17 send succeeds even when NIP-04 fallback gets PublishNoRelays',
@@ -18259,16 +18459,50 @@ void main() {
             ),
           ).thenAnswer((_) async {});
 
+          // Latched to 'nip04' so the fallback actually FIRES. With a null
+          // row the gate closes on protocol (#7664's `?? 'nip17'`) and this
+          // test exercised nothing — it asserted only that the NIP-17 leg
+          // succeeded, which is true whether or not the fallback ran. #8262.
           when(
             () => mockConversationsDao.getConversation(
               any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              isGroup: false,
+              createdAt: 1699999000,
+              lastMessageContent: 'Previous',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip04',
+            ),
+          );
 
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => const PublishNoRelays());
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
 
           final repo = DmRepository(
             nostrClient: mockNostrClient,
@@ -18284,9 +18518,20 @@ void main() {
             content: 'Hello',
           );
 
-          // NIP-17 succeeded; NIP-04 fallback silently got PublishNoRelays.
+          // NIP-17 succeeded even though the fallback did not land.
           expect(result.success, isTrue);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Drain the unawaited leg, then prove it actually ran: without
+          // this the test passes whether or not the fallback fired, which
+          // is exactly how it survived #7664 asserting nothing (#8262).
+          await pumpEventQueue();
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).called(1);
         },
       );
 
@@ -18363,12 +18608,34 @@ void main() {
             ),
           ).thenAnswer((_) async {});
 
+          // Latched to 'nip04' so the fallback actually FIRES. With a null
+          // row the gate closes on protocol (#7664's `?? 'nip17'`) and this
+          // test exercised nothing — it asserted only that the NIP-17 leg
+          // succeeded, which is true whether or not the fallback ran. #8262.
           when(
             () => mockConversationsDao.getConversation(
               any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              isGroup: false,
+              createdAt: 1699999000,
+              lastMessageContent: 'Previous',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip04',
+            ),
+          );
 
           when(
             () => mockNostrClient.publishEvent(any()),
@@ -18388,9 +18655,20 @@ void main() {
             content: 'Hello',
           );
 
-          // NIP-17 succeeded; NIP-04 fallback silently got PublishFailed.
+          // NIP-17 succeeded even though the fallback did not land.
           expect(result.success, isTrue);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Drain the unawaited leg, then prove it actually ran: without
+          // this the test passes whether or not the fallback fired, which
+          // is exactly how it survived #7664 asserting nothing (#8262).
+          await pumpEventQueue();
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).called(1);
         },
       );
     });
@@ -19237,6 +19515,14 @@ void main() {
             content: 'deleted mid-flight',
           );
 
+          // Drain the unawaited NIP-04 leg BEFORE asserting it never
+          // published. Without this the `verifyNever` below runs while the
+          // fallback future is still suspended, so it passes whether or not
+          // the cancel interlock works — proven by mutation: dropping
+          // `persistedLocally &&` from the gate left this test green while
+          // the leg demonstrably reached `publishEventAwaitOk` (#8262).
+          await pumpEventQueue();
+
           // The wire copy went out — the send itself still succeeded.
           expect(result.success, isTrue);
           verifyNever(
@@ -19284,7 +19570,14 @@ void main() {
           verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
           // The NIP-04 fallback must not fire either — it would send a
           // plaintext copy of a message the user just deleted.
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
         },
       );
 
@@ -22911,6 +23204,31 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
+
+          // The recovery must not stamp the thread 'nip04'. Nothing asserted
+          // this before: flipping the recover path's `?? 'nip17'` default to
+          // `'nip04'` left the whole suite green (#8262). A regression there
+          // would latch every recovered conversation, and per the latch
+          // mechanics that decision then freezes — so every later send in the
+          // thread would publish a cleartext kind-4 twin.
+          final upserted = verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: captureAny(named: 'dmProtocol'),
+            ),
+          ).captured;
+          expect(upserted, isNotEmpty);
+          expect(upserted.last, 'nip17');
         },
       );
 
