@@ -2551,12 +2551,12 @@ class DmRepository {
         // later pair hits this same early return, so the decision the first
         // arrival race made is never revisited (#8499).
         //
-        // `!isSentByMe` is load-bearing, not defensive. This `else` branch is
-        // reached by a peer's rumor AND by a self-authored 1:1 rumor with no
-        // send batch token, so clearing unconditionally would sometimes clear
-        // on our OWN self-wrap — inverting the rule into "clear when *I*
-        // speak NIP-17" and cutting a genuine legacy peer off from the only
-        // copy they can read.
+        // `!isSentByMe` is load-bearing on this duplicate branch. The `else`
+        // above is reached by a peer's rumor AND by a self-authored 1:1 rumor
+        // with no send batch token; clearing here on our own self-wrap would
+        // invert *this* path into "clear when *I* speak NIP-17". It does not
+        // cover a unique self-authored NIP-17, which is not a twin and still
+        // hits the persist upsert's `dmProtocol: 'nip17'` below.
         // Ledger first, unlatch second, and the unlatch can never throw out of
         // here. It is an opportunistic upgrade on evidence we happen to be
         // holding; the dedup bookkeeping below it is what stops this wrap

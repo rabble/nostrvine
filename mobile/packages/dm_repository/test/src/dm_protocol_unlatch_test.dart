@@ -231,8 +231,11 @@ void main() {
     );
 
     test(
-      'the unlatch is idempotent: a second peer twin leaves the thread nip17',
+      'a later peer NIP-17 after the unlatch leaves the thread nip17',
       () async {
+        // The first wrap claims the kind-4 twin and clears. The second wrap
+        // is not a twin (`claimCrossProtocolTwin` already consumed it) so it
+        // persists; this pins that later path must not downgrade the thread.
         await seedLatchedThreadWithKind4(
           id: '1' * 64,
           sender: _peer,

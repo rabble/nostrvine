@@ -216,16 +216,15 @@ void main() {
     );
 
     test(
-      'a latched thread is cleared only by a NIP-17 message with no kind-4 '
+      'a latched thread is also cleared by a NIP-17 message with no kind-4 '
       'twin',
       () async {
         await deliverNip04(id: '1' * 64, content: 'hello');
         expect(await storedProtocol(), 'nip04');
 
         // A genuinely new message from the peer — different text, so it is not
-        // the twin of anything stored. This is the escape hatch, and it only
-        // exists once the PEER stops dual-sending, i.e. once their own side is
-        // unlatched.
+        // the twin of anything stored. The persist path still writes nip17.
+        // Twin clearing lives in dm_protocol_unlatch_test.dart.
         await deliverNip17(
           wrapId: '2' * 64,
           rumorId: '3' * 64,
