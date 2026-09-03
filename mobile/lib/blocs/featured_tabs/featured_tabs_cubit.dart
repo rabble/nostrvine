@@ -19,17 +19,17 @@ part 'featured_tabs_state.dart';
 class FeaturedTabsCubit extends Cubit<FeaturedTabsState> {
   /// Creates the cubit over [repository].
   ///
-  /// [viewerIsMinor] is read at each refresh rather than captured once, so an
-  /// age-up or account switch is reflected on the next poll.
+  /// [gateAgeRestrictedContent] is read at each refresh rather than captured
+  /// once, so an age-up or account switch is reflected on the next poll.
   FeaturedTabsCubit({
     required FeaturedTabsRepository repository,
-    required bool Function() viewerIsMinor,
+    required bool Function() gateAgeRestrictedContent,
   }) : _repository = repository,
-       _viewerIsMinor = viewerIsMinor,
+       _gateAgeRestrictedContent = gateAgeRestrictedContent,
        super(const FeaturedTabsState());
 
   final FeaturedTabsRepository _repository;
-  final bool Function() _viewerIsMinor;
+  final bool Function() _gateAgeRestrictedContent;
 
   Timer? _pollTimer;
 
@@ -54,7 +54,9 @@ class FeaturedTabsCubit extends Cubit<FeaturedTabsState> {
     final generation = ++_refreshGeneration;
     emit(state.copyWith(status: FeaturedTabsStatus.loading));
 
-    final snapshot = await _repository.refresh(viewerIsMinor: _viewerIsMinor());
+    final snapshot = await _repository.refresh(
+      gateAgeRestrictedContent: _gateAgeRestrictedContent(),
+    );
     if (isClosed || generation != _refreshGeneration) return;
 
     emit(

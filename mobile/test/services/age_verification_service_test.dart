@@ -127,26 +127,23 @@ void main() {
       await expectLater(service.initialize(), completes);
     });
 
-    test('should notify listeners when verification status changes', () async {
+    test('notifies when adult verification loads or changes', () async {
+      var notificationCount = 0;
+      service = AgeVerificationService(
+        onAdultContentVerificationChanged: () => notificationCount++,
+      );
+
       await service.initialize();
+      expect(notificationCount, 1);
 
-      // Note: AgeVerificationService no longer extends ChangeNotifier
-      // This test of listener functionality is no longer applicable
-      // var notificationCount = 0;
-      // service.addListener(() {
-      //   notificationCount++;
-      // });
+      await service.setAdultContentVerified(true);
+      expect(notificationCount, 2);
 
-      // Skip the listener test - just verify the state changes work
-
-      await service.setAgeVerified(true);
-      expect(service.isAgeVerified, true);
-
-      await service.setAgeVerified(false);
-      expect(service.isAgeVerified, false);
+      await service.setAdultContentVerified(false);
+      expect(notificationCount, 3);
 
       await service.clearVerificationStatus();
-      expect(service.isAgeVerified, false);
+      expect(notificationCount, 4);
     });
   });
 }

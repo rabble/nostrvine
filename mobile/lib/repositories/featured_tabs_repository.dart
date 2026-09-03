@@ -95,10 +95,13 @@ class FeaturedTabsRepository {
   /// fresher than [cacheTtl], and to an empty snapshot once that has elapsed.
   /// Callers get a resolved answer, not an error to interpret.
   ///
-  /// [viewerIsMinor] hides tabs that have not explicitly opted in to a minor
-  /// audience. The public config endpoint is shared-cacheable and therefore
-  /// not personalized, so this gate is the client's responsibility.
-  Future<FeaturedTabsSnapshot> refresh({required bool viewerIsMinor}) async {
+  /// [gateAgeRestrictedContent] hides tabs whose dashboard configuration does
+  /// not allow viewers under 18. The public config endpoint is shared-cacheable
+  /// and therefore not personalized, so this gate is the client's
+  /// responsibility.
+  Future<FeaturedTabsSnapshot> refresh({
+    required bool gateAgeRestrictedContent,
+  }) async {
     final sequence = ++_refreshSequence;
     try {
       final response = await _apiClient.getFeaturedTabs();
@@ -111,9 +114,12 @@ class FeaturedTabsRepository {
         _cached = response;
         _cachedAt = _now();
       }
-      return _resolve(response, viewerIsMinor: viewerIsMinor);
+      return _resolve(
+        response,
+        gateAgeRestrictedContent: gateAgeRestrictedContent,
+      );
     } on FunnelcakeException {
-      return _fromCache(viewerIsMinor: viewerIsMinor);
+      return _fromCache(gateAgeRestrictedContent: gateAgeRestrictedContent);
     }
   }
 
@@ -148,7 +154,7 @@ class FeaturedTabsRepository {
     _cachedAt = null;
   }
 
-  FeaturedTabsSnapshot _fromCache({required bool viewerIsMinor}) {
+  FeaturedTabsSnapshot _fromCache({required bool gateAgeRestrictedContent}) {
     final cached = _cached;
     final cachedAt = _cachedAt;
     if (cached == null || cachedAt == null) {
@@ -158,17 +164,21 @@ class FeaturedTabsRepository {
       clearCache();
       return const FeaturedTabsSnapshot();
     }
-    return _resolve(cached, viewerIsMinor: viewerIsMinor);
+    return _resolve(cached, gateAgeRestrictedContent: gateAgeRestrictedContent);
   }
 
   FeaturedTabsSnapshot _resolve(
     FeaturedTabsResponse response, {
-    required bool viewerIsMinor,
+    required bool gateAgeRestrictedContent,
   }) {
     final now = _now();
     FeaturedTabConfig? eligible;
     for (final tab in response.tabs) {
-      if (_isEligible(tab, now: now, viewerIsMinor: viewerIsMinor)) {
+      if (_isEligible(
+        tab,
+        now: now,
+        gateAgeRestrictedContent: gateAgeRestrictedContent,
+      )) {
         eligible = tab;
         break;
       }
@@ -182,12 +192,12 @@ class FeaturedTabsRepository {
   bool _isEligible(
     FeaturedTabConfig tab, {
     required DateTime now,
-    required bool viewerIsMinor,
+    required bool gateAgeRestrictedContent,
   }) {
     if (!tab.enabled) return false;
     if (!tab.hasContent) return false;
     if (!tab.isWithinWindow(now)) return false;
-    if (viewerIsMinor && !tab.visibleToMinors) return false;
+    if (gateAgeRestrictedContent && !tab.visibleToMinors) return false;
     // The tab bar's label is compiled client-side, so the renderability floor
     // is an id to fetch and attribute the tab with.
     return tab.id.isNotEmpty;

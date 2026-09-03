@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/repositories/featured_tabs_repository.dart';
 
 /// Repository backing the server-configured featured Explore tab.
@@ -18,12 +18,24 @@ final featuredTabsRepositoryProvider = Provider<FeaturedTabsRepository>((ref) {
   return repository;
 });
 
-/// Whether the current viewer is gated as a protected minor.
+/// Whether the current viewer has completed Divine's existing 18+ verification.
+final featuredTabViewerIsAdultProvider = FutureProvider<bool>((ref) async {
+  ref.watch(adultContentVerificationVersionProvider);
+  final service = ref.watch(ageVerificationServiceProvider);
+  await service.initialized;
+  return service.isAdultContentVerified;
+});
+
+/// Whether featured tabs marked unavailable to under-18 viewers stay hidden.
 ///
-/// Reuses the #175 content-lock seam rather than the fail-closed DM seam: a
-/// featured tab is ordinary discovery content, so an absent age signal should
-/// not withhold it. Tabs still default to hidden for a known minor unless the
-/// configuration explicitly opts in.
-final featuredTabViewerIsMinorProvider = Provider<bool>((ref) {
-  return ref.watch(isProtectedMinorProvider);
+/// Loading and unverified states fail closed. Protected-minor accounts also
+/// stay gated because [AgeVerificationService] prevents them from completing
+/// adult-content verification.
+final featuredTabAgeGateProvider = Provider<bool>((ref) {
+  final viewerIsAdult = ref.watch(featuredTabViewerIsAdultProvider);
+  return viewerIsAdult.when(
+    data: (isAdult) => !isAdult,
+    error: (_, _) => true,
+    loading: () => true,
+  );
 });

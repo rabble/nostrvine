@@ -10,8 +10,10 @@ class AgeVerificationService {
   AgeVerificationService({
     bool Function()? isProtectedMinor,
     Future<void> Function()? onAdultMediaAccessRevoked,
+    VoidCallback? onAdultContentVerificationChanged,
   }) : _isProtectedMinor = isProtectedMinor ?? _notProtected,
-       _onAdultMediaAccessRevoked = onAdultMediaAccessRevoked;
+       _onAdultMediaAccessRevoked = onAdultMediaAccessRevoked,
+       _onAdultContentVerificationChanged = onAdultContentVerificationChanged;
 
   static bool _notProtected() => false;
 
@@ -19,6 +21,7 @@ class AgeVerificationService {
   /// is force-locked off and the self-attestation bypass is unavailable (#175).
   final bool Function() _isProtectedMinor;
   final Future<void> Function()? _onAdultMediaAccessRevoked;
+  final VoidCallback? _onAdultContentVerificationChanged;
 
   static const String _ageVerifiedKey = 'age_verified';
   static const String _verificationDateKey = 'age_verification_date';
@@ -63,6 +66,7 @@ class AgeVerificationService {
           adultDateMillis,
         );
       }
+      _onAdultContentVerificationChanged?.call();
     } catch (e) {
       Log.error(
         'Error loading age verification status: $e',
@@ -138,6 +142,7 @@ class AgeVerificationService {
       }
 
       _isAdultContentVerified = verified;
+      _onAdultContentVerificationChanged?.call();
       if (!verified) {
         await _notifyAdultMediaAccessRevoked();
       }
@@ -201,6 +206,7 @@ class AgeVerificationService {
       _verificationDate = null;
       _isAdultContentVerified = null;
       _adultContentVerificationDate = null;
+      _onAdultContentVerificationChanged?.call();
       await _notifyAdultMediaAccessRevoked();
 
       Log.debug(

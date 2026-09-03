@@ -82,7 +82,7 @@ void main() {
       router = MockGoRouter();
       when(
         () => featuredRepository.refresh(
-          viewerIsMinor: any(named: 'viewerIsMinor'),
+          gateAgeRestrictedContent: any(named: 'gateAgeRestrictedContent'),
         ),
       ).thenAnswer(
         // Zero cadence keeps the cubit from arming a poll timer that would
@@ -91,7 +91,7 @@ void main() {
       );
       featuredTabsCubit = FeaturedTabsCubit(
         repository: featuredRepository,
-        viewerIsMinor: () => false,
+        gateAgeRestrictedContent: () => false,
       );
       addTearDown(featuredTabsCubit.close);
       when(
