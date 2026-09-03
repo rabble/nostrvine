@@ -467,9 +467,8 @@ void main() {
       );
 
       // The editor must not carry its own ladder: #7550 is what happens when it
-      // does. The bare blob answers a Range request with a cached NoSuchKey body
-      // dressed up as a 206 (divine-blossom#198), so it is absent here, and the
-      // HLS rung is the master playlist the native player takes directly.
+      // does. The shared ladder tries renditions first and preserves the bare
+      // blob as its last-resort fallback.
       expect(
         stage.playbackUrls,
         equals(
@@ -484,6 +483,7 @@ void main() {
         equals([
           'https://media.divine.video/$hash/720p.mp4',
           'https://media.divine.video/$hash/hls/master.m3u8',
+          'https://media.divine.video/$hash',
         ]),
       );
     });
