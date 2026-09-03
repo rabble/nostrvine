@@ -23,14 +23,18 @@ class FakeRelay {
   FakeRelay._(
     this._server,
     this.reply,
+    this.replyForKinds,
     this.okConfirms,
     this.broadcast,
     this.stallReqForKinds,
   );
 
-  /// Starts a relay on an ephemeral loopback port.
+  /// Starts a relay on a loopback port — ephemeral unless [port] is given.
   ///
   /// [reply] is the event served for any `REQ`; null answers `EOSE` only.
+  /// [replyForKinds] narrows that to `REQ` frames naming one of those kinds,
+  /// so a relay can hand back a kind-10050 to the inbox lookup while every
+  /// other subscription still reads as empty.
   /// Set [okConfirms] false to model a relay that accepts the frame but never
   /// confirms it. Set [broadcast] true to fan a published `EVENT` out to every
   /// other open subscription — off by default so existing tests, which assert
@@ -40,16 +44,22 @@ class FakeRelay {
   /// `queryEventsDetailed` report `timedOut` — an `EOSE` is a conclusive
   /// "nothing here", so a relay answering EOSE cannot stand in for one that
   /// could not be read.
+  /// Pass a stopped relay's [FakeRelay.port] as [port] to bring "the same
+  /// relay" back, which is what a client that remembers the URL sees when a
+  /// relay recovers.
   static Future<FakeRelay> start({
     Map<String, dynamic>? reply,
+    Set<int> replyForKinds = const <int>{},
     bool okConfirms = true,
     bool broadcast = false,
     Set<int> stallReqForKinds = const <int>{},
+    int port = 0,
   }) async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
     final relay = FakeRelay._(
       server,
       reply,
+      replyForKinds,
       okConfirms,
       broadcast,
       stallReqForKinds,
@@ -67,6 +77,9 @@ class FakeRelay {
   /// records what it is handed but does not serve it, so "publish, then open a
   /// cold session that loads it" has to be staged explicitly.
   Map<String, dynamic>? reply;
+
+  /// Kinds whose `REQ` is answered with [reply]; empty means every `REQ`.
+  final Set<int> replyForKinds;
 
   /// Whether an inbound `EVENT` is answered with `OK … true`.
   final bool okConfirms;
@@ -163,7 +176,7 @@ class FakeRelay {
           final subId = frame[1] as String;
           _subscriptions[socket]?.add(subId);
           if (_isStalled(frame)) return;
-          if (reply != null) {
+          if (reply != null && _wantsReply(frame)) {
             send(<dynamic>['EVENT', subId, reply]);
           }
           send(<dynamic>['EOSE', subId]);
@@ -182,14 +195,20 @@ class FakeRelay {
   }
 
   /// Whether this `REQ` frame names a kind in [stallReqForKinds].
-  bool _isStalled(List<dynamic> frame) {
-    if (stallReqForKinds.isEmpty) return false;
+  bool _isStalled(List<dynamic> frame) =>
+      stallReqForKinds.isNotEmpty && _namesAnyKind(frame, stallReqForKinds);
+
+  /// Whether [reply] is owed to this `REQ` frame; see [replyForKinds].
+  bool _wantsReply(List<dynamic> frame) =>
+      replyForKinds.isEmpty || _namesAnyKind(frame, replyForKinds);
+
+  bool _namesAnyKind(List<dynamic> frame, Set<int> wanted) {
     for (final filter in frame.skip(2)) {
       if (filter is! Map) continue;
       final kinds = filter['kinds'];
       if (kinds is! List) continue;
       for (final kind in kinds) {
-        if (kind is int && stallReqForKinds.contains(kind)) return true;
+        if (kind is int && wanted.contains(kind)) return true;
       }
     }
     return false;
