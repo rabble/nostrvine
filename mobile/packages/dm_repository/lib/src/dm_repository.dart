@@ -1934,13 +1934,14 @@ class DmRepository {
   /// and waits for "the next inbox open". But the inbox is already open,
   /// showing the restore-paused banner, and its Retry re-runs the drain
   /// against whatever the pool looks like at that instant — against an
-  /// idle-disconnected pool that is the same failure again. So mirror the
-  /// labeler and feed services: hold a one-shot listener on the relay status
-  /// stream and re-run the drain when a relay the deferral did not have
-  /// becomes connected. At most one listener is armed at a time, a new run
-  /// supersedes it, and teardown cancels it. A page-cap pause deliberately
-  /// does not arm one: that budget resumes on the next inbox open by design.
-  /// See #8550.
+  /// idle-disconnected pool that is the same failure again. Like the labeler
+  /// and feed services, this holds a one-shot relay-status listener, but uses
+  /// a finer trigger: it re-runs the drain when any relay the deferral did not
+  /// have becomes connected. A relay that repeatedly reconnects without
+  /// answering can therefore re-drive the bounded drain. At most one listener
+  /// is armed at a time, a new run supersedes it, and teardown cancels it. A
+  /// page-cap pause deliberately does not arm one: that budget resumes on the
+  /// next inbox open by design. See #8550.
   void _resumeDrainWhenRelayConnects(String pubkey, int generation) {
     unawaited(_drainRelayReadySubscription?.cancel());
     _drainRelayReadySubscription = null;
