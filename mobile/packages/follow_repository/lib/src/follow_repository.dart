@@ -314,6 +314,20 @@ class FollowRepository {
     return eventId.compareTo(incumbentId) < 0;
   }
 
+  /// Remember [event] when it is the newest kind 3 seen so far.
+  ///
+  /// Deliberately independent of whether its *list* was adopted. Those are
+  /// two questions: which copy is authoritative, and where `content` comes
+  /// from. When a source already names the event the relay returns there is
+  /// no list to adopt, but `content` must still come from it — NIP-02 puts
+  /// the user's relay list there, and publishing `''` over it is #8265.
+  void _rememberContactListEvent(Event event) {
+    _currentUserContactListEvent = _pickBestContactList(
+      _currentUserContactListEvent,
+      event,
+    );
+  }
+
   /// Extract the `p`-tagged pubkeys of a kind 3 event.
   List<String> _followsOf(Event event, {required String source}) =>
       _sanitizePubkeys(
@@ -2386,16 +2400,13 @@ class FollowRepository {
           .fold<Event?>(null, _pickBestContactList);
       if (latestContactList == null) return;
 
-      final adopted = _adoptContactList(
+      _rememberContactListEvent(latestContactList);
+      _adoptContactList(
         _followsOf(latestContactList, source: 'PersonalEventCache'),
         createdAt: latestContactList.createdAt,
         eventId: latestContactList.id,
         source: 'PersonalEventCache',
       );
-
-      if (adopted) {
-        _currentUserContactListEvent = latestContactList;
-      }
     } catch (e) {
       Log.error(
         'Failed to load from PersonalEventCache: $e',
@@ -2868,6 +2879,8 @@ class FollowRepository {
     }
 
     if (newest != null) {
+      _rememberContactListEvent(newest);
+
       // Adopt what the relay holds as the base to publish from, then put the
       // pending local change back on top. Reading the authoritative event and
       // using it only for `content` is what let a stale hydration republish
@@ -2880,7 +2893,6 @@ class FollowRepository {
         eventId: newest.id,
         source: 'pre-publish read',
       )) {
-        _currentUserContactListEvent = newest;
         _applyPendingLocalChange(pending);
       }
     }
@@ -3031,9 +3043,9 @@ class FollowRepository {
       eventId: event.id,
       source: 'network Kind 3 event ${event.id}',
     );
+    _rememberContactListEvent(event);
     if (!adopted) return;
 
-    _currentUserContactListEvent = event;
     unawaited(_saveToLocalStorage());
     unawaited(_invalidateMyFollowingCache());
   }

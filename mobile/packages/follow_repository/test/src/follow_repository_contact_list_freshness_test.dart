@@ -311,5 +311,68 @@ void main() {
       expect(repository.followingPubkeys, [alice, bob]);
       expect(published.single, [alice, bob]);
     });
+
+    // The pre-publish read has two jobs: decide whose list wins, and supply
+    // `content` for the event about to be published. They are different
+    // questions. When LocalStorage already names the very event the relay
+    // returns, the list is not adopted — correctly, it is the same list — but
+    // `content` must still come from that event, or the publish sends `''`
+    // over the user's NIP-02 relay list. That is #8265's data loss, through a
+    // different door.
+    test('content survives when the read returns the event LocalStorage '
+        'already names', () async {
+      final existing = Event(
+        owner,
+        EventKind.contactList,
+        [
+          ['p', alice],
+        ],
+        '{"wss://relay.example":{"read":true,"write":true}}',
+        createdAt: 2000,
+      );
+
+      SharedPreferences.setMockInitialValues({
+        'following_list_$owner':
+            '{"v":2,"created_at":2000,'
+            '"id":"${existing.id}","pubkeys":["$alice"]}',
+      });
+
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            (events: <Event>[existing], timedOut: false, noRelays: false),
+      );
+
+      final publishedContent = <String>[];
+      when(
+        () => mockNostrClient.sendContactList(
+          any(),
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        publishedContent.add(invocation.positionalArguments[1] as String);
+        return contactList(createdAt: 3000, follows: [alice, bob]);
+      });
+
+      final repository = buildRepository();
+      addTearDown(repository.dispose);
+      await repository.initialize();
+      await repository.follow(bob);
+
+      expect(
+        publishedContent.single,
+        existing.content,
+        reason:
+            'NIP-02 kind 3 content carries the relay list; publishing an '
+            'empty string over it is the #8265 wipe',
+      );
+    });
   });
 }
