@@ -22,6 +22,10 @@ import '../helpers/test_provider_overrides.dart';
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SearchCancellationToken('test-search'));
+  });
+
   group(FindPeopleSheet, () {
     const currentUserPubkey =
         'facade00facade00facade00facade00facade00facade00facade00facade00';
@@ -29,6 +33,23 @@ void main() {
 
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
+      when(
+        () => mockProfileRepo.searchUsersProgressive(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          hasVideos: any(named: 'hasVideos'),
+          boostPubkeys: any(named: 'boostPubkeys'),
+          cancellationToken: any(named: 'cancellationToken'),
+        ),
+      ).thenAnswer((invocation) {
+        return mockProfileRepo.searchUsersProgressive(
+          query: invocation.namedArguments[#query] as String,
+          limit: invocation.namedArguments[#limit] as int,
+          sortBy: invocation.namedArguments[#sortBy] as String?,
+          hasVideos: invocation.namedArguments[#hasVideos] as bool,
+        );
+      });
     });
 
     Widget createTestWidget({

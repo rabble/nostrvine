@@ -179,6 +179,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
+      enableCancellation: true,
       followRepository: ref.read(followRepositoryProvider),
     );
 

@@ -57,6 +57,7 @@ _MockProfileRepository _createMockProfileRepository({
       sortBy: any(named: 'sortBy'),
       hasVideos: any(named: 'hasVideos'),
       boostPubkeys: any(named: 'boostPubkeys'),
+      cancellationToken: any(named: 'cancellationToken'),
     ),
   ).thenAnswer(
     (_) => Stream.value(
@@ -127,6 +128,10 @@ Override _vanishedProfiles(Set<String> pubkeys) =>
     vanishedProfilePubkeysProvider.overrideWith((ref) => Stream.value(pubkeys));
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SearchCancellationToken('test-search'));
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(UserPickerSheet, () {
@@ -1207,6 +1212,7 @@ void main() {
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
             boostPubkeys: any(named: 'boostPubkeys'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer((_) => streamController.stream);
 
@@ -1290,6 +1296,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
               boostPubkeys: any(named: 'boostPubkeys'),
+              cancellationToken: any(named: 'cancellationToken'),
             ),
           ).thenAnswer((invocation) {
             final boost =
@@ -1433,6 +1440,7 @@ void main() {
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
             boostPubkeys: any(named: 'boostPubkeys'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -1451,6 +1459,7 @@ void main() {
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
             boostPubkeys: any(named: 'boostPubkeys'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer((_) => bobController.stream);
 

@@ -64,6 +64,9 @@ const String profileSearchSortFollowers =
 typedef ProfileSearchFilter =
     List<UserProfile> Function(String query, List<UserProfile> profiles);
 
+bool _isSearchCancelled(SearchCancellationToken? token) =>
+    token?.isCancelled ?? false;
+
 /// Default indexer relays for kind 0 profile lookups.
 ///
 /// Production wiring overrides this via
@@ -872,10 +875,7 @@ class ProfileRepository implements ProfileReader {
       if (delay > Duration.zero) {
         await Future<void>.delayed(delay);
       }
-      final retry = await _doFetchFreshProfile(
-        pubkey,
-        requireRawKind0: true,
-      );
+      final retry = await _doFetchFreshProfile(pubkey, requireRawKind0: true);
       if (retry != null) return retry;
     }
 
@@ -2148,9 +2148,11 @@ class ProfileRepository implements ProfileReader {
     String? sortBy,
     bool hasVideos = false,
     Set<String>? boostPubkeys,
+    SearchCancellationToken? cancellationToken,
   }) async* {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
+    if (_isSearchCancelled(cancellationToken)) return;
 
     final resultMap = <String, UserProfile>{};
     final sources = <SearchSource, SearchSourceStatus>{
@@ -2185,6 +2187,7 @@ class ProfileRepository implements ProfileReader {
       final preCount = resultMap.length;
       try {
         final local = await searchUsersLocally(query: trimmed);
+        if (_isSearchCancelled(cancellationToken)) return;
         for (final profile in local) {
           resultMap[profile.pubkey] = profile;
         }
@@ -2211,6 +2214,7 @@ class ProfileRepository implements ProfileReader {
     }
 
     // Phase 2: Funnelcake REST API (fast)
+    if (_isSearchCancelled(cancellationToken)) return;
     final prevCount = resultMap.length;
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       final phase2Watch = Stopwatch()..start();
@@ -2223,6 +2227,7 @@ class ProfileRepository implements ProfileReader {
           sortBy: sortBy,
           hasVideos: hasVideos,
         );
+        if (_isSearchCancelled(cancellationToken)) return;
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
         }
@@ -2253,6 +2258,7 @@ class ProfileRepository implements ProfileReader {
     }
 
     // Phase 3: NIP-50 WebSocket (first page only)
+    if (_isSearchCancelled(cancellationToken)) return;
     if (offset == 0) {
       final preWsCount = resultMap.length;
       final phase3Watch = Stopwatch()..start();
@@ -2260,6 +2266,7 @@ class ProfileRepository implements ProfileReader {
         final events = await _nostrClient
             .queryUsers(trimmed, limit: limit, timeout: _nip50RelayQueryTimeout)
             .timeout(_nip50SearchTimeout);
+        if (_isSearchCancelled(cancellationToken)) return;
         for (final event in events) {
           final profile = UserProfile.fromNostrEvent(event);
           resultMap.putIfAbsent(profile.pubkey, () => profile);
@@ -2293,7 +2300,11 @@ class ProfileRepository implements ProfileReader {
       }
 
       if (resultMap.length > preWsCount) {
-        final enriched = await _enrichFromCache(resultMap.values.toList());
+        final enriched = await _enrichFromCache(
+          resultMap.values.toList(),
+          cancellationToken: cancellationToken,
+        );
+        if (_isSearchCancelled(cancellationToken)) return;
         final result = snapshot(
           isComplete: true,
           enriched: _applyFilter(
@@ -2314,7 +2325,12 @@ class ProfileRepository implements ProfileReader {
 
     // Final yield: enriched + filtered (when WS didn't add anything or
     // was skipped due to offset > 0)
-    final enriched = await _enrichFromCache(resultMap.values.toList());
+    if (_isSearchCancelled(cancellationToken)) return;
+    final enriched = await _enrichFromCache(
+      resultMap.values.toList(),
+      cancellationToken: cancellationToken,
+    );
+    if (_isSearchCancelled(cancellationToken)) return;
     final result = snapshot(
       isComplete: true,
       enriched: _applyFilter(
@@ -2582,19 +2598,16 @@ class ProfileRepository implements ProfileReader {
       // Connected relay fetches (one per pubkey, in parallel)
       final relayFuture = Future.wait(
         remainingList.map(
-          (
-            pubkey,
-          ) => Future.sync(() => _nostrClient.fetchProfile(pubkey)).catchError((
-            Object e,
-          ) {
-            Log.warning(
-              'Batch connected relay fetch failed for '
-              '${pubkeyForLogs(pubkey)}: $e',
-              name: 'ProfileRepository.fetchBatchProfiles',
-              category: LogCategory.relay,
-            );
-            return null;
-          }, test: (_) => true),
+          (pubkey) => Future.sync(() => _nostrClient.fetchProfile(pubkey))
+              .catchError((Object e) {
+                Log.warning(
+                  'Batch connected relay fetch failed for '
+                  '${pubkeyForLogs(pubkey)}: $e',
+                  name: 'ProfileRepository.fetchBatchProfiles',
+                  category: LogCategory.relay,
+                );
+                return null;
+              }, test: (_) => true),
         ),
       );
 
@@ -2694,12 +2707,17 @@ class ProfileRepository implements ProfileReader {
   ///
   /// For each profile, fills in null fields (picture, about, etc.) from
   /// the cached version without overwriting data from search results.
-  Future<List<UserProfile>> _enrichFromCache(List<UserProfile> profiles) async {
+  Future<List<UserProfile>> _enrichFromCache(
+    List<UserProfile> profiles, {
+    SearchCancellationToken? cancellationToken,
+  }) async {
     final enriched = <UserProfile>[];
     var cacheHits = 0;
     var pictureEnriched = 0;
     for (final profile in profiles) {
+      if (_isSearchCancelled(cancellationToken)) break;
       final cached = await _userProfilesDao.getProfile(profile.pubkey);
+      if (_isSearchCancelled(cancellationToken)) break;
       if (cached == null) {
         enriched.add(profile);
         continue;

@@ -4567,6 +4567,46 @@ void main() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
         });
 
+        test('cancellation after delayed REST prevents relay work', () async {
+          final rest = Completer<List<ProfileSearchResult>>();
+          final token = SearchCancellationToken('test-search');
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => rest.future);
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final resultFuture = repository
+              .searchUsersProgressive(
+                query: 'test',
+                cancellationToken: token,
+              )
+              .toList();
+          await Future<void>.delayed(Duration.zero);
+          token.cancel();
+          rest.complete([]);
+
+          expect(await resultFuture, isEmpty);
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+        });
+
         test('yields progressively: local, then API+relay merged', () async {
           // Arrange - local cache
           final cachedProfile = UserProfile(
