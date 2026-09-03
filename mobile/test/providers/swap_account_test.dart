@@ -572,11 +572,11 @@ void main() {
         );
         await tester.pump();
 
+        expect(pushSyncActivations, 1);
         expect(
           controller.currentContainer!.read(pushNotificationSyncProvider),
           same(incomingPushCoordinator),
         );
-        expect(pushSyncActivations, 1);
       },
     );
 
