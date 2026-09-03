@@ -40,10 +40,21 @@ match, which is the same property that makes them greppable against relay and
 funnelcake rows.
 
 The timestamp accepts a trailing `Z` **and** its absence, so exports from
-builds shipped before the UTC fix still parse. A `Z`-less line carries no
-zone, and lnav reads it as UTC, so a pre-UTC-fix export (device local time)
-lands shifted by the device's UTC offset against UTC server logs. Check the
-app version before trusting a cross-source timeline on an old export.
+builds shipped before #8520 still parse. The two are not equivalent:
+
+- **With `Z`** the suffix is parsed as a zone (`%z`), so the line is read as
+  UTC and converted to your display zone. That conversion is what makes a
+  merge against relay or Postgres output line up.
+- **Without `Z`** the line carries no zone and is read as a bare wall clock,
+  displayed exactly as written. That was the device's local time, so it sits
+  off a UTC-aware source by the difference between the reporter's offset and
+  yours.
+
+Check the app version before trusting a cross-source timeline on an old
+export. One caveat: lnav locks a timestamp format per file, so in a file that
+mixed both shapes the non-matching lines fold into the preceding message's
+timestamp instead of parsing their own. A real export comes from one build
+and does not mix; both shapes were verified to parse correctly on their own.
 
 ## `gha_log` — GitHub Actions job logs
 
