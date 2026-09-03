@@ -608,7 +608,7 @@ class NotificationRepository {
   /// Runs only when the snapshot is still empty (avoids racing the first
   /// REST response). Cached rows are surfaced as lightweight placeholders
   /// — video-anchored rows stay video-anchored when reconstructable, and
-  /// the next REST/WS arrival replaces them with fully enriched items.
+  /// the next REST arrival replaces them with fully enriched items.
   Future<void> _hydrateFromCache() async {
     try {
       if (_snapshot.value.items.isNotEmpty) return;

@@ -1,5 +1,5 @@
 // ABOUTME: Coalesces authoritative notification refresh triggers.
-// ABOUTME: Used by app resume to keep the repository snapshot fresh.
+// ABOUTME: Used by app resume and foreground push to keep snapshots fresh.
 
 import 'dart:async';
 
@@ -16,6 +16,9 @@ enum NotificationRefreshReason {
 
   /// App is foreground and idle enough to opportunistically warm notifications.
   foregroundIdleWarmup,
+
+  /// A foreground push arrived that may have a corresponding Inbox item.
+  pushReceived,
 }
 
 /// Forwards an unexpected refresh failure to the crash reporter.
@@ -32,20 +35,55 @@ class NotificationRefreshCoordinator {
   NotificationRefreshCoordinator({
     required NotificationRepository repository,
     Duration cooldown = const Duration(seconds: 30),
+    Duration pushDebounce = const Duration(seconds: 3),
+    Duration pushMaxWait = const Duration(seconds: 10),
+    Duration pushMinimumInterval = const Duration(seconds: 10),
     DateTime Function()? now,
     NotificationRefreshErrorReporter? errorReporter,
   }) : _repository = repository,
        _cooldown = cooldown,
+       _pushDebounce = pushDebounce,
+       _pushMaxWait = pushMaxWait,
+       _pushMinimumInterval = pushMinimumInterval,
        _now = now ?? DateTime.now,
        _reportError = errorReporter ?? _reportToCrashlytics;
 
   final NotificationRepository _repository;
   final Duration _cooldown;
+  final Duration _pushDebounce;
+  final Duration _pushMaxWait;
+  final Duration _pushMinimumInterval;
   final DateTime Function() _now;
   final NotificationRefreshErrorReporter _reportError;
 
   DateTime? _lastSuccessAt;
   Future<void>? _inFlight;
+  Timer? _pushDebounceTimer;
+  Timer? _pushMaxWaitTimer;
+  bool _disposed = false;
+
+  /// Schedules one authoritative refresh after a foreground push burst ends.
+  ///
+  /// Every arrival resets the trailing debounce, while a separate maximum-wait
+  /// timer prevents a sustained stream from postponing the refresh forever.
+  /// Successful requests retain a short rate floor. The eventual refresh
+  /// waits for an earlier refresh to finish and bypasses only the general
+  /// success cooldown: the repository's deep-pagination protection still
+  /// applies.
+  void schedulePushRefresh() {
+    if (_disposed) return;
+    _pushDebounceTimer?.cancel();
+    _pushDebounceTimer = Timer(_pushDebounce, _completePushBurst);
+    _pushMaxWaitTimer ??= Timer(_pushMaxWait, _completePushBurst);
+  }
+
+  void _completePushBurst() {
+    _pushDebounceTimer?.cancel();
+    _pushDebounceTimer = null;
+    _pushMaxWaitTimer?.cancel();
+    _pushMaxWaitTimer = null;
+    unawaited(_refreshAfterPushBurst());
+  }
 
   /// Requests an authoritative first-page refresh.
   ///
@@ -58,6 +96,12 @@ class NotificationRefreshCoordinator {
   Future<void> refresh({
     required NotificationRefreshReason reason,
     bool force = false,
+  }) => _refresh(reason: reason, force: force);
+
+  Future<void> _refresh({
+    required NotificationRefreshReason reason,
+    bool force = false,
+    bool bypassCooldown = false,
   }) {
     final inFlight = _inFlight;
     if (inFlight != null) return inFlight;
@@ -74,6 +118,7 @@ class NotificationRefreshCoordinator {
 
     final lastSuccessAt = _lastSuccessAt;
     if (!force &&
+        !bypassCooldown &&
         lastSuccessAt != null &&
         _now().difference(lastSuccessAt) < _cooldown) {
       return Future<void>.value();
@@ -84,6 +129,39 @@ class NotificationRefreshCoordinator {
     });
     _inFlight = future;
     return future;
+  }
+
+  Future<void> _refreshAfterPushBurst() async {
+    final inFlight = _inFlight;
+    if (inFlight != null) await inFlight;
+    if (_disposed) return;
+
+    final lastSuccessAt = _lastSuccessAt;
+    if (lastSuccessAt != null) {
+      final elapsed = _now().difference(lastSuccessAt);
+      if (elapsed < _pushMinimumInterval) {
+        final remaining = _pushMinimumInterval - elapsed;
+        _pushDebounceTimer?.cancel();
+        _pushMaxWaitTimer?.cancel();
+        _pushMaxWaitTimer = null;
+        _pushDebounceTimer = Timer(remaining, _completePushBurst);
+        return;
+      }
+    }
+
+    await _refresh(
+      reason: NotificationRefreshReason.pushReceived,
+      bypassCooldown: true,
+    );
+  }
+
+  /// Cancels pending burst work owned by this coordinator.
+  void dispose() {
+    _disposed = true;
+    _pushDebounceTimer?.cancel();
+    _pushDebounceTimer = null;
+    _pushMaxWaitTimer?.cancel();
+    _pushMaxWaitTimer = null;
   }
 
   Future<void> _runRefresh(NotificationRefreshReason reason) async {
@@ -153,5 +231,9 @@ final notificationRefreshCoordinatorProvider =
     Provider<NotificationRefreshCoordinator?>((ref) {
       final repository = ref.watch(notificationRepositoryProvider);
       if (repository == null) return null;
-      return NotificationRefreshCoordinator(repository: repository);
+      final coordinator = NotificationRefreshCoordinator(
+        repository: repository,
+      );
+      ref.onDispose(coordinator.dispose);
+      return coordinator;
     });
