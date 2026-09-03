@@ -90,6 +90,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         )
         self.assertNotIn("PROJECT_BUILD_NUMBER + 8", self.contents)
 
+    def test_android_release_publishes_to_internal_track(self) -> None:
+        block = self._workflow_block("android-build")
+        self.assertRegex(block, r"(?m)^        track: internal$")
+        self.assertNotIn("submit_as_draft", block)
+        self.assertNotIn("track: production", block)
+
     def test_shorebird_supporters_defines_are_optional(self) -> None:
         self.assertIn("optional_names = %w[", self.contents)
         self.assertIn("SUPPORTERS_API_BASE_URL", self.contents)
