@@ -669,14 +669,10 @@ _DbClassification _classifyDatabase(
       rethrow;
     }
 
-    try {
-      recoverHotRollbackJournal(
-        databasePath: dbPath,
-        configureEncryptedDatabase: (db) => applyCipherKey(db, rawKeyHex),
-      );
-    } on DatabaseHotJournalRecoveryError {
-      rethrow;
-    }
+    recoverHotRollbackJournal(
+      databasePath: dbPath,
+      configureEncryptedDatabase: (db) => applyCipherKey(db, rawKeyHex),
+    );
 
     try {
       return _classifyDatabaseOnce(dbPath);
