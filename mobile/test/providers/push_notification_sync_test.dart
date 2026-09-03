@@ -13,6 +13,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -34,6 +35,9 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _MockNotificationService extends Mock implements NotificationService {}
+
+class _MockNotificationRefreshCoordinator extends Mock
+    implements NotificationRefreshCoordinator {}
 
 class _FakeEvent extends Fake implements Event {
   @override
@@ -357,6 +361,46 @@ void main() {
   }
 
   group('pushNotificationSync', () {
+    test(
+      'foreground message schedules an authoritative Inbox refresh',
+      () async {
+        final messages = StreamController<RemoteMessage>.broadcast();
+        final refreshCoordinator = _MockNotificationRefreshCoordinator();
+        addTearDown(messages.close);
+        when(
+          () => pushService.handleForegroundMessage(any()),
+        ).thenAnswer((_) async {});
+        when(refreshCoordinator.schedulePushRefresh).thenReturn(null);
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        final container = buildContainer(
+          extraOverrides: [
+            firebaseOnMessageProvider.overrideWithValue(messages.stream),
+            notificationRefreshCoordinatorProvider.overrideWithValue(
+              refreshCoordinator,
+            ),
+          ],
+        );
+
+        container.read(pushNotificationSyncProvider);
+        messages.add(
+          const RemoteMessage(
+            data: {'title': 'New like', 'body': 'Someone'},
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => pushService.handleForegroundMessage(const {
+            'title': 'New like',
+            'body': 'Someone',
+          }),
+        ).called(1);
+        verify(refreshCoordinator.schedulePushRefresh).called(1);
+      },
+    );
+
     test(
       'does not publish stale registration when auth changes mid-flight',
       () async {

@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -289,7 +290,10 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
     message,
   ) {
     final pushService = ref.read(pushNotificationServiceProvider);
-    pushService?.handleForegroundMessage(message.data);
+    if (pushService != null) {
+      unawaited(pushService.handleForegroundMessage(message.data));
+    }
+    ref.read(notificationRefreshCoordinatorProvider)?.schedulePushRefresh();
   });
 
   ref.onDispose(() {

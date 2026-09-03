@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
@@ -32,10 +33,12 @@ void main() {
 
     NotificationRefreshCoordinator buildCoordinator({
       Duration cooldown = const Duration(seconds: 30),
+      Duration pushDebounce = const Duration(seconds: 3),
     }) {
       return NotificationRefreshCoordinator(
         repository: repository,
         cooldown: cooldown,
+        pushDebounce: pushDebounce,
         now: () => now,
         errorReporter: (error, stackTrace, {reason}) =>
             reportedErrors.add((error: error, reason: reason)),
@@ -170,6 +173,99 @@ void main() {
       await coordinator.refresh(reason: NotificationRefreshReason.appResume);
 
       expect(reportedErrors, isEmpty);
+    });
+
+    group('foreground push refresh', () {
+      test('trailing-debounces a burst into one refresh', () {
+        fakeAsync((async) {
+          final coordinator = buildCoordinator();
+
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 1));
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 1));
+          coordinator.schedulePushRefresh();
+
+          async.elapse(const Duration(milliseconds: 2999));
+          verifyNever(() => repository.refreshApplied());
+
+          async.elapse(const Duration(milliseconds: 1));
+          async.flushMicrotasks();
+          verify(() => repository.refreshApplied()).called(1);
+        });
+      });
+
+      test('preserves the deep-pagination guard', () {
+        fakeAsync((async) {
+          when(() => repository.hasPaginatedBeyondFirstPage).thenReturn(true);
+          final coordinator = buildCoordinator();
+
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          verifyNever(() => repository.refreshApplied());
+        });
+      });
+
+      test('dispose cancels a pending refresh', () {
+        fakeAsync((async) {
+          final coordinator = buildCoordinator();
+
+          coordinator.schedulePushRefresh();
+          coordinator.dispose();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          verifyNever(() => repository.refreshApplied());
+        });
+      });
+
+      test('a failed push refresh does not suppress the next burst', () {
+        fakeAsync((async) {
+          when(
+            () => repository.refreshApplied(),
+          ).thenThrow(Exception('timeout'));
+          final coordinator = buildCoordinator();
+
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          when(
+            () => repository.refreshApplied(),
+          ).thenAnswer((_) async => true);
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          verify(() => repository.refreshApplied()).called(2);
+        });
+      });
+
+      test('refreshes after an earlier refresh finishes', () {
+        fakeAsync((async) {
+          final firstRefresh = Completer<bool>();
+          var calls = 0;
+          when(() => repository.refreshApplied()).thenAnswer((_) {
+            calls += 1;
+            return calls == 1 ? firstRefresh.future : Future.value(true);
+          });
+          final coordinator = buildCoordinator();
+
+          unawaited(
+            coordinator.refresh(reason: NotificationRefreshReason.appResume),
+          );
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+          expect(calls, 1);
+
+          firstRefresh.complete(true);
+          async.flushMicrotasks();
+          expect(calls, 2);
+        });
+      });
     });
   });
 }
