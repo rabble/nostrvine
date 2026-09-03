@@ -285,7 +285,7 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
   }) async {
     final results = await _queryPublicLists(
       limit: 10,
-      logContext: 'for $ownerPubkey/$listId',
+      logContext: 'for ${pubkeyForLogs(ownerPubkey)}/$listId',
       author: ownerPubkey,
       dTag: listId,
     );
