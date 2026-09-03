@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "não foi possível desbloquear seu banco de dados local",
     "dbFailureAdviceResettable": "Reiniciar não vai resolver. Redefinir o banco de dados local abaixo dá ao Divine um começo limpo — sua conta permanece.",
     "dbFailureAdviceRestart": "Reinicie o Divine depois de desbloquear seu dispositivo. Se continuar acontecendo, atualize o app ou fale com o suporte.",
+    "dbFailureAdviceHotJournal": "Tente reiniciar o Divine uma vez. Se isso continuar acontecendo, atualize o app ou entre em contato com o suporte. Seus dados locais continuam aqui.",
     "dbFailureDiagnostic": "Diagnóstico: {code}",
     "dbFailureCloseApp": "fechar o Divine",
     "dbFailureResetAction": "redefinir banco de dados local",

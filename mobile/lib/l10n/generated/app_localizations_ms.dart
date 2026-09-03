@@ -11849,6 +11849,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mulakan semula Divine selepas membuka kunci peranti anda. Jika ini berterusan, kemas kini apl atau hubungi sokongan.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Cuba mulakan semula Divine sekali. Jika ini berterusan, kemas kini apl atau hubungi sokongan. Data setempat anda masih ada.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostik: $code';
   }

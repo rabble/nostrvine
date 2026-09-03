@@ -11120,6 +11120,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dbFailureAdviceRestart => '解锁设备后重新启动 Divine。如果问题持续出现，请更新应用或联系支持。';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      '请尝试重启一次 Divine。如果问题持续出现，请更新应用或联系支持。你的本地数据仍然保留着。';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return '诊断：$code';
   }

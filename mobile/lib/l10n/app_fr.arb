@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "impossible de déverrouiller votre base de données locale",
     "dbFailureAdviceResettable": "Un redémarrage ne réglera pas ça. Réinitialiser la base de données locale ci-dessous donne à Divine un nouveau départ — votre compte est conservé.",
     "dbFailureAdviceRestart": "Redémarrez Divine après avoir déverrouillé votre appareil. Si cela persiste, mettez l'application à jour ou contactez l'assistance.",
+    "dbFailureAdviceHotJournal": "Essayez de redémarrer Divine une fois. Si le problème persiste, mettez l’application à jour ou contactez l’assistance. Vos données locales sont toujours là.",
     "dbFailureDiagnostic": "Diagnostic : {code}",
     "dbFailureCloseApp": "fermer Divine",
     "dbFailureResetAction": "réinitialiser la base de données locale",

@@ -4797,6 +4797,7 @@
     "dbFailureTitle": "የአካባቢ ዳታቤዝዎን መክፈት አልተቻለም",
     "dbFailureAdviceResettable": "እንደገና ማስጀመር ይህን አያስተካክለውም። ከታች ያለውን የአካባቢ ዳታቤዝ ዳግም ማስጀመር ለDivine ንጹህ ጅምር ይሰጣል — መለያዎ ይቀራል።",
     "dbFailureAdviceRestart": "መሣሪያዎን ከከፈቱ በኋላ Divineን እንደገና ያስጀምሩ። ይህ የሚቀጥል ከሆነ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያግኙ።",
+    "dbFailureAdviceHotJournal": "Divineን አንድ ጊዜ እንደገና ለማስጀመር ይሞክሩ። ይህ ከቀጠለ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያነጋግሩ። የአካባቢዎ ውሂብ አሁንም አለ።",
     "dbFailureDiagnostic": "ምርመራ: {code}",
     "dbFailureCloseApp": "Divineን ዝጋ",
     "dbFailureResetAction": "የአካባቢ ዳታቤዝ ዳግም አስጀምር",

@@ -11947,6 +11947,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Restart Divine after unlocking your device. If this keeps happening, update the app or contact support.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Try restarting Divine once. If this keeps happening, update the app or contact support. Your local data is still here.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostic: $code';
   }

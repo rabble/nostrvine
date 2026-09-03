@@ -8096,6 +8096,10 @@
   "@dbFailureAdviceRestart": {
     "description": "Advice on the database-failure screen when no reset is offered, because the database is intact and only its keystore was unreachable."
   },
+  "dbFailureAdviceHotJournal": "Divineని ఒకసారి పునఃప్రారంభించి చూడండి. ఇది కొనసాగితే, యాప్‌ని అప్‌డేట్ చేయండి లేదా సపోర్ట్‌ని సంప్రదించండి. మీ స్థానిక డేటా ఇంకా భద్రంగా ఉంది.",
+  "@dbFailureAdviceHotJournal": {
+    "description": "Advice shown when SQLite could not safely replay a hot rollback journal and the app preserves the local database for recovery."
+  },
   "dbFailureDiagnostic": "డయాగ్నోస్టిక్: {code}",
   "@dbFailureDiagnostic": {
     "description": "Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.",

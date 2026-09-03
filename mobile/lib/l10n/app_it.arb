@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "impossibile sbloccare il database locale",
     "dbFailureAdviceResettable": "Riavviare non risolverà il problema. Reimpostare il database locale qui sotto dà a Divine un nuovo inizio — il tuo account resta.",
     "dbFailureAdviceRestart": "Riavvia Divine dopo aver sbloccato il dispositivo. Se continua a succedere, aggiorna l'app o contatta l'assistenza.",
+    "dbFailureAdviceHotJournal": "Prova a riavviare Divine una volta. Se continua a succedere, aggiorna l’app o contatta l’assistenza. I tuoi dati locali sono ancora presenti.",
     "dbFailureDiagnostic": "Diagnostica: {code}",
     "dbFailureCloseApp": "chiudi Divine",
     "dbFailureResetAction": "reimposta database locale",

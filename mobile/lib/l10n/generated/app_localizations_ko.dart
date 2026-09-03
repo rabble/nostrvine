@@ -11260,6 +11260,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '기기 잠금을 해제한 뒤 Divine을 다시 실행하세요. 계속 발생하면 앱을 업데이트하거나 고객지원에 문의하세요.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divine을 한 번 다시 시작해 보세요. 문제가 계속되면 앱을 업데이트하거나 지원팀에 문의하세요. 로컬 데이터는 그대로 보존되어 있습니다.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return '진단: $code';
   }

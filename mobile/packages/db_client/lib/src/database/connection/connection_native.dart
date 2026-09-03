@@ -4,6 +4,8 @@
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:db_client/src/database/connection/database_sidecars.dart';
+import 'package:db_client/src/database/connection/hot_journal_recovery.dart';
+import 'package:db_client/src/database/connection/hot_journal_recovery_models.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
@@ -502,12 +504,9 @@ enum CipherMigrationOutcome {
 
 /// The keyless classifier operation that could not determine the database
 /// format.
-enum DatabaseClassificationStage {
-  openDatabase,
-  readSchema,
-}
+enum DatabaseClassificationStage { openDatabase, readSchema }
 
-/// A transient SQLite failure left the existing database format unknown.
+/// SQLite could not safely determine the existing database format.
 ///
 /// Callers must fail closed: the file may be plaintext or encrypted, so
 /// opening it with either assumption can corrupt data or strand the session.
@@ -548,8 +547,10 @@ class DatabaseClassificationException implements Exception {
 /// while copying the rest of it — which no retry can fix, so the caller must
 /// fail closed rather than open it unkeyed.
 ///
-/// Throws [DatabaseClassificationException] when a transient SQLite failure
-/// leaves the existing file format unknown. Requires SQLite3MultipleCiphers;
+/// Throws [DatabaseClassificationException] when SQLite cannot safely identify
+/// the existing file format. Throws [DatabaseHotJournalRecoveryError] when a
+/// hot rollback journal cannot be safely replayed. Requires
+/// SQLite3MultipleCiphers;
 /// returns [CipherMigrationOutcome.failed] when it is not linked, leaving the
 /// proven-readable plaintext source intact.
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
@@ -586,7 +587,7 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
 
   if (!File(dbPath).existsSync()) return CipherMigrationOutcome.noDatabase;
 
-  switch (_classifyDatabase(dbPath)) {
+  switch (_classifyDatabase(dbPath, rawKeyHex: rawKeyHex)) {
     case _DbClassification.encrypted:
       return CipherMigrationOutcome.alreadyEncrypted;
     case _DbClassification.corrupt:
@@ -656,7 +657,41 @@ enum _DbClassification {
 /// split out from the transient errors: it is a property of the file, not of
 /// the moment, so it repeats on every launch and needs the caller to fail
 /// closed rather than defer.
-_DbClassification _classifyDatabase(String dbPath) {
+_DbClassification _classifyDatabase(
+  String dbPath, {
+  required String rawKeyHex,
+}) {
+  try {
+    return _classifyDatabaseOnce(dbPath);
+  } on DatabaseClassificationException catch (error) {
+    if (error.resultCode != sqliteReadOnly ||
+        error.extendedResultCode != sqliteReadOnlyRollback) {
+      rethrow;
+    }
+
+    try {
+      recoverHotRollbackJournal(
+        databasePath: dbPath,
+        configureEncryptedDatabase: (db) => applyCipherKey(db, rawKeyHex),
+      );
+    } on DatabaseHotJournalRecoveryError {
+      rethrow;
+    }
+
+    try {
+      return _classifyDatabaseOnce(dbPath);
+    } on DatabaseClassificationException catch (retryError) {
+      if (retryError.extendedResultCode == sqliteReadOnlyRollback) {
+        throw const DatabaseHotJournalRecoveryError(
+          stage: DatabaseHotJournalRecoveryStage.retryClassification,
+        );
+      }
+      rethrow;
+    }
+  }
+}
+
+_DbClassification _classifyDatabaseOnce(String dbPath) {
   Database db;
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);

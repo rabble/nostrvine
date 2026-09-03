@@ -11530,6 +11530,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'መሣሪያዎን ከከፈቱ በኋላ Divineን እንደገና ያስጀምሩ። ይህ የሚቀጥል ከሆነ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያግኙ።';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divineን አንድ ጊዜ እንደገና ለማስጀመር ይሞክሩ። ይህ ከቀጠለ መተግበሪያውን ያዘምኑ ወይም ድጋፍን ያነጋግሩ። የአካባቢዎ ውሂብ አሁንም አለ።';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'ምርመራ: $code';
   }

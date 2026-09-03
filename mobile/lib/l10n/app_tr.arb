@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "yerel veritabanınız açılamadı",
     "dbFailureAdviceResettable": "Yeniden başlatmak bunu düzeltmez. Aşağıdaki yerel veritabanını sıfırlamak Divine’a temiz bir başlangıç verir — hesabınız kalır.",
     "dbFailureAdviceRestart": "Cihazınızın kilidini açtıktan sonra Divine’ı yeniden başlatın. Bu sürerse uygulamayı güncelleyin veya destekle iletişime geçin.",
+    "dbFailureAdviceHotJournal": "Divine’ı bir kez yeniden başlatmayı deneyin. Bu durum devam ederse uygulamayı güncelleyin veya destek ekibiyle iletişime geçin. Yerel verileriniz hâlâ burada.",
     "dbFailureDiagnostic": "Tanılama: {code}",
     "dbFailureCloseApp": "Divine’ı kapat",
     "dbFailureResetAction": "yerel veritabanını sıfırla",

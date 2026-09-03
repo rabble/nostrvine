@@ -11758,6 +11758,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Mulai ulang Divine setelah membuka kunci perangkatmu. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Coba mulai ulang Divine satu kali. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan. Data lokal Anda masih ada.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostik: $code';
   }

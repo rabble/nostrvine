@@ -19938,6 +19938,12 @@ abstract class AppLocalizations {
   /// **'Restart Divine after unlocking your device. If this keeps happening, update the app or contact support.'**
   String get dbFailureAdviceRestart;
 
+  /// Advice shown when SQLite could not safely replay a hot rollback journal and the app preserves the local database for recovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Try restarting Divine once. If this keeps happening, update the app or contact support. Your local data is still here.'**
+  String get dbFailureAdviceHotJournal;
+
   /// Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.
   ///
   /// In en, this message translates to:

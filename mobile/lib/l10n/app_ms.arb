@@ -6450,6 +6450,7 @@
   "dbFailureTitle": "tidak dapat membuka kunci pangkalan data setempat anda",
   "dbFailureAdviceResettable": "Memulakan semula tidak akan membaikinya. Menetapkan semula pangkalan data setempat di bawah memberi Divine permulaan yang bersih — akaun anda kekal.",
   "dbFailureAdviceRestart": "Mulakan semula Divine selepas membuka kunci peranti anda. Jika ini berterusan, kemas kini apl atau hubungi sokongan.",
+  "dbFailureAdviceHotJournal": "Cuba mulakan semula Divine sekali. Jika ini berterusan, kemas kini apl atau hubungi sokongan. Data setempat anda masih ada.",
   "dbFailureDiagnostic": "Diagnostik: {code}",
   "dbFailureCloseApp": "tutup Divine",
   "dbFailureResetAction": "tetapkan semula pangkalan data setempat",

@@ -11249,6 +11249,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'デバイスのロックを解除してから Divine を再起動してください。これが続く場合は、アプリを更新するかサポートにご連絡ください。';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divineを一度再起動してみてください。問題が続く場合は、アプリを更新するかサポートにお問い合わせください。ローカルデータはそのまま残っています。';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return '診断: $code';
   }

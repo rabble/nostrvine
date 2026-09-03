@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart' show AppDatabase;
 import 'package:db_client/src/database/connection/connection_native.dart';
+import 'package:db_client/src/database/connection/hot_journal_recovery.dart';
+import 'package:db_client/src/database/connection/hot_journal_recovery_models.dart';
 import 'package:drift/drift.dart' show QueryExecutor;
 import 'package:drift/native.dart' show NativeDatabase;
 import 'package:flutter_test/flutter_test.dart';
@@ -1370,6 +1372,117 @@ void main() {
     });
 
     test(
+      'recovers a plaintext hot rollback journal before migration',
+      () async {
+        _createHotJournalFixture(dbPath);
+        _expectReadOnlyRollback(dbPath);
+
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(outcome, CipherMigrationOutcome.migrated);
+        expect(File('$dbPath-journal').existsSync(), isFalse);
+        expect(_hotJournalRowCount(dbPath, key: validKey), 1);
+      },
+    );
+
+    test(
+      'recovers an encrypted hot rollback journal under its existing key',
+      () async {
+        _createHotJournalFixture(dbPath, key: validKey);
+        _expectReadOnlyRollback(dbPath);
+
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(outcome, CipherMigrationOutcome.alreadyEncrypted);
+        expect(File('$dbPath-journal').existsSync(), isFalse);
+        expect(_hotJournalRowCount(dbPath, key: validKey), 1);
+      },
+    );
+
+    test(
+      'wrong key leaves an encrypted hot journal byte-for-byte intact',
+      () async {
+        _createHotJournalFixture(dbPath, key: validKey);
+        final databaseBefore = File(dbPath).readAsBytesSync();
+        final journalBefore = File('$dbPath-journal').readAsBytesSync();
+        const wrongKey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+        await expectLater(
+          migratePlaintextToEncrypted(
+            rawKeyHex: wrongKey,
+            databasePath: dbPath,
+          ),
+          throwsA(
+            isA<DatabaseHotJournalRecoveryError>().having(
+              (error) => error.stage,
+              'stage',
+              DatabaseHotJournalRecoveryStage.validateCipherKey,
+            ),
+          ),
+        );
+
+        expect(File(dbPath).readAsBytesSync(), databaseBefore);
+        expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+      },
+    );
+
+    test('failed replay restores the database and journal snapshot', () {
+      _createHotJournalFixture(dbPath, key: validKey);
+      final databaseBefore = File(dbPath).readAsBytesSync();
+      final journalBefore = File('$dbPath-journal').readAsBytesSync();
+      var configurations = 0;
+
+      expect(
+        () => recoverHotRollbackJournal(
+          databasePath: dbPath,
+          configureEncryptedDatabase: (database) {
+            configurations += 1;
+            applyCipherKey(database, validKey);
+            if (configurations == 2) throw StateError('injected failure');
+          },
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>().having(
+            (error) => error.stage,
+            'stage',
+            DatabaseHotJournalRecoveryStage.replayJournal,
+          ),
+        ),
+      );
+
+      expect(File(dbPath).readAsBytesSync(), databaseBefore);
+      expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+    });
+
+    test('short database fails closed before writable recovery', () {
+      File(dbPath).writeAsBytesSync(const [1, 2, 3]);
+      File('$dbPath-journal').writeAsBytesSync(const [4, 5, 6]);
+
+      expect(
+        () => recoverHotRollbackJournal(
+          databasePath: dbPath,
+          configureEncryptedDatabase: (db) => applyCipherKey(db, validKey),
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>().having(
+            (error) => error.stage,
+            'stage',
+            DatabaseHotJournalRecoveryStage.inspectHeader,
+          ),
+        ),
+      );
+      expect(File(dbPath).readAsBytesSync(), const [1, 2, 3]);
+      expect(File('$dbPath-journal').readAsBytesSync(), const [4, 5, 6]);
+    });
+
+    test(
       'migrates a populated plaintext DB to encrypted raw-key storage',
       () async {
         _createSqliteDatabase(dbPath, draftCount: 3);
@@ -1558,6 +1671,70 @@ void main() {
       },
     );
   });
+}
+
+void _createHotJournalFixture(String targetPath, {String? key}) {
+  final sourcePath = '$targetPath.source';
+  File(sourcePath).parent.createSync(recursive: true);
+  final source = sqlite3.open(sourcePath);
+  try {
+    if (key != null) applyCipherKey(source, key);
+    source
+      ..execute('PRAGMA journal_mode = DELETE;')
+      ..execute('PRAGMA synchronous = FULL;')
+      ..execute('PRAGMA cache_size = 1;')
+      ..execute('CREATE TABLE hot_journal_rows (value BLOB NOT NULL);')
+      ..execute('INSERT INTO hot_journal_rows VALUES (zeroblob(1024));')
+      ..execute('BEGIN IMMEDIATE;');
+    for (var index = 0; index < 24; index += 1) {
+      source.execute(
+        'INSERT INTO hot_journal_rows VALUES (zeroblob(65536));',
+      );
+    }
+    expect(File('$sourcePath-journal').lengthSync(), greaterThan(0));
+    File(sourcePath).copySync(targetPath);
+    File('$sourcePath-journal').copySync('$targetPath-journal');
+  } finally {
+    source
+      ..execute('ROLLBACK;')
+      ..close();
+    File(sourcePath).deleteSync();
+  }
+}
+
+void _expectReadOnlyRollback(String path) {
+  final database = sqlite3.open(path, mode: OpenMode.readOnly);
+  try {
+    expect(
+      () => database.select('SELECT count(*) FROM sqlite_master;'),
+      throwsA(
+        isA<SqliteException>()
+            .having((error) => error.resultCode, 'resultCode', sqliteReadOnly)
+            .having(
+              (error) => error.extendedResultCode,
+              'extendedResultCode',
+              sqliteReadOnlyRollback,
+            ),
+      ),
+    );
+  } finally {
+    database.close();
+  }
+}
+
+int _hotJournalRowCount(String path, {String? key}) {
+  final database = sqlite3.open(path, mode: OpenMode.readOnly);
+  try {
+    if (key != null) applyCipherKey(database, key);
+    return database
+            .select(
+              'SELECT count(*) AS count FROM hot_journal_rows;',
+            )
+            .single['count']
+        as int;
+  } finally {
+    database.close();
+  }
 }
 
 /// Creates an encrypted database with a few local-only rows (drafts, clips) in

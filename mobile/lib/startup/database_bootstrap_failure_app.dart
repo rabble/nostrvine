@@ -257,6 +257,7 @@ class _FailureScreenState extends State<_FailureScreen> {
                 _Step.failure => _FailureView(
                   error: widget.error,
                   stack: widget.stack,
+                  diagnosis: _diagnosis,
                   canCloseApp: widget.canCloseApp,
                   onCloseApp: widget.onCloseApp,
                   onResetRequested: _canReset
@@ -290,6 +291,7 @@ class _FailureView extends StatelessWidget {
   const _FailureView({
     required this.error,
     required this.stack,
+    required this.diagnosis,
     required this.canCloseApp,
     required this.onCloseApp,
     required this.onResetRequested,
@@ -297,16 +299,17 @@ class _FailureView extends StatelessWidget {
 
   final Object error;
   final StackTrace stack;
+  final DatabaseBootstrapDiagnosis diagnosis;
   final bool canCloseApp;
   final VoidCallback onCloseApp;
   final VoidCallback? onResetRequested;
 
-  /// The advice and the reset offer answer the same question, so one condition
-  /// decides both: unlocking and restarting is the fix for the transient
-  /// keystore case, and misleading for the diagnoses a reset is offered for.
-  String _advice(AppLocalizations l10n) => onResetRequested != null
-      ? l10n.dbFailureAdviceResettable
-      : l10n.dbFailureAdviceRestart;
+  String _advice(AppLocalizations l10n) => switch (diagnosis) {
+    DatabaseBootstrapDiagnosis.hotJournalUnrecovered =>
+      l10n.dbFailureAdviceHotJournal,
+    _ when onResetRequested != null => l10n.dbFailureAdviceResettable,
+    _ => l10n.dbFailureAdviceRestart,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -425,10 +428,7 @@ class _ResetConfirmView extends StatelessWidget {
 /// app. Supported platforms briefly build this step before closing, keeping
 /// the state transition deterministic and testable.
 class _ResetDoneView extends StatelessWidget {
-  const _ResetDoneView({
-    required this.canCloseApp,
-    required this.onCloseApp,
-  });
+  const _ResetDoneView({required this.canCloseApp, required this.onCloseApp});
 
   final bool canCloseApp;
   final VoidCallback onCloseApp;
@@ -488,6 +488,9 @@ enum DatabaseBootstrapDiagnosis {
   /// classified. Restarting may recover; deleting data is not justified.
   classificationUnavailable('db-classification-unavailable'),
 
+  /// SQLite found a hot rollback journal that could not be safely replayed.
+  hotJournalUnrecovered('db-journal-unrecovered'),
+
   /// Anything else. Read the exception from Crashlytics for this one.
   bootstrapFailed('db-bootstrap-failed');
 
@@ -516,7 +519,10 @@ enum DatabaseBootstrapDiagnosis {
   /// choice deliberately instead of defaulting into a destructive offer.
   bool get allowsLocalDatabaseReset => switch (this) {
     cipherMismatch || databaseUnreadable || bootstrapFailed => true,
-    cipherUnavailable || secureStorage || classificationUnavailable => false,
+    cipherUnavailable ||
+    secureStorage ||
+    classificationUnavailable ||
+    hotJournalUnrecovered => false,
   };
 }
 
@@ -541,6 +547,9 @@ DatabaseBootstrapDiagnosis databaseBootstrapDiagnosis(Object error) {
   }
   if (error is DatabaseClassificationException) {
     return DatabaseBootstrapDiagnosis.classificationUnavailable;
+  }
+  if (error is DatabaseHotJournalRecoveryError) {
+    return DatabaseBootstrapDiagnosis.hotJournalUnrecovered;
   }
 
   final message = error.toString();
