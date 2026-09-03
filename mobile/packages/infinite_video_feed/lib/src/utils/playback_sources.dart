@@ -11,12 +11,8 @@ import 'package:models/models.dart';
 /// [VideoEvent.videoUrl]. For Divine blob URLs the list is expanded with
 /// canonical alternatives so the runtime can fail over between them.
 ///
-/// For derivative-resolved Divine blobs, avoid falling back to the bare blob.
-/// Until divine-blossom#198 fixes Range support on bare blob URLs, range-
-/// requesting players can receive a cached XML NoSuchKey response as HTTP 206,
-/// so derivatives should recover through other renditions and HLS instead.
-/// Keep the raw URL only when it is the resolved source, where dropping it
-/// would leave raw/classic-Vine playback with no progressive option.
+/// Derivative-resolved Divine blobs use the bare blob as their final fallback,
+/// after quality-specific and HLS sources have been attempted.
 List<String> resolvePlaybackSources(
   VideoEvent video, {
   String? Function(VideoEvent video)? urlResolver,
@@ -32,13 +28,14 @@ List<String> resolvePlaybackSources(
   final hash = extractCanonicalDivineBlobHash(resolvedSource);
   if (hash != null) {
     final hlsUrl = canonicalDivineBlobHlsUrl(hash);
+    final rawUrl = canonicalDivineBlobRawUrl(hash);
     final isAlreadyHls = resolvedSource.contains('/hls/');
     if (isAlreadyHls) {
       final originalFallback =
           originalUrl != null && isDivineBlobRawUrl(originalUrl)
           ? null
           : originalUrl;
-      return orderedUniqueSources([resolvedSource, originalFallback]);
+      return orderedUniqueSources([resolvedSource, originalFallback, rawUrl]);
     }
 
     final isRawBlob = isDivineBlobRawUrl(resolvedSource);
@@ -46,17 +43,25 @@ List<String> resolvePlaybackSources(
       return orderedUniqueSources([resolvedSource, hlsUrl, originalUrl]);
     }
 
-    // TODO(liz): Restore the bare blob fallback after divine-blossom#198
-    // fixes Range support on bare blob URLs (#7184).
     final originalFallback =
         originalUrl != null && isDivineBlobRawUrl(originalUrl)
         ? null
         : originalUrl;
     if (derivativeFailureCache?.hasFreshFailureForHash(hash) ?? false) {
-      return orderedUniqueSources([hlsUrl, resolvedSource, originalFallback]);
+      return orderedUniqueSources([
+        hlsUrl,
+        resolvedSource,
+        originalFallback,
+        rawUrl,
+      ]);
     }
 
-    return orderedUniqueSources([resolvedSource, hlsUrl, originalFallback]);
+    return orderedUniqueSources([
+      resolvedSource,
+      hlsUrl,
+      originalFallback,
+      rawUrl,
+    ]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);
@@ -109,6 +114,10 @@ VideoErrorType classifyVideoError({
 /// HTTP 422 while the raw blob is already available. Playback should treat both
 /// as transient source failures instead of terminal missing-media evidence.
 bool isMediaProcessingError(Object? error, {String? errorMessage}) {
+  if (nativePlayerErrorCodeFromError(error) ==
+      NativePlayerErrorCode.mediaProcessing) {
+    return true;
+  }
   final lower = '${errorMessage ?? ''} ${error ?? ''}'.toLowerCase();
   return _mentionsHttpStatus(lower, 202) || _mentionsHttpStatus(lower, 422);
 }

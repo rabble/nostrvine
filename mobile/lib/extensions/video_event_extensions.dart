@@ -166,9 +166,8 @@ extension VideoEventAppExtensions on VideoEvent {
   ///   manifest overhead) — it is 3-8x smaller than the raw blob. This covers
   ///   raw-only uploads too: their `imeta` lists only the raw blob because it
   ///   is a publish-time snapshot taken before the derivatives transcode, but
-  ///   by playback time the 720p.mp4 almost always exists. Until
-  ///   divine-blossom#198 is fixed, playback waits for transcoding if neither
-  ///   MP4 nor HLS is ready because the broken bare fallback is withheld.
+  ///   by playback time the 720p.mp4 almost always exists. The playback ladder
+  ///   falls back through HLS to the bare blob while renditions catch up.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
   String? getOptimalVideoUrlForPlatform() {
@@ -180,11 +179,9 @@ extension VideoEventAppExtensions on VideoEvent {
 
     // Developer format override takes priority over every heuristic below so
     // A/B testing can force a specific server format on any Divine video,
-    // including classic Vine originals and raw-only uploads. Forcing `raw`
-    // intentionally exposes the bare blob path, which currently fails for
-    // range-requesting players until divine-blossom#198 is fixed. If any other
-    // forced variant does not exist yet the runtime fallback chain recovers,
-    // and seeing that is the point of the test switch.
+    // including classic Vine originals and raw-only uploads. If a forced
+    // derivative does not exist yet the runtime fallback chain recovers, and
+    // seeing that is the point of the test switch.
     final override = videoFormatPreference.format;
     if (override != null) {
       return switch (override) {
@@ -203,17 +200,12 @@ extension VideoEventAppExtensions on VideoEvent {
 
     // Production default: progressive MP4 720p (faststart). Fastest startup
     // (1 request, moov at front), correct colors on all platforms, and 3-8x
-    // smaller than the raw blob. Raw-only uploads take this path too. Until
-    // divine-blossom#198 is fixed, playback waits for transcoding if neither
-    // MP4 nor HLS is ready because the broken bare fallback is withheld.
+    // smaller than the raw blob. Raw-only uploads take this path too, with the
+    // bare blob retained as the final playback fallback.
     //
-    // Classic Vine originals take this path as well. They must never be sent
-    // to the bare blob: every Range request to `/{hash}` comes back as a
-    // cached `NoSuchKey` XML body dressed up as a 206, so AVFoundation - which
-    // always range-requests - fails with -11829 "Cannot Open" and the video
-    // never plays (divine-blossom#198). The transcoder caps at the source
-    // resolution, so the "720p" variant of a 480x480 Vine is still 480x480 -
-    // smaller than the raw blob, not an upscale.
+    // Classic Vine originals take this path as well. The transcoder caps at
+    // the source resolution, so the "720p" variant of a 480x480 Vine is still
+    // 480x480 — smaller than the raw blob, not an upscale.
     return '$_divineMediaBase/$hash/720p.mp4';
   }
 
@@ -222,11 +214,9 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Older desktop Chrome (< 150) and Firefox lack native HLS, so an HLS
   /// `.m3u8` won't play there. Resolve HLS to the progressive variant — the
   /// same [getOptimalVideoUrlForPlatform] selection the feed already uses on
-  /// every platform. Resolve bare Divine blobs too: every Range request to
-  /// `/{hash}` comes back as a cached `NoSuchKey` body dressed up as a 206
-  /// (divine-blossom#198), and a range-requesting player gets that instead of
-  /// video. Progressive URLs pass through unchanged, so the common case (and
-  /// its transcode readiness) is never touched.
+  /// every platform. Resolve bare Divine blobs too so previews prefer the
+  /// smaller progressive derivative. Progressive URLs pass through unchanged,
+  /// so the common case and its transcode readiness are never touched.
   String? get inlinePlayerVideoUrl {
     final url = videoUrl;
     if (url == null) return null;
@@ -248,11 +238,9 @@ extension VideoEventAppExtensions on VideoEvent {
   /// first.
   ///
   /// This is the feed's ladder, not a second one: [resolvePlaybackSources]
-  /// expands the platform pick into its canonical alternatives and withholds
-  /// the bare Divine blob, which answers a Range request with a cached
-  /// `NoSuchKey` body dressed up as a 206 (divine-blossom#198). Hand the result
-  /// to [setSourceWithFallbacks] — the HLS entry is a master playlist the
-  /// native player takes directly.
+  /// expands the platform pick into its canonical alternatives and keeps the
+  /// bare Divine blob last. Hand the result to [setSourceWithFallbacks] — the
+  /// HLS entry is a master playlist the native player takes directly.
   List<String> get previewPlaybackSources => resolvePlaybackSources(
     this,
     urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),

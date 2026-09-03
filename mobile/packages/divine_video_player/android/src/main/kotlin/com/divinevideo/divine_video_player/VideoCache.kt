@@ -9,6 +9,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
@@ -80,8 +81,13 @@ internal object VideoCache {
     }
 
     private fun upstreamFactory(context: Context): DataSource.Factory {
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+        val defaultHttpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
+        val httpDataSourceFactory = DataSource.Factory {
+            ProcessingResponseDataSource(
+                defaultHttpDataSourceFactory.createDataSource(),
+            )
+        }
         return DefaultDataSource.Factory(context, httpDataSourceFactory)
     }
 
@@ -91,6 +97,47 @@ internal object VideoCache {
         cache?.release()
         cache = null
         cacheDataSourceFactory = null
+    }
+}
+
+/**
+ * Converts an accepted HTTP 202 into a typed HTTP failure before Media3 tries
+ * to parse the processing response body as video or a manifest.
+ */
+internal class ProcessingResponseDataSource(
+    private val delegate: HttpDataSource,
+) : DataSource {
+
+    override fun addTransferListener(transferListener: TransferListener) {
+        delegate.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        val length = delegate.open(dataSpec)
+        if (delegate.responseCode != 202) return length
+
+        val responseHeaders = delegate.responseHeaders
+        delegate.close()
+        throw HttpDataSource.InvalidResponseCodeException(
+            202,
+            "Media is still processing",
+            null,
+            responseHeaders,
+            dataSpec,
+            ByteArray(0),
+        )
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+        delegate.read(buffer, offset, length)
+
+    override fun getUri(): Uri? = delegate.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> =
+        delegate.responseHeaders
+
+    override fun close() {
+        delegate.close()
     }
 }
 
