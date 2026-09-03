@@ -103,6 +103,7 @@ void main() {
     );
 
     ageVerificationService = AgeVerificationService(
+      preferences: prefs,
       currentPubkeyHex: () =>
           '1111111111111111111111111111111111111111111111111111111111111111',
     );

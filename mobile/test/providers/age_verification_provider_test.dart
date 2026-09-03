@@ -89,8 +89,8 @@ void main() {
 
       // First, set up verification in SharedPreferences
       SharedPreferences.setMockInitialValues({
-        'adult_content_verified': true,
-        'adult_content_verification_date':
+        'adult_content_verified_$pubkey': true,
+        'adult_content_verification_date_$pubkey':
             DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -149,13 +149,7 @@ void main() {
       }
     });
 
-    test('rebuilds and re-scopes the service when the account switches', () async {
-      // Guards the #7816 invariant: because the service caches verification in
-      // memory, a keepAlive instance must be rebuilt on account swap so the
-      // switched-in account does not inherit the previous account's value.
-      // Removing `ref.watch(currentAuthStateProvider)` from the provider makes
-      // this test fail (serviceB would be the same instance, still reporting A's
-      // verification).
+    test('same service reads the newly active account after a switch', () async {
       final prefs = await SharedPreferences.getInstance();
       final authService = _MockAuthService();
       when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
@@ -174,8 +168,8 @@ void main() {
       await serviceA.setAdultContentVerified(true);
       expect(serviceA.isAdultContentVerified, isTrue);
 
-      // Account swap: new pubkey, and the auth state transits a non-authenticated
-      // value (every real swap does), which must rebuild the keepAlive service.
+      // Account swap: the service reads through the live pubkey accessor, so it
+      // does not need a provider rebuild or an asynchronous cache reload.
       when(() => authService.currentPublicKeyHex).thenReturn(pubkeyB);
       container.updateOverrides([
         sharedPreferencesProvider.overrideWithValue(prefs),
@@ -188,8 +182,8 @@ void main() {
 
       expect(
         identical(serviceA, serviceB),
-        isFalse,
-        reason: 'account swap must rebuild the service, not reuse the cache',
+        isTrue,
+        reason: 'account swap must not require a service rebuild',
       );
       expect(
         serviceB.isAdultContentVerified,

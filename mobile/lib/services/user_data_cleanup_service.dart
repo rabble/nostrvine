@@ -3,6 +3,7 @@
 
 import 'package:creator_sync/creator_sync.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
+import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -227,6 +228,14 @@ class UserDataCleanupService {
           await _prefs.remove(cursorKey);
           clearedCount++;
           clearedKeys.add(cursorKey);
+        }
+      }
+
+      for (final key in AgeVerificationService.accountKeys(userPubkey)) {
+        if (_prefs.containsKey(key)) {
+          await _prefs.remove(key);
+          clearedCount++;
+          clearedKeys.add(key);
         }
       }
     }

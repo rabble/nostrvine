@@ -145,16 +145,13 @@ Future<void> _clearAdultMediaAccessCaches(Ref ref) async {
 }
 
 /// Age verification service for content creation restrictions
-/// keepAlive ensures the service persists and maintains in-memory verification state
-/// even when widgets that watch it dispose and rebuild
+/// keepAlive preserves one coordinator and callback instance. Verification
+/// values are read synchronously from preferences for the active account.
 @Riverpod(keepAlive: true)
 AgeVerificationService ageVerificationService(Ref ref) {
-  // Rebuild on account swap so the (keepAlive) service's in-memory cache is
-  // reloaded for the new account rather than serving the previous account's
-  // verification. Every swap transits a non-authenticated auth state (#7816).
-  ref.watch(currentAuthStateProvider);
   final authService = ref.read(authServiceProvider);
   final service = AgeVerificationService(
+    preferences: ref.watch(sharedPreferencesProvider),
     isProtectedMinor: () => ref.read(isProtectedMinorProvider),
     currentPubkeyHex: () => authService.currentPublicKeyHex,
     onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),

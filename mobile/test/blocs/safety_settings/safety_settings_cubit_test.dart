@@ -68,7 +68,7 @@ void main() {
       when(() => ageService.isAdultContentVerified).thenReturn(false);
       when(
         () => ageService.setAdultContentVerified(any()),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => true);
 
       when(filterService.unlockAdultCategories).thenAnswer((_) async {});
       when(filterService.lockAdultCategories).thenAnswer((_) async {});
@@ -252,6 +252,34 @@ void main() {
           videoEventService.filterAdultContentFromExistingVideos,
         ).called(1);
         verifyNever(filterService.unlockAdultCategories);
+      },
+    );
+
+    blocTest<SafetySettingsCubit, SafetySettingsState>(
+      'setAgeVerified reverts without unlocking when account binding is lost',
+      seed: () => const SafetySettingsState(status: SafetySettingsStatus.ready),
+      setUp: () {
+        when(
+          () => ageService.setAdultContentVerified(true),
+        ).thenAnswer((_) async => false);
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.setAgeVerified(true),
+      expect: () => [
+        isA<SafetySettingsState>().having(
+          (s) => s.isAgeVerified,
+          'optimistic isAgeVerified',
+          true,
+        ),
+        isA<SafetySettingsState>().having(
+          (s) => s.isAgeVerified,
+          'restored isAgeVerified',
+          false,
+        ),
+      ],
+      verify: (_) {
+        verifyNever(filterService.unlockAdultCategories);
+        verifyNever(filterService.lockAdultCategories);
       },
     );
 

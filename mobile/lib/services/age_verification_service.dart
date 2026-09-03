@@ -8,17 +8,21 @@ import 'package:unified_logger/unified_logger.dart';
 
 class AgeVerificationService {
   AgeVerificationService({
+    required SharedPreferences preferences,
     bool Function()? isProtectedMinor,
     String? Function()? currentPubkeyHex,
     Future<void> Function()? onAdultMediaAccessRevoked,
     VoidCallback? onAdultContentVerificationChanged,
-  }) : _isProtectedMinor = isProtectedMinor ?? _notProtected,
+  }) : _preferences = preferences,
+       _isProtectedMinor = isProtectedMinor ?? _notProtected,
        _currentPubkeyHex = currentPubkeyHex ?? _noPubkey,
        _onAdultMediaAccessRevoked = onAdultMediaAccessRevoked,
        _onAdultContentVerificationChanged = onAdultContentVerificationChanged;
 
   static bool _notProtected() => false;
   static String? _noPubkey() => null;
+
+  final SharedPreferences _preferences;
 
   /// Whether the current account is a protected minor. When true, adult content
   /// is force-locked off and the self-attestation bypass is unavailable (#175).
@@ -38,9 +42,8 @@ class AgeVerificationService {
   static const String _adultContentVerificationDateKey =
       'adult_content_verification_date';
 
-  /// Legacy device-global keys, pre-#7816. Adopted for the first authenticated
-  /// account that loads after upgrade, then deleted so no other account can
-  /// inherit them.
+  /// Legacy device-global keys, pre-#7816. Their account ownership cannot be
+  /// recovered safely, so they are deleted during initialization.
   static const List<String> _globalBaseKeys = [
     _ageVerifiedKey,
     _verificationDateKey,
@@ -52,145 +55,63 @@ class AgeVerificationService {
   static List<String> accountKeys(String pubkeyHex) =>
       _globalBaseKeys.map((base) => '${base}_$pubkeyHex').toList();
 
-  /// Removes every age / adult-content verification key for [pubkeyHex].
-  ///
-  /// Called on destructive account deletion so a re-used identity does not
-  /// resurrect a deleted account's verification (#7816).
-  static Future<void> purgeAccount(
-    SharedPreferences prefs,
-    String pubkeyHex,
-  ) async {
-    for (final key in accountKeys(pubkeyHex)) {
-      await prefs.remove(key);
-    }
-  }
-
-  bool? _isAgeVerified;
-  DateTime? _verificationDate;
-  bool? _isAdultContentVerified;
-  DateTime? _adultContentVerificationDate;
   Future<void>? _initializeFuture;
 
-  bool get isAgeVerified => _isAgeVerified ?? false;
-  DateTime? get verificationDate => _verificationDate;
-  bool get isAdultContentVerified =>
-      !_isProtectedMinor() && (_isAdultContentVerified ?? false);
-  DateTime? get adultContentVerificationDate => _adultContentVerificationDate;
+  bool get isAgeVerified => _readBool(_ageVerifiedKey);
 
-  /// Completes when persisted age-verification state has loaded.
-  Future<void> get initialized =>
-      _initializeFuture ??= _loadVerificationStatus();
+  DateTime? get verificationDate => _readDate(_verificationDateKey);
+
+  bool get isAdultContentVerified =>
+      !_isProtectedMinor() && _readBool(_adultContentVerifiedKey);
+
+  DateTime? get adultContentVerificationDate =>
+      _readDate(_adultContentVerificationDateKey);
+
+  /// Completes after unsafe legacy device-global verification has been removed.
+  Future<void> get initialized => _initializeFuture ??= _initialize();
 
   /// The scoped key for [base] under the active account, or null when no
   /// account is active.
-  String? _scopedKey(String base) {
-    final pubkey = _currentPubkeyHex();
+  static String? _scopedKey(String base, String? pubkey) {
     if (pubkey == null || pubkey.isEmpty) return null;
     return '${base}_$pubkey';
   }
 
-  Future<void> initialize() async {
-    await initialized;
+  bool _readBool(String base) {
+    final key = _scopedKey(base, _currentPubkeyHex());
+    return key != null && (_preferences.getBool(key) ?? false);
   }
 
-  Future<void> _loadVerificationStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await _migrateGlobalKeys(prefs);
-
-      final ageKey = _scopedKey(_ageVerifiedKey);
-      if (ageKey == null) {
-        _isAgeVerified = null;
-        _verificationDate = null;
-        _isAdultContentVerified = null;
-        _adultContentVerificationDate = null;
-        return;
-      }
-
-      _isAgeVerified = prefs.getBool(ageKey);
-      _isAdultContentVerified = prefs.getBool(
-        _scopedKey(_adultContentVerifiedKey)!,
-      );
-
-      final dateMillis = prefs.getInt(_scopedKey(_verificationDateKey)!);
-      _verificationDate = dateMillis == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(dateMillis);
-
-      final adultDateMillis = prefs.getInt(
-        _scopedKey(_adultContentVerificationDateKey)!,
-      );
-      _adultContentVerificationDate = adultDateMillis == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(adultDateMillis);
-      _onAdultContentVerificationChanged?.call();
-    } catch (e) {
-      Log.error(
-        'Error loading age verification status: $e',
-        name: 'AgeVerificationService',
-        category: LogCategory.system,
-      );
-    }
+  DateTime? _readDate(String base) {
+    final key = _scopedKey(base, _currentPubkeyHex());
+    final millis = key == null ? null : _preferences.getInt(key);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
   }
 
-  /// Migrates legacy device-global verification keys to the active account.
-  ///
-  /// Adopts each global value for the current account when the account has no
-  /// scoped value yet, then removes the global keys so a second account can
-  /// never inherit them. No-op while unauthenticated, leaving the globals in
-  /// place until an account claims them (#7816). Adopt-if-absent plus an
-  /// idempotent delete makes a repeated run for the same account harmless.
-  Future<void> _migrateGlobalKeys(SharedPreferences prefs) async {
-    final pubkey = _currentPubkeyHex();
-    if (pubkey == null || pubkey.isEmpty) return;
-    if (!_globalBaseKeys.any(prefs.containsKey)) return;
-
+  Future<void> _initialize() async {
     for (final base in _globalBaseKeys) {
-      final scoped = '${base}_$pubkey';
-      if (prefs.containsKey(base) && !prefs.containsKey(scoped)) {
-        final value = prefs.get(base);
-        if (value is bool) {
-          await prefs.setBool(scoped, value);
-        } else if (value is int) {
-          await prefs.setInt(scoped, value);
-        }
-      }
-      await prefs.remove(base);
+      await _preferences.remove(base);
     }
+    _onAdultContentVerificationChanged?.call();
   }
 
-  Future<void> setAgeVerified(bool verified) async {
-    final key = _scopedKey(_ageVerifiedKey);
-    final dateKey = _scopedKey(_verificationDateKey);
-    if (key == null || dateKey == null) {
-      Log.warning(
-        'No active account; skipping age verification write',
-        name: 'AgeVerificationService',
-        category: LogCategory.system,
-      );
-      return;
-    }
+  Future<void> initialize() => initialized;
+
+  Future<bool> setAgeVerified(bool verified) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setBool(key, verified);
-
-      if (verified) {
-        final now = DateTime.now();
-        await prefs.setInt(dateKey, now.millisecondsSinceEpoch);
-        _verificationDate = now;
-      } else {
-        await prefs.remove(dateKey);
-        _verificationDate = null;
-      }
-
-      _isAgeVerified = verified;
+      final written = await _writeVerification(
+        verified: verified,
+        valueBase: _ageVerifiedKey,
+        dateBase: _verificationDateKey,
+      );
+      if (!written) return false;
 
       Log.debug(
         'Age verification status updated: $verified',
         name: 'AgeVerificationService',
         category: LogCategory.system,
       );
+      return true;
     } catch (e) {
       Log.error(
         'Error saving age verification status: $e',
@@ -202,46 +123,26 @@ class AgeVerificationService {
   }
 
   Future<bool> checkAgeVerification() async {
-    if (_isAgeVerified == null) {
-      await _loadVerificationStatus();
-    }
+    await initialized;
     return isAgeVerified;
   }
 
-  Future<void> setAdultContentVerified(bool verified) async {
+  Future<bool> setAdultContentVerified(bool verified) async {
     if (verified && _isProtectedMinor()) {
       Log.warning(
         'Blocked adult-content verification for a protected minor',
         name: 'AgeVerificationService',
         category: LogCategory.system,
       );
-      return;
-    }
-    final key = _scopedKey(_adultContentVerifiedKey);
-    final dateKey = _scopedKey(_adultContentVerificationDateKey);
-    if (key == null || dateKey == null) {
-      Log.warning(
-        'No active account; skipping adult-content verification write',
-        name: 'AgeVerificationService',
-        category: LogCategory.system,
-      );
-      return;
+      return false;
     }
     try {
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setBool(key, verified);
-
-      if (verified) {
-        final now = DateTime.now();
-        await prefs.setInt(dateKey, now.millisecondsSinceEpoch);
-        _adultContentVerificationDate = now;
-      } else {
-        await prefs.remove(dateKey);
-        _adultContentVerificationDate = null;
-      }
-
-      _isAdultContentVerified = verified;
+      final written = await _writeVerification(
+        verified: verified,
+        valueBase: _adultContentVerifiedKey,
+        dateBase: _adultContentVerificationDateKey,
+      );
+      if (!written) return false;
       _onAdultContentVerificationChanged?.call();
       if (!verified) {
         await _notifyAdultMediaAccessRevoked();
@@ -252,6 +153,7 @@ class AgeVerificationService {
         name: 'AgeVerificationService',
         category: LogCategory.system,
       );
+      return true;
     } catch (e) {
       Log.error(
         'Error saving adult content verification status: $e',
@@ -263,11 +165,50 @@ class AgeVerificationService {
   }
 
   Future<bool> checkAdultContentVerification() async {
-    if (_isAdultContentVerified == null) {
-      await _loadVerificationStatus();
-    }
+    await initialized;
     return isAdultContentVerified;
   }
+
+  Future<bool> _writeVerification({
+    required bool verified,
+    required String valueBase,
+    required String dateBase,
+  }) async {
+    final pubkey = _currentPubkeyHex();
+    final valueKey = _scopedKey(valueBase, pubkey);
+    final dateKey = _scopedKey(dateBase, pubkey);
+    if (valueKey == null || dateKey == null) {
+      Log.warning(
+        'No active account; skipping verification write',
+        name: 'AgeVerificationService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    final previousValue = _preferences.getBool(valueKey);
+    final previousDate = _preferences.getInt(dateKey);
+    await _preferences.setBool(valueKey, verified);
+    if (verified) {
+      await _preferences.setInt(dateKey, DateTime.now().millisecondsSinceEpoch);
+    } else {
+      await _preferences.remove(dateKey);
+    }
+
+    if (_currentPubkeyHex() == pubkey) return true;
+
+    await _restoreBool(valueKey, previousValue);
+    await _restoreInt(dateKey, previousDate);
+    return false;
+  }
+
+  Future<void> _restoreBool(String key, bool? value) => value == null
+      ? _preferences.remove(key)
+      : _preferences.setBool(key, value);
+
+  Future<void> _restoreInt(String key, int? value) => value == null
+      ? _preferences.remove(key)
+      : _preferences.setInt(key, value);
 
   /// Check if user can view adult content, showing verification dialog if needed
   Future<bool> verifyAdultContentAccess(BuildContext context) async {
@@ -281,46 +222,18 @@ class AgeVerificationService {
     if (!context.mounted) return false;
 
     // Show verification dialog
+    final pubkey = _currentPubkeyHex();
+    if (pubkey == null || pubkey.isEmpty) return false;
     final verified = await AgeVerificationDialog.show(
       context,
       type: AgeVerificationType.adultContent,
     );
 
-    if (verified) {
-      await setAdultContentVerified(true);
-      return true;
+    if (verified && _currentPubkeyHex() == pubkey) {
+      return setAdultContentVerified(true);
     }
 
     return false;
-  }
-
-  Future<void> clearVerificationStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      for (final base in _globalBaseKeys) {
-        final key = _scopedKey(base);
-        if (key != null) await prefs.remove(key);
-      }
-
-      _isAgeVerified = null;
-      _verificationDate = null;
-      _isAdultContentVerified = null;
-      _adultContentVerificationDate = null;
-      _onAdultContentVerificationChanged?.call();
-      await _notifyAdultMediaAccessRevoked();
-
-      Log.debug(
-        'Age verification status cleared',
-        name: 'AgeVerificationService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error clearing age verification status: $e',
-        name: 'AgeVerificationService',
-        category: LogCategory.system,
-      );
-    }
   }
 
   Future<void> _notifyAdultMediaAccessRevoked() async {

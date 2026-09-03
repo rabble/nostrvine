@@ -7,18 +7,21 @@ void main() {
       '1111111111111111111111111111111111111111111111111111111111111111';
   const pubkeyB =
       '2222222222222222222222222222222222222222222222222222222222222222';
+  late SharedPreferences preferences;
 
   AgeVerificationService buildService({
     String? pubkey = pubkeyA,
     bool Function()? isProtectedMinor,
   }) => AgeVerificationService(
+    preferences: preferences,
     currentPubkeyHex: () => pubkey,
     isProtectedMinor: isProtectedMinor,
   );
 
   group('AgeVerificationService', () {
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      preferences = await SharedPreferences.getInstance();
     });
 
     group('age verification (creator gate)', () {
@@ -108,6 +111,43 @@ void main() {
           expect(accountAAgain.isAdultContentVerified, isTrue);
         },
       );
+
+      test(
+        'reads the active account after auth resolves without reinitializing',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('adult_content_verified_$pubkeyA', true);
+          String? activePubkey;
+          final service = AgeVerificationService(
+            preferences: preferences,
+            currentPubkeyHex: () => activePubkey,
+          );
+
+          await service.initialized;
+          expect(service.isAdultContentVerified, isFalse);
+
+          activePubkey = pubkeyA;
+
+          expect(service.isAdultContentVerified, isTrue);
+        },
+      );
+
+      test('aborts a write if the active account changes', () async {
+        var activePubkey = pubkeyA;
+        final service = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => activePubkey,
+        );
+        await service.initialize();
+
+        final write = service.setAdultContentVerified(true);
+        activePubkey = pubkeyB;
+        await write;
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.containsKey('adult_content_verified_$pubkeyA'), isFalse);
+        expect(service.isAdultContentVerified, isFalse);
+      });
     });
 
     group('no active account (fail-safe)', () {
@@ -166,7 +206,7 @@ void main() {
     });
 
     group('legacy global-key migration', () {
-      test('adopts a legacy global value for the active account', () async {
+      test('deletes legacy global values without granting them', () async {
         SharedPreferences.setMockInitialValues({
           'adult_content_verified': true,
           'adult_content_verification_date':
@@ -176,93 +216,11 @@ void main() {
         final service = buildService();
         await service.initialize();
 
-        expect(service.isAdultContentVerified, isTrue);
-      });
-
-      test('deletes the legacy global keys after adoption', () async {
-        SharedPreferences.setMockInitialValues({
-          'adult_content_verified': true,
-          'adult_content_verification_date':
-              DateTime.now().millisecondsSinceEpoch,
-        });
-
-        final service = buildService();
-        await service.initialize();
-
+        expect(service.isAdultContentVerified, isFalse);
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.containsKey('adult_content_verified'), isFalse);
         expect(prefs.containsKey('adult_content_verification_date'), isFalse);
-      });
-
-      test('a second account never inherits a migrated legacy value', () async {
-        SharedPreferences.setMockInitialValues({
-          'adult_content_verified': true,
-        });
-
-        final accountA = buildService();
-        await accountA.initialize();
-        expect(accountA.isAdultContentVerified, isTrue);
-
-        final accountB = buildService(pubkey: pubkeyB);
-        await accountB.initialize();
-        expect(accountB.isAdultContentVerified, isFalse);
-      });
-
-      test('retains the legacy global while no account is active', () async {
-        SharedPreferences.setMockInitialValues({
-          'adult_content_verified': true,
-        });
-
-        final service = buildService(pubkey: null);
-        await service.initialize();
-
-        // Not adopted (no account) and not deleted (waiting for one).
-        expect(service.isAdultContentVerified, isFalse);
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.containsKey('adult_content_verified'), isTrue);
-      });
-    });
-
-    group('clearVerificationStatus', () {
-      test('clears only the active account', () async {
-        final accountA = buildService();
-        await accountA.initialize();
-        await accountA.setAdultContentVerified(true);
-
-        final accountB = buildService(pubkey: pubkeyB);
-        await accountB.initialize();
-        await accountB.setAdultContentVerified(true);
-
-        await accountA.clearVerificationStatus();
-
-        expect(accountA.isAdultContentVerified, isFalse);
-
-        final accountBReload = buildService(pubkey: pubkeyB);
-        await accountBReload.initialize();
-        expect(accountBReload.isAdultContentVerified, isTrue);
-      });
-    });
-
-    group('purgeAccount', () {
-      test('removes only the target account keys', () async {
-        final accountA = buildService();
-        await accountA.initialize();
-        await accountA.setAdultContentVerified(true);
-
-        final accountB = buildService(pubkey: pubkeyB);
-        await accountB.initialize();
-        await accountB.setAdultContentVerified(true);
-
-        final prefs = await SharedPreferences.getInstance();
-        await AgeVerificationService.purgeAccount(prefs, pubkeyA);
-
-        final accountAReload = buildService();
-        await accountAReload.initialize();
-        expect(accountAReload.isAdultContentVerified, isFalse);
-
-        final accountBReload = buildService(pubkey: pubkeyB);
-        await accountBReload.initialize();
-        expect(accountBReload.isAdultContentVerified, isTrue);
+        expect(prefs.containsKey('adult_content_verified_$pubkeyA'), isFalse);
       });
     });
 
@@ -270,6 +228,7 @@ void main() {
       test('fires when adult verification is revoked', () async {
         var clearCount = 0;
         final service = AgeVerificationService(
+          preferences: preferences,
           currentPubkeyHex: () => pubkeyA,
           onAdultMediaAccessRevoked: () async => clearCount++,
         );
@@ -277,20 +236,6 @@ void main() {
         await service.setAdultContentVerified(true);
 
         await service.setAdultContentVerified(false);
-
-        expect(clearCount, equals(1));
-      });
-
-      test('fires when verification status is cleared', () async {
-        var clearCount = 0;
-        final service = AgeVerificationService(
-          currentPubkeyHex: () => pubkeyA,
-          onAdultMediaAccessRevoked: () async => clearCount++,
-        );
-        await service.initialize();
-        await service.setAdultContentVerified(true);
-
-        await service.clearVerificationStatus();
 
         expect(clearCount, equals(1));
       });

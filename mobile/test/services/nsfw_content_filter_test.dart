@@ -93,7 +93,10 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      ageService = AgeVerificationService(currentPubkeyHex: () => _testPubkey);
+      ageService = AgeVerificationService(
+        preferences: prefs,
+        currentPubkeyHex: () => _testPubkey,
+      );
       contentFilterService = ContentFilterService(
         ageVerificationService: ageService,
       );

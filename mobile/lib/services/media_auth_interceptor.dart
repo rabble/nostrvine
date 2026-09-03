@@ -22,8 +22,8 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
-  /// Awaits the persisted verification and content-filter state so gate
-  /// decisions read loaded values rather than cold-start in-memory defaults.
+  /// Awaits legacy verification cleanup and persisted content-filter loading
+  /// before making a gate decision.
   Future<void> _awaitModerationServicesReady() => Future.wait([
     _ageVerificationService.initialized,
     _contentFilterService.initialized,

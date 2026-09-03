@@ -13,10 +13,15 @@ void main() {
   group(ContentFilterService, () {
     late ContentFilterService service;
     late AgeVerificationService ageService;
+    late SharedPreferences preferences;
 
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      ageService = AgeVerificationService(currentPubkeyHex: () => _testPubkey);
+      preferences = await SharedPreferences.getInstance();
+      ageService = AgeVerificationService(
+        preferences: preferences,
+        currentPubkeyHex: () => _testPubkey,
+      );
       service = ContentFilterService(ageVerificationService: ageService);
     });
 
@@ -494,6 +499,7 @@ void main() {
         await service.unlockAdultCategories();
 
         final newAgeService = AgeVerificationService(
+          preferences: preferences,
           currentPubkeyHex: () => _testPubkey,
         );
         await newAgeService.initialize();
@@ -607,30 +613,33 @@ void main() {
         },
       );
 
-      test('returns warn when opted-in adult categories have mixed non-hide '
-          'preferences', () async {
-        await ageService.initialize();
-        await ageService.setAdultContentVerified(true);
-        await service.initialize();
+      test(
+        'returns warn when opted-in adult categories have mixed non-hide '
+        'preferences',
+        () async {
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
 
-        await service.setPreference(
-          ContentLabel.nudity,
-          ContentFilterPreference.show,
-        );
-        await service.setPreference(
-          ContentLabel.sexual,
-          ContentFilterPreference.warn,
-        );
-        await service.setPreference(
-          ContentLabel.porn,
-          ContentFilterPreference.hide,
-        );
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.show,
+          );
+          await service.setPreference(
+            ContentLabel.sexual,
+            ContentFilterPreference.warn,
+          );
+          await service.setPreference(
+            ContentLabel.porn,
+            ContentFilterPreference.hide,
+          );
 
-        expect(
-          service.adultPlaybackPreference,
-          equals(ContentFilterPreference.warn),
-        );
-      });
+          expect(
+            service.adultPlaybackPreference,
+            equals(ContentFilterPreference.warn),
+          );
+        },
+      );
 
       test(
         'returns hide when any configurable adult category remains hidden',
@@ -686,6 +695,7 @@ void main() {
         () async {
           var clearCount = 0;
           ageService = AgeVerificationService(
+            preferences: preferences,
             currentPubkeyHex: () => _testPubkey,
           );
           service = ContentFilterService(
@@ -817,6 +827,7 @@ void main() {
         await migrationService.initialize();
 
         final restartedAgeService = AgeVerificationService(
+          preferences: preferences,
           currentPubkeyHex: () => _testPubkey,
         );
         await restartedAgeService.initialize();

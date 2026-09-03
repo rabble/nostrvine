@@ -9,13 +9,21 @@ void main() {
   const pubkey =
       '1111111111111111111111111111111111111111111111111111111111111111';
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  late SharedPreferences preferences;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = await SharedPreferences.getInstance();
+  });
 
   group(AgeVerificationService, () {
     test(
       'isAdultContentVerified is false for a protected minor even if stored true',
       () async {
-        final service = AgeVerificationService(isProtectedMinor: () => true);
+        final service = AgeVerificationService(
+          preferences: preferences,
+          isProtectedMinor: () => true,
+        );
         await service.initialize();
         await service.setAdultContentVerified(true); // rejected below
         expect(service.isAdultContentVerified, false);
@@ -27,6 +35,7 @@ void main() {
       () async {
         var protected = true;
         final service = AgeVerificationService(
+          preferences: preferences,
           isProtectedMinor: () => protected,
         );
         await service.initialize();
@@ -39,6 +48,7 @@ void main() {
 
     test('non-protected account behaves normally', () async {
       final service = AgeVerificationService(
+        preferences: preferences,
         isProtectedMinor: () => false,
         currentPubkeyHex: () => pubkey,
       );
@@ -48,7 +58,10 @@ void main() {
     });
 
     test('defaults to not-protected when no callback supplied', () async {
-      final service = AgeVerificationService(currentPubkeyHex: () => pubkey);
+      final service = AgeVerificationService(
+        preferences: preferences,
+        currentPubkeyHex: () => pubkey,
+      );
       await service.initialize();
       await service.setAdultContentVerified(true);
       expect(service.isAdultContentVerified, true);
