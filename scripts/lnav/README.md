@@ -38,11 +38,10 @@ which is the same property that makes them greppable against relay and
 funnelcake rows.
 
 The timestamp accepts a trailing `Z` **and** its absence, so exports from
-builds shipped before the UTC fix still parse. A `Z`-less line says nothing
-about its zone, and lnav's interpretation varies by platform — local time
-where the timezone database is available, UTC where it is not — so a merge
-against UTC server logs will be offset either way. Check the app version
-before trusting a cross-source timeline on an old export.
+builds shipped before the UTC fix still parse. A `Z`-less line carries no
+zone, and lnav reads it as UTC, so a pre-UTC-fix export (device local time)
+lands shifted by the device's UTC offset against UTC server logs. Check the
+app version before trusting a cross-source timeline on an old export.
 
 ## `gha_log` — GitHub Actions job logs
 
