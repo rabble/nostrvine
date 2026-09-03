@@ -4,7 +4,7 @@
 that carry enough structure to be worth parsing. `brew install lnav`, then:
 
 ```bash
-cd mobile && mise run lnav_setup     # or: lnav -i scripts/lnav/*.json
+cd mobile && mise run lnav_setup     # or, from the repo root: lnav -i scripts/lnav/*.json
 ```
 
 lnav's value here is not prettier output — it is merging several sources into
@@ -38,9 +38,11 @@ which is the same property that makes them greppable against relay and
 funnelcake rows.
 
 The timestamp accepts a trailing `Z` **and** its absence, so exports from
-builds shipped before the UTC fix still parse. Without the `Z` lnav reads the
-line as local time, so a merge against UTC server logs will be offset — check
-the app version before trusting a cross-source timeline on an old export.
+builds shipped before the UTC fix still parse. A `Z`-less line says nothing
+about its zone, and lnav's interpretation varies by platform — local time
+where the timezone database is available, UTC where it is not — so a merge
+against UTC server logs will be offset either way. Check the app version
+before trusting a cross-source timeline on an old export.
 
 ## `gha_log` — GitHub Actions job logs
 
