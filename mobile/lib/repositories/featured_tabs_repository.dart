@@ -95,8 +95,8 @@ class FeaturedTabsRepository {
   /// fresher than [cacheTtl], and to an empty snapshot once that has elapsed.
   /// Callers get a resolved answer, not an error to interpret.
   ///
-  /// [gateAgeRestrictedContent] hides tabs that have not explicitly opted
-  /// in to a minor audience. The public config endpoint is shared-cacheable
+  /// [gateAgeRestrictedContent] hides tabs whose dashboard configuration does
+  /// not allow viewers under 18. The public config endpoint is shared-cacheable
   /// and therefore not personalized, so this gate is the client's
   /// responsibility.
   Future<FeaturedTabsSnapshot> refresh({

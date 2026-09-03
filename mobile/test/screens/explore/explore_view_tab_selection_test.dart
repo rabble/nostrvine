@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +50,8 @@ class _FakeCuratedListsState extends CuratedListsState {
 }
 
 const _pollInterval = Duration(seconds: 30);
+
+final _testFeaturedTabAgeGateProvider = StateProvider<bool>((ref) => true);
 
 const _featuredConfig = FeaturedTabConfig(
   id: 'ft_a1b2c3d4',
@@ -148,7 +152,9 @@ void main() {
             FeatureFlag.integratedApps,
           ).overrideWithValue(false),
           featuredTabsRepositoryProvider.overrideWithValue(repository),
-          featuredTabAgeGateProvider.overrideWithValue(false),
+          featuredTabAgeGateProvider.overrideWith(
+            (ref) => ref.watch(_testFeaturedTabAgeGateProvider),
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -174,6 +180,24 @@ void main() {
   }
 
   group('ExploreView tab selection', () {
+    testWidgets('refreshes featured tabs when 18+ verification resolves', (
+      tester,
+    ) async {
+      final repository = _StagedFeaturedTabsRepository();
+      await pumpExplore(tester, repository: repository);
+      expect(repository.refreshCount, 1);
+      expect(find.text('Spotlight'), findsNothing);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ExploreScreen)),
+      );
+      container.read(_testFeaturedTabAgeGateProvider.notifier).state = false;
+      await tester.pumpAndSettle();
+
+      expect(repository.refreshCount, 2);
+      expect(find.text('Spotlight'), findsOneWidget);
+    });
+
     testWidgets('a later availability change keeps the user on their tab', (
       tester,
     ) async {

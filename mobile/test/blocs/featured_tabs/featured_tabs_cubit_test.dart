@@ -1,4 +1,4 @@
-// ABOUTME: Tests for FeaturedTabsCubit refresh, polling, and viewer gating.
+// ABOUTME: Tests FeaturedTabsCubit refresh, polling, and 18+ viewer gating.
 // ABOUTME: Absence of a tab is the expected outcome, not an error state.
 
 import 'dart:async';

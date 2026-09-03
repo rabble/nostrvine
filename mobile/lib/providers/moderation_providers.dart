@@ -121,6 +121,19 @@ class AdultMediaAccessRevocationVersion extends Notifier<int> {
   void increment() => state++;
 }
 
+/// Increments after persisted 18+ verification loads or changes.
+final adultContentVerificationVersionProvider =
+    NotifierProvider<AdultContentVerificationVersion, int>(
+      AdultContentVerificationVersion.new,
+    );
+
+class AdultContentVerificationVersion extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
 Future<void> _clearAdultMediaAccessCaches(Ref ref) async {
   try {
     await clearOpenVineImageCache();
@@ -139,6 +152,11 @@ AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService(
     isProtectedMinor: () => ref.read(isProtectedMinorProvider),
     onAdultMediaAccessRevoked: () => _clearAdultMediaAccessCaches(ref),
+    onAdultContentVerificationChanged: () {
+      if (ref.mounted) {
+        ref.read(adultContentVerificationVersionProvider.notifier).increment();
+      }
+    },
   );
   service.initialize(); // Initialize asynchronously
   return service;

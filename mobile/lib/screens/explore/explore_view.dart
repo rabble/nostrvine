@@ -68,7 +68,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// Refetches the featured configuration on foreground so a backend kill
   /// switch lands without waiting out the poll interval.
   late final AppLifecycleListener _lifecycleListener;
-  ProviderSubscription<bool>? _minorStatusSubscription;
+  ProviderSubscription<bool>? _featuredTabAgeGateSubscription;
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
@@ -128,7 +128,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     _lifecycleListener = AppLifecycleListener(
       onResume: () => context.read<FeaturedTabsCubit>().refresh(),
     );
-    _minorStatusSubscription = ref.listenManual<bool>(
+    _featuredTabAgeGateSubscription = ref.listenManual<bool>(
       featuredTabAgeGateProvider,
       (previous, next) {
         if (previous != null && previous != next) {
@@ -205,7 +205,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   @override
   void dispose() {
     _lifecycleListener.dispose();
-    _minorStatusSubscription?.close();
+    _featuredTabAgeGateSubscription?.close();
     super.dispose();
   }
 

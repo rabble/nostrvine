@@ -114,7 +114,7 @@ void main() {
         expect(snapshot.hasTab, isFalse);
       });
 
-      test('hides a non-opted-in tab from a minor viewer', () async {
+      test('hides an 18+ tab from an unverified viewer', () async {
         stubTabs([_tab()]);
 
         final snapshot = await buildRepository().refresh(
@@ -124,7 +124,7 @@ void main() {
         expect(snapshot.hasTab, isFalse);
       });
 
-      test('shows an opted-in tab to a minor viewer', () async {
+      test('shows an under-18-enabled tab to an unverified viewer', () async {
         stubTabs([_tab(visibleToMinors: true)]);
 
         final snapshot = await buildRepository().refresh(

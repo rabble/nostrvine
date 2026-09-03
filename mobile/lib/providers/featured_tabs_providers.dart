@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/repositories/featured_tabs_repository.dart';
 
 /// Repository backing the server-configured featured Explore tab.
@@ -18,21 +18,24 @@ final featuredTabsRepositoryProvider = Provider<FeaturedTabsRepository>((ref) {
   return repository;
 });
 
-/// Whether age-restricted featured tabs should be gated for the current viewer
-/// (#7675).
+/// Whether the current viewer has completed Divine's existing 18+ verification.
+final featuredTabViewerIsAdultProvider = FutureProvider<bool>((ref) async {
+  ref.watch(adultContentVerificationVersionProvider);
+  final service = ref.watch(ageVerificationServiceProvider);
+  await service.initialized;
+  return service.isAdultContentVerified;
+});
+
+/// Whether featured tabs marked unavailable to under-18 viewers stay hidden.
 ///
-/// Age-restricted tabs are curated tabs an operator did NOT mark minor-safe, so
-/// this seam takes the fail-CLOSED conditional posture of the #176 DM and #182
-/// key-management surfaces — [isDmRestrictedProvider] — rather than the
-/// fail-OPEN #175 content lock. An unresolved Keycast check therefore hides
-/// age-restricted tabs where a Keycast verdict could plausibly apply (OAuth
-/// accounts, previously-Keycast self-custody), closing the gap where a
-/// non-Keycast minor would otherwise be shown them. Pure self-custody accounts,
-/// which Keycast can never produce a verdict for, stay permissive so adults are
-/// not blocked by an unanswerable check.
-///
-/// True for unknown and still-loading states too, not only a confirmed
-/// minor — the unknown-is-gated posture #176/#182 already use.
+/// Loading and unverified states fail closed. Protected-minor accounts also
+/// stay gated because [AgeVerificationService] prevents them from completing
+/// adult-content verification.
 final featuredTabAgeGateProvider = Provider<bool>((ref) {
-  return ref.watch(isDmRestrictedProvider);
+  final viewerIsAdult = ref.watch(featuredTabViewerIsAdultProvider);
+  return viewerIsAdult.when(
+    data: (isAdult) => !isAdult,
+    error: (_, _) => true,
+    loading: () => true,
+  );
 });
