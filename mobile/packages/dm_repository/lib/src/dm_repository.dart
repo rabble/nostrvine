@@ -3466,8 +3466,8 @@ class DmRepository {
   /// Routing only needs the relays, so this signature stays. A caller that
   /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
   /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
-  /// #7317. `sendGroupMessage` (#8434) and `_fanOutDeletion` still resolve
-  /// through here and inherit that collapse.
+  /// #7317. `sendGroupMessage` (#8434) still resolves through here and
+  /// inherits that collapse.
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
     return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
   }
@@ -6354,6 +6354,28 @@ class DmRepository {
   /// the sweep re-drives the whole rumor and the recipients that already have
   /// it dedup on the (identical) rumor id. Mirrors
   /// `DmReactionsRepository._fanOutRumor`.
+  ///
+  /// A recipient's wrap "lands" only when the relay that confirmed it is one
+  /// the recipient reads. When their kind-10050 could not be READ the wrap
+  /// falls back to the default pool, and the pool's `OK` is downgraded to a
+  /// soft failure through [downgradeFallbackPoolDelivery] — the same rule the
+  /// 1:1 send and its retry apply (#7317) and the reaction fan-out applies
+  /// (#8443). A recipient who genuinely advertises NO inbox is also left
+  /// alone, on different terms: the pool fallback stays because reachability
+  /// is preserved (#570) — a deliberate deviation from NIP-17's "clients
+  /// shouldn't try" — and its `OK` is scored as delivery because we keep
+  /// that deviation, not because NIP-17 licenses it.
+  ///
+  /// Scoring the unreadable case as landed is #8515, and it is not merely a
+  /// mislabel: [DirectMessagesDao.markMessageDeletionSent] clears the stored
+  /// rumor, and `getRetryableOwnMessageDeletions` selects on `deletion_pending`
+  /// AND a non-null rumor — so the row leaves the sweep's worklist on two
+  /// counts and the retraction becomes unrecoverable.
+  ///
+  /// Unlike `_fanOutRumor`, the aggregate failure does NOT carry
+  /// `retryablePending`. Nothing can observe it here: this result is consumed
+  /// only by [_driveMessageDeletion], which branches on `blocked` alone and
+  /// returns a [DmMessageDeletionOutcome], so the flag would be dead weight.
   Future<NIP17SendResult> _fanOutDeletion({
     required Event deletion,
     required List<String> recipients,
@@ -6364,23 +6386,28 @@ class DmRepository {
     // recipient's own inbox — a false "confirmed" for a recipient who only
     // reads their advertised inbox. Resolution never throws (it degrades to
     // null → default pool), so a failed lookup cannot abort the fan-out.
-    final inboxByRecipient = <String, List<String>?>{};
+    //
+    // Resolved through the DETAILED reader: routing only needs the relays, but
+    // this fan-out also REPORTS delivery, and `absent` and `unreadable` both
+    // route to the pool while meaning opposite things (#8515).
+    final inboxByRecipient = <String, DmInboxLookup>{};
     final selfWrapRelays = _selfWrapTargetRelays();
     await Future.wait([
       for (final recipient in recipients)
-        resolveDmInboxRelays(
+        resolveDmInboxRelaysDetailed(
           recipient,
-        ).then((relays) => inboxByRecipient[recipient] = relays),
+        ).then((inbox) => inboxByRecipient[recipient] = inbox),
     ]);
     final selfWrapTargets = await selfWrapRelays;
     NIP17SendSuccess? lastSuccess;
     final failures = <NIP17SendFailure>[];
     for (final recipient in recipients) {
-      final result = await _messageService!
+      final inbox = inboxByRecipient[recipient];
+      final published = await _messageService!
           .sendRumor(
             rumorEvent: deletion,
             recipientPubkey: recipient,
-            targetRelays: inboxByRecipient[recipient],
+            targetRelays: inbox?.relays,
             selfWrapTargetRelays: selfWrapTargets,
             awaitRecipientOk: true,
           )
@@ -6396,6 +6423,13 @@ class DmRepository {
               retryablePending: true,
             ),
           );
+      // A pool `OK` for a recipient whose inbox we could not READ is not
+      // delivery: the retraction may be sitting where they never look, and
+      // `markMessageDeletionSent` would clear the stored rumor, taking the row
+      // off the sweep's worklist for good (#8515).
+      final result = inbox == null
+          ? published
+          : downgradeFallbackPoolDelivery(published, inbox.state);
       switch (result) {
         case NIP17SendSuccess():
           lastSuccess = result;
