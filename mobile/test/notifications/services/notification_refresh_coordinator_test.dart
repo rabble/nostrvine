@@ -314,7 +314,11 @@ void main() {
             calls += 1;
             return calls == 1 ? firstRefresh.future : Future.value(true);
           });
-          final coordinator = buildCoordinator();
+          // Zero floor: under the default, the first refresh's success defers
+          // the burst, so this passes with or without the guard it pins.
+          final coordinator = buildCoordinator(
+            pushMinimumInterval: Duration.zero,
+          );
 
           unawaited(
             coordinator.refresh(reason: NotificationRefreshReason.appResume),
