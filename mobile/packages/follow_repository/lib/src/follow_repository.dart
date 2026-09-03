@@ -230,6 +230,100 @@ class FollowRepository {
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
 
+  // ── Contact-list freshness (NIP-01) ──────────────────────────────────
+  //
+  // Kind 3 is replaceable, so NIP-01 already fixes which of two copies is
+  // authoritative: the higher `created_at`, and on an exact tie the lower
+  // event id. Nothing about the number of `p` tags enters that rule, and it
+  // cannot: a shorter list is what a legitimate unfollow produces, so
+  // "whichever has more follows wins" resurrects every removal made on
+  // another device (#8266).
+  //
+  // Two of this repository's five sources cannot state a `created_at` at all
+  // — the legacy bare-array cache written before this record existed, and the
+  // funnelcake REST index, which is derived and lags. Their freshness is
+  // unknowable rather than old, so they seed an empty state and lose to any
+  // source that can name a timestamp.
+
+  /// Where the list currently in [_followingPubkeys] came from, for ordering.
+  ///
+  /// `null` means nothing has been adopted yet. A non-null record with a
+  /// `createdAt` of `null` means the source carried no timestamp.
+  ({int? createdAt, String? id})? _followingProvenance;
+
+  /// The list exactly as adopted, before any local follow/unfollow was
+  /// applied on top. [_broadcastContactList] diffs [_followingPubkeys]
+  /// against this to know what the pending local change actually is.
+  List<String> _adoptedFollows = const [];
+
+  /// Adopt [pubkeys] when [createdAt] makes its source the newest one seen.
+  ///
+  /// Returns whether the list was adopted. [createdAt] `null` means the source
+  /// carries no timestamp; such a source can seed an empty state but never
+  /// displace one that has a timestamp.
+  bool _adoptContactList(
+    List<String> pubkeys, {
+    required int? createdAt,
+    required String source,
+    String? eventId,
+  }) {
+    final incumbent = _followingProvenance;
+
+    if (incumbent != null && !_isNewer(createdAt, eventId, incumbent)) {
+      Log.debug(
+        'Keeping the contact list already loaded '
+        '(created_at ${incumbent.createdAt ?? 'unknown'}) over $source '
+        '(created_at ${createdAt ?? 'unknown'})',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    _followingPubkeys = pubkeys;
+    _adoptedFollows = List<String>.from(pubkeys);
+    _followingProvenance = (createdAt: createdAt, id: eventId);
+    _emitFollowingList();
+
+    Log.info(
+      'Adopted contact list from $source: ${pubkeys.length} following '
+      '(created_at ${createdAt ?? 'unknown'})',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
+    return true;
+  }
+
+  /// NIP-01's ordering for replaceable events, with "no timestamp" ranked
+  /// below every real one.
+  static bool _isNewer(
+    int? createdAt,
+    String? eventId,
+    ({int? createdAt, String? id}) incumbent,
+  ) {
+    if (createdAt == null) return false;
+    final incumbentCreatedAt = incumbent.createdAt;
+    if (incumbentCreatedAt == null) return true;
+    if (createdAt != incumbentCreatedAt) return createdAt > incumbentCreatedAt;
+
+    // Same second. NIP-01: "the event with the lowest id (first in lexical
+    // order) should be retained". Only decidable when both ids are known;
+    // otherwise the incumbent stands.
+    final incumbentId = incumbent.id;
+    if (eventId == null || incumbentId == null) return false;
+    return eventId.compareTo(incumbentId) < 0;
+  }
+
+  /// Extract the `p`-tagged pubkeys of a kind 3 event.
+  List<String> _followsOf(Event event, {required String source}) =>
+      _sanitizePubkeys(
+        event.tags
+            .where((tag) => tag.length > 1 && tag[0] == 'p')
+            .map((tag) => tag[1])
+            .toList(),
+        source: source,
+      );
+
   // A contact-list broadcast withheld because the read that precedes it came
   // back inconclusive. Flushed by [retryPendingContactListBroadcast] and by
   // the next follow or unfollow, which rebroadcasts the whole list anyway.
@@ -2009,9 +2103,6 @@ class FollowRepository {
       category: LogCategory.system,
     );
 
-    // Store previous state for rollback
-    final previousFollowList = List<String>.from(_followingPubkeys);
-
     // 1. Update in-memory cache immediately
     _followingPubkeys = [..._followingPubkeys, pubkey];
     _emitFollowingList();
@@ -2046,8 +2137,10 @@ class FollowRepository {
         category: LogCategory.system,
       );
     } catch (e) {
-      // Rollback on failure
-      _followingPubkeys = previousFollowList;
+      // Roll back this follow only. Restoring a whole pre-follow snapshot
+      // would also throw away a newer contact list the pre-publish read
+      // adopted, putting the stale list back (#8266).
+      _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
       _emitFollowingList();
 
       Log.error(
@@ -2124,9 +2217,6 @@ class FollowRepository {
       category: LogCategory.system,
     );
 
-    // Store previous state for rollback
-    final previousFollowList = List<String>.from(_followingPubkeys);
-
     // 1. Update in-memory cache immediately
     _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
     _emitFollowingList();
@@ -2161,8 +2251,10 @@ class FollowRepository {
         category: LogCategory.system,
       );
     } catch (e) {
-      // Rollback on failure
-      _followingPubkeys = previousFollowList;
+      // Roll back this unfollow only, for the same reason as [follow].
+      if (!_followingPubkeys.contains(pubkey)) {
+        _followingPubkeys = [..._followingPubkeys, pubkey];
+      }
       _emitFollowingList();
 
       Log.error(
@@ -2203,67 +2295,69 @@ class FollowRepository {
     );
   }
 
-  /// Merge follows from another contact list event (union merge for conflict resolution).
+  /// Schema version of the persisted contact-list record.
   ///
-  /// Used when syncing offline actions - combines local follows with
-  /// any follows that were added on other devices while offline.
-  Future<void> mergeFollows(List<String> additionalPubkeys) async {
-    // Remove self if accidentally included
-    final merged = <String>{
-      ..._followingPubkeys,
-      ..._sanitizePubkeys(additionalPubkeys, source: 'merged follows'),
-    }..remove(_nostrClient.publicKey);
+  /// v1 was a bare JSON array of pubkeys with no timestamp, so a cache written
+  /// by it cannot be ordered against a real event. v2 carries the `created_at`
+  /// and id of the kind 3 the list came from, which is what NIP-01 orders by.
+  static const _followingRecordVersion = 2;
 
-    if (merged.length != _followingPubkeys.length ||
-        !merged.every(_followingPubkeys.contains)) {
-      _followingPubkeys = merged.toList();
-      _emitFollowingList();
-      await _invalidateMyFollowingCache();
+  String _followingStorageKey(String pubkey) => 'following_list_$pubkey';
 
-      // Broadcast the merged list
-      await _broadcastContactList();
-      await _saveToLocalStorage();
-
-      Log.info(
-        'Merged contact lists: now following '
-        '${_followingPubkeys.length} users',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Load following list from local storage (SharedPreferences)
+  /// Load following list from local storage (SharedPreferences).
+  ///
+  /// Reads both schema versions: a bare JSON array is the pre-#8266 v1 record
+  /// and yields no timestamp, so it seeds the list but loses to the first
+  /// source that can name one.
   Future<void> _loadFromLocalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentUserPubkey = _nostrClient.publicKey;
+      if (currentUserPubkey.isEmpty) return;
 
-      if (currentUserPubkey.isNotEmpty) {
-        final key = 'following_list_$currentUserPubkey';
-        final cached = prefs.getString(key);
+      final cached = prefs.getString(_followingStorageKey(currentUserPubkey));
+      if (cached == null) return;
 
-        if (cached != null) {
-          final decoded = jsonDecode(cached) as List<dynamic>;
-          final cachedPubkeys = decoded.cast<String>();
-          final sanitizedPubkeys = _sanitizePubkeys(
-            cachedPubkeys,
-            source: 'LocalStorage',
-          );
-          _followingPubkeys = sanitizedPubkeys;
-          _emitFollowingList();
+      final decoded = jsonDecode(cached);
 
-          if (sanitizedPubkeys.length != cachedPubkeys.length) {
-            await _saveToLocalStorage();
-          }
+      final List<dynamic> rawPubkeys;
+      int? createdAt;
+      String? eventId;
+      var isLegacyRecord = false;
 
-          Log.info(
-            'Loaded cached following list: '
-            '${_followingPubkeys.length} users',
-            name: 'FollowRepository',
-            category: LogCategory.system,
-          );
-        }
+      if (decoded is List) {
+        rawPubkeys = decoded;
+        isLegacyRecord = true;
+      } else if (decoded is Map<String, dynamic>) {
+        rawPubkeys = (decoded['pubkeys'] as List<dynamic>?) ?? const [];
+        createdAt = decoded['created_at'] as int?;
+        eventId = decoded['id'] as String?;
+      } else {
+        Log.warning(
+          'Ignoring unreadable cached following list',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      final cachedPubkeys = rawPubkeys.cast<String>();
+      final sanitizedPubkeys = _sanitizePubkeys(
+        cachedPubkeys,
+        source: 'LocalStorage',
+      );
+
+      _adoptContactList(
+        sanitizedPubkeys,
+        createdAt: createdAt,
+        eventId: eventId,
+        source: isLegacyRecord ? 'LocalStorage (v1)' : 'LocalStorage',
+      );
+
+      // Rewrite when entries were dropped, and to migrate a v1 record onto the
+      // versioned envelope so the next launch can order it.
+      if (isLegacyRecord || sanitizedPubkeys.length != cachedPubkeys.length) {
+        await _saveToLocalStorage();
       }
     } catch (e) {
       Log.error(
@@ -2282,53 +2376,25 @@ class FollowRepository {
 
     try {
       final cachedContactLists = _getCachedEventsByKind!(EventKind.contactList);
+      if (cachedContactLists.isEmpty) return;
 
-      if (cachedContactLists.isNotEmpty) {
-        // Use the most recent contact list event
-        final latestContactList = cachedContactLists.first;
+      // PersonalEventCache orders by `created_at` alone, so two kind 3s
+      // written in the same second come back in an arbitrary order. Apply
+      // NIP-01's full rule here rather than trusting `.first`.
+      final latestContactList = cachedContactLists
+          .where((event) => event.kind == EventKind.contactList)
+          .fold<Event?>(null, _pickBestContactList);
+      if (latestContactList == null) return;
 
-        final pTags = latestContactList.tags.where(
-          (tag) => tag.isNotEmpty && tag[0] == 'p',
-        );
+      final adopted = _adoptContactList(
+        _followsOf(latestContactList, source: 'PersonalEventCache'),
+        createdAt: latestContactList.createdAt,
+        eventId: latestContactList.id,
+        source: 'PersonalEventCache',
+      );
 
-        final pubkeys = _sanitizePubkeys(
-          pTags
-              .map((tag) => tag.length > 1 ? tag[1] : '')
-              .where((pubkey) => pubkey.isNotEmpty)
-              .cast<String>()
-              .toList(),
-          source: 'PersonalEventCache',
-        );
-
-        if (pubkeys.isNotEmpty) {
-          // Guard: only accept the cached event when it is at least as
-          // large as the list already loaded from LocalStorage. A stale
-          // PersonalEventCache entry with fewer pubkeys should not
-          // overwrite a fresher LocalStorage value — the network steps
-          // will fetch the authoritative event later.
-          if (pubkeys.length < _followingPubkeys.length) {
-            Log.debug(
-              'PersonalEventCache has fewer follows '
-              '(${pubkeys.length}) than LocalStorage '
-              '(${_followingPubkeys.length}), skipping',
-              name: 'FollowRepository',
-              category: LogCategory.system,
-            );
-            return;
-          }
-
-          _followingPubkeys = pubkeys;
-          _currentUserContactListEvent = latestContactList;
-          _emitFollowingList();
-
-          Log.debug(
-            'Loaded following from '
-            'PersonalEventCache: '
-            '${pubkeys.length} users',
-            name: 'FollowRepository',
-            category: LogCategory.system,
-          );
-        }
+      if (adopted) {
+        _currentUserContactListEvent = latestContactList;
       }
     } catch (e) {
       Log.error(
@@ -2387,18 +2453,17 @@ class FollowRepository {
       final pubkeys = _sanitizePubkeys(collected, source: 'REST API');
 
       if (pubkeys.isNotEmpty) {
-        _followingPubkeys = pubkeys;
-        _emitFollowingList();
-
-        // Persist to SharedPreferences so redirect logic can use it
-        await _saveToLocalStorage();
-
-        Log.info(
-          'Loaded following from REST API: '
-          '${pubkeys.length} users',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
+        // The REST index is derived from the kind 3 and carries no
+        // `created_at` of its own, so it seeds an empty state and loses to
+        // any real event (#8266).
+        if (_adoptContactList(
+          pubkeys,
+          createdAt: null,
+          source: 'REST API',
+        )) {
+          // Persist to SharedPreferences so redirect logic can use it
+          await _saveToLocalStorage();
+        }
       } else {
         Log.debug(
           'REST API returned empty following list',
@@ -2423,12 +2488,21 @@ class FollowRepository {
       final currentUserPubkey = _nostrClient.publicKey;
 
       if (currentUserPubkey.isNotEmpty) {
-        final key = 'following_list_$currentUserPubkey';
-        await prefs.setString(key, jsonEncode(_followingPubkeys));
+        final provenance = _followingProvenance;
+        await prefs.setString(
+          _followingStorageKey(currentUserPubkey),
+          jsonEncode({
+            'v': _followingRecordVersion,
+            'created_at': provenance?.createdAt,
+            'id': provenance?.id,
+            'pubkeys': _followingPubkeys,
+          }),
+        );
 
         Log.debug(
           'Saved following list to cache: '
-          '${_followingPubkeys.length} users',
+          '${_followingPubkeys.length} users '
+          '(created_at ${provenance?.createdAt ?? 'unknown'})',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -2469,7 +2543,7 @@ class FollowRepository {
         _loadContactListFromIndexer(currentUserPubkey),
       ]);
 
-      // Use whichever returned a result (prefer the one with more p-tags)
+      // Use whichever returned a result, newest first (NIP-01).
       final connectedResult = results[0];
       final indexerResult = results[1];
 
@@ -2640,13 +2714,14 @@ class FollowRepository {
     }
   }
 
-  /// Pick the best contact list from two sources.
-  /// Prefers the newest event by createdAt since kind 3 is replaceable
-  /// (NIP-02) — a user may intentionally unfollow people, reducing p-tags.
+  /// Pick the authoritative contact list of two, per NIP-01's rule for
+  /// replaceable events: newest `created_at`, lowest event id on a tie.
   Event? _pickBestContactList(Event? a, Event? b) {
     if (a == null) return b;
     if (b == null) return a;
-    return b.createdAt > a.createdAt ? b : a;
+    return _isNewer(b.createdAt, b.id, (createdAt: a.createdAt, id: a.id))
+        ? b
+        : a;
   }
 
   /// Subscribe to contact list for real-time sync and cross-device updates.
@@ -2785,17 +2860,72 @@ class FollowRepository {
       timeout: _contactListReadTimeout,
     );
 
-    var newest = _currentUserContactListEvent;
+    Event? newest;
     for (final event in result.events) {
       if (event.pubkey != pubkey) continue;
       if (event.kind != EventKind.contactList) continue;
-      final current = newest;
-      if (current != null && event.createdAt <= current.createdAt) continue;
-      newest = event;
+      newest = _pickBestContactList(newest, event);
     }
-    _currentUserContactListEvent = newest;
+
+    if (newest != null) {
+      // Adopt what the relay holds as the base to publish from, then put the
+      // pending local change back on top. Reading the authoritative event and
+      // using it only for `content` is what let a stale hydration republish
+      // follows the newest event had already dropped (#8266): the `p` tags
+      // come from [_publishableFollows], not from this event.
+      final pending = _pendingLocalChange();
+      if (_adoptContactList(
+        _followsOf(newest, source: 'pre-publish read'),
+        createdAt: newest.createdAt,
+        eventId: newest.id,
+        source: 'pre-publish read',
+      )) {
+        _currentUserContactListEvent = newest;
+        _applyPendingLocalChange(pending);
+      }
+    }
 
     return !result.timedOut && !result.noRelays;
+  }
+
+  /// The local follow/unfollow not yet reflected in the adopted base.
+  ({List<String> added, Set<String> removed}) _pendingLocalChange() {
+    final adopted = _adoptedFollows.toSet();
+    final current = _followingPubkeys.toSet();
+    return (
+      added: _followingPubkeys.where((p) => !adopted.contains(p)).toList(),
+      removed: adopted.where((p) => !current.contains(p)).toSet(),
+    );
+  }
+
+  /// Re-apply [pending] on top of a freshly adopted base.
+  ///
+  /// New follows go on the end, which is where NIP-02 asks clients to append
+  /// them so the list stays in chronological order.
+  void _applyPendingLocalChange(
+    ({List<String> added, Set<String> removed}) pending,
+  ) {
+    if (pending.added.isEmpty && pending.removed.isEmpty) return;
+
+    final rebased = [
+      ..._followingPubkeys.where((p) => !pending.removed.contains(p)),
+      ...pending.added.where((p) => !_followingPubkeys.contains(p)),
+    ];
+    if (rebased.length == _followingPubkeys.length &&
+        rebased.indexed.every((e) => e.$2 == _followingPubkeys[e.$1])) {
+      return;
+    }
+
+    _followingPubkeys = rebased;
+    _emitFollowingList();
+
+    Log.info(
+      'Re-applied the pending local change over the newest contact list: '
+      '${pending.added.length} added, ${pending.removed.length} removed, '
+      'now ${rebased.length} following',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
   }
 
   /// Rebroadcast a contact list whose publish was withheld by an inconclusive
@@ -2872,6 +3002,10 @@ class FollowRepository {
     _cacheUserEvent?.call(event);
 
     _currentUserContactListEvent = event;
+    // The event we just published is now the newest one we know of, and its
+    // tags are the new base for the next pending-change diff.
+    _followingProvenance = (createdAt: event.createdAt, id: event.id);
+    _adoptedFollows = List<String>.from(_followingPubkeys);
     _contactListBroadcastPending = false;
 
     Log.debug(
@@ -2881,130 +3015,26 @@ class FollowRepository {
     );
   }
 
-  // ── Catastrophic-reduction merge guard ──────────────────────────────
-  //
-  // Protects against buggy external Nostr clients that publish a Kind 3
-  // event without first fetching the existing contact list, effectively
-  // overwriting hundreds of follows with a single entry.
-  //
-  // The guard uses a two-condition AND gate:
-  //   1. Drastic reduction — the remote list lost more than
-  //      [_mergeMaxLossFraction] (50 %) of the local list.
-  //   2. New-pubkey fingerprint — the remote list contains at least one
-  //      pubkey absent from the local list (the hallmark of a "follow one
-  //      user, replace the whole list" bug).
-  //
-  // When BOTH conditions are true the lists are union-merged and the
-  // corrected list is re-broadcast so relays converge on the right state.
-  //
-  // A legitimate mass-unfollow produces a strict *subset* of the local
-  // list, so condition 2 filters it out and the replacement is accepted.
-  //
-  // The guard is only active when the local list has at least
-  // [_mergeMinFollows] entries. With only 1 follow the list can only
-  // drop to zero, which is either a legitimate unfollow or a fresh
-  // account state — no merge is needed.
-  //
-  // Edge cases:
-  //   • Exactly 50 % loss (equals the ceil threshold) → accepted, not
-  //     merged, because the loss is within tolerance.
-  //   • Remote list is entirely new pubkeys but same size → accepted,
-  //     because condition 1 fails (no size reduction).
-  //   • Re-broadcast failure after merge → local list is already
-  //     correct; relays will converge on the next publish.
-  // ───────────────────────────────────────────────────────────────────
-
-  /// Minimum local-list size for the merge guard to activate. A user with
-  /// only 1 follow cannot trigger a "catastrophic reduction" — the list
-  /// can only go to zero.
-  static const _mergeMinFollows = 2;
-
-  /// Maximum fraction of the local list that may be removed before the
-  /// reduction is treated as suspicious. 0.5 → more than half lost
-  /// triggers a merge instead of a replace.
-  static const _mergeMaxLossFraction = 0.5;
-
-  /// Process a NIP-02 contact list event (Kind 3)
+  /// Process a NIP-02 contact list event (Kind 3).
+  ///
+  /// Kind 3 is replaceable, so the newest event is the whole truth: whatever
+  /// it omits, the user removed. There is deliberately no size check here.
+  /// The union-merge that used to guard against a "drastically smaller" remote
+  /// list could not tell a buggy client apart from a real cross-device edit —
+  /// unfollowing several people and following one produces exactly the
+  /// fingerprint it looked for — and it re-broadcast the union, publishing the
+  /// resurrected follows back to the relay (#8266).
   void _processContactListEvent(Event event) {
-    // Only update if this is newer than our current contact list event
-    if (_currentUserContactListEvent == null ||
-        event.createdAt > _currentUserContactListEvent!.createdAt) {
-      _currentUserContactListEvent = event;
+    final adopted = _adoptContactList(
+      _followsOf(event, source: 'network Kind 3 event ${event.id}'),
+      createdAt: event.createdAt,
+      eventId: event.id,
+      source: 'network Kind 3 event ${event.id}',
+    );
+    if (!adopted) return;
 
-      // Extract followed pubkeys from 'p' tags
-      final taggedPubkeys = <String>[];
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-          taggedPubkeys.add(tag[1]);
-        }
-      }
-      final followedPubkeys = _sanitizePubkeys(
-        taggedPubkeys,
-        source: 'network Kind 3 event ${event.id}',
-      );
-
-      // Guard: detect catastrophic list reduction from buggy external clients.
-      // A common Nostr footgun is publishing a Kind 3 event without first
-      // fetching the existing contact list, which overwrites the full list
-      // with only the newly followed user. We detect this by checking for
-      // two conditions simultaneously:
-      //   1. The remote list is drastically smaller than the local list.
-      //   2. The remote list contains pubkeys NOT already in the local list
-      //      (the "only-new-follow" fingerprint of buggy clients).
-      // A legitimate mass-unfollow produces a strict subset of the local
-      // list, so condition 2 filters it out.
-      final localSet = _followingPubkeys.toSet();
-      final isDrasticReduction =
-          _followingPubkeys.length >= _mergeMinFollows &&
-          followedPubkeys.length <
-              (_followingPubkeys.length * _mergeMaxLossFraction).ceil();
-      final hasNewPubkeys = followedPubkeys.any((pk) => !localSet.contains(pk));
-
-      if (isDrasticReduction && hasNewPubkeys) {
-        final merged = <String>{..._followingPubkeys, ...followedPubkeys};
-
-        Log.warning(
-          'Catastrophic contact list reduction '
-          'detected '
-          '(${_followingPubkeys.length} → '
-          '${followedPubkeys.length}). '
-          'Merging to ${merged.length} follows '
-          'instead of replacing.',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-
-        _followingPubkeys = merged.toList();
-        _emitFollowingList();
-        unawaited(_saveToLocalStorage());
-        unawaited(_invalidateMyFollowingCache());
-
-        // Re-broadcast the merged list so relays have the correct state.
-        unawaited(
-          _broadcastContactList().catchError((Object e) {
-            Log.error(
-              'Failed to broadcast merged '
-              'contact list: $e',
-              name: 'FollowRepository',
-              category: LogCategory.system,
-            );
-          }),
-        );
-        return;
-      }
-
-      _followingPubkeys = followedPubkeys;
-      _emitFollowingList();
-
-      Log.info(
-        'Updated follow list from network: '
-        '${_followingPubkeys.length} following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
-
-      unawaited(_saveToLocalStorage());
-      unawaited(_invalidateMyFollowingCache());
-    }
+    _currentUserContactListEvent = event;
+    unawaited(_saveToLocalStorage());
+    unawaited(_invalidateMyFollowingCache());
   }
 }

@@ -2,6 +2,7 @@
 // ABOUTME: Tests follow/unfollow operations, caching, and network sync
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
@@ -44,7 +45,19 @@ class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
-class _MockEvent extends Mock implements Event {}
+class _MockEvent extends Mock implements Event {
+  _MockEvent() {
+    // A real `sendContactList` returns a signed event, so `createdAt` and `id`
+    // are always populated. The repository reads both to record which kind 3
+    // its list came from (#8266), so a mock that leaves them null is not a
+    // stand-in for anything production can produce. Tests that care about a
+    // specific value still override these.
+    when(() => createdAt).thenReturn(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    );
+    when(() => id).thenReturn('e' * 64);
+  }
+}
 
 /// A fake relay that fires [fakeResponses] via [onMessage] during connect.
 ///
@@ -974,10 +987,15 @@ void main() {
         await repository.initialize();
 
         final prefs = await SharedPreferences.getInstance();
-        expect(
-          prefs.getString('following_list_$testCurrentUserPubkey'),
-          '["$testTargetPubkey"]',
-        );
+        final stored =
+            jsonDecode(
+                  prefs.getString('following_list_$testCurrentUserPubkey')!,
+                )
+                as Map<String, dynamic>;
+        expect(stored['pubkeys'], [testTargetPubkey]);
+        // A v1 record carries no timestamp, so the rewrite records none —
+        // which is what makes it lose to any real event (#8266).
+        expect(stored['created_at'], isNull);
       });
 
       test('follow succeeds and publishes a clean list when the cached '
@@ -1241,12 +1259,11 @@ void main() {
 
       // The filter is a publish-boundary property, and this is where it
       // stops being one. Relays hold the filtered event from the publish
-      // onwards, so the next initialize() reads it back and replaces the
-      // local list with it — the entry is a strict subset, so the
-      // catastrophic-reduction guard correctly declines to merge. Pinned so
-      // that "unblocking restores the follow" is never read as durable: it
-      // holds for the session that blocked, not past the next launch.
-      // Whether it should be restorable at all is open with T&S (#6903).
+      // onwards, so the next initialize() reads it back and, being the newest
+      // kind 3, it replaces the local list. Pinned so that "unblocking
+      // restores the follow" is never read as durable: it holds for the
+      // session that blocked, not past the next launch. Whether it should be
+      // restorable at all is open with T&S (#6903).
       test('the filtered kind 3 read back replaces the local list', () async {
         blocked.add(testTargetPubkey);
         var relayContactList = Event(
@@ -2764,71 +2781,6 @@ void main() {
         await realTimeStreamController.close();
       });
 
-      // #6903 filters at the publish boundary only. The inbound path must
-      // stay unfiltered: `hasNewPubkeys` is computed from the incoming list,
-      // so dropping blocked entries before the catastrophic-reduction guard
-      // can flip it false, skip the guard, and let a truncated remote list
-      // replace the local one wholesale — the #6109 class of follow loss.
-      test('does not filter an incoming contact list before the merge '
-          'guard', () async {
-        final seededPubkeys = List.generate(
-          12,
-          (i) => i.toRadixString(16).padLeft(64, '0'),
-        );
-        SharedPreferences.setMockInitialValues({
-          'following_list_$testCurrentUserPubkey':
-              '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
-        });
-        const blockedNewPubkey =
-            'ff00000000000000000000000000000000000000000000000000000000000002';
-
-        when(() => mockNostrClient.sendContactList(any(), any())).thenAnswer(
-          (_) async => Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            [],
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 200,
-          ),
-        );
-
-        repository = FollowRepository(
-          nostrClient: mockNostrClient,
-          isCacheInitialized: () => cacheIsInitialized,
-          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-          cacheUserEvent: cachedUserEvents.add,
-          indexerRelayUrls: const [],
-          blockedPubkeys: (_) => const {blockedNewPubkey},
-        );
-        await repository.initialize();
-        expect(repository.followingCount, 12);
-
-        // The sole incoming pubkey is one we blocked. Filtering it on the way
-        // in would leave an empty list, which is a strict subset — the guard
-        // would accept it and 12 follows would be gone.
-        realTimeStreamController.add(
-          Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            [
-              ['p', blockedNewPubkey],
-            ],
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
-          ),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(
-          repository.followingCount,
-          13,
-          reason: 'the guard must merge, not replace',
-        );
-        for (final pubkey in seededPubkeys) {
-          expect(repository.followingPubkeys, contains(pubkey));
-        }
-      });
-
       test('updates following list when newer Kind 3 event arrives', () async {
         await repository.initialize();
 
@@ -3003,10 +2955,12 @@ void main() {
         await subscription.cancel();
       });
 
+      // A cross-device mass unfollow. Nothing about the size of the drop
+      // matters: the newer event is authoritative, so the removals stand.
       test(
-        'merges lists when remote event has drastically fewer follows',
+        'a newer event that drops most of the list is adopted whole',
         () async {
-          // Generate 12 pubkeys to seed the local cache (above _mergeMinFollows)
+          // Seed with 12 follows
           final seededPubkeys = List.generate(
             12,
             (i) => i.toRadixString(16).padLeft(64, '0'),
@@ -3016,7 +2970,6 @@ void main() {
                 '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
           });
 
-          // Need fresh repository to pick up cached data
           repository = FollowRepository(
             nostrClient: mockNostrClient,
             isCacheInitialized: () => cacheIsInitialized,
@@ -3025,29 +2978,16 @@ void main() {
             indexerRelayUrls: const [],
           );
 
-          // Mock sendContactList for the merge broadcast
-          when(() => mockNostrClient.sendContactList(any(), any())).thenAnswer(
-            (_) async => Event(
-              testCurrentUserPubkey,
-              3,
-              [],
-              '',
-              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 200,
-            ),
-          );
-
           await repository.initialize();
           expect(repository.followingCount, 12);
 
-          // Remote event with only 1 follow — catastrophic reduction
-          const newPubkey =
-              'ff00000000000000000000000000000000000000000000000000000000000001';
+          // Remote event keeps only 3 of the original 12 — drastic but all
+          // entries are a subset of the local list (no new pubkeys), so this
+          // is a legitimate mass unfollow on another client.
           final remoteEvent = Event(
             testCurrentUserPubkey,
             3,
-            [
-              ['p', newPubkey],
-            ],
+            seededPubkeys.take(3).map((p) => ['p', p]).toList(),
             '',
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
           );
@@ -3055,58 +2995,10 @@ void main() {
           realTimeStreamController.add(remoteEvent);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Should have merged: all 12 original + 1 new = 13
-          expect(repository.followingCount, 13);
-          expect(repository.followingPubkeys, contains(newPubkey));
-          for (final pk in seededPubkeys) {
-            expect(repository.followingPubkeys, contains(pk));
-          }
-
-          // Verify broadcast was triggered to fix relay state
-          verify(() => mockNostrClient.sendContactList(any(), any())).called(1);
+          // Should accept as-is (not merge) because no new pubkeys
+          expect(repository.followingCount, 3);
         },
       );
-
-      test('accepts drastic reduction when remote is a subset (legitimate mass '
-          'unfollow)', () async {
-        // Seed with 12 follows
-        final seededPubkeys = List.generate(
-          12,
-          (i) => i.toRadixString(16).padLeft(64, '0'),
-        );
-        SharedPreferences.setMockInitialValues({
-          'following_list_$testCurrentUserPubkey':
-              '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
-        });
-
-        repository = FollowRepository(
-          nostrClient: mockNostrClient,
-          isCacheInitialized: () => cacheIsInitialized,
-          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-          cacheUserEvent: cachedUserEvents.add,
-          indexerRelayUrls: const [],
-        );
-
-        await repository.initialize();
-        expect(repository.followingCount, 12);
-
-        // Remote event keeps only 3 of the original 12 — drastic but all
-        // entries are a subset of the local list (no new pubkeys), so this
-        // is a legitimate mass unfollow on another client.
-        final remoteEvent = Event(
-          testCurrentUserPubkey,
-          3,
-          seededPubkeys.take(3).map((p) => ['p', p]).toList(),
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
-        );
-
-        realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Should accept as-is (not merge) because no new pubkeys
-        expect(repository.followingCount, 3);
-      });
 
       test(
         'accepts remote event with slightly fewer follows (legitimate unfollow)',
@@ -3192,10 +3084,12 @@ void main() {
         expect(repository.followingCount, 10);
       });
 
+      // Same rule at the small end: one follow replaced by a different one
+      // is still just the newer event winning.
       test(
-        'skips merge protection when local list is below threshold',
+        'a newer event replaces a single-entry list',
         () async {
-          // Seed with 1 follow (below _mergeMinFollows of 2)
+          // Seed with 1 follow
           final seededPubkeys = List.generate(
             1,
             (i) => i.toRadixString(16).padLeft(64, '0'),
@@ -4153,31 +4047,36 @@ void main() {
         expect(repository.followingCount, 0);
       });
 
+      // Both directions of the #8266 contract. The count is deliberately the
+      // opposite of the answer each time, so a re-introduced "more p tags
+      // wins" heuristic fails here rather than passing by coincidence.
       test(
-        'skips PersonalEventCache when it has fewer follows than '
-        'LocalStorage',
+        'a newer PersonalEventCache event wins even with fewer follows',
         () async {
-          // Seed LocalStorage with 10 follows
           final localPubkeys = List.generate(
             10,
             (i) => i.toRadixString(16).padLeft(64, '0'),
           );
+          final cachePubkeys = localPubkeys.take(3).toList();
           SharedPreferences.setMockInitialValues({
-            'following_list_$testCurrentUserPubkey':
-                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+            'following_list_$testCurrentUserPubkey': jsonEncode({
+              'v': 2,
+              'created_at': 1000,
+              'id': 'a' * 64,
+              'pubkeys': localPubkeys,
+            }),
           });
 
-          // PersonalEventCache returns a stale event with only 3 pubkeys
-          final stalePubkeys = localPubkeys.take(3).toList();
-          final staleEvent = Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            stalePubkeys.map((p) => ['p', p]).toList(),
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100,
-          );
           cacheIsInitialized = true;
-          getCachedEventsByKind = (_) => [staleEvent];
+          getCachedEventsByKind = (_) => [
+            Event(
+              testCurrentUserPubkey,
+              EventKind.contactList,
+              cachePubkeys.map((p) => ['p', p]).toList(),
+              '',
+              createdAt: 2000,
+            ),
+          ];
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
@@ -4189,42 +4088,37 @@ void main() {
 
           await repository.initialize();
 
-          // Should keep the 10 from LocalStorage, not the 3 from cache
-          expect(repository.followingCount, 10);
-          for (final pk in localPubkeys) {
-            expect(repository.followingPubkeys, contains(pk));
-          }
+          expect(repository.followingPubkeys, cachePubkeys);
         },
       );
 
       test(
-        'accepts PersonalEventCache when it has more follows than '
-        'LocalStorage',
+        'a newer LocalStorage record wins even with fewer follows',
         () async {
-          // Seed LocalStorage with 3 follows
-          final localPubkeys = List.generate(
-            3,
+          final cachePubkeys = List.generate(
+            10,
             (i) => i.toRadixString(16).padLeft(64, '0'),
           );
+          final localPubkeys = cachePubkeys.take(3).toList();
           SharedPreferences.setMockInitialValues({
-            'following_list_$testCurrentUserPubkey':
-                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+            'following_list_$testCurrentUserPubkey': jsonEncode({
+              'v': 2,
+              'created_at': 2000,
+              'id': 'a' * 64,
+              'pubkeys': localPubkeys,
+            }),
           });
 
-          // PersonalEventCache returns a newer event with 5 pubkeys
-          final cachePubkeys = List.generate(
-            5,
-            (i) => (i + 10).toRadixString(16).padLeft(64, '0'),
-          );
-          final cacheEvent = Event(
-            testCurrentUserPubkey,
-            EventKind.contactList,
-            cachePubkeys.map((p) => ['p', p]).toList(),
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
-          );
           cacheIsInitialized = true;
-          getCachedEventsByKind = (_) => [cacheEvent];
+          getCachedEventsByKind = (_) => [
+            Event(
+              testCurrentUserPubkey,
+              EventKind.contactList,
+              cachePubkeys.map((p) => ['p', p]).toList(),
+              '',
+              createdAt: 1000,
+            ),
+          ];
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
@@ -4236,11 +4130,7 @@ void main() {
 
           await repository.initialize();
 
-          // Should use the 5 from PersonalEventCache
-          expect(repository.followingCount, 5);
-          for (final pk in cachePubkeys) {
-            expect(repository.followingPubkeys, contains(pk));
-          }
+          expect(repository.followingPubkeys, localPubkeys);
         },
       );
     });
@@ -5239,64 +5129,6 @@ void main() {
           expect(repository.isInitialized, isTrue);
         },
       );
-    });
-
-    group('mergeFollows', () {
-      test('removes self from merged list', () async {
-        final mockEvent = _MockEvent();
-        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
-        when(() => mockEvent.content).thenReturn('');
-        when(
-          () => mockNostrClient.sendContactList(
-            any(),
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => mockEvent);
-
-        await repository.initialize();
-
-        // Merge a list that includes self
-        await repository.mergeFollows([
-          testTargetPubkey,
-          testCurrentUserPubkey,
-        ]);
-
-        expect(repository.isFollowing(testTargetPubkey), isTrue);
-        expect(
-          repository.isFollowing(testCurrentUserPubkey),
-          isFalse,
-        );
-      });
-
-      test('does not broadcast when no change', () async {
-        SharedPreferences.setMockInitialValues({
-          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
-        });
-
-        repository = FollowRepository(
-          nostrClient: mockNostrClient,
-          isCacheInitialized: () => cacheIsInitialized,
-          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-          cacheUserEvent: cachedUserEvents.add,
-          indexerRelayUrls: const [],
-        );
-
-        await repository.initialize();
-
-        // Merge the same list — no change
-        await repository.mergeFollows([testTargetPubkey]);
-
-        verifyNever(
-          () => mockNostrClient.sendContactList(
-            any(),
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        );
-      });
     });
 
     group('getFollowerCount', () {
@@ -7708,79 +7540,6 @@ void main() {
 
           // Should not crash — returns whatever was collected
           expect(followers, isA<List<String>>());
-        },
-      );
-
-      test(
-        'broadcastContactList catchError during catastrophic merge',
-        () async {
-          final seededPubkeys = List.generate(
-            12,
-            (i) => i.toRadixString(16).padLeft(64, '0'),
-          );
-          SharedPreferences.setMockInitialValues({
-            'following_list_$testCurrentUserPubkey':
-                '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
-          });
-
-          final controller = StreamController<Event>.broadcast();
-          when(
-            () => mockNostrClient.subscribe(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-              relayTypes: any(named: 'relayTypes'),
-              sendAfterAuth: any(named: 'sendAfterAuth'),
-              onEose: any(named: 'onEose'),
-            ),
-          ).thenAnswer((_) => controller.stream);
-
-          // Make broadcast fail
-          when(
-            () => mockNostrClient.sendContactList(
-              any(),
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenAnswer((_) async => null);
-
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            isCacheInitialized: () => cacheIsInitialized,
-            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-            cacheUserEvent: cachedUserEvents.add,
-            indexerRelayUrls: const [],
-          );
-
-          await repository.initialize();
-          expect(repository.followingCount, 12);
-
-          // Catastrophic reduction with new pubkey → triggers merge
-          // + broadcastContactList which fails
-          const newPk =
-              'ff00000000000000000000000000000000000000000000000000000000000001';
-          controller.add(
-            Event(
-              testCurrentUserPubkey,
-              3,
-              [
-                ['p', newPk],
-              ],
-              '',
-              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
-            ),
-          );
-          await Future<void>.delayed(
-            const Duration(milliseconds: 100),
-          );
-
-          // Merge happened, broadcast failed but didn't crash
-          expect(repository.followingCount, 13);
-
-          await repository.dispose();
-          await controller.close();
         },
       );
 
