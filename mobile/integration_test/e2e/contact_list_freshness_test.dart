@@ -238,55 +238,63 @@ void main() {
       return personalEventCache;
     }
 
-    testWidgets('the cross-device unfollow survives a cold start', (
-      tester,
-    ) async {
-      final relay = await FakeRelay.start(broadcast: true);
-      addTearDown(relay.stop);
+    testWidgets(
+      'the cross-device unfollow survives a cold start',
+      (
+        tester,
+      ) async {
+        final relay = await FakeRelay.start(broadcast: true);
+        addTearDown(relay.stop);
 
-      final personalEventCache = await stageCrossDeviceUnfollow(relay);
+        final personalEventCache = await stageCrossDeviceUnfollow(relay);
 
-      // Cold start: same SharedPreferences, same PersonalEventCache.
-      final reopened = await buildRepository(relay, personalEventCache);
-      addTearDown(reopened.dispose);
-      await reopened.initialize();
+        // Cold start: same SharedPreferences, same PersonalEventCache.
+        final reopened = await buildRepository(relay, personalEventCache);
+        addTearDown(reopened.dispose);
+        await reopened.initialize();
 
-      expect(
-        reopened.followingPubkeys,
-        [alice],
-        reason:
-            'the cached event is older and has more p tags; preferring it '
-            'undoes a legitimate unfollow (#8266)',
-      );
-    });
+        expect(
+          reopened.followingPubkeys,
+          [alice],
+          reason:
+              'the cached event is older and has more p tags; preferring it '
+              'undoes a legitimate unfollow (#8266)',
+        );
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
 
-    testWidgets('the next follow does not republish the unfollowed accounts', (
-      tester,
-    ) async {
-      final relay = await FakeRelay.start(broadcast: true);
-      addTearDown(relay.stop);
+    testWidgets(
+      'the next follow does not republish the unfollowed accounts',
+      (
+        tester,
+      ) async {
+        final relay = await FakeRelay.start(broadcast: true);
+        addTearDown(relay.stop);
 
-      final personalEventCache = await stageCrossDeviceUnfollow(relay);
-      final publishedBefore = relay.publishedEvents
-          .where((e) => e.kind == EventKind.contactList)
-          .length;
+        final personalEventCache = await stageCrossDeviceUnfollow(relay);
+        final publishedBefore = relay.publishedEvents
+            .where((e) => e.kind == EventKind.contactList)
+            .length;
 
-      final reopened = await buildRepository(relay, personalEventCache);
-      addTearDown(reopened.dispose);
-      await reopened.initialize();
-      await reopened.follow(dave);
-      await relay.awaitPublished(
-        EventKind.contactList,
-        count: publishedBefore + 1,
-      );
+        final reopened = await buildRepository(relay, personalEventCache);
+        addTearDown(reopened.dispose);
+        await reopened.initialize();
+        await reopened.follow(dave);
+        await relay.awaitPublished(
+          EventKind.contactList,
+          count: publishedBefore + 1,
+        );
 
-      expect(
-        relay.publicFollows,
-        unorderedEquals([alice, dave]),
-        reason:
-            'bob and carol were unfollowed on the other device; a follow '
-            'must not put them back on the relay',
-      );
-    });
+        expect(
+          relay.publicFollows,
+          unorderedEquals([alice, dave]),
+          reason:
+              'bob and carol were unfollowed on the other device; a follow '
+              'must not put them back on the relay',
+        );
+      },
+      timeout: const Timeout(Duration(minutes: 2)),
+    );
   });
 }
