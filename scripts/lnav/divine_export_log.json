@@ -1,0 +1,70 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "divine_export_log": {
+        "title": "Divine app log export",
+        "description": "LogCaptureService._formatLogEntry output: the openvine_full_logs_*.txt attached to bug reports.",
+        "regex": {
+            "std": {
+                "pattern": "^\\[(?<timestamp>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z?)\\] \\[(?<level>VERBOSE|DEBUG|INFO|WARNING|ERROR)\\] (?:\\[(?<logger>[^\\]]*)\\] )?(?<category>\\w+): (?<body>.*)$"
+            }
+        },
+        "timestamp-format": [
+            "%Y-%m-%dT%H:%M:%S.%f%z",
+            "%Y-%m-%dT%H:%M:%S%z",
+            "%Y-%m-%dT%H:%M:%S.%f",
+            "%Y-%m-%dT%H:%M:%S"
+        ],
+        "level-field": "level",
+        "level": {
+            "trace": "VERBOSE",
+            "debug": "DEBUG",
+            "info": "INFO",
+            "warning": "WARNING",
+            "error": "ERROR"
+        },
+        "body-field": "body",
+        "value": {
+            "logger": {
+                "kind": "string",
+                "identifier": true,
+                "description": "The `name:` argument at the call site, e.g. DmRepository."
+            },
+            "category": {
+                "kind": "string",
+                "identifier": true,
+                "description": "LogCategory enum name (lowercase), or GENERAL when the call site passed none."
+            },
+            "body": {
+                "kind": "string"
+            }
+        },
+        "highlights": {
+            "npub": {
+                "pattern": "npub1[023456789acdefghjklmnpqrstuvwxyz]{58}",
+                "color": "#5fd7af"
+            },
+            "nsec": {
+                "pattern": "(nsec1|ncryptsec1)[023456789acdefghjklmnpqrstuvwxyz]+",
+                "color": "#ff005f"
+            },
+            "hexid": {
+                "pattern": "\\b[0-9a-f]{64}\\b",
+                "color": "#87afff"
+            }
+        },
+        "sample": [
+            {
+                "line": "[2026-09-02T08:29:25.929639Z] [INFO] system: Completed phase: hive_storage in 19ms",
+                "level": "info"
+            },
+            {
+                "line": "[2026-09-02T08:29:26.100000Z] [ERROR] [DmRepository] relay: publish failed | Error: TimeoutException",
+                "level": "error"
+            },
+            {
+                "line": "[2026-03-04T15:30:00.100] [WARNING] GENERAL: pre-UTC build, no offset",
+                "level": "warning"
+            }
+        ]
+    }
+}

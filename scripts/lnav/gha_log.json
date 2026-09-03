@@ -1,0 +1,47 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "gha_log": {
+        "title": "GitHub Actions job log",
+        "description": "Output of `gh run view <id> --log` / `--log-failed`: job TAB step TAB RFC3339 timestamp SPACE message.",
+        "url": "https://docs.github.com/en/actions",
+        "regex": {
+            "std": {
+                "pattern": "^(?<job>[^\\t]*)\\t(?<step>[^\\t]*)\\t\\x{feff}?(?<timestamp>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+Z) ?(?:##\\[(?<level>error|warning|notice|debug)\\])?(?<body>.*)$"
+            }
+        },
+        "timestamp-format": [
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ],
+        "level-field": "level",
+        "level": {
+            "error": "error",
+            "warning": "warning",
+            "notice": "notice",
+            "debug": "debug"
+        },
+        "body-field": "body",
+        "value": {
+            "job": {
+                "kind": "string",
+                "identifier": true,
+                "description": "Workflow job, e.g. 'Tests (shard 3/8)'"
+            },
+            "step": {
+                "kind": "string",
+                "identifier": true,
+                "description": "Step name within the job"
+            },
+            "body": {
+                "kind": "string"
+            }
+        },
+        "sample": [
+            {
+                "line": "build / build\tUNKNOWN STEP\t2026-09-02T02:54:29.1670551Z ##[group]Runner Image Provisioner"
+            },
+            {
+                "line": "build / build\tUNKNOWN STEP\t2026-09-02T02:54:30.3725492Z   repository: divinevideo/divine-mobile"
+            }
+        ]
+    }
+}
