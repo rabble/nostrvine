@@ -84,15 +84,17 @@ void main() {
     test('preserves existing DB and sidecars when stored version is stale', () {
       Directory(dbDir).createSync(recursive: true);
       File(dbPath).writeAsBytesSync(const [1]);
-      File('$dbPath-wal').writeAsBytesSync(const [2]);
-      File('$dbPath-shm').writeAsBytesSync(const [3]);
+      File('$dbPath-journal').writeAsBytesSync(const [2]);
+      File('$dbPath-wal').writeAsBytesSync(const [3]);
+      File('$dbPath-shm').writeAsBytesSync(const [4]);
       writeDbCacheVersion(dbDir, 1);
 
       applyDbCacheVersionReset(dbPath);
 
       expect(File(dbPath).readAsBytesSync(), equals(const [1]));
-      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [2]));
-      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [3]));
+      expect(File('$dbPath-journal').readAsBytesSync(), equals(const [2]));
+      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [3]));
+      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [4]));
       expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
     });
 
@@ -302,6 +304,21 @@ void main() {
       },
     );
 
+    test('does not reuse a backup name owned by a rollback journal', () async {
+      _createSqliteDatabase(legacyPath, draftCount: 1);
+      _createSqliteDatabase(newPath);
+      final occupiedBackupPath = _destinationBackupPath(newPath);
+      File('$occupiedBackupPath-journal').writeAsBytesSync(const [9]);
+
+      await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
+
+      expect(
+        File('$occupiedBackupPath-journal').readAsBytesSync(),
+        equals([9]),
+      );
+      expect(File('$occupiedBackupPath.1').existsSync(), isTrue);
+    });
+
     test(
       'preserves destination when queue rows still require action',
       () async {
@@ -383,18 +400,21 @@ void main() {
       expect(Directory(p.dirname(newPath)).existsSync(), isFalse);
     });
 
-    test('migrates WAL and SHM sidecar files alongside the database', () async {
+    test('migrates every sidecar file alongside the database', () async {
       final legacyFile = File(legacyPath);
       legacyFile.parent.createSync(recursive: true);
       legacyFile.writeAsBytesSync(const [1]);
-      File('$legacyPath-wal').writeAsBytesSync(const [2]);
-      File('$legacyPath-shm').writeAsBytesSync(const [3]);
+      File('$legacyPath-journal').writeAsBytesSync(const [2]);
+      File('$legacyPath-wal').writeAsBytesSync(const [3]);
+      File('$legacyPath-shm').writeAsBytesSync(const [4]);
 
       await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
       expect(File(newPath).readAsBytesSync(), equals(const [1]));
-      expect(File('$newPath-wal').readAsBytesSync(), equals(const [2]));
-      expect(File('$newPath-shm').readAsBytesSync(), equals(const [3]));
+      expect(File('$newPath-journal').readAsBytesSync(), equals(const [2]));
+      expect(File('$newPath-wal').readAsBytesSync(), equals(const [3]));
+      expect(File('$newPath-shm').readAsBytesSync(), equals(const [4]));
+      expect(File('$legacyPath-journal').existsSync(), isFalse);
       expect(File('$legacyPath-wal').existsSync(), isFalse);
       expect(File('$legacyPath-shm').existsSync(), isFalse);
     });
@@ -1423,10 +1443,11 @@ void main() {
       }
     });
 
-    test('moves the encrypted artifact and WAL/SHM sidecars into place', () {
+    test('moves the encrypted artifact and every sidecar into place', () {
       File(encryptedPath).writeAsBytesSync(const [1]);
-      File('$encryptedPath-wal').writeAsBytesSync(const [2]);
-      File('$encryptedPath-shm').writeAsBytesSync(const [3]);
+      File('$encryptedPath-journal').writeAsBytesSync(const [2]);
+      File('$encryptedPath-wal').writeAsBytesSync(const [3]);
+      File('$encryptedPath-shm').writeAsBytesSync(const [4]);
 
       promoteEncryptedMigrationArtifact(
         encryptedPath: encryptedPath,
@@ -1434,9 +1455,11 @@ void main() {
       );
 
       expect(File(dbPath).readAsBytesSync(), equals(const [1]));
-      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [2]));
-      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [3]));
+      expect(File('$dbPath-journal').readAsBytesSync(), equals(const [2]));
+      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [3]));
+      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [4]));
       expect(File(encryptedPath).existsSync(), isFalse);
+      expect(File('$encryptedPath-journal').existsSync(), isFalse);
       expect(File('$encryptedPath-wal').existsSync(), isFalse);
       expect(File('$encryptedPath-shm').existsSync(), isFalse);
     });
@@ -1467,22 +1490,25 @@ void main() {
         final indexedBackupPath = '$dbPath.pre_cipher_migration_backup.1';
         final keyLossBackupPath = '$dbPath.pre_key_loss_wipe_backup';
         File(backupPath).writeAsBytesSync(const [1]);
-        File('$backupPath-wal').writeAsBytesSync(const [2]);
-        File('$backupPath-shm').writeAsBytesSync(const [3]);
-        File(indexedBackupPath).writeAsBytesSync(const [4]);
-        File('$indexedBackupPath-wal').writeAsBytesSync(const [5]);
-        File(keyLossBackupPath).writeAsBytesSync(const [6]);
+        File('$backupPath-journal').writeAsBytesSync(const [2]);
+        File('$backupPath-wal').writeAsBytesSync(const [3]);
+        File('$backupPath-shm').writeAsBytesSync(const [4]);
+        File(indexedBackupPath).writeAsBytesSync(const [5]);
+        File('$indexedBackupPath-journal').writeAsBytesSync(const [6]);
+        File(keyLossBackupPath).writeAsBytesSync(const [7]);
         File(
           '$dbPath.pre_cipher_migration_backup_notes',
-        ).writeAsBytesSync(const [7]);
+        ).writeAsBytesSync(const [8]);
 
         cleanUpPreCipherMigrationBackups(dbPath);
 
         expect(File(dbPath).existsSync(), isTrue);
         expect(File(backupPath).existsSync(), isFalse);
+        expect(File('$backupPath-journal').existsSync(), isFalse);
         expect(File('$backupPath-wal').existsSync(), isFalse);
         expect(File('$backupPath-shm').existsSync(), isFalse);
         expect(File(indexedBackupPath).existsSync(), isFalse);
+        expect(File('$indexedBackupPath-journal').existsSync(), isFalse);
         expect(File('$indexedBackupPath-wal').existsSync(), isFalse);
         expect(File(keyLossBackupPath).existsSync(), isTrue);
         expect(
@@ -1503,9 +1529,10 @@ void main() {
       );
       dbPath = p.join(tempRoot.path, 'divine_db.db');
       File(dbPath).writeAsBytesSync(const [1]);
-      File('$dbPath-wal').writeAsBytesSync(const [2]);
-      File('$dbPath-shm').writeAsBytesSync(const [3]);
-      File('$dbPath.pre_key_loss_wipe_backup').writeAsBytesSync(const [4]);
+      File('$dbPath-journal').writeAsBytesSync(const [2]);
+      File('$dbPath-wal').writeAsBytesSync(const [3]);
+      File('$dbPath-shm').writeAsBytesSync(const [4]);
+      File('$dbPath.pre_key_loss_wipe_backup').writeAsBytesSync(const [5]);
     });
 
     tearDown(() {
@@ -1520,6 +1547,7 @@ void main() {
         deleteDatabaseAndSidecars(dbPath);
 
         expect(File(dbPath).existsSync(), isFalse);
+        expect(File('$dbPath-journal').existsSync(), isFalse);
         expect(File('$dbPath-wal').existsSync(), isFalse);
         expect(File('$dbPath-shm').existsSync(), isFalse);
         expect(

@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'package:db_client/src/database/connection/database_sidecars.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
@@ -921,7 +922,7 @@ bool _isPreCipherMigrationBackupName(String name, String backupPrefix) {
     return true;
   }
 
-  for (final suffix in const ['-wal', '-shm']) {
+  for (final suffix in databaseSidecarSuffixes) {
     if (!name.endsWith(suffix) || name.length <= suffix.length) continue;
     final baseName = name.substring(0, name.length - suffix.length);
     if (baseName == backupPrefix || indexedBackupPattern.hasMatch(baseName)) {
@@ -1037,8 +1038,8 @@ void applyDbCacheVersionReset(String dbPath) {
 ///    data, delete the orphaned legacy file. Otherwise preserve both;
 ///    replacing a populated destination can discard local-only data.
 ///
-/// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
-/// any unsynced writes in the write-ahead log are preserved.
+/// Also migrates SQLite rollback-journal, WAL, and SHM sidecar files if
+/// present, so recovery data and unsynced writes stay with the database.
 @visibleForTesting
 Future<void> migrateLegacyDatabase({
   required String legacyPath,
@@ -1087,7 +1088,7 @@ void _backupDestinationDatabase(String dbPath) {
   );
 
   File(dbPath).renameSync(backupPath);
-  for (final suffix in const ['-wal', '-shm']) {
+  for (final suffix in databaseSidecarSuffixes) {
     final sidecar = File('$dbPath$suffix');
     if (sidecar.existsSync()) {
       sidecar.renameSync('$backupPath$suffix');
@@ -1116,7 +1117,7 @@ void _backupLegacyConflictDatabase({
 
 Map<String, List<int>> _readDatabaseSidecars(String dbPath) {
   final sidecars = <String, List<int>>{};
-  for (final suffix in const ['-wal', '-shm']) {
+  for (final suffix in databaseSidecarSuffixes) {
     final sidecar = File('$dbPath$suffix');
     if (sidecar.existsSync()) {
       sidecars[suffix] = sidecar.readAsBytesSync();
@@ -1130,7 +1131,7 @@ void _moveSidecars({
   required String toPath,
   Map<String, List<int>>? preservedSidecars,
 }) {
-  for (final suffix in const ['-wal', '-shm']) {
+  for (final suffix in databaseSidecarSuffixes) {
     final sidecar = File('$fromPath$suffix');
     if (sidecar.existsSync()) {
       sidecar.renameSync('$toPath$suffix');
@@ -1142,7 +1143,7 @@ void _moveSidecars({
 
 @visibleForTesting
 void deleteDatabaseAndSidecars(String dbPath) {
-  for (final suffix in const ['', '-wal', '-shm']) {
+  for (final suffix in ['', ...databaseSidecarSuffixes]) {
     final file = File('$dbPath$suffix');
     if (file.existsSync()) file.deleteSync();
   }
@@ -1152,8 +1153,9 @@ String _nextDatabaseBackupPath(String dbPath, {required String suffix}) {
   var candidate = '$dbPath$suffix';
   var index = 1;
   while (File(candidate).existsSync() ||
-      File('$candidate-wal').existsSync() ||
-      File('$candidate-shm').existsSync()) {
+      databaseSidecarSuffixes.any(
+        (sidecarSuffix) => File('$candidate$sidecarSuffix').existsSync(),
+      )) {
     candidate = '$dbPath$suffix.$index';
     index += 1;
   }
