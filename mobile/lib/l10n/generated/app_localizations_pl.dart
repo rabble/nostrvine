@@ -1317,36 +1317,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Brak dostępnych filmów';
 
   @override
-  String get exploreDiscoverLists => 'Odkrywaj listy';
-
-  @override
-  String get exploreAboutLists => 'O listach';
-
-  @override
-  String get exploreAboutListsDescription =>
-      'Listy pomagają ci porządkować i kuratorować treści Divine na dwa sposoby:';
-
-  @override
-  String get explorePeopleLists => 'Listy osób';
-
-  @override
-  String get explorePeopleListsDescription =>
-      'Obserwuj grupy twórców i zobacz ich najnowsze filmy';
-
-  @override
-  String get exploreVideoLists => 'Listy filmów';
-
-  @override
-  String get exploreVideoListsDescription =>
-      'Twórz playlisty ulubionych filmów do oglądania później';
-
-  @override
-  String get exploreMyLists => 'Moje listy';
-
-  @override
-  String get exploreSubscribedLists => 'Subskrybowane listy';
-
-  @override
   String get exploreErrorLoadingLists =>
       'Błąd wczytywania list. Spróbuj ponownie.';
 
@@ -4886,19 +4856,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String listPersonCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count osoby',
-      many: '$count osób',
-      few: '$count osoby',
-      one: '1 osoba',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get listByAuthorPrefix => 'Autor: ';
 
   @override
@@ -5010,6 +4967,9 @@ class AppLocalizationsPl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get listsDiscoveryEmpty => 'Nothing to discover yet. Pull to refresh.';
 
   @override
   String get listShareAction => 'Udostępnij listę';
@@ -6111,31 +6071,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get discoverListsFailedToUpdateSubscription =>
       'Nie udało się zaktualizować subskrypcji. Spróbuj ponownie.';
-
-  @override
-  String get discoverListsTitle => 'Odkrywaj listy';
-
-  @override
-  String get discoverListsFailedToLoad => 'Nie udało się wczytać list';
-
-  @override
-  String get discoverListsLoading => 'Odkrywanie publicznych list...';
-
-  @override
-  String get discoverListsRelayTimeout =>
-      'Relay nie zwrócił list na czas. Spróbuj ponownie.';
-
-  @override
-  String get discoverListsServiceUnavailable => 'Usługa niedostępna.';
-
-  @override
-  String get discoverListsEmptyTitle => 'Nie znaleziono publicznych list';
-
-  @override
-  String get discoverListsEmptySubtitle => 'Wróć później po nowe listy';
-
-  @override
-  String get discoverListsByAuthorPrefix => 'od';
 
   @override
   String get curatedListEmptyTitle => 'Brak filmów na tej liście';

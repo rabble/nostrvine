@@ -1303,36 +1303,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Няма налични видеа';
 
   @override
-  String get exploreDiscoverLists => 'Открий списъци';
-
-  @override
-  String get exploreAboutLists => 'Относно списъците';
-
-  @override
-  String get exploreAboutListsDescription =>
-      'Списъците ти помагат да организираш и управляваш Divine съдържание по два начина:';
-
-  @override
-  String get explorePeopleLists => 'Списъци с хора';
-
-  @override
-  String get explorePeopleListsDescription =>
-      'Следвай групи от творци и виж най-новите им видеа';
-
-  @override
-  String get exploreVideoLists => 'Видео списъци';
-
-  @override
-  String get exploreVideoListsDescription =>
-      'Създай плейлисти с любимите си видеа, за да ги гледаш по-късно';
-
-  @override
-  String get exploreMyLists => 'Моите списъци';
-
-  @override
-  String get exploreSubscribedLists => 'Абонирани списъци';
-
-  @override
   String get exploreErrorLoadingLists =>
       'Грешка при зареждане на списъците. Опитай пак.';
 
@@ -4807,17 +4777,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String listPersonCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count души',
-      one: '1 човек',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get listByAuthorPrefix => 'От ';
 
   @override
@@ -4929,6 +4888,9 @@ class AppLocalizationsBg extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get listsDiscoveryEmpty => 'Nothing to discover yet. Pull to refresh.';
 
   @override
   String get listShareAction => 'Сподели списъка';
@@ -6018,31 +5980,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get discoverListsFailedToUpdateSubscription =>
       'Неуспешно актуализиране на абонамента. Опитай пак.';
-
-  @override
-  String get discoverListsTitle => 'Открий списъци';
-
-  @override
-  String get discoverListsFailedToLoad => 'Зареждането на списъците не успя';
-
-  @override
-  String get discoverListsLoading => 'Откриваме публични списъци...';
-
-  @override
-  String get discoverListsRelayTimeout =>
-      'Релето не върна списъци навреме. Опитай пак.';
-
-  @override
-  String get discoverListsServiceUnavailable => 'Услугата не е налична.';
-
-  @override
-  String get discoverListsEmptyTitle => 'Не са намерени публични списъци';
-
-  @override
-  String get discoverListsEmptySubtitle => 'Върни се по-късно за нови списъци';
-
-  @override
-  String get discoverListsByAuthorPrefix => 'от';
 
   @override
   String get curatedListEmptyTitle => 'Няма видеа в този списък';

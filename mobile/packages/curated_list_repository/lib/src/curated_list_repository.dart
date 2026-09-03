@@ -331,6 +331,17 @@ class CuratedListRepository {
   /// (Nostr event ID). Non-matching entries are addressable coordinates.
   static final _hexEventIdPattern = RegExp(r'^[0-9a-f]{64}$');
 
+  /// Resolves up to [maxThumbnails] thumbnail URLs for each of [lists].
+  ///
+  /// The same funnelcake-first, batched-relay-fallback pipeline the search
+  /// stream uses to enrich its results, exposed for discovery surfaces that
+  /// fetch their lists elsewhere (the relay discovery stream) and render
+  /// thumbnail collages.
+  Future<List<CuratedList>> resolveListThumbnails(
+    List<CuratedList> lists, {
+    int maxThumbnails = 5,
+  }) => _resolveAllThumbnails(lists, maxThumbnails: maxThumbnails);
+
   /// Resolves thumbnail URLs for a batch of [lists] concurrently.
   ///
   /// Each list gets up to [maxThumbnails] thumbnail URLs populated from
