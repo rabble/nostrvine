@@ -199,10 +199,18 @@ void main() {
       'deletion_pending and KEEPS its rumor, even though the pool confirmed '
       'the kind-5 wrap',
       (tester) async {
-        // The relay serves the inbox, but resolution is abandoned before it
-        // can answer — the `on TimeoutException` exit in `_queryOwnDmInbox`,
-        // documented as "Deliberately `failed`, never `absent`".
-        final relay = await FakeRelay.start(reply: recipientInbox());
+        // The relay accepts the kind-10050 REQ and never settles it, so the
+        // 1ms budget expires into the `on TimeoutException` exit in
+        // `_queryOwnDmInbox`, documented as "Deliberately `failed`, never
+        // `absent`". The stall is what makes this deterministic: a short
+        // budget alone races a relay that can still answer (see ARM B), and
+        // the routing lookup inside `deleteMessageForEveryone` is unguarded,
+        // so a race winner would route to the advertised inbox and settle the
+        // row `deletion_sent` — red, and flaky.
+        final relay = await FakeRelay.start(
+          reply: recipientInbox(),
+          stallReqForKinds: const {EventKind.dmRelaysList},
+        );
         addTearDown(relay.stop);
         final stack = await buildStack(relay);
 
