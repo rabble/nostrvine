@@ -6306,8 +6306,11 @@ class DmRepository {
   /// falls back to the default pool, and the pool's `OK` is downgraded to a
   /// soft failure through [downgradeFallbackPoolDelivery] — the same rule the
   /// 1:1 send and its retry apply (#7317) and the reaction fan-out applies
-  /// (#8443). A recipient who genuinely advertises NO inbox is left alone:
-  /// the pool is where they read, so that `OK` is real delivery.
+  /// (#8443). A recipient who genuinely advertises NO inbox is also left
+  /// alone, on different terms: the pool fallback stays because reachability
+  /// is preserved (#570) — a deliberate deviation from NIP-17's "clients
+  /// shouldn't try" — and its `OK` is scored as delivery because we keep
+  /// that deviation, not because NIP-17 licenses it.
   ///
   /// Scoring the unreadable case as landed is #8515, and it is not merely a
   /// mislabel: [DirectMessagesDao.markMessageDeletionSent] clears the stored

@@ -313,7 +313,9 @@ void main() {
       'retracted — #8515 must not over-fire on absence',
       (tester) async {
         // EOSE with no event: the relays answered, the recipient advertises
-        // nothing. The default pool IS where they read, so the OK is real.
+        // nothing. Routing still falls back to the pool — the deliberate #570
+        // deviation from NIP-17's "clients shouldn't try" — and that OK is
+        // scored as delivery because we keep the deviation.
         final relay = await FakeRelay.start();
         addTearDown(relay.stop);
         final stack = await buildStack(relay);

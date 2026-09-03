@@ -14003,7 +14003,8 @@ void main() {
 
         test(
           'a recipient who genuinely advertises NO inbox is still retracted - '
-          'the pool is where they read, so that OK is real delivery',
+          'the deliberate #570 pool fallback stays, and its OK is scored as '
+          'delivery because we keep that deviation',
           () async {
             // setUp stubs queryEventsDetailed -> answeredList([]): the relays
             // answered and there is no kind-10050. Conclusive absence.
