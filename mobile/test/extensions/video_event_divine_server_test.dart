@@ -303,10 +303,8 @@ void main() {
       );
     });
 
-    // Regression test for classic Vines being unplayable on iOS. Every Range
-    // request to the bare blob (`/{hash}`) returns a cached `NoSuchKey` XML
-    // body as a 206, and AVFoundation always range-requests, so it never gets
-    // video back (divine-blossom#198).
+    // Prefer the smaller faststart derivative for classic Vine originals too;
+    // the playback ladder retains the bare blob only as its final fallback.
     test('uses MP4 720p for classic Vine originals', () {
       final video = _createVideoWithUrl(
         'https://media.divine.video/$hash',
@@ -349,17 +347,15 @@ void main() {
     const hash =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-    test('withholds the bare blob for extensionless Divine URLs', () {
+    test('keeps the bare blob last for extensionless Divine URLs', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      // The regression in #7550: the preview used to be handed the bare blob,
-      // which answers a Range request with a cached NoSuchKey body dressed up
-      // as a 206 (divine-blossom#198).
       expect(
         video.previewPlaybackSources,
         equals([
           'https://media.divine.video/$hash/720p.mp4',
           'https://media.divine.video/$hash/hls/master.m3u8',
+          'https://media.divine.video/$hash',
         ]),
       );
     });
@@ -386,7 +382,10 @@ void main() {
       // A media playlist (stream_720p.m3u8) carries no #EXT-X-STREAM-INF, so
       // anything that parses variants out of it resolves to nothing. The
       // master is the rung the feed uses and the one the native player takes.
-      expect(video.previewPlaybackSources.last, endsWith('/hls/master.m3u8'));
+      expect(
+        video.previewPlaybackSources[1],
+        endsWith('/hls/master.m3u8'),
+      );
     });
 
     test('leaves non-Divine videos with their single original source', () {

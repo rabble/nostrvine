@@ -209,9 +209,7 @@ void main() {
         failures: [
           PlatformException(
             code: 'PLAYER_ERROR',
-            details: const <String, Object?>{
-              'errorCode': 'media_processing',
-            },
+            details: const <String, Object?>{'errorCode': 'media_processing'},
           ),
         ],
       );
@@ -236,6 +234,34 @@ void main() {
       expect(delays, isEmpty);
       expect(logs.where((line) => line.contains('Source processing')), isEmpty);
       expect(logs.any((line) => line.contains('retrySource=rawUrl')), isTrue);
+    });
+
+    test('retries typed media-processing error on the last source', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [
+          PlatformException(
+            code: 'PLAYER_ERROR',
+            details: const <String, Object?>{'errorCode': 'media_processing'},
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+
+      final delays = <Duration>[];
+      final result = await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['processingUrl'],
+        log: logs.add,
+        delay: (duration) async => delays.add(duration),
+      );
+
+      expect(result, equals(('processingUrl', 0)));
+      expect(clips.map((clip) => clip.uri), ['processingUrl', 'processingUrl']);
+      expect(delays, [const Duration(seconds: 1)]);
+      expect(logs.single, contains('Source processing'));
     });
 
     test('records media-processing source failure before failover', () async {

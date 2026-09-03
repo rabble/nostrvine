@@ -4,11 +4,13 @@ import android.net.Uri
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.HttpDataSource
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -83,5 +85,24 @@ class VideoCacheTest {
         verify(exactly = 1) { cachedFactory.createDataSource() }
         verify(exactly = 0) { uncachedFactory.createDataSource() }
         assertTrue(openedSpec.captured.httpRequestHeaders.isEmpty())
+    }
+
+    @Test
+    fun `processing response rejects accepted HTTP 202 and closes delegate`() {
+        val delegate = mockk<HttpDataSource>(relaxed = true) {
+            every { open(any()) } returns 42L
+            every { responseCode } returns 202
+            every { responseHeaders } returns mapOf(
+                "Retry-After" to listOf("3"),
+            )
+        }
+        val source = ProcessingResponseDataSource(delegate)
+
+        val error = assertThrows(HttpDataSource.InvalidResponseCodeException::class.java) {
+            source.open(dataSpec())
+        }
+
+        assertEquals(202, error.responseCode)
+        verify(exactly = 1) { delegate.close() }
     }
 }
