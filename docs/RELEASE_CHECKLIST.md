@@ -87,10 +87,10 @@ From `mobile/`:
 - [ ] Confirm app ID is still `co.openvine.app`.
 - [ ] Confirm the manifest still removes Advertising ID and unused location/Bluetooth permissions.
 - [ ] Verify the current release notes and tester notes are ready.
-- [ ] Upload the AAB to the intended track:
-  - Manual Play Console upload, or
-  - `./deploy_android.sh internal|closed|production`
-- [ ] Verify release track assignment and staged rollout settings.
+- [ ] Cut the release through the Codemagic `android-build` workflow: it publishes the signed, Shorebird-enabled AAB to Play's **internal testing** track. Do not rebuild for broader distribution; promote that exact Play artifact after internal testing passes.
+- [ ] Verify the new release is live on the internal testing track in Play Console and available to internal testers.
+- [ ] Promote the artifact deliberately in Play Console — internal testing to broader testing or production — with a staged production rollout, verifying each hop. This promotion is the release decision; the Codemagic build alone ships nothing to production.
+- [ ] `./deploy_android.sh` uploads a plain `flutter build` AAB, not a Shorebird release, so its binaries cannot be patched. Use it only for throwaway manual test lanes, never as the production release path.
 
 ## 8. Final Sign-Off
 
