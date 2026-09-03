@@ -32,9 +32,11 @@ lnav openvine_full_logs_*.txt
  WHERE log_level >= 'warning' GROUP BY category ORDER BY 2 DESC;
 ```
 
-Full npubs, `nsec`/`ncryptsec`, and 64-char hex ids are highlighted. That works
-precisely *because* we never truncate them — a shortened id would not match,
-which is the same property that makes them greppable against relay and
+Full npubs and 64-char hex ids are highlighted; the `nsec`/`ncryptsec` pattern
+is a tripwire rather than a routine sight, because exports redact secrets
+before write (`_sanitizeString` in `bug_report_service.dart`). Highlighting
+works precisely *because* we never truncate ids — a shortened id would not
+match, which is the same property that makes them greppable against relay and
 funnelcake rows.
 
 The timestamp accepts a trailing `Z` **and** its absence, so exports from
