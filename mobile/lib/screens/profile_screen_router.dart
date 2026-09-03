@@ -465,18 +465,9 @@ class _ProfileDataView extends ConsumerWidget {
     }
 
     return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
-      listenWhen: (previous, current) {
-        // Listen only for upload completions
-        final prevCompleted = previous.uploads
-            .where((upload) => upload.result != null)
-            .length;
-        final currCompleted = current.uploads
-            .where((upload) => upload.result != null)
-            .length;
-        return currCompleted > prevCompleted;
-      },
+      listenWhen: (_, current) => current.recentlyPublished.isNotEmpty,
       listener: (context, state) {
-        // Refresh the feed when background uploads complete.
+        // Refresh the feed when a background publish succeeds.
         context.read<ProfileFeedCubit>().add(
           const ProfileFeedRefreshRequested(),
         );
