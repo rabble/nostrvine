@@ -19,12 +19,15 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -36,6 +39,8 @@ class _MockContentBlocklistRepository extends Mock
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockDivineVideoDraft extends Mock implements DivineVideoDraft {}
 
 class _MockBackgroundPublishBloc
     extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
@@ -126,6 +131,7 @@ void main() {
     late _MockContentBlocklistRepository blocklistRepository;
     late _MockBackgroundPublishBloc backgroundPublishBloc;
     late _MockPeopleListsBloc peopleListsBloc;
+    late StreamController<BackgroundPublishState> backgroundPublishStates;
 
     setUpAll(() {
       registerFallbackValue(_FakeVideoEvent());
@@ -139,10 +145,12 @@ void main() {
       blocklistRepository = _MockContentBlocklistRepository();
       backgroundPublishBloc = _MockBackgroundPublishBloc();
       peopleListsBloc = _MockPeopleListsBloc();
+      backgroundPublishStates = StreamController<BackgroundPublishState>();
+      addTearDown(backgroundPublishStates.close);
 
       whenListen(
         backgroundPublishBloc,
-        const Stream<BackgroundPublishState>.empty(),
+        backgroundPublishStates.stream,
         initialState: const BackgroundPublishState(),
       );
       whenListen(
@@ -285,6 +293,105 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 3));
     });
+
+    testWidgets('successful background publish refreshes the profile feed', (
+      tester,
+    ) async {
+      await pumpProfileAt(tester, 0);
+      clearInteractions(videosRepository);
+
+      backgroundPublishStates.add(
+        const BackgroundPublishState(
+          recentlyPublished: [PublishedVideo(draftId: 'published-draft')],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      verify(
+        () => videosRepository.getAuthorFeed(
+          authorPubkey: _authorPubkeyHex,
+          relaySeed: any(named: 'relaySeed'),
+          skipCache: true,
+        ),
+      ).called(1);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('failed background publish does not refresh the profile feed', (
+      tester,
+    ) async {
+      final draft = _MockDivineVideoDraft();
+      when(() => draft.id).thenReturn('failed-draft');
+      await pumpProfileAt(tester, 0);
+      clearInteractions(videosRepository);
+
+      backgroundPublishStates.add(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draft,
+              result: const PublishError(PublishErrorKind.generic),
+              progress: 1,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      verifyNever(
+        () => videosRepository.getAuthorFeed(
+          authorPubkey: any(named: 'authorPubkey'),
+          relaySeed: any(named: 'relaySeed'),
+          skipCache: true,
+        ),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets(
+      'vanished background upload does not refresh the profile feed',
+      (
+        tester,
+      ) async {
+        final draft = _MockDivineVideoDraft();
+        when(() => draft.id).thenReturn('vanished-draft');
+        await pumpProfileAt(tester, 0);
+
+        backgroundPublishStates.add(
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.5),
+            ],
+          ),
+        );
+        await tester.pump();
+        clearInteractions(videosRepository);
+
+        // The upload leaves the collection with no success result, exactly as
+        // BackgroundPublishVanished emits it. recentlyPublished stays empty, so
+        // this is not a publish and must not refresh the grid.
+        backgroundPublishStates.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump();
+
+        verifyNever(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: true,
+          ),
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
 
   // A divine:///profile/<npub> or https://divine.video/profile/<npub> deep

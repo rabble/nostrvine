@@ -1913,9 +1913,6 @@ class VideoEventPublisher {
         _totalEventsPublished++;
         _lastPublishTime = DateTime.now();
 
-        // Note: Discovery cache was already updated immediately after event
-        // creation (before relay publish) for instant local UI feedback.
-
         // Invalidate profile stats cache so video count updates immediately
         final currentPubkey = _nostrService.publicKey;
         if (currentPubkey.isNotEmpty) {
