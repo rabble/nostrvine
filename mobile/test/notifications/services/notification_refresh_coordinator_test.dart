@@ -1,4 +1,4 @@
-// ABOUTME: Tests for notification refresh coalescing on app resume.
+// ABOUTME: Tests for notification refresh coalescing on resume and push.
 // ABOUTME: Guards cooldown consumption and failure routing semantics.
 
 import 'dart:async';
@@ -240,6 +240,32 @@ void main() {
           async.flushMicrotasks();
 
           verify(() => repository.refreshApplied()).called(2);
+        });
+      });
+
+      test('dispose during an in-flight refresh drops the queued push '
+          'refresh', () {
+        fakeAsync((async) {
+          final firstRefresh = Completer<bool>();
+          var calls = 0;
+          when(() => repository.refreshApplied()).thenAnswer((_) {
+            calls += 1;
+            return calls == 1 ? firstRefresh.future : Future.value(true);
+          });
+          final coordinator = buildCoordinator();
+
+          unawaited(
+            coordinator.refresh(reason: NotificationRefreshReason.appResume),
+          );
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+          expect(calls, 1);
+
+          coordinator.dispose();
+          firstRefresh.complete(true);
+          async.flushMicrotasks();
+          expect(calls, 1);
         });
       });
 
