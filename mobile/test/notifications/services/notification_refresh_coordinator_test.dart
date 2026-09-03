@@ -4,13 +4,18 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
+
+final _repoSwap = StateProvider<int>((_) => 0);
 
 void main() {
   group(NotificationRefreshCoordinator, () {
@@ -221,6 +226,18 @@ void main() {
         });
       });
 
+      test('schedulePushRefresh after dispose never refreshes', () {
+        fakeAsync((async) {
+          final coordinator = buildCoordinator()..dispose();
+
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          verifyNever(() => repository.refreshApplied());
+        });
+      });
+
       test('a failed push refresh does not suppress the next burst', () {
         fakeAsync((async) {
           when(
@@ -290,6 +307,59 @@ void main() {
           firstRefresh.complete(true);
           async.flushMicrotasks();
           expect(calls, 2);
+        });
+      });
+    });
+
+    group('notificationRefreshCoordinatorProvider', () {
+      test('disposing the container cancels a scheduled push refresh', () {
+        fakeAsync((async) {
+          final container = ProviderContainer(
+            overrides: [
+              notificationRepositoryProvider.overrideWithValue(repository),
+            ],
+          );
+          final coordinator = container.read(
+            notificationRefreshCoordinatorProvider,
+          );
+          expect(coordinator, isNotNull);
+
+          coordinator!.schedulePushRefresh();
+          container.dispose();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          verifyNever(() => repository.refreshApplied());
+        });
+      });
+
+      test('a repository swap disposes the outgoing coordinator', () {
+        fakeAsync((async) {
+          final repositoryB = _MockNotificationRepository();
+          when(repositoryB.refreshApplied).thenAnswer((_) async => true);
+          when(() => repositoryB.isClosed).thenReturn(false);
+          when(() => repositoryB.hasPaginatedBeyondFirstPage).thenReturn(false);
+          final container = ProviderContainer(
+            overrides: [
+              notificationRepositoryProvider.overrideWith(
+                (ref) => ref.watch(_repoSwap) == 0 ? repository : repositoryB,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+          final first = container.read(
+            notificationRefreshCoordinatorProvider,
+          )!;
+
+          first.schedulePushRefresh();
+          container.read(_repoSwap.notifier).state = 1;
+          final next = container.read(notificationRefreshCoordinatorProvider);
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+
+          expect(next, isNot(same(first)));
+          verifyNever(() => repository.refreshApplied());
+          verifyNever(repositoryB.refreshApplied);
         });
       });
     });
