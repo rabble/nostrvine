@@ -445,6 +445,55 @@ void main() {
       });
     });
 
+    group('searchProfilesByIdentity', () {
+      test(
+        'ranks exact identity matches first and excludes biography text',
+        () async {
+          await dao.upsertProfiles([
+            createProfile(
+              name: 'alice',
+              displayName: 'Exact',
+              about: 'unrelated',
+            ),
+            createProfile(
+              pubkey: testPubkey2,
+              eventId: 'event2',
+              name: 'alice-fan',
+              displayName: 'Prefix',
+            ),
+            createProfile(
+              pubkey: 'a' * 64,
+              eventId: 'event3',
+              name: 'other',
+              about: 'alice appears only here',
+            ),
+          ]);
+
+          final results = await dao.searchProfilesByIdentity('ALICE', limit: 2);
+
+          expect(results.map((profile) => profile.displayName), [
+            'Exact',
+            'Prefix',
+          ]);
+        },
+      );
+
+      test('honors the requested bound', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'match-one'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'match-two',
+          ),
+        ]);
+
+        final results = await dao.searchProfilesByIdentity('match', limit: 1);
+
+        expect(results, hasLength(1));
+      });
+    });
+
     group('upsertProfiles', () {
       test('does nothing for empty list', () async {
         await dao.upsertProfiles([]);

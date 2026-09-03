@@ -4262,6 +4262,65 @@ void main() {
         expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
       });
 
+      test(
+        'searchUsersProgressive puts an exact name ahead of popularity',
+        () async {
+          stubRestResults([
+            ProfileSearchResult(
+              pubkey: pk18Videos,
+              displayName: 'Alice Archive',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 10000,
+              videoCount: 18,
+            ),
+            ProfileSearchResult(
+              pubkey: pk1Video,
+              name: 'alice',
+              displayName: 'Exact Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'alice', sortBy: 'followers')
+              .last;
+
+          expect(result.profiles.first.pubkey, pk1Video);
+        },
+      );
+
+      test(
+        'reports REST pagination independently of merged profile count',
+        () async {
+          stubRestResults(resultsInServerOrder());
+          when(() => mockUserProfilesDao.getAllProfiles()).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: pkCachedVine,
+                displayName: 'Lauren Cached',
+                createdAt: DateTime(2026),
+                eventId: 'cached',
+                rawData: const {},
+              ),
+            ],
+          );
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: 'lauren',
+                limit: 3,
+                offset: 10,
+                sortBy: 'followers',
+              )
+              .last;
+
+          expect(result.nextRestOffset, 13);
+          expect(result.restHasMore, isTrue);
+        },
+      );
+
       test('searchUsersProgressive breaks a real follower-count tie by '
           'video count', () async {
         stubRestResults(resultsInServerOrder(followerCount: 100));
@@ -4445,6 +4504,44 @@ void main() {
 
         expect(results, isEmpty);
       });
+
+      test(
+        'applies search and block filters to bounded local candidates',
+        () async {
+          final included = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Included',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          );
+          final blocked = UserProfile(
+            pubkey: otherPubkey,
+            displayName: 'Blocked',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'e' * 64,
+          );
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              expect(query, 'test');
+              expect(limit, 200);
+              return [included, blocked];
+            },
+            profileSearchFilter: (_, profiles) => profiles,
+            blockFilter: (pubkey) => pubkey == otherPubkey,
+          );
+
+          final emissions = await repository
+              .searchUsersProgressive(query: 'test')
+              .toList();
+
+          expect(emissions.first.profiles, [included]);
+        },
+      );
 
       test('yields local results first then remote results', () async {
         // Arrange - local cache has a profile

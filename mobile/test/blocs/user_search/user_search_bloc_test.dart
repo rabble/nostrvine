@@ -777,6 +777,49 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
+        'uses REST metadata instead of the merged result count',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              ProgressiveSearchResult(
+                profiles: createTestProfiles(10),
+                sources: const {},
+                isComplete: true,
+                nextRestOffset: 100,
+                restHasMore: true,
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (state) => state.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((state) => state.offset, 'offset', 100)
+              .having((state) => state.hasMore, 'hasMore', true),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
         'does nothing when hasMore is false',
         build: createBloc,
         seed: () => UserSearchState(

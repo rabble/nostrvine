@@ -13,7 +13,7 @@ import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter, Nip19;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -66,6 +66,10 @@ typedef ProfileSearchFilter =
 
 bool _isSearchCancelled(SearchCancellationToken? token) =>
     token?.isCancelled ?? false;
+
+/// Bounded local identity lookup used by interactive people discovery.
+typedef LocalProfileSearch =
+    Future<List<UserProfile>> Function(String query, int limit);
 
 /// Default indexer relays for kind 0 profile lookups.
 ///
@@ -130,6 +134,7 @@ class ProfileRepository implements ProfileReader {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
+    LocalProfileSearch? localProfileSearch,
     BlockedProfileFilter? blockFilter,
     PendingProfileSavesDao? pendingProfileSavesDao,
     IdentityEventsDao? identityEventsDao,
@@ -145,6 +150,7 @@ class ProfileRepository implements ProfileReader {
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
+       _localProfileSearch = localProfileSearch,
        _blockFilter = blockFilter,
        _pendingProfileSavesDao = pendingProfileSavesDao,
        _identityEventsDao = identityEventsDao,
@@ -162,6 +168,7 @@ class ProfileRepository implements ProfileReader {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+  final LocalProfileSearch? _localProfileSearch;
   final BlockedProfileFilter? _blockFilter;
 
   /// Durable single-row-per-user slot for a save whose kind-0 publish is not
@@ -275,6 +282,23 @@ class ProfileRepository implements ProfileReader {
   Future<int> countUsersLocally({required String query}) async {
     final matches = await searchUsersLocally(query: query);
     return matches.length;
+  }
+
+  Future<List<UserProfile>> _searchUsersForDiscovery({
+    required String query,
+    required int limit,
+  }) async {
+    final localSearch = _localProfileSearch;
+    if (localSearch == null) {
+      return searchUsersLocally(query: query, limit: limit);
+    }
+    final candidates = await localSearch(query, limit);
+    final filtered =
+        _profileSearchFilter?.call(query, candidates) ?? candidates;
+    final blockFilter = _blockFilter;
+    return blockFilter == null
+        ? filtered
+        : filtered.where((profile) => !blockFilter(profile.pubkey)).toList();
   }
 
   /// Whether the given pubkey is known to have no Kind 0 profile.
@@ -2160,6 +2184,8 @@ class ProfileRepository implements ProfileReader {
         source: const SearchSourcePending(),
     };
     final useServerSort = sortBy != null;
+    int? nextRestOffset;
+    var restHasMore = false;
 
     ProgressiveSearchResult snapshot({
       required bool isComplete,
@@ -2178,6 +2204,8 @@ class ProfileRepository implements ProfileReader {
         profiles: profiles,
         sources: Map.unmodifiable(sources),
         isComplete: isComplete,
+        nextRestOffset: nextRestOffset,
+        restHasMore: restHasMore,
       );
     }
 
@@ -2186,7 +2214,10 @@ class ProfileRepository implements ProfileReader {
       final phase1Watch = Stopwatch()..start();
       final preCount = resultMap.length;
       try {
-        final local = await searchUsersLocally(query: trimmed);
+        final local = await _searchUsersForDiscovery(
+          query: trimmed,
+          limit: limit,
+        );
         if (_isSearchCancelled(cancellationToken)) return;
         for (final profile in local) {
           resultMap[profile.pubkey] = profile;
@@ -2228,6 +2259,8 @@ class ProfileRepository implements ProfileReader {
           hasVideos: hasVideos,
         );
         if (_isSearchCancelled(cancellationToken)) return;
+        nextRestOffset = offset + restResults.length;
+        restHasMore = restResults.length == limit;
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
         }
@@ -2377,7 +2410,7 @@ class ProfileRepository implements ProfileReader {
   }) {
     List<UserProfile> filtered;
     if (useServerSort) {
-      filtered = _rankServerSortedPage(profiles, sortBy);
+      filtered = _rankSearchResults(query, profiles, sortBy);
     } else if (_profileSearchFilter != null) {
       filtered = _profileSearchFilter(query, profiles);
     } else {
@@ -2393,6 +2426,79 @@ class ProfileRepository implements ProfileReader {
     }
 
     return _boostProfiles(filtered, boostPubkeys);
+  }
+
+  /// Orders people search by textual relevance before popularity.
+  ///
+  /// Funnelcake's follower sort remains a useful tie-breaker, but an exact
+  /// account match must never be buried beneath popular substring matches.
+  static List<UserProfile> _rankSearchResults(
+    String query,
+    List<UserProfile> profiles,
+    String? sortBy,
+  ) {
+    final popularityRanked = _rankServerSortedPage(profiles, sortBy);
+    final popularityIndex = {
+      for (final (index, profile) in popularityRanked.indexed)
+        profile.pubkey: index,
+    };
+    final relevanceByPubkey = {
+      for (final profile in profiles)
+        profile.pubkey: _searchRelevance(profile, query),
+    };
+    return [...profiles]..sort((a, b) {
+      final relevance = relevanceByPubkey[b.pubkey]!.compareTo(
+        relevanceByPubkey[a.pubkey]!,
+      );
+      if (relevance != 0) return relevance;
+      return popularityIndex[a.pubkey]!.compareTo(popularityIndex[b.pubkey]!);
+    });
+  }
+
+  static int _searchRelevance(UserProfile profile, String query) {
+    final normalizedQuery = query.trim().toLowerCase();
+    final name = profile.name?.trim().toLowerCase() ?? '';
+    final displayName = profile.displayName?.trim().toLowerCase() ?? '';
+    final nip05 = profile.nip05?.trim().toLowerCase() ?? '';
+    final nip05Name = nip05.split('@').first;
+    final npub = _npub(profile.pubkey);
+
+    if ({
+      profile.pubkey.toLowerCase(),
+      npub,
+      name,
+      displayName,
+      nip05,
+      nip05Name,
+    }.contains(normalizedQuery)) {
+      return 4;
+    }
+    if (name.startsWith(normalizedQuery) ||
+        displayName.startsWith(normalizedQuery) ||
+        nip05Name.startsWith(normalizedQuery)) {
+      return 3;
+    }
+    if (_hasWordPrefix(name, normalizedQuery) ||
+        _hasWordPrefix(displayName, normalizedQuery)) {
+      return 2;
+    }
+    if (name.contains(normalizedQuery) ||
+        displayName.contains(normalizedQuery) ||
+        nip05.contains(normalizedQuery)) {
+      return 1;
+    }
+    return 0;
+  }
+
+  static bool _hasWordPrefix(String value, String query) =>
+      value.split(RegExp(r'\s+')).any((word) => word.startsWith(query));
+
+  static String _npub(String pubkey) {
+    try {
+      return Nip19.encodePubKey(pubkey).toLowerCase();
+    } on Object {
+      return '';
+    }
   }
 
   /// Orders a server-sorted result page by the signals the REST payload
