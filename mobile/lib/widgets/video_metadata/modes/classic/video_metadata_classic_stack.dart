@@ -18,6 +18,7 @@ class VideoMetadataClassicStack extends StatelessWidget {
         children: [
           Expanded(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: .only(top: 12),
               child: Column(
                 mainAxisSize: .min,

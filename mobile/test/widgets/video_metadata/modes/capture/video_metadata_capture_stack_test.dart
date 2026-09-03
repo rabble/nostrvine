@@ -32,7 +32,10 @@ void main() {
       );
     });
 
-    Widget buildWidget() {
+    Widget buildWidget({
+      TextScaler textScaler = TextScaler.noScaling,
+      EdgeInsets viewInsets = EdgeInsets.zero,
+    }) {
       return ProviderScope(
         overrides: [
           clipManagerProvider.overrideWith(
@@ -42,10 +45,21 @@ void main() {
             () => _MockVideoEditorNotifier(VideoEditorProviderState()),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: VideoMetadataCaptureStack(),
+          theme: ThemeData(platform: TargetPlatform.iOS),
+          builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
+            return MediaQuery(
+              data: mediaQuery.copyWith(
+                textScaler: textScaler,
+                viewInsets: viewInsets,
+              ),
+              child: child!,
+            );
+          },
+          home: const VideoMetadataCaptureStack(),
         ),
       );
     }
@@ -87,10 +101,57 @@ void main() {
       expect(scaffold.backgroundColor, equals(VineTheme.surfaceContainerHigh));
     });
 
-    testWidgets('body is scrollable', (tester) async {
+    testWidgets('body scroll dismisses the keyboard', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(
+        scrollView.keyboardDismissBehavior,
+        ScrollViewKeyboardDismissBehavior.onDrag,
+      );
+    });
+
+    testWidgets('dragging a long description scrolls toward metadata options', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(402, 874));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        buildWidget(
+          textScaler: const TextScaler.linear(1.35),
+          viewInsets: const EdgeInsets.only(bottom: 336),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final description = find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineTextField && widget.labelText == 'Description',
+      );
+      await tester.enterText(description, List.filled(260, 'a').join());
+      await tester.pump();
+
+      final bottomBar = find.byType(VideoMetadataCaptureBottomBar);
+      final descriptionRect = tester.getRect(description);
+      final dragStart = Offset(
+        descriptionRect.center.dx,
+        tester.getTopLeft(bottomBar).dy - 1,
+      );
+      expect(descriptionRect.contains(dragStart), isTrue);
+
+      final outerScrollable = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      final initialOffset = outerScrollable.position.pixels;
+
+      await tester.dragFrom(dragStart, const Offset(0, -300));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(outerScrollable.position.pixels, greaterThan(initialOffset));
     });
   });
 }
