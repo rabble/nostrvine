@@ -374,5 +374,37 @@ void main() {
             'empty string over it is the #8265 wipe',
       );
     });
+
+    // An offline follow persists the list *plus* the provenance of the base it
+    // was applied to, so the record names an event whose tags it no longer
+    // matches. That is deliberate: the record means "at least as fresh as this
+    // event", which is what ordering needs. The queued follow must therefore
+    // survive a restart rather than being overwritten by the very event it was
+    // built on.
+    test(
+      'an offline follow survives a restart against its own base event',
+      () async {
+        final base = contactList(createdAt: 2000, follows: [alice]);
+        SharedPreferences.setMockInitialValues({
+          'following_list_$owner':
+              '{"v":2,"created_at":2000,'
+              '"id":"${base.id}","pubkeys":["$alice","$bob"]}',
+        });
+        getCachedEventsByKind = (kind) =>
+            kind == EventKind.contactList ? [base] : [];
+
+        final repository = buildRepository();
+        addTearDown(repository.dispose);
+        await repository.initialize();
+
+        expect(
+          repository.followingPubkeys,
+          [alice, bob],
+          reason:
+              'the cached event ties on created_at and id, so it must not '
+              'displace the list that already carries the queued follow',
+        );
+      },
+    );
   });
 }
