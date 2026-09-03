@@ -965,8 +965,21 @@ class NostrClient {
     // pool has finished connecting — would otherwise short-circuit to an
     // empty result (RelayPool completes immediately when no relay accepts
     // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
-    if (_relayManager.connectedRelays.isEmpty &&
-        (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
+    //
+    // A temp relay outside the pool answers on its own socket, so a lookup
+    // that names one keeps its no-wait path. A temp relay that IS a pool
+    // member does not: RelayPool resolves it to the pooled relay object, and
+    // with the pool idled out (the SDK drops every socket after 90s of
+    // silence and nothing reconnects it unasked) nobody takes the REQ. The DM
+    // history drain dials the account's own kind-10050 inbox this way, and
+    // for a divine account that list is the pool itself — so every page it
+    // issued into an idle pool failed within milliseconds as "no relay
+    // answered", and the Retry that re-issued the same page could never
+    // recover. See #8550.
+    final canAnswerWithoutPool =
+        _relayManager.connectedRelays.isEmpty &&
+        _hasRelayOutsidePool(effectiveTempRelays);
+    if (_relayManager.connectedRelays.isEmpty && !canAnswerWithoutPool) {
       try {
         await retryDisconnectedRelays().timeout(remainingTimeout());
       } on TimeoutException {
@@ -979,8 +992,7 @@ class NostrClient {
     // see from here; the fan-out's own account of who took the REQ is folded
     // in below.
     final noConnectedRelays =
-        _relayManager.connectedRelays.isEmpty &&
-        (effectiveTempRelays == null || effectiveTempRelays.isEmpty);
+        _relayManager.connectedRelays.isEmpty && !canAnswerWithoutPool;
     final filtersJson = filters.map((f) => f.toJson()).toList();
     Future<({List<Event> events, bool timedOut, bool noRelaysParticipated})>
     runWebSocketQuery() => _nostr.queryEventsDetailed(
@@ -1444,6 +1456,21 @@ class NostrClient {
     if (relays == null) return null;
     final allowed = relays.where(_relayManager.isRelayAllowed).toList();
     return allowed.isEmpty ? null : allowed;
+  }
+
+  /// Whether [tempRelays] names at least one relay the pool does not own.
+  ///
+  /// Only such a relay can answer a fan-out while every pooled relay is
+  /// disconnected: `RelayPool` hands a temp address that matches a pool
+  /// member to the pooled relay object rather than opening a socket of its
+  /// own. Compared on normalized URLs, since the pool stores them that way
+  /// and a trailing slash must not make a pool member look like an outsider.
+  bool _hasRelayOutsidePool(List<String>? tempRelays) {
+    if (tempRelays == null || tempRelays.isEmpty) return false;
+    final pooled = _relayManager.configuredRelays.toSet();
+    return tempRelays.any(
+      (url) => !pooled.contains(normalizeRelayUrl(url) ?? url),
+    );
   }
 
   /// Removes a relay connection.
