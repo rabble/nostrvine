@@ -353,6 +353,45 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 3));
     });
+
+    testWidgets(
+      'vanished background upload does not refresh the profile feed',
+      (
+        tester,
+      ) async {
+        final draft = _MockDivineVideoDraft();
+        when(() => draft.id).thenReturn('vanished-draft');
+        await pumpProfileAt(tester, 0);
+
+        backgroundPublishStates.add(
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.5),
+            ],
+          ),
+        );
+        await tester.pump();
+        clearInteractions(videosRepository);
+
+        // The upload leaves the collection with no success result, exactly as
+        // BackgroundPublishVanished emits it. recentlyPublished stays empty, so
+        // this is not a publish and must not refresh the grid.
+        backgroundPublishStates.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump();
+
+        verifyNever(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: true,
+          ),
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
 
   // A divine:///profile/<npub> or https://divine.video/profile/<npub> deep
