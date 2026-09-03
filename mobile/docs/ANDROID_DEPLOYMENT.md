@@ -3,7 +3,14 @@
 Status: Launch-critical
 Validated against: `mobile/build_android.sh`, `mobile/deploy_android.sh`, `mobile/android/app/build.gradle.kts`, and `mobile/android/app/src/main/AndroidManifest.xml` on 2026-03-19.
 
-This is the current Android release path for Divine.
+Store releases ship through the Codemagic `android-build` workflow, which
+publishes the signed, Shorebird-enabled AAB to Play's internal testing track;
+after internal testing passes, promote that exact Play artifact in the Play
+Console (see [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md#7-android-submission-checklist)).
+This guide covers the local build and manual upload lanes. They produce a plain
+`flutter build` AAB that is not a Shorebird release and cannot be patched, so
+use them for local verification and throwaway test lanes — never as the
+production release path.
 
 ## App Metadata
 
@@ -27,7 +34,15 @@ What the script does:
 3. Runs `flutter clean`, `flutter pub get`, and `build_runner`.
 4. Builds a signed release AAB for Play Console upload.
 
+`./build_android.sh` runs `flutter build appbundle`, not `shorebird release`.
+The AAB it produces is for local verification and manual test lanes only; it
+cannot receive Shorebird patches and must not be promoted to production.
+
 ## Upload Options
+
+The lanes below upload a plain `flutter build` AAB for throwaway manual
+testing. Production releases come from Codemagic as described above; do not
+use `./deploy_android.sh production` to ship.
 
 ### Manual Play Console upload
 

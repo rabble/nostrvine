@@ -65,6 +65,12 @@ From `mobile/`:
 ./build_android.sh release
 ```
 
+Store release artifacts are built by the Codemagic `android-build` workflow (a
+Shorebird release), not by these local commands. The Android AAB built here is
+plain `flutter build` output — not a Shorebird release — so it cannot be
+patched and never ships to Play; treat it as a verification artifact (see
+section 7).
+
 - [ ] iOS archive completed successfully in Xcode Organizer.
 - [ ] Android release AAB exists at `build/app/outputs/bundle/release/app-release.aab`.
 - [ ] If using the Play upload helper, verify `android/play-store-service-account.json` is present before running `./deploy_android.sh`.
