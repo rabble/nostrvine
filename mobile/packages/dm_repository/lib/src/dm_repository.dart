@@ -3411,10 +3411,7 @@ class DmRepository {
       // decrypt and transaction return: this handler has no generation guard
       // to abandon on, and a switch inside that window would import this
       // stamp into the next account's maximum, narrowing its `since:`.
-      await _syncState?.recordSeen(
-        ownerPubkey,
-        createdAt: persistedCreatedAt,
-      );
+      await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
       await _syncState?.recordWireSeen(
         ownerPubkey,
         createdAt: nip04Event.createdAt,
@@ -4146,6 +4143,22 @@ class DmRepository {
       resolveDmInboxRelaysDetailed(recipientPubkey),
       _selfWrapTargetRelays(),
     ).wait;
+
+    // A recipient who advertises a kind-10050 implements NIP-17 — the kind is
+    // defined by it (17.md:63) and NIP-51 scopes it to NIP-17 DMs explicitly
+    // (51.md:42) — so they can read the gift wrap and do not need a cleartext
+    // twin. #8505 already unlatches on a NIP-17 event FROM the peer, but that
+    // needs them to send something. A one-way thread never gets that evidence,
+    // so it dual-sent a kind 4 on every message forever (#8519).
+    //
+    // This runs BEFORE the persist transaction on purpose: the gate below
+    // reads `dmProtocol` from the row that transaction loads, so clearing here
+    // means THIS send already skips the kind 4 rather than only later ones.
+    //
+    // `found` only. `absent` and `unreadable` route to the same place but mean
+    // different things — `unreadable` is a failed lookup, not evidence the
+    // peer cannot read NIP-17 — and treating them alike is the #7317 mistake.
+    await _clearLatchOnAdvertisedInbox(conversationId, inbox.state);
 
     // OK-confirm the recipient wrap: a WebSocket frame-accept is a false
     // positive on a flaky single relay (the relay may never store the event),
@@ -4884,6 +4897,19 @@ class DmRepository {
       resolveDmInboxRelaysDetailed(row.recipientPubkey),
       _selfWrapTargetRelays(),
     ).wait;
+
+    // The sweep resolves the same inbox the send path does, so it holds the
+    // same evidence and must reach the same conclusion. A thread whose only
+    // traffic is a queued message the sweep drives would otherwise stay
+    // latched no matter how many times we re-read the peer's kind-10050, and
+    // the next foreground send would publish the twin this pass already knew
+    // was unnecessary (#8519).
+    //
+    // Keying on the row's conversationId is safe even though recovery also
+    // drives GROUP rows: only the 1:1 kind-4 receive path ever writes
+    // 'nip04', so a group row can never be latched and the DAO's
+    // `WHERE dm_protocol = 'nip04'` matches nothing.
+    await _clearLatchOnAdvertisedInbox(row.conversationId, inbox.state);
 
     final publishResult = await _sendRumorWithTimeout(
       rumor: rumor,
@@ -6653,6 +6679,53 @@ class DmRepository {
   // Send - NIP-04 fallback (Kind 4)
   // -------------------------------------------------------------------------
 
+  /// Clears a `'nip04'` latch when the peer advertises a kind-10050 DM inbox.
+  ///
+  /// Weaker evidence than a NIP-17 event from them, and deliberately so: it is
+  /// the only signal available on a thread where they never send anything. A
+  /// client that publishes a kind-10050 implements NIP-17 and can read a gift
+  /// wrap, so the cleartext twin buys them nothing.
+  ///
+  /// The clearing is one-way: nothing re-latches a thread
+  /// (`_handleNip04Event` preserves the stored value — a property inherited
+  /// from the pre-latch upsert, not a designed guard), so a kind-10050 left
+  /// behind by a client the peer has since abandoned can permanently cut a
+  /// legacy-only reader off from the one copy they can read. Accepted:
+  /// #8519 weighs exactly this residual, the mirror cache-staleness case is
+  /// filed as #8528, and whether a later peer-authored kind-4 may re-latch
+  /// is a receive-path decision of the same "decide whether" family,
+  /// deliberately not taken here.
+  ///
+  /// Best-effort. A failure leaves the thread latched and the next send
+  /// presents the same evidence again, so it must never cost the message.
+  Future<void> _clearLatchOnAdvertisedInbox(
+    String conversationId,
+    DmInboxResolution state,
+  ) async {
+    if (state != DmInboxResolution.found) return;
+    try {
+      final cleared = await _conversationsDao.clearNip04ProtocolLatch(
+        conversationId,
+        ownerPubkey: _userPubkey,
+      );
+      if (cleared) {
+        Log.info(
+          'Cleared the nip04 protocol latch on conversation $conversationId: '
+          'the recipient advertises a kind-10050 DM inbox, so the legacy '
+          'kind-4 copy is no longer published to them',
+          category: LogCategory.system,
+        );
+      }
+    } on Object catch (e) {
+      Log.warning(
+        'Could not clear the nip04 protocol latch on conversation '
+        '$conversationId from the advertised inbox: $e — the thread keeps '
+        'dual-sending until the next attempt',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// The event id to put in a kind-4 `e` tag for a reply, or `null` when the
   /// reply target is not one the legacy recipient can resolve.
   ///
@@ -6768,6 +6841,18 @@ class DmRepository {
         category: LogCategory.system,
       );
     }
+
+    // Say so on SUCCESS too, not only on the failure paths #8262 instrumented.
+    // A cleartext kind 4 leaving the device is the event worth a line: the
+    // NIP-17 leg logs `Successfully published` either way, so without this a
+    // support log for a latched thread reads as an ordinary private send with
+    // no trace that a public-metadata copy went out beside it (#8519).
+    Log.info(
+      'NIP-04 fallback: published the legacy kind-4 copy for '
+      '${pubkeyForLogs(recipientPubkey)} (event ${signed.id}) — this thread is '
+      'still latched to nip04, so its metadata is public',
+      category: LogCategory.system,
+    );
 
     return NIP17SendResult.success(
       rumorEventId: signed.id,
@@ -7763,12 +7848,8 @@ class DmRepository {
     );
     if (removedAt != null) return false;
 
-    final newest = bucket.reduce(
-      (a, b) => b.createdAt >= a.createdAt ? b : a,
-    );
-    final oldest = bucket.reduce(
-      (a, b) => b.createdAt < a.createdAt ? b : a,
-    );
+    final newest = bucket.reduce((a, b) => b.createdAt >= a.createdAt ? b : a);
+    final oldest = bucket.reduce((a, b) => b.createdAt < a.createdAt ? b : a);
     final messageIds = [for (final m in bucket) m.id];
 
     await _conversationsDao.runInTransaction(() async {

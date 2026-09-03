@@ -89,7 +89,8 @@ jobs:
             integration_test/e2e/block_leaves_kind3_follow_test.dart \
             integration_test/e2e/dm_group_delete_for_everyone_test.dart \
             integration_test/e2e/dm_reaction_unreadable_inbox_test.dart \
-            integration_test/e2e/dm_deletion_unreadable_inbox_test.dart; do
+            integration_test/e2e/dm_deletion_unreadable_inbox_test.dart \
+            integration_test/e2e/dm_oneway_latch_unlatch_test.dart; do
             echo "── $suite"
             xvfb-run -a flutter test "$suite" --tags service -d linux
           done
