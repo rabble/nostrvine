@@ -5726,8 +5726,11 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.';
 
   @override
-  String get dmDeleteRefusedMessage =>
-      'Không xóa được với mọi người. Tin nhắn của bạn vẫn còn đó — hãy thử lại.';
+  String get dmDeleteRefusedMessage => 'Không xóa được với mọi người.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Một số người vẫn có thể nhìn thấy tin nhắn này.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Cuộc trò chuyện này đã đóng.';

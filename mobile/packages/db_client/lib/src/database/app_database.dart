@@ -129,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -202,9 +202,6 @@ class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         await _repairSchemaV11();
       }
-      if (from < 12) {
-        await _repairSchemaV12();
-      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -220,7 +217,6 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV8();
         await _repairSchemaV10();
         await _repairSchemaV11();
-        await _repairSchemaV12();
       }
 
       // Run cleanup of expired data on every app startup
@@ -258,62 +254,6 @@ class AppDatabase extends _$AppDatabase {
       'twin_collapsed',
       'INTEGER NOT NULL DEFAULT 0 CHECK ("twin_collapsed" IN (0, 1))',
     );
-  }
-
-  /// Returns a wholly-refused one-to-one delete-for-everyone to the thread
-  /// (#8284).
-  ///
-  /// Before #8201 a refused retraction settled as `deletion_blocked` while the
-  /// row stayed soft-deleted from `markMessageDeletionPending`, and nothing
-  /// ever wrote `is_deleted` back: the sweep's worklist wants
-  /// `deletion_pending`, and `deleteMessageForEveryone` returns early on
-  /// `is_deleted`. The sender was left believing a message was retracted that
-  /// the recipient still holds, with no bubble left to act on. Only
-  /// `is_deleted` moves here. The status stays as the durable record of the
-  /// refusal: it keeps the row off the retry sweep and is what the
-  /// conversation bloc reads (`DmMessage.retractionBlocked`) to raise the
-  /// refusal toast — the same state a fresh refusal now writes.
-  ///
-  /// One-to-one only. A row does not record whether its fan-out was wholly or
-  /// partly refused (`_fanOutDeletion` classifies on
-  /// `failures.every((f) => f.blocked)` and never persists whether anyone
-  /// accepted), but a one-to-one has exactly one recipient once
-  /// `_deletionWrapRecipients` drops the sender, so `deletion_blocked` there
-  /// is wholly refused by construction. A group row stays hidden until a
-  /// partial-retraction UX exists. `is_group = 0` is required on top of the
-  /// participant count so a legacy conversation inflated to a group and since
-  /// collapsed to one participant stays out.
-  ///
-  /// Every guard fails closed: a missing conversation, unreadable
-  /// participants, or a row that cannot be proven one-to-one is left hidden.
-  /// Idempotent — `is_deleted = 1` stops matching once a row is restored. The
-  /// denormalized inbox preview is not rebuilt here;
-  /// `_backfillConversationPreviews` recomputes it from the visible set on the
-  /// next sign-in.
-  Future<void> _repairSchemaV12() async {
-    await customStatement('''
-      UPDATE direct_messages
-      SET is_deleted = 0
-      WHERE deletion_publish_status = 'deletion_blocked'
-        AND is_deleted = 1
-        AND (
-          SELECT COUNT(*)
-          FROM json_each(
-            (
-              SELECT CASE
-                WHEN c.is_group = 0
-                  AND json_valid(c.participant_pubkeys)
-                  AND json_type(c.participant_pubkeys) = 'array'
-                THEN c.participant_pubkeys
-                ELSE '[]'
-              END
-              FROM conversations c
-              WHERE c.id = direct_messages.conversation_id
-            )
-          ) AS participant
-          WHERE participant.value <> direct_messages.sender_pubkey
-        ) = 1
-    ''');
   }
 
   /// Adds the two-phase reporting column to the queued view-event outbox.

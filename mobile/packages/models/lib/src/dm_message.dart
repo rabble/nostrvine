@@ -4,6 +4,18 @@
 import 'package:equatable/equatable.dart';
 import 'package:models/src/dm_shared_video_ref.dart';
 
+/// Delivery state of an own-message "Delete for everyone" request.
+enum DmRetractionStatus {
+  /// No deletion is in progress.
+  none,
+
+  /// Delivery has not yet been confirmed for every recipient.
+  pending,
+
+  /// Delivery was refused for at least one recipient.
+  failed,
+}
+
 /// A decrypted NIP-17 direct message.
 ///
 /// Represents a single message in a conversation after the three-layer
@@ -27,7 +39,7 @@ class DmMessage extends Equatable {
     this.fileMetadata,
     this.sharedVideoRef,
     this.sendBatchId,
-    this.retractionBlocked = false,
+    this.retractionStatus = DmRetractionStatus.none,
   });
 
   /// The rumor event ID (kind 14 or 15).
@@ -80,21 +92,12 @@ class DmMessage extends Equatable {
   /// bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
-  /// Whether a "Delete for everyone" on this message was refused for every
-  /// recipient (#8201).
+  /// Delivery state for this sender-authored message's retraction.
   ///
-  /// This is the only deletion state a thread can show. A retraction still in
-  /// flight, or one that landed, both leave the row soft-deleted and therefore
-  /// filtered out of the conversation stream — so a visible message is either
-  /// ordinary or one whose retraction was wholly refused. The bubble is back
-  /// on screen because nothing was retracted; saying so is the point.
-  ///
-  /// A **mixed** outcome — some recipients accepted, the rest blocked — is
-  /// recorded blocked too, but stays hidden and never sets this flag, because
-  /// the message really is retracted for the recipients that accepted.
-  /// "Refused" is also not always a send-policy verdict: the marker behind the
-  /// status has several Keycast sources.
-  final bool retractionBlocked;
+  /// Pending and failed retractions remain recognizable in the sender's
+  /// thread with subdued styling and a compact status affordance. Only a
+  /// retraction confirmed for every recipient disappears (#8201).
+  final DmRetractionStatus retractionStatus;
 
   /// Whether this is a file message (kind 15).
   bool get isFileMessage => messageKind == 15;
@@ -120,7 +123,7 @@ class DmMessage extends Equatable {
     fileMetadata,
     sharedVideoRef,
     sendBatchId,
-    retractionBlocked,
+    retractionStatus,
   ];
 }
 

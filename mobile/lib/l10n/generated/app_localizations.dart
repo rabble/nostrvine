@@ -9913,11 +9913,17 @@ abstract class AppLocalizations {
   /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
   String get dmSendBlockedRetiredMessage;
 
-  /// SnackBar text shown when a "Delete for everyone" was refused for every recipient and will not be retried automatically (#8201). Only a wholly refused retraction reaches this — a mixed outcome, where some recipients accepted, stays hidden — so "still there" is accurate, and it points at the same Delete action, which re-drives it. There is no separate retry button.
+  /// Temporary SnackBar text and failed-retraction sheet title shown when Delete for everyone was not confirmed for every recipient (#8201).
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t delete for everyone. Your message is still there — tap Delete again to retry.'**
+  /// **'Couldn\'t delete for everyone.'**
   String get dmDeleteRefusedMessage;
+
+  /// Explanation in the action sheet opened from the warning icon beside an own message whose deletion was not confirmed for everyone.
+  ///
+  /// In en, this message translates to:
+  /// **'Some people may still be able to see this message.'**
+  String get dmDeleteRefusedDetails;
 
   /// Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416).
   ///

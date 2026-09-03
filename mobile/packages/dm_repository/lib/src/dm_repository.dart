@@ -761,6 +761,12 @@ class DmRepository {
   final Map<String, Future<NIP17SendResult>> _recoveriesInFlight =
       <String, Future<NIP17SendResult>>{};
 
+  /// Message retractions have their own result type, but need the same
+  /// per-rumor join: a tap on Try again can race the background sweep.
+  final Map<String, Future<DmMessageDeletionOutcome>>
+  _messageDeletionRecoveriesInFlight =
+      <String, Future<DmMessageDeletionOutcome>>{};
+
   /// Runs [attempt] under the per-row in-flight key [key], or joins an
   /// attempt already running under the same key. Exceptions propagate to
   /// every joiner (both callers handle the documented [StateError] /
@@ -2054,7 +2060,7 @@ class DmRepository {
         if (tag.length < 2 || tag[0] != 'e') continue;
         await _applyMessageDeletion(
           rumorId: tag[1],
-          deleterPubkey: deletionEvent.pubkey,
+          deletion: deletionEvent,
         );
       }
     } on Object catch (e, stackTrace) {
@@ -2106,7 +2112,7 @@ class DmRepository {
         giftWrapId: giftWrapId,
       );
       Future<DmWrapOutcome?> asMessage() async =>
-          _applyMessageDeletion(rumorId: rumorId, deleterPubkey: rumor.pubkey);
+          _applyMessageDeletion(rumorId: rumorId, deletion: rumor);
 
       final resolved = tryReactionsFirst
           ? await asReaction() ?? await asMessage()
@@ -2133,7 +2139,7 @@ class DmRepository {
     return false;
   }
 
-  /// Soft-deletes the message [rumorId] on behalf of [deleterPubkey], the
+  /// Applies [deletion] to [rumorId], the
   /// single place the NIP-09 author rule is enforced for messages.
   ///
   /// Returns `null` when this account holds no message with that id, so the
@@ -2145,13 +2151,13 @@ class DmRepository {
   /// deleted, or refused for author mismatch. A mismatch will never become
   /// valid, so re-decrypting it forever buys nothing.
   ///
-  /// [deleterPubkey] must be the rumor's authenticated author. For a wrapped
+  /// The deletion author's pubkey must be authenticated. For a wrapped
   /// deletion that is `rumor.pubkey`, which `getRumorEvent` rebuilds from the
   /// signed seal — never the gift wrap's own pubkey, which is an ephemeral
   /// NIP-59 key carrying no identity.
   Future<DmWrapOutcome?> _applyMessageDeletion({
     required String rumorId,
-    required String deleterPubkey,
+    required Event deletion,
   }) async {
     final row = await _directMessagesDao.getMessageById(
       rumorId,
@@ -2160,13 +2166,26 @@ class DmRepository {
     if (row == null) return null;
 
     // NIP-09: only the original author may delete.
-    if (row.senderPubkey != deleterPubkey) {
+    if (row.senderPubkey != deletion.pubkey) {
       Log.debug(
         'Ignoring kind 5 for $rumorId: author mismatch '
-        '(event=${pubkeyForLogs(deleterPubkey)}, '
+        '(event=${pubkeyForLogs(deletion.pubkey)}, '
         'sender=${pubkeyForLogs(row.senderPubkey)})',
         category: LogCategory.system,
       );
+      return DmWrapOutcome.processed;
+    }
+
+    // A self-wrap proves that another device requested the retraction, not
+    // that every recipient accepted it. Keep the sender's bubble visible and
+    // retryable until the normal fan-out records a terminal outcome.
+    if (deletion.pubkey == _ownerPubkey) {
+      await _directMessagesDao.markMessageDeletionPending(
+        rumorId,
+        deletionRumorJson: jsonEncode(deletion.toJson()),
+        ownerPubkey: _ownerPubkey,
+      );
+      await _refreshConversationPreview(row.conversationId);
       return DmWrapOutcome.processed;
     }
 
@@ -6279,41 +6298,32 @@ class DmRepository {
           return DmMessageDeletionOutcome.sent;
         case NIP17SendFailure(:final error, :final blocked):
           if (blocked) {
-            // Only a WHOLLY refused retraction comes back to the thread. When
-            // some recipients accepted, the message really is retracted for
-            // them, so un-hiding it here would tell the sender it "is still
-            // there" and offer a retry that mints a second kind-5 for people
-            // who already applied the first. That mixed outcome needs its own
-            // partial-retraction UX, and stays hidden until it has one
-            // (#8201).
-            final restored = !anyRecipientAccepted;
+            // Until every recipient confirms, keep the sender's recognizable
+            // bubble in the thread with failed-retraction styling. This is
+            // also honest for a mixed fan-out: the UI says only that deletion
+            // for everyone was not confirmed, not who still has it (#8201).
             await _directMessagesDao.markMessageDeletionBlocked(
               rumorId,
-              restoreToThread: restored,
+              restoreToThread: true,
               ownerPubkey: _ownerPubkey,
             );
-            if (restored) {
-              // The pending write removed this message from the denormalized
-              // inbox preview. Restoring it to the thread has to rebuild the
-              // preview from that restored visible set too.
-              try {
-                await _refreshConversationPreview(conversationId);
-              } on Object catch (e, stackTrace) {
-                // The durable outcome is already blocked. A denormalized
-                // preview failure must not relabel it unconfirmed and invite
-                // retries.
-                Log.error(
-                  'Failed to restore conversation preview after blocked '
-                  'deletion of $rumorId: $e',
-                  category: LogCategory.system,
-                  error: e,
-                  stackTrace: stackTrace,
-                );
-              }
+            try {
+              await _refreshConversationPreview(conversationId);
+            } on Object catch (e, stackTrace) {
+              // The durable outcome is already blocked. A denormalized
+              // preview failure must not relabel it unconfirmed and invite
+              // retries.
+              Log.error(
+                'Failed to restore conversation preview after blocked '
+                'deletion of $rumorId: $e',
+                category: LogCategory.system,
+                error: e,
+                stackTrace: stackTrace,
+              );
             }
             Log.info(
               'Deletion of $rumorId refused by send policy; not retrying '
-              '(restoredToThread=$restored)',
+              '(partiallyDelivered=$anyRecipientAccepted)',
               category: LogCategory.system,
             );
             return DmMessageDeletionOutcome.blocked;
@@ -6368,6 +6378,18 @@ class DmRepository {
   /// deletion is a no-op.
   Future<DmMessageDeletionOutcome> retryMessageDeletion({
     required String rumorId,
+  }) {
+    final existing = _messageDeletionRecoveriesInFlight[rumorId];
+    if (existing != null) return existing;
+    final future = _retryMessageDeletion(rumorId: rumorId);
+    _messageDeletionRecoveriesInFlight[rumorId] = future;
+    return future.whenComplete(
+      () => _messageDeletionRecoveriesInFlight.remove(rumorId),
+    );
+  }
+
+  Future<DmMessageDeletionOutcome> _retryMessageDeletion({
+    required String rumorId,
   }) async {
     if (_messageService == null || _userPubkey.isEmpty) {
       return DmMessageDeletionOutcome.unavailable;
@@ -6395,6 +6417,17 @@ class DmRepository {
         category: LogCategory.system,
       );
       return DmMessageDeletionOutcome.unavailable;
+    }
+
+    // A user-driven retry moves a blocked row back through pending so the
+    // bubble swaps its warning icon for progress. Sweep retries are already
+    // pending and do not need another write.
+    if (row.deletionPublishStatus == DirectMessagesDao.deletionBlocked) {
+      await _directMessagesDao.markMessageDeletionPending(
+        rumorId,
+        deletionRumorJson: storedRumor,
+        ownerPubkey: _ownerPubkey,
+      );
     }
 
     return _driveMessageDeletion(
@@ -8246,10 +8279,11 @@ class DmRepository {
       fileMetadata: fileMetadata,
       sharedVideoRef: DmSharedVideoCitation.parse(tags),
       sendBatchId: row.sendBatchId,
-      // Only a refused retraction can reach here: `pending` and `sent` both
-      // leave the row soft-deleted, so the stream filters them out (#8201).
-      retractionBlocked:
-          row.deletionPublishStatus == DirectMessagesDao.deletionBlocked,
+      retractionStatus: switch (row.deletionPublishStatus) {
+        DirectMessagesDao.deletionPending => DmRetractionStatus.pending,
+        DirectMessagesDao.deletionBlocked => DmRetractionStatus.failed,
+        _ => DmRetractionStatus.none,
+      },
     );
   }
 

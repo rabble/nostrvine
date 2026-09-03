@@ -5785,7 +5785,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dmDeleteRefusedMessage =>
-      'Verwijderen voor iedereen is niet gelukt. Je bericht staat er nog — probeer het opnieuw.';
+      'Verwijderen voor iedereen is niet gelukt.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Sommige mensen kunnen dit bericht mogelijk nog zien.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Dit gesprek is gesloten.';

@@ -5763,8 +5763,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔';
 
   @override
-  String get dmDeleteRefusedMessage =>
-      'سب کے لیے حذف نہیں ہو سکا۔ آپ کا پیغام اب بھی موجود ہے — دوبارہ کوشش کریں۔';
+  String get dmDeleteRefusedMessage => 'سب کے لیے حذف نہیں ہو سکا۔';
+
+  @override
+  String get dmDeleteRefusedDetails => 'کچھ لوگ اب بھی یہ پیغام دیکھ سکتے ہیں۔';
 
   @override
   String get dmRetiredThreadClosedTitle => 'یہ گفتگو بند ہو چکی ہے۔';

@@ -5832,7 +5832,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dmDeleteRefusedMessage =>
-      'La suppression pour tout le monde a échoué. Ton message est toujours là — réessaie.';
+      'La suppression pour tout le monde a échoué.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Certaines personnes peuvent encore voir ce message.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Cette conversation est fermée.';

@@ -3574,9 +3574,13 @@
   "@dmSendBlockedRetiredMessage": {
     "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
   },
-  "dmDeleteRefusedMessage": "Couldn't delete for everyone. Your message is still there — tap Delete again to retry.",
+  "dmDeleteRefusedMessage": "Couldn't delete for everyone.",
   "@dmDeleteRefusedMessage": {
-    "description": "SnackBar text shown when a \"Delete for everyone\" was refused for every recipient and will not be retried automatically (#8201). Only a wholly refused retraction reaches this \u2014 a mixed outcome, where some recipients accepted, stays hidden \u2014 so \"still there\" is accurate, and it points at the same Delete action, which re-drives it. There is no separate retry button."
+    "description": "Temporary SnackBar text and failed-retraction sheet title shown when Delete for everyone was not confirmed for every recipient (#8201)."
+  },
+  "dmDeleteRefusedDetails": "Some people may still be able to see this message.",
+  "@dmDeleteRefusedDetails": {
+    "description": "Explanation in the action sheet opened from the warning icon beside an own message whose deletion was not confirmed for everyone."
   },
   "dmRetiredThreadClosedTitle": "This conversation is closed.",
   "@dmRetiredThreadClosedTitle": {

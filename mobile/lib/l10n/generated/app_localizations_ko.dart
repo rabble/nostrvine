@@ -5464,8 +5464,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 대화는 아무도 읽지 않습니다. 대신 Divine Moderation에 메시지를 보내세요.';
 
   @override
-  String get dmDeleteRefusedMessage =>
-      '모두에게서 삭제하지 못했어요. 메시지가 아직 남아 있어요. 다시 시도해 주세요.';
+  String get dmDeleteRefusedMessage => '모두에게서 삭제하지 못했어요.';
+
+  @override
+  String get dmDeleteRefusedDetails => '일부 사람에게는 이 메시지가 아직 보일 수 있어요.';
 
   @override
   String get dmRetiredThreadClosedTitle => '이 대화는 종료되었습니다.';

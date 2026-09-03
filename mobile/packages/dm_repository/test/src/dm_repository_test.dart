@@ -997,36 +997,31 @@ void main() {
 
     group('computeConversationId', () {
       test('returns same hash regardless of order', () {
-        final resultAB = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
-        final resultBA = DmRepository.computeConversationId([
-          _validPubkeyB,
-          _validPubkeyA,
-        ]);
+        final resultAB = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
+        final resultBA = DmRepository.computeConversationId(
+          [_validPubkeyB, _validPubkeyA],
+        );
 
         expect(resultAB, equals(resultBA));
       });
 
       test('returns different hash for different participants', () {
-        final resultAB = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
-        final resultAC = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyC,
-        ]);
+        final resultAB = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
+        final resultAC = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyC],
+        );
 
         expect(resultAB, isNot(equals(resultAC)));
       });
 
       test('returns a 64-character hex string', () {
-        final result = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+        final result = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
 
         expect(result, hasLength(64));
         expect(result, matches(RegExp(r'^[0-9a-f]{64}$')));
@@ -1167,7 +1162,12 @@ void main() {
         const videoAddress = '34236:$creatorPubkey:video-id';
         const inviteTags = [
           ['divine', 'collab-invite'],
-          ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+          [
+            'a',
+            videoAddress,
+            'wss://relay.divine.video',
+            'root',
+          ],
           ['role', 'Collaborator'],
         ];
 
@@ -1238,7 +1238,10 @@ void main() {
         );
         // Content keeps the divine.video URL AND adds the nostr: URI.
         expect(rumorEvent.content, contains('nostr:naddr1'));
-        expect(rumorEvent.content, contains('https://divine.video/video/abc'));
+        expect(
+          rumorEvent.content,
+          contains('https://divine.video/video/abc'),
+        );
       });
 
       test('sendSharedVideo cites a regular (22) video by id', () async {
@@ -1812,38 +1815,43 @@ void main() {
         );
       });
 
-      test('all-or-nothing: any non-approved participant blocks the whole '
-          'group send (#176)', () async {
-        // One approved, one not. Per-recipient gating alone would still
-        // deliver to the approved participant, so an attacker could p-tag the
-        // minor with a pinned decoy. The whole send must be refused.
-        when(
-          () => mockMessageService.canSendTo(_validPubkeyB),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockMessageService.canSendTo(_validPubkeyC),
-        ).thenAnswer((_) async => false);
+      test(
+        'all-or-nothing: any non-approved participant blocks the whole '
+        'group send (#176)',
+        () async {
+          // One approved, one not. Per-recipient gating alone would still
+          // deliver to the approved participant, so an attacker could p-tag the
+          // minor with a pinned decoy. The whole send must be refused.
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyB),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyC),
+          ).thenAnswer((_) async => false);
 
-        final repository = createRepository();
+          final repository = createRepository();
 
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'group with a decoy',
-        );
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group with a decoy',
+          );
 
-        expect(results, isNotEmpty);
-        expect(results.every((r) => !r.success), isTrue);
-        // Nothing delivered — not even to the approved participant.
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-      });
+          expect(results, isNotEmpty);
+          expect(results.every((r) => !r.success), isTrue);
+          // Nothing delivered — not even to the approved participant.
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('userPubkey', () {
@@ -1971,7 +1979,9 @@ void main() {
         final rumor = createRumorEvent();
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
         stubDaoInserts();
 
@@ -2056,7 +2066,12 @@ void main() {
         final inviteTags = [
           ['p', _validPubkeyA],
           ['divine', 'collab-invite'],
-          ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+          [
+            'a',
+            videoAddress,
+            'wss://relay.divine.video',
+            'root',
+          ],
           ['p', creatorPubkey],
           ['role', 'Collaborator'],
         ];
@@ -2116,188 +2131,191 @@ void main() {
         await repository.stopListening();
       });
 
-      test('history drain decrypts a remote-signer page with bounded '
-          'parallelism while persisting serially', () async {
-        // Remote signers (Keycast RPC / Amber / NIP-46) cannot use the batch
-        // decrypt isolate, so before this fix every drained wrap was
-        // decrypted one network round trip at a time under the event lock —
-        // a multi-minute drain for a large history. The drain must now keep
-        // up to DmHistoryDrainConfig.remoteDecryptConcurrency decrypts in
-        // flight, while persistence stays serialized under the lock.
-        const wrapCount = 16;
+      test(
+        'history drain decrypts a remote-signer page with bounded '
+        'parallelism while persisting serially',
+        () async {
+          // Remote signers (Keycast RPC / Amber / NIP-46) cannot use the batch
+          // decrypt isolate, so before this fix every drained wrap was
+          // decrypted one network round trip at a time under the event lock —
+          // a multi-minute drain for a large history. The drain must now keep
+          // up to DmHistoryDrainConfig.remoteDecryptConcurrency decrypts in
+          // flight, while persistence stays serialized under the lock.
+          const wrapCount = 16;
 
-        String hex64(int seed, String tag) =>
-            (tag * 64).substring(0, 62) +
-            seed.toRadixString(16).padLeft(2, '0');
+          String hex64(int seed, String tag) =>
+              (tag * 64).substring(0, 62) +
+              seed.toRadixString(16).padLeft(2, '0');
 
-        final wraps = <Event>[
-          for (var i = 0; i < wrapCount; i++)
-            Event.fromJson({
-              'id': hex64(i, 'a'),
-              'pubkey': hex64(i, 'b'),
+          final wraps = <Event>[
+            for (var i = 0; i < wrapCount; i++)
+              Event.fromJson({
+                'id': hex64(i, 'a'),
+                'pubkey': hex64(i, 'b'),
+                'created_at': 1700000000 - i,
+                'kind': EventKind.giftWrap,
+                'tags': [
+                  ['p', _validPubkeyA],
+                ],
+                'content': 'wrap-$i',
+                'sig': '',
+              }),
+          ];
+
+          // Each wrap decrypts to a distinct rumor (distinct sender → distinct
+          // conversation) so every wrap produces its own persisted message.
+          Event rumorFor(Event wrap) {
+            final i = wraps.indexOf(wrap);
+            return Event.fromJson({
+              'id': hex64(i, 'c'),
+              'pubkey': hex64(i, 'd'),
               'created_at': 1700000000 - i,
-              'kind': EventKind.giftWrap,
+              'kind': EventKind.privateDirectMessage,
               'tags': [
                 ['p', _validPubkeyA],
               ],
-              'content': 'wrap-$i',
+              'content': 'msg-$i',
               'sig': '',
-            }),
-        ];
-
-        // Each wrap decrypts to a distinct rumor (distinct sender → distinct
-        // conversation) so every wrap produces its own persisted message.
-        Event rumorFor(Event wrap) {
-          final i = wraps.indexOf(wrap);
-          return Event.fromJson({
-            'id': hex64(i, 'c'),
-            'pubkey': hex64(i, 'd'),
-            'created_at': 1700000000 - i,
-            'kind': EventKind.privateDirectMessage,
-            'tags': [
-              ['p', _validPubkeyA],
-            ],
-            'content': 'msg-$i',
-            'sig': '',
-          });
-        }
-
-        // The bounded pool launches all its workers up front, so every
-        // concurrent decrypt increments `active` before the first delay
-        // resolves → maxActive is deterministic.
-        var activeDecrypts = 0;
-        var maxActiveDecrypts = 0;
-
-        // Persistence runs under the event lock, so runInTransaction must
-        // never overlap.
-        var activePersists = 0;
-        var maxActivePersists = 0;
-
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(any()),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
-        // Track persist concurrency on the actual write inside the
-        // transaction. Persists run under the event lock, so a yield here
-        // would expose any overlap — there must be none.
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((_) async {
-          activePersists++;
-          if (activePersists > maxActivePersists) {
-            maxActivePersists = activePersists;
+            });
           }
-          await Future<void>.delayed(Duration.zero);
-          activePersists--;
-          return true;
-        });
 
-        var servedGiftWrapPage = false;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          ),
-        ).thenAnswer((inv) async {
-          final filters =
-              inv.positionalArguments.first as List<nostr_filter.Filter>;
-          final filter = filters.single;
-          // Outgoing-NIP-04 recovery pass (authors:[self], no p): nothing.
-          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-            return answeredPage(const <Event>[]);
-          }
-          // One page of wraps, then exhaustion.
-          if (servedGiftWrapPage) return answeredPage(const <Event>[]);
-          servedGiftWrapPage = true;
-          return answeredPage(wraps);
-        });
+          // The bounded pool launches all its workers up front, so every
+          // concurrent decrypt increments `active` before the first delay
+          // resolves → maxActive is deterministic.
+          var activeDecrypts = 0;
+          var maxActiveDecrypts = 0;
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 1700000000
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(
-          syncState: syncState,
-          rumorDecryptor: (_, wrap) async {
-            activeDecrypts++;
-            if (activeDecrypts > maxActiveDecrypts) {
-              maxActiveDecrypts = activeDecrypts;
+          // Persistence runs under the event lock, so runInTransaction must
+          // never overlap.
+          var activePersists = 0;
+          var maxActivePersists = 0;
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+          // Track persist concurrency on the actual write inside the
+          // transaction. Persists run under the event lock, so a yield here
+          // would expose any overlap — there must be none.
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async {
+            activePersists++;
+            if (activePersists > maxActivePersists) {
+              maxActivePersists = activePersists;
             }
-            await Future<void>.delayed(const Duration(milliseconds: 5));
-            activeDecrypts--;
-            return rumorFor(wrap);
-          },
-        );
+            await Future<void>.delayed(Duration.zero);
+            activePersists--;
+            return true;
+          });
 
-        await repository.backfillHistoryIfNeeded();
+          var servedGiftWrapPage = false;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final filter = filters.single;
+            // Outgoing-NIP-04 recovery pass (authors:[self], no p): nothing.
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            // One page of wraps, then exhaustion.
+            if (servedGiftWrapPage) return answeredPage(const <Event>[]);
+            servedGiftWrapPage = true;
+            return answeredPage(wraps);
+          });
 
-        // Decryption ran in parallel...
-        expect(
-          maxActiveDecrypts,
-          DmHistoryDrainConfig.remoteDecryptConcurrency,
-          reason:
-              'remote-signer decrypts should run concurrently, not '
-              'one network round trip at a time',
-        );
-        // ...persistence stayed strictly serial...
-        expect(
-          maxActivePersists,
-          1,
-          reason: 'persistence must stay serialized under the event lock',
-        );
-        // ...and every wrap was persisted exactly once.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(wrapCount);
-      });
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 1700000000
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(
+            syncState: syncState,
+            rumorDecryptor: (_, wrap) async {
+              activeDecrypts++;
+              if (activeDecrypts > maxActiveDecrypts) {
+                maxActiveDecrypts = activeDecrypts;
+              }
+              await Future<void>.delayed(const Duration(milliseconds: 5));
+              activeDecrypts--;
+              return rumorFor(wrap);
+            },
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Decryption ran in parallel...
+          expect(
+            maxActiveDecrypts,
+            DmHistoryDrainConfig.remoteDecryptConcurrency,
+            reason:
+                'remote-signer decrypts should run concurrently, not '
+                'one network round trip at a time',
+          );
+          // ...persistence stayed strictly serial...
+          expect(
+            maxActivePersists,
+            1,
+            reason: 'persistence must stay serialized under the event lock',
+          );
+          // ...and every wrap was persisted exactly once.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(wrapCount);
+        },
+      );
 
       group('remote-signer batch unwrap (#5471)', () {
         String hex64(int seed, String tag) =>
@@ -2521,127 +2539,133 @@ void main() {
           },
         );
 
-        test('persists a rumor that omits the derivable id and pubkey '
-            'instead of degrading to the per-wrap path', () async {
-          // #5471 review: a NIP-59 rumor is unsigned, so the sender may omit
-          // the derivable id (and keycast forwards it verbatim). The batch
-          // path must read only the fields it keeps (kind/tags/content/
-          // created_at) so such a slot still yields a usable rumor instead of
-          // throwing in Event.fromJson and silently falling to the per-wrap
-          // pool — which would quietly degrade the verb to a no-op on prod.
-          final wraps = buildWraps(2);
-          serveOnePage(wraps);
+        test(
+          'persists a rumor that omits the derivable id and pubkey '
+          'instead of degrading to the per-wrap path',
+          () async {
+            // #5471 review: a NIP-59 rumor is unsigned, so the sender may omit
+            // the derivable id (and keycast forwards it verbatim). The batch
+            // path must read only the fields it keeps (kind/tags/content/
+            // created_at) so such a slot still yields a usable rumor instead of
+            // throwing in Event.fromJson and silently falling to the per-wrap
+            // pool — which would quietly degrade the verb to a no-op on prod.
+            final wraps = buildWraps(2);
+            serveOnePage(wraps);
 
-          var decryptorCalls = 0;
-          final signer = _BatchUnwrapSigner(
-            (batch) async => [
-              for (var i = 0; i < batch.length; i++)
+            var decryptorCalls = 0;
+            final signer = _BatchUnwrapSigner(
+              (batch) async => [
+                for (var i = 0; i < batch.length; i++)
+                  GiftWrapUnwrapSlot.success(
+                    rumor: {
+                      'created_at': 1700000000 - i,
+                      'kind': EventKind.privateDirectMessage,
+                      'tags': [
+                        ['p', _validPubkeyA],
+                      ],
+                      'content': 'no-id-$i',
+                      // No 'id', no 'pubkey': both discarded by the unwrap.
+                    },
+                    sender: hex64(i, 'd'),
+                  ),
+              ],
+            );
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, _) async {
+                decryptorCalls++;
+                return null;
+              },
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            expect(signer.batchCalls, 1);
+            expect(
+              decryptorCalls,
+              0,
+              reason:
+                  'a rumor lacking id/pubkey must still unwrap via the batch '
+                  'path, not fall back to the per-wrap decryptor',
+            );
+            verifyInserted(2);
+          },
+        );
+
+        test(
+          'recomputes the canonical rumor id rather than trusting the '
+          'claimed id',
+          () async {
+            // #5471 review: the batch path attributes the rumor to the
+            // server-authenticated sender and recomputes the id, so the
+            // persisted primary key is the canonical NIP-01 id, not whatever
+            // (possibly non-canonical) id the sender claimed.
+            final wraps = buildWraps(1);
+            serveOnePage(wraps);
+
+            final signer = _BatchUnwrapSigner(
+              (_) async => [
                 GiftWrapUnwrapSlot.success(
-                  rumor: {
-                    'created_at': 1700000000 - i,
-                    'kind': EventKind.privateDirectMessage,
-                    'tags': [
-                      ['p', _validPubkeyA],
-                    ],
-                    'content': 'no-id-$i',
-                    // No 'id', no 'pubkey': both discarded by the unwrap.
-                  },
-                  sender: hex64(i, 'd'),
+                  rumor: rumorJsonFor(0),
+                  sender: hex64(0, 'd'),
                 ),
-            ],
-          );
+              ],
+            );
 
-          final repository = batchRepository(
-            signer: signer,
-            rumorDecryptor: (_, _) async {
-              decryptorCalls++;
-              return null;
-            },
-          );
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, _) async => null,
+            );
 
-          await repository.backfillHistoryIfNeeded();
+            await repository.backfillHistoryIfNeeded();
 
-          expect(signer.batchCalls, 1);
-          expect(
-            decryptorCalls,
-            0,
-            reason:
-                'a rumor lacking id/pubkey must still unwrap via the batch '
-                'path, not fall back to the per-wrap decryptor',
-          );
-          verifyInserted(2);
-        });
-
-        test('recomputes the canonical rumor id rather than trusting the '
-            'claimed id', () async {
-          // #5471 review: the batch path attributes the rumor to the
-          // server-authenticated sender and recomputes the id, so the
-          // persisted primary key is the canonical NIP-01 id, not whatever
-          // (possibly non-canonical) id the sender claimed.
-          final wraps = buildWraps(1);
-          serveOnePage(wraps);
-
-          final signer = _BatchUnwrapSigner(
-            (_) async => [
-              GiftWrapUnwrapSlot.success(
-                rumor: rumorJsonFor(0),
-                sender: hex64(0, 'd'),
+            final captured = verify(
+              () => mockDirectMessagesDao.insertMessage(
+                id: captureAny(named: 'id'),
+                conversationId: any(named: 'conversationId'),
+                senderPubkey: any(named: 'senderPubkey'),
+                content: any(named: 'content'),
+                createdAt: any(named: 'createdAt'),
+                giftWrapId: any(named: 'giftWrapId'),
+                messageKind: any(named: 'messageKind'),
+                replyToId: any(named: 'replyToId'),
+                subject: any(named: 'subject'),
+                fileType: any(named: 'fileType'),
+                encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+                decryptionKey: any(named: 'decryptionKey'),
+                decryptionNonce: any(named: 'decryptionNonce'),
+                fileHash: any(named: 'fileHash'),
+                originalFileHash: any(named: 'originalFileHash'),
+                fileSize: any(named: 'fileSize'),
+                dimensions: any(named: 'dimensions'),
+                blurhash: any(named: 'blurhash'),
+                thumbnailUrl: any(named: 'thumbnailUrl'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+                tagsJson: any(named: 'tagsJson'),
+                sendBatchId: any(named: 'sendBatchId'),
               ),
-            ],
-          );
+            ).captured;
 
-          final repository = batchRepository(
-            signer: signer,
-            rumorDecryptor: (_, _) async => null,
-          );
+            final claimedId = rumorJsonFor(0)['id'] as String;
+            final canonicalId = Event(
+              hex64(0, 'd'),
+              EventKind.privateDirectMessage,
+              [
+                ['p', _validPubkeyA],
+              ],
+              'msg-0',
+              createdAt: 1700000000,
+            ).id;
 
-          await repository.backfillHistoryIfNeeded();
-
-          final captured = verify(
-            () => mockDirectMessagesDao.insertMessage(
-              id: captureAny(named: 'id'),
-              conversationId: any(named: 'conversationId'),
-              senderPubkey: any(named: 'senderPubkey'),
-              content: any(named: 'content'),
-              createdAt: any(named: 'createdAt'),
-              giftWrapId: any(named: 'giftWrapId'),
-              messageKind: any(named: 'messageKind'),
-              replyToId: any(named: 'replyToId'),
-              subject: any(named: 'subject'),
-              fileType: any(named: 'fileType'),
-              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-              decryptionKey: any(named: 'decryptionKey'),
-              decryptionNonce: any(named: 'decryptionNonce'),
-              fileHash: any(named: 'fileHash'),
-              originalFileHash: any(named: 'originalFileHash'),
-              fileSize: any(named: 'fileSize'),
-              dimensions: any(named: 'dimensions'),
-              blurhash: any(named: 'blurhash'),
-              thumbnailUrl: any(named: 'thumbnailUrl'),
-              ownerPubkey: any(named: 'ownerPubkey'),
-              tagsJson: any(named: 'tagsJson'),
-              sendBatchId: any(named: 'sendBatchId'),
-            ),
-          ).captured;
-
-          final claimedId = rumorJsonFor(0)['id'] as String;
-          final canonicalId = Event(
-            hex64(0, 'd'),
-            EventKind.privateDirectMessage,
-            [
-              ['p', _validPubkeyA],
-            ],
-            'msg-0',
-            createdAt: 1700000000,
-          ).id;
-
-          expect(captured.single, canonicalId);
-          expect(
-            captured.single,
-            isNot(claimedId),
-            reason: 'the claimed (non-canonical) id must be discarded',
-          );
-        });
+            expect(captured.single, canonicalId);
+            expect(
+              captured.single,
+              isNot(claimedId),
+              reason: 'the claimed (non-canonical) id must be discarded',
+            );
+          },
+        );
       });
 
       test('successful gift-wrap persist advances sync boundaries', () async {
@@ -2680,54 +2704,57 @@ void main() {
         await repository.stopListening();
       });
 
-      test('gift-wrap persist records the OUTER wrap stamp as the wire '
-          'boundary, not the rumor stamp (#8209)', () async {
-        // The fixture wrap is stamped 500s below its rumor, standing in for
-        // the NIP-17 backdate. `since:` is filtered by the relay against the
-        // outer stamp, so tracking only the rumor clock leaves the window
-        // starting 500s above the event it is meant to include.
-        const rumorCreatedAt = 1700000500;
-        const outerCreatedAt = 1700000000;
-        final giftWrap = createGiftWrapEvent();
-        expect(
-          giftWrap.createdAt,
-          outerCreatedAt,
-          reason: 'fixture must keep the outer stamp below the rumor',
-        );
-        final rumor = createRumorEvent(createdAt: rumorCreatedAt);
+      test(
+        'gift-wrap persist records the OUTER wrap stamp as the wire '
+        'boundary, not the rumor stamp (#8209)',
+        () async {
+          // The fixture wrap is stamped 500s below its rumor, standing in for
+          // the NIP-17 backdate. `since:` is filtered by the relay against the
+          // outer stamp, so tracking only the rumor clock leaves the window
+          // starting 500s above the event it is meant to include.
+          const rumorCreatedAt = 1700000500;
+          const outerCreatedAt = 1700000000;
+          final giftWrap = createGiftWrapEvent();
+          expect(
+            giftWrap.createdAt,
+            outerCreatedAt,
+            reason: 'fixture must keep the outer stamp below the rumor',
+          );
+          final rumor = createRumorEvent(createdAt: rumorCreatedAt);
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => rumor,
-          syncState: syncState,
-        );
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+            syncState: syncState,
+          );
 
-        await repository.startListening();
-        controller.add(giftWrap);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(syncState.recordedWire, hasLength(1));
-        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
-        expect(syncState.recordedWire.single.createdAt, outerCreatedAt);
-        // The rumor boundary keeps the honest send time the UI orders by.
-        expect(syncState.recorded.single.createdAt, rumorCreatedAt);
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, outerCreatedAt);
+          // The rumor boundary keeps the honest send time the UI orders by.
+          expect(syncState.recorded.single.createdAt, rumorCreatedAt);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test(
         'an already-processed gift wrap still advances the wire boundary so '
@@ -2832,7 +2859,9 @@ void main() {
         );
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
         stubDaoInserts();
 
@@ -2872,198 +2901,201 @@ void main() {
         await repository.stopListening();
       });
 
-      test('stamps a self-authored group rumor batch tag onto the persisted '
-          'row so a sibling recovery dedups against it (one bubble)', () async {
-        final batchId = 'a' * 64;
-        // The sender's own self-wrap echo of a 2-recipient (B, C) group
-        // send: authored by A, p-tagging the other members, carrying the
-        // client-internal batch token.
-        final selfEcho = createRumorEvent(
-          pubkey: _validPubkeyA,
-          tags: [
-            ['p', _validPubkeyB],
-            ['p', _validPubkeyC],
-            ['batch', batchId],
-          ],
-        );
+      test(
+        'stamps a self-authored group rumor batch tag onto the persisted '
+        'row so a sibling recovery dedups against it (one bubble)',
+        () async {
+          final batchId = 'a' * 64;
+          // The sender's own self-wrap echo of a 2-recipient (B, C) group
+          // send: authored by A, p-tagging the other members, carrying the
+          // client-internal batch token.
+          final selfEcho = createRumorEvent(
+            pubkey: _validPubkeyA,
+            tags: [
+              ['p', _validPubkeyB],
+              ['p', _validPubkeyC],
+              ['batch', batchId],
+            ],
+          );
 
-        // Stateful persisted store shared by the insert and the batch-id
-        // dedup probe, so the sibling recovery below reads exactly what
-        // ingest wrote.
-        final persisted = <({String id, String? batchId})>[];
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(any()),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((inv) async {
-          persisted.add((
-            id: inv.namedArguments[#id] as String,
-            batchId: inv.namedArguments[#sendBatchId] as String?,
-          ));
-          return true;
-        });
-        when(
-          () => mockDirectMessagesDao.hasMessageWithSendBatchId(
-            batchId: any(named: 'batchId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((inv) async {
-          final probed = inv.namedArguments[#batchId] as String?;
-          return persisted.any((m) => m.batchId == probed);
-        });
+          // Stateful persisted store shared by the insert and the batch-id
+          // dedup probe, so the sibling recovery below reads exactly what
+          // ingest wrote.
+          final persisted = <({String id, String? batchId})>[];
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            persisted.add((
+              id: inv.namedArguments[#id] as String,
+              batchId: inv.namedArguments[#sendBatchId] as String?,
+            ));
+            return true;
+          });
+          when(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((inv) async {
+            final probed = inv.namedArguments[#batchId] as String?;
+            return persisted.any((m) => m.batchId == probed);
+          });
 
-        // A group queue row for recipient B of the same batch, so its
-        // recovery classifies as a group sibling and dedups by batch id.
-        final groupConversationId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-          _validPubkeyC,
-        ]);
-        // A pre-existing group conversation, so the self-wrap echo resolves
-        // to the full membership rather than collapsing to a phantom 1:1
-        // (the real race: an echo of a 2nd+ send to an existing group).
-        when(
-          () => mockConversationsDao.getConversation(
-            groupConversationId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: groupConversationId,
-            participantPubkeys: jsonEncode([
-              _validPubkeyA,
-              _validPubkeyB,
-              _validPubkeyC,
-            ]),
-            isGroup: true,
-            createdAt: 1690000000,
-            lastMessageContent: 'earlier',
-            lastMessageTimestamp: 1690000000,
-            lastMessageSenderPubkey: _validPubkeyA,
-            isRead: true,
-            currentUserHasSent: true,
-            ownerPubkey: _validPubkeyA,
-            dmProtocol: 'nip17',
-          ),
-        );
-        final bRumorJson = jsonEncode({
-          'id': _rumorEventId,
-          'pubkey': _validPubkeyA,
-          'created_at': 1700000000,
-          'kind': EventKind.privateDirectMessage,
-          'tags': [
-            ['p', _validPubkeyB],
-            ['p', _validPubkeyC],
-            ['batch', batchId],
-          ],
-          'content': 'Hello from B!',
-          'sig': '',
-        });
-        final mockOutgoingDmsDao = _MockOutgoingDmsDao();
-        when(() => mockOutgoingDmsDao.getById(any())).thenAnswer(
-          (_) async => OutgoingDm(
-            id: _rumorEventId,
-            conversationId: groupConversationId,
-            recipientPubkey: _validPubkeyB,
-            content: 'Hello from B!',
-            createdAt: 1700000000,
-            rumorEventJson: bRumorJson,
-            recipientWrapStatus: OutgoingWrapStatus.failed,
-            selfWrapStatus: OutgoingWrapStatus.failed,
-            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
-            ownerPubkey: _validPubkeyA,
-            sendBatchId: batchId,
-          ),
-        );
-        when(
-          () => mockOutgoingDmsDao.deleteById(any()),
-        ).thenAnswer((_) async => 1);
-        when(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenAnswer((_) async => true);
+          // A group queue row for recipient B of the same batch, so its
+          // recovery classifies as a group sibling and dedups by batch id.
+          final groupConversationId = DmRepository.computeConversationId([
+            _validPubkeyA,
+            _validPubkeyB,
+            _validPubkeyC,
+          ]);
+          // A pre-existing group conversation, so the self-wrap echo resolves
+          // to the full membership rather than collapsing to a phantom 1:1
+          // (the real race: an echo of a 2nd+ send to an existing group).
+          when(
+            () => mockConversationsDao.getConversation(
+              groupConversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupConversationId,
+              participantPubkeys: jsonEncode([
+                _validPubkeyA,
+                _validPubkeyB,
+                _validPubkeyC,
+              ]),
+              isGroup: true,
+              createdAt: 1690000000,
+              lastMessageContent: 'earlier',
+              lastMessageTimestamp: 1690000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip17',
+            ),
+          );
+          final bRumorJson = jsonEncode({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyA,
+            'created_at': 1700000000,
+            'kind': EventKind.privateDirectMessage,
+            'tags': [
+              ['p', _validPubkeyB],
+              ['p', _validPubkeyC],
+              ['batch', batchId],
+            ],
+            'content': 'Hello from B!',
+            'sig': '',
+          });
+          final mockOutgoingDmsDao = _MockOutgoingDmsDao();
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer(
+            (_) async => OutgoingDm(
+              id: _rumorEventId,
+              conversationId: groupConversationId,
+              recipientPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              rumorEventJson: bRumorJson,
+              recipientWrapStatus: OutgoingWrapStatus.failed,
+              selfWrapStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              ownerPubkey: _validPubkeyA,
+              sendBatchId: batchId,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenAnswer((_) async => true);
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => selfEcho,
-          outgoingDmsDao: mockOutgoingDmsDao,
-        );
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => selfEcho,
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        // 1) Ingest the self-wrap echo: it stamps the batch id on the row.
-        await repository.startListening();
-        controller.add(createGiftWrapEvent());
-        await Future<void>.delayed(Duration.zero);
+          // 1) Ingest the self-wrap echo: it stamps the batch id on the row.
+          await repository.startListening();
+          controller.add(createGiftWrapEvent());
+          await Future<void>.delayed(Duration.zero);
 
-        expect(persisted, hasLength(1));
-        expect(persisted.single.batchId, equals(batchId));
+          expect(persisted, hasLength(1));
+          expect(persisted.single.batchId, equals(batchId));
 
-        // 2) The sibling recovery fires; it must dedup on the stamped
-        // batch id and NOT insert a second bubble.
-        stubSendRumor(
-          (_, recipient) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipient,
-          ),
-        );
-        final recovered = await repository.recoverFullSend(
-          rumorId: _rumorEventId,
-        );
+          // 2) The sibling recovery fires; it must dedup on the stamped
+          // batch id and NOT insert a second bubble.
+          stubSendRumor(
+            (_, recipient) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipient,
+            ),
+          );
+          final recovered = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        expect(recovered.success, isTrue);
-        expect(
-          persisted,
-          hasLength(1),
-          reason: 'the stamped batch id dedups the sibling recovery',
-        );
+          expect(recovered.success, isTrue);
+          expect(
+            persisted,
+            hasLength(1),
+            reason: 'the stamped batch id dedups the sibling recovery',
+          );
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test(
         'does NOT stamp a peer-authored rumor batch tag (forgery guard)',
@@ -3205,7 +3237,9 @@ void main() {
         final giftWrap = createGiftWrapEvent();
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => true);
 
         final controller = StreamController<Event>();
@@ -3259,7 +3293,9 @@ void main() {
         final giftWrap = createGiftWrapEvent();
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
 
         final controller = StreamController<Event>();
@@ -3309,136 +3345,142 @@ void main() {
         await repository.stopListening();
       });
 
-      test('queues a failed-decrypt gift wrap for retry instead of dropping it '
-          '(#5202)', () async {
-        final giftWrap = createGiftWrapEvent();
-        final pendingDao = _MockPendingGiftWrapsDao();
-        when(
-          () => pendingDao.recordFailedDecrypt(
-            giftWrapId: any(named: 'giftWrapId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            rawJson: any(named: 'rawJson'),
-            createdAt: any(named: 'createdAt'),
-          ),
-        ).thenAnswer((_) async {});
+      test(
+        'queues a failed-decrypt gift wrap for retry instead of dropping it '
+        '(#5202)',
+        () async {
+          final giftWrap = createGiftWrapEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
-        ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => null,
-          pendingGiftWrapsDao: pendingDao,
-        );
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+            pendingGiftWrapsDao: pendingDao,
+          );
 
-        await repository.startListening();
-        controller.add(giftWrap);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
 
-        verify(
-          () => pendingDao.recordFailedDecrypt(
-            giftWrapId: _giftWrapEventId,
-            ownerPubkey: _validPubkeyA,
-            rawJson: any(named: 'rawJson'),
-            createdAt: 1700000000,
-          ),
-        ).called(1);
-
-        await controller.close();
-        await repository.stopListening();
-      });
-
-      test('retryPendingDecryptions recovers a previously undecryptable wrap '
-          'and clears its pending row (#5202)', () async {
-        final giftWrap = createGiftWrapEvent();
-        final rumor = createRumorEvent();
-        final pendingDao = _MockPendingGiftWrapsDao();
-
-        when(
-          () => pendingDao.deleteExhausted(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer((_) async => 0);
-        when(
-          () => pendingDao.getRetryable(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer(
-          (_) async => [
-            PendingGiftWrap(
+          verify(
+            () => pendingDao.recordFailedDecrypt(
               giftWrapId: _giftWrapEventId,
               ownerPubkey: _validPubkeyA,
-              rawJson: jsonEncode(giftWrap.toJson()),
+              rawJson: any(named: 'rawJson'),
               createdAt: 1700000000,
-              attempts: 1,
             ),
-          ],
-        );
-        when(
-          () => pendingDao.deletePending(
-            giftWrapId: any(named: 'giftWrapId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async {});
+          ).called(1);
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => rumor,
-          pendingGiftWrapsDao: pendingDao,
-        );
+      test(
+        'retryPendingDecryptions recovers a previously undecryptable wrap '
+        'and clears its pending row (#5202)',
+        () async {
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
 
-        await repository.retryPendingDecryptions();
-        await Future<void>.delayed(Duration.zero);
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              PendingGiftWrap(
+                giftWrapId: _giftWrapEventId,
+                ownerPubkey: _validPubkeyA,
+                rawJson: jsonEncode(giftWrap.toJson()),
+                createdAt: 1700000000,
+                attempts: 1,
+              ),
+            ],
+          );
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
 
-        // The wrap decrypted and persisted…
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: _validPubkeyB,
-            content: 'Hello from B!',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-        // …and the pending row was cleared so it stops being retried.
-        verify(
-          () => pendingDao.deletePending(
-            giftWrapId: _giftWrapEventId,
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).called(1);
-      });
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+            pendingGiftWrapsDao: pendingDao,
+          );
+
+          await repository.retryPendingDecryptions();
+          await Future<void>.delayed(Duration.zero);
+
+          // The wrap decrypted and persisted…
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+          // …and the pending row was cleared so it stops being retried.
+          verify(
+            () => pendingDao.deletePending(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'a gift wrap whose decrypt THROWS is queued for retry, not dropped',
@@ -3494,59 +3536,65 @@ void main() {
         },
       );
 
-      test('reports once with an aggregate count when gift wraps are abandoned '
-          'at the decrypt retry cap', () async {
-        // These are inbound DMs the user will never see, and the wrap
-        // carries no decryptable sender or conversation, so nothing can be
-        // surfaced in the UI. A local warning is invisible in triage, so
-        // this report is the only signal that permanent message loss
-        // happened. One report per drain pass, not per wrap, so a spam
-        // burst cannot flood the dashboard.
-        final pendingDao = _MockPendingGiftWrapsDao();
-        when(
-          () => pendingDao.deleteExhausted(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer((_) async => 3);
-        when(
-          () => pendingDao.getRetryable(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer((_) async => <PendingGiftWrap>[]);
+      test(
+        'reports once with an aggregate count when gift wraps are abandoned '
+        'at the decrypt retry cap',
+        () async {
+          // These are inbound DMs the user will never see, and the wrap
+          // carries no decryptable sender or conversation, so nothing can be
+          // surfaced in the UI. A local warning is invisible in triage, so
+          // this report is the only signal that permanent message loss
+          // happened. One report per drain pass, not per wrap, so a spam
+          // burst cannot flood the dashboard.
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
 
-        final repository = createRepository(pendingGiftWrapsDao: pendingDao);
-        await repository.retryPendingDecryptions();
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
 
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          DmRepositoryReportableSites.pendingDecryptExhausted,
-        );
-        expect(reporterCalls.single.error.toString(), contains('3'));
-      });
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptExhausted,
+          );
+          expect(reporterCalls.single.error.toString(), contains('3'));
+        },
+      );
 
-      test('does not report when nothing hit the decrypt retry cap', () async {
-        final pendingDao = _MockPendingGiftWrapsDao();
-        when(
-          () => pendingDao.deleteExhausted(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer((_) async => 0);
-        when(
-          () => pendingDao.getRetryable(
-            ownerPubkey: any(named: 'ownerPubkey'),
-            maxAttempts: any(named: 'maxAttempts'),
-          ),
-        ).thenAnswer((_) async => <PendingGiftWrap>[]);
+      test(
+        'does not report when nothing hit the decrypt retry cap',
+        () async {
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
 
-        final repository = createRepository(pendingGiftWrapsDao: pendingDao);
-        await repository.retryPendingDecryptions();
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
 
-        expect(reporterCalls, isEmpty);
-      });
+          expect(reporterCalls, isEmpty);
+        },
+      );
 
       test(
         'reports and drops a pending wrap with corrupt stored JSON',
@@ -3609,7 +3657,9 @@ void main() {
         final wrongKindRumor = createRumorEvent(kind: 1);
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
 
         final controller = StreamController<Event>();
@@ -3665,7 +3715,9 @@ void main() {
         final rumor = createRumorEvent(tags: []);
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
 
         final controller = StreamController<Event>();
@@ -3726,7 +3778,9 @@ void main() {
         );
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
         stubDaoInserts();
 
@@ -3791,7 +3845,9 @@ void main() {
           );
 
           when(
-            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+            () => mockDirectMessagesDao.hasGiftWrap(
+              _giftWrapEventId,
+            ),
           ).thenAnswer((_) async => false);
           stubDaoInserts();
 
@@ -3835,7 +3891,9 @@ void main() {
 
       test('processes multiple events sequentially', () async {
         final giftWrap1 = createGiftWrapEvent();
-        final giftWrap2 = createGiftWrapEvent(id: _giftWrapEventId2);
+        final giftWrap2 = createGiftWrapEvent(
+          id: _giftWrapEventId2,
+        );
         final rumor1 = createRumorEvent(content: 'First');
         final rumor2 = createRumorEvent(
           id:
@@ -3845,10 +3903,14 @@ void main() {
         );
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId2),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId2,
+          ),
         ).thenAnswer((_) async => false);
         stubDaoInserts();
 
@@ -3910,7 +3972,9 @@ void main() {
         final rumor = createRumorEvent();
 
         when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          () => mockDirectMessagesDao.hasGiftWrap(
+            _giftWrapEventId,
+          ),
         ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.insertMessage(
@@ -3974,7 +4038,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
@@ -3998,7 +4064,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
@@ -4023,13 +4091,17 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
         await repository.stopListening();
 
-        verify(() => mockNostrClient.unsubscribe(any())).called(1);
+        verify(
+          () => mockNostrClient.unsubscribe(any()),
+        ).called(1);
 
         await controller.close();
       });
@@ -4048,7 +4120,9 @@ void main() {
           controllers.add(controller);
           return controller.stream;
         });
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
 
@@ -4115,7 +4189,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         verify(
-          () => mockConversationsDao.backfillCurrentUserHasSent(_validPubkeyA),
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
         ).called(1);
       });
 
@@ -4133,7 +4209,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = createRepository();
         await repository.startListening();
@@ -4231,41 +4309,44 @@ void main() {
         },
       );
 
-      test('startListening derives since from the WIRE boundary, not the rumor '
-          'boundary, once one has been recorded (#8209)', () async {
-        // One NIP-17 message: honest send time in the rumor, outer wrap
-        // backdated a day per NIP-17. A relay evaluates `since:` against the
-        // outer stamp, so deriving the window from the rumor clock starts it
-        // a day above the events it is supposed to admit.
-        const rumorNewest = 1700000000;
-        const wireNewest = rumorNewest - 86400;
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+      test(
+        'startListening derives since from the WIRE boundary, not the rumor '
+        'boundary, once one has been recorded (#8209)',
+        () async {
+          // One NIP-17 message: honest send time in the rumor, outer wrap
+          // backdated a day per NIP-17. A relay evaluates `since:` against the
+          // outer stamp, so deriving the window from the rumor clock starts it
+          // a day above the events it is supposed to admit.
+          const rumorNewest = 1700000000;
+          const wireNewest = rumorNewest - 86400;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final syncState = _FakeDmSyncState()
-          ..newestOverride = rumorNewest
-          ..newestWireOverride = wireNewest;
-        final repository = createRepository(syncState: syncState);
-        await repository.startListening();
+          final syncState = _FakeDmSyncState()
+            ..newestOverride = rumorNewest
+            ..newestWireOverride = wireNewest;
+          final repository = createRepository(syncState: syncState);
+          await repository.startListening();
 
-        final captured =
-            verify(
-                  () => mockNostrClient.subscribe(
-                    captureAny(),
-                    subscriptionId: any(named: 'subscriptionId'),
-                  ),
-                ).captured.single
-                as List<nostr_filter.Filter>;
-        expect(captured.single.since, wireNewest - 2 * 86400);
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured.single.since, wireNewest - 2 * 86400);
 
-        await repository.stopListening();
-        await controller.close();
-      });
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
 
       test(
         'since leaves the whole 2-day overlap below the wire boundary, so a '
@@ -4314,88 +4395,91 @@ void main() {
         },
       );
 
-      test('a wrap the relay holds below the window is never served, while a '
-          'newer one on the same relay is (#8439)', () async {
-        // Both wraps sit on the SAME relay and arrive through the SAME REQ.
-        // The only thing separating them is which side of `since:` their
-        // OUTER stamp falls on, so any handling that reached one would have
-        // reached the other. That is what makes the control load-bearing:
-        // it rules out "the relay was never read", which is the obvious
-        // rival explanation and the one an assertion on the victim alone
-        // cannot exclude.
-        //
-        // Scope: this pins the window and what the relay does with it. The
-        // receive pipeline downstream has its own tests, and
-        // `recordWireSeen`'s monotonicity is pinned in dm_sync_state_test —
-        // together they are what make the loss permanent rather than merely
-        // late.
-        const wireNewest = 1700000000;
-        const since = wireNewest - 2 * 86400;
-        // Published earlier than our newest processed wrap and delivered
-        // late. #8361's invariant does not reach it: that argument binds
-        // only wraps published at or after `wireNewest`, because it needs
-        // `outer >= P - 2d` together with `W <= P`.
-        const victimOuter = since - 1;
-        const controlOuter = wireNewest - 3600;
+      test(
+        'a wrap the relay holds below the window is never served, while a '
+        'newer one on the same relay is (#8439)',
+        () async {
+          // Both wraps sit on the SAME relay and arrive through the SAME REQ.
+          // The only thing separating them is which side of `since:` their
+          // OUTER stamp falls on, so any handling that reached one would have
+          // reached the other. That is what makes the control load-bearing:
+          // it rules out "the relay was never read", which is the obvious
+          // rival explanation and the one an assertion on the victim alone
+          // cannot exclude.
+          //
+          // Scope: this pins the window and what the relay does with it. The
+          // receive pipeline downstream has its own tests, and
+          // `recordWireSeen`'s monotonicity is pinned in dm_sync_state_test —
+          // together they are what make the loss permanent rather than merely
+          // late.
+          const wireNewest = 1700000000;
+          const since = wireNewest - 2 * 86400;
+          // Published earlier than our newest processed wrap and delivered
+          // late. #8361's invariant does not reach it: that argument binds
+          // only wraps published at or after `wireNewest`, because it needs
+          // `outer >= P - 2d` together with `W <= P`.
+          const victimOuter = since - 1;
+          const controlOuter = wireNewest - 3600;
 
-        Event wrapAt(int createdAt, String id) => Event.fromJson({
-          'id': id,
-          'pubkey': _validPubkeyC,
-          'created_at': createdAt,
-          'kind': EventKind.giftWrap,
-          'tags': [
-            ['p', _validPubkeyA],
-          ],
-          'content': 'encrypted-content',
-          'sig': '',
-        });
+          Event wrapAt(int createdAt, String id) => Event.fromJson({
+            'id': id,
+            'pubkey': _validPubkeyC,
+            'created_at': createdAt,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'encrypted-content',
+            'sig': '',
+          });
 
-        final victim = wrapAt(victimOuter, _giftWrapEventId);
-        final control = wrapAt(controlOuter, _giftWrapEventId2);
-        final relay = _SinceEnforcingRelay([victim, control]);
+          final victim = wrapAt(victimOuter, _giftWrapEventId);
+          final control = wrapAt(controlOuter, _giftWrapEventId2);
+          final relay = _SinceEnforcingRelay([victim, control]);
 
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer(
-          (invocation) => relay.subscribe(
-            invocation.positionalArguments.first as List<nostr_filter.Filter>,
-          ),
-        );
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(any()),
-        ).thenAnswer((_) async => false);
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer(
+            (invocation) => relay.subscribe(
+              invocation.positionalArguments.first as List<nostr_filter.Filter>,
+            ),
+          );
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
 
-        final syncState = _FakeDmSyncState()
-          ..newestOverride = wireNewest
-          ..newestWireOverride = wireNewest;
-        final repository = createRepository(
-          // Undecryptable on purpose: this test is about which events the
-          // relay hands over, not what the pipeline then does with them.
-          rumorDecryptor: (_, _) async => null,
-          syncState: syncState,
-        );
+          final syncState = _FakeDmSyncState()
+            ..newestOverride = wireNewest
+            ..newestWireOverride = wireNewest;
+          final repository = createRepository(
+            // Undecryptable on purpose: this test is about which events the
+            // relay hands over, not what the pipeline then does with them.
+            rumorDecryptor: (_, _) async => null,
+            syncState: syncState,
+          );
 
-        await repository.startListening();
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          await Future<void>.delayed(Duration.zero);
 
-        expect(relay.lastFilters!.single.since, since);
-        // The relay answered normally and simply omitted the older wrap —
-        // no error, no `CLOSED`, no short page. That silence is why the
-        // loss cannot be noticed from the client without a separate probe.
-        expect(
-          relay.served.map((event) => event.id),
-          [control.id],
-          reason:
-              'the victim wrap is below since:, so the relay never serves '
-              'it and nothing downstream can know it exists',
-        );
+          expect(relay.lastFilters!.single.since, since);
+          // The relay answered normally and simply omitted the older wrap —
+          // no error, no `CLOSED`, no short page. That silence is why the
+          // loss cannot be noticed from the client without a separate probe.
+          expect(
+            relay.served.map((event) => event.id),
+            [control.id],
+            reason:
+                'the victim wrap is below since:, so the relay never serves '
+                'it and nothing downstream can know it exists',
+          );
 
-        await repository.stopListening();
-        await relay.close();
-      });
+          await repository.stopListening();
+          await relay.close();
+        },
+      );
     });
 
     group('resolveDmInboxRelays', () {
@@ -4445,11 +4529,9 @@ void main() {
               Completer<({List<Event> events, bool timedOut, bool noRelays})>();
           addTearDown(() {
             if (!stalledRead.isCompleted) {
-              stalledRead.complete((
-                events: const <Event>[],
-                timedOut: true,
-                noRelays: false,
-              ));
+              stalledRead.complete(
+                (events: const <Event>[], timedOut: true, noRelays: false),
+              );
             }
           });
           when(
@@ -4478,10 +4560,10 @@ void main() {
           kind10050Event(['wss://inbox.example', 'wss://inbox2.example']),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
-          'wss://inbox.example',
-          'wss://inbox2.example',
-        ]);
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://inbox.example', 'wss://inbox2.example'],
+        );
       });
 
       test('returns null when no kind-10050 event exists', () async {
@@ -4496,28 +4578,34 @@ void main() {
         expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
       });
 
-      test('ignores relay-returned events that do not match the requested '
-          'kind-10050 author', () async {
-        stubQuery([
-          kind10050Event([
-            'wss://attacker-selected.example',
-          ], pubkey: _validPubkeyC),
-          kind10050Event([
-            'wss://wrong-kind.example',
-          ], kind: EventKind.textNote),
-        ]);
-        final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
-      });
+      test(
+        'ignores relay-returned events that do not match the requested '
+        'kind-10050 author',
+        () async {
+          stubQuery([
+            kind10050Event(
+              ['wss://attacker-selected.example'],
+              pubkey: _validPubkeyC,
+            ),
+            kind10050Event(
+              ['wss://wrong-kind.example'],
+              kind: EventKind.textNote,
+            ),
+          ]);
+          final repository = createRepository();
+          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        },
+      );
 
       test('de-duplicates relay urls', () async {
         stubQuery([
           kind10050Event(['wss://a.example', 'wss://a.example']),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
-          'wss://a.example',
-        ]);
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://a.example'],
+        );
       });
 
       test('drops disallowed relay urls from kind-10050 events', () async {
@@ -4605,9 +4693,10 @@ void main() {
           kind10050Event(['wss://new.example'], createdAt: 1700000500),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
-          'wss://new.example',
-        ]);
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://new.example'],
+        );
       });
 
       test('queries kind-10050 for the requested author', () async {
@@ -4682,10 +4771,10 @@ void main() {
           ]),
         );
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
-          'wss://relay-tag.example',
-          'wss://r-tag.example',
-        ]);
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://relay-tag.example', 'wss://r-tag.example'],
+        );
       });
     });
 
@@ -4862,35 +4951,38 @@ void main() {
         },
       );
 
-      test('live subscription falls back to the default pool (null targeting) '
-          'when the user has no kind-10050', () async {
-        // setUp default queryEventsDetailed -> [] : no kind-10050.
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+      test(
+        'live subscription falls back to the default pool (null targeting) '
+        'when the user has no kind-10050',
+        () async {
+          // setUp default queryEventsDetailed -> [] : no kind-10050.
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository();
-        await repository.startListening();
+          final repository = createRepository();
+          await repository.startListening();
 
-        final captured = verify(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: captureAny(named: 'tempRelays'),
-            targetRelays: captureAny(named: 'targetRelays'),
-          ),
-        ).captured;
-        expect(captured, [isNull, isNull]);
+          final captured = verify(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: captureAny(named: 'tempRelays'),
+              targetRelays: captureAny(named: 'targetRelays'),
+            ),
+          ).captured;
+          expect(captured, [isNull, isNull]);
 
-        await repository.stopListening();
-        await controller.close();
-      });
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
 
       test(
         'history drain targets the own kind-10050 inbox relays as tempRelays',
@@ -5060,93 +5152,98 @@ void main() {
       // the identical session-token guard (stopListening bumps _resetGeneration
       // exactly as _resetState does), so the account-switch test below covers
       // the during-resolve invalidation mechanism for both paths.
-      test('an account switch during the own-inbox resolve bails the old '
-          "user's subscription and frees the new user to subscribe", () async {
-        // The own-inbox resolve reads through `queryEventsDetailed` (#8212).
-        // Stubbing `queryEvents` here held nothing in flight: production
-        // stopped calling it, so the read fell through to the shared
-        // answered-empty default and returned before the switch.
-        final resolveA =
-            Completer<({List<Event> events, bool timedOut, bool noRelays})>();
-        final resolveB =
-            Completer<({List<Event> events, bool timedOut, bool noRelays})>();
-        var resolveCalls = 0;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((_) {
-          resolveCalls++;
-          return resolveCalls == 1 ? resolveA.future : resolveB.future;
-        });
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+      test(
+        'an account switch during the own-inbox resolve bails the old '
+        "user's subscription and frees the new user to subscribe",
+        () async {
+          // The own-inbox resolve reads through `queryEventsDetailed` (#8212).
+          // Stubbing `queryEvents` here held nothing in flight: production
+          // stopped calling it, so the read fell through to the shared
+          // answered-empty default and returned before the switch.
+          final resolveA =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          final resolveB =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          var resolveCalls = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) {
+            resolveCalls++;
+            return resolveCalls == 1 ? resolveA.future : resolveB.future;
+          });
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
 
-        final repository = createRepository(); // user A
-        final pendingA = repository.startListening();
+          final repository = createRepository(); // user A
+          final pendingA = repository.startListening();
 
-        // A's resolve must genuinely be in flight at the moment of the
-        // switch, or this test proves nothing about the race it names.
-        await pumpEventQueue();
-        expect(resolveCalls, 1);
+          // A's resolve must genuinely be in flight at the moment of the
+          // switch, or this test proves nothing about the race it names.
+          await pumpEventQueue();
+          expect(resolveCalls, 1);
 
-        // Switch A -> B while A's resolve is still in flight.
-        repository.setCredentials(
-          userPubkey: _validPubkeyB,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+          // Switch A -> B while A's resolve is still in flight.
+          repository.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
 
-        // B can begin its own resolve without waiting for A's stale one.
-        final pendingB = repository.startListening();
-        await pumpEventQueue();
-        expect(resolveCalls, 2);
+          // B can begin its own resolve without waiting for A's stale one.
+          final pendingB = repository.startListening();
+          await pumpEventQueue();
+          expect(resolveCalls, 2);
 
-        // Resume A first so the generation guard, rather than B's completed
-        // subscription, is what prevents A from opening a stale stream.
-        resolveA.complete(answeredList(const <Event>[]));
-        await pendingA;
+          // Resume A first so the generation guard, rather than B's completed
+          // subscription, is what prevents A from opening a stale stream.
+          resolveA.complete(answeredList(const <Event>[]));
+          await pendingA;
 
-        // A's continuation bailed — no subscription opened under A's id.
-        verifyNever(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: dmInboxSubscriptionId(_validPubkeyA),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        );
+          // A's continuation bailed — no subscription opened under A's id.
+          verifyNever(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: dmInboxSubscriptionId(_validPubkeyA),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
 
-        resolveB.complete(answeredList(const <Event>[]));
-        await pendingB;
-        final filter =
-            verify(
-                  () => mockNostrClient.subscribe(
-                    captureAny(),
-                    subscriptionId: dmInboxSubscriptionId(_validPubkeyB),
-                    tempRelays: any(named: 'tempRelays'),
-                    targetRelays: any(named: 'targetRelays'),
-                  ),
-                ).captured.single
-                as List<nostr_filter.Filter>;
-        expect(filter.single.p, [_validPubkeyB]);
+          resolveB.complete(answeredList(const <Event>[]));
+          await pendingB;
+          final filter =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: dmInboxSubscriptionId(_validPubkeyB),
+                      tempRelays: any(named: 'tempRelays'),
+                      targetRelays: any(named: 'targetRelays'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(filter.single.p, [_validPubkeyB]);
 
-        await repository.stopListening();
-        await controller.close();
-      });
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
     });
 
     group('ensureDmRelayListPublished (#4974 RC3)', () {
@@ -5187,61 +5284,20 @@ void main() {
         noResponseFrom: const [],
       );
 
-      test('publishes a kind-10050 advertising the injected stable relay when '
-          'absent and records the flag on a confirmed OK', () async {
-        // setUp default queryEventsDetailed -> [] : no existing kind-10050.
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => outcome(accepted: true));
-
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(syncState: syncState);
-        await repository.ensureDmRelayListPublished();
-
-        final captured = verify(
-          () => mockNostrClient.publishEventAwaitOk(
-            captureAny(),
-            targetRelays: captureAny(named: 'targetRelays'),
-          ),
-        ).captured;
-        final event = captured[0] as Event;
-        expect(event.kind, EventKind.dmRelaysList);
-        expect(event.tags, [
-          ['relay', 'wss://relay.divine.video'],
-        ]);
-        expect(captured[1], ['wss://relay.divine.video']);
-        expect(syncState.dmRelayListPublishedPubkeys, contains(_validPubkeyA));
-      });
-
-      group('discovery relays (#7336)', () {
-        const divine = 'wss://relay.divine.video';
-        const dmFallback1 = 'wss://nos.lol';
-        const dmFallback2 = 'wss://relay.primal.net';
-        const discovery = 'wss://purplepag.es';
-
-        test('publishes to the advertised and discovery relays, while tagging '
-            'the three DM relays only', () async {
+      test(
+        'publishes a kind-10050 advertising the injected stable relay when '
+        'absent and records the flag on a confirmed OK',
+        () async {
+          // setUp default queryEventsDetailed -> [] : no existing kind-10050.
           when(
             () => mockNostrClient.publishEventAwaitOk(
               any(),
               targetRelays: any(named: 'targetRelays'),
             ),
-          ).thenAnswer(
-            (_) async => partialOutcome(
-              targets: const [divine, dmFallback1, dmFallback2, discovery],
-              acceptedBy: const [divine, dmFallback1, dmFallback2, discovery],
-            ),
-          );
+          ).thenAnswer((_) async => outcome(accepted: true));
 
           final syncState = _FakeDmSyncState();
-          final repository = createRepository(
-            syncState: syncState,
-            dmInboxDiscoveryRelays: const [dmFallback1, dmFallback2, discovery],
-            dmInboxTaggedRelays: const [dmFallback1, dmFallback2],
-          );
+          final repository = createRepository(syncState: syncState);
           await repository.ensureDmRelayListPublished();
 
           final captured = verify(
@@ -5250,76 +5306,151 @@ void main() {
               targetRelays: captureAny(named: 'targetRelays'),
             ),
           ).captured;
-          // The EVENT is copied to the discovery indexer, but the list names
-          // only relays Divine actually drains for incoming DMs.
-          expect((captured[0] as Event).tags, [
-            ['relay', divine],
-            ['relay', dmFallback1],
-            ['relay', dmFallback2],
+          final event = captured[0] as Event;
+          expect(event.kind, EventKind.dmRelaysList);
+          expect(event.tags, [
+            ['relay', 'wss://relay.divine.video'],
           ]);
-          expect(captured[1], [divine, dmFallback1, dmFallback2, discovery]);
+          expect(captured[1], ['wss://relay.divine.video']);
           expect(
             syncState.dmRelayListPublishedPubkeys,
             contains(_validPubkeyA),
           );
-        });
+        },
+      );
 
-        test('a discovery relay refusing the kind is best-effort — the list is '
-            'still published', () async {
-          when(
-            () => mockNostrClient.publishEventAwaitOk(
-              any(),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenAnswer(
-            (_) async => partialOutcome(
-              targets: const [divine, discovery],
-              acceptedBy: const [divine],
-            ),
-          );
+      group('discovery relays (#7336)', () {
+        const divine = 'wss://relay.divine.video';
+        const dmFallback1 = 'wss://nos.lol';
+        const dmFallback2 = 'wss://relay.primal.net';
+        const discovery = 'wss://purplepag.es';
 
-          final syncState = _FakeDmSyncState();
-          final repository = createRepository(
-            syncState: syncState,
-            dmInboxDiscoveryRelays: const [discovery],
-          );
-          await repository.ensureDmRelayListPublished();
+        test(
+          'publishes to the advertised and discovery relays, while tagging '
+          'the three DM relays only',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
+                acceptedBy: const [
+                  divine,
+                  dmFallback1,
+                  dmFallback2,
+                  discovery,
+                ],
+              ),
+            );
 
-          // Discovery is a bonus, not a precondition: a third-party relay
-          // changing its kind policy must never put every account into a
-          // republish loop on each login.
-          expect(
-            syncState.dmRelayListPublishedPubkeys,
-            contains(_validPubkeyA),
-          );
-        });
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [
+                dmFallback1,
+                dmFallback2,
+                discovery,
+              ],
+              dmInboxTaggedRelays: const [dmFallback1, dmFallback2],
+            );
+            await repository.ensureDmRelayListPublished();
 
-        test('a discovery relay accepting does NOT stand in for the advertised '
-            'relay refusing — retries next login', () async {
-          when(
-            () => mockNostrClient.publishEventAwaitOk(
-              any(),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenAnswer(
-            (_) async => partialOutcome(
-              targets: const [divine, discovery],
-              acceptedBy: const [discovery],
-            ),
-          );
+            final captured = verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                captureAny(),
+                targetRelays: captureAny(named: 'targetRelays'),
+              ),
+            ).captured;
+            // The EVENT is copied to the discovery indexer, but the list names
+            // only relays Divine actually drains for incoming DMs.
+            expect((captured[0] as Event).tags, [
+              ['relay', divine],
+              ['relay', dmFallback1],
+              ['relay', dmFallback2],
+            ]);
+            expect(captured[1], [
+              divine,
+              dmFallback1,
+              dmFallback2,
+              discovery,
+            ]);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
 
-          final syncState = _FakeDmSyncState();
-          final repository = createRepository(
-            syncState: syncState,
-            dmInboxDiscoveryRelays: const [discovery],
-          );
-          await repository.ensureDmRelayListPublished();
+        test(
+          'a discovery relay refusing the kind is best-effort — the list is '
+          'still published',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [divine],
+              ),
+            );
 
-          // "Something accepted" is the wrong bar. The advertised relay is
-          // the one divine drains, so a list that never reached it leaves
-          // the account undeliverable while the flag says it is done.
-          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
-        });
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // Discovery is a bonus, not a precondition: a third-party relay
+            // changing its kind policy must never put every account into a
+            // republish loop on each login.
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a discovery relay accepting does NOT stand in for the advertised '
+          'relay refusing — retries next login',
+          () async {
+            when(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).thenAnswer(
+              (_) async => partialOutcome(
+                targets: const [divine, discovery],
+                acceptedBy: const [discovery],
+              ),
+            );
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(
+              syncState: syncState,
+              dmInboxDiscoveryRelays: const [discovery],
+            );
+            await repository.ensureDmRelayListPublished();
+
+            // "Something accepted" is the wrong bar. The advertised relay is
+            // the one divine drains, so a list that never reached it leaves
+            // the account undeliverable while the flag says it is done.
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
 
         test(
           'drops a discovery relay whose URL is not a usable relay',
@@ -5379,35 +5510,41 @@ void main() {
         },
       );
 
-      test('skips publishing and records the flag when the user already '
-          'advertises a kind-10050', () async {
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer(
-          (_) async => answeredList([
-            existingInbox(['wss://own.example']),
-          ]),
-        );
+      test(
+        'skips publishing and records the flag when the user already '
+        'advertises a kind-10050',
+        () async {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => answeredList([
+              existingInbox(['wss://own.example']),
+            ]),
+          );
 
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(syncState: syncState);
-        await repository.ensureDmRelayListPublished();
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          await repository.ensureDmRelayListPublished();
 
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        );
-        expect(syncState.dmRelayListPublishedPubkeys, contains(_validPubkeyA));
-      });
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+          expect(
+            syncState.dmRelayListPublishedPubkeys,
+            contains(_validPubkeyA),
+          );
+        },
+      );
 
       test('is a no-op when already published this device/pubkey', () async {
         final syncState = _FakeDmSyncState()
@@ -5486,75 +5623,84 @@ void main() {
         expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
       });
 
-      test('does NOT publish or set the flag when the own-inbox lookup fails '
-          '(transient) — never overwrites a real list', () async {
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenThrow(Exception('relay down'));
+      test(
+        'does NOT publish or set the flag when the own-inbox lookup fails '
+        '(transient) — never overwrites a real list',
+        () async {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenThrow(Exception('relay down'));
 
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(syncState: syncState);
-        await repository.ensureDmRelayListPublished();
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          await repository.ensureDmRelayListPublished();
 
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        );
-        expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
-      });
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+        },
+      );
 
-      test('a transient lookup failure is not cached — a later call re-queries '
-          'and can publish', () async {
-        var queries = 0;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((_) async {
-          queries++;
-          if (queries == 1) throw Exception('relay down');
-          return answeredList(const <Event>[]); // absent on the retry
-        });
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => outcome(accepted: true));
+      test(
+        'a transient lookup failure is not cached — a later call re-queries '
+        'and can publish',
+        () async {
+          var queries = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async {
+            queries++;
+            if (queries == 1) throw Exception('relay down');
+            return answeredList(const <Event>[]); // absent on the retry
+          });
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => outcome(accepted: true));
 
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
 
-        // First login: lookup fails -> no publish, flag unset.
-        await repository.ensureDmRelayListPublished();
-        expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          // First login: lookup fails -> no publish, flag unset.
+          await repository.ensureDmRelayListPublished();
+          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
 
-        // Next login: the failure was not memoized, so it re-queries,
-        // resolves absent, and publishes.
-        await repository.ensureDmRelayListPublished();
-        expect(queries, 2);
-        verify(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).called(1);
-        expect(syncState.dmRelayListPublishedPubkeys, contains(_validPubkeyA));
-      });
+          // Next login: the failure was not memoized, so it re-queries,
+          // resolves absent, and publishes.
+          await repository.ensureDmRelayListPublished();
+          expect(queries, 2);
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).called(1);
+          expect(
+            syncState.dmRelayListPublishedPubkeys,
+            contains(_validPubkeyA),
+          );
+        },
+      );
 
       test(
         'does NOT reuse the live subscription resolve — the publish reads the '
@@ -5640,23 +5786,26 @@ void main() {
           ).thenAnswer((_) async => outcome(accepted: true));
         }
 
-        test('does NOT publish when the own-inbox read reached no relay — a '
-            'fan-out nobody took is not evidence of absence', () async {
-          stubOwnInbox(unansweredList(noRelays: true));
-          stubAcceptedPublish();
+        test(
+          'does NOT publish when the own-inbox read reached no relay — a '
+          'fan-out nobody took is not evidence of absence',
+          () async {
+            stubOwnInbox(unansweredList(noRelays: true));
+            stubAcceptedPublish();
 
-          final syncState = _FakeDmSyncState();
-          final repository = createRepository(syncState: syncState);
-          await repository.ensureDmRelayListPublished();
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
 
-          verifyNever(
-            () => mockNostrClient.publishEventAwaitOk(
-              any(),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          );
-          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
-        });
+            verifyNever(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            );
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
 
         test(
           'does NOT publish when the own-inbox read did not settle — a relay '
@@ -5679,26 +5828,29 @@ void main() {
           },
         );
 
-        test('still publishes when the relays answered and the user genuinely '
-            'has no kind-10050', () async {
-          stubOwnInbox(answeredList(const <Event>[]));
-          stubAcceptedPublish();
+        test(
+          'still publishes when the relays answered and the user genuinely '
+          'has no kind-10050',
+          () async {
+            stubOwnInbox(answeredList(const <Event>[]));
+            stubAcceptedPublish();
 
-          final syncState = _FakeDmSyncState();
-          final repository = createRepository(syncState: syncState);
-          await repository.ensureDmRelayListPublished();
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
 
-          verify(
-            () => mockNostrClient.publishEventAwaitOk(
-              any(),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).called(1);
-          expect(
-            syncState.dmRelayListPublishedPubkeys,
-            contains(_validPubkeyA),
-          );
-        });
+            verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).called(1);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
 
         test(
           'a partially settled read that DID return the list is found, never '
@@ -5732,40 +5884,47 @@ void main() {
           },
         );
 
-        test('reads the own kind-10050 authoritatively: no cache, full relay '
-            'settlement', () async {
-          stubOwnInbox(answeredList(const <Event>[]));
-          stubAcceptedPublish();
+        test(
+          'reads the own kind-10050 authoritatively: no cache, full relay '
+          'settlement',
+          () async {
+            stubOwnInbox(answeredList(const <Event>[]));
+            stubAcceptedPublish();
 
-          final repository = createRepository(syncState: _FakeDmSyncState());
-          await repository.ensureDmRelayListPublished();
+            final repository = createRepository(syncState: _FakeDmSyncState());
+            await repository.ensureDmRelayListPublished();
 
-          final captured = verify(
-            () => mockNostrClient.queryEventsDetailed(
-              captureAny(),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: captureAny(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-              requireAllRelaysSettled: captureAny(
-                named: 'requireAllRelaysSettled',
+            final captured = verify(
+              () => mockNostrClient.queryEventsDetailed(
+                captureAny(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: captureAny(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: captureAny(
+                  named: 'requireAllRelaysSettled',
+                ),
+                timeout: any(named: 'timeout'),
               ),
-              timeout: any(named: 'timeout'),
-            ),
-          ).captured;
+            ).captured;
 
-          var sawOwnInboxRead = false;
-          for (var i = 0; i < captured.length; i += 3) {
-            final filters = captured[i] as List<nostr_filter.Filter>;
-            if (!(filters.single.kinds?.contains(EventKind.dmRelaysList) ??
-                false)) {
-              continue;
+            var sawOwnInboxRead = false;
+            for (var i = 0; i < captured.length; i += 3) {
+              final filters = captured[i] as List<nostr_filter.Filter>;
+              if (!(filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                  false)) {
+                continue;
+              }
+              sawOwnInboxRead = true;
+              expect(captured[i + 1], isFalse, reason: 'useCache');
+              expect(
+                captured[i + 2],
+                isTrue,
+                reason: 'requireAllRelaysSettled',
+              );
             }
-            sawOwnInboxRead = true;
-            expect(captured[i + 1], isFalse, reason: 'useCache');
-            expect(captured[i + 2], isTrue, reason: 'requireAllRelaysSettled');
-          }
-          expect(sawOwnInboxRead, isTrue);
-        });
+            expect(sawOwnInboxRead, isTrue);
+          },
+        );
 
         test(
           'reads a recipient kind-10050 cheaply: cache on, first answer wins',
@@ -5807,45 +5966,48 @@ void main() {
           },
         );
 
-        test('an unanswered own-inbox read is not memoized — a later call '
-            're-queries and can publish', () async {
-          var queries = 0;
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: any(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async {
-            queries++;
-            // A read nothing answered — not an exception. This is the shape
-            // #8212 actually fails in; the throwing variant is a separate
-            // test. It must leave the path re-runnable just the same.
-            if (queries == 1) return unansweredList(timedOut: true);
-            return answeredList(const <Event>[]);
-          });
-          stubAcceptedPublish();
+        test(
+          'an unanswered own-inbox read is not memoized — a later call '
+          're-queries and can publish',
+          () async {
+            var queries = 0;
+            when(
+              () => mockNostrClient.queryEventsDetailed(
+                any(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: any(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+                timeout: any(named: 'timeout'),
+              ),
+            ).thenAnswer((_) async {
+              queries++;
+              // A read nothing answered — not an exception. This is the shape
+              // #8212 actually fails in; the throwing variant is a separate
+              // test. It must leave the path re-runnable just the same.
+              if (queries == 1) return unansweredList(timedOut: true);
+              return answeredList(const <Event>[]);
+            });
+            stubAcceptedPublish();
 
-          final syncState = _FakeDmSyncState();
-          final repository = createRepository(syncState: syncState);
-          await repository.ensureDmRelayListPublished();
-          await repository.ensureDmRelayListPublished();
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+            await repository.ensureDmRelayListPublished();
 
-          expect(queries, 2);
-          verify(
-            () => mockNostrClient.publishEventAwaitOk(
-              any(),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).called(1);
-          expect(
-            syncState.dmRelayListPublishedPubkeys,
-            contains(_validPubkeyA),
-          );
-        });
+            expect(queries, 2);
+            verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).called(1);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
       });
     });
 
@@ -5914,24 +6076,27 @@ void main() {
         );
       }
 
-      test('does NOT mark complete when a fan-out reached no relay — defers to '
-          'the next inbox open (#5202)', () async {
-        // Relays report connected, so the old `connectedRelayCount` guard
-        // would have passed here and latched. Only the fan-out's own account
-        // of who took the REQ can see this.
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        stubUnansweredHistory(noRelays: true);
+      test(
+        'does NOT mark complete when a fan-out reached no relay — defers to '
+        'the next inbox open (#5202)',
+        () async {
+          // Relays report connected, so the old `connectedRelayCount` guard
+          // would have passed here and latched. Only the fan-out's own account
+          // of who took the REQ can see this.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(noRelays: true);
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(syncState.drainCompleteOverride, isFalse);
-        expect(syncState.markedCompletePubkeys, isEmpty);
-      });
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
 
       test(
         'does NOT mark complete when a relay refused the page — defers to the '
@@ -6001,46 +6166,49 @@ void main() {
         },
       );
 
-      test('demands full relay settlement on every drain page, so a refusal '
-          'cannot arrive as an ordinary empty answer (#8209)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
+      test(
+        'demands full relay settlement on every drain page, so a refusal '
+        'cannot arrive as an ordinary empty answer (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        final captured = verify(
-          () => mockNostrClient.queryEventsDetailed(
-            captureAny(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: captureAny(
-              named: 'requireAllRelaysSettled',
+          final captured = verify(
+            () => mockNostrClient.queryEventsDetailed(
+              captureAny(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: captureAny(
+                named: 'requireAllRelaysSettled',
+              ),
             ),
-          ),
-        ).captured;
+          ).captured;
 
-        // Pair each call's filters with the flag it passed, then keep the
-        // drain's own reads. The memoized kind-10050 inbox resolve goes
-        // through this same method and deliberately does NOT demand
-        // settlement — a relay list is re-resolvable, a skipped page is not
-        // (#8212).
-        final demands = <Object?>[];
-        for (var i = 0; i + 1 < captured.length; i += 2) {
-          final filters = captured[i]! as List<nostr_filter.Filter>;
-          final kinds = filters.single.kinds ?? const <int>[];
-          if (kinds.contains(EventKind.dmRelaysList)) continue;
-          demands.add(captured[i + 1]);
-        }
-        expect(demands, isNotEmpty);
-        expect(demands, everyElement(isTrue));
-      });
+          // Pair each call's filters with the flag it passed, then keep the
+          // drain's own reads. The memoized kind-10050 inbox resolve goes
+          // through this same method and deliberately does NOT demand
+          // settlement — a relay list is re-resolvable, a skipped page is not
+          // (#8212).
+          final demands = <Object?>[];
+          for (var i = 0; i + 1 < captured.length; i += 2) {
+            final filters = captured[i]! as List<nostr_filter.Filter>;
+            final kinds = filters.single.kinds ?? const <int>[];
+            if (kinds.contains(EventKind.dmRelaysList)) continue;
+            demands.add(captured[i + 1]);
+          }
+          expect(demands, isNotEmpty);
+          expect(demands, everyElement(isTrue));
+        },
+      );
 
       /// Stubs a first page that carries [events] but which not every relay
       /// settled (`timedOut`), and an authoritative empty page for every read
@@ -6110,190 +6278,208 @@ void main() {
         },
       );
 
-      test('an unanswered empty page after a partial page keeps the first '
-          'unsettled resume cursor (#8209)', () async {
-        var giftWrapPages = 0;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          ),
-        ).thenAnswer((inv) async {
-          final filter =
-              (inv.positionalArguments.first as List<nostr_filter.Filter>)
-                  .single;
-          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-            return answeredPage(const <Event>[]);
-          }
-          giftWrapPages++;
-          return giftWrapPages == 1
-              ? partialPage([deletion(50)])
-              : unansweredPage(timedOut: true);
-        });
+      test(
+        'an unanswered empty page after a partial page keeps the first '
+        'unsettled resume cursor (#8209)',
+        () async {
+          var giftWrapPages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            giftWrapPages++;
+            return giftWrapPages == 1
+                ? partialPage([deletion(50)])
+                : unansweredPage(timedOut: true);
+          });
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(giftWrapPages, 2);
-        expect(syncState.persistedDrainCursors, [100]);
-        expect(syncState.drainCursorOverride, 100);
-        expect(syncState.drainCompleteOverride, isFalse);
-      });
+          expect(giftWrapPages, 2);
+          expect(syncState.persistedDrainCursors, [100]);
+          expect(syncState.drainCursorOverride, 100);
+          expect(syncState.drainCompleteOverride, isFalse);
+        },
+      );
 
-      test('a later run re-requests the window a partial page left unsettled '
-          '(#8209)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        final capturedUntil = <int?>[];
-        stubPartialThenExhausted([deletion(50)], capturedUntil);
+      test(
+        'a later run re-requests the window a partial page left unsettled '
+        '(#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubPartialThenExhausted([deletion(50)], capturedUntil);
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // Persisting the partial page's own gift wraps / NIP-04 messages
-        // drags oldestSyncedAt down to their timestamps (recordSeen, from
-        // _persistDecryptedGiftWrap and _handleNip04Event). The drain must
-        // not depend on that boundary to find its way back: it seeds from
-        // `historyDrainCursor ?? oldestSyncedAt ?? now`.
-        syncState.oldestOverride = 50;
+          // Persisting the partial page's own gift wraps / NIP-04 messages
+          // drags oldestSyncedAt down to their timestamps (recordSeen, from
+          // _persistDecryptedGiftWrap and _handleNip04Event). The drain must
+          // not depend on that boundary to find its way back: it seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`.
+          syncState.oldestOverride = 50;
 
-        capturedUntil.clear();
-        await repository.backfillHistoryIfNeeded();
+          capturedUntil.clear();
+          await repository.backfillHistoryIfNeeded();
 
-        // Seeded from the same boundary as the first run, not from below
-        // the partial page — that window is requested again, whole.
-        expect(capturedUntil.first, 100);
-      });
+          // Seeded from the same boundary as the first run, not from below
+          // the partial page — that window is requested again, whole.
+          expect(capturedUntil.first, 100);
+        },
+      );
 
-      test('marks complete on an empty page a relay actually answered '
-          '(genuine exhaustion)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
+      test(
+        'marks complete on an empty page a relay actually answered '
+        '(genuine exhaustion)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // Queried once, got an authoritative empty page, completed.
-        expect(capturedUntil, [100]);
-        expect(syncState.drainCompleteOverride, isTrue);
-      });
+          // Queried once, got an authoritative empty page, completed.
+          expect(capturedUntil, [100]);
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
 
-      test('an unanswered page leaves the drain re-runnable, so history is '
-          'recovered once the relays come back (#8209)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        stubUnansweredHistory(timedOut: true);
+      test(
+        'an unanswered page leaves the drain re-runnable, so history is '
+        'recovered once the relays come back (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
-        expect(syncState.drainCompleteOverride, isFalse);
+          await repository.backfillHistoryIfNeeded();
+          expect(syncState.drainCompleteOverride, isFalse);
 
-        // The relays recover and serve real history. Under the latching
-        // behavior this second pass never issued a query at all.
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
+          // The relays recover and serve real history. Under the latching
+          // behavior this second pass never issued a query at all.
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(
-          capturedUntil,
-          isNotEmpty,
-          reason: 'the drain must still be armed after an unanswered page',
-        );
-        expect(syncState.drainCompleteOverride, isTrue);
-      });
-
-      test('pins the resume cursor when a page goes unanswered, so a sync '
-          'boundary that moves meanwhile cannot pull the next run below the '
-          'window still owed (#8209)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        stubUnansweredHistory(timedOut: true);
-
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
-
-        await repository.backfillHistoryIfNeeded();
-
-        // Deferring is not enough on its own: the drain seeds from
-        // `historyDrainCursor ?? oldestSyncedAt ?? now`, so a run that
-        // defers without persisting anything comes back to whatever
-        // oldestSyncedAt has become.
-        expect(syncState.drainCursorOverride, 100);
-
-        // The live subscription keeps ingesting while the drain is deferred,
-        // and recordSeen drags oldestSyncedAt below the window the drain
-        // still owes.
-        syncState.oldestOverride = 50;
-
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
-        await repository.backfillHistoryIfNeeded();
-
-        expect(capturedUntil.first, 100);
-      });
-
-      test("queries the user's own outgoing NIP-04 (authors:[self], kind 4) "
-          'when the drain completes (#5304)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
-        final capturedFilters = <nostr_filter.Filter>[];
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          ),
-        ).thenAnswer((inv) async {
-          capturedFilters.addAll(
-            inv.positionalArguments.first as List<nostr_filter.Filter>,
+          expect(
+            capturedUntil,
+            isNotEmpty,
+            reason: 'the drain must still be armed after an unanswered page',
           );
-          // Gift-wrap drain exhausts immediately; the NIP-04 recovery query
-          // also returns empty — we only assert that it was issued.
-          return answeredPage(const <Event>[]);
-        });
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
 
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+      test(
+        'pins the resume cursor when a page goes unanswered, so a sync '
+        'boundary that moves meanwhile cannot pull the next run below the '
+        'window still owed (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
 
-        await repository.backfillHistoryIfNeeded();
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        // The user's own outgoing NIP-04 is `author=self, p=recipient`,
-        // invisible to the `p:[self]` drain filter; this authors-scoped pass
-        // lets such legacy conversations re-prove `currentUserHasSent` so
-        // they are not stranded as message requests after a wipe.
-        expect(
-          capturedFilters.any(
-            (f) =>
-                (f.authors?.contains(_validPubkeyA) ?? false) &&
-                (f.kinds?.contains(EventKind.directMessage) ?? false),
-          ),
-          isTrue,
-        );
-        expect(syncState.drainCompleteOverride, isTrue);
-      });
+          await repository.backfillHistoryIfNeeded();
+
+          // Deferring is not enough on its own: the drain seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`, so a run that
+          // defers without persisting anything comes back to whatever
+          // oldestSyncedAt has become.
+          expect(syncState.drainCursorOverride, 100);
+
+          // The live subscription keeps ingesting while the drain is deferred,
+          // and recordSeen drags oldestSyncedAt below the window the drain
+          // still owes.
+          syncState.oldestOverride = 50;
+
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+          await repository.backfillHistoryIfNeeded();
+
+          expect(capturedUntil.first, 100);
+        },
+      );
+
+      test(
+        "queries the user's own outgoing NIP-04 (authors:[self], kind 4) "
+        'when the drain completes (#5304)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedFilters = <nostr_filter.Filter>[];
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            capturedFilters.addAll(
+              inv.positionalArguments.first as List<nostr_filter.Filter>,
+            );
+            // Gift-wrap drain exhausts immediately; the NIP-04 recovery query
+            // also returns empty — we only assert that it was issued.
+            return answeredPage(const <Event>[]);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The user's own outgoing NIP-04 is `author=self, p=recipient`,
+          // invisible to the `p:[self]` drain filter; this authors-scoped pass
+          // lets such legacy conversations re-prove `currentUserHasSent` so
+          // they are not stranded as message requests after a wipe.
+          expect(
+            capturedFilters.any(
+              (f) =>
+                  (f.authors?.contains(_validPubkeyA) ?? false) &&
+                  (f.kinds?.contains(EventKind.directMessage) ?? false),
+            ),
+            isTrue,
+          );
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
 
       test(
         'restores read state after the drain via the last-sent floor (#4977)',
@@ -6360,30 +6546,33 @@ void main() {
         },
       );
 
-      test('hasAttemptedHistoryRecovery distinguishes a fresh install from a '
-          'stopped-short drain', () {
-        final fresh = _FakeDmSyncState()
-          ..drainCompleteOverride = false
-          ..drainVersionOverride = 0;
-        expect(
-          createRepository(syncState: fresh).hasAttemptedHistoryRecovery,
-          isFalse,
-        );
+      test(
+        'hasAttemptedHistoryRecovery distinguishes a fresh install from a '
+        'stopped-short drain',
+        () {
+          final fresh = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = 0;
+          expect(
+            createRepository(syncState: fresh).hasAttemptedHistoryRecovery,
+            isFalse,
+          );
 
-        final attempted = _FakeDmSyncState()
-          ..drainCompleteOverride = false
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        expect(
-          createRepository(syncState: attempted).hasAttemptedHistoryRecovery,
-          isTrue,
-        );
+          final attempted = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          expect(
+            createRepository(syncState: attempted).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
 
-        final complete = _FakeDmSyncState()..drainCompleteOverride = true;
-        expect(
-          createRepository(syncState: complete).hasAttemptedHistoryRecovery,
-          isTrue,
-        );
-      });
+          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          expect(
+            createRepository(syncState: complete).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+        },
+      );
 
       test(
         'hasAttemptedHistoryRecovery is true when no sync state is wired',
@@ -6651,121 +6840,136 @@ void main() {
         },
       );
 
-      test('re-runs once for an install stranded complete by an older drain '
-          '(drainVersion below current) — #5202', () async {
-        final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final oldestRumor = nowSec - 90 * 86400;
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
+      test(
+        're-runs once for an install stranded complete by an older drain '
+        '(drainVersion below current) — #5202',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final oldestRumor = nowSec - 90 * 86400;
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
 
-        // Pre-#5202 install: flagged complete at an older drain version
-        // while history still exists on the relay. oldestSyncedAt is set
-        // because a real install always has one - leaving it null let the
-        // seed fall through to `now` and made this assertion vacuous.
-        final syncState = _FakeDmSyncState()
-          ..drainCompleteOverride = true
-          ..newestOverride = nowSec - 3600
-          ..oldestOverride = oldestRumor
-          ..drainVersionOverride = 0;
-        final repository = createRepository(syncState: syncState);
+          // Pre-#5202 install: flagged complete at an older drain version
+          // while history still exists on the relay. oldestSyncedAt is set
+          // because a real install always has one - leaving it null let the
+          // seed fall through to `now` and made this assertion vacuous.
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
+            ..drainVersionOverride = 0;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // The version bump cleared the stale flag and the drain re-ran,
-        // then re-completed cleanly (default 3 relays connected).
-        expect(syncState.upgradedPubkeys, isNotEmpty);
-        expect(capturedUntil, isNotEmpty);
-        // Not merely "a query happened": the forced pass must start ABOVE
-        // oldestSyncedAt, or it only re-reads history the install has.
-        expect(capturedUntil.first, greaterThan(oldestRumor));
-        expect(syncState.drainCompleteOverride, isTrue);
-        expect(syncState.drainVersionOverride, DmSyncState.currentDrainVersion);
-      });
+          // The version bump cleared the stale flag and the drain re-ran,
+          // then re-completed cleanly (default 3 relays connected).
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(capturedUntil, isNotEmpty);
+          // Not merely "a query happened": the forced pass must start ABOVE
+          // oldestSyncedAt, or it only re-reads history the install has.
+          expect(capturedUntil.first, greaterThan(oldestRumor));
+          expect(syncState.drainCompleteOverride, isTrue);
+          expect(
+            syncState.drainVersionOverride,
+            DmSyncState.currentDrainVersion,
+          );
+        },
+      );
 
-      test('a forced re-drain requests the recent window the eroded since: '
-          'stranded, not just history below oldestSyncedAt — #8362', () async {
-        final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        // Established install: the drain completed months ago, so
-        // markHistoryDrainComplete already removed the resume cursor and
-        // oldestSyncedAt is the floor of the whole account history.
-        final oldestRumor = nowSec - 90 * 86400;
-        // A gift wrap the pre-#8361 `since:` window dropped. Its OUTER
-        // stamp sits just under the two-day overlap - far ABOVE the
-        // account's oldest rumor, which is why seeding the forced pass at
-        // oldestSyncedAt never asks for it.
-        final strandedOuter = nowSec - 2 * 86400 - 3600;
+      test(
+        'a forced re-drain requests the recent window the eroded since: '
+        'stranded, not just history below oldestSyncedAt — #8362',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          // Established install: the drain completed months ago, so
+          // markHistoryDrainComplete already removed the resume cursor and
+          // oldestSyncedAt is the floor of the whole account history.
+          final oldestRumor = nowSec - 90 * 86400;
+          // A gift wrap the pre-#8361 `since:` window dropped. Its OUTER
+          // stamp sits just under the two-day overlap - far ABOVE the
+          // account's oldest rumor, which is why seeding the forced pass at
+          // oldestSyncedAt never asks for it.
+          final strandedOuter = nowSec - 2 * 86400 - 3600;
 
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(<Event>[deletion(strandedOuter)], capturedUntil);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(<Event>[deletion(strandedOuter)], capturedUntil);
 
-        final syncState = _FakeDmSyncState()
-          ..drainCompleteOverride = true
-          ..newestOverride = nowSec - 3600
-          ..oldestOverride = oldestRumor
-          ..drainVersionOverride = DmSyncState.currentDrainVersion - 1;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
+            ..drainVersionOverride = DmSyncState.currentDrainVersion - 1;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(syncState.upgradedPubkeys, isNotEmpty);
-        expect(
-          capturedUntil.any((until) => (until ?? 0) >= strandedOuter),
-          isTrue,
-          reason:
-              'the forced pass must request a window that covers the '
-              'stranded wrap; seeding at oldestSyncedAt asks only for '
-              '${nowSec - oldestRumor}s-old history and recovers nothing',
-        );
-      });
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(
+            capturedUntil.any((until) => (until ?? 0) >= strandedOuter),
+            isTrue,
+            reason:
+                'the forced pass must request a window that covers the '
+                'stranded wrap; seeding at oldestSyncedAt asks only for '
+                '${nowSec - oldestRumor}s-old history and recovers nothing',
+          );
+        },
+      );
 
-      test('re-arms an install the pre-#8209 drain latched complete while '
-          'history was still on the relay', () async {
-        final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final oldestRumor = nowSec - 90 * 86400;
-        final capturedUntil = <int?>[];
-        stubFiniteHistory(const <Event>[], capturedUntil);
+      test(
+        're-arms an install the pre-#8209 drain latched complete while '
+        'history was still on the relay',
+        () async {
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final oldestRumor = nowSec - 90 * 86400;
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
 
-        // 3 is the version that shipped the `connectedRelayCount` guard: an
-        // install that latched under it has historyDrainComplete set and
-        // returns before issuing a single query, so the corrected guard
-        // never reaches it. Only a currentDrainVersion bump does — this is
-        // hardcoded rather than `currentDrainVersion - 1` precisely so it
-        // fails if #8209 ships without one.
-        final syncState = _FakeDmSyncState()
-          ..drainCompleteOverride = true
-          ..newestOverride = nowSec - 3600
-          ..oldestOverride = oldestRumor
-          ..drainVersionOverride = 3;
-        final repository = createRepository(syncState: syncState);
+          // 3 is the version that shipped the `connectedRelayCount` guard: an
+          // install that latched under it has historyDrainComplete set and
+          // returns before issuing a single query, so the corrected guard
+          // never reaches it. Only a currentDrainVersion bump does — this is
+          // hardcoded rather than `currentDrainVersion - 1` precisely so it
+          // fails if #8209 ships without one.
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..newestOverride = nowSec - 3600
+            ..oldestOverride = oldestRumor
+            ..drainVersionOverride = 3;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(syncState.upgradedPubkeys, isNotEmpty);
-        expect(capturedUntil, isNotEmpty);
-        expect(capturedUntil.first, greaterThan(oldestRumor));
-        expect(syncState.drainCompleteOverride, isTrue);
-      });
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(capturedUntil, isNotEmpty);
+          expect(capturedUntil.first, greaterThan(oldestRumor));
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
 
-      test('emits recovery true→false on historyRecoveryStream around an '
-          'actual drain (#5202)', () async {
-        final capturedUntil = <int?>[];
-        stubFiniteHistory([deletion(50)], capturedUntil);
-        final syncState = _FakeDmSyncState()
-          ..oldestOverride = 100
-          ..drainVersionOverride = DmSyncState.currentDrainVersion;
-        final repository = createRepository(syncState: syncState);
+      test(
+        'emits recovery true→false on historyRecoveryStream around an '
+        'actual drain (#5202)',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory([deletion(50)], capturedUntil);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
 
-        final recovery = <bool>[];
-        final sub = repository.historyRecoveryStream.listen(recovery.add);
+          final recovery = <bool>[];
+          final sub = repository.historyRecoveryStream.listen(recovery.add);
 
-        expect(repository.isRecoveringHistory, isFalse);
-        await repository.backfillHistoryIfNeeded();
-        await Future<void>.delayed(Duration.zero);
-        await sub.cancel();
+          expect(repository.isRecoveringHistory, isFalse);
+          await repository.backfillHistoryIfNeeded();
+          await Future<void>.delayed(Duration.zero);
+          await sub.cancel();
 
-        expect(recovery, [true, false]);
-        expect(repository.isRecoveringHistory, isFalse);
-      });
+          expect(recovery, [true, false]);
+          expect(repository.isRecoveringHistory, isFalse);
+        },
+      );
 
       test(
         'does not emit recovery for an already-complete drain (#5202)',
@@ -6787,32 +6991,35 @@ void main() {
         },
       );
 
-      test('pages newest→oldest from oldestSyncedAt until the relay is empty, '
-          'then marks the drain complete', () async {
-        final capturedUntil = <int?>[];
-        stubFiniteHistory([
-          deletion(50),
-          deletion(40),
-          deletion(30),
-        ], capturedUntil);
+      test(
+        'pages newest→oldest from oldestSyncedAt until the relay is empty, '
+        'then marks the drain complete',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory([
+            deletion(50),
+            deletion(40),
+            deletion(30),
+          ], capturedUntil);
 
-        final syncState = _FakeDmSyncState()..oldestOverride = 100;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // Seeded from oldestSyncedAt, then strictly decreasing.
-        expect(capturedUntil.first, 100);
-        for (var i = 1; i < capturedUntil.length; i++) {
-          expect(capturedUntil[i]! < capturedUntil[i - 1]!, isTrue);
-        }
-        // Terminated on an empty page and recorded completion.
-        expect(syncState.drainCompleteOverride, isTrue);
-        // The boundary is persisted while paging and cleared once the
-        // drain completes cleanly.
-        expect(syncState.persistedDrainCursors, isNotEmpty);
-        expect(syncState.drainCursorOverride, isNull);
-      });
+          // Seeded from oldestSyncedAt, then strictly decreasing.
+          expect(capturedUntil.first, 100);
+          for (var i = 1; i < capturedUntil.length; i++) {
+            expect(capturedUntil[i]! < capturedUntil[i - 1]!, isTrue);
+          }
+          // Terminated on an empty page and recorded completion.
+          expect(syncState.drainCompleteOverride, isTrue);
+          // The boundary is persisted while paging and cleared once the
+          // drain completes cleanly.
+          expect(syncState.persistedDrainCursors, isNotEmpty);
+          expect(syncState.drainCursorOverride, isNull);
+        },
+      );
 
       test('is a no-op when the drain already completed', () async {
         final syncState = _FakeDmSyncState()
@@ -6849,108 +7056,116 @@ void main() {
         );
       });
 
-      test('stops at the page cap, leaves the drain incomplete, and persists '
-          'a resume cursor', () async {
-        var calls = 0;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          ),
-        ).thenAnswer((inv) async {
-          final filters =
-              inv.positionalArguments.first as List<nostr_filter.Filter>;
-          // Skip the #4974 own kind-10050 inbox-relay resolve so it is not
-          // counted as a drain page.
-          if (filters.single.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-            return answeredPage(const <Event>[]);
-          }
-          calls++;
-          final until = filters.single.until!;
-          // Infinite descending supply: only the maxPages cap can stop it.
-          return answeredPage([deletion(until - 1)]);
-        });
+      test(
+        'stops at the page cap, leaves the drain incomplete, and persists '
+        'a resume cursor',
+        () async {
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            // Skip the #4974 own kind-10050 inbox-relay resolve so it is not
+            // counted as a drain page.
+            if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                false) {
+              return answeredPage(const <Event>[]);
+            }
+            calls++;
+            final until = filters.single.until!;
+            // Infinite descending supply: only the maxPages cap can stop it.
+            return answeredPage([deletion(until - 1)]);
+          });
 
-        final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(calls, DmHistoryDrainConfig.maxPages);
-        // Cap hit: do NOT declare the drain complete, or heavy users would
-        // permanently lose history older than the cap. Persist the
-        // boundary so the next inbox open resumes instead of restarting.
-        // See #4953.
-        expect(syncState.drainCompleteOverride, isFalse);
-        expect(syncState.markedCompletePubkeys, isEmpty);
-        expect(syncState.drainCursorOverride, isNotNull);
-        expect(syncState.drainCursorOverride, lessThan(1000000));
-        // The boundary is persisted after EVERY page (not just the last),
-        // so an interruption at any point resumes from the latest page.
-        expect(
-          syncState.persistedDrainCursors,
-          hasLength(DmHistoryDrainConfig.maxPages),
-        );
-      });
+          expect(calls, DmHistoryDrainConfig.maxPages);
+          // Cap hit: do NOT declare the drain complete, or heavy users would
+          // permanently lose history older than the cap. Persist the
+          // boundary so the next inbox open resumes instead of restarting.
+          // See #4953.
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(syncState.drainCursorOverride, isNotNull);
+          expect(syncState.drainCursorOverride, lessThan(1000000));
+          // The boundary is persisted after EVERY page (not just the last),
+          // so an interruption at any point resumes from the latest page.
+          expect(
+            syncState.persistedDrainCursors,
+            hasLength(DmHistoryDrainConfig.maxPages),
+          );
+        },
+      );
 
-      test("the page-cap log names the frozen resume cursor, not the loop's "
-          '(#8209)', () async {
-        await LogCaptureService().clearAllLogs();
+      test(
+        "the page-cap log names the frozen resume cursor, not the loop's "
+        '(#8209)',
+        () async {
+          await LogCaptureService().clearAllLogs();
 
-        var calls = 0;
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-          ),
-        ).thenAnswer((inv) async {
-          final filters =
-              inv.positionalArguments.first as List<nostr_filter.Filter>;
-          if (filters.single.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-            return answeredPage(const <Event>[]);
-          }
-          calls++;
-          final until = filters.single.until!;
-          // Every page unsettled, over an infinite descending supply: the
-          // durable cursor freezes at the seed on page 1 while the loop's
-          // own `cursor` keeps descending all the way to the cap. The log
-          // has to name the former — it is what the next run resumes from.
-          return partialPage([deletion(until - 1)]);
-        });
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                false) {
+              return answeredPage(const <Event>[]);
+            }
+            calls++;
+            final until = filters.single.until!;
+            // Every page unsettled, over an infinite descending supply: the
+            // durable cursor freezes at the seed on page 1 while the loop's
+            // own `cursor` keeps descending all the way to the cap. The log
+            // has to name the former — it is what the next run resumes from.
+            return partialPage([deletion(until - 1)]);
+          });
 
-        final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(calls, DmHistoryDrainConfig.maxPages);
-        expect(syncState.persistedDrainCursors, [1000000]);
+          expect(calls, DmHistoryDrainConfig.maxPages);
+          expect(syncState.persistedDrainCursors, [1000000]);
 
-        const loopCursor = 1000000 - DmHistoryDrainConfig.maxPages;
-        final capLogs = LogCaptureService()
-            .getRecentLogs()
-            .where(
-              (e) =>
-                  e.level == LogLevel.warning &&
-                  e.message.contains('paused at the page cap'),
-            )
-            .toList();
-        expect(capLogs, hasLength(1));
-        expect(
-          capLogs.single.message,
-          contains('will resume from the persisted cursor (1000000)'),
-        );
-        expect(
-          capLogs.single.message,
-          isNot(contains('persisted cursor ($loopCursor)')),
-        );
-      });
+          const loopCursor = 1000000 - DmHistoryDrainConfig.maxPages;
+          final capLogs = LogCaptureService()
+              .getRecentLogs()
+              .where(
+                (e) =>
+                    e.level == LogLevel.warning &&
+                    e.message.contains('paused at the page cap'),
+              )
+              .toList();
+          expect(capLogs, hasLength(1));
+          expect(
+            capLogs.single.message,
+            contains('will resume from the persisted cursor (1000000)'),
+          );
+          expect(
+            capLogs.single.message,
+            isNot(contains('persisted cursor ($loopCursor)')),
+          );
+        },
+      );
 
       test(
         'resumes from the persisted drain cursor instead of oldestSyncedAt',
@@ -7453,14 +7668,18 @@ void main() {
         // Stateful dedup mirroring production: hasGiftWrap reflects what
         // insertMessage has persisted, so the inclusive `until` boundary
         // re-request is deduped instead of re-inserted.
-        when(() => mockDirectMessagesDao.hasGiftWrap(any())).thenAnswer(
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer(
           (inv) async =>
               persistedGiftWrapIds.contains(inv.positionalArguments[0]),
         );
         // Batched dedup probe (#13) mirrors the same stateful set as
         // hasGiftWrap, so the inclusive-`until` boundary re-request is deduped
         // before decryption instead of re-decrypted.
-        when(() => mockDirectMessagesDao.giftWrapIdsPresent(any())).thenAnswer(
+        when(
+          () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
+        ).thenAnswer(
           (inv) async => (inv.positionalArguments[0] as Set<String>)
               .intersection(persistedGiftWrapIds),
         );
@@ -7703,7 +7922,10 @@ void main() {
           );
           expect(
             persistedGiftWrapIds,
-            containsAll(<String>[wrap1.id, wrap2.id]),
+            containsAll(<String>[
+              wrap1.id,
+              wrap2.id,
+            ]),
           );
 
           await controller.close();
@@ -7711,138 +7933,153 @@ void main() {
         },
       );
 
-      test('verify-isolate spawn failure falls back to inline verification '
-          'without respawning per wrap', () async {
-        final wrap1 = await _buildGiftWrap(
-          rumor: rumorFor('spawn-fail inline 1', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
-        final wrap2 = await _buildGiftWrap(
-          rumor: rumorFor('spawn-fail inline 2', createdAt: 1700000600),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000100,
-        );
+      test(
+        'verify-isolate spawn failure falls back to inline verification '
+        'without respawning per wrap',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('spawn-fail inline 1', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('spawn-fail inline 2', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000100,
+          );
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        var spawnAttempts = 0;
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: LocalNostrSigner(recipientPriv),
-          verifyIsolateSpawner: () async {
-            spawnAttempts++;
-            throw StateError('spawn refused');
-          },
-        );
+          var spawnAttempts = 0;
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            verifyIsolateSpawner: () async {
+              spawnAttempts++;
+              throw StateError('spawn refused');
+            },
+          );
 
-        await repository.startListening();
-        controller
-          ..add(wrap1)
-          ..add(wrap2);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller
+            ..add(wrap1)
+            ..add(wrap2);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        // One failed spawn attempt, then inline verification — both wraps
-        // still decrypt and persist.
-        expect(spawnAttempts, equals(1));
-        expect(persistedGiftWrapIds, containsAll(<String>[wrap1.id, wrap2.id]));
+          // One failed spawn attempt, then inline verification — both wraps
+          // still decrypt and persist.
+          expect(spawnAttempts, equals(1));
+          expect(
+            persistedGiftWrapIds,
+            containsAll(<String>[
+              wrap1.id,
+              wrap2.id,
+            ]),
+          );
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
-      test('stopListening closes the shared verify isolate (the production '
-          'disposal path — provider rebuilds never hit _resetState)', () async {
-        final wrap = await _buildGiftWrap(
-          rumor: rumorFor('closed on stop', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
+      test(
+        'stopListening closes the shared verify isolate (the production '
+        'disposal path — provider rebuilds never hit _resetState)',
+        () async {
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('closed on stop', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final verifyWorker = _RecordingVerifyWorker();
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: LocalNostrSigner(recipientPriv),
-          verifyIsolateSpawner: () async => verifyWorker,
-        );
+          final verifyWorker = _RecordingVerifyWorker();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            verifyIsolateSpawner: () async => verifyWorker,
+          );
 
-        await repository.startListening();
-        controller.add(wrap);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(wrap);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(verifyWorker.verifiedKinds, isNotEmpty);
-        expect(verifyWorker.closed, isFalse);
+          expect(verifyWorker.verifiedKinds, isNotEmpty);
+          expect(verifyWorker.closed, isFalse);
 
-        await controller.close();
-        await repository.stopListening();
+          await controller.close();
+          await repository.stopListening();
 
-        expect(verifyWorker.closed, isTrue);
-      });
+          expect(verifyWorker.closed, isTrue);
+        },
+      );
 
-      test('a verify-isolate spawn in flight across stopListening is closed, '
-          'never installed', () async {
-        final wrap = await _buildGiftWrap(
-          rumor: rumorFor('stale spawn', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
+      test(
+        'a verify-isolate spawn in flight across stopListening is closed, '
+        'never installed',
+        () async {
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('stale spawn', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final staleWorker = _RecordingVerifyWorker();
-        final spawnGate = Completer<void>();
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: LocalNostrSigner(recipientPriv),
-          verifyIsolateSpawner: () async {
-            await spawnGate.future;
-            return staleWorker;
-          },
-        );
+          final staleWorker = _RecordingVerifyWorker();
+          final spawnGate = Completer<void>();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            verifyIsolateSpawner: () async {
+              await spawnGate.future;
+              return staleWorker;
+            },
+          );
 
-        await repository.startListening();
-        controller.add(wrap);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(wrap);
+          await Future<void>.delayed(Duration.zero);
 
-        // Stop while the spawn is still blocked, then release it. The
-        // generation bump must invalidate the late spawn so its worker is
-        // closed instead of being installed as a leak nothing ever closes.
-        await controller.close();
-        final stop = repository.stopListening();
-        spawnGate.complete();
-        await stop;
+          // Stop while the spawn is still blocked, then release it. The
+          // generation bump must invalidate the late spawn so its worker is
+          // closed instead of being installed as a leak nothing ever closes.
+          await controller.close();
+          final stop = repository.stopListening();
+          spawnGate.complete();
+          await stop;
 
-        expect(staleWorker.closed, isTrue);
-        // The stale worker never verified anything — the wrap it was
-        // spawned for fell back to inline verification.
-        expect(staleWorker.verifiedKinds, isEmpty);
-      });
+          expect(staleWorker.closed, isTrue);
+          // The stale worker never verified anything — the wrap it was
+          // spawned for fell back to inline verification.
+          expect(staleWorker.verifiedKinds, isEmpty);
+        },
+      );
 
       test(
         'a wrap suspended at refreshPublicKey across stopListening does not '
@@ -8026,115 +8263,124 @@ void main() {
         },
       );
 
-      test('remote-signer drain drops a wrap whose seal fails verification '
-          '(#5424)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+      test(
+        'remote-signer drain drops a wrap whose seal fails verification '
+        '(#5424)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
 
-        final forged = await _buildForgedSealGiftWrap(
-          rumor: rumorFor('should be dropped', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
-        stubDrainPage([forged]);
+          final forged = await _buildForgedSealGiftWrap(
+            rumor: rumorFor('should be dropped', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          stubDrainPage([forged]);
 
-        final verifyWorker = _RecordingVerifyWorker();
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: LocalNostrSigner(recipientPriv),
-          syncState: drainPending(),
-          verifyIsolateSpawner: () async => verifyWorker,
-        );
+          final verifyWorker = _RecordingVerifyWorker();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            syncState: drainPending(),
+            verifyIsolateSpawner: () async => verifyWorker,
+          );
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // The seal was verified (off-isolate) and rejected, so the wrap is
-        // never persisted as a message.
-        expect(verifyWorker.verifiedKinds, contains(EventKind.sealEventKind));
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          // The seal was verified (off-isolate) and rejected, so the wrap is
+          // never persisted as a message.
+          expect(
+            verifyWorker.verifiedKinds,
+            contains(EventKind.sealEventKind),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
-      test('remote-signer drain verifies through a real DmVerifyIsolate '
-          'end-to-end (toJson/SendPort round-trip) (#5424)', () async {
-        when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+      test(
+        'remote-signer drain verifies through a real DmVerifyIsolate '
+        'end-to-end (toJson/SendPort round-trip) (#5424)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
 
-        final wrap = await _buildGiftWrap(
-          rumor: rumorFor('real verify isolate', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
-        stubDrainPage([wrap]);
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('real verify isolate', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          stubDrainPage([wrap]);
 
-        // Inject the production spawner so the outer-wrap + seal verification
-        // crosses a real SendPort (event.toJson() out, bool back) on the
-        // actual drain path — the recording worker the other drain tests use
-        // runs inline, so the isolate's port round-trip is otherwise only
-        // covered by dm_verify_isolate_test.dart in isolation. See #5424.
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: LocalNostrSigner(recipientPriv),
-          syncState: drainPending(),
-          verifyIsolateSpawner: DmVerifyIsolate.spawn,
-        );
+          // Inject the production spawner so the outer-wrap + seal verification
+          // crosses a real SendPort (event.toJson() out, bool back) on the
+          // actual drain path — the recording worker the other drain tests use
+          // runs inline, so the isolate's port round-trip is otherwise only
+          // covered by dm_verify_isolate_test.dart in isolation. See #5424.
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            syncState: drainPending(),
+            verifyIsolateSpawner: DmVerifyIsolate.spawn,
+          );
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        // The wrap survived the real-isolate verification round-trip (both
-        // the outer wrap and the seal returned true across the port) and
-        // persisted as a message.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: senderPub,
-            content: 'real verify isolate',
-            createdAt: 1700000500,
-            giftWrapId: wrap.id,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: recipientPub,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-      });
+          // The wrap survived the real-isolate verification round-trip (both
+          // the outer wrap and the seal returned true across the port) and
+          // persisted as a message.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'real verify isolate',
+              createdAt: 1700000500,
+              giftWrapId: wrap.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'stale drain spawn cannot close or clear the next drain worker',
@@ -8211,93 +8457,96 @@ void main() {
         },
       );
 
-      test('batches a drain page of real gift wraps and persists each message '
-          'without a per-event decryptor', () async {
-        final wrap1 = await _buildGiftWrap(
-          rumor: rumorFor('batch hello 1', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
-        final wrap2 = await _buildGiftWrap(
-          rumor: rumorFor('batch hello 2', createdAt: 1700000600),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000001,
-        );
-        stubDrainPage([wrap1, wrap2]);
+      test(
+        'batches a drain page of real gift wraps and persists each message '
+        'without a per-event decryptor',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('batch hello 1', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('batch hello 2', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000001,
+          );
+          stubDrainPage([wrap1, wrap2]);
 
-        final syncState = drainPending();
-        // No rumorDecryptor injected: the only decrypt path available is the
-        // isolate batch, so persisted messages prove the batch decrypted.
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: _IsolateLocalSigner(recipientPriv),
-          syncState: syncState,
-        );
+          final syncState = drainPending();
+          // No rumorDecryptor injected: the only decrypt path available is the
+          // isolate batch, so persisted messages prove the batch decrypted.
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: syncState,
+          );
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: senderPub,
-            content: 'batch hello 1',
-            createdAt: 1700000500,
-            giftWrapId: wrap1.id,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: recipientPub,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: senderPub,
-            content: 'batch hello 2',
-            createdAt: 1700000600,
-            giftWrapId: wrap2.id,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: recipientPub,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'batch hello 1',
+              createdAt: 1700000500,
+              giftWrapId: wrap1.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'batch hello 2',
+              createdAt: 1700000600,
+              giftWrapId: wrap2.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
 
-        // Sync boundaries advance on the rumor's real created_at, and dedup
-        // holds across the inclusive-boundary re-request (no triple insert).
-        expect(
-          syncState.recorded.map((r) => r.createdAt),
-          containsAll(<int>[1700000500, 1700000600]),
-        );
-      });
+          // Sync boundaries advance on the rumor's real created_at, and dedup
+          // holds across the inclusive-boundary re-request (no triple insert).
+          expect(
+            syncState.recorded.map((r) => r.createdAt),
+            containsAll(<int>[1700000500, 1700000600]),
+          );
+        },
+      );
 
       test(
         'probes the page dedup index with ONE batch query carrying the whole '
@@ -8335,97 +8584,100 @@ void main() {
         },
       );
 
-      test('a wrap already in the processed-wrap ledger is not re-decrypted, '
-          'while its page-mate still persists (#5452)', () async {
-        final alreadyProcessed = await _buildGiftWrap(
-          rumor: rumorFor('ledgered', createdAt: 1700000500),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000000,
-        );
-        final fresh = await _buildGiftWrap(
-          rumor: rumorFor('fresh', createdAt: 1700000600),
-          senderPrivateKey: senderPriv,
-          recipientPubkey: recipientPub,
-          outerCreatedAt: 1700000001,
-        );
-        stubDrainPage([alreadyProcessed, fresh]);
+      test(
+        'a wrap already in the processed-wrap ledger is not re-decrypted, '
+        'while its page-mate still persists (#5452)',
+        () async {
+          final alreadyProcessed = await _buildGiftWrap(
+            rumor: rumorFor('ledgered', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final fresh = await _buildGiftWrap(
+            rumor: rumorFor('fresh', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000001,
+          );
+          stubDrainPage([alreadyProcessed, fresh]);
 
-        // Only the ledger knows about the first wrap — the messages table
-        // does not. That is the split `_alreadyProcessedBatch` unions, and
-        // dropping its ledger half is invisible to every other test (#8170).
-        final ledger = _InMemoryProcessedGiftWrapsDao();
-        await ledger.record(
-          giftWrapId: alreadyProcessed.id,
-          ownerPubkey: recipientPub,
-        );
-
-        final repository = createRepository(
-          userPubkey: recipientPub,
-          signer: _IsolateLocalSigner(recipientPriv),
-          syncState: drainPending(),
-          processedGiftWrapsDao: ledger,
-        );
-
-        await repository.backfillHistoryIfNeeded();
-
-        // The page-mate proves the drain ran and decrypted normally.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: senderPub,
-            content: 'fresh',
-            createdAt: 1700000600,
-            giftWrapId: fresh.id,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
+          // Only the ledger knows about the first wrap — the messages table
+          // does not. That is the split `_alreadyProcessedBatch` unions, and
+          // dropping its ledger half is invisible to every other test (#8170).
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          await ledger.record(
+            giftWrapId: alreadyProcessed.id,
             ownerPubkey: recipientPub,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
+          );
 
-        // The ledgered one is skipped before any decrypt, so it never
-        // reaches an insert.
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: 'ledgered',
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: drainPending(),
+            processedGiftWrapsDao: ledger,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The page-mate proves the drain ran and decrypted normally.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'fresh',
+              createdAt: 1700000600,
+              giftWrapId: fresh.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+
+          // The ledgered one is skipped before any decrypt, so it never
+          // reaches an insert.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: 'ledgered',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
       test(
         'an undecryptable wrap falls back to the per-event path and is queued '
@@ -8589,7 +8841,9 @@ void main() {
               sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((inv) async {
-            persistedGiftWrapIds.add(inv.namedArguments[#giftWrapId] as String);
+            persistedGiftWrapIds.add(
+              inv.namedArguments[#giftWrapId] as String,
+            );
             persistedContents.add(inv.namedArguments[#content] as String);
             return true;
           });
@@ -8614,9 +8868,10 @@ void main() {
 
           await repository.backfillHistoryIfNeeded();
 
-          expect(persistedContents, {
-            for (var i = 0; i < count; i++) 'multichunk $i',
-          });
+          expect(
+            persistedContents,
+            {for (var i = 0; i < count; i++) 'multichunk $i'},
+          );
         },
       );
 
@@ -8730,9 +8985,15 @@ void main() {
 
         expect(conversations, hasLength(1));
         expect(conversations.first.id, equals(convId));
-        expect(conversations.first.participantPubkeys, equals(participants));
+        expect(
+          conversations.first.participantPubkeys,
+          equals(participants),
+        );
         expect(conversations.first.isGroup, isFalse);
-        expect(conversations.first.lastMessageContent, equals('Hi'));
+        expect(
+          conversations.first.lastMessageContent,
+          equals('Hi'),
+        );
         expect(conversations.first.isRead, isTrue);
       });
     });
@@ -8819,14 +9080,10 @@ void main() {
         );
       });
 
-      // #8201. A refused retraction is the only deletion state the thread can
-      // ever show: `pending` and `sent` both leave `isDeleted` true, so the
-      // row is filtered out. The bubble is back, and it has to say why.
-      test('marks a message whose retraction was refused', () async {
-        final convId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+      test('maps a refused retraction to failed bubble state', () async {
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
         when(
           () => mockDirectMessagesDao.watchMessagesForConversation(
             convId,
@@ -8851,14 +9108,16 @@ void main() {
 
         final messages = await createRepository().watchMessages(convId).first;
 
-        expect(messages.single.retractionBlocked, isTrue);
+        expect(
+          messages.single.retractionStatus,
+          DmRetractionStatus.failed,
+        );
       });
 
-      test('leaves an ordinary message unmarked', () async {
-        final convId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+      test('maps an ordinary message to no retraction state', () async {
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
         when(
           () => mockDirectMessagesDao.watchMessagesForConversation(
             convId,
@@ -8882,14 +9141,13 @@ void main() {
 
         final messages = await createRepository().watchMessages(convId).first;
 
-        expect(messages.single.retractionBlocked, isFalse);
+        expect(messages.single.retractionStatus, DmRetractionStatus.none);
       });
 
       test('maps $DirectMessageRow to $DmMessage', () async {
-        final convId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
 
         when(
           () => mockDirectMessagesDao.watchMessagesForConversation(
@@ -8917,9 +9175,15 @@ void main() {
 
         expect(messages, hasLength(1));
         expect(messages.first.id, equals(_rumorEventId));
-        expect(messages.first.senderPubkey, equals(_validPubkeyB));
+        expect(
+          messages.first.senderPubkey,
+          equals(_validPubkeyB),
+        );
         expect(messages.first.content, equals('Hello!'));
-        expect(messages.first.giftWrapId, equals(_giftWrapEventId));
+        expect(
+          messages.first.giftWrapId,
+          equals(_giftWrapEventId),
+        );
       });
     });
 
@@ -9030,44 +9294,49 @@ void main() {
         lastReadTimestamp: cursor,
       );
 
-      test('reading a conversation publishes a debounced self-only read marker '
-          'keyed by the participant tuple', () async {
-        when(
-          () => mockConversationsDao.getAllConversations(
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => [readConversation(cursor: 1700000200)]);
+      test(
+        'reading a conversation publishes a debounced self-only read marker '
+        'keyed by the participant tuple',
+        () async {
+          when(
+            () => mockConversationsDao.getAllConversations(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => [readConversation(cursor: 1700000200)]);
 
-        final repository = createRepository(
-          readMarkerDebounceDelay: Duration.zero,
-        );
-        await repository.markConversationAsRead(conversationId);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+          final repository = createRepository(
+            readMarkerDebounceDelay: Duration.zero,
+          );
+          await repository.markConversationAsRead(conversationId);
+          await Future<void>.delayed(const Duration(milliseconds: 20));
 
-        final captured = verify(
-          () => mockMessageService.publishSelfApplicationMarker(
-            content: captureAny(named: 'content'),
-            tags: captureAny(named: 'tags'),
-            eventKind: any(named: 'eventKind'),
-          ),
-        ).captured;
-        expect(captured, isNotEmpty);
-        final payload = jsonDecode(captured[0] as String) as Map;
-        final tags = captured[1] as List<List<String>>;
-        expect(payload['v'], 1);
-        expect((payload['read'] as Map)[tupleKey], 1700000200);
-        expect(tags, contains(equals(['d', 'divine/dm-read/v1'])));
-        // Self-only: a read marker never goes out as a counterparty message.
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-      });
+          final captured = verify(
+            () => mockMessageService.publishSelfApplicationMarker(
+              content: captureAny(named: 'content'),
+              tags: captureAny(named: 'tags'),
+              eventKind: any(named: 'eventKind'),
+            ),
+          ).captured;
+          expect(captured, isNotEmpty);
+          final payload = jsonDecode(captured[0] as String) as Map;
+          final tags = captured[1] as List<List<String>>;
+          expect(payload['v'], 1);
+          expect((payload['read'] as Map)[tupleKey], 1700000200);
+          expect(tags, contains(equals(['d', 'divine/dm-read/v1'])));
+          // Self-only: a read marker never goes out as a counterparty message.
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+        },
+      );
 
       test(
         'does not publish a marker when no conversation has been read',
@@ -9118,88 +9387,91 @@ void main() {
         ).called(1);
       });
 
-      test('an incoming kind-30078 read marker advances cursors and is not '
-          'rendered as a message', () async {
-        Event giftWrap() => Event.fromJson({
-          'id': _giftWrapEventId,
-          'pubkey':
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          'created_at': 1700000000,
-          'kind': EventKind.giftWrap,
-          'tags': [
-            ['p', _validPubkeyA],
-          ],
-          'content': 'encrypted',
-          'sig': '',
-        });
-        final markerRumor = Event.fromJson({
-          'id': _rumorEventId,
-          'pubkey': _validPubkeyA,
-          'created_at': 1700000300,
-          'kind': EventKind.appSpecificData,
-          'tags': [
-            ['d', 'divine/dm-read/v1'],
-          ],
-          'content': jsonEncode({
-            'v': 1,
-            'read': {tupleKey: 1700000300},
-          }),
-          'sig': '',
-        });
+      test(
+        'an incoming kind-30078 read marker advances cursors and is not '
+        'rendered as a message',
+        () async {
+          Event giftWrap() => Event.fromJson({
+            'id': _giftWrapEventId,
+            'pubkey':
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'created_at': 1700000000,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'encrypted',
+            'sig': '',
+          });
+          final markerRumor = Event.fromJson({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyA,
+            'created_at': 1700000300,
+            'kind': EventKind.appSpecificData,
+            'tags': [
+              ['d', 'divine/dm-read/v1'],
+            ],
+            'content': jsonEncode({
+              'v': 1,
+              'read': {tupleKey: 1700000300},
+            }),
+            'sig': '',
+          });
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
-        ).thenAnswer((_) async => false);
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => markerRumor,
-        );
-        await repository.startListening();
-        controller.add(giftWrap());
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => markerRumor,
+          );
+          await repository.startListening();
+          controller.add(giftWrap());
+          await Future<void>.delayed(const Duration(milliseconds: 20));
 
-        verify(
-          () => mockConversationsDao.applyReadCursor(
-            conversationId,
-            1700000300,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          verify(
+            () => mockConversationsDao.applyReadCursor(
+              conversationId,
+              1700000300,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
       test(
         'markConversationsAsRead marks the batch and schedules one publish',
@@ -9223,10 +9495,10 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 20));
 
           verify(
-            () => mockConversationsDao.markMultipleAsRead([
-              conversationId,
-              'other',
-            ], ownerPubkey: any(named: 'ownerPubkey')),
+            () => mockConversationsDao.markMultipleAsRead(
+              [conversationId, 'other'],
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).called(1);
           verify(
             () => mockMessageService.publishSelfApplicationMarker(
@@ -9466,12 +9738,17 @@ void main() {
         },
       );
 
-      test('a rejected read marker is still ledgered so it is not re-decrypted '
-          'on every launch', () async {
-        final ledger = await deliverMarkerRumor(readMarkerFrom(_validPubkeyB));
+      test(
+        'a rejected read marker is still ledgered so it is not re-decrypted '
+        'on every launch',
+        () async {
+          final ledger = await deliverMarkerRumor(
+            readMarkerFrom(_validPubkeyB),
+          );
 
-        expect(ledger.recorded, contains(_giftWrapEventId));
-      });
+          expect(ledger.recorded, contains(_giftWrapEventId));
+        },
+      );
 
       test(
         'a self-authored marker cannot ratchet a cursor past the local clock',
@@ -9635,82 +9912,85 @@ void main() {
         ).thenAnswer((_) async => null);
       });
 
-      test('deletes messages then conversation in a transaction', () async {
-        const convId =
-            'aabb00112233445566778899aabbccddeeff'
-            '0011223344556677889900aabb00';
+      test(
+        'deletes messages then conversation in a transaction',
+        () async {
+          const convId =
+              'aabb00112233445566778899aabbccddeeff'
+              '0011223344556677889900aabb00';
 
-        when(
-          () => mockConversationsDao.runInTransaction<void>(any()),
-        ).thenAnswer((inv) async {
-          final callback =
-              inv.positionalArguments.first as Future<void> Function();
-          await callback();
-        });
-        when(
-          () => mockDirectMessagesDao.deleteConversationMessages(
-            convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 3);
-        when(
-          () => mockConversationsDao.deleteConversation(
-            convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 1);
+          when(
+            () => mockConversationsDao.runInTransaction<void>(any()),
+          ).thenAnswer((inv) async {
+            final callback =
+                inv.positionalArguments.first as Future<void> Function();
+            await callback();
+          });
+          when(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => mockConversationsDao.deleteConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
 
-        final removedConversationsDao = _MockRemovedConversationsDao();
-        final outgoingDmsDao = _MockOutgoingDmsDao();
-        when(
-          () => removedConversationsDao.record(
-            conversationId: convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-            removedAt: any(named: 'removedAt'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => outgoingDmsDao.deleteForConversation(
-            conversationId: convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 1);
+          final removedConversationsDao = _MockRemovedConversationsDao();
+          final outgoingDmsDao = _MockOutgoingDmsDao();
+          when(
+            () => removedConversationsDao.record(
+              conversationId: convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              removedAt: any(named: 'removedAt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => outgoingDmsDao.deleteForConversation(
+              conversationId: convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
 
-        final repository = createRepository(
-          removedConversationsDao: removedConversationsDao,
-          outgoingDmsDao: outgoingDmsDao,
-        );
-        await repository.removeConversation(convId);
+          final repository = createRepository(
+            removedConversationsDao: removedConversationsDao,
+            outgoingDmsDao: outgoingDmsDao,
+          );
+          await repository.removeConversation(convId);
 
-        verify(
-          () => mockConversationsDao.runInTransaction<void>(any()),
-        ).called(1);
-        verify(
-          () => mockDirectMessagesDao.deleteConversationMessages(
-            convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-        verify(
-          () => mockConversationsDao.deleteConversation(
-            convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-        verify(
-          () => removedConversationsDao.record(
-            conversationId: convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-            removedAt: any(named: 'removedAt'),
-          ),
-        ).called(1);
-        verify(
-          () => outgoingDmsDao.deleteForConversation(
-            conversationId: convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockConversationsDao.runInTransaction<void>(any()),
+          ).called(1);
+          verify(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verify(
+            () => mockConversationsDao.deleteConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verify(
+            () => removedConversationsDao.record(
+              conversationId: convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              removedAt: any(named: 'removedAt'),
+            ),
+          ).called(1);
+          verify(
+            () => outgoingDmsDao.deleteForConversation(
+              conversationId: convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('rethrows when DAO throws', () async {
         const convId =
@@ -9839,7 +10119,9 @@ void main() {
         final repository = createRepository();
         await repository.removeConversations([]);
 
-        verifyNever(() => mockConversationsDao.runInTransaction<void>(any()));
+        verifyNever(
+          () => mockConversationsDao.runInTransaction<void>(any()),
+        );
         verifyNever(
           () => mockDirectMessagesDao.deleteMultipleConversationMessages(
             any(),
@@ -10350,10 +10632,9 @@ void main() {
 
     group('watchMessages - Kind 15', () {
       test('maps $DirectMessageRow with file metadata to $DmMessage', () async {
-        final convId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
 
         const fileHash =
             'cccccccccccccccccccccccccccccccc'
@@ -10398,7 +10679,10 @@ void main() {
         expect(messages.first.isFileMessage, isTrue);
         expect(messages.first.messageKind, equals(EventKind.fileMessage));
         expect(messages.first.fileMetadata, isNotNull);
-        expect(messages.first.fileMetadata!.fileType, equals('image/jpeg'));
+        expect(
+          messages.first.fileMetadata!.fileType,
+          equals('image/jpeg'),
+        );
         expect(messages.first.fileMetadata!.isImage, isTrue);
         expect(
           messages.first.fileMetadata!.decryptionKey,
@@ -10408,9 +10692,15 @@ void main() {
           messages.first.fileMetadata!.decryptionNonce,
           equals(decryptionNonce),
         );
-        expect(messages.first.fileMetadata!.fileHash, equals(fileHash));
+        expect(
+          messages.first.fileMetadata!.fileHash,
+          equals(fileHash),
+        );
         expect(messages.first.fileMetadata!.fileSize, equals(1024));
-        expect(messages.first.fileMetadata!.dimensions, equals('1920x1080'));
+        expect(
+          messages.first.fileMetadata!.dimensions,
+          equals('1920x1080'),
+        );
       });
     });
 
@@ -10757,70 +11047,75 @@ void main() {
         ).thenAnswer((_) async => null);
       }
 
-      test('sendMessage to moderation pubkey succeeds and persists', () async {
-        const reportContent =
-            'Content Report\n'
-            'Reason: Spam or Unwanted Content\n'
-            'Event: abc123eventid';
+      test(
+        'sendMessage to moderation pubkey succeeds and persists',
+        () async {
+          const reportContent =
+              'Content Report\n'
+              'Reason: Spam or Unwanted Content\n'
+              'Event: abc123eventid';
 
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
-        // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+          // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
 
-        final repository = createRepository();
+          final repository = createRepository();
 
-        final result = await repository.sendMessage(
-          recipientPubkey: moderationPubkey,
-          content: reportContent,
-        );
-
-        expect(result.success, isTrue);
-
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
+          final result = await repository.sendMessage(
             recipientPubkey: moderationPubkey,
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: _validPubkeyA,
             content: reportContent,
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: _giftWrapEventId,
-            messageKind: any(named: 'messageKind'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-      });
+          );
+
+          expect(result.success, isTrue);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: moderationPubkey,
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyA,
+              content: reportContent,
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId,
+              messageKind: any(named: 'messageKind'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'receiving a DM from the moderation pubkey persists correctly',
@@ -10923,56 +11218,67 @@ void main() {
         },
       );
 
-      test('computeConversationId is deterministic with moderation pubkey', () {
-        final idUserFirst = DmRepository.computeConversationId([
-          _validPubkeyA,
-          moderationPubkey,
-        ]);
-        final idModFirst = DmRepository.computeConversationId([
-          moderationPubkey,
-          _validPubkeyA,
-        ]);
+      test(
+        'computeConversationId is deterministic with moderation pubkey',
+        () {
+          final idUserFirst = DmRepository.computeConversationId(
+            [_validPubkeyA, moderationPubkey],
+          );
+          final idModFirst = DmRepository.computeConversationId(
+            [moderationPubkey, _validPubkeyA],
+          );
 
-        expect(
-          idUserFirst,
-          equals(idModFirst),
-          reason:
-              'Conversation ID must be the same regardless of '
-              'participant order',
-        );
+          expect(
+            idUserFirst,
+            equals(idModFirst),
+            reason:
+                'Conversation ID must be the same regardless of '
+                'participant order',
+          );
 
-        // Verify it is a valid 64-char hex SHA-256
-        expect(idUserFirst, hasLength(64));
-        expect(idUserFirst, matches(RegExp(r'^[0-9a-f]{64}$')));
-      });
+          // Verify it is a valid 64-char hex SHA-256
+          expect(idUserFirst, hasLength(64));
+          expect(
+            idUserFirst,
+            matches(RegExp(r'^[0-9a-f]{64}$')),
+          );
+        },
+      );
 
-      test('moderation conversation is distinct from other conversations', () {
-        final modConvId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          moderationPubkey,
-        ]);
-        final regularConvId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
+      test(
+        'moderation conversation is distinct from other conversations',
+        () {
+          final modConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, moderationPubkey],
+          );
+          final regularConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyB],
+          );
 
-        expect(
-          modConvId,
-          isNot(equals(regularConvId)),
-          reason:
-              'Moderation conversation must be distinct from '
-              'regular user conversations',
-        );
-      });
+          expect(
+            modConvId,
+            isNot(equals(regularConvId)),
+            reason:
+                'Moderation conversation must be distinct from '
+                'regular user conversations',
+          );
+        },
+      );
 
-      test('moderation pubkey is a valid 64-character hex string', () {
-        expect(
-          () => DmRepository.validatePubkey(moderationPubkey),
-          returnsNormally,
-        );
-        expect(moderationPubkey, hasLength(64));
-        expect(RegExp(r'^[0-9a-f]{64}$').hasMatch(moderationPubkey), isTrue);
-      });
+      test(
+        'moderation pubkey is a valid 64-character hex string',
+        () {
+          expect(
+            () => DmRepository.validatePubkey(moderationPubkey),
+            returnsNormally,
+          );
+          expect(moderationPubkey, hasLength(64));
+          expect(
+            RegExp(r'^[0-9a-f]{64}$').hasMatch(moderationPubkey),
+            isTrue,
+          );
+        },
+      );
 
       test(
         'DM to external Nostr user (non-Divine app) uses same send path',
@@ -11272,147 +11578,153 @@ void main() {
         await repository.stopListening();
       });
 
-      test('a replayed NIP-04 event suppressed by a removed conversation is '
-          'skipped before decryption', () async {
-        final nip04Event = createNip04Event();
-        final removedConversationsDao = _MockRemovedConversationsDao();
-        final ledger = _InMemoryProcessedGiftWrapsDao();
-        var decryptCalls = 0;
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: any(named: 'counterpart'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => false);
-        when(
-          () => removedConversationsDao.removedAtFor(
-            conversationId: any(named: 'conversationId'),
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).thenAnswer((_) async => 1700000000);
+      test(
+        'a replayed NIP-04 event suppressed by a removed conversation is '
+        'skipped before decryption',
+        () async {
+          final nip04Event = createNip04Event();
+          final removedConversationsDao = _MockRemovedConversationsDao();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          var decryptCalls = 0;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => removedConversationsDao.removedAtFor(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => 1700000000);
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          removedConversationsDao: removedConversationsDao,
-          nip04Decryptor: (_, _) async {
-            decryptCalls++;
-            return 'Decrypted NIP-04 text';
-          },
-        );
-        await repository.startListening();
-        controller.add(nip04Event);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            removedConversationsDao: removedConversationsDao,
+            nip04Decryptor: (_, _) async {
+              decryptCalls++;
+              return 'Decrypted NIP-04 text';
+            },
+          );
+          await repository.startListening();
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        // First delivery: decrypt once, suppress, record terminally.
-        expect(decryptCalls, 1);
-        expect(ledger.recorded, contains(_rumorEventId));
+          // First delivery: decrypt once, suppress, record terminally.
+          expect(decryptCalls, 1);
+          expect(ledger.recorded, contains(_rumorEventId));
 
-        // Relay replay delivers the same event again; the ledger hit skips
-        // it before paying a second decryption.
-        controller.add(nip04Event);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          // Relay replay delivers the same event again; the ledger hit skips
+          // it before paying a second decryption.
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(decryptCalls, 1);
+          expect(decryptCalls, 1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
-      test('a NIP-04 event ignored by database dedup is recorded so redelivery '
-          'skips decrypt', () async {
-        final nip04Event = createNip04Event();
-        final ledger = _InMemoryProcessedGiftWrapsDao();
-        var decryptCalls = 0;
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: any(named: 'counterpart'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((_) async => false);
+      test(
+        'a NIP-04 event ignored by database dedup is recorded so redelivery '
+        'skips decrypt',
+        () async {
+          final nip04Event = createNip04Event();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          var decryptCalls = 0;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => false);
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          nip04Decryptor: (_, _) async {
-            decryptCalls++;
-            return 'Decrypted NIP-04 text';
-          },
-        );
-        await repository.startListening();
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            nip04Decryptor: (_, _) async {
+              decryptCalls++;
+              return 'Decrypted NIP-04 text';
+            },
+          );
+          await repository.startListening();
 
-        controller.add(nip04Event);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(decryptCalls, 1);
-        expect(ledger.recorded, contains(_rumorEventId));
+          expect(decryptCalls, 1);
+          expect(ledger.recorded, contains(_rumorEventId));
 
-        controller.add(nip04Event);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(decryptCalls, 1);
+          expect(decryptCalls, 1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('decrypts and persists a NIP-04 message', () async {
         final nip04Event = createNip04Event();
@@ -11876,59 +12188,62 @@ void main() {
         },
       );
 
-      test('persisted NIP-04 boundaries stay scoped to the event owner during '
-          'an account switch', () async {
-        final nip04Event = createNip04Event();
-        final decryptStarted = Completer<void>();
-        final decryptResult = Completer<String?>();
+      test(
+        'persisted NIP-04 boundaries stay scoped to the event owner during '
+        'an account switch',
+        () async {
+          final nip04Event = createNip04Event();
+          final decryptStarted = Completer<void>();
+          final decryptResult = Completer<String?>();
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(any()),
-        ).thenAnswer((_) async => false);
-        stubDaoInserts();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(
-          nip04Decryptor: (_, _) {
-            decryptStarted.complete();
-            return decryptResult.future;
-          },
-          syncState: syncState,
-        );
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) {
+              decryptStarted.complete();
+              return decryptResult.future;
+            },
+            syncState: syncState,
+          );
 
-        await repository.startListening();
-        controller.add(nip04Event);
-        await decryptStarted.future;
+          await repository.startListening();
+          controller.add(nip04Event);
+          await decryptStarted.future;
 
-        // The decrypt is a remote-signer round trip on the real path, so
-        // this is the widest window a switch can land in — wider than the
-        // dedup read the sibling test above covers. Unlike the NIP-17
-        // handler, this one has no generation guard to abandon on.
-        repository.setCredentials(
-          userPubkey: _validPubkeyC,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
-        decryptResult.complete('Hello over NIP-04');
-        await Future<void>.delayed(Duration.zero);
+          // The decrypt is a remote-signer round trip on the real path, so
+          // this is the widest window a switch can land in — wider than the
+          // dedup read the sibling test above covers. Unlike the NIP-17
+          // handler, this one has no generation guard to abandon on.
+          repository.setCredentials(
+            userPubkey: _validPubkeyC,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          decryptResult.complete('Hello over NIP-04');
+          await Future<void>.delayed(Duration.zero);
 
-        expect(syncState.recordedWire, hasLength(1));
-        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
-        expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
-        expect(syncState.recorded, hasLength(1));
-        expect(syncState.recorded.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+          expect(syncState.recorded, hasLength(1));
+          expect(syncState.recorded.single.pubkey, _validPubkeyA);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('skips NIP-04 events with no p tag', () async {
         final nip04Event = createNip04Event(tags: []);
@@ -12067,7 +12382,9 @@ void main() {
           'sig': '',
         });
 
-        final nip04Event = createNip04Event(id: _giftWrapEventId2);
+        final nip04Event = createNip04Event(
+          id: _giftWrapEventId2,
+        );
 
         final rumor = Event.fromJson({
           'id': _rumorEventId,
@@ -12373,245 +12690,260 @@ void main() {
         ).thenAnswer((_) async {});
       }
 
-      test('sends NIP-04 fallback when conversation is known NIP-04', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
-
-        // An inbound legacy message stamped this thread 'nip04', so the
-        // peer is known not to speak NIP-17 — the fallback is the only
-        // copy they can read.
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: DmRepository.computeConversationId(
-              [_validPubkeyA, _validPubkeyB]..sort(),
+      test(
+        'sends NIP-04 fallback when conversation is known NIP-04',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
             ),
-            participantPubkeys: jsonEncode(
-              [_validPubkeyA, _validPubkeyB]..sort(),
+          );
+          stubDaoInserts();
+
+          // An inbound legacy message stamped this thread 'nip04', so the
+          // peer is known not to speak NIP-17 — the fallback is the only
+          // copy they can read.
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
-            isGroup: false,
-            createdAt: 1699999000,
-            lastMessageContent: 'Previous',
-            lastMessageTimestamp: 1700000000,
-            lastMessageSenderPubkey: _validPubkeyB,
-            isRead: true,
-            currentUserHasSent: true,
-            ownerPubkey: _validPubkeyA,
-            dmProtocol: 'nip04',
-          ),
-        );
-
-        // Stub publishEvent — NIP-04 fallback will call this
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer(
-          (_) async => const PublishOutcome(
-            eventId: _giftWrapEventId,
-            acceptedBy: ['wss://relay.divine.video'],
-            rejectedBy: <String, String>{},
-            noResponseFrom: <String>[],
-          ),
-        );
-
-        final repository = createRepository();
-
-        final _ = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-
-        // Allow the unawaited NIP-04 future to complete
-        await Future<void>.delayed(Duration.zero);
-
-        // Verify both NIP-17 and NIP-04 were called
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-
-        verify(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).called(1);
-      });
-
-      test('skips NIP-04 fallback on the first send of a new conversation '
-          '(#7342)', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
-
-        // No row yet — the user is starting this thread.
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Stub the publish so a kind-4 fallback would succeed and be
-        // recorded; the assertion below must fail on a real leak, not
-        // on an exception swallowed by the fallback's catchError.
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer(
-          (_) async => const PublishOutcome(
-            eventId: _giftWrapEventId,
-            acceptedBy: ['wss://relay.divine.video'],
-            rejectedBy: <String, String>{},
-            noResponseFrom: <String>[],
-          ),
-        );
-
-        final repository = createRepository();
-
-        final _ = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-
-        // Allow an unawaited NIP-04 future to land if one was started.
-        await Future<void>.delayed(Duration.zero);
-
-        // The gift wrap still goes out.
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-
-        // No cleartext kind-4 copy naming the recipient in a `p` tag.
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        );
-      });
-
-      test('skips NIP-04 fallback when conversation is known NIP-17', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
-
-        // Production reads `getConversation(id, ownerPubkey: ...)`. A stub
-        // without `ownerPubkey` never matches, so this used to close the
-        // gate by MissingStubError (or a parent null row) rather than by
-        // protocol — and `verifyNever(publishEvent)` was vacuously true
-        // after the leg moved to `publishEventAwaitOk`.
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: DmRepository.computeConversationId(
-              [_validPubkeyA, _validPubkeyB]..sort(),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              isGroup: false,
+              createdAt: 1699999000,
+              lastMessageContent: 'Previous',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip04',
             ),
-            participantPubkeys: jsonEncode(
-              [_validPubkeyA, _validPubkeyB]..sort(),
+          );
+
+          // Stub publishEvent — NIP-04 fallback will call this
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
             ),
-            isGroup: false,
-            createdAt: 1699999000,
-            lastMessageContent: 'Previous',
-            lastMessageTimestamp: 1700000000,
-            lastMessageSenderPubkey: _validPubkeyB,
-            isRead: true,
-            currentUserHasSent: true,
-            ownerPubkey: _validPubkeyA,
-            dmProtocol: 'nip17',
-          ),
-        );
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer(
-          (_) async => const PublishOutcome(
-            eventId: 'nip04-fallback-copy',
-            acceptedBy: <String>[],
-            rejectedBy: <String, String>{},
-            noResponseFrom: <String>[],
-          ),
-        );
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: _giftWrapEventId,
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
 
-        final repository = createRepository();
+          final repository = createRepository();
 
-        final _ = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
 
-        await pumpEventQueue();
+          // Allow the unawaited NIP-04 future to complete
+          await Future<void>.delayed(Duration.zero);
 
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
+          // Verify both NIP-17 and NIP-04 were called
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
 
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        );
-      });
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'skips NIP-04 fallback on the first send of a new conversation '
+        '(#7342)',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          // No row yet — the user is starting this thread.
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Stub the publish so a kind-4 fallback would succeed and be
+          // recorded; the assertion below must fail on a real leak, not
+          // on an exception swallowed by the fallback's catchError.
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: _giftWrapEventId,
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
+
+          final repository = createRepository();
+
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+
+          // Allow an unawaited NIP-04 future to land if one was started.
+          await Future<void>.delayed(Duration.zero);
+
+          // The gift wrap still goes out.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+
+          // No cleartext kind-4 copy naming the recipient in a `p` tag.
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'skips NIP-04 fallback when conversation is known NIP-17',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          // Production reads `getConversation(id, ownerPubkey: ...)`. A stub
+          // without `ownerPubkey` never matches, so this used to close the
+          // gate by MissingStubError (or a parent null row) rather than by
+          // protocol — and `verifyNever(publishEvent)` was vacuously true
+          // after the leg moved to `publishEventAwaitOk`.
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: DmRepository.computeConversationId(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              participantPubkeys: jsonEncode(
+                [_validPubkeyA, _validPubkeyB]..sort(),
+              ),
+              isGroup: false,
+              createdAt: 1699999000,
+              lastMessageContent: 'Previous',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip17',
+            ),
+          );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-fallback-copy',
+              acceptedBy: <String>[],
+              rejectedBy: <String, String>{},
+              noResponseFrom: <String>[],
+            ),
+          );
+
+          final repository = createRepository();
+
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+
+          await pumpEventQueue();
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+        },
+      );
 
       // ---------------------------------------------------------------
       // #8262: every failure of this leg must be observable.
@@ -12661,196 +12993,217 @@ void main() {
               .map((e) => e.message)
               .toList();
 
-      test('logs when the signer cannot NIP-04 encrypt, instead of dropping '
-          'the failure silently (#8262)', () async {
-        await LogCaptureService().clearAllLogs();
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubLatchedNip04Conversation();
+      test(
+        'logs when the signer cannot NIP-04 encrypt, instead of dropping '
+        'the failure silently (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
 
-        // A signer can do NIP-44 (the NIP-17 leg) and still refuse NIP-04:
-        // it is a separate capability. Amber prompts for it separately and
-        // a nip44-only NIP-07 extension has no `window.nostr.nip04` at all.
-        // Both report the refusal by returning null, not by throwing — so
-        // the gate's `.catchError` never sees it.
-        final mockSigner = _MockNostrSigner();
-        when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
-        when(
-          () => mockSigner.encrypt(any(), any()),
-        ).thenAnswer((_) async => null);
+          // A signer can do NIP-44 (the NIP-17 leg) and still refuse NIP-04:
+          // it is a separate capability. Amber prompts for it separately and
+          // a nip44-only NIP-07 extension has no `window.nostr.nip04` at all.
+          // Both report the refusal by returning null, not by throwing — so
+          // the gate's `.catchError` never sees it.
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => null);
 
-        final repository = createRepository(signer: mockSigner);
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-        await pumpEventQueue();
+          final repository = createRepository(signer: mockSigner);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
 
-        expect(result.success, isTrue);
-        // Nothing was published: the leg gave up before signing.
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        );
-        // And it said so.
-        expect(
-          logsContaining('encrypt returned null', level: LogLevel.warning),
-          hasLength(1),
-        );
-      });
+          expect(result.success, isTrue);
+          // Nothing was published: the leg gave up before signing.
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+          // And it said so.
+          expect(
+            logsContaining(
+              'encrypt returned null',
+              level: LogLevel.warning,
+            ),
+            hasLength(1),
+          );
+        },
+      );
 
-      test('logs when the signer refuses to sign the kind 4 (#8262)', () async {
-        await LogCaptureService().clearAllLogs();
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubLatchedNip04Conversation();
+      test(
+        'logs when the signer refuses to sign the kind 4 (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
 
-        final mockSigner = _MockNostrSigner();
-        when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
-        when(
-          () => mockSigner.encrypt(any(), any()),
-        ).thenAnswer((_) async => 'ciphertext?iv=aXY=');
-        when(() => mockSigner.signEvent(any())).thenAnswer((_) async => null);
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => 'ciphertext?iv=aXY=');
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((_) async => null);
 
-        final repository = createRepository(signer: mockSigner);
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-        await pumpEventQueue();
+          final repository = createRepository(signer: mockSigner);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
 
-        expect(result.success, isTrue);
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        );
-        expect(
-          logsContaining('signEvent returned null', level: LogLevel.warning),
-          hasLength(1),
-        );
-      });
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+          expect(
+            logsContaining(
+              'signEvent returned null',
+              level: LogLevel.warning,
+            ),
+            hasLength(1),
+          );
+        },
+      );
 
-      test('a relay answering OK false is reported as a lost legacy copy, not '
-          'as a delivered one (#8262)', () async {
-        await LogCaptureService().clearAllLogs();
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubLatchedNip04Conversation();
+      test(
+        'a relay answering OK false is reported as a lost legacy copy, not '
+        'as a delivered one (#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
 
-        // The whole point of OK-confirming this leg. `publishEvent` reports
-        // success on a WebSocket frame write, so this refusal used to come
-        // back as PublishSuccess with a null failureReason — a delivered
-        // message that no relay ever stored.
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer(
-          (_) async => const PublishOutcome(
-            eventId: 'nip04-refused',
-            acceptedBy: <String>[],
-            rejectedBy: {
-              'wss://relay.divine.video': 'rate-limited: slow down there chief',
-            },
-            noResponseFrom: <String>[],
-          ),
-        );
+          // The whole point of OK-confirming this leg. `publishEvent` reports
+          // success on a WebSocket frame write, so this refusal used to come
+          // back as PublishSuccess with a null failureReason — a delivered
+          // message that no relay ever stored.
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-refused',
+              acceptedBy: <String>[],
+              rejectedBy: {
+                'wss://relay.divine.video':
+                    'rate-limited: slow down there chief',
+              },
+              noResponseFrom: <String>[],
+            ),
+          );
 
-        final repository = createRepository();
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-        await pumpEventQueue();
+          final repository = createRepository();
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
 
-        // The NIP-17 copy still governs what the user sees.
-        expect(result.success, isTrue);
-        // But the refusal is on the record.
-        expect(
-          logsContaining(
-            'no relay accepted the legacy kind-4 copy',
-            level: LogLevel.error,
-          ),
-          hasLength(1),
-        );
-      });
+          // The NIP-17 copy still governs what the user sees.
+          expect(result.success, isTrue);
+          // But the refusal is on the record.
+          expect(
+            logsContaining(
+              'no relay accepted the legacy kind-4 copy',
+              level: LogLevel.error,
+            ),
+            hasLength(1),
+          );
+        },
+      );
 
-      test('a partial refusal is logged while the copy still counts as sent '
-          '(#8262)', () async {
-        await LogCaptureService().clearAllLogs();
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubLatchedNip04Conversation();
+      test(
+        'a partial refusal is logged while the copy still counts as sent '
+        '(#8262)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubLatchedNip04Conversation();
 
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        ).thenAnswer(
-          (_) async => const PublishOutcome(
-            eventId: 'nip04-partial',
-            acceptedBy: ['wss://relay.divine.video'],
-            rejectedBy: {'wss://nos.lol': 'blocked: kind 4 not accepted'},
-            noResponseFrom: <String>[],
-          ),
-        );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'nip04-partial',
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: {'wss://nos.lol': 'blocked: kind 4 not accepted'},
+              noResponseFrom: <String>[],
+            ),
+          );
 
-        final repository = createRepository();
-        final _ = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'Hello!',
-        );
-        await pumpEventQueue();
+          final repository = createRepository();
+          final _ = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello!',
+          );
+          await pumpEventQueue();
 
-        // Accepted somewhere, so not an error — but the refusing relay is
-        // named, because a kind-policy or rate-limit refusal is otherwise
-        // invisible.
-        expect(
-          logsContaining('refused by 1 relay', level: LogLevel.warning),
-          hasLength(1),
-        );
-        expect(
-          logsContaining(
-            'no relay accepted the legacy kind-4 copy',
-            level: LogLevel.error,
-          ),
-          isEmpty,
-        );
-      });
+          // Accepted somewhere, so not an error — but the refusing relay is
+          // named, because a kind-policy or rate-limit refusal is otherwise
+          // invisible.
+          expect(
+            logsContaining('refused by 1 relay', level: LogLevel.warning),
+            hasLength(1),
+          );
+          expect(
+            logsContaining(
+              'no relay accepted the legacy kind-4 copy',
+              level: LogLevel.error,
+            ),
+            isEmpty,
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------
@@ -12858,10 +13211,9 @@ void main() {
     // -----------------------------------------------------------------
 
     group('deleteMessageForEveryone', () {
-      final conversationId = DmRepository.computeConversationId([
-        _validPubkeyA,
-        _validPubkeyB,
-      ]);
+      final conversationId = DmRepository.computeConversationId(
+        [_validPubkeyA, _validPubkeyB],
+      );
 
       test('throws $StateError when not initialized', () {
         final repo = DmRepository(
@@ -12932,332 +13284,348 @@ void main() {
         );
       });
 
-      test('publishes kind 5 event and soft-deletes locally', () async {
-        final repo = createRepository();
+      test(
+        'publishes kind 5 event and soft-deletes locally',
+        () async {
+          final repo = createRepository();
 
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DirectMessageRow(
-            id: _rumorEventId,
-            conversationId: conversationId,
-            senderPubkey: _validPubkeyA, // current user
-            content: 'Hello',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            messageKind: 14,
-            isDeleted: false,
-            twinCollapsed: false,
-          ),
-        );
-
-        when(
-          () => mockConversationsDao.getConversation(
-            conversationId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: conversationId,
-            participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            isRead: true,
-            currentUserHasSent: true,
-          ),
-        );
-
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) => NIP17SendResult.success(
-            rumorEventId: rumorEvent.id,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionSent(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockDirectMessagesDao.getMessagesForConversation(
-            conversationId,
-            limit: 1,
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
-          ),
-        ).thenAnswer((_) async {});
-
-        await repo.deleteMessageForEveryone(_rumorEventId);
-        // The wire attempt is unawaited, so let it settle.
-        await Future<void>.delayed(Duration.zero);
-
-        // The kind 5 now travels as a NIP-17 rumor, so `sendRumor` is the
-        // sink and the public pool must not see it at all. That absence IS
-        // the #7341 fix: a bare kind-5 named the counterparty in a plaintext
-        // `p` tag on a relay that retains deletion requests indefinitely.
-        verifyNever(() => mockNostrClient.publishEvent(any()));
-
-        final captured =
-            verify(
-                  () => mockMessageService.sendRumor(
-                    rumorEvent: captureAny(named: 'rumorEvent'),
-                    recipientPubkey: any(named: 'recipientPubkey'),
-                    targetRelays: any(named: 'targetRelays'),
-                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
-                    selfWrapOnSoftUnconfirmed: any(
-                      named: 'selfWrapOnSoftUnconfirmed',
-                    ),
-                  ),
-                ).captured.single
-                as Event;
-        expect(captured.kind, equals(EventKind.eventDeletion));
-        // `p` now names the wrap recipient rather than advertising the
-        // counterparty publicly — same tag, opposite meaning.
-        expect(
-          captured.tags,
-          containsAll([
-            ['e', _rumorEventId],
-            ['k', '14'],
-            ['p', _validPubkeyB],
-          ]),
-        );
-
-        // Durable first, delivered second.
-        verify(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-        verify(
-          () => mockDirectMessagesDao.markMessageDeletionSent(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-      });
-
-      test('routes the delete-for-everyone kind-5 to the recipient '
-          'kind-10050 inbox', () async {
-        final repo = createRepository();
-
-        when(
-          () => mockNostrClient.configuredRelays,
-        ).thenReturn(const ['wss://relay.divine.video']);
-
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DirectMessageRow(
-            id: _rumorEventId,
-            conversationId: conversationId,
-            senderPubkey: _validPubkeyA, // current user
-            content: 'Hello',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            messageKind: 14,
-            isDeleted: false,
-            twinCollapsed: false,
-          ),
-        );
-
-        when(
-          () => mockConversationsDao.getConversation(
-            conversationId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: conversationId,
-            participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            isRead: true,
-            currentUserHasSent: true,
-          ),
-        );
-
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) => NIP17SendResult.success(
-            rumorEventId: rumorEvent.id,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionSent(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockDirectMessagesDao.getMessagesForConversation(
-            conversationId,
-            limit: 1,
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
-          ),
-        ).thenAnswer((_) async {});
-
-        // Recipient advertises a DM inbox. Before #7321's sibling fix the
-        // delete-for-everyone fan-out omitted targetRelays entirely while
-        // still demanding an OK, so the OK came from the default pool — a
-        // false "confirmed" for an inbox-only reader.
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((invocation) async {
-          final filters =
-              invocation.positionalArguments.first as List<nostr_filter.Filter>;
-          final author = filters.single.authors!.single;
-          return answeredList([
-            Event(
-              author,
-              EventKind.dmRelaysList,
-              [
-                ['relay', 'wss://inbox.example'],
-              ],
-              '',
-              createdAt: 1700000000,
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA, // current user
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          // The wire attempt is unawaited, so let it settle.
+          await Future<void>.delayed(Duration.zero);
+
+          // The kind 5 now travels as a NIP-17 rumor, so `sendRumor` is the
+          // sink and the public pool must not see it at all. That absence IS
+          // the #7341 fix: a bare kind-5 named the counterparty in a plaintext
+          // `p` tag on a relay that retains deletion requests indefinitely.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+
+          final captured =
+              verify(
+                    () => mockMessageService.sendRumor(
+                      rumorEvent: captureAny(named: 'rumorEvent'),
+                      recipientPubkey: any(named: 'recipientPubkey'),
+                      targetRelays: any(named: 'targetRelays'),
+                      awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                      selfWrapOnSoftUnconfirmed: any(
+                        named: 'selfWrapOnSoftUnconfirmed',
+                      ),
+                    ),
+                  ).captured.single
+                  as Event;
+          expect(captured.kind, equals(EventKind.eventDeletion));
+          // `p` now names the wrap recipient rather than advertising the
+          // counterparty publicly — same tag, opposite meaning.
+          expect(
+            captured.tags,
+            containsAll([
+              ['e', _rumorEventId],
+              ['k', '14'],
+              ['p', _validPubkeyB],
+            ]),
+          );
+
+          // Durable first, delivered second.
+          verify(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verify(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'routes the delete-for-everyone kind-5 to the recipient '
+        'kind-10050 inbox',
+        () async {
+          final repo = createRepository();
+
+          when(() => mockNostrClient.configuredRelays).thenReturn(const [
+            'wss://relay.divine.video',
           ]);
-        });
 
-        await repo.deleteMessageForEveryone(_rumorEventId);
-        // The wire attempt is unawaited, so let it settle.
-        await Future<void>.delayed(Duration.zero);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA, // current user
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
 
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: _validPubkeyB,
-            targetRelays: ['wss://inbox.example'],
-            selfWrapTargetRelays: const [
-              'wss://relay.divine.video',
-              'wss://inbox.example',
-            ],
-            awaitRecipientOk: true,
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-      });
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Recipient advertises a DM inbox. Before #7321's sibling fix the
+          // delete-for-everyone fan-out omitted targetRelays entirely while
+          // still demanding an OK, so the OK came from the default pool — a
+          // false "confirmed" for an inbox-only reader.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (invocation) async {
+              final filters =
+                  invocation.positionalArguments.first
+                      as List<nostr_filter.Filter>;
+              final author = filters.single.authors!.single;
+              return answeredList([
+                Event(
+                  author,
+                  EventKind.dmRelaysList,
+                  [
+                    ['relay', 'wss://inbox.example'],
+                  ],
+                  '',
+                  createdAt: 1700000000,
+                ),
+              ]);
+            },
+          );
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          // The wire attempt is unawaited, so let it settle.
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: ['wss://inbox.example'],
+              selfWrapTargetRelays: const [
+                'wss://relay.divine.video',
+                'wss://inbox.example',
+              ],
+              awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+        },
+      );
 
       // Regression for #7322: `getMessageById` has no `isDeleted`
       // predicate, so without the early return a repeat delete of the same
       // rumor passed both guards above and signed + published a SECOND
       // kind 5. Reachable from the UI — the bubble only disappears once the
       // first delete finishes, so an impatient user taps Delete again.
-      test('returns early on an already soft-deleted row without signing or '
-          'publishing a duplicate kind 5', () async {
-        final signer = _MockNostrSigner();
-        final repo = createRepository(signer: signer);
+      test(
+        'returns early on an already soft-deleted row without signing or '
+        'publishing a duplicate kind 5',
+        () async {
+          final signer = _MockNostrSigner();
+          final repo = createRepository(signer: signer);
 
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DirectMessageRow(
-            id: _rumorEventId,
-            conversationId: conversationId,
-            senderPubkey: _validPubkeyA,
-            content: 'Hello',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            messageKind: 14,
-            isDeleted: true,
-            twinCollapsed: false,
-          ),
-        );
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: true,
+              twinCollapsed: false,
+            ),
+          );
 
-        await repo.deleteMessageForEveryone(_rumorEventId);
+          await repo.deleteMessageForEveryone(_rumorEventId);
 
-        verifyNever(() => signer.signEvent(any()));
-        // `publishEvent` is no longer the sink, so asserting on it alone
-        // would pass whether or not the guard works. `sendRumor` is what a
-        // duplicate delete would actually re-send.
-        verifyNever(() => mockNostrClient.publishEvent(any()));
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-        verifyNever(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      });
+          verifyNever(() => signer.signEvent(any()));
+          // `publishEvent` is no longer the sink, so asserting on it alone
+          // would pass whether or not the guard works. `sendRumor` is what a
+          // duplicate delete would actually re-send.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
 
       /// Seeds an own, undeleted message of [messageKind] plus its
       /// conversation, and stubs the preview refresh — the shared setup for
@@ -13340,38 +13708,41 @@ void main() {
         ).thenAnswer((_) async {});
       }
 
-      test('stores the deletion durably BEFORE attempting the wire', () async {
-        // The ordering is the whole fix for #8165: if the wire attempt came
-        // first, a crash or a dead relay between hiding the bubble and
-        // recording the rumor would lose the retraction with the message
-        // already gone from the UI.
-        stubDeletableMessage();
-        final order = <String>[];
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async {
-          order.add('durable');
-          return true;
-        });
-        stubSendRumor((rumorEvent, recipientPubkey) {
-          order.add('wire');
-          return NIP17SendResult.success(
-            rumorEventId: rumorEvent.id,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          );
-        });
+      test(
+        'stores the deletion durably BEFORE attempting the wire',
+        () async {
+          // The ordering is the whole fix for #8165: if the wire attempt came
+          // first, a crash or a dead relay between hiding the bubble and
+          // recording the rumor would lose the retraction with the message
+          // already gone from the UI.
+          stubDeletableMessage();
+          final order = <String>[];
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {
+            order.add('durable');
+            return true;
+          });
+          stubSendRumor((rumorEvent, recipientPubkey) {
+            order.add('wire');
+            return NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            );
+          });
 
-        final repo = createRepository();
-        await repo.deleteMessageForEveryone(_rumorEventId);
-        await Future<void>.delayed(Duration.zero);
+          final repo = createRepository();
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          await Future<void>.delayed(Duration.zero);
 
-        expect(order, equals(['durable', 'wire']));
-      });
+          expect(order, equals(['durable', 'wire']));
+        },
+      );
 
       // #8201. A refused retraction leaves the row visible and un-deleted, so
       // tapping Delete again must re-drive it. Nothing may special-case
@@ -13484,33 +13855,36 @@ void main() {
         await expectLater(nudge, completes);
       });
 
-      test('leaves the row pending when no relay confirms the wrap', () async {
-        // The #8165 case: an unconfirmed publish must not settle the row,
-        // or the sweep loses it and the user is told a message was
-        // retracted that the recipient still holds.
-        stubDeletableMessage();
-        stubSendRumor(
-          (_, _) => const NIP17SendResult.failure('no relay confirmed'),
-        );
+      test(
+        'leaves the row pending when no relay confirms the wrap',
+        () async {
+          // The #8165 case: an unconfirmed publish must not settle the row,
+          // or the sweep loses it and the user is told a message was
+          // retracted that the recipient still holds.
+          stubDeletableMessage();
+          stubSendRumor(
+            (_, _) => const NIP17SendResult.failure('no relay confirmed'),
+          );
 
-        final repo = createRepository();
-        await repo.deleteMessageForEveryone(_rumorEventId);
-        await Future<void>.delayed(Duration.zero);
+          final repo = createRepository();
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          await Future<void>.delayed(Duration.zero);
 
-        verifyNever(
-          () => mockDirectMessagesDao.markMessageDeletionSent(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-        verifyNever(
-          () => mockDirectMessagesDao.markMessageDeletionBlocked(
-            _rumorEventId,
-            restoreToThread: any(named: 'restoreToThread'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      });
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeletionBlocked(
+              _rumorEventId,
+              restoreToThread: any(named: 'restoreToThread'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
 
       test(
         'records a policy-blocked deletion as blocked, never as sent',
@@ -13634,10 +14008,9 @@ void main() {
     });
 
     group('retryMessageDeletion', () {
-      final conversationId = DmRepository.computeConversationId([
-        _validPubkeyA,
-        _validPubkeyB,
-      ]);
+      final conversationId = DmRepository.computeConversationId(
+        [_validPubkeyA, _validPubkeyB],
+      );
 
       const storedRumorJson =
           '{"id":"$_rumorEventId","pubkey":"$_validPubkeyA",'
@@ -13754,7 +14127,9 @@ void main() {
           ),
         );
 
-        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
 
         expect(outcome, equals(DmMessageDeletionOutcome.sent));
         final captured =
@@ -13768,6 +14143,41 @@ void main() {
                 as Event;
         expect(captured.id, equals(_rumorEventId));
         expect(captured.kind, equals(EventKind.eventDeletion));
+      });
+
+      test('joins a manual retry racing the background sweep', () async {
+        final repo = createRepository();
+        stubPendingDeletion();
+        final publish = Completer<NIP17SendResult>();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final first = repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final second = repo.retryMessageDeletion(rumorId: _rumorEventId);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).called(1);
+        publish.complete(
+          NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+
+        expect(await first, DmMessageDeletionOutcome.sent);
+        expect(await second, DmMessageDeletionOutcome.sent);
       });
 
       test('requires a relay OK before settling the row', () async {
@@ -13809,7 +14219,9 @@ void main() {
           ),
         ).thenAnswer((_) async => const NIP17SendResult.failure('no relay'));
 
-        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
 
         expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
         verifyNever(
@@ -13831,7 +14243,9 @@ void main() {
           ),
         ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
 
-        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
 
         expect(outcome, equals(DmMessageDeletionOutcome.blocked));
         // Nothing was retracted anywhere, so the message comes back.
@@ -13865,85 +14279,90 @@ void main() {
         );
       });
 
-      test('keeps a partially delivered retraction hidden', () async {
-        // #8201. `_fanOutDeletion` records blocked whenever
-        // every FAILED recipient was blocked, so a group where one member
-        // accepted the kind-5 and another refused lands here. The retraction
-        // really happened for the member that accepted, so the sender's copy
-        // must stay hidden rather than claim the message "is still there".
-        final repo = createRepository();
-        stubPendingDeletion();
-        when(
-          () => mockConversationsDao.getConversation(
-            conversationId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: conversationId,
-            participantPubkeys:
-                '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
-            isGroup: true,
-            createdAt: 1700000000,
-            isRead: true,
-            currentUserHasSent: true,
-          ),
-        );
-        when(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: _validPubkeyB,
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: _validPubkeyB,
-          ),
-        );
-        when(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: _validPubkeyC,
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-          ),
-        ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
+      test(
+        'keeps a partially delivered retraction visible as failed',
+        () async {
+          // #8201. `_fanOutDeletion` records blocked whenever
+          // every FAILED recipient was blocked, so a group where one member
+          // accepted the kind-5 and another refused lands here. The retraction
+          // happened for one member but not everyone, so the sender keeps a
+          // recognizable failed-retraction bubble without claiming who has it.
+          final repo = createRepository();
+          stubPendingDeletion();
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys:
+                  '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
+              isGroup: true,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyC,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
 
-        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+          final outcome = await repo.retryMessageDeletion(
+            rumorId: _rumorEventId,
+          );
 
-        expect(outcome, equals(DmMessageDeletionOutcome.blocked));
-        verify(
-          () => mockDirectMessagesDao.markMessageDeletionBlocked(
-            _rumorEventId,
-            restoreToThread: false,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-        // Nothing came back to the thread, so the preview must not be
-        // rebuilt to put it back in the inbox either.
-        verifyNever(
-          () => mockConversationsDao.upsertConversation(
-            id: conversationId,
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: 1700000000,
-            lastMessageSenderPubkey: _validPubkeyA,
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-            forceUpdateLastMessage: true,
-          ),
-        );
-      });
+          expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+          verify(
+            () => mockDirectMessagesDao.markMessageDeletionBlocked(
+              _rumorEventId,
+              restoreToThread: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: conversationId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
+            ),
+          ).called(1);
+        },
+      );
 
       test('reports unavailable when no rumor was stored', () async {
         final repo = createRepository();
         stubPendingDeletion(rumorJson: null);
 
-        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
 
         expect(outcome, equals(DmMessageDeletionOutcome.unavailable));
         verifyNever(
@@ -14075,60 +14494,63 @@ void main() {
           },
         );
 
-        test('one unreadable member holds the whole GROUP retraction pending - '
-            'one row cannot record a partial fan-out', () async {
-          stubPendingDeletion();
-          when(
-            () => mockConversationsDao.getConversation(
-              conversationId,
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer(
-            (_) async => ConversationRow(
-              id: conversationId,
-              participantPubkeys:
-                  '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
-              isGroup: true,
-              createdAt: 1700000000,
-              isRead: true,
-              currentUserHasSent: true,
-            ),
-          );
-          // Readable for B, unreadable for C: the aggregate must follow the
-          // worst member, because settling the row would clear the one
-          // stored rumor both members share.
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: any(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((invocation) async {
-            final filters = invocation.positionalArguments.first as List;
-            final authors =
-                (filters.first as nostr_filter.Filter).authors ?? const [];
-            return authors.contains(_validPubkeyC)
-                ? unansweredList(noRelays: true)
-                : answeredList(const <Event>[]);
-          });
-          stubDeletionWrapConfirmed();
-          final repo = createRepository();
+        test(
+          'one unreadable member holds the whole GROUP retraction pending - '
+          'one row cannot record a partial fan-out',
+          () async {
+            stubPendingDeletion();
+            when(
+              () => mockConversationsDao.getConversation(
+                conversationId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            ).thenAnswer(
+              (_) async => ConversationRow(
+                id: conversationId,
+                participantPubkeys:
+                    '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
+                isGroup: true,
+                createdAt: 1700000000,
+                isRead: true,
+                currentUserHasSent: true,
+              ),
+            );
+            // Readable for B, unreadable for C: the aggregate must follow the
+            // worst member, because settling the row would clear the one
+            // stored rumor both members share.
+            when(
+              () => mockNostrClient.queryEventsDetailed(
+                any(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: any(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+                timeout: any(named: 'timeout'),
+              ),
+            ).thenAnswer((invocation) async {
+              final filters = invocation.positionalArguments.first as List;
+              final authors =
+                  (filters.first as nostr_filter.Filter).authors ?? const [];
+              return authors.contains(_validPubkeyC)
+                  ? unansweredList(noRelays: true)
+                  : answeredList(const <Event>[]);
+            });
+            stubDeletionWrapConfirmed();
+            final repo = createRepository();
 
-          final outcome = await repo.retryMessageDeletion(
-            rumorId: _rumorEventId,
-          );
+            final outcome = await repo.retryMessageDeletion(
+              rumorId: _rumorEventId,
+            );
 
-          expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
-          verifyNever(
-            () => mockDirectMessagesDao.markMessageDeletionSent(
-              _rumorEventId,
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          );
-        });
+            expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
+            verifyNever(
+              () => mockDirectMessagesDao.markMessageDeletionSent(
+                _rumorEventId,
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            );
+          },
+        );
       });
     });
 
@@ -14528,164 +14950,170 @@ void main() {
         },
       );
 
-      test('routes to existing group when extra p-tags match it', () async {
-        // Rumor from B with extra p-tag for C — group [A,B,C] exists.
-        final giftWrap = createGiftWrapEvent();
-        final rumor = createRumorEvent(
-          tags: [
-            ['p', _validPubkeyA],
-            ['p', _validPubkeyC],
-          ],
-        );
+      test(
+        'routes to existing group when extra p-tags match it',
+        () async {
+          // Rumor from B with extra p-tag for C — group [A,B,C] exists.
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent(
+            tags: [
+              ['p', _validPubkeyA],
+              ['p', _validPubkeyC],
+            ],
+          );
 
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(any()),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: any(named: 'counterpart'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
 
-        // Stub: existing group conversation [A, B, C].
-        final groupParticipants = [_validPubkeyA, _validPubkeyB, _validPubkeyC]
-          ..sort();
-        final groupId = DmRepository.computeConversationId(groupParticipants);
+          // Stub: existing group conversation [A, B, C].
+          final groupParticipants = [
+            _validPubkeyA,
+            _validPubkeyB,
+            _validPubkeyC,
+          ]..sort();
+          final groupId = DmRepository.computeConversationId(groupParticipants);
 
-        // Generic fallback returns null (no conversation found).
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-        // Specific stub: group conversation exists.
-        when(
-          () => mockConversationsDao.getConversation(
-            groupId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: groupId,
-            participantPubkeys: jsonEncode(groupParticipants),
-            isGroup: true,
-            lastMessageContent: 'Group msg',
-            lastMessageTimestamp: 1699999999,
-            lastMessageSenderPubkey: _validPubkeyC,
-            isRead: true,
-            currentUserHasSent: true,
-            createdAt: 1699999999,
-          ),
-        );
+          // Generic fallback returns null (no conversation found).
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          // Specific stub: group conversation exists.
+          when(
+            () => mockConversationsDao.getConversation(
+              groupId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupId,
+              participantPubkeys: jsonEncode(groupParticipants),
+              isGroup: true,
+              lastMessageContent: 'Group msg',
+              lastMessageTimestamp: 1699999999,
+              lastMessageSenderPubkey: _validPubkeyC,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1699999999,
+            ),
+          );
 
-        final controller = StreamController<Event>();
-        when(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).thenAnswer((_) => controller.stream);
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
 
-        final repository = createRepository(
-          rumorDecryptor: (_, _) async => rumor,
-        );
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+          );
 
-        await repository.startListening();
-        controller.add(giftWrap);
-        await Future<void>.delayed(Duration.zero);
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
 
-        // Should route to the existing group, not create a new 1:1.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: groupId,
-            senderPubkey: _validPubkeyB,
-            content: 'Hello from B!',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
+          // Should route to the existing group, not create a new 1:1.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: groupId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
 
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: groupId,
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: true,
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: 'Hello from B!',
-            lastMessageTimestamp: 1700000000,
-            lastMessageSenderPubkey: _validPubkeyB,
-            isRead: false,
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: groupId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello from B!',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: false,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test(
         'self-wrap routes to correct conversation, not self-conversation',
@@ -14827,10 +15255,9 @@ void main() {
           ).called(1);
 
           // Self-conversation ID should NOT have been used.
-          final selfConvId = DmRepository.computeConversationId([
-            _validPubkeyA,
-            _validPubkeyA,
-          ]);
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
           verifyNever(
             () => mockDirectMessagesDao.insertMessage(
               id: any(named: 'id'),
@@ -15096,42 +15523,48 @@ void main() {
         expect(result.requests, hasLength(1));
       });
 
-      test('1:1 with a stale isGroup=true flag still routes a followed peer to '
-          'the followed list (#5374)', () {
-        final conv = makeConversation(
-          id: 'conv1',
-          participantPubkeys: [_validPubkeyA, _validPubkeyB],
-          isGroup: true, // stale/inconsistent flag on a 1:1 row
-        );
+      test(
+        '1:1 with a stale isGroup=true flag still routes a followed peer to '
+        'the followed list (#5374)',
+        () {
+          final conv = makeConversation(
+            id: 'conv1',
+            participantPubkeys: [_validPubkeyA, _validPubkeyB],
+            isGroup: true, // stale/inconsistent flag on a 1:1 row
+          );
 
-        final result = DmRepository.classifyPotentialRequests(
-          [conv],
-          userPubkey: _validPubkeyA,
-          isFollowing: (pk) => pk == _validPubkeyB,
-        );
+          final result = DmRepository.classifyPotentialRequests(
+            [conv],
+            userPubkey: _validPubkeyA,
+            isFollowing: (pk) => pk == _validPubkeyB,
+          );
 
-        expect(result.followed, hasLength(1));
-        expect(result.requests, isEmpty);
-      });
+          expect(result.followed, hasLength(1));
+          expect(result.requests, isEmpty);
+        },
+      );
 
-      test('conversation with 2+ non-self participants is a request even when '
-          'isGroup is false and only one member is followed', () {
-        final conv = makeConversation(
-          id: 'conv1',
-          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
-          // isGroup defaults to false — classification must rely on the
-          // participant count, not the flag.
-        );
+      test(
+        'conversation with 2+ non-self participants is a request even when '
+        'isGroup is false and only one member is followed',
+        () {
+          final conv = makeConversation(
+            id: 'conv1',
+            participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+            // isGroup defaults to false — classification must rely on the
+            // participant count, not the flag.
+          );
 
-        final result = DmRepository.classifyPotentialRequests(
-          [conv],
-          userPubkey: _validPubkeyA,
-          isFollowing: (pk) => pk == _validPubkeyB,
-        );
+          final result = DmRepository.classifyPotentialRequests(
+            [conv],
+            userPubkey: _validPubkeyA,
+            isFollowing: (pk) => pk == _validPubkeyB,
+          );
 
-        expect(result.followed, isEmpty);
-        expect(result.requests, hasLength(1));
-      });
+          expect(result.followed, isEmpty);
+          expect(result.requests, hasLength(1));
+        },
+      );
 
       test('duplicate peer pubkeys are deduplicated to a 1:1', () {
         final conv = makeConversation(
@@ -15177,7 +15610,9 @@ void main() {
       }
 
       test('returns accepted unchanged when followedPotential is empty', () {
-        final accepted = [makeConversation(id: 'a', lastMessageTimestamp: 100)];
+        final accepted = [
+          makeConversation(id: 'a', lastMessageTimestamp: 100),
+        ];
 
         final result = DmRepository.mergeAndSort(accepted, []);
 
@@ -15189,7 +15624,9 @@ void main() {
           makeConversation(id: 'a', lastMessageTimestamp: 200),
           makeConversation(id: 'b', lastMessageTimestamp: 100),
         ];
-        final followed = [makeConversation(id: 'c', lastMessageTimestamp: 150)];
+        final followed = [
+          makeConversation(id: 'c', lastMessageTimestamp: 150),
+        ];
 
         final result = DmRepository.mergeAndSort(accepted, followed);
 
@@ -15620,7 +16057,10 @@ void main() {
             conversations.first.lastMessageContent,
             equals('Latest reply'),
           );
-          expect(conversations.first.lastMessageTimestamp, equals(1700000500));
+          expect(
+            conversations.first.lastMessageTimestamp,
+            equals(1700000500),
+          );
           expect(
             conversations.first.lastMessageSenderPubkey,
             equals(_validPubkeyA),
@@ -15639,49 +16079,55 @@ void main() {
         },
       );
 
-      test('preserves DAO ordering', () async {
-        final participantsA = [_validPubkeyA, _validPubkeyB]..sort();
-        final participantsB = [_validPubkeyA, _validPubkeyC]..sort();
-        final convA = DmRepository.computeConversationId(participantsA);
-        final convB = DmRepository.computeConversationId(participantsB);
+      test(
+        'preserves DAO ordering',
+        () async {
+          final participantsA = [_validPubkeyA, _validPubkeyB]..sort();
+          final participantsB = [_validPubkeyA, _validPubkeyC]..sort();
+          final convA = DmRepository.computeConversationId(participantsA);
+          final convB = DmRepository.computeConversationId(participantsB);
 
-        when(
-          () => mockConversationsDao.watchAcceptedConversations(
-            limit: any(named: 'limit'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.value([
-            ConversationRow(
-              id: convA,
-              participantPubkeys: jsonEncode(participantsA),
-              isGroup: false,
-              isRead: true,
-              currentUserHasSent: true,
-              createdAt: 1700000000,
-              lastMessageContent: 'B latest',
-              lastMessageTimestamp: 1700000900,
+          when(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
-            ConversationRow(
-              id: convB,
-              participantPubkeys: jsonEncode(participantsB),
-              isGroup: false,
-              isRead: true,
-              currentUserHasSent: true,
-              createdAt: 1700000000,
-              lastMessageContent: 'A latest',
-              lastMessageTimestamp: 1700000300,
-            ),
-          ]),
-        );
+          ).thenAnswer(
+            (_) => Stream.value([
+              ConversationRow(
+                id: convA,
+                participantPubkeys: jsonEncode(participantsA),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: true,
+                createdAt: 1700000000,
+                lastMessageContent: 'B latest',
+                lastMessageTimestamp: 1700000900,
+              ),
+              ConversationRow(
+                id: convB,
+                participantPubkeys: jsonEncode(participantsB),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: true,
+                createdAt: 1700000000,
+                lastMessageContent: 'A latest',
+                lastMessageTimestamp: 1700000300,
+              ),
+            ]),
+          );
 
-        final repository = createRepository();
-        final conversations = await repository
-            .watchAcceptedConversations()
-            .first;
+          final repository = createRepository();
+          final conversations = await repository
+              .watchAcceptedConversations()
+              .first;
 
-        expect(conversations.map((c) => c.id).toList(), equals([convA, convB]));
-      });
+          expect(
+            conversations.map((c) => c.id).toList(),
+            equals([convA, convB]),
+          );
+        },
+      );
     });
 
     group('watchPotentialRequests', () {
@@ -15778,7 +16224,9 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => controller.stream);
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
       }
 
       test('valid kind 5 soft-deletes message and refreshes preview', () async {
@@ -15882,6 +16330,92 @@ void main() {
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'an own-device kind 5 keeps the message pending and replayable',
+        () async {
+          final controller = StreamController<Event>();
+          stubSubscription(controller);
+          final deletion = createDeletionEvent(
+            authorPubkey: _validPubkeyA,
+            deletedRumorIds: [_rumorEventId],
+          );
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              convId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+          );
+          await repository.startListening();
+          controller.add(deletion);
+          await Future<void>.delayed(Duration.zero);
+
+          final captured =
+              verify(
+                    () => mockDirectMessagesDao.markMessageDeletionPending(
+                      _rumorEventId,
+                      deletionRumorJson: captureAny(
+                        named: 'deletionRumorJson',
+                      ),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(
+            Event.fromJson(jsonDecode(captured) as Map<String, dynamic>).id,
+            deletion.id,
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('ignores kind 5 from non-author (NIP-09 mismatch)', () async {
         final controller = StreamController<Event>();
@@ -16336,7 +16870,10 @@ void main() {
       });
 
       test('applies a k=15 deletion to the file message it names', () async {
-        stubMessage(_giftWrapEventId2, messageKind: EventKind.fileMessage);
+        stubMessage(
+          _giftWrapEventId2,
+          messageKind: EventKind.fileMessage,
+        );
 
         final repository = await deliver(
           deletionRumor(targets: [_giftWrapEventId2], kTag: '15'),
@@ -16582,69 +17119,75 @@ void main() {
         await Future<void>.delayed(Duration.zero);
       }
 
-      test('a re-delivered reaction wrap is decrypted only once (recorded in '
-          'the ledger after the first terminal persist)', () async {
-        when(
-          () => mockReactionsRepository.persistIncoming(
-            rumorEvent: any(named: 'rumorEvent'),
-            giftWrapId: _giftWrapEventId,
-          ),
-        ).thenAnswer((_) async => DmWrapOutcome.processed);
+      test(
+        'a re-delivered reaction wrap is decrypted only once (recorded in '
+        'the ledger after the first terminal persist)',
+        () async {
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
-        var decryptCount = 0;
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          reactionsRepository: mockReactionsRepository,
-          rumorDecryptor: (_, _) async {
-            decryptCount++;
-            return reactionRumor();
-          },
-        );
-        await repository.startListening();
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return reactionRumor();
+            },
+          );
+          await repository.startListening();
 
-        await deliverTwice(giftWrap());
+          await deliverTwice(giftWrap());
 
-        expect(decryptCount, 1);
-        expect(ledger.recorded, contains(_giftWrapEventId));
-        verify(
-          () => mockReactionsRepository.persistIncoming(
-            rumorEvent: any(named: 'rumorEvent'),
-            giftWrapId: _giftWrapEventId,
-          ),
-        ).called(1);
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+          verify(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
-      test('a re-delivered deletion wrap is decrypted only once', () async {
-        when(
-          () => mockReactionsRepository.applyDeletion(
-            rumorId: any(named: 'rumorId'),
-            deleterPubkey: any(named: 'deleterPubkey'),
-            giftWrapId: _giftWrapEventId,
-          ),
-        ).thenAnswer((_) async => DmWrapOutcome.processed);
+      test(
+        'a re-delivered deletion wrap is decrypted only once',
+        () async {
+          when(
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: any(named: 'rumorId'),
+              deleterPubkey: any(named: 'deleterPubkey'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
-        var decryptCount = 0;
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          reactionsRepository: mockReactionsRepository,
-          rumorDecryptor: (_, _) async {
-            decryptCount++;
-            return deletionRumor();
-          },
-        );
-        await repository.startListening();
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return deletionRumor();
+            },
+          );
+          await repository.startListening();
 
-        await deliverTwice(giftWrap());
+          await deliverTwice(giftWrap());
 
-        expect(decryptCount, 1);
-        expect(ledger.recorded, contains(_giftWrapEventId));
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test(
         'an unresolved reaction (deferred) is NOT recorded and re-decrypts on '
@@ -16744,82 +17287,85 @@ void main() {
         },
       );
 
-      test('a text wrap ignored by database dedup is recorded so redelivery '
-          'skips decrypt', () async {
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: any(named: 'counterpart'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: _validPubkeyB,
-            content: 'Retried peer message',
-            createdAt: 1700000000,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((_) async => false);
+      test(
+        'a text wrap ignored by database dedup is recorded so redelivery '
+        'skips decrypt',
+        () async {
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyB,
+              content: 'Retried peer message',
+              createdAt: 1700000000,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => false);
 
-        final syncState = _FakeDmSyncState();
-        var decryptCount = 0;
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          syncState: syncState,
-          rumorDecryptor: (_, _) async {
-            decryptCount++;
-            return textRumor(id: _giftWrapEventId2);
-          },
-        );
-        await repository.startListening();
+          final syncState = _FakeDmSyncState();
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            syncState: syncState,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return textRumor(id: _giftWrapEventId2);
+            },
+          );
+          await repository.startListening();
 
-        await deliverTwice(giftWrap());
+          await deliverTwice(giftWrap());
 
-        expect(decryptCount, 1);
-        expect(ledger.recorded, contains(_giftWrapEventId));
-        expect(syncState.recorded, isEmpty);
-        verifyNever(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        );
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+          expect(syncState.recorded, isEmpty);
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test(
         'a text wrap skipped by the transactional gift-wrap re-check does not '
@@ -17072,158 +17618,161 @@ void main() {
         await repository.stopListening();
       });
 
-      test('a reopened removed conversation keeps suppressing replayed '
-          'pre-removal history', () async {
-        final removedConversationsDao = _InMemoryRemovedConversationsDao();
-        final conversationId = DmRepository.computeConversationId(const [
-          _validPubkeyA,
-          _validPubkeyB,
-        ]);
-        await removedConversationsDao.record(
-          conversationId: conversationId,
-          ownerPubkey: _validPubkeyA,
-          removedAt: 1700000000,
-        );
-
-        const newMessageAt = 1700000001;
-        when(
-          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId2),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: any(named: 'counterpart'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).thenAnswer((_) async {});
-
-        Event giftWrap2() => Event.fromJson({
-          'id': _giftWrapEventId2,
-          'pubkey': _validPubkeyC,
-          'created_at': 1700000101,
-          'kind': EventKind.giftWrap,
-          'tags': [
-            ['p', _validPubkeyA],
-          ],
-          'content': 'wrapped',
-          'sig': '',
-        });
-
-        // First delivery: a genuinely newer message reopens the
-        // conversation.
-        var rumor = textRumor(createdAt: newMessageAt);
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          removedConversationsDao: removedConversationsDao,
-          rumorDecryptor: (_, _) async => rumor,
-        );
-        await repository.startListening();
-
-        controller.add(giftWrap());
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        // The tombstone survives the reopen — this is the #7804 invariant.
-        expect(
-          await removedConversationsDao.removedAtFor(
+      test(
+        'a reopened removed conversation keeps suppressing replayed '
+        'pre-removal history',
+        () async {
+          final removedConversationsDao = _InMemoryRemovedConversationsDao();
+          final conversationId = DmRepository.computeConversationId(const [
+            _validPubkeyA,
+            _validPubkeyB,
+          ]);
+          await removedConversationsDao.record(
             conversationId: conversationId,
             ownerPubkey: _validPubkeyA,
-          ),
-          1700000000,
-        );
+            removedAt: 1700000000,
+          );
 
-        // Relay replay now redelivers the pre-removal message: with the
-        // tombstone intact it stays suppressed instead of resurrecting the
-        // removed history.
-        rumor = textRumor(id: _giftWrapEventId2);
-        controller.add(giftWrap2());
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          const newMessageAt = 1700000001;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId2),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
 
-        expect(ledger.recorded, contains(_giftWrapEventId2));
-        // Exactly one insert across both deliveries: the reopening message
-        // only.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
+          Event giftWrap2() => Event.fromJson({
+            'id': _giftWrapEventId2,
+            'pubkey': _validPubkeyC,
+            'created_at': 1700000101,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'wrapped',
+            'sig': '',
+          });
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          // First delivery: a genuinely newer message reopens the
+          // conversation.
+          var rumor = textRumor(createdAt: newMessageAt);
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            removedConversationsDao: removedConversationsDao,
+            rumorDecryptor: (_, _) async => rumor,
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // The tombstone survives the reopen — this is the #7804 invariant.
+          expect(
+            await removedConversationsDao.removedAtFor(
+              conversationId: conversationId,
+              ownerPubkey: _validPubkeyA,
+            ),
+            1700000000,
+          );
+
+          // Relay replay now redelivers the pre-removal message: with the
+          // tombstone intact it stays suppressed instead of resurrecting the
+          // removed history.
+          rumor = textRumor(id: _giftWrapEventId2);
+          controller.add(giftWrap2());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(ledger.recorded, contains(_giftWrapEventId2));
+          // Exactly one insert across both deliveries: the reopening message
+          // only.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by
       // whoever sent the wrap. Left unbounded, one such rumor advances the
@@ -17343,50 +17892,53 @@ void main() {
         },
       );
 
-      test('the skew guard does not reject an honestly-dated rumor', () async {
-        // Same wrap, same pipeline — only the rumor timestamp differs. The
-        // rumor must reach its kind handler instead of being short-circuited.
-        final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final honest = Event.fromJson({
-          'id': _rumorEventId,
-          'pubkey': _validPubkeyB,
-          'created_at': nowSec - 60,
-          'kind': EventKind.reaction,
-          'tags': [
-            ['e', _giftWrapEventId2],
-            ['p', _validPubkeyA],
-          ],
-          'content': '❤️',
-          'sig': '',
-        });
-        when(
-          () => mockReactionsRepository.persistIncoming(
-            rumorEvent: any(named: 'rumorEvent'),
-            giftWrapId: _giftWrapEventId,
-          ),
-        ).thenAnswer((_) async => DmWrapOutcome.processed);
+      test(
+        'the skew guard does not reject an honestly-dated rumor',
+        () async {
+          // Same wrap, same pipeline — only the rumor timestamp differs. The
+          // rumor must reach its kind handler instead of being short-circuited.
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final honest = Event.fromJson({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyB,
+            'created_at': nowSec - 60,
+            'kind': EventKind.reaction,
+            'tags': [
+              ['e', _giftWrapEventId2],
+              ['p', _validPubkeyA],
+            ],
+            'content': '❤️',
+            'sig': '',
+          });
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
-        final repository = createRepository(
-          processedGiftWrapsDao: ledger,
-          reactionsRepository: mockReactionsRepository,
-          rumorDecryptor: (_, _) async => honest,
-        );
-        await repository.startListening();
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async => honest,
+          );
+          await repository.startListening();
 
-        controller.add(giftWrap());
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
 
-        verify(
-          () => mockReactionsRepository.persistIncoming(
-            rumorEvent: any(named: 'rumorEvent'),
-            giftWrapId: _giftWrapEventId,
-          ),
-        ).called(1);
+          verify(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
 
-        await controller.close();
-        await repository.stopListening();
-      });
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
     });
 
     group('_refreshConversationPreview', () {
@@ -17516,125 +18068,128 @@ void main() {
         },
       );
 
-      test('uses file preview text when latest remaining is kind 15', () async {
-        final repo = createRepository();
+      test(
+        'uses file preview text when latest remaining is kind 15',
+        () async {
+          final repo = createRepository();
 
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => DirectMessageRow(
-            id: _rumorEventId,
-            conversationId: convId,
-            senderPubkey: _validPubkeyA,
-            content: 'Deleted msg',
-            createdAt: 1700000000,
-            giftWrapId: _giftWrapEventId,
-            messageKind: 14,
-            isDeleted: false,
-            twinCollapsed: false,
-          ),
-        );
-
-        when(
-          () => mockConversationsDao.getConversation(
-            convId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: convId,
-            participantPubkeys: jsonEncode(participants),
-            isGroup: false,
-            isRead: true,
-            currentUserHasSent: true,
-            createdAt: 1700000000,
-          ),
-        );
-
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) => NIP17SendResult.success(
-            rumorEventId: rumorEvent.id,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionPending(
-            _rumorEventId,
-            deletionRumorJson: any(named: 'deletionRumorJson'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockDirectMessagesDao.markMessageDeletionSent(
-            _rumorEventId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        // After deletion, a file message remains
-        when(
-          () => mockDirectMessagesDao.getMessagesForConversation(
-            convId,
-            limit: 1,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => [
-            DirectMessageRow(
-              id: _giftWrapEventId2,
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
               conversationId: convId,
-              senderPubkey: _validPubkeyB,
-              content: 'https://blossom.example.com/file.enc',
-              createdAt: 1699999000,
-              giftWrapId: _giftWrapEventId2,
-              messageKind: EventKind.fileMessage,
+              senderPubkey: _validPubkeyA,
+              content: 'Deleted msg',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
               isDeleted: false,
               twinCollapsed: false,
-              fileType: 'image/jpeg',
             ),
-          ],
-        );
+          );
 
-        when(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
-          ),
-        ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: convId,
+              participantPubkeys: jsonEncode(participants),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+            ),
+          );
 
-        await repo.deleteMessageForEveryone(_rumorEventId);
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        // Verify file preview text was used
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: convId,
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: 'Sent a photo',
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-            forceUpdateLastMessage: true,
-          ),
-        ).called(1);
-      });
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionSent(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // After deletion, a file message remains
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              convId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              DirectMessageRow(
+                id: _giftWrapEventId2,
+                conversationId: convId,
+                senderPubkey: _validPubkeyB,
+                content: 'https://blossom.example.com/file.enc',
+                createdAt: 1699999000,
+                giftWrapId: _giftWrapEventId2,
+                messageKind: EventKind.fileMessage,
+                isDeleted: false,
+                twinCollapsed: false,
+                fileType: 'image/jpeg',
+              ),
+            ],
+          );
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
+          // Verify file preview text was used
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: convId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Sent a photo',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('setCredentials', () {
@@ -17652,22 +18207,27 @@ void main() {
         expect(repo.userPubkey, equals(_validPubkeyA));
       });
 
-      test('switching users resets state and re-initializes', () async {
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+      test(
+        'switching users resets state and re-initializes',
+        () async {
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
 
-        final repo = createRepository()
-          ..setCredentials(
-            userPubkey: _validPubkeyB,
-            signer: LocalNostrSigner(_validPrivateKey),
-            messageService: mockMessageService,
-          );
+          final repo = createRepository()
+            ..setCredentials(
+              userPubkey: _validPubkeyB,
+              signer: LocalNostrSigner(_validPrivateKey),
+              messageService: mockMessageService,
+            );
 
-        // Give post-auth maintenance a chance to run.
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Give post-auth maintenance a chance to run.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(repo.userPubkey, equals(_validPubkeyB));
-        expect(repo.isInitialized, isTrue);
-      });
+          expect(repo.userPubkey, equals(_validPubkeyB));
+          expect(repo.isInitialized, isTrue);
+        },
+      );
     });
 
     // #8270 / #8203. `_mergeDuplicateConversations` used to run here and
@@ -17679,8 +18239,11 @@ void main() {
     group('post-auth maintenance leaves a group conversation intact', () {
       test('does not reassign or delete a group sharing a 1:1 peer', () async {
         final oneToOne = [_validPubkeyA, _validPubkeyB]..sort();
-        final groupParticipants = [_validPubkeyA, _validPubkeyB, _validPubkeyC]
-          ..sort();
+        final groupParticipants = [
+          _validPubkeyA,
+          _validPubkeyB,
+          _validPubkeyC,
+        ]..sort();
         expect(
           groupParticipants.firstWhere((pubkey) => pubkey != _validPubkeyA),
           _validPubkeyB,
@@ -17756,109 +18319,117 @@ void main() {
     });
 
     group('_cleanupSelfConversations', () {
-      test('deletes self-conversation when it exists', () async {
-        final selfConvId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyA,
-        ]);
+      test(
+        'deletes self-conversation when it exists',
+        () async {
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
 
-        // Stub: self-conversation exists
-        when(
-          () => mockConversationsDao.getConversation(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: selfConvId,
-            participantPubkeys: jsonEncode([_validPubkeyA, _validPubkeyA]),
-            isGroup: false,
-            isRead: true,
-            currentUserHasSent: false,
-            createdAt: 1700000000,
-          ),
-        );
+          // Stub: self-conversation exists
+          when(
+            () => mockConversationsDao.getConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: selfConvId,
+              participantPubkeys: jsonEncode([_validPubkeyA, _validPubkeyA]),
+              isGroup: false,
+              isRead: true,
+              currentUserHasSent: false,
+              createdAt: 1700000000,
+            ),
+          );
 
-        when(
-          () => mockDirectMessagesDao.deleteConversationMessages(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 0);
+          when(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 0);
 
-        when(
-          () => mockConversationsDao.deleteConversation(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => 1);
+          when(
+            () => mockConversationsDao.deleteConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
 
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
 
-        // Create repo then setCredentials to trigger post-auth
-        // maintenance including _cleanupSelfConversations.
-        DmRepository(
-          nostrClient: mockNostrClient,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-        ).setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+          // Create repo then setCredentials to trigger post-auth
+          // maintenance including _cleanupSelfConversations.
+          DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          ).setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
 
-        // Give post-auth maintenance time to complete.
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Give post-auth maintenance time to complete.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        verify(
-          () => mockDirectMessagesDao.deleteConversationMessages(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
+          verify(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
 
-        verify(
-          () => mockConversationsDao.deleteConversation(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockConversationsDao.deleteConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
 
-      test('no-op when self-conversation does not exist', () async {
-        final selfConvId = DmRepository.computeConversationId([
-          _validPubkeyA,
-          _validPubkeyA,
-        ]);
+      test(
+        'no-op when self-conversation does not exist',
+        () async {
+          final selfConvId = DmRepository.computeConversationId(
+            [_validPubkeyA, _validPubkeyA],
+          );
 
-        when(
-          () => mockConversationsDao.getConversation(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.getConversation(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
 
-        DmRepository(
-          nostrClient: mockNostrClient,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-        ).setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-        );
+          DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          ).setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        verifyNever(
-          () => mockDirectMessagesDao.deleteConversationMessages(
-            selfConvId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      });
+          verifyNever(
+            () => mockDirectMessagesDao.deleteConversationMessages(
+              selfConvId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
     });
 
     group('sendMessage - replyToId', () {
@@ -18019,52 +18590,57 @@ void main() {
         ).thenAnswer((_) async => null);
       }
 
-      test('sends to each recipient and persists group conversation', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
+      test(
+        'sends to each recipient and persists group conversation',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
 
-        final repo = createRepository();
-        final results = await repo.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'Group hello!',
-        );
+          final repo = createRepository();
+          final results = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group hello!',
+          );
 
-        expect(results, hasLength(2));
-        expect(results.every((r) => r.success), isTrue);
+          expect(results, hasLength(2));
+          expect(results.every((r) => r.success), isTrue);
 
-        // Verify sent to each recipient
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(2);
+          // Verify sent to each recipient
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(2);
 
-        // Verify group conversation was persisted
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: true,
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: 'Group hello!',
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: _validPubkeyA,
-            currentUserHasSent: true,
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
-      });
+          // Verify group conversation was persisted
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Group hello!',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'persists when at least one send succeeds (partial failure)',
@@ -18118,159 +18694,178 @@ void main() {
         },
       );
 
-      test('does not persist when all sends fail', () async {
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) async =>
-              const NIP17SendResult.failure('relay timeout'),
-        );
-
-        final repo = createRepository();
-        final results = await repo.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'Fails!',
-        );
-
-        expect(results, hasLength(2));
-        expect(results.every((r) => !r.success), isTrue);
-
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
-
-      test('threads additionalTags q-tag onto each recipient rumor and the '
-          'persisted tagsJson', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
-
-        const qTag = ['q', '34236:$_validPubkeyD:my-d', 'wss://relay.example'];
-
-        final repo = createRepository();
-        final _ = await repo.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'Group share!',
-          additionalTags: const [qTag],
-        );
-
-        // Each recipient's built rumor carries the q-tag (alongside the
-        // other recipient's p-tag).
-        final sentRumors = verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: captureAny(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).captured.cast<Event>();
-        expect(sentRumors, hasLength(2));
-        for (final rumor in sentRumors) {
-          expect(rumor.tags, contains(equals(qTag)));
-          // Both other-recipient p-tags ride along per NIP-17.
-          expect(
-            rumor.tags.where((tag) => tag.length >= 2 && tag[0] == 'p'),
-            isNotEmpty,
+      test(
+        'does not persist when all sends fail',
+        () async {
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay timeout'),
           );
-        }
 
-        // The locally-persisted tagsJson carries the q-tag alongside the
-        // per-recipient p-tags.
-        final tagsJson =
-            verify(
-                  () => mockDirectMessagesDao.insertMessage(
-                    id: any(named: 'id'),
-                    conversationId: any(named: 'conversationId'),
-                    senderPubkey: any(named: 'senderPubkey'),
-                    content: any(named: 'content'),
-                    createdAt: any(named: 'createdAt'),
-                    giftWrapId: any(named: 'giftWrapId'),
-                    replyToId: any(named: 'replyToId'),
-                    ownerPubkey: any(named: 'ownerPubkey'),
-                    tagsJson: captureAny(named: 'tagsJson'),
-                    sendBatchId: any(named: 'sendBatchId'),
-                  ),
-                ).captured.single
-                as String;
-        final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
-            .map((tag) => (tag as List<dynamic>).cast<String>())
-            .toList();
-        expect(persistedTags, contains(equals(qTag)));
-        expect(persistedTags, contains(equals(['p', _validPubkeyB])));
-        expect(persistedTags, contains(equals(['p', _validPubkeyC])));
-      });
+          final repo = createRepository();
+          final results = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Fails!',
+          );
 
-      test('threads additionalTags q-tag and the e reply tag into the '
-          'persisted tagsJson', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
 
-        const qTag = ['q', '34236:$_validPubkeyD:my-d', 'wss://relay.example'];
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
-        final repo = createRepository();
-        final _ = await repo.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'Group reply!',
-          additionalTags: const [qTag],
-          replyToId: _giftWrapEventId,
-        );
+      test(
+        'threads additionalTags q-tag onto each recipient rumor and the '
+        'persisted tagsJson',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
 
-        final tagsJson =
-            verify(
-                  () => mockDirectMessagesDao.insertMessage(
-                    id: any(named: 'id'),
-                    conversationId: any(named: 'conversationId'),
-                    senderPubkey: any(named: 'senderPubkey'),
-                    content: any(named: 'content'),
-                    createdAt: any(named: 'createdAt'),
-                    giftWrapId: any(named: 'giftWrapId'),
-                    replyToId: any(named: 'replyToId'),
-                    ownerPubkey: any(named: 'ownerPubkey'),
-                    tagsJson: captureAny(named: 'tagsJson'),
-                    sendBatchId: any(named: 'sendBatchId'),
-                  ),
-                ).captured.single
-                as String;
-        final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
-            .map((tag) => (tag as List<dynamic>).cast<String>())
-            .toList();
-        expect(persistedTags, contains(equals(qTag)));
-        expect(persistedTags, contains(equals(['e', _giftWrapEventId])));
-      });
+          const qTag = [
+            'q',
+            '34236:$_validPubkeyD:my-d',
+            'wss://relay.example',
+          ];
+
+          final repo = createRepository();
+          final _ = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group share!',
+            additionalTags: const [qTag],
+          );
+
+          // Each recipient's built rumor carries the q-tag (alongside the
+          // other recipient's p-tag).
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            expect(rumor.tags, contains(equals(qTag)));
+            // Both other-recipient p-tags ride along per NIP-17.
+            expect(
+              rumor.tags.where((tag) => tag.length >= 2 && tag[0] == 'p'),
+              isNotEmpty,
+            );
+          }
+
+          // The locally-persisted tagsJson carries the q-tag alongside the
+          // per-recipient p-tags.
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
+          expect(persistedTags, contains(equals(qTag)));
+          expect(persistedTags, contains(equals(['p', _validPubkeyB])));
+          expect(persistedTags, contains(equals(['p', _validPubkeyC])));
+        },
+      );
+
+      test(
+        'threads additionalTags q-tag and the e reply tag into the '
+        'persisted tagsJson',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          const qTag = [
+            'q',
+            '34236:$_validPubkeyD:my-d',
+            'wss://relay.example',
+          ];
+
+          final repo = createRepository();
+          final _ = await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group reply!',
+            additionalTags: const [qTag],
+            replyToId: _giftWrapEventId,
+          );
+
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
+          expect(persistedTags, contains(equals(qTag)));
+          expect(persistedTags, contains(equals(['e', _giftWrapEventId])));
+        },
+      );
     });
 
     group('sendSharedVideoGroup', () {
@@ -18327,170 +18922,190 @@ void main() {
         ).thenAnswer((_) async => null);
       }
 
-      test('cites an addressable (34236) video as a q-tag + nostr: URI and '
-          'carries the reply e-tag on every recipient rumor', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async =>
-              const NIP17SendResult.failure('relay unavailable'),
-        );
-
-        final repository = createRepository();
-        const author =
-            'cccccccccccccccccccccccccccccccc'
-            'cccccccccccccccccccccccccccccccc';
-
-        final _ = await repository.sendSharedVideoGroup(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          baseContent: 'watch this https://divine.video/video/abc',
-          videoKind: 34236,
-          videoAuthorPubkey: author,
-          videoDTag: 'abc',
-          relayHint: 'wss://relay.example',
-          replyToId: _giftWrapEventId,
-        );
-
-        final sentRumors = verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: captureAny(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).captured.cast<Event>();
-        expect(sentRumors, hasLength(2));
-        for (final rumor in sentRumors) {
-          // q tag cites the video by coordinate, no 4th element
-          // (addressable).
-          expect(
-            rumor.tags,
-            contains(equals(['q', '34236:$author:abc', 'wss://relay.example'])),
+      test(
+        'cites an addressable (34236) video as a q-tag + nostr: URI and '
+        'carries the reply e-tag on every recipient rumor',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay unavailable'),
           );
-          // Reply e-tag points at the parent message.
-          expect(rumor.tags, contains(equals(['e', _giftWrapEventId])));
-          // Content keeps the divine.video URL AND adds the nostr: URI.
-          expect(rumor.content, contains('nostr:naddr1'));
-          expect(rumor.content, contains('https://divine.video/video/abc'));
-        }
-      });
 
-      test('falls back to a plain sendGroupMessage when the citation cannot '
-          'be built (invalid author)', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        stubDaoInserts();
+          final repository = createRepository();
+          const author =
+              'cccccccccccccccccccccccccccccccc'
+              'cccccccccccccccccccccccccccccccc';
 
-        final repository = createRepository();
+          final _ = await repository.sendSharedVideoGroup(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            baseContent: 'watch this https://divine.video/video/abc',
+            videoKind: 34236,
+            videoAuthorPubkey: author,
+            videoDTag: 'abc',
+            relayHint: 'wss://relay.example',
+            replyToId: _giftWrapEventId,
+          );
 
-        final _ = await repository.sendSharedVideoGroup(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          baseContent: 'watch this',
-          videoKind: 34236,
-          // Not a 64-char hex pubkey, so DmSharedVideoCitation.build
-          // returns null and the group send degrades to plain text.
-          videoAuthorPubkey: 'not-a-valid-author',
-          videoDTag: 'abc',
-          relayHint: 'wss://relay.example',
-        );
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            // q tag cites the video by coordinate, no 4th element
+            // (addressable).
+            expect(
+              rumor.tags,
+              contains(
+                equals(['q', '34236:$author:abc', 'wss://relay.example']),
+              ),
+            );
+            // Reply e-tag points at the parent message.
+            expect(rumor.tags, contains(equals(['e', _giftWrapEventId])));
+            // Content keeps the divine.video URL AND adds the nostr: URI.
+            expect(rumor.content, contains('nostr:naddr1'));
+            expect(
+              rumor.content,
+              contains('https://divine.video/video/abc'),
+            );
+          }
+        },
+      );
 
-        final sentRumors = verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: captureAny(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).captured.cast<Event>();
-        expect(sentRumors, hasLength(2));
-        for (final rumor in sentRumors) {
-          // No q-tag and no appended nostr: URI on the plain fallback.
+      test(
+        'falls back to a plain sendGroupMessage when the citation cannot '
+        'be built (invalid author)',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          final repository = createRepository();
+
+          final _ = await repository.sendSharedVideoGroup(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            baseContent: 'watch this',
+            videoKind: 34236,
+            // Not a 64-char hex pubkey, so DmSharedVideoCitation.build
+            // returns null and the group send degrades to plain text.
+            videoAuthorPubkey: 'not-a-valid-author',
+            videoDTag: 'abc',
+            relayHint: 'wss://relay.example',
+          );
+
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            // No q-tag and no appended nostr: URI on the plain fallback.
+            expect(
+              rumor.tags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
+              isFalse,
+            );
+            expect(rumor.content, equals('watch this'));
+            expect(rumor.content, isNot(contains('nostr:')));
+          }
+
+          // The persisted tagsJson is the plain p-tag set — no q-tag.
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                      sendBatchId: any(named: 'sendBatchId'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
           expect(
-            rumor.tags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
+            persistedTags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
             isFalse,
           );
-          expect(rumor.content, equals('watch this'));
-          expect(rumor.content, isNot(contains('nostr:')));
-        }
-
-        // The persisted tagsJson is the plain p-tag set — no q-tag.
-        final tagsJson =
-            verify(
-                  () => mockDirectMessagesDao.insertMessage(
-                    id: any(named: 'id'),
-                    conversationId: any(named: 'conversationId'),
-                    senderPubkey: any(named: 'senderPubkey'),
-                    content: any(named: 'content'),
-                    createdAt: any(named: 'createdAt'),
-                    giftWrapId: any(named: 'giftWrapId'),
-                    replyToId: any(named: 'replyToId'),
-                    ownerPubkey: any(named: 'ownerPubkey'),
-                    tagsJson: captureAny(named: 'tagsJson'),
-                    sendBatchId: any(named: 'sendBatchId'),
-                  ),
-                ).captured.single
-                as String;
-        final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
-            .map((tag) => (tag as List<dynamic>).cast<String>())
-            .toList();
-        expect(
-          persistedTags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
-          isFalse,
-        );
-      });
+        },
+      );
     });
 
     group('setCredentials with custom decryptors', () {
-      test('stores injected rumorDecryptor and nip04Decryptor', () async {
-        var rumorCalled = false;
-        var nip04Called = false;
+      test(
+        'stores injected rumorDecryptor and nip04Decryptor',
+        () async {
+          var rumorCalled = false;
+          var nip04Called = false;
 
-        final repo = DmRepository(
-          nostrClient: mockNostrClient,
-          directMessagesDao: mockDirectMessagesDao,
-          conversationsDao: mockConversationsDao,
-        );
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          );
 
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
 
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        repo.setCredentials(
-          userPubkey: _validPubkeyA,
-          signer: LocalNostrSigner(_validPrivateKey),
-          messageService: mockMessageService,
-          rumorDecryptor: (nostr, event) async {
-            rumorCalled = true;
-            return null;
-          },
-          nip04Decryptor: (pubkey, ciphertext) async {
-            nip04Called = true;
-            return null;
-          },
-        );
+          repo.setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+            rumorDecryptor: (nostr, event) async {
+              rumorCalled = true;
+              return null;
+            },
+            nip04Decryptor: (pubkey, ciphertext) async {
+              nip04Called = true;
+              return null;
+            },
+          );
 
-        // Give post-auth maintenance a chance to complete.
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Give post-auth maintenance a chance to complete.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // The decryptors are stored — we verify by confirming
-        // setCredentials accepted them without error.
-        expect(repo.isInitialized, isTrue);
-        // Variables exist to confirm the closures were created.
-        // Calling them would require a full receive pipeline test;
-        // this test verifies the branch at lines 160-161 is reached.
-        expect(rumorCalled, isFalse);
-        expect(nip04Called, isFalse);
-      });
+          // The decryptors are stored — we verify by confirming
+          // setCredentials accepted them without error.
+          expect(repo.isInitialized, isTrue);
+          // Variables exist to confirm the closures were created.
+          // Calling them would require a full receive pipeline test;
+          // this test verifies the branch at lines 160-161 is reached.
+          expect(rumorCalled, isFalse);
+          expect(nip04Called, isFalse);
+        },
+      );
     });
 
     group('subscription onError reconnect', () {
@@ -18576,11 +19191,15 @@ void main() {
           // The NIP-04 fallback is fire-and-forget; PublishNoRelays must not
           // bubble up and fail the overall sendMessage result.
           final mockSigner = _MockNostrSigner();
-          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(mockSigner.getPublicKey).thenAnswer(
+            (_) async => _validPubkeyA,
+          );
           when(
             () => mockSigner.encrypt(any(), any()),
           ).thenAnswer((_) async => 'encrypted-content');
-          when(() => mockSigner.signEvent(any())).thenAnswer((inv) async {
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((inv) async {
             final e = inv.positionalArguments.first as Event;
             return e
               ..id = 'nip04-event-id-no-relays'
@@ -18721,11 +19340,15 @@ void main() {
           // The NIP-04 fallback is fire-and-forget; PublishFailed must not
           // bubble up and fail the overall sendMessage result.
           final mockSigner = _MockNostrSigner();
-          when(mockSigner.getPublicKey).thenAnswer((_) async => _validPubkeyA);
+          when(mockSigner.getPublicKey).thenAnswer(
+            (_) async => _validPubkeyA,
+          );
           when(
             () => mockSigner.encrypt(any(), any()),
           ).thenAnswer((_) async => 'encrypted-content');
-          when(() => mockSigner.signEvent(any())).thenAnswer((inv) async {
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((inv) async {
             final e = inv.positionalArguments.first as Event;
             return e
               ..id = 'nip04-event-id-send-error'
@@ -18973,7 +19596,9 @@ void main() {
         mockOutgoingDmsDao = _MockOutgoingDmsDao();
         // Default stubs covering the queue lifecycle a successful or
         // failed send touches.
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((_) async {});
+        when(
+          () => mockOutgoingDmsDao.enqueue(any()),
+        ).thenAnswer((_) async {});
         when(
           () => mockOutgoingDmsDao.deleteById(any()),
         ).thenAnswer((_) async => 1);
@@ -19070,105 +19695,119 @@ void main() {
         ).thenAnswer((_) async => const PublishFailed());
       });
 
-      test('enqueues a pending row with the rumor id, then deletes it on '
-          'full delivery', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+      test(
+        'enqueues a pending row with the rumor id, then deletes it on '
+        'full delivery',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'queue-wired message',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'queue-wired message',
+          );
 
-        expect(result.success, isTrue);
+          expect(result.success, isTrue);
 
-        // Capture the enqueue call so we can assert the row shape and
-        // re-use the rumor id for the deleteById verify.
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        expect(captured, hasLength(1));
-        final enqueued = captured.single as OutgoingDm;
-        expect(enqueued.recipientPubkey, equals(_validPubkeyB));
-        expect(enqueued.ownerPubkey, equals(_validPubkeyA));
-        expect(enqueued.content, equals('queue-wired message'));
-        expect(enqueued.recipientWrapStatus, OutgoingWrapStatus.pending);
-        expect(enqueued.selfWrapStatus, OutgoingWrapStatus.pending);
-        expect(
-          enqueued.id,
-          isNotEmpty,
-          reason:
-              'queue PK is the rumor id; the buildRumor stub computes '
-              'a deterministic id from rumor fields',
-        );
+          // Capture the enqueue call so we can assert the row shape and
+          // re-use the rumor id for the deleteById verify.
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          expect(captured, hasLength(1));
+          final enqueued = captured.single as OutgoingDm;
+          expect(enqueued.recipientPubkey, equals(_validPubkeyB));
+          expect(enqueued.ownerPubkey, equals(_validPubkeyA));
+          expect(enqueued.content, equals('queue-wired message'));
+          expect(enqueued.recipientWrapStatus, OutgoingWrapStatus.pending);
+          expect(enqueued.selfWrapStatus, OutgoingWrapStatus.pending);
+          expect(
+            enqueued.id,
+            isNotEmpty,
+            reason:
+                'queue PK is the rumor id; the buildRumor stub computes '
+                'a deterministic id from rumor fields',
+          );
 
-        verify(() => mockOutgoingDmsDao.deleteById(enqueued.id)).called(1);
-        // The failure-path mark methods must NOT fire on a successful
-        // send — that would leave the row in a phantom failed state
-        // even though delivery succeeded.
-        verifyNever(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        );
-      });
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.id),
+          ).called(1);
+          // The failure-path mark methods must NOT fire on a successful
+          // send — that would leave the row in a phantom failed state
+          // even though delivery succeeded.
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
 
-      test('an unreadable recipient inbox is NOT delivery: a fallback-pool OK '
-          'keeps the row pending instead of deleting it (#7317)', () async {
-        // The recipient DOES advertise an inbox; our pool just could not
-        // read it. The publish still lands on the default pool and the
-        // relay still says OK - which is exactly the false positive.
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((_) async => unansweredList(noRelays: true));
-        stubSendRumor(
-          // selfWrapPublished defaults true, which is the arm that deletes
-          // the row — the exact behaviour under test.
-          (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: rumorEvent.id,
-            messageEventId: 'wrap-on-the-fallback-pool',
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+      test(
+        'an unreadable recipient inbox is NOT delivery: a fallback-pool OK '
+        'keeps the row pending instead of deleting it (#7317)',
+        () async {
+          // The recipient DOES advertise an inbox; our pool just could not
+          // read it. The publish still lands on the default pool and the
+          // relay still says OK - which is exactly the false positive.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => unansweredList(noRelays: true));
+          stubSendRumor(
+            // selfWrapPublished defaults true, which is the arm that deletes
+            // the row — the exact behaviour under test.
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap-on-the-fallback-pool',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'routed to the fallback pool',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'routed to the fallback pool',
+          );
 
-        // Reported as retryable-pending, not delivered.
-        expect(result.success, isFalse);
-        expect(result.retryablePending, isTrue);
+          // Reported as retryable-pending, not delivered.
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
 
-        final enqueued =
-            verify(
-                  () => mockOutgoingDmsDao.enqueue(captureAny()),
-                ).captured.single
-                as OutgoingDm;
-        // The retry handle SURVIVES - this is the whole point. Without it
-        // no sweep can ever re-resolve the recipient's inbox.
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verify(() => mockOutgoingDmsDao.incrementRetry(enqueued.id)).called(1);
-      });
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          // The retry handle SURVIVES - this is the whole point. Without it
+          // no sweep can ever re-resolve the recipient's inbox.
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.id),
+          ).called(1);
+        },
+      );
 
       test(
         'a recipient who genuinely advertises no inbox is still delivered - '
@@ -19204,78 +19843,85 @@ void main() {
         },
       );
 
-      test('a soft-unconfirmed send keeps the enqueued row pending via '
-          'incrementRetry, does NOT mark it failed, delete it, or persist '
-          'locally', () async {
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure(
-            'Message recipient OK unconfirmed',
-            retryablePending: true,
-          ),
-        );
+      test(
+        'a soft-unconfirmed send keeps the enqueued row pending via '
+        'incrementRetry, does NOT mark it failed, delete it, or persist '
+        'locally',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'unconfirmed message',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'unconfirmed message',
+          );
 
-        expect(result.success, isFalse);
-        expect(result.retryablePending, isTrue);
-        // Row was enqueued pending; the soft outcome only bumps the retry
-        // counter — it never flips to failed, never deletes, and (since the
-        // recipient is unconfirmed) never persists to direct_messages.
-        final enqueued =
-            verify(
-                  () => mockOutgoingDmsDao.enqueue(captureAny()),
-                ).captured.single
-                as OutgoingDm;
-        verify(() => mockOutgoingDmsDao.incrementRetry(enqueued.id)).called(1);
-        verifyNever(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        );
-        verifyNever(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        );
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          // Row was enqueued pending; the soft outcome only bumps the retry
+          // counter — it never flips to failed, never deletes, and (since the
+          // recipient is unconfirmed) never persists to direct_messages.
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.id),
+          ).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
       test(
         'a policy-blocked recipient is neither enqueued nor sent (#176)',
@@ -19310,387 +19956,429 @@ void main() {
         },
       );
 
-      test('a hard failure reports the row it parked, so a retry can re-drive '
-          'that row instead of enqueuing a second copy (#6610)', () async {
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure('relay unavailable'),
-        );
+      test(
+        'a hard failure reports the row it parked, so a retry can re-drive '
+        'that row instead of enqueuing a second copy (#6610)',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('relay unavailable'),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'parked message',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'parked message',
+          );
 
-        final enqueued =
-            verify(
-                  () => mockOutgoingDmsDao.enqueue(captureAny()),
-                ).captured.single
-                as OutgoingDm;
-        // Without this the caller has no handle on the row and its only
-        // option is another sendMessage, which mints a fresh rumor — the
-        // sweep then delivers one copy and the retry delivers another.
-        expect(result.queuedRumorId, equals(enqueued.id));
-      });
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          // Without this the caller has no handle on the row and its only
+          // option is another sendMessage, which mints a fresh rumor — the
+          // sweep then delivers one copy and the retry delivers another.
+          expect(result.queuedRumorId, equals(enqueued.id));
+        },
+      );
 
-      test('a soft-unconfirmed send reports the row it left pending', () async {
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure(
-            'Message recipient OK unconfirmed',
-            retryablePending: true,
-          ),
-        );
+      test(
+        'a soft-unconfirmed send reports the row it left pending',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'unconfirmed message',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'unconfirmed message',
+          );
 
-        final enqueued =
-            verify(
-                  () => mockOutgoingDmsDao.enqueue(captureAny()),
-                ).captured.single
-                as OutgoingDm;
-        expect(result.queuedRumorId, equals(enqueued.id));
-      });
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          expect(result.queuedRumorId, equals(enqueued.id));
+        },
+      );
 
-      test('a policy block reports no parked row — the gate returns before the '
-          'enqueue, so there is nothing to re-drive', () async {
-        when(
-          () => mockMessageService.canSendTo(_validPubkeyB),
-        ).thenAnswer((_) async => false);
+      test(
+        'a policy block reports no parked row — the gate returns before the '
+        'enqueue, so there is nothing to re-drive',
+        () async {
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyB),
+          ).thenAnswer((_) async => false);
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'should be blocked before enqueue',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'should be blocked before enqueue',
+          );
 
-        expect(result.blocked, isTrue);
-        expect(result.queuedRumorId, isNull);
-      });
+          expect(result.blocked, isTrue);
+          expect(result.queuedRumorId, isNull);
+        },
+      );
 
-      test('on publish failure: marks both wraps failed with the error '
-          'and leaves the row for the retry service', () async {
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) async =>
-              const NIP17SendResult.failure('relay unavailable'),
-        );
+      test(
+        'on publish failure: marks both wraps failed with the error '
+        'and leaves the row for the retry service',
+        () async {
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay unavailable'),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'this will fail',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'this will fail',
+          );
 
-        expect(result.success, isFalse);
+          expect(result.success, isFalse);
 
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        final enqueued = captured.single as OutgoingDm;
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueued = captured.single as OutgoingDm;
 
-        // Recipient publish failed before the self-wrap could land,
-        // so both wrap states stay retryable.
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: enqueued.id,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'relay unavailable',
-          ),
-        ).called(1);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: enqueued.id,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'relay unavailable',
-          ),
-        ).called(1);
-        // On failure the row stays put — deleteById must not fire,
-        // otherwise the user loses the failed bubble + retry option.
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        // direct_messages must not be inserted — that's reserved for
-        // confirmed deliveries.
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          // Recipient publish failed before the self-wrap could land,
+          // so both wrap states stay retryable.
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'relay unavailable',
+            ),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'relay unavailable',
+            ),
+          ).called(1);
+          // On failure the row stays put — deleteById must not fire,
+          // otherwise the user loses the failed bubble + retry option.
+          verifyNever(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          );
+          // direct_messages must not be inserted — that's reserved for
+          // confirmed deliveries.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
-      test('a server-side policy block after enqueue drops the row, '
-          'not marks it failed (#6067)', () async {
-        // The client canSendTo gate passed — the block is server-side and
-        // the client did not predict it — so the row is enqueued and sent,
-        // then Keycast refuses with a 403 that sendRumor classifies as
-        // blocked. A policy block is terminal, so the row must be dropped
-        // (no doomed Resend bubble), the same as the group and drain arms.
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.blocked(
-            'blocked: recipient not permitted by send policy',
-          ),
-        );
+      test(
+        'a server-side policy block after enqueue drops the row, '
+        'not marks it failed (#6067)',
+        () async {
+          // The client canSendTo gate passed — the block is server-side and
+          // the client did not predict it — so the row is enqueued and sent,
+          // then Keycast refuses with a 403 that sendRumor classifies as
+          // blocked. A policy block is terminal, so the row must be dropped
+          // (no doomed Resend bubble), the same as the group and drain arms.
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.blocked(
+              'blocked: recipient not permitted by send policy',
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'blocked after enqueue',
-        );
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'blocked after enqueue',
+          );
 
-        expect(result.blocked, isTrue);
+          expect(result.blocked, isTrue);
 
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        final enqueued = captured.single as OutgoingDm;
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueued = captured.single as OutgoingDm;
 
-        // Terminal: the row is deleted, never marked failed/retryable
-        // (which would leave a doomed red Resend bubble).
-        verify(() => mockOutgoingDmsDao.deleteById(enqueued.id)).called(1);
-        verifyNever(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: OutgoingWrapStatus.failed,
-            lastError: any(named: 'lastError'),
-          ),
-        );
-        // The recipient received nothing, so no direct_messages row.
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          // Terminal: the row is deleted, never marked failed/retryable
+          // (which would leave a doomed red Resend bubble).
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.id),
+          ).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          // The recipient received nothing, so no direct_messages row.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
-      test('on partial delivery: persists locally, keeps the queue row, '
-          'marks recipient sent, and marks self failed', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-            selfWrapPublished: false,
-          ),
-        );
+      test(
+        'on partial delivery: persists locally, keeps the queue row, '
+        'marks recipient sent, and marks self failed',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+              selfWrapPublished: false,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'recipient got it, self-wrap failed',
-        );
-
-        expect(result.success, isTrue);
-        expect(result.selfWrapPublished, isFalse);
-
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        final enqueued = captured.single as OutgoingDm;
-
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: enqueued.id,
-            status: OutgoingWrapStatus.sent,
-            eventId: _giftWrapEventId,
-          ),
-        ).called(1);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: enqueued.id,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'Recipient delivered, but self-wrap publish failed',
-          ),
-        ).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: _validPubkeyA,
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
             content: 'recipient got it, self-wrap failed',
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: _giftWrapEventId,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: _validPubkeyA,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-      });
+          );
 
-      test('queue is opt-in: when no OutgoingDmsDao is injected, '
-          'sendMessage falls back to the direct-write behaviour and '
-          'never touches the queue', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
 
-        // No outgoingDmsDao argument — older test fixtures and
-        // (until provider is updated) production paths.
-        final repository = createRepository();
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueued = captured.single as OutgoingDm;
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'no queue here',
-        );
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.sent,
+              eventId: _giftWrapEventId,
+            ),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Recipient delivered, but self-wrap publish failed',
+            ),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyA,
+              content: 'recipient got it, self-wrap failed',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: _validPubkeyA,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+        },
+      );
 
-        expect(result.success, isTrue);
-        verifyNever(() => mockOutgoingDmsDao.enqueue(any()));
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-      });
+      test(
+        'queue is opt-in: when no OutgoingDmsDao is injected, '
+        'sendMessage falls back to the direct-write behaviour and '
+        'never touches the queue',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-      test('cancel interlock: a row cancelled during the publish window is '
-          'not resurrected — no local persist, no conversation upsert, no '
-          'NIP-04 fallback', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        // The user tapped Delete while the OK-confirm was in flight: by
-        // the time the success transaction re-reads the row, it is gone.
-        when(
-          () => mockOutgoingDmsDao.getById(any()),
-        ).thenAnswer((_) async => null);
+          // No outgoingDmsDao argument — older test fixtures and
+          // (until provider is updated) production paths.
+          final repository = createRepository();
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'no queue here',
+          );
 
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'deleted mid-flight',
-        );
+          expect(result.success, isTrue);
+          verifyNever(() => mockOutgoingDmsDao.enqueue(any()));
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
 
-        // Drain the unawaited NIP-04 leg BEFORE asserting it never
-        // published. Without this the `verifyNever` below runs while the
-        // fallback future is still suspended, so it passes whether or not
-        // the cancel interlock works — proven by mutation: dropping
-        // `persistedLocally &&` from the gate left this test green while
-        // the leg demonstrably reached `publishEventAwaitOk` (#8262).
-        await pumpEventQueue();
+      test(
+        'cancel interlock: a row cancelled during the publish window is '
+        'not resurrected — no local persist, no conversation upsert, no '
+        'NIP-04 fallback',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          // The user tapped Delete while the OK-confirm was in flight: by
+          // the time the success transaction re-reads the row, it is gone.
+          when(
+            () => mockOutgoingDmsDao.getById(any()),
+          ).thenAnswer((_) async => null);
 
-        // The wire copy went out — the send itself still succeeded.
-        expect(result.success, isTrue);
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-        verifyNever(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        );
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        // The NIP-04 fallback must not fire either — it would send a
-        // plaintext copy of a message the user just deleted.
-        verifyNever(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-            timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
-          ),
-        );
-      });
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'deleted mid-flight',
+          );
+
+          // Drain the unawaited NIP-04 leg BEFORE asserting it never
+          // published. Without this the `verifyNever` below runs while the
+          // fallback future is still suspended, so it passes whether or not
+          // the cancel interlock works — proven by mutation: dropping
+          // `persistedLocally &&` from the gate left this test green while
+          // the leg demonstrably reached `publishEventAwaitOk` (#8262).
+          await pumpEventQueue();
+
+          // The wire copy went out — the send itself still succeeded.
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          // The NIP-04 fallback must not fire either — it would send a
+          // plaintext copy of a message the user just deleted.
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+        },
+      );
 
       group('retryableOutgoingWork nudge', () {
         Future<List<void>> collectedEvents(
@@ -19778,31 +20466,34 @@ void main() {
           },
         );
 
-        test('still fires when the soft-unconfirmed bookkeeping write throws '
-            '— the row remains retryable either way', () async {
-          stubSendRumor(
-            (_, _) async => const NIP17SendResult.failure(
-              'Message recipient OK unconfirmed',
-              retryablePending: true,
-            ),
-          );
-          when(
-            () => mockOutgoingDmsDao.incrementRetry(any()),
-          ).thenThrow(Exception('drift busy'));
-          final repository = createRepository(
-            outgoingDmsDao: mockOutgoingDmsDao,
-          );
-
-          final events = await collectedEvents(repository, () async {
-            final result = await repository.sendMessage(
-              recipientPubkey: _validPubkeyB,
-              content: 'soft unconfirmed, bookkeeping down',
+        test(
+          'still fires when the soft-unconfirmed bookkeeping write throws '
+          '— the row remains retryable either way',
+          () async {
+            stubSendRumor(
+              (_, _) async => const NIP17SendResult.failure(
+                'Message recipient OK unconfirmed',
+                retryablePending: true,
+              ),
             );
-            expect(result.retryablePending, isTrue);
-          });
+            when(
+              () => mockOutgoingDmsDao.incrementRetry(any()),
+            ).thenThrow(Exception('drift busy'));
+            final repository = createRepository(
+              outgoingDmsDao: mockOutgoingDmsDao,
+            );
 
-          expect(events, hasLength(1));
-        });
+            final events = await collectedEvents(repository, () async {
+              final result = await repository.sendMessage(
+                recipientPubkey: _validPubkeyB,
+                content: 'soft unconfirmed, bookkeeping down',
+              );
+              expect(result.retryablePending, isTrue);
+            });
+
+            expect(events, hasLength(1));
+          },
+        );
 
         test('stays silent on full delivery — nothing left to retry', () async {
           // success() defaults to selfWrapPublished: true — full delivery.
@@ -19828,414 +20519,434 @@ void main() {
         });
       });
 
-      test('on publish failure: when markRecipientWrapStatus throws inside '
-          '_finalizeAfterRecipientFailure, the swallow is reported and '
-          'the failure result still surfaces', () async {
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure('relay unavailable'),
-        );
-        when(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenThrow(Exception('drift busy'));
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'this will fail',
-        );
-
-        expect(result.success, isFalse);
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          equals(DmRepositoryReportableSites.finalizeAfterRecipientFailure),
-        );
-      });
-
-      test('on publish success: when local persistence inside the outer '
-          'transaction throws, the swallow is reported and the publish '
-          'success result still surfaces', () async {
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        // Force the outer try/catch in sendMessage by failing the
-        // local insertMessage inside the transaction.
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenThrow(Exception('drift busy'));
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'local persistence will fail',
-        );
-
-        // Publish succeeded — caller still sees success even though
-        // local persistence threw.
-        expect(result.success, isTrue);
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          equals(DmRepositoryReportableSites.sendMessageOuterTransaction),
-        );
-      });
-
-      test('two IDENTICAL 1:1 sends in the SAME Unix second BOTH enqueue and '
-          'BOTH persist under distinct rumor ids (regression: #7326 '
-          'same-second 1:1 rumor-id collision)', () async {
-        // A rumor id is sha256([0, pubkey, created_at(seconds), kind, tags,
-        // content]) with no nonce, so without a per-invocation token two 1:1
-        // sends of byte-identical text in one Unix second build
-        // byte-identical rumors. Same event id ⇒ same queue-row PK, which
-        // `enqueue`'s insertOrIgnore drops ⇒ the second bubble never exists;
-        // and the loser's success transaction is skipped by the cancel
-        // interlock, because the winner's finalize already deleted the row
-        // it re-reads. Both calls still return success, so nothing surfaces
-        // to the user and nothing is left for the retry sweep to re-drive.
-        //
-        // sendGroupMessage was given a per-invocation batch token for this
-        // exact mechanism (#6046); this pins the 1:1 sibling.
-        //
-        // Drive REAL rumor-id hashing (the faithful buildRumor stub builds a
-        // real Event from the passed tags) under a frozen second, so this is
-        // a production-path proof rather than a stub that pre-distinguishes
-        // ids.
-        const frozenSecond = 1700000000;
-        when(
-          () => mockMessageService.buildRumor(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-            createdAt: any(named: 'createdAt'),
-          ),
-        ).thenAnswer((inv) {
-          final recipient = inv.namedArguments[#recipientPubkey] as String;
-          final content = inv.namedArguments[#content] as String;
-          final eventKind =
-              (inv.namedArguments[#eventKind] as int?) ??
-              EventKind.privateDirectMessage;
-          final additionalTags =
-              (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
-              const <List<String>>[];
-          // Ignore the wall-clock created_at so both invocations genuinely
-          // share one second — the collision case.
-          return Event(
-            _validPubkeyA,
-            eventKind,
-            [
-              ['p', recipient],
-              ...additionalTags,
-            ],
-            content,
-            createdAt: frozenSecond,
+      test(
+        'on publish failure: when markRecipientWrapStatus throws inside '
+        '_finalizeAfterRecipientFailure, the swallow is reported and '
+        'the failure result still surfaces',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('relay unavailable'),
           );
-        });
+          when(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
 
-        // Deterministic per-invocation tokens in the shape production mints
-        // (64 lowercase hex); a counter makes the assertions crisp.
-        final tokens = <String>['a' * 64, 'b' * 64];
-        var tokenIndex = 0;
-
-        // Model the durable queue faithfully: insertOrIgnore enqueue plus
-        // reads/deletes over the captured rows, so a rumor-id collision
-        // surfaces as a dropped row rather than being hidden by a permissive
-        // stub.
-        final store = <OutgoingDm>[];
-        final enqueuedBatchIds = <String?>[];
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
-          final dm = inv.positionalArguments.first as OutgoingDm;
-          if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
-          store.add(dm);
-          enqueuedBatchIds.add(dm.sendBatchId);
-        });
-        when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
-          final id = inv.positionalArguments.first as String;
-          for (final r in store) {
-            if (r.id == id) return r;
-          }
-          return null;
-        });
-        when(() => mockOutgoingDmsDao.deleteById(any())).thenAnswer((
-          inv,
-        ) async {
-          final id = inv.positionalArguments.first as String;
-          final before = store.length;
-          store.removeWhere((r) => r.id == id);
-          return before - store.length;
-        });
-
-        // Model persisted messages with the same insertOrIgnore-on-id
-        // semantics the real dao has, so a rumor-id collision shows up as a
-        // missing local bubble.
-        final persisted = <({String id, String? batchId})>[];
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((inv) async {
-          final id = inv.namedArguments[#id] as String;
-          // insertOrIgnore
-          if (persisted.any((m) => m.id == id)) return false;
-          persisted.add((
-            id: id,
-            batchId: inv.namedArguments[#sendBatchId] as String?,
-          ));
-          return true;
-        });
-
-        // Full delivery: the queue row is deleted on finalize, which is what
-        // leaves the second send's cancel interlock looking at an absent row.
-        final sentRumorIds = <String>[];
-        stubSendRumor((rumor, recipient) async {
-          sentRumorIds.add(rumor.id);
-          return NIP17SendResult.success(
-            rumorEventId: rumor.id,
-            messageEventId: 'wrap-${rumor.id}',
-            recipientPubkey: recipient,
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
           );
-        });
 
-        final repository = createRepository(
-          outgoingDmsDao: mockOutgoingDmsDao,
-          sendBatchIdGenerator: () => tokens[tokenIndex++],
-        );
-
-        final first = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'ok',
-        );
-        final second = await repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'ok',
-        );
-
-        // Both calls report success — that is what makes the loss silent.
-        expect(first.success, isTrue);
-        expect(second.success, isTrue);
-
-        // Distinct wire rumors: two sends, two ids.
-        expect(sentRumorIds, hasLength(2));
-        expect(sentRumorIds.toSet(), hasLength(2));
-        expect(enqueuedBatchIds, equals(tokens));
-
-        // Two local bubbles. Under the collision this is 1: the second
-        // send's insertMessage carries the colliding rumor id, and the dao's
-        // insertOrIgnore drops it. The user typed two messages and sees one.
-        expect(persisted, hasLength(2));
-        expect(persisted.map((m) => m.id).toSet(), hasLength(2));
-        expect(persisted.map((m) => m.batchId), orderedEquals(tokens));
-      });
-
-      test('two OVERLAPPING identical 1:1 sends in the SAME Unix second keep '
-          'two queue rows and persist two bubbles (regression: #7326 '
-          'same-second 1:1 rumor-id collision, concurrent arm)', () async {
-        // ConversationBloc registers ConversationMessageSent with
-        // `concurrent()`, so two sends genuinely overlap rather than
-        // serialising. This arm parks the first send mid-publish so the
-        // second enqueues while the first row is still live — the path where
-        // the collision is swallowed by the QUEUE (insertOrIgnore on the
-        // rumor-id PK) and then by the cancel interlock, rather than by
-        // insertMessage as in the back-to-back arm above.
-        const frozenSecond = 1700000000;
-        when(
-          () => mockMessageService.buildRumor(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-            createdAt: any(named: 'createdAt'),
-          ),
-        ).thenAnswer((inv) {
-          final recipient = inv.namedArguments[#recipientPubkey] as String;
-          final content = inv.namedArguments[#content] as String;
-          final eventKind =
-              (inv.namedArguments[#eventKind] as int?) ??
-              EventKind.privateDirectMessage;
-          final additionalTags =
-              (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
-              const <List<String>>[];
-          return Event(
-            _validPubkeyA,
-            eventKind,
-            [
-              ['p', recipient],
-              ...additionalTags,
-            ],
-            content,
-            createdAt: frozenSecond,
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'this will fail',
           );
-        });
 
-        final tokens = <String>['a' * 64, 'b' * 64];
-        var tokenIndex = 0;
-
-        final store = <OutgoingDm>[];
-        final enqueuedIds = <String>[];
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
-          final dm = inv.positionalArguments.first as OutgoingDm;
-          if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
-          store.add(dm);
-          enqueuedIds.add(dm.id);
-        });
-        when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
-          final id = inv.positionalArguments.first as String;
-          for (final r in store) {
-            if (r.id == id) return r;
-          }
-          return null;
-        });
-        when(() => mockOutgoingDmsDao.deleteById(any())).thenAnswer((
-          inv,
-        ) async {
-          final id = inv.positionalArguments.first as String;
-          final before = store.length;
-          store.removeWhere((r) => r.id == id);
-          return before - store.length;
-        });
-
-        final persisted = <String>[];
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((inv) async {
-          final id = inv.namedArguments[#id] as String;
-          if (persisted.contains(id)) return false; // insertOrIgnore
-          persisted.add(id);
-          return true;
-        });
-
-        // Park the first publish so the second send's enqueue lands while
-        // the first row is still live, then release it after the second has
-        // finalized (and deleted the row it shares).
-        final firstPublishReached = Completer<void>();
-        final releaseFirstPublish = Completer<void>();
-        var publishCall = 0;
-        final sentRumorIds = <String>[];
-        stubSendRumor((rumor, recipient) async {
-          final call = ++publishCall;
-          sentRumorIds.add(rumor.id);
-          if (call == 1) {
-            firstPublishReached.complete();
-            await releaseFirstPublish.future;
-          }
-          return NIP17SendResult.success(
-            rumorEventId: rumor.id,
-            messageEventId: 'wrap-${rumor.id}-$call',
-            recipientPubkey: recipient,
+          expect(result.success, isFalse);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.finalizeAfterRecipientFailure,
+            ),
           );
-        });
+        },
+      );
 
-        final repository = createRepository(
-          outgoingDmsDao: mockOutgoingDmsDao,
-          sendBatchIdGenerator: () => tokens[tokenIndex++],
-        );
+      test(
+        'on publish success: when local persistence inside the outer '
+        'transaction throws, the swallow is reported and the publish '
+        'success result still surfaces',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          // Force the outer try/catch in sendMessage by failing the
+          // local insertMessage inside the transaction.
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenThrow(Exception('drift busy'));
 
-        final firstSend = repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'ok',
-        );
-        await firstPublishReached.future;
-        final secondSend = repository.sendMessage(
-          recipientPubkey: _validPubkeyB,
-          content: 'ok',
-        );
-        final second = await secondSend;
-        releaseFirstPublish.complete();
-        final first = await firstSend;
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        expect(first.success, isTrue);
-        expect(second.success, isTrue);
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'local persistence will fail',
+          );
 
-        // Two durable queue rows with distinct rumor-id PKs. Under the
-        // collision this is 1: the second enqueue is insertOrIgnore'd away,
-        // leaving that send with no durable trace for the retry sweep.
-        expect(enqueuedIds, hasLength(2));
-        expect(enqueuedIds.toSet(), hasLength(2));
+          // Publish succeeded — caller still sees success even though
+          // local persistence threw.
+          expect(result.success, isTrue);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.sendMessageOuterTransaction,
+            ),
+          );
+        },
+      );
 
-        // Two local bubbles. Under the collision this is 1: the loser's
-        // success transaction re-reads a row the winner's finalize already
-        // deleted, so the cancel interlock skips the persist outright.
-        expect(persisted, hasLength(2));
-        expect(persisted.toSet(), hasLength(2));
-      });
+      test(
+        'two IDENTICAL 1:1 sends in the SAME Unix second BOTH enqueue and '
+        'BOTH persist under distinct rumor ids (regression: #7326 '
+        'same-second 1:1 rumor-id collision)',
+        () async {
+          // A rumor id is sha256([0, pubkey, created_at(seconds), kind, tags,
+          // content]) with no nonce, so without a per-invocation token two 1:1
+          // sends of byte-identical text in one Unix second build
+          // byte-identical rumors. Same event id ⇒ same queue-row PK, which
+          // `enqueue`'s insertOrIgnore drops ⇒ the second bubble never exists;
+          // and the loser's success transaction is skipped by the cancel
+          // interlock, because the winner's finalize already deleted the row
+          // it re-reads. Both calls still return success, so nothing surfaces
+          // to the user and nothing is left for the retry sweep to re-drive.
+          //
+          // sendGroupMessage was given a per-invocation batch token for this
+          // exact mechanism (#6046); this pins the 1:1 sibling.
+          //
+          // Drive REAL rumor-id hashing (the faithful buildRumor stub builds a
+          // real Event from the passed tags) under a frozen second, so this is
+          // a production-path proof rather than a stub that pre-distinguishes
+          // ids.
+          const frozenSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            // Ignore the wall-clock created_at so both invocations genuinely
+            // share one second — the collision case.
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: frozenSecond,
+            );
+          });
+
+          // Deterministic per-invocation tokens in the shape production mints
+          // (64 lowercase hex); a counter makes the assertions crisp.
+          final tokens = <String>['a' * 64, 'b' * 64];
+          var tokenIndex = 0;
+
+          // Model the durable queue faithfully: insertOrIgnore enqueue plus
+          // reads/deletes over the captured rows, so a rumor-id collision
+          // surfaces as a dropped row rather than being hidden by a permissive
+          // stub.
+          final store = <OutgoingDm>[];
+          final enqueuedBatchIds = <String?>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            final dm = inv.positionalArguments.first as OutgoingDm;
+            if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
+            store.add(dm);
+            enqueuedBatchIds.add(dm.sendBatchId);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
+
+          // Model persisted messages with the same insertOrIgnore-on-id
+          // semantics the real dao has, so a rumor-id collision shows up as a
+          // missing local bubble.
+          final persisted = <({String id, String? batchId})>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            final id = inv.namedArguments[#id] as String;
+            // insertOrIgnore
+            if (persisted.any((m) => m.id == id)) return false;
+            persisted.add((
+              id: id,
+              batchId: inv.namedArguments[#sendBatchId] as String?,
+            ));
+            return true;
+          });
+
+          // Full delivery: the queue row is deleted on finalize, which is what
+          // leaves the second send's cancel interlock looking at an absent row.
+          final sentRumorIds = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            sentRumorIds.add(rumor.id);
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-${rumor.id}',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => tokens[tokenIndex++],
+          );
+
+          final first = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          final second = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+
+          // Both calls report success — that is what makes the loss silent.
+          expect(first.success, isTrue);
+          expect(second.success, isTrue);
+
+          // Distinct wire rumors: two sends, two ids.
+          expect(sentRumorIds, hasLength(2));
+          expect(sentRumorIds.toSet(), hasLength(2));
+          expect(enqueuedBatchIds, equals(tokens));
+
+          // Two local bubbles. Under the collision this is 1: the second
+          // send's insertMessage carries the colliding rumor id, and the dao's
+          // insertOrIgnore drops it. The user typed two messages and sees one.
+          expect(persisted, hasLength(2));
+          expect(persisted.map((m) => m.id).toSet(), hasLength(2));
+          expect(persisted.map((m) => m.batchId), orderedEquals(tokens));
+        },
+      );
+
+      test(
+        'two OVERLAPPING identical 1:1 sends in the SAME Unix second keep '
+        'two queue rows and persist two bubbles (regression: #7326 '
+        'same-second 1:1 rumor-id collision, concurrent arm)',
+        () async {
+          // ConversationBloc registers ConversationMessageSent with
+          // `concurrent()`, so two sends genuinely overlap rather than
+          // serialising. This arm parks the first send mid-publish so the
+          // second enqueues while the first row is still live — the path where
+          // the collision is swallowed by the QUEUE (insertOrIgnore on the
+          // rumor-id PK) and then by the cancel interlock, rather than by
+          // insertMessage as in the back-to-back arm above.
+          const frozenSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: frozenSecond,
+            );
+          });
+
+          final tokens = <String>['a' * 64, 'b' * 64];
+          var tokenIndex = 0;
+
+          final store = <OutgoingDm>[];
+          final enqueuedIds = <String>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            final dm = inv.positionalArguments.first as OutgoingDm;
+            if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
+            store.add(dm);
+            enqueuedIds.add(dm.id);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
+
+          final persisted = <String>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            final id = inv.namedArguments[#id] as String;
+            if (persisted.contains(id)) return false; // insertOrIgnore
+            persisted.add(id);
+            return true;
+          });
+
+          // Park the first publish so the second send's enqueue lands while
+          // the first row is still live, then release it after the second has
+          // finalized (and deleted the row it shares).
+          final firstPublishReached = Completer<void>();
+          final releaseFirstPublish = Completer<void>();
+          var publishCall = 0;
+          final sentRumorIds = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            final call = ++publishCall;
+            sentRumorIds.add(rumor.id);
+            if (call == 1) {
+              firstPublishReached.complete();
+              await releaseFirstPublish.future;
+            }
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-${rumor.id}-$call',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => tokens[tokenIndex++],
+          );
+
+          final firstSend = repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          await firstPublishReached.future;
+          final secondSend = repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          final second = await secondSend;
+          releaseFirstPublish.complete();
+          final first = await firstSend;
+
+          expect(first.success, isTrue);
+          expect(second.success, isTrue);
+
+          // Two durable queue rows with distinct rumor-id PKs. Under the
+          // collision this is 1: the second enqueue is insertOrIgnore'd away,
+          // leaving that send with no durable trace for the retry sweep.
+          expect(enqueuedIds, hasLength(2));
+          expect(enqueuedIds.toSet(), hasLength(2));
+
+          // Two local bubbles. Under the collision this is 1: the loser's
+          // success transaction re-reads a row the winner's finalize already
+          // deleted, so the cancel interlock skips the persist outright.
+          expect(persisted, hasLength(2));
+          expect(persisted.toSet(), hasLength(2));
+        },
+      );
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
@@ -20247,7 +20958,9 @@ void main() {
 
       setUp(() {
         mockOutgoingDmsDao = _MockOutgoingDmsDao();
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((_) async {});
+        when(
+          () => mockOutgoingDmsDao.enqueue(any()),
+        ).thenAnswer((_) async {});
         when(
           () => mockOutgoingDmsDao.deleteById(any()),
         ).thenAnswer((_) async => 1);
@@ -20371,7 +21084,11 @@ void main() {
           final captured = verify(
             () => mockOutgoingDmsDao.enqueue(captureAny()),
           ).captured;
-          expect(captured, hasLength(2), reason: 'one queue row per recipient');
+          expect(
+            captured,
+            hasLength(2),
+            reason: 'one queue row per recipient',
+          );
           final enqueuedB = captured.first as OutgoingDm;
           final enqueuedC = captured.last as OutgoingDm;
           expect(enqueuedB.recipientPubkey, equals(_validPubkeyB));
@@ -20420,87 +21137,97 @@ void main() {
         },
       );
 
-      test('fans out ONE shared rumor id to every recipient (#8188)', () async {
-        // The bug: a per-recipient rumor forks the id, so the single `e`
-        // tag a delete-for-everyone carries names an id only one recipient
-        // holds. NIP-59 59.md:108 permits — and every shipping group-DM
-        // client uses — a single rumor wrapped for each recipient. Kind-5
-        // deletions and kind-7 reactions in this very repository already
-        // fan out one shared rumor; kind-14/15 messages are the outlier.
-        final rumorIdsSeen = <String>[];
-        stubSendRumor((rumor, recipient) async {
-          rumorIdsSeen.add(rumor.id);
-          return NIP17SendResult.success(
-            rumorEventId: rumor.id,
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+      test(
+        'fans out ONE shared rumor id to every recipient (#8188)',
+        () async {
+          // The bug: a per-recipient rumor forks the id, so the single `e`
+          // tag a delete-for-everyone carries names an id only one recipient
+          // holds. NIP-59 59.md:108 permits — and every shipping group-DM
+          // client uses — a single rumor wrapped for each recipient. Kind-5
+          // deletions and kind-7 reactions in this very repository already
+          // fan out one shared rumor; kind-14/15 messages are the outlier.
+          final rumorIdsSeen = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            rumorIdsSeen.add(rumor.id);
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final _ = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'group hello',
-        );
-
-        expect(rumorIdsSeen, hasLength(2));
-        expect(
-          rumorIdsSeen.toSet(),
-          hasLength(1),
-          reason:
-              'every participant must store the message under the SAME '
-              'rumor id, or a retraction naming one id no-ops for the rest',
-        );
-      });
-
-      test('keeps one queue row per recipient even though the rumor id is '
-          'shared (#8188)', () async {
-        // The shared rumor id must not collapse the durable queue:
-        // `enqueue` is insertOrIgnore and does NOT throw, so colliding PKs
-        // would silently discard siblings with no trace for the sweep.
-        stubSendRumor((rumor, recipient) async {
-          return NIP17SendResult.success(
-            rumorEventId: rumor.id,
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group hello',
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          expect(rumorIdsSeen, hasLength(2));
+          expect(
+            rumorIdsSeen.toSet(),
+            hasLength(1),
+            reason:
+                'every participant must store the message under the SAME '
+                'rumor id, or a retraction naming one id no-ops for the rest',
+          );
+        },
+      );
 
-        final _ = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'group hello',
-        );
+      test(
+        'keeps one queue row per recipient even though the rumor id is '
+        'shared (#8188)',
+        () async {
+          // The shared rumor id must not collapse the durable queue:
+          // `enqueue` is insertOrIgnore and does NOT throw, so colliding PKs
+          // would silently discard siblings with no trace for the sweep.
+          stubSendRumor((rumor, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
 
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured.cast<OutgoingDm>();
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        expect(captured, hasLength(2));
-        expect(
-          captured.map((r) => r.id).toSet(),
-          hasLength(2),
-          reason: 'each recipient needs its own durable queue row',
-        );
-        expect(captured.map((r) => r.recipientPubkey).toSet(), {
-          _validPubkeyB,
-          _validPubkeyC,
-        });
-        // Both rows replay the SAME rumor, so a retry re-publishes the
-        // shared id rather than minting a fresh one.
-        expect(
-          captured
-              .map(
-                (r) =>
-                    (jsonDecode(r.rumorEventJson)
-                        as Map<String, dynamic>)['id'],
-              )
-              .toSet(),
-          hasLength(1),
-        );
-      });
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group hello',
+          );
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured.cast<OutgoingDm>();
+
+          expect(captured, hasLength(2));
+          expect(
+            captured.map((r) => r.id).toSet(),
+            hasLength(2),
+            reason: 'each recipient needs its own durable queue row',
+          );
+          expect(
+            captured.map((r) => r.recipientPubkey).toSet(),
+            {_validPubkeyB, _validPubkeyC},
+          );
+          // Both rows replay the SAME rumor, so a retry re-publishes the
+          // shared id rather than minting a fresh one.
+          expect(
+            captured
+                .map(
+                  (r) =>
+                      (jsonDecode(r.rumorEventJson)
+                          as Map<String, dynamic>)['id'],
+                )
+                .toSet(),
+            hasLength(1),
+          );
+        },
+      );
 
       test(
         'persists the local message under the shared rumor id, which is what '
@@ -20556,78 +21283,84 @@ void main() {
         },
       );
 
-      test('resolves each recipient kind-10050 inbox and OK-confirms every '
-          'per-recipient wrap against it', () async {
-        // The author-agnostic stub below also answers the SENDER's own
-        // kind-10050 lookup, so the self-wrap destination resolves too and
-        // reads the pool to union with it (#7328).
-        when(
-          () => mockNostrClient.configuredRelays,
-        ).thenReturn(const ['wss://relay.divine.video']);
-        // Both recipients advertise a DM inbox (the stub returns it for any
-        // author query); each wrap must route there with OK-confirm, not the
-        // default pool.
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((invocation) async {
-          final filters =
-              invocation.positionalArguments.first as List<nostr_filter.Filter>;
-          final recipient = filters.single.authors!.single;
-          return answeredList([
-            Event(
-              recipient,
-              EventKind.dmRelaysList,
-              [
-                ['relay', 'wss://inbox.example'],
-              ],
-              '',
-              createdAt: 1700000000,
-            ),
+      test(
+        'resolves each recipient kind-10050 inbox and OK-confirms every '
+        'per-recipient wrap against it',
+        () async {
+          // The author-agnostic stub below also answers the SENDER's own
+          // kind-10050 lookup, so the self-wrap destination resolves too and
+          // reads the pool to union with it (#7328).
+          when(() => mockNostrClient.configuredRelays).thenReturn(const [
+            'wss://relay.divine.video',
           ]);
-        });
-        stubSendRumor((_, recipient) async {
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
-          );
-        });
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final _ = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'group routed to inboxes',
-        );
-
-        for (final recipient in [_validPubkeyB, _validPubkeyC]) {
-          verify(
-            () => mockMessageService.sendRumor(
-              rumorEvent: any(named: 'rumorEvent'),
-              recipientPubkey: recipient,
-              targetRelays: ['wss://inbox.example'],
-              // The self-copy is addressed to the SENDER, so unlike
-              // targetRelays it does not vary per recipient — it is the pool
-              // unioned with the sender's own advertised inbox (#7328).
-              selfWrapTargetRelays: const [
-                'wss://relay.divine.video',
-                'wss://inbox.example',
-              ],
-              awaitRecipientOk: true,
-              selfWrapOnSoftUnconfirmed: any(
-                named: 'selfWrapOnSoftUnconfirmed',
-              ),
+          // Both recipients advertise a DM inbox (the stub returns it for any
+          // author query); each wrap must route there with OK-confirm, not the
+          // default pool.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
-          ).called(1);
-        }
-      });
+          ).thenAnswer((invocation) async {
+            final filters =
+                invocation.positionalArguments.first
+                    as List<nostr_filter.Filter>;
+            final recipient = filters.single.authors!.single;
+            return answeredList([
+              Event(
+                recipient,
+                EventKind.dmRelaysList,
+                [
+                  ['relay', 'wss://inbox.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ]);
+          });
+          stubSendRumor((_, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group routed to inboxes',
+          );
+
+          for (final recipient in [_validPubkeyB, _validPubkeyC]) {
+            verify(
+              () => mockMessageService.sendRumor(
+                rumorEvent: any(named: 'rumorEvent'),
+                recipientPubkey: recipient,
+                targetRelays: ['wss://inbox.example'],
+                // The self-copy is addressed to the SENDER, so unlike
+                // targetRelays it does not vary per recipient — it is the pool
+                // unioned with the sender's own advertised inbox (#7328).
+                selfWrapTargetRelays: const [
+                  'wss://relay.divine.video',
+                  'wss://inbox.example',
+                ],
+                awaitRecipientOk: true,
+                selfWrapOnSoftUnconfirmed: any(
+                  named: 'selfWrapOnSoftUnconfirmed',
+                ),
+              ),
+            ).called(1);
+          }
+        },
+      );
 
       test(
         'marks recipient sent + self failed only for the recipients '
@@ -20749,360 +21482,395 @@ void main() {
         },
       );
 
-      test('keeps a soft-unconfirmed recipient pending via incrementRetry '
-          'while the others fully deliver', () async {
-        stubSendRumor((_, recipient) async {
-          if (recipient == _validPubkeyC) {
-            return const NIP17SendResult.failure(
-              'recipient OK unconfirmed',
-              retryablePending: true,
+      test(
+        'keeps a soft-unconfirmed recipient pending via incrementRetry '
+        'while the others fully deliver',
+        () async {
+          stubSendRumor((_, recipient) async {
+            if (recipient == _validPubkeyC) {
+              return const NIP17SendResult.failure(
+                'recipient OK unconfirmed',
+                retryablePending: true,
+              );
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
             );
-          }
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'one soft recipient',
-        );
-
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        final enqueuedB = captured.first as OutgoingDm;
-        final enqueuedC = captured.last as OutgoingDm;
-
-        expect(results, hasLength(2));
-        expect(results.last.retryablePending, isTrue);
-        expect(
-          results.last.queuedRumorId,
-          equals(enqueuedC.id),
-          reason:
-              'soft-unconfirmed group siblings leave a live queue row that '
-              'manual retry must re-drive instead of minting a new rumor',
-        );
-
-        verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
-        // Soft recipient: row stays pending (in-flight clock), only the
-        // retry counter bumps — never marked failed, never deleted.
-        verify(() => mockOutgoingDmsDao.incrementRetry(enqueuedC.id)).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(enqueuedC.id));
-        verifyNever(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: enqueuedC.id,
-            status: OutgoingWrapStatus.failed,
-            lastError: any(named: 'lastError'),
-          ),
-        );
-      });
-
-      test('drops a mid-flight policy-blocked recipient row while the others '
-          'fully deliver', () async {
-        stubSendRumor((_, recipient) async {
-          if (recipient == _validPubkeyC) {
-            return const NIP17SendResult.blocked('blocked by policy');
-          }
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one soft recipient',
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueuedB = captured.first as OutgoingDm;
+          final enqueuedC = captured.last as OutgoingDm;
 
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'one blocked recipient',
-        );
+          expect(results, hasLength(2));
+          expect(results.last.retryablePending, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            equals(enqueuedC.id),
+            reason:
+                'soft-unconfirmed group siblings leave a live queue row that '
+                'manual retry must re-drive instead of minting a new rumor',
+          );
 
-        final captured = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured;
-        final enqueuedB = captured.first as OutgoingDm;
-        final enqueuedC = captured.last as OutgoingDm;
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
+          // Soft recipient: row stays pending (in-flight clock), only the
+          // retry counter bumps — never marked failed, never deleted.
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueuedC.id),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(enqueuedC.id));
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueuedC.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
 
-        expect(results, hasLength(2));
-        expect(results.last.blocked, isTrue);
-        expect(
-          results.last.queuedRumorId,
-          isNull,
-          reason: 'policy-blocked group siblings leave no row to re-drive',
-        );
+      test(
+        'drops a mid-flight policy-blocked recipient row while the others '
+        'fully deliver',
+        () async {
+          stubSendRumor((_, recipient) async {
+            if (recipient == _validPubkeyC) {
+              return const NIP17SendResult.blocked('blocked by policy');
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
 
-        // Both the delivered row and the terminally-blocked row are
-        // deleted; a block is terminal, not a retryable failure.
-        verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
-        verify(() => mockOutgoingDmsDao.deleteById(enqueuedC.id)).called(1);
-        verifyNever(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: enqueuedC.id,
-            status: OutgoingWrapStatus.failed,
-            lastError: any(named: 'lastError'),
-          ),
-        );
-        verifyNever(() => mockOutgoingDmsDao.incrementRetry(enqueuedC.id));
-      });
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-      test('when all recipients fail: marks every row both-wraps failed '
-          'and never inserts a direct_messages row', () async {
-        stubSendRumor(
-          (rumorEvent, recipientPubkey) async =>
-              const NIP17SendResult.failure('all relays down'),
-        );
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one blocked recipient',
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueuedB = captured.first as OutgoingDm;
+          final enqueuedC = captured.last as OutgoingDm;
 
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'total failure',
-        );
+          expect(results, hasLength(2));
+          expect(results.last.blocked, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            isNull,
+            reason: 'policy-blocked group siblings leave no row to re-drive',
+          );
 
-        expect(results, hasLength(2));
-        expect(results.every((r) => !r.success), isTrue);
+          // Both the delivered row and the terminally-blocked row are
+          // deleted; a block is terminal, not a retryable failure.
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedC.id)).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueuedC.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(named: 'lastError'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.incrementRetry(enqueuedC.id));
+        },
+      );
 
-        final capturedRows = verify(
-          () => mockOutgoingDmsDao.enqueue(captureAny()),
-        ).captured.cast<OutgoingDm>();
-        expect(
-          results.map((r) => r.queuedRumorId),
-          equals(capturedRows.map((r) => r.id)),
-          reason:
-              'hard-failed group siblings leave retryable queue rows that '
-              'callers must be able to re-drive',
-        );
+      test(
+        'when all recipients fail: marks every row both-wraps failed '
+        'and never inserts a direct_messages row',
+        () async {
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('all relays down'),
+          );
 
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: any(named: 'id'),
-            status: OutgoingWrapStatus.failed,
-            lastError: 'all relays down',
-          ),
-        ).called(2);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: OutgoingWrapStatus.failed,
-            lastError: 'all relays down',
-          ),
-        ).called(2);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-      test('a sibling enqueue write failure never strands the rows already '
-          'parked ahead of it', () async {
-        // `enqueue` swallows PK conflicts but still throws on a real write
-        // error — SQLite BUSY/LOCKED is reachable because
-        // OutgoingDmRetryService writes this table concurrently. Letting it
-        // escape would hand the caller a throw and no handle on the sibling
-        // already parked, whose only "retry" is then a fresh fan-out the
-        // receiver cannot collapse (#7316). Publishing the parked sibling
-        // while skipping the unqueued one would be visible as a partial
-        // success, which callers reduce to "sent" (#7448).
-        final enqueued = <OutgoingDm>[];
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
-          invocation,
-        ) async {
-          final row = invocation.positionalArguments.first as OutgoingDm;
-          if (row.recipientPubkey == _validPubkeyC) {
-            throw StateError('database is locked');
-          }
-          enqueued.add(row);
-        });
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure('all relays down'),
-        );
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'total failure',
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
 
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'one sibling cannot be parked',
-        );
+          final capturedRows = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured.cast<OutgoingDm>();
+          expect(
+            results.map((r) => r.queuedRumorId),
+            equals(capturedRows.map((r) => r.id)),
+            reason:
+                'hard-failed group siblings leave retryable queue rows that '
+                'callers must be able to re-drive',
+          );
 
-        expect(enqueued, hasLength(1));
-        expect(results, hasLength(2));
-        expect(results.every((r) => !r.success), isTrue);
-        expect(
-          results.map((r) => r.queuedRumorId),
-          everyElement(isNull),
-          reason:
-              'the parked sibling was unwound before any publish, so a user '
-              'retry can safely submit the whole group again',
-        );
-        verify(
-          () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
-        ).called(1);
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-        // Nothing survived the unwind, so there is no bubble to reach and
-        // the thread the user was composing into must not be resurrected.
-        verifyNever(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        );
-        expect(
-          reporterCalls.map((c) => c.site),
-          contains(DmRepositoryReportableSites.sendGroupMessageEnqueueSibling),
-        );
-      });
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: OutgoingWrapStatus.failed,
+              lastError: 'all relays down',
+            ),
+          ).called(2);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: OutgoingWrapStatus.failed,
+              lastError: 'all relays down',
+            ),
+          ).called(2);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
 
-      test('a sibling enqueue write failure returns queued ids for parked '
-          'rows that cannot be unwound', () async {
-        final enqueued = <OutgoingDm>[];
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
-          invocation,
-        ) async {
-          final row = invocation.positionalArguments.first as OutgoingDm;
-          if (row.recipientPubkey == _validPubkeyC) {
-            throw StateError('database is locked');
-          }
-          enqueued.add(row);
-        });
-        when(
-          () => mockOutgoingDmsDao.deleteById(any()),
-        ).thenThrow(StateError('database is still locked'));
-        stubSendRumor(
-          (_, _) async => const NIP17SendResult.failure('all relays down'),
-        );
+      test(
+        'a sibling enqueue write failure never strands the rows already '
+        'parked ahead of it',
+        () async {
+          // `enqueue` swallows PK conflicts but still throws on a real write
+          // error — SQLite BUSY/LOCKED is reachable because
+          // OutgoingDmRetryService writes this table concurrently. Letting it
+          // escape would hand the caller a throw and no handle on the sibling
+          // already parked, whose only "retry" is then a fresh fan-out the
+          // receiver cannot collapse (#7316). Publishing the parked sibling
+          // while skipping the unqueued one would be visible as a partial
+          // success, which callers reduce to "sent" (#7448).
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
+            invocation,
+          ) async {
+            final row = invocation.positionalArguments.first as OutgoingDm;
+            if (row.recipientPubkey == _validPubkeyC) {
+              throw StateError('database is locked');
+            }
+            enqueued.add(row);
+          });
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('all relays down'),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'one sibling cannot be parked or unwound',
-        );
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one sibling cannot be parked',
+          );
 
-        expect(enqueued, hasLength(1));
-        expect(results, hasLength(2));
-        expect(results.every((r) => !r.success), isTrue);
-        expect(
-          results.first.queuedRumorId,
-          equals(enqueued.single.id),
-          reason:
-              'the row that could not be unwound must remain retryable via '
-              'recoverFullSend, not a fresh group submit',
-        );
-        expect(results.last.queuedRumorId, isNull);
-        verify(
-          () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
-        ).called(1);
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-        expect(
-          reporterCalls.map((c) => c.site),
-          contains(DmRepositoryReportableSites.sendGroupMessageEnqueueSibling),
-        );
-        expect(
-          reporterCalls.map((c) => c.site),
-          contains(
-            DmRepositoryReportableSites.sendGroupMessageUnwindQueuedSibling,
-          ),
-        );
-        // The surviving row still holds the user's message, so a brand-new
-        // group thread has to exist for them to reach that bubble and retry
-        // or delete it.
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: true,
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: 'one sibling cannot be parked or unwound',
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: _validPubkeyA,
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
-      });
+          expect(enqueued, hasLength(1));
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
+          expect(
+            results.map((r) => r.queuedRumorId),
+            everyElement(isNull),
+            reason:
+                'the parked sibling was unwound before any publish, so a user '
+                'retry can safely submit the whole group again',
+          );
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+          // Nothing survived the unwind, so there is no bubble to reach and
+          // the thread the user was composing into must not be resurrected.
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
+            ),
+          );
+        },
+      );
+
+      test(
+        'a sibling enqueue write failure returns queued ids for parked '
+        'rows that cannot be unwound',
+        () async {
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((
+            invocation,
+          ) async {
+            final row = invocation.positionalArguments.first as OutgoingDm;
+            if (row.recipientPubkey == _validPubkeyC) {
+              throw StateError('database is locked');
+            }
+            enqueued.add(row);
+          });
+          when(() => mockOutgoingDmsDao.deleteById(any())).thenThrow(
+            StateError('database is still locked'),
+          );
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('all relays down'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one sibling cannot be parked or unwound',
+          );
+
+          expect(enqueued, hasLength(1));
+          expect(results, hasLength(2));
+          expect(results.every((r) => !r.success), isTrue);
+          expect(
+            results.first.queuedRumorId,
+            equals(enqueued.single.id),
+            reason:
+                'the row that could not be unwound must remain retryable via '
+                'recoverFullSend, not a fresh group submit',
+          );
+          expect(results.last.queuedRumorId, isNull);
+          verify(
+            () => mockOutgoingDmsDao.deleteById(enqueued.single.id),
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageEnqueueSibling,
+            ),
+          );
+          expect(
+            reporterCalls.map((c) => c.site),
+            contains(
+              DmRepositoryReportableSites.sendGroupMessageUnwindQueuedSibling,
+            ),
+          );
+          // The surviving row still holds the user's message, so a brand-new
+          // group thread has to exist for them to reach that bubble and retry
+          // or delete it.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: true,
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'one sibling cannot be parked or unwound',
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: _validPubkeyA,
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'queue is opt-in: when no OutgoingDmsDao is injected, '
@@ -21136,185 +21904,197 @@ void main() {
         },
       );
 
-      test('sibling dedup: when the sweep recovery already persisted the '
-          'batch message, group-send completion inserts no second bubble '
-          'but still finalizes the sibling rows', () async {
-        // A group send publishes its recipients sequentially and can
-        // outlive the interrupted-send sweep's min-age guard — the sweep
-        // may recover a sibling and persist the batch's ONE local message
-        // first. The send's own transaction must then not insert a second
-        // copy under a different sibling rumor id.
-        stubSendRumor((_, recipient) async {
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+      test(
+        'sibling dedup: when the sweep recovery already persisted the '
+        'batch message, group-send completion inserts no second bubble '
+        'but still finalizes the sibling rows',
+        () async {
+          // A group send publishes its recipients sequentially and can
+          // outlive the interrupted-send sweep's min-age guard — the sweep
+          // may recover a sibling and persist the batch's ONE local message
+          // first. The send's own transaction must then not insert a second
+          // copy under a different sibling rumor id.
+          stubSendRumor((_, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+          when(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
           );
-        });
-        when(
-          () => mockDirectMessagesDao.hasMessageWithSendBatchId(
-            batchId: any(named: 'batchId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'recovery persisted first',
-        );
-
-        expect(results.every((r) => r.success), isTrue);
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-        // Both fully-delivered sibling rows still leave the queue, and
-        // the conversation preview still updates.
-        verify(() => mockOutgoingDmsDao.deleteById(any())).called(2);
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
-      });
-
-      test('two distinct group sends of identical text seconds apart BOTH '
-          'persist, each under its own durable batch id (regression: #6046 '
-          'collision-proof batch identity)', () async {
-        // The bug this pins: the old dedup matched a group send against any
-        // same-sender/same-content message within a ±5s window, so a second
-        // send of identical text 1-5s later collided with the first —
-        // dropping the later message from local history even though its wire
-        // copies were delivered. Batch identity is now the first sibling
-        // rumor's event id, which embeds the (second-resolution) timestamp,
-        // so two sends in DIFFERENT seconds get DIFFERENT batch ids.
-        //
-        // Drive a simulated clock through buildRumor so the two sends land
-        // in distinct seconds (a genuine 2s-apart resend), still inside the
-        // old ±5s window that would have collided them.
-        var batchSecond = 1700000000;
-        when(
-          () => mockMessageService.buildRumor(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-            createdAt: any(named: 'createdAt'),
-          ),
-        ).thenAnswer((inv) {
-          final recipient = inv.namedArguments[#recipientPubkey] as String;
-          final content = inv.namedArguments[#content] as String;
-          final eventKind =
-              (inv.namedArguments[#eventKind] as int?) ??
-              EventKind.privateDirectMessage;
-          final additionalTags =
-              (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
-              const <List<String>>[];
-          return Event(
-            _validPubkeyA,
-            eventKind,
-            [
-              ['p', recipient],
-              ...additionalTags,
-            ],
-            content,
-            createdAt: batchSecond,
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'recovery persisted first',
           );
-        });
-        stubSendRumor((_, recipient) async {
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient-$batchSecond',
-            messageEventId: 'wrap-$recipient-$batchSecond',
-            recipientPubkey: recipient,
+
+          expect(results.every((r) => r.success), isTrue);
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
           );
-        });
+          // Both fully-delivered sibling rows still leave the queue, and
+          // the conversation preview still updates.
+          verify(() => mockOutgoingDmsDao.deleteById(any())).called(2);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
 
-        // Capture the batch id stamped on every persisted local message.
-        final persistedBatchIds = <String?>[];
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenAnswer((inv) async {
-          persistedBatchIds.add(inv.namedArguments[#sendBatchId] as String?);
-          return true;
-        });
+      test(
+        'two distinct group sends of identical text seconds apart BOTH '
+        'persist, each under its own durable batch id (regression: #6046 '
+        'collision-proof batch identity)',
+        () async {
+          // The bug this pins: the old dedup matched a group send against any
+          // same-sender/same-content message within a ±5s window, so a second
+          // send of identical text 1-5s later collided with the first —
+          // dropping the later message from local history even though its wire
+          // copies were delivered. Batch identity is now the first sibling
+          // rumor's event id, which embeds the (second-resolution) timestamp,
+          // so two sends in DIFFERENT seconds get DIFFERENT batch ids.
+          //
+          // Drive a simulated clock through buildRumor so the two sends land
+          // in distinct seconds (a genuine 2s-apart resend), still inside the
+          // old ±5s window that would have collided them.
+          var batchSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: batchSecond,
+            );
+          });
+          stubSendRumor((_, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient-$batchSecond',
+              messageEventId: 'wrap-$recipient-$batchSecond',
+              recipientPubkey: recipient,
+            );
+          });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          // Capture the batch id stamped on every persisted local message.
+          final persistedBatchIds = <String?>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            persistedBatchIds.add(
+              inv.namedArguments[#sendBatchId] as String?,
+            );
+            return true;
+          });
 
-        final _ = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'ok',
-        );
-        batchSecond += 2; // 2s later — inside the old ±5s collision window.
-        final _ = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'ok',
-        );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        // Both sends persisted a local message (the old window would have
-        // suppressed the second), and each carries its own batch id.
-        expect(persistedBatchIds, hasLength(2));
-        expect(persistedBatchIds[0], isNotNull);
-        expect(persistedBatchIds[1], isNotNull);
-        expect(persistedBatchIds[0], isNot(equals(persistedBatchIds[1])));
-      });
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+          batchSecond += 2; // 2s later — inside the old ±5s collision window.
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'ok',
+          );
+
+          // Both sends persisted a local message (the old window would have
+          // suppressed the second), and each carries its own batch id.
+          expect(persistedBatchIds, hasLength(2));
+          expect(persistedBatchIds[0], isNotNull);
+          expect(persistedBatchIds[1], isNotNull);
+          expect(persistedBatchIds[0], isNot(equals(persistedBatchIds[1])));
+        },
+      );
 
       test(
         'two IDENTICAL group sends in the SAME Unix second BOTH persist under '
@@ -21397,9 +22177,9 @@ void main() {
             final cid = inv.namedArguments[#conversationId] as String;
             return store.where((r) => r.conversationId == cid).toList();
           });
-          when(() => mockOutgoingDmsDao.deleteById(any())).thenAnswer((
-            inv,
-          ) async {
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
             final id = inv.positionalArguments.first as String;
             final before = store.length;
             store.removeWhere((r) => r.id == id);
@@ -21682,7 +22462,9 @@ void main() {
           verify(
             () => mockOutgoingDmsDao.deleteById(enqueued.last.id),
           ).called(1);
-          verifyNever(() => mockOutgoingDmsDao.deleteById(enqueued.first.id));
+          verifyNever(
+            () => mockOutgoingDmsDao.deleteById(enqueued.first.id),
+          );
         },
       );
 
@@ -21752,161 +22534,171 @@ void main() {
         },
       );
 
-      test('a throwing per-recipient publish is converted to a plain failure '
-          'and never aborts the rest of the batch', () async {
-        stubSendRumor((_, recipient) {
-          if (recipient == _validPubkeyB) {
-            throw StateError('signer wedged');
-          }
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+      test(
+        'a throwing per-recipient publish is converted to a plain failure '
+        'and never aborts the rest of the batch',
+        () async {
+          stubSendRumor((_, recipient) {
+            if (recipient == _validPubkeyB) {
+              throw StateError('signer wedged');
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final results = await repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC],
-          content: 'one recipient throws',
-        );
-
-        expect(results, hasLength(2));
-        expect(results.first.success, isFalse);
-        expect(
-          results.first.error,
-          contains('joined in-flight recovery failed'),
-        );
-        expect(
-          results.last.success,
-          isTrue,
-          reason: 'the second recipient must still be attempted',
-        );
-      });
-
-      test('a batch cancelled while the first publish is in flight is not '
-          'fanned out to the remaining recipients', () async {
-        // Model the durable queue in memory so cancelOutgoingBatch actually
-        // removes the rows the pre-publish re-read then observes as gone.
-        final store = <OutgoingDm>[];
-        when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
-          store.add(inv.positionalArguments.first as OutgoingDm);
-        });
-        when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
-          final id = inv.positionalArguments.first as String;
-          for (final r in store) {
-            if (r.id == id) return r;
-          }
-          return null;
-        });
-        when(
-          () => mockOutgoingDmsDao.getForConversation(
-            conversationId: any(named: 'conversationId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((inv) async {
-          final cid = inv.namedArguments[#conversationId] as String;
-          return store.where((r) => r.conversationId == cid).toList();
-        });
-        when(() => mockOutgoingDmsDao.deleteById(any())).thenAnswer((
-          inv,
-        ) async {
-          final id = inv.positionalArguments.first as String;
-          final before = store.length;
-          store.removeWhere((r) => r.id == id);
-          return before - store.length;
-        });
-
-        // The first recipient's publish blocks so the whole batch can be
-        // cancelled while the fan-out is still in flight.
-        final firstPublish = Completer<NIP17SendResult>();
-        final sentTo = <String>[];
-        stubSendRumor((_, recipient) {
-          sentTo.add(recipient);
-          if (recipient == _validPubkeyB) return firstPublish.future;
-          return NIP17SendResult.success(
-            rumorEventId: 'rumor-$recipient',
-            messageEventId: 'wrap-$recipient',
-            recipientPubkey: recipient,
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one recipient throws',
           );
-        });
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          expect(results, hasLength(2));
+          expect(results.first.success, isFalse);
+          expect(
+            results.first.error,
+            contains('joined in-flight recovery failed'),
+          );
+          expect(
+            results.last.success,
+            isTrue,
+            reason: 'the second recipient must still be attempted',
+          );
+        },
+      );
 
-        final sendFuture = repository.sendGroupMessage(
-          recipientPubkeys: [_validPubkeyB, _validPubkeyC, _validPubkeyD],
-          content: 'cancelled mid fan-out',
-        );
-        // All three rows enqueue before the first publish; the send now
-        // parks on B's blocked publish.
-        await pumpEventQueue();
-        expect(store, hasLength(3));
+      test(
+        'a batch cancelled while the first publish is in flight is not '
+        'fanned out to the remaining recipients',
+        () async {
+          // Model the durable queue in memory so cancelOutgoingBatch actually
+          // removes the rows the pre-publish re-read then observes as gone.
+          final store = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            store.add(inv.positionalArguments.first as OutgoingDm);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.getForConversation(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((inv) async {
+            final cid = inv.namedArguments[#conversationId] as String;
+            return store.where((r) => r.conversationId == cid).toList();
+          });
+          when(() => mockOutgoingDmsDao.deleteById(any())).thenAnswer((
+            inv,
+          ) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
 
-        // The user long-presses the pending bubble and deletes the batch.
-        final cancelled = await repository.cancelOutgoingBatch(
-          rumorId: store.first.id,
-        );
-        expect(cancelled, equals(3));
-        expect(store, isEmpty);
+          // The first recipient's publish blocks so the whole batch can be
+          // cancelled while the fan-out is still in flight.
+          final firstPublish = Completer<NIP17SendResult>();
+          final sentTo = <String>[];
+          stubSendRumor((_, recipient) {
+            sentTo.add(recipient);
+            if (recipient == _validPubkeyB) return firstPublish.future;
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
 
-        // B's publish (already dispatched) lands — inherent TOCTOU, the
-        // same accepted trade-off as recoverFullSend.
-        firstPublish.complete(
-          NIP17SendResult.success(
-            rumorEventId: 'rumor-$_validPubkeyB',
-            messageEventId: 'wrap-$_validPubkeyB',
-            recipientPubkey: _validPubkeyB,
-          ),
-        );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final results = await sendFuture;
+          final sendFuture = repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC, _validPubkeyD],
+            content: 'cancelled mid fan-out',
+          );
+          // All three rows enqueue before the first publish; the send now
+          // parks on B's blocked publish.
+          await pumpEventQueue();
+          expect(store, hasLength(3));
 
-        // C and D are never published — their cancelled rows short-circuit
-        // the per-recipient publish before it dispatches.
-        expect(sentTo, equals([_validPubkeyB]));
-        expect(results, hasLength(3));
-        expect(results[1].success, isFalse);
-        expect(results[2].success, isFalse);
-        expect(
-          results[1].queuedRumorId,
-          isNull,
-          reason: 'cancelled siblings leave no row to re-drive',
-        );
-        expect(
-          results[2].queuedRumorId,
-          isNull,
-          reason: 'cancelled siblings leave no row to re-drive',
-        );
-        // Nothing is persisted locally: B's row was gone by the finalize
-        // re-read, so the group bubble does not resurrect either.
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
+          // The user long-presses the pending bubble and deletes the batch.
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: store.first.id,
+          );
+          expect(cancelled, equals(3));
+          expect(store, isEmpty);
+
+          // B's publish (already dispatched) lands — inherent TOCTOU, the
+          // same accepted trade-off as recoverFullSend.
+          firstPublish.complete(
+            NIP17SendResult.success(
+              rumorEventId: 'rumor-$_validPubkeyB',
+              messageEventId: 'wrap-$_validPubkeyB',
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+
+          final results = await sendFuture;
+
+          // C and D are never published — their cancelled rows short-circuit
+          // the per-recipient publish before it dispatches.
+          expect(sentTo, equals([_validPubkeyB]));
+          expect(results, hasLength(3));
+          expect(results[1].success, isFalse);
+          expect(results[2].success, isFalse);
+          expect(
+            results[1].queuedRumorId,
+            isNull,
+            reason: 'cancelled siblings leave no row to re-drive',
+          );
+          expect(
+            results[2].queuedRumorId,
+            isNull,
+            reason: 'cancelled siblings leave no row to re-drive',
+          );
+          // Nothing is persisted locally: B's row was gone by the finalize
+          // re-read, so the group bubble does not resurrect either.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
     });
 
     group('getOutgoing', () {
@@ -21931,7 +22723,9 @@ void main() {
           ),
         ).thenAnswer((_) async => [row]);
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
 
         expect(await repository.getOutgoing('conv'), equals([row]));
       });
@@ -22034,237 +22828,283 @@ void main() {
         },
       );
 
-      test('on successful self-wrap publish: deletes the queue row and '
-          'returns success', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _rumorEventId,
-            recipientPubkey: _validPubkeyA,
-          ),
-        );
+      test(
+        'on successful self-wrap publish: deletes the queue row and '
+        'returns success',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _rumorEventId,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isTrue);
+          expect(result.success, isTrue);
 
-        // Critical contract from #4102: recovery must NOT republish
-        // the recipient wrap. Verify by asserting the underlying send
-        // primitives are never called.
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-        verifyNever(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        );
+          // Critical contract from #4102: recovery must NOT republish
+          // the recipient wrap. Verify by asserting the underlying send
+          // primitives are never called.
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          verifyNever(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          );
 
-        verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
-        verifyNever(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        );
-      });
+          verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
+          verifyNever(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          );
+        },
+      );
 
-      test('on successful self-wrap publish: when deleteById throws, '
-          'falls back to markSelfWrapStatus(sent, eventId) and still '
-          'returns success', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: _validPubkeyA,
-          ),
-        );
-        when(
-          () => mockOutgoingDmsDao.deleteById(_rumorEventId),
-        ).thenThrow(Exception('drift busy'));
+      test(
+        'on successful self-wrap publish: when deleteById throws, '
+        'falls back to markSelfWrapStatus(sent, eventId) and still '
+        'returns success',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        // Publish landed → recovery is a success even though the
-        // delete failed.
-        expect(result.success, isTrue);
+          // Publish landed → recovery is a success even though the
+          // delete failed.
+          expect(result.success, isTrue);
 
-        // Fallback closes the duplicate-publish hole: marks the row
-        // sent with the published event id so the next sweep
-        // short-circuits via the idempotent already-sent guard
-        // instead of republishing the self-wrap.
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.sent,
-            eventId: _giftWrapEventId2,
-          ),
-        ).called(1);
+          // Fallback closes the duplicate-publish hole: marks the row
+          // sent with the published event id so the next sweep
+          // short-circuits via the idempotent already-sent guard
+          // instead of republishing the self-wrap.
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.sent,
+              eventId: _giftWrapEventId2,
+            ),
+          ).called(1);
 
-        // The swallowed deleteById failure is reported via the
-        // errorReporter so production has a Crashlytics signal even
-        // though the recovery path returned success.
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          equals(DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish),
-        );
-      });
+          // The swallowed deleteById failure is reported via the
+          // errorReporter so production has a Crashlytics signal even
+          // though the recovery path returned success.
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
+            ),
+          );
+        },
+      );
 
-      test('on successful self-wrap publish: when both deleteById AND '
-          'fallback markSelfWrapStatus throw, surfaces success and does '
-          'not rethrow', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: _validPubkeyA,
-          ),
-        );
-        when(
-          () => mockOutgoingDmsDao.deleteById(_rumorEventId),
-        ).thenThrow(Exception('drift busy'));
-        when(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenThrow(Exception('drift still busy'));
+      test(
+        'on successful self-wrap publish: when both deleteById AND '
+        'fallback markSelfWrapStatus throw, surfaces success and does '
+        'not rethrow',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift still busy'));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        // Caller still sees success: publish outcome drives the
-        // return value, not the bookkeeping outcome. Self-wraps are
-        // idempotent on receive (NIP-17 dedup keys), so the
-        // doubly-degraded path is safe.
-        expect(result.success, isTrue);
+          // Caller still sees success: publish outcome drives the
+          // return value, not the bookkeeping outcome. Self-wraps are
+          // idempotent on receive (NIP-17 dedup keys), so the
+          // doubly-degraded path is safe.
+          expect(result.success, isTrue);
 
-        // Both swallowed failures surface via the errorReporter so
-        // the doubly-degraded path is visible in Crashlytics. The
-        // recovery path is "safe via NIP-17 dedup" only because we
-        // now measure the rate at which it fires.
-        expect(reporterCalls.map((c) => c.site), <String>[
-          DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
-          DmRepositoryReportableSites.recoverSelfWrapBookkeepingDoubleFailure,
-        ]);
-      });
+          // Both swallowed failures surface via the errorReporter so
+          // the doubly-degraded path is visible in Crashlytics. The
+          // recovery path is "safe via NIP-17 dedup" only because we
+          // now measure the rate at which it fires.
+          expect(reporterCalls.map((c) => c.site), <String>[
+            DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
+            DmRepositoryReportableSites.recoverSelfWrapBookkeepingDoubleFailure,
+          ]);
+        },
+      );
 
-      test('on self-wrap publish failure: marks self_wrap_status failed '
-          'and leaves the row queued for the next retry', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => const NIP17SendResult.failure('relay timeout'),
-        );
+      test(
+        'on self-wrap publish failure: marks self_wrap_status failed '
+        'and leaves the row queued for the next retry',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isFalse);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'relay timeout',
-          ),
-        ).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-      });
+          expect(result.success, isFalse);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'relay timeout',
+            ),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
 
-      test('on self-wrap publish failure: nudges retryableOutgoingWork so a '
-          'manual recovery failure re-arms the sweep heartbeat', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => const NIP17SendResult.failure('relay timeout'),
-        );
+      test(
+        'on self-wrap publish failure: nudges retryableOutgoingWork so a '
+        'manual recovery failure re-arms the sweep heartbeat',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-        final events = <void>[];
-        final subscription = repository.retryableOutgoingWork.listen(
-          events.add,
-        );
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+          final events = <void>[];
+          final subscription = repository.retryableOutgoingWork.listen(
+            events.add,
+          );
 
-        final _ = await repository.recoverSelfWrap(rumorId: _rumorEventId);
-        await pumpEventQueue();
-        await subscription.cancel();
+          final _ = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          await pumpEventQueue();
+          await subscription.cancel();
 
-        expect(events, hasLength(1));
-      });
+          expect(events, hasLength(1));
+        },
+      );
 
-      test('idempotent: when the row already shows self_wrap_status sent, '
-          'returns success without re-publishing', () async {
-        when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
-          (_) async => queuedRow(
-            selfWrapStatus: OutgoingWrapStatus.sent,
-            selfWrapEventId: _giftWrapEventId2,
-          ),
-        );
+      test(
+        'idempotent: when the row already shows self_wrap_status sent, '
+        'returns success without re-publishing',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer(
+            (_) async => queuedRow(
+              selfWrapStatus: OutgoingWrapStatus.sent,
+              selfWrapEventId: _giftWrapEventId2,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isTrue);
-        expect(result.messageEventId, equals(_giftWrapEventId2));
-        verifyNever(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        );
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-      });
+          expect(result.success, isTrue);
+          expect(result.messageEventId, equals(_giftWrapEventId2));
+          verifyNever(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
 
       test(
         'throws ArgumentError when no queue row exists for the rumor id',
@@ -22284,24 +23124,29 @@ void main() {
         },
       );
 
-      test('throws ArgumentError when the queue row belongs to a '
-          'different account', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow(ownerPubkey: _validPubkeyD));
+      test(
+        'throws ArgumentError when the queue row belongs to a '
+        'different account',
+        () async {
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
+            (_) async => queuedRow(ownerPubkey: _validPubkeyD),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        expect(
-          () => repository.recoverSelfWrap(rumorId: _rumorEventId),
-          throwsArgumentError,
-        );
-        verifyNever(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        );
-      });
+          expect(
+            () => repository.recoverSelfWrap(rumorId: _rumorEventId),
+            throwsArgumentError,
+          );
+          verifyNever(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          );
+        },
+      );
 
       test(
         'throws StateError when the outgoing_dms DAO is not wired in',
@@ -22315,130 +23160,151 @@ void main() {
         },
       );
 
-      test('on rumor JSON parse failure: marks self_wrap_status failed '
-          'with the parse error and surfaces a failure result', () async {
-        final corruptedRow = OutgoingDm(
-          id: _rumorEventId,
-          conversationId: 'conv',
-          recipientPubkey: _validPubkeyB,
-          content: 'queued message',
-          createdAt: 1700000000,
-          rumorEventJson: 'this is not json',
-          recipientWrapStatus: OutgoingWrapStatus.sent,
-          selfWrapStatus: OutgoingWrapStatus.failed,
-          queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
-          ownerPubkey: _validPubkeyA,
-        );
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => corruptedRow);
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
-
-        expect(result.success, isFalse);
-        expect(result.error, contains('rumor JSON parse failed'));
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
+      test(
+        'on rumor JSON parse failure: marks self_wrap_status failed '
+        'with the parse error and surfaces a failure result',
+        () async {
+          final corruptedRow = OutgoingDm(
             id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: any(
-              named: 'lastError',
-              that: contains('rumor JSON parse failed'),
+            conversationId: 'conv',
+            recipientPubkey: _validPubkeyB,
+            content: 'queued message',
+            createdAt: 1700000000,
+            rumorEventJson: 'this is not json',
+            recipientWrapStatus: OutgoingWrapStatus.sent,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ownerPubkey: _validPubkeyA,
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => corruptedRow);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('rumor JSON parse failed'));
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(
+                named: 'lastError',
+                that: contains('rumor JSON parse failed'),
+              ),
             ),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        );
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          );
 
-        // Programming-invariant violation (we wrote that JSON) is
-        // reported even though the recovery returned a non-throwing
-        // failure result.
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          equals(DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse),
-        );
-      });
+          // Programming-invariant violation (we wrote that JSON) is
+          // reported even though the recovery returned a non-throwing
+          // failure result.
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse),
+          );
+        },
+      );
 
-      test('on rumor JSON parse failure: when the salvage markSelfWrapStatus '
-          'also throws, reports both the parse failure and the salvage '
-          'failure and still returns a non-throwing failure result', () async {
-        final corruptedRow = OutgoingDm(
-          id: _rumorEventId,
-          conversationId: 'conv',
-          recipientPubkey: _validPubkeyB,
-          content: 'queued message',
-          createdAt: 1700000000,
-          rumorEventJson: 'this is not json',
-          recipientWrapStatus: OutgoingWrapStatus.sent,
-          selfWrapStatus: OutgoingWrapStatus.failed,
-          queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
-          ownerPubkey: _validPubkeyA,
-        );
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => corruptedRow);
-        when(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenThrow(Exception('drift busy'));
+      test(
+        'on rumor JSON parse failure: when the salvage markSelfWrapStatus '
+        'also throws, reports both the parse failure and the salvage '
+        'failure and still returns a non-throwing failure result',
+        () async {
+          final corruptedRow = OutgoingDm(
+            id: _rumorEventId,
+            conversationId: 'conv',
+            recipientPubkey: _validPubkeyB,
+            content: 'queued message',
+            createdAt: 1700000000,
+            rumorEventJson: 'this is not json',
+            recipientWrapStatus: OutgoingWrapStatus.sent,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ownerPubkey: _validPubkeyA,
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => corruptedRow);
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isFalse);
-        expect(reporterCalls.map((c) => c.site), <String>[
-          DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse,
-          DmRepositoryReportableSites.recoverSelfWrapMarkFailedAfterJsonParse,
-        ]);
-      });
+          expect(result.success, isFalse);
+          expect(reporterCalls.map((c) => c.site), <String>[
+            DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse,
+            DmRepositoryReportableSites.recoverSelfWrapMarkFailedAfterJsonParse,
+          ]);
+        },
+      );
 
-      test('on self-wrap publish failure: when the salvage markSelfWrapStatus '
-          'throws, reports the salvage failure and still returns the '
-          'publish-failure result', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => const NIP17SendResult.failure('relay timeout'),
-        );
-        when(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: any(named: 'id'),
-            status: any(named: 'status'),
-            eventId: any(named: 'eventId'),
-            lastError: any(named: 'lastError'),
-          ),
-        ).thenThrow(Exception('drift busy'));
+      test(
+        'on self-wrap publish failure: when the salvage markSelfWrapStatus '
+        'throws, reports the salvage failure and still returns the '
+        'publish-failure result',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isFalse);
-        expect(reporterCalls, hasLength(1));
-        expect(
-          reporterCalls.single.site,
-          equals(
-            DmRepositoryReportableSites
-                .recoverSelfWrapMarkFailedAfterPublishFailure,
-          ),
-        );
-      });
+          expect(result.success, isFalse);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites
+                  .recoverSelfWrapMarkFailedAfterPublishFailure,
+            ),
+          );
+        },
+      );
     });
 
     group('recoverFullSend', () {
@@ -22564,44 +23430,51 @@ void main() {
         ).thenAnswer((_) async => null);
       });
 
-      test('an unreadable recipient inbox on retry is NOT delivery: the sweep '
-          'must not consume the row a soft send preserved (#7317)', () async {
-        // Persistently unreadable — the same state the original send saw.
-        // Without this fix the sweep re-resolves to null, publishes to the
-        // pool, scores the OK as success and deletes the row, converging on
-        // exactly the pre-fix outcome ~160s later.
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((_) async => unansweredList(noRelays: true));
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+      test(
+        'an unreadable recipient inbox on retry is NOT delivery: the sweep '
+        'must not consume the row a soft send preserved (#7317)',
+        () async {
+          // Persistently unreadable — the same state the original send saw.
+          // Without this fix the sweep re-resolves to null, publishes to the
+          // pool, scores the OK as success and deletes the row, converging on
+          // exactly the pre-fix outcome ~160s later.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => unansweredList(noRelays: true));
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isFalse);
-        expect(result.retryablePending, isTrue);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verify(
-          () => mockOutgoingDmsDao.incrementRetry(_rumorEventId),
-        ).called(1);
-      });
+          expect(result.success, isFalse);
+          expect(result.retryablePending, isTrue);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(_rumorEventId),
+          ).called(1);
+        },
+      );
 
       test(
         'skips the local persist when the row is cancelled while the '
@@ -22781,41 +23654,51 @@ void main() {
         },
       );
 
-      test('resetRetryBudget never re-arms a foreign-owner row — the owner '
-          'check runs before the reset, not only in the locked body', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow(ownerPubkey: _validPubkeyB));
+      test(
+        'resetRetryBudget never re-arms a foreign-owner row — the owner '
+        'check runs before the reset, not only in the locked body',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow(ownerPubkey: _validPubkeyB));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        await expectLater(
-          () => repository.recoverFullSend(
-            rumorId: _rumorEventId,
-            resetRetryBudget: true,
-          ),
-          throwsArgumentError,
-        );
-        verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
-      });
+          await expectLater(
+            () => repository.recoverFullSend(
+              rumorId: _rumorEventId,
+              resetRetryBudget: true,
+            ),
+            throwsArgumentError,
+          );
+          verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
+        },
+      );
 
-      test('resetRetryBudget is a no-op for a missing row — the locked body '
-          'still throws its documented ArgumentError', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => null);
+      test(
+        'resetRetryBudget is a no-op for a missing row — the locked body '
+        'still throws its documented ArgumentError',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => null);
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        await expectLater(
-          () => repository.recoverFullSend(
-            rumorId: _rumorEventId,
-            resetRetryBudget: true,
-          ),
-          throwsArgumentError,
-        );
-        verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
-      });
+          await expectLater(
+            () => repository.recoverFullSend(
+              rumorId: _rumorEventId,
+              resetRetryBudget: true,
+            ),
+            throwsArgumentError,
+          );
+          verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
+        },
+      );
 
       test(
         'resetRetryBudget swallows a throwing owner-check read — the reset '
@@ -22840,64 +23723,71 @@ void main() {
         },
       );
 
-      test('preserves an existing GROUP conversation topology — never rewrites '
-          'the group as a 1:1 with reduced participants', () async {
-        final groupParticipants = jsonEncode(
-          [_validPubkeyA, _validPubkeyB, _validPubkeyC]..sort(),
-        );
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockConversationsDao.getConversation(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => ConversationRow(
-            id: 'conv',
-            participantPubkeys: groupParticipants,
-            isGroup: true,
-            createdAt: 1690000000,
-            lastMessageContent: 'earlier',
-            lastMessageTimestamp: 1690000000,
-            lastMessageSenderPubkey: _validPubkeyB,
-            isRead: true,
-            currentUserHasSent: true,
-            ownerPubkey: _validPubkeyA,
-            dmProtocol: 'nip17',
-          ),
-        );
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+      test(
+        'preserves an existing GROUP conversation topology — never rewrites '
+        'the group as a 1:1 with reduced participants',
+        () async {
+          final groupParticipants = jsonEncode(
+            [_validPubkeyA, _validPubkeyB, _validPubkeyC]..sort(),
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: 'conv',
+              participantPubkeys: groupParticipants,
+              isGroup: true,
+              createdAt: 1690000000,
+              lastMessageContent: 'earlier',
+              lastMessageTimestamp: 1690000000,
+              lastMessageSenderPubkey: _validPubkeyB,
+              isRead: true,
+              currentUserHasSent: true,
+              ownerPubkey: _validPubkeyA,
+              dmProtocol: 'nip17',
+            ),
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isTrue);
-        verify(
-          () => mockConversationsDao.upsertConversation(
-            id: 'conv',
-            participantPubkeys: groupParticipants,
-            isGroup: true,
-            createdAt: 1690000000,
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: any(named: 'dmProtocol'),
-          ),
-        ).called(1);
-      });
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: 'conv',
+              participantPubkeys: groupParticipants,
+              isGroup: true,
+              createdAt: 1690000000,
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'group-row recovery skips the direct_messages insert when a batch '
@@ -22966,439 +23856,494 @@ void main() {
             ),
           );
           // The queue row still finalizes — full delivery deletes it.
-          verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
         },
       );
 
-      test('group-row recovery of a legacy null-batch row falls back to the '
-          'content/timestamp dedup window', () async {
-        // A row enqueued before send_batch_id existed carries null; its
-        // persisted winner is likewise null-batch, so the two must still
-        // reconcile on the legacy hasMatchingMessage window.
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
-            counterpart: DmDedupCounterpart.unconstrained,
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            windowSeconds: any(named: 'windowSeconds'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => true);
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isTrue);
-        // Null-batch row never probes the batch-id surface.
-        verifyNever(
-          () => mockDirectMessagesDao.hasMessageWithSendBatchId(
-            batchId: any(named: 'batchId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-        verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
-      });
-
-      test('on full delivery: deletes the queue row, inserts '
-          'direct_messages, and surfaces the success result', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isTrue);
-        // Full delivery deletes the row in the same transaction as
-        // the local message persist.
-        verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: 'conv',
-            senderPubkey: _validPubkeyA,
-            content: 'queued message',
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: _giftWrapEventId2,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: _validPubkeyA,
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-
-        // Recovering a full queued send re-persists the message and
-        // conversation, so it marks the conversation read (#5515).
-        verify(
-          () => mockConversationsDao.markAsRead(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).called(1);
-
-        // The recovery must not stamp the thread 'nip04'. Nothing asserted
-        // this before: flipping the recover path's `?? 'nip17'` default to
-        // `'nip04'` left the whole suite green (#8262). A regression there
-        // would latch every recovered conversation, and per the latch
-        // mechanics that decision then freezes — so every later send in the
-        // thread would publish a cleartext kind-4 twin.
-        final upserted = verify(
-          () => mockConversationsDao.upsertConversation(
-            id: any(named: 'id'),
-            participantPubkeys: any(named: 'participantPubkeys'),
-            isGroup: any(named: 'isGroup'),
-            createdAt: any(named: 'createdAt'),
-            lastMessageContent: any(named: 'lastMessageContent'),
-            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
-            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
-            subject: any(named: 'subject'),
-            isRead: any(named: 'isRead'),
-            currentUserHasSent: any(named: 'currentUserHasSent'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            dmProtocol: captureAny(named: 'dmProtocol'),
-          ),
-        ).captured;
-        expect(upserted, isNotEmpty);
-        expect(upserted.last, 'nip17');
-      });
-
-      test('reconstructs tagsJson from the rebuilt rumor so a recovered '
-          'shared-video reply keeps its q citation locally', () async {
-        final videoTags = [
-          ['p', _validPubkeyB],
-          ['q', '34236:$_validPubkeyB:my-reel', 'wss://relay.divine.video'],
-        ];
-        final videoRumorJson = jsonEncode({
-          'id': _rumorEventId,
-          'pubkey': _validPubkeyA,
-          'created_at': 1700000000,
-          'kind': EventKind.privateDirectMessage,
-          'tags': videoTags,
-          'content': 'love this reel',
-          'sig': '',
-        });
-        when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
-          (_) async => OutgoingDm(
-            id: _rumorEventId,
-            conversationId: 'conv',
-            recipientPubkey: _validPubkeyB,
-            content: 'love this reel',
-            createdAt: 1700000000,
-            rumorEventJson: videoRumorJson,
-            recipientWrapStatus: OutgoingWrapStatus.failed,
-            selfWrapStatus: OutgoingWrapStatus.failed,
-            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
-            ownerPubkey: _validPubkeyA,
-          ),
-        );
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isTrue);
-        // The recovered row persists the full rumor tags (including the
-        // NIP-18 q citation) instead of dropping them, so the sender's local
-        // bubble re-derives its sharedVideoRef.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: 'conv',
-            senderPubkey: _validPubkeyA,
-            content: 'love this reel',
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: _giftWrapEventId2,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: _validPubkeyA,
-            tagsJson: jsonEncode(videoTags),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-      });
-
-      test('on partial delivery: keeps the queue row, marks recipient '
-          'sent and self failed, still inserts direct_messages', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-            selfWrapPublished: false,
-          ),
-        );
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isTrue);
-        expect(result.selfWrapPublished, isFalse);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.sent,
-            eventId: _giftWrapEventId2,
-          ),
-        ).called(1);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'Recipient delivered, but self-wrap publish failed',
-          ),
-        ).called(1);
-        // Local persistence still fires — the recipient received the
-        // message, so the sender side must show it.
-        verify(
-          () => mockDirectMessagesDao.insertMessage(
-            id: _rumorEventId,
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: _giftWrapEventId2,
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).called(1);
-      });
-
-      test('on recipient publish failure: re-marks both wraps failed and '
-          'does NOT touch direct_messages', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        stubSendRumor(
-          (_, _) async =>
-              const NIP17SendResult.failure('relay still unavailable'),
-        );
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isFalse);
-        expect(result.error, equals('relay still unavailable'));
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'relay still unavailable',
-          ),
-        ).called(1);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: 'relay still unavailable',
-          ),
-        ).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-        verifyNever(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        );
-      });
-
-      test('routes the retry wrap to the recipient kind-10050 inbox and '
-          'OK-confirms it (not the default pool)', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        // Recipient advertises a DM inbox — the retry must target it so the
-        // OK-confirm is meaningful for an inbox-only reader, not satisfied
-        // by an unrelated default-pool relay.
-        when(
-          () => mockNostrClient.queryEventsDetailed(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-            tempRelays: any(named: 'tempRelays'),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer(
-          (_) async => answeredList([
-            Event(
-              _validPubkeyB,
-              EventKind.dmRelaysList,
-              [
-                ['relay', 'wss://inbox.example'],
-              ],
-              '',
-              createdAt: 1700000000,
+      test(
+        'group-row recovery of a legacy null-batch row falls back to the '
+        'content/timestamp dedup window',
+        () async {
+          // A row enqueued before send_batch_id existed carries null; its
+          // persisted winner is likewise null-batch, so the two must still
+          // reconcile on the legacy hasMatchingMessage window.
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: DmDedupCounterpart.unconstrained,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              windowSeconds: any(named: 'windowSeconds'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
-          ]),
-        );
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+          ).thenAnswer((_) async => true);
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: _validPubkeyB,
-            targetRelays: ['wss://inbox.example'],
-            awaitRecipientOk: true,
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-      });
+          expect(result.success, isTrue);
+          // Null-batch row never probes the batch-id surface.
+          verifyNever(
+            () => mockDirectMessagesDao.hasMessageWithSendBatchId(
+              batchId: any(named: 'batchId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
+        },
+      );
 
-      test('falls back to the default pool (targetRelays null) when the '
-          'recipient has no kind-10050 inbox', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        // setUp's file-level queryEvents stub returns [] → null inbox.
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
+      test(
+        'on full delivery: deletes the queue row, inserts '
+        'direct_messages, and surfaces the success result',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        verify(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: _validPubkeyB,
-            targetRelays: any(named: 'targetRelays', that: isNull),
-            awaitRecipientOk: true,
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        ).called(1);
-      });
+          expect(result.success, isTrue);
+          // Full delivery deletes the row in the same transaction as
+          // the local message persist.
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: 'conv',
+              senderPubkey: _validPubkeyA,
+              content: 'queued message',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId2,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: _validPubkeyA,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+
+          // Recovering a full queued send re-persists the message and
+          // conversation, so it marks the conversation read (#5515).
+          verify(
+            () => mockConversationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+
+          // The recovery must not stamp the thread 'nip04'. Nothing asserted
+          // this before: flipping the recover path's `?? 'nip17'` default to
+          // `'nip04'` left the whole suite green (#8262). A regression there
+          // would latch every recovered conversation, and per the latch
+          // mechanics that decision then freezes — so every later send in the
+          // thread would publish a cleartext kind-4 twin.
+          final upserted = verify(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: captureAny(named: 'dmProtocol'),
+            ),
+          ).captured;
+          expect(upserted, isNotEmpty);
+          expect(upserted.last, 'nip17');
+        },
+      );
+
+      test(
+        'reconstructs tagsJson from the rebuilt rumor so a recovered '
+        'shared-video reply keeps its q citation locally',
+        () async {
+          final videoTags = [
+            ['p', _validPubkeyB],
+            ['q', '34236:$_validPubkeyB:my-reel', 'wss://relay.divine.video'],
+          ];
+          final videoRumorJson = jsonEncode({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyA,
+            'created_at': 1700000000,
+            'kind': EventKind.privateDirectMessage,
+            'tags': videoTags,
+            'content': 'love this reel',
+            'sig': '',
+          });
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
+            (_) async => OutgoingDm(
+              id: _rumorEventId,
+              conversationId: 'conv',
+              recipientPubkey: _validPubkeyB,
+              content: 'love this reel',
+              createdAt: 1700000000,
+              rumorEventJson: videoRumorJson,
+              recipientWrapStatus: OutgoingWrapStatus.failed,
+              selfWrapStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              ownerPubkey: _validPubkeyA,
+            ),
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          // The recovered row persists the full rumor tags (including the
+          // NIP-18 q citation) instead of dropping them, so the sender's local
+          // bubble re-derives its sharedVideoRef.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: 'conv',
+              senderPubkey: _validPubkeyA,
+              content: 'love this reel',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId2,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: _validPubkeyA,
+              tagsJson: jsonEncode(videoTags),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'on partial delivery: keeps the queue row, marks recipient '
+        'sent and self failed, still inserts direct_messages',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+              selfWrapPublished: false,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.sent,
+              eventId: _giftWrapEventId2,
+            ),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Recipient delivered, but self-wrap publish failed',
+            ),
+          ).called(1);
+          // Local persistence still fires — the recipient received the
+          // message, so the sender side must show it.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId2,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'on recipient publish failure: re-marks both wraps failed and '
+        'does NOT touch direct_messages',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, _) async =>
+                const NIP17SendResult.failure('relay still unavailable'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, equals('relay still unavailable'));
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'relay still unavailable',
+            ),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'relay still unavailable',
+            ),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'routes the retry wrap to the recipient kind-10050 inbox and '
+        'OK-confirms it (not the default pool)',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          // Recipient advertises a DM inbox — the retry must target it so the
+          // OK-confirm is meaningful for an inbox-only reader, not satisfied
+          // by an unrelated default-pool relay.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => answeredList([
+              Event(
+                _validPubkeyB,
+                EventKind.dmRelaysList,
+                [
+                  ['relay', 'wss://inbox.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ]),
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: ['wss://inbox.example'],
+              awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to the default pool (targetRelays null) when the '
+        'recipient has no kind-10050 inbox',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          // setUp's file-level queryEvents stub returns [] → null inbox.
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
+
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              targetRelays: any(named: 'targetRelays', that: isNull),
+              awaitRecipientOk: true,
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'on a soft-unconfirmed send: keeps the row pending via incrementRetry '
@@ -23587,57 +24532,68 @@ void main() {
         },
       );
 
-      test('idempotent: when recipient_wrap_status is already sent, '
-          'defers to recoverSelfWrap and never republishes the recipient '
-          'wrap', () async {
-        // Row promoted to recipient: sent / self: failed before this
-        // recoverFullSend call (e.g. a concurrent retry, or the
-        // original sendMessage hit the partial-success path).
-        when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
-          (_) async => queuedRow(
-            recipientWrapStatus: OutgoingWrapStatus.sent,
-            recipientWrapEventId: _giftWrapEventId,
-          ),
-        );
-        when(
-          () => mockMessageService.publishSelfWrap(
-            rumorEvent: any(named: 'rumorEvent'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _rumorEventId,
-            recipientPubkey: _validPubkeyA,
-          ),
-        );
+      test(
+        'idempotent: when recipient_wrap_status is already sent, '
+        'defers to recoverSelfWrap and never republishes the recipient '
+        'wrap',
+        () async {
+          // Row promoted to recipient: sent / self: failed before this
+          // recoverFullSend call (e.g. a concurrent retry, or the
+          // original sendMessage hit the partial-success path).
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
+            (_) async => queuedRow(
+              recipientWrapStatus: OutgoingWrapStatus.sent,
+              recipientWrapEventId: _giftWrapEventId,
+            ),
+          );
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _rumorEventId,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        expect(result.success, isTrue);
-        // Critical invariant: no recipient publish on this branch.
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-        verifyNever(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        );
-        // recoverSelfWrap landed: it deletes the row after a clean
-        // publish.
-        verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
-      });
+          expect(result.success, isTrue);
+          // Critical invariant: no recipient publish on this branch.
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+          verifyNever(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          );
+          // recoverSelfWrap landed: it deletes the row after a clean
+          // publish.
+          verify(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).called(1);
+        },
+      );
 
       test(
         'throws ArgumentError when no queue row exists for the rumor id',
@@ -23657,28 +24613,35 @@ void main() {
         },
       );
 
-      test('throws ArgumentError when the queue row belongs to a '
-          'different account', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow(ownerPubkey: _validPubkeyD));
+      test(
+        'throws ArgumentError when the queue row belongs to a '
+        'different account',
+        () async {
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
+            (_) async => queuedRow(ownerPubkey: _validPubkeyD),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        expect(
-          () => repository.recoverFullSend(rumorId: _rumorEventId),
-          throwsArgumentError,
-        );
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-      });
+          expect(
+            () => repository.recoverFullSend(rumorId: _rumorEventId),
+            throwsArgumentError,
+          );
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+        },
+      );
 
       test(
         'throws StateError when the outgoing_dms DAO is not wired in',
@@ -23692,109 +24655,125 @@ void main() {
         },
       );
 
-      test('on rumor JSON parse failure: marks both wraps failed with '
-          'the parse error and never attempts to publish', () async {
-        final corruptedRow = OutgoingDm(
-          id: _rumorEventId,
-          conversationId: 'conv',
-          recipientPubkey: _validPubkeyB,
-          content: 'queued message',
-          createdAt: 1700000000,
-          rumorEventJson: 'this is not json',
-          recipientWrapStatus: OutgoingWrapStatus.failed,
-          selfWrapStatus: OutgoingWrapStatus.failed,
-          queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
-          ownerPubkey: _validPubkeyA,
-        );
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => corruptedRow);
-
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
-
-        expect(result.success, isFalse);
-        expect(result.error, contains('rumor JSON parse failed'));
-        verify(
-          () => mockOutgoingDmsDao.markRecipientWrapStatus(
+      test(
+        'on rumor JSON parse failure: marks both wraps failed with '
+        'the parse error and never attempts to publish',
+        () async {
+          final corruptedRow = OutgoingDm(
             id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: any(
-              named: 'lastError',
-              that: contains('rumor JSON parse failed'),
+            conversationId: 'conv',
+            recipientPubkey: _validPubkeyB,
+            content: 'queued message',
+            createdAt: 1700000000,
+            rumorEventJson: 'this is not json',
+            recipientWrapStatus: OutgoingWrapStatus.failed,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ownerPubkey: _validPubkeyA,
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => corruptedRow);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('rumor JSON parse failed'));
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(
+                named: 'lastError',
+                that: contains('rumor JSON parse failed'),
+              ),
             ),
-          ),
-        ).called(1);
-        verify(
-          () => mockOutgoingDmsDao.markSelfWrapStatus(
-            id: _rumorEventId,
-            status: OutgoingWrapStatus.failed,
-            lastError: any(
-              named: 'lastError',
-              that: contains('rumor JSON parse failed'),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.failed,
+              lastError: any(
+                named: 'lastError',
+                that: contains('rumor JSON parse failed'),
+              ),
             ),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockMessageService.sendRumor(
-            rumorEvent: any(named: 'rumorEvent'),
-            recipientPubkey: any(named: 'recipientPubkey'),
-            targetRelays: any(named: 'targetRelays'),
-            awaitRecipientOk: any(named: 'awaitRecipientOk'),
-            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
-          ),
-        );
-      });
+          ).called(1);
+          verifyNever(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              targetRelays: any(named: 'targetRelays'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+              selfWrapOnSoftUnconfirmed: any(
+                named: 'selfWrapOnSoftUnconfirmed',
+              ),
+            ),
+          );
+        },
+      );
 
-      test('when local persistence throws after a successful publish: '
-          'still returns the publish-success result (degraded state, '
-          'no rethrow)', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(_rumorEventId),
-        ).thenAnswer((_) async => queuedRow());
-        stubSendRumor(
-          (_, recipientPubkey) async => NIP17SendResult.success(
-            rumorEventId: _rumorEventId,
-            messageEventId: _giftWrapEventId2,
-            recipientPubkey: recipientPubkey,
-          ),
-        );
-        when(
-          () => mockDirectMessagesDao.insertMessage(
-            id: any(named: 'id'),
-            conversationId: any(named: 'conversationId'),
-            senderPubkey: any(named: 'senderPubkey'),
-            content: any(named: 'content'),
-            createdAt: any(named: 'createdAt'),
-            giftWrapId: any(named: 'giftWrapId'),
-            messageKind: any(named: 'messageKind'),
-            replyToId: any(named: 'replyToId'),
-            subject: any(named: 'subject'),
-            fileType: any(named: 'fileType'),
-            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
-            decryptionKey: any(named: 'decryptionKey'),
-            decryptionNonce: any(named: 'decryptionNonce'),
-            fileHash: any(named: 'fileHash'),
-            originalFileHash: any(named: 'originalFileHash'),
-            fileSize: any(named: 'fileSize'),
-            dimensions: any(named: 'dimensions'),
-            blurhash: any(named: 'blurhash'),
-            thumbnailUrl: any(named: 'thumbnailUrl'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-            tagsJson: any(named: 'tagsJson'),
-            sendBatchId: any(named: 'sendBatchId'),
-          ),
-        ).thenThrow(Exception('drift busy'));
+      test(
+        'when local persistence throws after a successful publish: '
+        'still returns the publish-success result (degraded state, '
+        'no rethrow)',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenThrow(Exception('drift busy'));
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final result = await repository.recoverFullSend(rumorId: _rumorEventId);
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
 
-        // Publish landed → caller sees success even though local
-        // bookkeeping inside the transaction failed.
-        expect(result.success, isTrue);
-      });
+          // Publish landed → caller sees success even though local
+          // bookkeeping inside the transaction failed.
+          expect(result.success, isTrue);
+        },
+      );
     });
 
     group('cancelOutgoingSend', () {
@@ -23825,7 +24804,9 @@ void main() {
           () => mockOutgoingDmsDao.getById(_rumorEventId),
         ).thenAnswer((_) async => row());
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
         await repository.cancelOutgoingSend(rumorId: _rumorEventId);
 
         verify(() => mockOutgoingDmsDao.deleteById(_rumorEventId)).called(1);
@@ -23836,7 +24817,9 @@ void main() {
           () => mockOutgoingDmsDao.getById(_rumorEventId),
         ).thenAnswer((_) async => null);
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
         await repository.cancelOutgoingSend(rumorId: _rumorEventId);
 
         verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
@@ -23962,52 +24945,74 @@ void main() {
         );
       });
 
-      test('resolves the batch from the persisted winner when its own queue '
-          'row is gone, and cancels pending AND failed siblings', () async {
-        // The winner's row was deleted when it confirmed — deleting the
-        // group bubble hands us the persisted message id, not a live row.
-        when(
-          () => mockOutgoingDmsDao.getById(winnerRumorId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            winnerRumorId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => persistedWinner());
+      test(
+        'resolves the batch from the persisted winner when its own queue '
+        'row is gone, and cancels pending AND failed siblings',
+        () async {
+          // The winner's row was deleted when it confirmed — deleting the
+          // group bubble hands us the persisted message id, not a live row.
+          when(
+            () => mockOutgoingDmsDao.getById(winnerRumorId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              winnerRumorId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => persistedWinner());
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final cancelled = await repository.cancelOutgoingBatch(
-          rumorId: winnerRumorId,
-        );
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: winnerRumorId,
+          );
 
-        expect(cancelled, equals(2));
-        verify(() => mockOutgoingDmsDao.deleteById(pendingSiblingId)).called(1);
-        verify(() => mockOutgoingDmsDao.deleteById(failedSiblingId)).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById('other-batch'));
-        verifyNever(() => mockOutgoingDmsDao.deleteById('other-timestamp'));
-      });
+          expect(cancelled, equals(2));
+          verify(
+            () => mockOutgoingDmsDao.deleteById(pendingSiblingId),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.deleteById(failedSiblingId),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById('other-batch'));
+          verifyNever(
+            () => mockOutgoingDmsDao.deleteById('other-timestamp'),
+          );
+        },
+      );
 
-      test('resolves the batch from a surviving sibling row and cancels the '
-          'whole batch including that row', () async {
-        when(() => mockOutgoingDmsDao.getById(failedSiblingId)).thenAnswer(
-          (_) async => sibling(
-            id: failedSiblingId,
-            recipientWrapStatus: OutgoingWrapStatus.failed,
-          ),
-        );
+      test(
+        'resolves the batch from a surviving sibling row and cancels the '
+        'whole batch including that row',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(failedSiblingId),
+          ).thenAnswer(
+            (_) async => sibling(
+              id: failedSiblingId,
+              recipientWrapStatus: OutgoingWrapStatus.failed,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final cancelled = await repository.cancelOutgoingBatch(
-          rumorId: failedSiblingId,
-        );
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: failedSiblingId,
+          );
 
-        expect(cancelled, equals(2));
-        verify(() => mockOutgoingDmsDao.deleteById(pendingSiblingId)).called(1);
-        verify(() => mockOutgoingDmsDao.deleteById(failedSiblingId)).called(1);
-      });
+          expect(cancelled, equals(2));
+          verify(
+            () => mockOutgoingDmsDao.deleteById(pendingSiblingId),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.deleteById(failedSiblingId),
+          ).called(1);
+        },
+      );
 
       test(
         'resolves a queue-only shared rumor id to its per-recipient handles',
@@ -24062,65 +25067,72 @@ void main() {
         },
       );
 
-      test('two batches sharing (conversationId, content, createdAt) are '
-          'cancelled independently by durable batch id — the collision the old '
-          'tuple could not separate (regression: #6046)', () async {
-        const batchAId = 'batch-A';
-        const batchBId = 'batch-B';
-        const aRow1 = 'a111';
-        const aRow2 = 'a222';
-        const bRow1 = 'b111';
-        const bRow2 = 'b222';
-        // Two group batches whose siblings collide on the OLD tuple (same
-        // conversationId + content + createdAt) but carry distinct durable
-        // batch ids. Cancelling batch B must leave batch A untouched.
-        when(
-          () => mockOutgoingDmsDao.getForConversation(
-            conversationId: any(named: 'conversationId'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer(
-          (_) async => [
-            sibling(
-              id: aRow1,
-              recipientWrapStatus: OutgoingWrapStatus.pending,
-              sendBatchId: batchAId,
+      test(
+        'two batches sharing (conversationId, content, createdAt) are '
+        'cancelled independently by durable batch id — the collision the old '
+        'tuple could not separate (regression: #6046)',
+        () async {
+          const batchAId = 'batch-A';
+          const batchBId = 'batch-B';
+          const aRow1 = 'a111';
+          const aRow2 = 'a222';
+          const bRow1 = 'b111';
+          const bRow2 = 'b222';
+          // Two group batches whose siblings collide on the OLD tuple (same
+          // conversationId + content + createdAt) but carry distinct durable
+          // batch ids. Cancelling batch B must leave batch A untouched.
+          when(
+            () => mockOutgoingDmsDao.getForConversation(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
-            sibling(
-              id: aRow2,
-              recipientWrapStatus: OutgoingWrapStatus.failed,
-              sendBatchId: batchAId,
-            ),
-            sibling(
+          ).thenAnswer(
+            (_) async => [
+              sibling(
+                id: aRow1,
+                recipientWrapStatus: OutgoingWrapStatus.pending,
+                sendBatchId: batchAId,
+              ),
+              sibling(
+                id: aRow2,
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                sendBatchId: batchAId,
+              ),
+              sibling(
+                id: bRow1,
+                recipientWrapStatus: OutgoingWrapStatus.pending,
+                sendBatchId: batchBId,
+              ),
+              sibling(
+                id: bRow2,
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                sendBatchId: batchBId,
+              ),
+            ],
+          );
+          when(() => mockOutgoingDmsDao.getById(bRow1)).thenAnswer(
+            (_) async => sibling(
               id: bRow1,
               recipientWrapStatus: OutgoingWrapStatus.pending,
               sendBatchId: batchBId,
             ),
-            sibling(
-              id: bRow2,
-              recipientWrapStatus: OutgoingWrapStatus.failed,
-              sendBatchId: batchBId,
-            ),
-          ],
-        );
-        when(() => mockOutgoingDmsDao.getById(bRow1)).thenAnswer(
-          (_) async => sibling(
-            id: bRow1,
-            recipientWrapStatus: OutgoingWrapStatus.pending,
-            sendBatchId: batchBId,
-          ),
-        );
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        final cancelled = await repository.cancelOutgoingBatch(rumorId: bRow1);
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: bRow1,
+          );
 
-        expect(cancelled, equals(2));
-        verify(() => mockOutgoingDmsDao.deleteById(bRow1)).called(1);
-        verify(() => mockOutgoingDmsDao.deleteById(bRow2)).called(1);
-        verifyNever(() => mockOutgoingDmsDao.deleteById(aRow1));
-        verifyNever(() => mockOutgoingDmsDao.deleteById(aRow2));
-      });
+          expect(cancelled, equals(2));
+          verify(() => mockOutgoingDmsDao.deleteById(bRow1)).called(1);
+          verify(() => mockOutgoingDmsDao.deleteById(bRow2)).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(aRow1));
+          verifyNever(() => mockOutgoingDmsDao.deleteById(aRow2));
+        },
+      );
 
       test('a 1:1 row cancels exactly itself — no sibling scan', () async {
         final pairParticipants = [_validPubkeyA, _validPubkeyB]..sort();
@@ -24140,7 +25152,9 @@ void main() {
           ),
         );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+        final repository = createRepository(
+          outgoingDmsDao: mockOutgoingDmsDao,
+        );
 
         final cancelled = await repository.cancelOutgoingBatch(
           rumorId: _rumorEventId,
@@ -24156,24 +25170,31 @@ void main() {
         );
       });
 
-      test('throws ArgumentError for a foreign-owner queue row and cancels '
-          'nothing', () async {
-        when(() => mockOutgoingDmsDao.getById(failedSiblingId)).thenAnswer(
-          (_) async => sibling(
-            id: failedSiblingId,
-            recipientWrapStatus: OutgoingWrapStatus.failed,
-            ownerPubkey: _validPubkeyB,
-          ),
-        );
+      test(
+        'throws ArgumentError for a foreign-owner queue row and cancels '
+        'nothing',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(failedSiblingId),
+          ).thenAnswer(
+            (_) async => sibling(
+              id: failedSiblingId,
+              recipientWrapStatus: OutgoingWrapStatus.failed,
+              ownerPubkey: _validPubkeyB,
+            ),
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
 
-        await expectLater(
-          () => repository.cancelOutgoingBatch(rumorId: failedSiblingId),
-          throwsArgumentError,
-        );
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-      });
+          await expectLater(
+            () => repository.cancelOutgoingBatch(rumorId: failedSiblingId),
+            throwsArgumentError,
+          );
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
 
       test(
         'returns 0 for a foreign persisted message and cancels nothing',
@@ -24203,33 +25224,38 @@ void main() {
         },
       );
 
-      test('returns 0 when neither a queue row nor a persisted message '
-          'exists', () async {
-        when(
-          () => mockOutgoingDmsDao.getById(winnerRumorId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDirectMessagesDao.getMessageById(
-            winnerRumorId,
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockOutgoingDmsDao.getByRumorId(
+      test(
+        'returns 0 when neither a queue row nor a persisted message '
+        'exists',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(winnerRumorId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              winnerRumorId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockOutgoingDmsDao.getByRumorId(
+              rumorId: winnerRumorId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final cancelled = await repository.cancelOutgoingBatch(
             rumorId: winnerRumorId,
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).thenAnswer((_) async => null);
+          );
 
-        final repository = createRepository(outgoingDmsDao: mockOutgoingDmsDao);
-
-        final cancelled = await repository.cancelOutgoingBatch(
-          rumorId: winnerRumorId,
-        );
-
-        expect(cancelled, equals(0));
-        verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
-      });
+          expect(cancelled, equals(0));
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
 
       test('throws StateError when the queue DAO is not wired in', () async {
         final repository = createRepository();
@@ -24253,7 +25279,9 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         DmRepository(
           nostrClient: mockNostrClient,
@@ -24266,11 +25294,15 @@ void main() {
         );
 
         await untilCalled(
-          () => mockConversationsDao.backfillCurrentUserHasSent(_validPubkeyA),
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
         );
 
         verify(
-          () => mockConversationsDao.backfillCurrentUserHasSent(_validPubkeyA),
+          () => mockConversationsDao.backfillCurrentUserHasSent(
+            _validPubkeyA,
+          ),
         ).called(1);
       });
     });
@@ -24290,7 +25322,9 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         DmRepository(
           nostrClient: mockNostrClient,

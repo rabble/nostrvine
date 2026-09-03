@@ -5753,8 +5753,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen läser den här konversationen. Skriv till Divine Moderation i stället.';
 
   @override
-  String get dmDeleteRefusedMessage =>
-      'Det gick inte att radera för alla. Ditt meddelande finns kvar – försök igen.';
+  String get dmDeleteRefusedMessage => 'Det gick inte att radera för alla.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Vissa personer kan fortfarande se det här meddelandet.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Den här konversationen är stängd.';

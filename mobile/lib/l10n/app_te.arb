@@ -3528,7 +3528,8 @@
   "@dmSendBlockedRetiredMessage": {
     "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
   },
-  "dmDeleteRefusedMessage": "అందరి కోసం తొలగించడం సాధ్యపడలేదు. మీ సందేశం ఇంకా అక్కడే ఉంది — మళ్లీ ప్రయత్నించండి.",
+  "dmDeleteRefusedMessage": "అందరి కోసం తొలగించడం సాధ్యపడలేదు.",
+  "dmDeleteRefusedDetails": "కొంతమంది ఇప్పటికీ ఈ సందేశాన్ని చూడగలిగే అవకాశం ఉంది.",
   "dmRetiredThreadClosedTitle": "ఈ సంభాషణ మూసివేయబడింది.",
   "@dmRetiredThreadClosedTitle": {
     "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."

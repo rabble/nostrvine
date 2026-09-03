@@ -37,7 +37,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   DirectMessagesDao(super.attachedDatabase);
 
   /// Soft-deleted locally; the kind-5 wrap still needs a confirmed delivery.
-  static const String _deletionPending = 'deletion_pending';
+  static const String deletionPending = 'deletion_pending';
 
   /// A relay confirmed the wrap for every recipient. Terminal.
   static const String _deletionSent = 'deletion_sent';
@@ -46,9 +46,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// claim of full delivery — recipients outside the block may already have
   /// received the retraction.
   ///
-  /// Public because the repository reads it back to label a restored row as a
-  /// refused retraction (`DmMessage.retractionBlocked`, #8201). It does not
-  /// decide visibility — `is_deleted` does.
+  /// Public because the repository maps it to the failed-retraction bubble
+  /// state (#8201).
   static const String deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
@@ -59,6 +58,22 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   ) {
     if (ownerPubkey == null) return const Constant(true);
     return column.equals(ownerPubkey) | column.isNull();
+  }
+
+  /// Rows the sender must still be able to recognize in the conversation.
+  ///
+  /// A pending or refused own retraction is deliberately visible even though
+  /// `is_deleted` is already true. The message disappears only after every
+  /// recipient confirms the deletion.
+  Expression<bool> _visibleInThread(
+    $DirectMessagesTable t,
+    String? ownerPubkey,
+  ) {
+    final uncertainOwnRetraction = ownerPubkey == null
+        ? const Constant(false)
+        : t.senderPubkey.equals(ownerPubkey) &
+              t.deletionPublishStatus.isIn([deletionPending, deletionBlocked]);
+    return t.isDeleted.equals(false) | uncertainOwnRetraction;
   }
 
   /// Insert a decrypted DM, returning whether a row was actually written.
@@ -182,7 +197,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
 
   /// Get messages for a conversation, newest first.
   ///
-  /// Excludes soft-deleted messages (NIP-09 kind 5).
+  /// Excludes confirmed soft-deleted messages while retaining own messages
+  /// whose delete-for-everyone delivery is still pending or failed.
   Future<List<DirectMessageRow>> getMessagesForConversation(
     String conversationId, {
     int? limit,
@@ -193,7 +209,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..where(
         (t) =>
             t.conversationId.equals(conversationId) &
-            t.isDeleted.equals(false) &
+            _visibleInThread(t, ownerPubkey) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
@@ -210,7 +226,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
 
   /// Watch messages for a conversation (reactive stream), newest first.
   ///
-  /// Excludes soft-deleted messages (NIP-09 kind 5).
+  /// Excludes confirmed soft-deleted messages while retaining own messages
+  /// whose delete-for-everyone delivery is still pending or failed.
   Stream<List<DirectMessageRow>> watchMessagesForConversation(
     String conversationId, {
     int? limit,
@@ -220,7 +237,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..where(
         (t) =>
             t.conversationId.equals(conversationId) &
-            t.isDeleted.equals(false) &
+            _visibleInThread(t, ownerPubkey) &
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
@@ -256,11 +273,11 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Soft-delete [rumorId] and durably record the kind-5 rumor that still
   /// has to reach the recipient.
   ///
-  /// One write, so a crash between hiding the bubble and storing the rumor
-  /// cannot lose the retraction. The row leaves the live set immediately
-  /// (`watchMessagesForConversation` excludes `is_deleted`), while
-  /// `deletion_publish_status = 'deletion_pending'` keeps it visible to the
-  /// retry sweep until a relay confirms the wrap. Mirrors
+  /// One write, so a crash between recording the user's intent and storing
+  /// the rumor cannot lose the retraction. The sender's conversation query
+  /// keeps the row visible with pending styling, while
+  /// `deletion_publish_status = 'deletion_pending'` keeps it on the retry
+  /// worklist until every recipient confirms the wrap. Mirrors
   /// `DmReactionsDao.markOwnDeletionPending`.
   ///
   /// Returns `true` if the row was updated, `false` if [rumorId] was not
@@ -280,7 +297,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
               DirectMessagesCompanion(
                 isDeleted: const Value(true),
                 deletionRumorJson: Value(deletionRumorJson),
-                deletionPublishStatus: const Value(_deletionPending),
+                deletionPublishStatus: const Value(deletionPending),
               ),
             );
     return rows > 0;
@@ -311,22 +328,11 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// The rumor is **kept** (#8226). It is the retraction's event identity: a
   /// replay would keep every attempt one kind-5, where rebuilding mints a
-  /// fresh id per attempt. Some blocked sources also lift at runtime (the
-  /// minor restriction and Keycast's `verified_minor` gate read live state),
-  /// so the payload can become deliverable. Nothing replays it yet: the sweep
-  /// ([getRetryableOwnMessageDeletions]) requires `deletion_pending`, and a
-  /// user re-tap goes through `deleteMessageForEveryone`, which builds a fresh
-  /// rumor. Whether an explicit retry should replay it is the retry-UX
-  /// decision on #8201.
+  /// fresh id per attempt. The warning affordance can move the row back to
+  /// pending and replay this exact payload.
   ///
-  /// [restoreToThread] returns the message to the thread (#8201): nothing was
-  /// retracted, and the bubble is the only thing the user can act on to try
-  /// again. The caller passes `false` for a **mixed** outcome, where
-  /// recipients outside the block already applied the retraction — un-hiding
-  /// there would claim the message "is still there" for a thread that mostly
-  /// dropped it, and a retry would mint a second kind-5 for them. Until a
-  /// partial-retraction UX exists that row stays hidden, with only the status
-  /// recording what happened.
+  /// [restoreToThread] keeps the original bubble recognizable while its
+  /// failed status explains that deletion was not confirmed for everyone.
   ///
   /// "Blocked" is not always a send-policy verdict: the marker it derives from
   /// is a substring match with several Keycast sources, so #7337's
@@ -394,7 +400,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
                 t.senderPubkey.equals(ownerPubkey) &
                 t.isDeleted.equals(true) &
                 t.deletionRumorJson.isNotNull() &
-                t.deletionPublishStatus.equals(_deletionPending),
+                t.deletionPublishStatus.equals(deletionPending),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
         .get();

@@ -531,6 +531,41 @@ void main() {
           expect(live, isEmpty);
         });
 
+        test('keeps an own pending retraction visible to its owner', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final live = await dao.getMessagesForConversation(
+            conversationId1,
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(live.single.id, 'msg_del');
+        });
+
+        test(
+          'does not expose an uncertain retraction to another owner',
+          () async {
+            await insertOwnMessage();
+            await dao.markMessageDeletionPending(
+              'msg_del',
+              deletionRumorJson: '{"kind":5}',
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            final live = await dao.getMessagesForConversation(
+              conversationId1,
+              ownerPubkey: 'pubkey_bob',
+            );
+
+            expect(live, isEmpty);
+          },
+        );
+
         test('reports false for an unknown rumor id', () async {
           final updated = await dao.markMessageDeletionPending(
             'msg_missing',

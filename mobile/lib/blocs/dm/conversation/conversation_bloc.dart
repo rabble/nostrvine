@@ -63,6 +63,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       _onMessageDeleted,
       transformer: sequential(),
     );
+    on<ConversationMessageDeletionRetryRequested>(
+      _onMessageDeletionRetryRequested,
+      transformer: sequential(),
+    );
     on<ConversationSelfWrapRecoveryRequested>(
       _onSelfWrapRecoveryRequested,
       transformer: sequential(),
@@ -175,33 +179,40 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   }
 
   /// Retractions that came back refused on this tick (#8201): messages in
-  /// [next] carrying `retractionBlocked` that were absent from the previous
-  /// tick. Restricting them to what this screen asked for is the set
-  /// difference at the call site.
-  ///
-  /// The absence is load-bearing: `markMessageDeletionPending` soft-deletes
-  /// the row, so the thread ticks without it between the tap and the outcome,
-  /// and only a refusal brings it back. Diffing consecutive ticks alone never
-  /// sees that transition (measured on device), and matching presence alone
-  /// would fire on the tap itself for a RETRY, whose bubble is still on
-  /// screen carrying the previous refusal.
+  /// [next] that changed from an ordinary/pending bubble to a failed
+  /// retraction. Restricting them to what this screen asked for is the set
+  /// difference at the call site, so a pre-existing failure stays quiet when
+  /// a thread opens.
   Set<String> _refusedRetractions(List<DmMessage> next) {
     if (state.awaitingRetraction.isEmpty) return const {};
-    final previouslyVisible = {for (final m in state.messages) m.id};
+    final previousById = {for (final m in state.messages) m.id: m};
     return {
       for (final message in next)
-        if (message.retractionBlocked &&
-            !previouslyVisible.contains(message.id))
+        if (message.retractionStatus == DmRetractionStatus.failed &&
+            previousById[message.id]?.retractionStatus !=
+                DmRetractionStatus.failed)
           message.id,
     };
+  }
+
+  Future<void> _onMessageDeletionRetryRequested(
+    ConversationMessageDeletionRetryRequested event,
+    Emitter<ConversationState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        awaitingRetraction: {...state.awaitingRetraction, event.rumorId},
+      ),
+    );
+    await _dmRepository.retryMessageDeletion(rumorId: event.rumorId);
   }
 
   Future<void> _onMessageDeleted(
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
-    // Remember what we asked for BEFORE the repository hides the message, so
-    // the refusal can be matched across the tick where it is absent (#8201).
+    // Remember what we asked for before the repository starts the attempt, so
+    // the pending-to-failed transition can announce this user action (#8201).
     emit(
       state.copyWith(
         awaitingRetraction: {...state.awaitingRetraction, event.rumorId},
@@ -421,9 +432,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   /// status until the conversation is re-opened. Re-reading here, from the
   /// handler's own emitter, repaints it immediately and idempotently — a later
   /// watch tick simply re-emits the same rows.
-  Future<void> _refreshPendingOutgoing(
-    Emitter<ConversationState> emit,
-  ) async {
+  Future<void> _refreshPendingOutgoing(Emitter<ConversationState> emit) async {
     try {
       final rows = await _dmRepository.getOutgoing(_conversationId);
       emit(state.copyWith(pendingOutgoing: rows));
@@ -488,10 +497,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
     if (remaining.isEmpty) {
       emit(
-        state.copyWith(
-          sendStatus: SendStatus.sent,
-          clearLastPartialSend: true,
-        ),
+        state.copyWith(sendStatus: SendStatus.sent, clearLastPartialSend: true),
       );
     } else {
       // A second Retry tap targets exactly the outstanding rumors —

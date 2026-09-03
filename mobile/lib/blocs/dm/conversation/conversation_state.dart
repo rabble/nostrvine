@@ -115,21 +115,11 @@ class ConversationState extends Equatable {
   final List<DmMessage> messages;
   final SendStatus sendStatus;
 
-  /// Rumor ids this screen asked to retract that have not come back refused
-  /// (#8201).
+  /// Rumor ids this screen is actively trying to retract (#8201).
   ///
-  /// The set shrinks on a refusal and on nothing else, and the view toasts on
-  /// exactly that shrink — so an id whose retraction lands stays here for the
-  /// life of the bloc, harmlessly, rather than being pruned.
-  ///
-  /// Remembering what was asked is what spans the gap: `markMessageDeletion-
-  /// Pending` soft-deletes the message, so it leaves the thread between the
-  /// tap and the refusal, and the refused message that reappears looks new
-  /// rather than changed. Starting empty on every open also keeps a refusal
-  /// recorded in an earlier session quiet, and a refusal counts only for a
-  /// message absent from the previous tick, which keeps a RETRY of an
-  /// already-refused bubble quiet until that row has actually left and come
-  /// back.
+  /// An id is removed when its visible bubble transitions to failed. The view
+  /// uses that removal for the one-time toast, while failures that predate the
+  /// current screen remain quiet.
   final Set<String> awaitingRetraction;
 
   /// The last send attempt that delivered to recipients but failed to

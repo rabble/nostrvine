@@ -106,6 +106,63 @@ TapGestureRecognizer? _findRecognizer(InlineSpan span, String linkText) {
 }
 
 void main() {
+  group('retraction status', () {
+    testWidgets('shows a muted warning affordance for a failed retraction', (
+      tester,
+    ) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessageBubble(
+              message: 'Still recognizable',
+              timestamp: '2:30 PM',
+              isSent: true,
+              retractionStatus: DmRetractionStatus.failed,
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Opacity && widget.opacity == 0.55,
+        ),
+        findsOneWidget,
+      );
+      final warning = _divineIcon(DivineIconName.warningCircle);
+      expect(warning, findsOneWidget);
+
+      await tester.tap(warning);
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('shows progress without a warning while deletion is pending', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessageBubble(
+              message: 'Still recognizable',
+              timestamp: '2:30 PM',
+              isSent: true,
+              retractionStatus: DmRetractionStatus.pending,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
+    });
+  });
+
   final strings = AppLocalizationsEn();
 
   setUpAll(() {

@@ -151,7 +151,9 @@ void main() {
       mockAuthService = _MockAuthService(currentPubkey);
       mockBlocklist = _MockContentBlocklistRepository();
       // Default: nobody blocked. Reaction-filtering tests re-stub this.
-      when(() => mockBlocklist.dmHiddenPubkeys).thenReturn(const <String>{});
+      when(
+        () => mockBlocklist.dmHiddenPubkeys,
+      ).thenReturn(const <String>{});
       when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
 
       whenListen(
@@ -162,9 +164,9 @@ void main() {
         initialState: const ConversationReactionsState(),
       );
 
-      when(
-        () => mockInviteActionsCubit.state,
-      ).thenReturn(const CollaboratorInviteActionsState());
+      when(() => mockInviteActionsCubit.state).thenReturn(
+        const CollaboratorInviteActionsState(),
+      );
       when(
         () => mockInviteActionsCubit.acceptInvite(any()),
       ).thenAnswer((_) async {});
@@ -221,7 +223,9 @@ void main() {
           ),
           profileRepositoryProvider.overrideWithValue(null),
           profileReadRepositoryProvider.overrideWithValue(null),
-          fetchUserProfileProvider(counterparty).overrideWith(
+          fetchUserProfileProvider(
+            counterparty,
+          ).overrideWith(
             (ref) => otherProfileFuture ?? Future.value(otherProfile),
           ),
           userProfileStatsReactiveProvider(
@@ -230,7 +234,9 @@ void main() {
           profileVanishedProvider(
             counterparty,
           ).overrideWith((ref) => otherProfileVanished),
-          profileVanishedSnapshotProvider(counterparty).overrideWith(
+          profileVanishedSnapshotProvider(
+            counterparty,
+          ).overrideWith(
             (ref) =>
                 otherProfileVanishedFuture ??
                 Future.value(otherProfileVanished),
@@ -283,7 +289,9 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             counterparties: counterparties,
-            state: const ConversationState(status: ConversationStatus.loaded),
+            state: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
           ),
         );
         await tester.pump();
@@ -639,44 +647,6 @@ void main() {
           ),
         );
       });
-
-      testWidgets('consecutive refusals each raise a retraction toast', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            previousState: const ConversationState(
-              awaitingRetraction: {'first', 'second'},
-            ),
-            state: const ConversationState(awaitingRetraction: {'second'}),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
-      });
-
-      testWidgets('a send outcome does not replay a prior retraction refusal', (
-        tester,
-      ) async {
-        final previousAwaiting = Set<String>.of(const {'message'});
-        final currentAwaiting = Set<String>.of(const {'message'});
-
-        await tester.pumpWidget(
-          buildSubject(
-            previousState: ConversationState(
-              awaitingRetraction: previousAwaiting,
-            ),
-            state: ConversationState(
-              sendStatus: SendStatus.blocked,
-              awaitingRetraction: currentAwaiting,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
-      });
     });
 
     // #6416. Nothing has read a retired moderation key since the rotation, so
@@ -762,9 +732,7 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             counterparty: retired,
-            previousState: const ConversationState(
-              awaitingRetraction: {'message'},
-            ),
+            previousState: const ConversationState(),
             state: const ConversationState(sendStatus: SendStatus.blocked),
           ),
         );
@@ -774,34 +742,6 @@ void main() {
         // key IS an official Divine account, just one nobody reads.
         expect(find.text(l10n.dmSendBlockedRetiredMessage), findsOneWidget);
         expect(find.text(l10n.dmSendBlockedMessage), findsNothing);
-      });
-
-      testWidgets('a refused retraction announces the failure', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            previousState: const ConversationState(
-              awaitingRetraction: {'message'},
-            ),
-            state: const ConversationState(),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
-      });
-
-      testWidgets('an ordinary tick raises no retraction toast', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            previousState: const ConversationState(),
-            state: const ConversationState(),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
       });
 
       // Closing the composer is not the whole of "closed". Every retraction
@@ -1083,6 +1023,86 @@ void main() {
       });
     });
 
+    group('refused retraction', () {
+      // #8201. The warning icon is the durable status; the toast is only the
+      // immediate announcement and must not remain on screen indefinitely.
+      testWidgets('a refused retraction shows a transient explanation', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              awaitingRetraction: {'message'},
+            ),
+            state: const ConversationState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('an ordinary tick raises no retraction toast', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(),
+            state: const ConversationState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('consecutive refusals each raise a retraction toast', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              awaitingRetraction: {'first', 'second'},
+            ),
+            state: const ConversationState(
+              awaitingRetraction: {'second'},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
+      });
+
+      testWidgets('a send outcome does not replay a prior retraction refusal', (
+        tester,
+      ) async {
+        final previousAwaiting = Set<String>.of(const {'message'});
+        final currentAwaiting = Set<String>.of(const {'message'});
+
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: ConversationState(
+              awaitingRetraction: previousAwaiting,
+            ),
+            state: ConversationState(
+              sendStatus: SendStatus.blocked,
+              awaitingRetraction: currentAwaiting,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmSendBlockedMessage), findsOneWidget);
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+    });
+
     group('renders', () {
       testWidgets('renders $ConversationAppBar', (tester) async {
         await tester.pumpWidget(buildSubject());
@@ -1093,7 +1113,9 @@ void main() {
 
       testWidgets(
         'waits for the peer identity before opening profile options',
-        (tester) async {
+        (
+          tester,
+        ) async {
           final profileCompleter = Completer<UserProfile?>();
           await tester.pumpWidget(
             buildSubject(
@@ -1207,7 +1229,9 @@ void main() {
         // alongside the l10n key.
         expect(
           find.text(
-            lookupAppLocalizations(const Locale('de')).dmConversationLoadError,
+            lookupAppLocalizations(
+              const Locale('de'),
+            ).dmConversationLoadError,
           ),
           findsNothing,
         );
@@ -1271,7 +1295,10 @@ void main() {
 
           final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.byType(EmptyConversation), findsOneWidget);
-          expect(find.text(l10n.conversationRestorePausedTitle), findsNothing);
+          expect(
+            find.text(l10n.conversationRestorePausedTitle),
+            findsNothing,
+          );
         },
       );
 
@@ -1319,7 +1346,10 @@ void main() {
 
           final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.byType(EmptyConversation), findsOneWidget);
-          expect(find.text(l10n.conversationRestorePausedTitle), findsNothing);
+          expect(
+            find.text(l10n.conversationRestorePausedTitle),
+            findsNothing,
+          );
         },
       );
 
@@ -1360,39 +1390,42 @@ void main() {
       // transaction commit and the watch tick), the queue row in
       // `pendingOutgoing` is the only thing the user has — and it must
       // be visible.
-      testWidgets('renders $MessageBubble when only pendingOutgoing is populated '
-          '(regression for #4193)', (tester) async {
-        final pendingRow = OutgoingDm(
-          id: 'rumor-test-id',
-          conversationId:
-              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          recipientPubkey: otherPubkey,
-          content: 'Optimistic in flight',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          rumorEventJson: '{}',
-          recipientWrapStatus: OutgoingWrapStatus.pending,
-          selfWrapStatus: OutgoingWrapStatus.pending,
-          queuedAt: now,
-          ownerPubkey: currentPubkey,
-        );
+      testWidgets(
+        'renders $MessageBubble when only pendingOutgoing is populated '
+        '(regression for #4193)',
+        (tester) async {
+          final pendingRow = OutgoingDm(
+            id: 'rumor-test-id',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            recipientPubkey: otherPubkey,
+            content: 'Optimistic in flight',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            rumorEventJson: '{}',
+            recipientWrapStatus: OutgoingWrapStatus.pending,
+            selfWrapStatus: OutgoingWrapStatus.pending,
+            queuedAt: now,
+            ownerPubkey: currentPubkey,
+          );
 
-        await tester.pumpWidget(
-          buildSubject(
-            state: ConversationState(
-              status: ConversationStatus.loaded,
-              pendingOutgoing: [pendingRow],
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                pendingOutgoing: [pendingRow],
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(find.byType(MessageBubble), findsOneWidget);
-        expect(find.text('Optimistic in flight'), findsOneWidget);
-        // EmptyConversation must NOT render — `messages.isEmpty` alone
-        // is not enough to declare the conversation empty when an
-        // optimistic is in flight.
-        expect(find.byType(EmptyConversation), findsNothing);
-      });
+          expect(find.byType(MessageBubble), findsOneWidget);
+          expect(find.text('Optimistic in flight'), findsOneWidget);
+          // EmptyConversation must NOT render — `messages.isEmpty` alone
+          // is not enough to declare the conversation empty when an
+          // optimistic is in flight.
+          expect(find.byType(EmptyConversation), findsNothing);
+        },
+      );
 
       testWidgets('renders display name from profile in app bar', (
         tester,
@@ -1576,177 +1609,190 @@ void main() {
           await tester.tap(find.text(l10n.inboxCollabInviteCoPostButton));
           await tester.pump();
 
-          verify(() => mockInviteActionsCubit.acceptInvite(any())).called(1);
+          verify(
+            () => mockInviteActionsCubit.acceptInvite(any()),
+          ).called(1);
         },
       );
 
-      testWidgets('renders collaborator invite card instead of plaintext invite copy', (
-        tester,
-      ) async {
-        final message = DmMessage(
-          id: '9999999999999999999999999999999999999999999999999999999999999999',
-          conversationId:
-              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          senderPubkey: otherPubkey,
-          content: 'You were invited to collaborate.',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          giftWrapId:
-              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
-          tags: const [
-            ['divine', 'collab-invite'],
-            [
-              'a',
-              '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
-              'wss://relay.divine.video',
+      testWidgets(
+        'renders collaborator invite card instead of plaintext invite copy',
+        (tester) async {
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
             ],
-            ['p', otherPubkey],
-            ['role', 'Collaborator'],
-            ['title', 'Skate loop'],
-          ],
-        );
+          );
 
-        await tester.pumpWidget(
-          buildSubject(
-            state: ConversationState(
-              status: ConversationStatus.loaded,
-              messages: [message],
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(
-          find.textContaining(l10n.inboxCollabInvitePreviewTitle),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Skate loop'), findsOneWidget);
-        expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
-        expect(find.text(l10n.inboxCollabInviteNotMineButton), findsOneWidget);
-        expect(find.text('You were invited to collaborate.'), findsNothing);
+          expect(
+            find.textContaining(l10n.inboxCollabInvitePreviewTitle),
+            findsOneWidget,
+          );
+          expect(find.textContaining('Skate loop'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
+          expect(
+            find.text(l10n.inboxCollabInviteNotMineButton),
+            findsOneWidget,
+          );
+          expect(find.text('You were invited to collaborate.'), findsNothing);
 
-        await tester.tap(find.text(l10n.inboxCollabInviteCoPostButton));
-        await tester.pump();
+          await tester.tap(find.text(l10n.inboxCollabInviteCoPostButton));
+          await tester.pump();
 
-        verify(() => mockInviteActionsCubit.acceptInvite(any())).called(1);
-      });
+          verify(
+            () => mockInviteActionsCubit.acceptInvite(any()),
+          ).called(1);
+        },
+      );
 
-      testWidgets('renders untitled fallback instead of raw d-tag when no title tag', (
-        tester,
-      ) async {
-        final message = DmMessage(
-          id: '9999999999999999999999999999999999999999999999999999999999999999',
-          conversationId:
-              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          senderPubkey: otherPubkey,
-          content: 'You were invited to collaborate.',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          giftWrapId:
-              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
-          tags: const [
-            ['divine', 'collab-invite'],
-            [
-              'a',
-              '34236:1122334411223344112233441122334411223344112233441122334411223344:b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
-              'wss://relay.divine.video',
+      testWidgets(
+        'renders untitled fallback instead of raw d-tag when no title tag',
+        (tester) async {
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
             ],
-            ['p', otherPubkey],
-            ['role', 'Collaborator'],
-          ],
-        );
+          );
 
-        await tester.pumpWidget(
-          buildSubject(
-            state: ConversationState(
-              status: ConversationStatus.loaded,
-              messages: [message],
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(
-          find.text(l10n.inboxCollabInviteCardUntitledVideo),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining(
-            'b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
-          ),
-          findsNothing,
-        );
-      });
+          expect(
+            find.text(l10n.inboxCollabInviteCardUntitledVideo),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              'b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
+            ),
+            findsNothing,
+          );
+        },
+      );
 
-      testWidgets('renders collaborator invite video inline without navigating away', (
-        tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+      testWidgets(
+        'renders collaborator invite video inline without navigating away',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(1800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final mockGoRouter = MockGoRouter();
-        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
-        when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
-            'skate-loop',
-            fallbackRouteIds: any(named: 'fallbackRouteIds'),
-          ),
-        ).thenAnswer(
-          (_) async => VideoEventBuilder(
-            id: '7777777777777777777777777777777777777777777777777777777777777777',
-            pubkey: otherPubkey,
-            title: 'Skate loop',
-            videoUrl: 'https://cdn.divine.video/videos/skate-loop.mp4',
-            thumbnailUrl: 'https://cdn.divine.video/thumbs/skate-loop.jpg',
-          ).build(),
-        );
+          final mockGoRouter = MockGoRouter();
+          when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'skate-loop',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoEventBuilder(
+              id: '7777777777777777777777777777777777777777777777777777777777777777',
+              pubkey: otherPubkey,
+              title: 'Skate loop',
+              videoUrl: 'https://cdn.divine.video/videos/skate-loop.mp4',
+              thumbnailUrl: 'https://cdn.divine.video/thumbs/skate-loop.jpg',
+            ).build(),
+          );
 
-        final message = DmMessage(
-          id: '9999999999999999999999999999999999999999999999999999999999999999',
-          conversationId:
-              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          senderPubkey: otherPubkey,
-          content: 'You were invited to collaborate.',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          giftWrapId:
-              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
-          tags: const [
-            ['divine', 'collab-invite'],
-            [
-              'a',
-              '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
-              'wss://relay.divine.video',
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
             ],
-            ['p', otherPubkey],
-            ['role', 'Collaborator'],
-            ['title', 'Skate loop'],
-          ],
-        );
+          );
 
-        await tester.pumpWidget(
-          buildSubject(
-            state: ConversationState(
-              status: ConversationStatus.loaded,
-              messages: [message],
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+              goRouter: mockGoRouter,
             ),
-            goRouter: mockGoRouter,
-          ),
-        );
-        await tester.pump();
-        await tester.pump();
+          );
+          await tester.pump();
+          await tester.pump();
 
-        expect(
-          find.byKey(const ValueKey('collaborator_invite_inline_player')),
-          findsOneWidget,
-        );
-        expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
-        expect(find.text(l10n.inboxCollabInviteNotMineButton), findsOneWidget);
-        final playerSize = tester.getSize(
-          find.byKey(const ValueKey('collaborator_invite_inline_player')),
-        );
-        expect(playerSize.width, lessThanOrEqualTo(420));
-        expect(playerSize.height, lessThanOrEqualTo(748));
+          expect(
+            find.byKey(const ValueKey('collaborator_invite_inline_player')),
+            findsOneWidget,
+          );
+          expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
+          expect(
+            find.text(l10n.inboxCollabInviteNotMineButton),
+            findsOneWidget,
+          );
+          final playerSize = tester.getSize(
+            find.byKey(const ValueKey('collaborator_invite_inline_player')),
+          );
+          expect(playerSize.width, lessThanOrEqualTo(420));
+          expect(playerSize.height, lessThanOrEqualTo(748));
 
-        verifyNever(() => mockGoRouter.push(any()));
-      });
+          verifyNever(() => mockGoRouter.push(any()));
+        },
+      );
 
       // #3559 — NIP-17 echoes a sender's gift wrap back to themselves,
       // so the inviter's own outgoing collab invite shows up in their
@@ -1810,38 +1856,41 @@ void main() {
       // structured tags, the bubble must not render — it would tell the
       // user to "open diVine" inside diVine itself, with no actionable
       // affordance.
-      testWidgets('suppresses legacy NIP-04 invite plaintext duplicates with no '
-          'structured tags', (tester) async {
-        final message = DmMessage(
-          id: '7777777777777777777777777777777777777777777777777777777777777777',
-          conversationId:
-              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-          senderPubkey: otherPubkey,
-          content:
-              'You were invited to collaborate on Skate loop. '
-              'Open diVine to review and accept.',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          giftWrapId:
-              'ccccccccddddddddeeeeeeeeffffffff00000000111111112222222233333333',
-        );
+      testWidgets(
+        'suppresses legacy NIP-04 invite plaintext duplicates with no '
+        'structured tags',
+        (tester) async {
+          final message = DmMessage(
+            id: '7777777777777777777777777777777777777777777777777777777777777777',
+            conversationId:
+                'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            senderPubkey: otherPubkey,
+            content:
+                'You were invited to collaborate on Skate loop. '
+                'Open diVine to review and accept.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'ccccccccddddddddeeeeeeeeffffffff00000000111111112222222233333333',
+          );
 
-        await tester.pumpWidget(
-          buildSubject(
-            state: ConversationState(
-              status: ConversationStatus.loaded,
-              messages: [message],
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(find.byType(CollaboratorInviteCard), findsNothing);
-        expect(find.byType(MessageBubble), findsNothing);
-        expect(
-          find.textContaining('Open diVine to review and accept'),
-          findsNothing,
-        );
-      });
+          expect(find.byType(CollaboratorInviteCard), findsNothing);
+          expect(find.byType(MessageBubble), findsNothing);
+          expect(
+            find.textContaining('Open diVine to review and accept'),
+            findsNothing,
+          );
+        },
+      );
 
       testWidgets(
         'still renders plain text DMs that do not match the invite suffix',
@@ -1945,7 +1994,9 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             previousState: const ConversationState(),
-            state: const ConversationState(sendStatus: SendStatus.noRecipient),
+            state: const ConversationState(
+              sendStatus: SendStatus.noRecipient,
+            ),
           ),
         );
         await tester.pump();
@@ -2019,52 +2070,55 @@ void main() {
         },
       );
 
-      testWidgets('does not show a SnackBar when sendStatus stays non-failed '
-          '(e.g. sending → sent)', (tester) async {
-        whenListen(
-          mockBloc,
-          Stream<ConversationState>.fromIterable(const [
-            ConversationState(
+      testWidgets(
+        'does not show a SnackBar when sendStatus stays non-failed '
+        '(e.g. sending → sent)',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sending,
+              ),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sent,
+              ),
+            ]),
+            initialState: const ConversationState(
               status: ConversationStatus.loaded,
-              sendStatus: SendStatus.sending,
             ),
-            ConversationState(
-              status: ConversationStatus.loaded,
-              sendStatus: SendStatus.sent,
-            ),
-          ]),
-          initialState: const ConversationState(
-            status: ConversationStatus.loaded,
-          ),
-        );
+          );
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            additionalOverrides: [
-              fetchUserProfileProvider(
-                otherPubkey,
-              ).overrideWith((ref) async => null),
-            ],
-            home: BlocProvider<ConversationBloc>.value(
-              value: mockBloc,
-              child: BlocProvider<CollaboratorInviteActionsCubit>.value(
-                value: mockInviteActionsCubit,
-                child: BlocProvider<DmRestoreStatusCubit>.value(
-                  value: mockRestoreStatusCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text(l10n.dmSendFailedMessage), findsNothing);
-      });
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+        },
+      );
 
       testWidgets(
         'tapping a failed bubble opens the recovery bottom sheet; Resend '
@@ -2176,145 +2230,150 @@ void main() {
         },
       );
 
-      testWidgets('on a partially delivered group bubble: Resend targets only the '
-          'FAILED sibling; Stop trying cancels pending AND failed siblings but '
-          'never one whose recipient already got the message', (tester) async {
-        const groupConversationId =
-            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
-        final batchCreatedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
-        OutgoingDm sibling({
-          required String id,
-          required String recipientPubkey,
-          required OutgoingWrapStatus recipientWrap,
-          OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
-        }) => OutgoingDm(
-          id: id,
-          conversationId: groupConversationId,
-          recipientPubkey: recipientPubkey,
-          content: failedSendContent,
-          createdAt: batchCreatedAt,
-          rumorEventJson: '{}',
-          recipientWrapStatus: recipientWrap,
-          selfWrapStatus: selfWrap,
-          queuedAt: DateTime(2026),
-          ownerPubkey: currentPubkey,
-        );
-        // The batch winner is persisted; three siblings survive in mixed
-        // states.
-        final persistedWinner = DmMessage(
-          id: 'rumor-winner',
-          conversationId: groupConversationId,
-          senderPubkey: currentPubkey,
-          content: failedSendContent,
-          createdAt: batchCreatedAt,
-          giftWrapId: 'wrap-winner',
-        );
-        final state = ConversationState(
-          status: ConversationStatus.loaded,
-          messages: [persistedWinner],
-          pendingOutgoing: [
-            sibling(
-              id: 'rumor-pending',
-              recipientPubkey: otherPubkey,
-              recipientWrap: OutgoingWrapStatus.pending,
-            ),
-            sibling(
-              id: 'rumor-failed',
-              recipientPubkey:
-                  '4444444444444444444444444444444444444444444444444444444444444444',
-              recipientWrap: OutgoingWrapStatus.failed,
-              selfWrap: OutgoingWrapStatus.failed,
-            ),
-            sibling(
-              id: 'rumor-delivered-selffailed',
-              recipientPubkey:
-                  '5555555555555555555555555555555555555555555555555555555555555555',
-              recipientWrap: OutgoingWrapStatus.sent,
-              selfWrap: OutgoingWrapStatus.failed,
-            ),
-          ],
-        );
-        whenListen(
-          mockBloc,
-          Stream<ConversationState>.value(state),
-          initialState: state,
-        );
-
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            mockNostrService: mockNostrClient,
-            additionalOverrides: [
-              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
-              fetchUserProfileProvider(
-                otherPubkey,
-              ).overrideWith((ref) async => null),
-              contentBlocklistRepositoryProvider.overrideWithValue(
-                mockBlocklist,
+      testWidgets(
+        'on a partially delivered group bubble: Resend targets only the '
+        'FAILED sibling; Stop trying cancels pending AND failed siblings but '
+        'never one whose recipient already got the message',
+        (tester) async {
+          const groupConversationId =
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+          final batchCreatedAt = DateTime(2026).millisecondsSinceEpoch ~/ 1000;
+          OutgoingDm sibling({
+            required String id,
+            required String recipientPubkey,
+            required OutgoingWrapStatus recipientWrap,
+            OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
+          }) => OutgoingDm(
+            id: id,
+            conversationId: groupConversationId,
+            recipientPubkey: recipientPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            rumorEventJson: '{}',
+            recipientWrapStatus: recipientWrap,
+            selfWrapStatus: selfWrap,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+          // The batch winner is persisted; three siblings survive in mixed
+          // states.
+          final persistedWinner = DmMessage(
+            id: 'rumor-winner',
+            conversationId: groupConversationId,
+            senderPubkey: currentPubkey,
+            content: failedSendContent,
+            createdAt: batchCreatedAt,
+            giftWrapId: 'wrap-winner',
+          );
+          final state = ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [persistedWinner],
+            pendingOutgoing: [
+              sibling(
+                id: 'rumor-pending',
+                recipientPubkey: otherPubkey,
+                recipientWrap: OutgoingWrapStatus.pending,
+              ),
+              sibling(
+                id: 'rumor-failed',
+                recipientPubkey:
+                    '4444444444444444444444444444444444444444444444444444444444444444',
+                recipientWrap: OutgoingWrapStatus.failed,
+                selfWrap: OutgoingWrapStatus.failed,
+              ),
+              sibling(
+                id: 'rumor-delivered-selffailed',
+                recipientPubkey:
+                    '5555555555555555555555555555555555555555555555555555555555555555',
+                recipientWrap: OutgoingWrapStatus.sent,
+                selfWrap: OutgoingWrapStatus.failed,
               ),
             ],
-            home: BlocProvider<ConversationBloc>.value(
-              value: mockBloc,
-              child: BlocProvider<CollaboratorInviteActionsCubit>.value(
-                value: mockInviteActionsCubit,
-                child: BlocProvider<ConversationReactionsCubit>.value(
-                  value: mockReactionsCubit,
-                  child: BlocProvider<DmRestoreStatusCubit>.value(
-                    value: mockRestoreStatusCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+          );
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.value(state),
+            initialState: state,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklist,
+                ),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // Exactly one bubble: the persisted winner, carrying the batch's
-        // aggregated failed status (the surviving siblings are folded in).
-        expect(find.text(failedSendContent), findsOneWidget);
+          // Exactly one bubble: the persisted winner, carrying the batch's
+          // aggregated failed status (the surviving siblings are folded in).
+          expect(find.text(failedSendContent), findsOneWidget);
 
-        await tester.tap(find.text(failedSendContent));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.dmMessageActionRetrySend));
-        await tester.pumpAndSettle();
-        final afterResend = verify(() => mockBloc.add(captureAny())).captured;
-        expect(
-          afterResend.whereType<ConversationFullSendRecoveryRequested>(),
-          hasLength(1),
-        );
-        expect(
-          afterResend
-              .whereType<ConversationFullSendRecoveryRequested>()
-              .single
-              .rumorIds,
-          equals(const ['rumor-failed']),
-          reason:
-              'resend must never re-deliver to recipients that '
-              'already confirmed or are still pending',
-        );
+          await tester.tap(find.text(l10n.dmMessageActionRetrySend));
+          await tester.pumpAndSettle();
+          final afterResend = verify(() => mockBloc.add(captureAny())).captured;
+          expect(
+            afterResend.whereType<ConversationFullSendRecoveryRequested>(),
+            hasLength(1),
+          );
+          expect(
+            afterResend
+                .whereType<ConversationFullSendRecoveryRequested>()
+                .single
+                .rumorIds,
+            equals(const ['rumor-failed']),
+            reason:
+                'resend must never re-deliver to recipients that '
+                'already confirmed or are still pending',
+          );
 
-        // Re-open and Stop trying → cancels the undelivered siblings only.
-        await tester.tap(find.text(failedSendContent));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.dmMessageActionCancelSend));
-        await tester.pumpAndSettle();
-        final cancelled = verify(() => mockBloc.add(captureAny())).captured
-            .whereType<ConversationOutgoingSendCancelled>()
-            .map((e) => e.rumorId)
-            .toList();
-        expect(
-          cancelled,
-          unorderedEquals(const ['rumor-pending', 'rumor-failed']),
-          reason:
-              'cancel-send drops every undelivered sibling, but a '
-              'recipient that already has the message keeps its row '
-              '(only its self-wrap sync is outstanding)',
-        );
-      });
+          // Re-open and Stop trying → cancels the undelivered siblings only.
+          await tester.tap(find.text(failedSendContent));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.dmMessageActionCancelSend));
+          await tester.pumpAndSettle();
+          final cancelled = verify(() => mockBloc.add(captureAny())).captured
+              .whereType<ConversationOutgoingSendCancelled>()
+              .map((e) => e.rumorId)
+              .toList();
+          expect(
+            cancelled,
+            unorderedEquals(const ['rumor-pending', 'rumor-failed']),
+            reason:
+                'cancel-send drops every undelivered sibling, but a '
+                'recipient that already has the message keeps its row '
+                '(only its self-wrap sync is outstanding)',
+          );
+        },
+      );
 
       // accessibility.md requires explicit SemanticsService announcements
       // on async visible state changes. A hard failure shows NO snackbar
@@ -2424,129 +2483,135 @@ void main() {
           '7777777777777777777777777777777777777777777777777777777777777777';
       const partialSend = PartialSend(rumorIds: [partialRumorId]);
 
-      testWidgets('shows the partial-delivery SnackBar copy when sendStatus '
-          'transitions to sentPartial', (tester) async {
-        whenListen(
-          mockBloc,
-          Stream<ConversationState>.fromIterable(const [
-            ConversationState(status: ConversationStatus.loaded),
-            ConversationState(
+      testWidgets(
+        'shows the partial-delivery SnackBar copy when sendStatus '
+        'transitions to sentPartial',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sentPartial,
+                lastPartialSend: partialSend,
+              ),
+            ]),
+            initialState: const ConversationState(
               status: ConversationStatus.loaded,
-              sendStatus: SendStatus.sentPartial,
-              lastPartialSend: partialSend,
             ),
-          ]),
-          initialState: const ConversationState(
-            status: ConversationStatus.loaded,
-          ),
-        );
+          );
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            additionalOverrides: [
-              fetchUserProfileProvider(
-                otherPubkey,
-              ).overrideWith((ref) async => null),
-            ],
-            home: BlocProvider<ConversationBloc>.value(
-              value: mockBloc,
-              child: BlocProvider<CollaboratorInviteActionsCubit>.value(
-                value: mockInviteActionsCubit,
-                child: BlocProvider<DmRestoreStatusCubit>.value(
-                  value: mockRestoreStatusCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
 
-        expect(
-          find.text(l10n.dmSendPartialMessage),
-          findsOneWidget,
-          reason:
-              'partial-delivery copy must come from context.l10n and be '
-              'distinct from the full-failure copy',
-        );
-        expect(find.text(l10n.dmSendFailedMessage), findsNothing);
-        expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
-      });
+          expect(
+            find.text(l10n.dmSendPartialMessage),
+            findsOneWidget,
+            reason:
+                'partial-delivery copy must come from context.l10n and be '
+                'distinct from the full-failure copy',
+          );
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+          expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+        },
+      );
 
-      testWidgets('tapping Retry on the partial-delivery SnackBar dispatches '
-          'ConversationSelfWrapRecoveryRequested with the rumor ids — '
-          'never ConversationMessageSent (#4102: no duplicate recipient '
-          'publish)', (tester) async {
-        whenListen(
-          mockBloc,
-          Stream<ConversationState>.fromIterable(const [
-            ConversationState(status: ConversationStatus.loaded),
-            ConversationState(
+      testWidgets(
+        'tapping Retry on the partial-delivery SnackBar dispatches '
+        'ConversationSelfWrapRecoveryRequested with the rumor ids — '
+        'never ConversationMessageSent (#4102: no duplicate recipient '
+        'publish)',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sentPartial,
+                lastPartialSend: partialSend,
+              ),
+            ]),
+            initialState: const ConversationState(
               status: ConversationStatus.loaded,
-              sendStatus: SendStatus.sentPartial,
-              lastPartialSend: partialSend,
             ),
-          ]),
-          initialState: const ConversationState(
-            status: ConversationStatus.loaded,
-          ),
-        );
+          );
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            additionalOverrides: [
-              fetchUserProfileProvider(
-                otherPubkey,
-              ).overrideWith((ref) async => null),
-            ],
-            home: BlocProvider<ConversationBloc>.value(
-              value: mockBloc,
-              child: BlocProvider<CollaboratorInviteActionsCubit>.value(
-                value: mockInviteActionsCubit,
-                child: BlocProvider<DmRestoreStatusCubit>.value(
-                  value: mockRestoreStatusCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
-        // Settle the floating divine snackbar's entrance animation so its
-        // action is at its final, tappable position.
-        await tester.pumpAndSettle();
+          );
+          await tester.pump();
+          // Settle the floating divine snackbar's entrance animation so its
+          // action is at its final, tappable position.
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.dmSendFailedRetry));
-        await tester.pump();
+          await tester.tap(find.text(l10n.dmSendFailedRetry));
+          await tester.pump();
 
-        final captured = verify(() => mockBloc.add(captureAny())).captured;
-        expect(captured, isNotEmpty);
-        final retryEvent = captured.last;
-        expect(
-          retryEvent,
-          isA<ConversationSelfWrapRecoveryRequested>().having(
-            (e) => e.rumorIds,
-            'rumorIds',
-            equals(const [partialRumorId]),
-          ),
-        );
-        // The pinning contract from #4102: no recipient republish on
-        // partial recovery.
-        expect(
-          captured.whereType<ConversationMessageSent>(),
-          isEmpty,
-          reason:
-              'partial recovery must NOT redispatch ConversationMessageSent '
-              '— that would re-deliver to the recipient',
-        );
-      });
+          final captured = verify(() => mockBloc.add(captureAny())).captured;
+          expect(captured, isNotEmpty);
+          final retryEvent = captured.last;
+          expect(
+            retryEvent,
+            isA<ConversationSelfWrapRecoveryRequested>().having(
+              (e) => e.rumorIds,
+              'rumorIds',
+              equals(const [partialRumorId]),
+            ),
+          );
+          // The pinning contract from #4102: no recipient republish on
+          // partial recovery.
+          expect(
+            captured.whereType<ConversationMessageSent>(),
+            isEmpty,
+            reason:
+                'partial recovery must NOT redispatch ConversationMessageSent '
+                '— that would re-deliver to the recipient',
+          );
+        },
+      );
     });
 
     // Keyboard-dismissal contract: any pointer-down in the messages
@@ -2582,34 +2647,38 @@ void main() {
         await tester.pump();
       }
 
-      testWidgets('dismisses keyboard when the message list is dragged', (
-        tester,
-      ) async {
-        await pumpWithMessage(tester);
-        await tester.showKeyboard(find.byType(TextField));
-        expect(tester.testTextInput.isVisible, isTrue);
+      testWidgets(
+        'dismisses keyboard when the message list is dragged',
+        (tester) async {
+          await pumpWithMessage(tester);
+          await tester.showKeyboard(find.byType(TextField));
+          expect(tester.testTextInput.isVisible, isTrue);
 
-        // `tester.drag` synthesizes a real pointer drag, producing
-        // a ScrollUpdateNotification with non-null dragDetails —
-        // the same code path as a real finger. controller.jumpTo
-        // would NOT trigger dismissal (no drag details).
-        await tester.drag(find.byType(ListView), const Offset(0, 200));
-        await tester.pump();
+          // `tester.drag` synthesizes a real pointer drag, producing
+          // a ScrollUpdateNotification with non-null dragDetails —
+          // the same code path as a real finger. controller.jumpTo
+          // would NOT trigger dismissal (no drag details).
+          await tester.drag(find.byType(ListView), const Offset(0, 200));
+          await tester.pump();
 
-        expect(tester.testTextInput.isVisible, isFalse);
-      });
+          expect(tester.testTextInput.isVisible, isFalse);
+        },
+      );
 
-      testWidgets('dismisses keyboard on pointer-down inside the messages area '
-          '(regression guard for the Listener swap)', (tester) async {
-        await pumpWithMessage(tester);
-        await tester.showKeyboard(find.byType(TextField));
-        expect(tester.testTextInput.isVisible, isTrue);
+      testWidgets(
+        'dismisses keyboard on pointer-down inside the messages area '
+        '(regression guard for the Listener swap)',
+        (tester) async {
+          await pumpWithMessage(tester);
+          await tester.showKeyboard(find.byType(TextField));
+          expect(tester.testTextInput.isVisible, isTrue);
 
-        await tester.tapAt(tester.getCenter(find.byType(MessageBubble)));
-        await tester.pump();
+          await tester.tapAt(tester.getCenter(find.byType(MessageBubble)));
+          await tester.pump();
 
-        expect(tester.testTextInput.isVisible, isFalse);
-      });
+          expect(tester.testTextInput.isVisible, isFalse);
+        },
+      );
 
       // Pins the second half of the GestureDetector → Listener swap
       // contract: dismissal on pointer-down must NOT eat the
@@ -2620,32 +2689,38 @@ void main() {
       // bubble renders — this test proves the full chain
       // Listener (conversation_view) → MessageBubble → onLongPress
       // → ReactionPickerOverlay.show is intact after the swap.
-      testWidgets('long-pressing a $MessageBubble still surfaces '
-          'message actions', (tester) async {
-        await pumpWithMessage(tester);
+      testWidgets(
+        'long-pressing a $MessageBubble still surfaces '
+        'message actions',
+        (tester) async {
+          await pumpWithMessage(tester);
 
-        // Mirror `message_bubble_test.dart`: long-press the bubble
-        // by its rendered text. `find.byType(MessageBubble)` aims
-        // at the widget's geometric center, which sits over the
-        // padding/Semantics node above the bubble's inner
-        // GestureDetector and misses the hit-test (Flutter warns
-        // "warnIfMissed" in that case).
-        await tester.longPress(find.text('Hello there!'));
-        await tester.pumpAndSettle();
+          // Mirror `message_bubble_test.dart`: long-press the bubble
+          // by its rendered text. `find.byType(MessageBubble)` aims
+          // at the widget's geometric center, which sits over the
+          // padding/Semantics node above the bubble's inner
+          // GestureDetector and misses the hit-test (Flutter warns
+          // "warnIfMissed" in that case).
+          await tester.longPress(find.text('Hello there!'));
+          await tester.pumpAndSettle();
 
-        // The sheet's localized action labels are the cheapest
-        // proof the modal actually mounted — asserting on the
-        // sheet widget class would also work but couples to its
-        // current implementation (VineBottomSheetActionMenu).
-        expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
-        // `pumpWithMessage` constructs a received message
-        // (senderPubkey = otherPubkey), so the sheet must offer
-        // Report (received-only) and not Delete (sent-only).
-        expect(find.text(l10n.dmMessageActionReport), findsOneWidget);
-        expect(find.text(l10n.dmMessageActionDeleteForEveryone), findsNothing);
-        expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
-        expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
-      });
+          // The sheet's localized action labels are the cheapest
+          // proof the modal actually mounted — asserting on the
+          // sheet widget class would also work but couples to its
+          // current implementation (VineBottomSheetActionMenu).
+          expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+          // `pumpWithMessage` constructs a received message
+          // (senderPubkey = otherPubkey), so the sheet must offer
+          // Report (received-only) and not Delete (sent-only).
+          expect(find.text(l10n.dmMessageActionReport), findsOneWidget);
+          expect(
+            find.text(l10n.dmMessageActionDeleteForEveryone),
+            findsNothing,
+          );
+          expect(find.text(l10n.dmMessageActionCopyVideoUrl), findsNothing);
+          expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
+        },
+      );
 
       // Closes #4710: the "+" affordance was a no-op stub. Proves the
       // long-press → "+" path now dismisses the reaction overlay and
@@ -2793,52 +2868,53 @@ void main() {
         expect(find.text(l10n.shareSheetSaveVideo), findsNothing);
       });
 
-      testWidgets('saves the original for the current user structured share', (
-        tester,
-      ) async {
-        final message = sharedVideoMessage(senderPubkey: currentPubkey);
-        final video = VideoEventBuilder(
-          id: stableId,
-          pubkey: currentPubkey,
-        ).build();
-        when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
-            stableId,
-            fallbackRouteIds: ['34236:$currentPubkey:$stableId'],
-          ),
-        ).thenAnswer((_) async => video);
-        when(
-          () => mockWatermarkDownloadService.downloadOriginal(
-            video: video,
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((invocation) async {
-          final onProgress =
-              invocation.namedArguments[#onProgress]
-                  as void Function(OriginalSaveStage);
-          onProgress(OriginalSaveStage.downloading);
-          onProgress(OriginalSaveStage.saving);
-          return const WatermarkDownloadSuccess('/tmp/original.mp4');
-        });
+      testWidgets(
+        'saves the original for the current user structured share',
+        (tester) async {
+          final message = sharedVideoMessage(senderPubkey: currentPubkey);
+          final video = VideoEventBuilder(
+            id: stableId,
+            pubkey: currentPubkey,
+          ).build();
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              stableId,
+              fallbackRouteIds: ['34236:$currentPubkey:$stableId'],
+            ),
+          ).thenAnswer((_) async => video);
+          when(
+            () => mockWatermarkDownloadService.downloadOriginal(
+              video: video,
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final onProgress =
+                invocation.namedArguments[#onProgress]
+                    as void Function(OriginalSaveStage);
+            onProgress(OriginalSaveStage.downloading);
+            onProgress(OriginalSaveStage.saving);
+            return const WatermarkDownloadSuccess('/tmp/original.mp4');
+          });
 
-        await openSaveAction(tester, message: message);
-        await tester.tap(find.text(l10n.shareSheetSaveVideo));
-        await tester.pumpAndSettle();
+          await openSaveAction(tester, message: message);
+          await tester.tap(find.text(l10n.shareSheetSaveVideo));
+          await tester.pumpAndSettle();
 
-        verify(
-          () => mockWatermarkDownloadService.downloadOriginal(
-            video: video,
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockWatermarkDownloadService.downloadWithWatermark(
-            video: any(named: 'video'),
-            watermarkText: any(named: 'watermarkText'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        );
-      });
+          verify(
+            () => mockWatermarkDownloadService.downloadOriginal(
+              video: video,
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockWatermarkDownloadService.downloadWithWatermark(
+              video: any(named: 'video'),
+              watermarkText: any(named: 'watermarkText'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
 
       testWidgets(
         'saves a watermarked copy for another creator structured share',

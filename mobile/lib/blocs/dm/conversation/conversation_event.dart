@@ -38,6 +38,16 @@ class ConversationMessageDeleted extends ConversationEvent {
   List<Object?> get props => [rumorId];
 }
 
+/// Retry delivery of the stored delete-for-everyone rumor.
+class ConversationMessageDeletionRetryRequested extends ConversationEvent {
+  const ConversationMessageDeletionRetryRequested({required this.rumorId});
+
+  final String rumorId;
+
+  @override
+  List<Object?> get props => [rumorId];
+}
+
 /// Re-publish only the sender self-addressed gift wraps for rumors
 /// whose recipient publish landed but whose self-wrap did not.
 ///

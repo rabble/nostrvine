@@ -5818,7 +5818,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dmDeleteRefusedMessage =>
-      'Non è stato possibile eliminare per tutti. Il tuo messaggio è ancora lì: riprova.';
+      'Non è stato possibile eliminare per tutti.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Alcune persone potrebbero ancora vedere questo messaggio.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Questa conversazione è chiusa.';

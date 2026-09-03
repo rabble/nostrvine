@@ -5918,7 +5918,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmDeleteRefusedMessage =>
-      'Ștergerea pentru toată lumea nu a reușit. Mesajul tău este încă aici — încearcă din nou.';
+      'Ștergerea pentru toată lumea nu a reușit.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Este posibil ca unele persoane să vadă în continuare acest mesaj.';
 
   @override
   String get dmRetiredThreadClosedTitle => 'Această conversație este închisă.';

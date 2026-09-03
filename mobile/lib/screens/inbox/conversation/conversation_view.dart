@@ -345,7 +345,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               ),
               BlocListener<ConversationBloc, ConversationState>(
                 // The bloc removes an id from the pending set only when its
-                // retraction comes back refused, so the shrink IS the
+                // bubble transitions to failed, so the shrink is the
                 // refusal — and two refusals on consecutive ticks each fire.
                 listenWhen: (previous, current) => previous.awaitingRetraction
                     .difference(current.awaitingRetraction)
@@ -491,12 +491,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     }
   }
 
-  /// Surfaces a "Delete for everyone" that every recipient refused (#8201).
+  /// Briefly announces an unconfirmed "Delete for everyone" (#8201).
   ///
-  /// The message is already back in the thread — the repository un-hides it,
-  /// because nothing was retracted — so the retry affordance is the same
-  /// Delete action on that bubble, not a button on this toast. A mixed
-  /// outcome stays hidden and never reaches this listener.
+  /// The durable affordance is the warning beside the muted bubble; this
+  /// toast is only immediate feedback and dismisses on the standard timer.
   void _onRetractionRefused(BuildContext context, ConversationState state) {
     _showErrorToastAndAnnounce(context, context.l10n.dmDeleteRefusedMessage);
   }
@@ -606,7 +604,13 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   void _showErrorToastAndAnnounce(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          message,
+          error: true,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -992,6 +996,7 @@ class _MessageList extends StatelessWidget {
     DmMessage message,
     bool isSent,
     DmDeliveryStatus deliveryStatus,
+    DmRetractionStatus retractionStatus,
   ) async {
     final videoTarget = resolveDmVideoTarget(
       content: StringUtils.sanitizeUtf16(message.content),
@@ -1009,7 +1014,8 @@ class _MessageList extends StatelessWidget {
       isSent: isSent,
       isVideoShare: videoTarget != null,
       showPicker: showPicker,
-      showDelete: retractionsEnabled,
+      showDelete:
+          retractionsEnabled && retractionStatus == DmRetractionStatus.none,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -1047,6 +1053,25 @@ class _MessageList extends StatelessWidget {
           senderPubkey: message.senderPubkey,
         );
     }
+  }
+
+  Future<void> _onFailedRetractionTap(
+    BuildContext context,
+    DmMessage message,
+  ) async {
+    final bloc = context.read<ConversationBloc>();
+    final retry = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: DivineStickerName.alert,
+      title: context.l10n.dmDeleteRefusedMessage,
+      subtitle: context.l10n.dmDeleteRefusedDetails,
+      primaryButtonText: context.l10n.authTryAgain,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      secondaryButtonText: context.l10n.commonCancel,
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+    if (retry != true || bloc.isClosed) return;
+    bloc.add(ConversationMessageDeletionRetryRequested(rumorId: message.id));
   }
 
   /// Tapping a failed own bubble opens a recovery bottom sheet offering a
@@ -1223,16 +1248,22 @@ class _MessageList extends StatelessWidget {
             isSent: isSent,
             isFirstInGroup: isFirstInGroup,
             isLastInGroup: isLastInGroup,
-            onLongPress: () =>
-                _onMessageLongPress(context, message, isSent, status),
+            onLongPress: () => _onMessageLongPress(
+              context,
+              message,
+              isSent,
+              status,
+              message.retractionStatus,
+            ),
             // A single tap on a failed own bubble opens the resend/stop-trying
             // recovery bottom sheet; every other bubble keeps its default tap.
             // Withheld in a blocked thread, where resending would publish to
             // the blocked account (see [sendRecoveryEnabled]).
-            onTap:
-                sendRecoveryEnabled &&
-                    isSent &&
-                    status == DmDeliveryStatus.failed
+            onTap: message.retractionStatus == DmRetractionStatus.failed
+                ? () => _onFailedRetractionTap(context, message)
+                : sendRecoveryEnabled &&
+                      isSent &&
+                      status == DmDeliveryStatus.failed
                 ? () => _onFailedMessageTap(context, message)
                 : null,
             // Double-tap-to-like, hidden on failed own sends to mirror the
@@ -1240,10 +1271,12 @@ class _MessageList extends StatelessWidget {
             // never received is meaningless).
             onDoubleTap:
                 !reactionsEnabled ||
+                    message.retractionStatus != DmRetractionStatus.none ||
                     (isSent && status == DmDeliveryStatus.failed)
                 ? null
                 : () => _likeOnDoubleTap(context, message),
             deliveryStatus: status,
+            retractionStatus: message.retractionStatus,
             dmReplyContext: dmReplyContext,
             sharedVideoRef: ownShareVideoRef,
             quotedVideoRef: quotedVideoRef,
