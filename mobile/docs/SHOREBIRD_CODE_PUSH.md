@@ -187,8 +187,10 @@ it for Beta App Review. After the full external cohort passes, perform a manual
 App Store promotion by selecting that exact build for the marketing version and
 submitting it for App Store Review. Do not rebuild between those gates; the
 binary reviewed for public release must be the Shorebird binary exercised by
-both tester cohorts. Android continues to upload to Play as a draft, with
-promotion to production remaining manual.
+both tester cohorts. Android uploads the same Shorebird-enabled release to
+Play's internal testing track first. After internal testing passes, promote
+that exact Play artifact to broader testing and then production manually; do
+not rebuild between gates.
 
 Release commands pass `--public-key-path`, so every new store binary only
 accepts signed Shorebird patches. A release built without the public key cannot

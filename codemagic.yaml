@@ -1099,13 +1099,10 @@ workflows:
     publishing:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: production
-        # Upload as a draft instead of rolling out a release. Rolling out a
-        # production release fails the build until the one-time Play Console
-        # "Foreground service permissions" declaration is completed (required
-        # on every track). A draft upload succeeds; promote it to a live
-        # release in the Play Console after completing that declaration.
-        submit_as_draft: true
+        # Ship the exact Shorebird-enabled release to internal testers first.
+        # Promote this same Play artifact manually after testing; do not rebuild
+        # it for broader testing or production.
+        track: internal
 
   # Patch workflows ship a Dart-only fix to an already-released build over the
   # air. They publish to Shorebird, not to Play or the App Store, and are

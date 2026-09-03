@@ -65,6 +65,12 @@ From `mobile/`:
 ./build_android.sh release
 ```
 
+Store release artifacts are built by the Codemagic `android-build` workflow (a
+Shorebird release), not by these local commands. The Android AAB built here is
+plain `flutter build` output — not a Shorebird release — so it cannot be
+patched and never ships to Play; treat it as a verification artifact (see
+section 7).
+
 - [ ] iOS archive completed successfully in Xcode Organizer.
 - [ ] Android release AAB exists at `build/app/outputs/bundle/release/app-release.aab`.
 - [ ] If using the Play upload helper, verify `android/play-store-service-account.json` is present before running `./deploy_android.sh`.
@@ -87,10 +93,10 @@ From `mobile/`:
 - [ ] Confirm app ID is still `co.openvine.app`.
 - [ ] Confirm the manifest still removes Advertising ID and unused location/Bluetooth permissions.
 - [ ] Verify the current release notes and tester notes are ready.
-- [ ] Upload the AAB to the intended track:
-  - Manual Play Console upload, or
-  - `./deploy_android.sh internal|closed|production`
-- [ ] Verify release track assignment and staged rollout settings.
+- [ ] Cut the release through the Codemagic `android-build` workflow: it publishes the signed, Shorebird-enabled AAB to Play's **internal testing** track. Do not rebuild for broader distribution; promote that exact Play artifact after internal testing passes.
+- [ ] Verify the new release is live on the internal testing track in Play Console and available to internal testers.
+- [ ] Promote the artifact deliberately in Play Console — internal testing to broader testing or production — with a staged production rollout, verifying each hop, and advance the staged rollout to 100% or record why it is being held. This promotion is the release decision; the Codemagic build alone ships nothing to production.
+- [ ] `./deploy_android.sh` uploads a plain `flutter build` AAB, not a Shorebird release, so its binaries cannot be patched. Use it only for throwaway manual test lanes, never as the production release path.
 
 ## 8. Final Sign-Off
 
