@@ -4904,6 +4904,11 @@ class DmRepository {
     // latched no matter how many times we re-read the peer's kind-10050, and
     // the next foreground send would publish the twin this pass already knew
     // was unnecessary (#8519).
+    //
+    // Keying on the row's conversationId is safe even though recovery also
+    // drives GROUP rows: only the 1:1 kind-4 receive path ever writes
+    // 'nip04', so a group row can never be latched and the DAO's
+    // `WHERE dm_protocol = 'nip04'` matches nothing.
     await _clearLatchOnAdvertisedInbox(row.conversationId, inbox.state);
 
     final publishResult = await _sendRumorWithTimeout(
@@ -6680,6 +6685,16 @@ class DmRepository {
   /// the only signal available on a thread where they never send anything. A
   /// client that publishes a kind-10050 implements NIP-17 and can read a gift
   /// wrap, so the cleartext twin buys them nothing.
+  ///
+  /// The clearing is one-way: nothing re-latches a thread
+  /// (`_handleNip04Event` preserves the stored value — a property inherited
+  /// from the pre-latch upsert, not a designed guard), so a kind-10050 left
+  /// behind by a client the peer has since abandoned can permanently cut a
+  /// legacy-only reader off from the one copy they can read. Accepted:
+  /// #8519 weighs exactly this residual, the mirror cache-staleness case is
+  /// filed as #8528, and whether a later peer-authored kind-4 may re-latch
+  /// is a receive-path decision of the same "decide whether" family,
+  /// deliberately not taken here.
   ///
   /// Best-effort. A failure leaves the thread latched and the next send
   /// presents the same evidence again, so it must never cost the message.
