@@ -248,6 +248,13 @@ class _ReportContentViewState extends State<_ReportContentView> {
   /// display text, which is exactly what must not live in cubit state.
   String? _errorMessage;
 
+  /// Whether the reporter just tried to insert an image the report cannot
+  /// carry. Held here, above the details field, because that field's [State]
+  /// can be rebuilt from scratch mid-interaction (a reason reselection, or the
+  /// Android rebuild in #8511's review), which would otherwise drop this
+  /// one-shot notice while the announcement had already fired.
+  bool _imageInsertionRejected = false;
+
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
 
@@ -305,6 +312,24 @@ class _ReportContentViewState extends State<_ReportContentView> {
     }
   }
 
+  void _onImageInsertionRejected() {
+    // Reports are text only; there is no attachment path, so a keyboard-
+    // inserted image is intentionally dropped and never touches the field or
+    // any report state (#8210). Android-only: the engine implements
+    // commitContent nowhere else. Surface the drop so the reporter uses words.
+    if (!mounted) return;
+    if (!_imageInsertionRejected) {
+      setState(() => _imageInsertionRejected = true);
+    }
+    // Announce on every attempt, not once: each commit is a discrete,
+    // deliberate action worth confirming to a screen reader.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.reportDetailsImageNotAttached,
+      Directionality.of(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = context.select(
@@ -331,7 +356,9 @@ class _ReportContentViewState extends State<_ReportContentView> {
                     detailsFocusNode: _detailsFocusNode,
                     detailsFieldKey: _detailsFieldKey,
                     otherCardKey: _otherCardKey,
-                    onDetailsChanged: _clearErrorMessage,
+                    onDetailsChanged: _onDetailsChanged,
+                    imageInsertionRejected: _imageInsertionRejected,
+                    onImageInserted: _onImageInsertionRejected,
                   ),
           ),
         ),
@@ -370,9 +397,12 @@ class _ReportContentViewState extends State<_ReportContentView> {
     );
   }
 
-  void _clearErrorMessage() {
-    if (_errorMessage == null) return;
-    setState(() => _errorMessage = null);
+  void _onDetailsChanged() {
+    if (_errorMessage == null && !_imageInsertionRejected) return;
+    setState(() {
+      _errorMessage = null;
+      _imageInsertionRejected = false;
+    });
   }
 
   void _handleSubmitReport() {
@@ -471,6 +501,8 @@ class _ReportFormBody extends StatelessWidget {
     required this.detailsFieldKey,
     required this.otherCardKey,
     required this.onDetailsChanged,
+    required this.imageInsertionRejected,
+    required this.onImageInserted,
   });
 
   final ContentFilterReason? selectedReason;
@@ -483,8 +515,15 @@ class _ReportFormBody extends StatelessWidget {
   /// keyboard pushes the details field up.
   final GlobalKey otherCardKey;
 
-  /// Clears a pending validation error as soon as the user edits the details.
+  /// Clears a pending validation error (and the image-rejection notice) as
+  /// soon as the user edits the details.
   final VoidCallback onDetailsChanged;
+
+  /// Whether the reporter tried to insert an image; drives the field's notice.
+  final bool imageInsertionRejected;
+
+  /// Forwarded to the details field's content-insertion handler.
+  final VoidCallback onImageInserted;
 
   @override
   Widget build(BuildContext context) {
@@ -549,6 +588,8 @@ class _ReportFormBody extends StatelessWidget {
                     controller: detailsController,
                     focusNode: detailsFocusNode,
                     onChanged: onDetailsChanged,
+                    imageInsertionRejected: imageInsertionRejected,
+                    onImageInserted: onImageInserted,
                   ),
                 ],
               ),
@@ -722,6 +763,8 @@ class _CappedDetailsField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    required this.imageInsertionRejected,
+    required this.onImageInserted,
   });
 
   final GlobalKey fieldKey;
@@ -729,13 +772,21 @@ class _CappedDetailsField extends StatefulWidget {
   final FocusNode focusNode;
   final VoidCallback onChanged;
 
+  /// Whether the reporter tried to insert an image, which reports cannot carry.
+  /// Lives in the durable parent so a rebuild of this field's [State] cannot
+  /// drop the one-shot notice mid-interaction (#8511 review).
+  final bool imageInsertionRejected;
+
+  /// Called when the keyboard commits image content, so the durable parent
+  /// records the rejection and announces it.
+  final VoidCallback onImageInserted;
+
   @override
   State<_CappedDetailsField> createState() => _CappedDetailsFieldState();
 }
 
 class _CappedDetailsFieldState extends State<_CappedDetailsField> {
   bool _truncated = false;
-  bool _imageInsertionRejected = false;
 
   void _onTruncated() {
     if (_truncated || !mounted) return;
@@ -747,32 +798,11 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
     );
   }
 
-  void _onContentInserted(KeyboardInsertedContent content) {
-    // Reports are text only; there is no attachment path, so a keyboard-
-    // inserted image is intentionally dropped and never touches the field or
-    // any report state (#8210). Android-only: the engine implements
-    // commitContent nowhere else. Surface the drop so the reporter uses words.
-    if (!mounted) return;
-    if (!_imageInsertionRejected) {
-      setState(() => _imageInsertionRejected = true);
-    }
-    // Announce on every attempt, not once: each commit is a discrete,
-    // deliberate action worth confirming to a screen reader.
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      context.l10n.reportDetailsImageNotAttached,
-      Directionality.of(context),
-    );
-  }
-
   void _onChanged(String value) {
     widget.onChanged();
     if (_truncated &&
         value.characters.length < BugReportConfig.maxFreeTextFieldLength) {
       setState(() => _truncated = false);
-    }
-    if (_imageInsertionRejected) {
-      setState(() => _imageInsertionRejected = false);
     }
   }
 
@@ -798,7 +828,7 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           // handler can answer it in our own words. #8223 chose not to hide
           // the keyboard's image button, so it stays live.
           contentInsertionConfiguration: ContentInsertionConfiguration(
-            onContentInserted: _onContentInserted,
+            onContentInserted: (_) => widget.onImageInserted(),
           ),
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
@@ -821,7 +851,7 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
               color: context.vineColors.onSurfaceVariant,
             ),
           ),
-        if (_imageInsertionRejected)
+        if (widget.imageInsertionRejected)
           Text(
             context.l10n.reportDetailsImageNotAttached,
             style: VineTheme.labelSmallFont(

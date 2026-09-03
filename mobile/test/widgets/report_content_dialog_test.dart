@@ -2797,5 +2797,34 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'keeps the not-attached notice when the details field gets a fresh '
+      'State (reason reselection), because the flag lives in the durable '
+      'parent',
+      (tester) async {
+        await openDetailsField(tester);
+        await commitKeyboardImage(tester);
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.reportDetailsImageNotAttached), findsOneWidget);
+
+        // Leaving "Other" unmounts the details field; returning builds a fresh
+        // _CappedDetailsField State. That is the same class of rebuild that
+        // dropped the notice on Android (#8511 review) — a State-local flag
+        // would be lost here.
+        await tester.tap(find.text(l10n.reportReasonSpam));
+        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsNothing);
+
+        await tester.tap(find.text(l10n.reportReasonOther));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.reportDetailsImageNotAttached),
+          findsOneWidget,
+          reason: 'the notice must survive a fresh details-field State',
+        );
+      },
+    );
   });
 }
