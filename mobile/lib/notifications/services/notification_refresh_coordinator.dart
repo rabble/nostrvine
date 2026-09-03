@@ -36,37 +36,53 @@ class NotificationRefreshCoordinator {
     required NotificationRepository repository,
     Duration cooldown = const Duration(seconds: 30),
     Duration pushDebounce = const Duration(seconds: 3),
+    Duration pushMaxWait = const Duration(seconds: 10),
+    Duration pushMinimumInterval = const Duration(seconds: 10),
     DateTime Function()? now,
     NotificationRefreshErrorReporter? errorReporter,
   }) : _repository = repository,
        _cooldown = cooldown,
        _pushDebounce = pushDebounce,
+       _pushMaxWait = pushMaxWait,
+       _pushMinimumInterval = pushMinimumInterval,
        _now = now ?? DateTime.now,
        _reportError = errorReporter ?? _reportToCrashlytics;
 
   final NotificationRepository _repository;
   final Duration _cooldown;
   final Duration _pushDebounce;
+  final Duration _pushMaxWait;
+  final Duration _pushMinimumInterval;
   final DateTime Function() _now;
   final NotificationRefreshErrorReporter _reportError;
 
   DateTime? _lastSuccessAt;
   Future<void>? _inFlight;
   Timer? _pushDebounceTimer;
+  Timer? _pushMaxWaitTimer;
   bool _disposed = false;
 
   /// Schedules one authoritative refresh after a foreground push burst ends.
   ///
-  /// Every arrival resets the trailing debounce. The eventual refresh waits
-  /// for an earlier refresh to finish and bypasses only its success cooldown:
-  /// the repository's deep-pagination protection still applies.
+  /// Every arrival resets the trailing debounce, while a separate maximum-wait
+  /// timer prevents a sustained stream from postponing the refresh forever.
+  /// Successful requests retain a short rate floor. The eventual refresh
+  /// waits for an earlier refresh to finish and bypasses only the general
+  /// success cooldown: the repository's deep-pagination protection still
+  /// applies.
   void schedulePushRefresh() {
     if (_disposed) return;
     _pushDebounceTimer?.cancel();
-    _pushDebounceTimer = Timer(_pushDebounce, () {
-      _pushDebounceTimer = null;
-      unawaited(_refreshAfterPushBurst());
-    });
+    _pushDebounceTimer = Timer(_pushDebounce, _completePushBurst);
+    _pushMaxWaitTimer ??= Timer(_pushMaxWait, _completePushBurst);
+  }
+
+  void _completePushBurst() {
+    _pushDebounceTimer?.cancel();
+    _pushDebounceTimer = null;
+    _pushMaxWaitTimer?.cancel();
+    _pushMaxWaitTimer = null;
+    unawaited(_refreshAfterPushBurst());
   }
 
   /// Requests an authoritative first-page refresh.
@@ -119,6 +135,20 @@ class NotificationRefreshCoordinator {
     final inFlight = _inFlight;
     if (inFlight != null) await inFlight;
     if (_disposed) return;
+
+    final lastSuccessAt = _lastSuccessAt;
+    if (lastSuccessAt != null) {
+      final elapsed = _now().difference(lastSuccessAt);
+      if (elapsed < _pushMinimumInterval) {
+        final remaining = _pushMinimumInterval - elapsed;
+        _pushDebounceTimer?.cancel();
+        _pushMaxWaitTimer?.cancel();
+        _pushMaxWaitTimer = null;
+        _pushDebounceTimer = Timer(remaining, _completePushBurst);
+        return;
+      }
+    }
+
     await _refresh(
       reason: NotificationRefreshReason.pushReceived,
       bypassCooldown: true,
@@ -130,6 +160,8 @@ class NotificationRefreshCoordinator {
     _disposed = true;
     _pushDebounceTimer?.cancel();
     _pushDebounceTimer = null;
+    _pushMaxWaitTimer?.cancel();
+    _pushMaxWaitTimer = null;
   }
 
   Future<void> _runRefresh(NotificationRefreshReason reason) async {

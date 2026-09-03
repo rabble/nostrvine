@@ -39,11 +39,15 @@ void main() {
     NotificationRefreshCoordinator buildCoordinator({
       Duration cooldown = const Duration(seconds: 30),
       Duration pushDebounce = const Duration(seconds: 3),
+      Duration pushMaxWait = const Duration(seconds: 10),
+      Duration pushMinimumInterval = const Duration(seconds: 10),
     }) {
       return NotificationRefreshCoordinator(
         repository: repository,
         cooldown: cooldown,
         pushDebounce: pushDebounce,
+        pushMaxWait: pushMaxWait,
+        pushMinimumInterval: pushMinimumInterval,
         now: () => now,
         errorReporter: (error, stackTrace, {reason}) =>
             reportedErrors.add((error: error, reason: reason)),
@@ -200,6 +204,46 @@ void main() {
         });
       });
 
+      test('refreshes at the maximum wait during a sustained burst', () {
+        fakeAsync((async) {
+          final coordinator = buildCoordinator();
+
+          for (var second = 0; second < 10; second += 1) {
+            coordinator.schedulePushRefresh();
+            if (second < 9) async.elapse(const Duration(seconds: 1));
+          }
+
+          async.elapse(const Duration(milliseconds: 999));
+          verifyNever(() => repository.refreshApplied());
+
+          async.elapse(const Duration(milliseconds: 1));
+          async.flushMicrotasks();
+          verify(() => repository.refreshApplied()).called(1);
+        });
+      });
+
+      test('enforces a minimum interval between successful push refreshes', () {
+        fakeAsync((async) {
+          final coordinator = buildCoordinator();
+
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+          verify(() => repository.refreshApplied()).called(1);
+
+          now = now.add(const Duration(seconds: 4));
+          coordinator.schedulePushRefresh();
+          async.elapse(const Duration(seconds: 3));
+          async.flushMicrotasks();
+          verifyNever(() => repository.refreshApplied());
+
+          now = now.add(const Duration(seconds: 6));
+          async.elapse(const Duration(seconds: 6));
+          async.flushMicrotasks();
+          verify(() => repository.refreshApplied()).called(1);
+        });
+      });
+
       test('preserves the deep-pagination guard', () {
         fakeAsync((async) {
           when(() => repository.hasPaginatedBeyondFirstPage).thenReturn(true);
@@ -219,6 +263,7 @@ void main() {
 
           coordinator.schedulePushRefresh();
           coordinator.dispose();
+          expect(async.pendingTimers, isEmpty);
           async.elapse(const Duration(seconds: 3));
           async.flushMicrotasks();
 
@@ -305,6 +350,11 @@ void main() {
           expect(calls, 1);
 
           firstRefresh.complete(true);
+          async.flushMicrotasks();
+          expect(calls, 1);
+
+          now = now.add(const Duration(seconds: 10));
+          async.elapse(const Duration(seconds: 10));
           async.flushMicrotasks();
           expect(calls, 2);
         });
