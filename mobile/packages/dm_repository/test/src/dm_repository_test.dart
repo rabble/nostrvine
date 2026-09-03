@@ -6013,6 +6013,16 @@ void main() {
 
     group('backfillHistoryIfNeeded', () {
       setUp(stubReadCursorRowMatched);
+      // A deferred drain arms a relay-status listener (#8550). Default to a
+      // pool with nothing connected and a stream that never speaks, so the
+      // deferral tests below exercise the deferral itself; the resume tests
+      // swap in a controllable stream.
+      setUp(() {
+        when(() => mockNostrClient.relayStatuses).thenReturn(const {});
+        when(
+          () => mockNostrClient.relayStatusStream,
+        ).thenAnswer((_) => const Stream.empty());
+      });
 
       // Kind-5 deletions with no tags flow through _handleIncomingEvent
       // with zero decryption / DAO side effects, so they exercise the
@@ -7640,6 +7650,269 @@ void main() {
         await stop;
         await retry;
       });
+
+      // ---------------------------------------------------------------
+      // Relay-ready resume after a relay-availability deferral (#8550)
+      // ---------------------------------------------------------------
+
+      /// Routes the drain's relay-status reads through a stream the test
+      /// drives, with [connectedNow] as the pool at deferral time.
+      StreamController<Map<String, RelayConnectionStatus>> stubRelayStatus({
+        Map<String, RelayConnectionStatus> connectedNow = const {},
+      }) {
+        final controller =
+            StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+        addTearDown(controller.close);
+        when(() => mockNostrClient.relayStatuses).thenReturn(connectedNow);
+        when(
+          () => mockNostrClient.relayStatusStream,
+        ).thenAnswer((_) => controller.stream);
+        return controller;
+      }
+
+      Map<String, RelayConnectionStatus> connected(List<String> urls) => {
+        for (final url in urls) url: RelayConnectionStatus.connected(url),
+      };
+
+      /// Answers the first gift-wrap page as one nothing answered and every
+      /// later page (gift-wrap and NIP-04 alike) as authoritative and empty,
+      /// so a resumed run can complete.
+      void stubUnansweredThenExhausted() {
+        var giftWrapPages = 0;
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((inv) async {
+          final filter =
+              (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                  .single;
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return answeredPage(const <Event>[]);
+          }
+          giftWrapPages++;
+          return giftWrapPages == 1
+              ? unansweredPage(noRelays: true)
+              : answeredPage(const <Event>[]);
+        });
+      }
+
+      _FakeDmSyncState armedSyncState() => _FakeDmSyncState()
+        ..oldestOverride = 100
+        ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+      /// Waits for the drain a relay-status emission started, without the
+      /// test itself invoking the drain: a test-side `backfillHistoryIfNeeded`
+      /// would run the recovery it is trying to prove happened on its own.
+      Future<void> untilMarkedComplete(_FakeDmSyncState syncState) async {
+        for (
+          var i = 0;
+          i < 200 && syncState.markedCompletePubkeys.isEmpty;
+          i++
+        ) {
+          await Future<void>.delayed(Duration.zero);
+        }
+      }
+
+      test(
+        'resumes on its own once a relay connects after a page no relay '
+        'answered (#8550)',
+        () async {
+          final relayStatus = stubRelayStatus();
+          stubUnansweredThenExhausted();
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(
+            relayStatus.hasListener,
+            isTrue,
+            reason: 'a deferred drain must wait for a relay to connect',
+          );
+
+          relayStatus.add(connected(['wss://relay.example']));
+          await untilMarkedComplete(syncState);
+
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+          expect(
+            relayStatus.hasListener,
+            isFalse,
+            reason: 'the resume is one-shot',
+          );
+        },
+      );
+
+      test(
+        'does not resume for a relay that was already connected when the '
+        'drain deferred',
+        () async {
+          final relayStatus = stubRelayStatus(
+            connectedNow: connected(['wss://a.example']),
+          );
+          stubUnansweredThenExhausted();
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          expect(relayStatus.hasListener, isTrue);
+
+          // The same relay reporting again is not new capacity.
+          relayStatus.add(connected(['wss://a.example']));
+          await pumpEventQueue();
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add(connected(['wss://a.example', 'wss://b.example']));
+          await untilMarkedComplete(syncState);
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+        },
+      );
+
+      test(
+        'stops waiting for a relay once the repository is torn down',
+        () async {
+          final relayStatus = stubRelayStatus();
+          stubUnansweredThenExhausted();
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          expect(relayStatus.hasListener, isTrue);
+
+          await repository.stopListening();
+
+          expect(relayStatus.hasListener, isFalse);
+          relayStatus.add(connected(['wss://relay.example']));
+          await pumpEventQueue();
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'resumes after a run in which not every relay settled a page',
+        () async {
+          final relayStatus = stubRelayStatus();
+          var giftWrapPages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            giftWrapPages++;
+            // Run 1: one relay answered a page, another never did; the next
+            // page is authoritative and empty. Run 2: exhausted at once.
+            return giftWrapPages == 1
+                ? partialPage([deletion(500)])
+                : answeredPage(const <Event>[]);
+          });
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add(connected(['wss://relay.example']));
+          await untilMarkedComplete(syncState);
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+        },
+      );
+
+      test(
+        'resumes after outgoing NIP-04 recovery found no live relay',
+        () async {
+          final relayStatus = stubRelayStatus();
+          var nip04Pages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            // The drain's own kind-10050 inbox lookup has the same
+            // `authors`-only shape; only the kind-4 pass is under test.
+            if (filter.authors != null &&
+                (filter.kinds?.contains(EventKind.directMessage) ?? false)) {
+              nip04Pages++;
+              return nip04Pages == 1
+                  ? unansweredPage(noRelays: true)
+                  : answeredPage(const <Event>[]);
+            }
+            return answeredPage(const <Event>[]);
+          });
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add(connected(['wss://relay.example']));
+          await untilMarkedComplete(syncState);
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+        },
+      );
+
+      test(
+        'does not arm a relay-ready resume after a page-cap pause',
+        () async {
+          final relayStatus = stubRelayStatus();
+          // Every gift-wrap page carries one event below the cursor, so the run
+          // spends its whole page budget without reaching the end.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            return answeredPage([deletion((filter.until ?? 1000) - 1)]);
+          });
+          final syncState = armedSyncState()..oldestOverride = 100000;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(
+            relayStatus.hasListener,
+            isFalse,
+            reason: 'a page-cap pause resumes on the next inbox open by design',
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------

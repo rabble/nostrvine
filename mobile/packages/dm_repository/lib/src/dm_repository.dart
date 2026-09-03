@@ -521,6 +521,12 @@ class DmRepository {
 
   StreamSubscription<Event>? _giftWrapSubscription;
   Timer? _reconnectTimer;
+
+  /// One-shot relay-status listener armed by a deferred history drain, so
+  /// the drain resumes when a relay connects instead of waiting for the next
+  /// inbox open. See [_resumeDrainWhenRelayConnects].
+  StreamSubscription<Map<String, RelayConnectionStatus>>?
+  _drainRelayReadySubscription;
   late bool _disposed = false;
 
   /// Guards against a double-subscribe race: [startListening] now awaits the
@@ -880,6 +886,8 @@ class DmRepository {
     _subscribing = false;
     _disposed = true;
     _eventLock = null;
+    unawaited(_drainRelayReadySubscription?.cancel());
+    _drainRelayReadySubscription = null;
     // Drop the in-flight history drain and decrypt-retry pass so the next
     // user can start fresh; the running loops bail on the _userPubkey change.
     _historyDrain = null;
@@ -1621,6 +1629,10 @@ class DmRepository {
     // drain on the stopListening() path, but a stop immediately followed by a
     // restart on this instance clears it again under an in-flight drain.
     final gen = _resetGeneration;
+    // A run in progress supersedes a resume armed by an earlier deferral; if
+    // this run defers too it arms a fresh one against the pool it saw.
+    unawaited(_drainRelayReadySubscription?.cancel());
+    _drainRelayReadySubscription = null;
     // One-time forced re-drain: installs that completed under an older,
     // buggy drain (pre-#5202) are stuck with historyDrainComplete=true while
     // the relay still holds unrecovered history. A drain-version bump clears
@@ -1760,6 +1772,7 @@ class DmRepository {
                 category: LogCategory.system,
               );
             }
+            _resumeDrainWhenRelayConnects(pubkey, gen);
             return;
           }
           reachedEnd = true;
@@ -1851,6 +1864,7 @@ class DmRepository {
             'completion to the next inbox open.',
             category: LogCategory.system,
           );
+          _resumeDrainWhenRelayConnects(pubkey, gen);
         }
       } else if (reachedEnd) {
         // Reached the end of what the answering relays hold, but an earlier
@@ -1863,6 +1877,7 @@ class DmRepository {
           'next inbox open.',
           category: LogCategory.system,
         );
+        _resumeDrainWhenRelayConnects(pubkey, gen);
       } else {
         // Page cap hit: leave historyDrainComplete unset and the cursor
         // persisted so the next inbox open resumes the remaining history
@@ -1912,6 +1927,54 @@ class DmRepository {
     }
   }
 
+  /// Resumes a deferred history drain once a relay that was not connected
+  /// when the drain gave up connects.
+  ///
+  /// Every relay-availability deferral leaves `historyDrainComplete` unset
+  /// and waits for "the next inbox open". But the inbox is already open,
+  /// showing the restore-paused banner, and its Retry re-runs the drain
+  /// against whatever the pool looks like at that instant — against an
+  /// idle-disconnected pool that is the same failure again. So mirror the
+  /// labeler and feed services: hold a one-shot listener on the relay status
+  /// stream and re-run the drain when a relay the deferral did not have
+  /// becomes connected. At most one listener is armed at a time, a new run
+  /// supersedes it, and teardown cancels it. A page-cap pause deliberately
+  /// does not arm one: that budget resumes on the next inbox open by design.
+  /// See #8550.
+  void _resumeDrainWhenRelayConnects(String pubkey, int generation) {
+    unawaited(_drainRelayReadySubscription?.cancel());
+    _drainRelayReadySubscription = null;
+    if (_ingestSessionEnded(pubkey, generation)) return;
+    final connectedAtDeferral = <String>{
+      for (final entry in _nostrClient.relayStatuses.entries)
+        if (entry.value.isConnected) entry.key,
+    };
+    Log.info(
+      'DM history drain for ${pubkeyForLogs(pubkey)} will resume when a relay '
+      'connects (connected now: ${connectedAtDeferral.length}/'
+      '${_nostrClient.configuredRelayCount})',
+      category: LogCategory.system,
+    );
+    _drainRelayReadySubscription = _nostrClient.relayStatusStream.listen((
+      statuses,
+    ) {
+      final newlyConnected = statuses.entries.any(
+        (entry) =>
+            entry.value.isConnected && !connectedAtDeferral.contains(entry.key),
+      );
+      if (!newlyConnected) return;
+      unawaited(_drainRelayReadySubscription?.cancel());
+      _drainRelayReadySubscription = null;
+      if (_ingestSessionEnded(pubkey, generation)) return;
+      Log.info(
+        'Resuming DM history drain for ${pubkeyForLogs(pubkey)} after a relay '
+        'connected',
+        category: LogCategory.system,
+      );
+      unawaited(backfillHistoryIfNeeded());
+    });
+  }
+
   /// Stops listening for incoming DMs and tears this repository down.
   ///
   /// This is the production disposal path — `dmRepositoryProvider` wires it to
@@ -1934,6 +1997,8 @@ class DmRepository {
     _resetGeneration++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    await _drainRelayReadySubscription?.cancel();
+    _drainRelayReadySubscription = null;
     // Drop the loop handles so a later startListening() starts a fresh pass
     // rather than re-awaiting a stale future, and reclaim the drain-scoped
     // decrypt isolate holding this user's key now rather than whenever the
