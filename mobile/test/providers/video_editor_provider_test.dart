@@ -896,6 +896,66 @@ void main() {
               'no draftId is set',
         );
       });
+
+      // #8488: a native call in the render chain can hang — the platform
+      // channel neither returns nor throws, so the awaiting coroutine stays
+      // suspended and every `catch`/`finally` that would reset the flags is
+      // unreachable. Without a bound the editor sits on a 0% spinner with Post
+      // disabled forever, and the retry overlay that already exists is never
+      // shown.
+      test('surfaces a failure when the render never settles', () {
+        fakeAsync((async) {
+          final notifier = container.read(videoEditorProvider.notifier);
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                limitClipDuration: false,
+                video: EditorVideo.file('/docs/clip.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+              );
+
+          // Never completes and never throws — a hung native call.
+          final hung = Completer<(DivineVideoClip, String?)>();
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                parameters,
+                taskId,
+              }) => hung.future;
+
+          unawaited(notifier.startRenderVideo());
+          async.flushMicrotasks();
+
+          expect(
+            container.read(videoEditorProvider).isProcessing,
+            isTrue,
+            reason: 'the render is in flight',
+          );
+
+          async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+          async.flushMicrotasks();
+
+          final state = container.read(videoEditorProvider);
+          expect(
+            state.isProcessing,
+            isFalse,
+            reason: 'a render that cannot finish must stop reporting progress',
+          );
+          expect(
+            state.renderFailed,
+            isTrue,
+            reason: 'the retry overlay is the only way out of a hung render',
+          );
+          expect(
+            state.isValidToPost,
+            isFalse,
+            reason: 'there is no rendered clip to post',
+          );
+        });
+      });
     });
 
     group('c2paSigningFailedFor (#6058)', () {
