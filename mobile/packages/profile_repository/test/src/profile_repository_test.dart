@@ -4292,6 +4292,39 @@ void main() {
       );
 
       test(
+        'searchUsersProgressive puts the account whose npub was pasted first',
+        () async {
+          const pkPasted =
+              'b01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b';
+          stubRestResults([
+            ProfileSearchResult(
+              pubkey: pk18Videos,
+              displayName: 'Popular Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 10000,
+              videoCount: 18,
+            ),
+            ProfileSearchResult(
+              pubkey: pkPasted,
+              displayName: 'Pasted Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: Nip19.encodePubKey(pkPasted).toUpperCase(),
+                sortBy: 'followers',
+              )
+              .last;
+
+          expect(result.profiles.first.pubkey, pkPasted);
+        },
+      );
+
+      test(
         'reports REST pagination independently of merged profile count',
         () async {
           stubRestResults(resultsInServerOrder());
@@ -4584,6 +4617,26 @@ void main() {
           await repository.searchUsersProgressive(query: invalid).toList();
 
           expect(receivedTerm, invalid);
+        },
+      );
+
+      test(
+        'passes a non-npub query to the local identity lookup unchanged',
+        () async {
+          String? receivedQuery;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedQuery = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: 'npub1short').toList();
+
+          expect(receivedQuery, 'npub1short');
         },
       );
 

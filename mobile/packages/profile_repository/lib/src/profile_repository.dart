@@ -71,9 +71,6 @@ bool _isSearchCancelled(SearchCancellationToken? token) =>
 typedef LocalProfileSearch =
     Future<List<UserProfile>> Function(String query, int limit);
 
-/// Length of a bech32 `npub` string (`npub1` prefix + 58 data chars).
-const int _npubStringLength = 63;
-
 /// Default indexer relays for kind 0 profile lookups.
 ///
 /// Production wiring overrides this via
@@ -311,15 +308,8 @@ class ProfileRepository implements ProfileReader {
   /// `npub` query would otherwise return no local candidates even when the
   /// account is cached. A partial `npub` prefix cannot be decoded and is
   /// left for the raw-query path.
-  static String _localSearchTerm(String query) {
-    final trimmed = query.trim();
-    if (trimmed.length != _npubStringLength ||
-        !trimmed.toLowerCase().startsWith('npub1')) {
-      return query;
-    }
-    final hex = Nip19.decode(trimmed);
-    return hex.isEmpty ? query : hex;
-  }
+  static String _localSearchTerm(String query) =>
+      _npubQueryToHex(query) ?? query;
 
   /// Whether the given pubkey is known to have no Kind 0 profile.
   ///
@@ -2462,9 +2452,11 @@ class ProfileRepository implements ProfileReader {
       for (final (index, profile) in popularityRanked.indexed)
         profile.pubkey: index,
     };
+    final normalizedQuery = query.trim().toLowerCase();
+    final queryHex = _npubQueryToHex(normalizedQuery);
     final relevanceByPubkey = {
       for (final profile in profiles)
-        profile.pubkey: _searchRelevance(profile, query),
+        profile.pubkey: _searchRelevance(profile, normalizedQuery, queryHex),
     };
     return [...profiles]..sort((a, b) {
       final relevance = relevanceByPubkey[b.pubkey]!.compareTo(
@@ -2475,22 +2467,25 @@ class ProfileRepository implements ProfileReader {
     });
   }
 
-  static int _searchRelevance(UserProfile profile, String query) {
-    final normalizedQuery = query.trim().toLowerCase();
+  /// Relevance tier of [profile] for an already lowercased, trimmed
+  /// [normalizedQuery]. [queryHex] is the decoded form when the query is an
+  /// npub, so an exact account match never depends on encoding every
+  /// candidate's pubkey.
+  static int _searchRelevance(
+    UserProfile profile,
+    String normalizedQuery,
+    String? queryHex,
+  ) {
+    final pubkey = profile.pubkey.toLowerCase();
     final name = profile.name?.trim().toLowerCase() ?? '';
     final displayName = profile.displayName?.trim().toLowerCase() ?? '';
     final nip05 = profile.nip05?.trim().toLowerCase() ?? '';
     final nip05Name = nip05.split('@').first;
-    final npub = _npub(profile.pubkey);
 
-    if ({
-      profile.pubkey.toLowerCase(),
-      npub,
-      name,
-      displayName,
-      nip05,
-      nip05Name,
-    }.contains(normalizedQuery)) {
+    if (pubkey == queryHex ||
+        {pubkey, name, displayName, nip05, nip05Name}.contains(
+          normalizedQuery,
+        )) {
       return 4;
     }
     if (name.startsWith(normalizedQuery) ||
@@ -2513,13 +2508,23 @@ class ProfileRepository implements ProfileReader {
   static bool _hasWordPrefix(String value, String query) =>
       value.split(RegExp(r'\s+')).any((word) => word.startsWith(query));
 
-  static String _npub(String pubkey) {
-    try {
-      return Nip19.encodePubKey(pubkey).toLowerCase();
-    } on Object {
-      return '';
+  /// Hex pubkey for a complete `npub1…` [query], `null` for anything else.
+  ///
+  /// The cache and the REST payload carry hex, so a pasted npub has to be
+  /// decoded before it can match an account. Partial npubs cannot decode and
+  /// are left to the textual tiers.
+  static String? _npubQueryToHex(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (!Nip19.isPubkey(normalized) || normalized.length != _npubLength) {
+      return null;
     }
+    final hex = Nip19.decode(normalized);
+    return hex.isEmpty ? null : hex;
   }
+
+  /// Length of a bech32 `npub1…` string: the prefix plus 52 data characters
+  /// and a 6-character checksum.
+  static const _npubLength = 63;
 
   /// Orders a server-sorted result page by the signals the REST payload
   /// actually carries.
