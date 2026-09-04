@@ -1,7 +1,7 @@
-// ABOUTME: Tests for BugReportService log export result value type and surface.
-// ABOUTME: The full export flow is exercised via manual testing because it
-// ABOUTME: depends on the device's Downloads directory and LogCaptureService
-// ABOUTME: file IO that is awkward to mock in pure unit tests.
+// ABOUTME: Tests BugReportService export sizing, headers, and result values.
+// ABOUTME: Covers deterministic UTF-8 bounds without platform file or share IO.
+
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -89,6 +89,170 @@ void main() {
       expect(
         BugReportService.buildLogExportFileName(localTime),
         'openvine_full_logs_2026-09-02T08-00-00.000Z.txt',
+      );
+    });
+  });
+
+  group('buildBoundedLogBody', () {
+    const passthrough = _passthrough;
+
+    test('retains every record under the limit', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['oldest', 'newest'],
+        sanitize: passthrough,
+        maxBytes: 100,
+      );
+
+      expect(result.lines, ['oldest', 'newest']);
+      expect(result.exportedCount, 2);
+      expect(result.omittedCount, 0);
+      expect(result.body, 'oldest\nnewest\n');
+    });
+
+    test('retains every record exactly at the limit', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['abc', 'de'],
+        sanitize: passthrough,
+        maxBytes: utf8.encode('abc\nde\n').length,
+      );
+
+      expect(result.lines, ['abc', 'de']);
+      expect(utf8.encode(result.body).length, 7);
+      expect(result.omittedCount, 0);
+    });
+
+    test('drops the oldest record when one byte over the limit', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['a', 'new'],
+        sanitize: passthrough,
+        maxBytes: utf8.encode('a\nnew\n').length - 1,
+      );
+
+      expect(result.lines, ['new']);
+      expect(result.exportedCount, 1);
+      expect(result.omittedCount, 1);
+    });
+
+    test('retains a newest contiguous suffix in original order', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['first', 'second', 'third'],
+        sanitize: passthrough,
+        maxBytes: utf8.encode('second\nthird\n').length,
+      );
+
+      expect(result.lines, ['second', 'third']);
+      expect(result.omittedCount, 1);
+    });
+
+    test('counts multibyte records as UTF-8 without splitting them', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['🪩', '🌿'],
+        sanitize: passthrough,
+        maxBytes: utf8.encode('🌿\n').length + 1,
+      );
+
+      expect(result.lines, ['🌿']);
+      expect(utf8.decode(utf8.encode(result.body)), '🌿\n');
+      expect(result.body, isNot(contains('�')));
+    });
+
+    test('measures records after sanitization', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['secret', 'safe'],
+        sanitize: (line) => line == 'secret' ? '[REDACTED]' : line,
+        maxBytes: utf8.encode('[REDACTED]\nsafe\n').length - 1,
+      );
+
+      expect(result.lines, ['safe']);
+      expect(result.omittedCount, 1);
+    });
+
+    test('exports retained records in their sanitized form', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['keep nsec1secret'],
+        sanitize: (line) => line.replaceAll('nsec1secret', '[REDACTED]'),
+        maxBytes: 100,
+      );
+
+      expect(result.lines, ['keep [REDACTED]']);
+      expect(result.body, contains('[REDACTED]'));
+      expect(result.body, isNot(contains('nsec1secret')));
+    });
+
+    test('sanitizes retained records plus at most one rejected probe', () {
+      var calls = 0;
+      final result = BugReportService.buildBoundedLogBody(
+        const ['first', 'second', 'third'],
+        sanitize: (line) {
+          calls++;
+          return line;
+        },
+        maxBytes: utf8.encode('third\n').length,
+      );
+
+      expect(result.lines, ['third']);
+      expect(calls, result.exportedCount + 1);
+    });
+  });
+
+  group('buildBoundedLogContent', () {
+    String header({required int exportedCount, required int omittedCount}) =>
+        'Records Exported: $exportedCount of 3\n'
+        'Omitted Records: $omittedCount\n\n';
+
+    test('includes header bytes in the export ceiling', () {
+      final maxBytes =
+          utf8.encode(header(exportedCount: 3, omittedCount: 3)).length +
+          utf8.encode('three\n').length;
+      final result = BugReportService.buildBoundedLogContent(
+        const ['one', 'two', 'three'],
+        buildHeader: header,
+        sanitize: _passthrough,
+        maxBytes: maxBytes,
+      );
+
+      expect(utf8.encode(result.content).length, lessThanOrEqualTo(maxBytes));
+      expect(result.content, contains('Records Exported: 1 of 3'));
+      expect(result.content, contains('Omitted Records: 2'));
+      expect(result.content, endsWith('three\n'));
+    });
+
+    test('rejects a header that alone exceeds the ceiling', () {
+      expect(
+        () => BugReportService.buildBoundedLogContent(
+          const ['line'],
+          buildHeader: ({required exportedCount, required omittedCount}) =>
+              'Current Screen: ${'x' * 100}',
+          sanitize: _passthrough,
+          maxBytes: 20,
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('buildLogExportRecordSummary', () {
+    test('reports full retention', () {
+      expect(
+        BugReportService.buildLogExportRecordSummary(
+          totalCount: 3,
+          exportedCount: 3,
+          omittedCount: 0,
+        ),
+        'Records Exported: 3 of 3\n'
+        'Omitted Records: 0 '
+        '(oldest first, export size limit 2.0 MB)\n',
+      );
+    });
+
+    test('reports oldest records omitted by the ceiling', () {
+      expect(
+        BugReportService.buildLogExportRecordSummary(
+          totalCount: 50000,
+          exportedCount: 17342,
+          omittedCount: 32658,
+        ),
+        contains('Omitted Records: 32658 (oldest first'),
       );
     });
   });
@@ -341,3 +505,5 @@ void main() {
     });
   });
 }
+
+String _passthrough(String value) => value;

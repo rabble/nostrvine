@@ -241,5 +241,14 @@ void main() {
       expect(logs, isEmpty);
       expect(logs, isA<List<LogEntry>>());
     });
+
+    test('reports formatted log size in UTF-8 bytes', () async {
+      const lines = ['ASCII', '🪩'];
+
+      final stats = await service.getLogStatistics(logLines: lines);
+
+      expect(stats['totalSizeBytes'], 9);
+      expect(stats['totalLogLines'], 2);
+    });
   });
 }
