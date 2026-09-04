@@ -969,6 +969,12 @@ class RelayPool {
   /// Set [afterFanoutReachedNoRelay] when the REQ fan-out ended with no relay
   /// having taken the query.
   ///
+  /// A fourth fact takes no flag because it is read from the relays
+  /// themselves: whether any relay still holds this query while being unable
+  /// to answer it. That one is recomputed on every call rather than recorded,
+  /// because it can both appear without a status change and disappear again on
+  /// a reconnect.
+  ///
   /// Every set this records into is written *after* the `callback == null`
   /// return, so a query the caller already abandoned cannot re-enter the
   /// bookkeeping that [_completeQuery] and [unsubscribe] have swept.
@@ -990,15 +996,37 @@ class RelayPool {
       ..._tempRelaysSnapshot(),
       ..._cacheRelaysSnapshot(),
     ];
+    // Split what the old single condition collapsed. A relay that owes nothing
+    // and a relay that took the REQ and can no longer answer it are very
+    // different facts, and only the first means "settled".
+    //
+    // The second is the hole: a dropped socket, a zombie repair mid-cycle, or
+    // a NIP-42 gate the relay has shown is shut. Such a relay is deliberately
+    // not waited on — that is what [_canStillSettleQuery] exists to stop — but
+    // it leaves exactly the gap a silent relay leaves, and a caller that
+    // demanded full settlement must not read the relays that did answer as
+    // "every relay says there is nothing".
+    //
+    // Derived here rather than recorded when the relay goes dark, for two
+    // reasons. A silent-relay repair marks the relay unable to settle *before*
+    // it fires any status change, so a recorded flag would still be empty in
+    // that window. And the state is not permanent: a reconnect re-issues the
+    // saved REQ under the same subscription id and its events reach the
+    // original caller, so a relay that comes back and answers must stop
+    // counting — a sticky flag would report a repaired flap as an inconclusive
+    // read and roll back a write that had in fact succeeded.
+    var strandedOnBlockedRelay = false;
     for (final r in list) {
+      if (!r.checkQuery(subId)) continue;
       // Some relay still owes us a terminal frame for this query.
-      if (r.checkQuery(subId) && _canStillSettleQuery(r)) {
+      if (_canStillSettleQuery(r)) {
         if (_queryAnswered.contains(subId) &&
             !_queriesRequiringFullSettlement.contains(subId)) {
           _armQuerySettleWindow(subId);
         }
         return;
       }
+      strandedOnBlockedRelay = true;
     }
 
     // Nothing is pending — but for a full-settlement caller that only means
@@ -1012,10 +1040,14 @@ class RelayPool {
     // — see [_queryReachedNoRelay] — and `sentTo` already tells the caller the
     // answer is not authoritative, so it completes now instead of costing the
     // caller its whole deadline.
+    // [strandedOnBlockedRelay] joins the two existing reasons to keep waiting.
+    // It cannot coincide with [_queryReachedNoRelay]: a fan-out no relay took
+    // leaves no relay holding the query, so nothing can be stranded on one.
     if (_queriesRequiringFullSettlement.contains(subId) &&
         !_queryReachedNoRelay.contains(subId) &&
         (!_queryAnswered.contains(subId) ||
-            _queryClosedWithoutAnswer.contains(subId))) {
+            _queryClosedWithoutAnswer.contains(subId) ||
+            strandedOnBlockedRelay)) {
       return;
     }
 
