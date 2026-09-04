@@ -334,6 +334,7 @@
     "profileLinkCopied": "Tautan profil disalin",
     "profileSetupEditProfileTitle": "Ubah Profil",
     "nostrSettingsNip05ProfileRequired": "Siapkan profilmu sebelum menambahkan alamat NIP-05.",
+    "nostrSettingsNip05CreateProfileAction": "Buat profil",
     "profileSetupBackLabel": "Kembali",
     "profileSetupAboutNostr": "Tentang Nostr",
     "profileSetupProfilePublished": "Profil berhasil dipublikasikan!",

@@ -872,6 +872,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stel je profiel in voordat je een NIP-05-adres toevoegt.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Profiel maken';
+
+  @override
   String get profileSetupBackLabel => 'Terug';
 
   @override

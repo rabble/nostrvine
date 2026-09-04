@@ -886,6 +886,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Configure ton profil avant d’ajouter une adresse NIP-05.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Créer un profil';
+
+  @override
   String get profileSetupBackLabel => 'Retour';
 
   @override

@@ -792,6 +792,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nostrSettingsNip05ProfileRequired => '添加 NIP-05 地址前，请先设置个人资料。';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => '创建个人资料';
+
+  @override
   String get profileSetupBackLabel => '返回';
 
   @override

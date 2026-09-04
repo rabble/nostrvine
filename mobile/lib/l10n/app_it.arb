@@ -334,6 +334,7 @@
     "profileLinkCopied": "Link del profilo copiato",
     "profileSetupEditProfileTitle": "Modifica profilo",
     "nostrSettingsNip05ProfileRequired": "Configura il tuo profilo prima di aggiungere un indirizzo NIP-05.",
+    "nostrSettingsNip05CreateProfileAction": "Crea profilo",
     "profileSetupBackLabel": "Indietro",
     "profileSetupAboutNostr": "Info su Nostr",
     "profileSetupProfilePublished": "Profilo pubblicato con successo!",

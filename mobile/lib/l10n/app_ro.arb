@@ -334,6 +334,7 @@
     "profileLinkCopied": "Linkul profilului a fost copiat",
     "profileSetupEditProfileTitle": "Editează profilul",
     "nostrSettingsNip05ProfileRequired": "Configurează-ți profilul înainte de a adăuga o adresă NIP-05.",
+    "nostrSettingsNip05CreateProfileAction": "Creează profil",
     "profileSetupBackLabel": "Înapoi",
     "profileSetupAboutNostr": "Despre Nostr",
     "profileSetupProfilePublished": "Profil publicat cu succes!",

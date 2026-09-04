@@ -840,6 +840,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hãy thiết lập hồ sơ trước khi thêm địa chỉ NIP-05.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Tạo hồ sơ';
+
+  @override
   String get profileSetupBackLabel => 'Quay lại';
 
   @override

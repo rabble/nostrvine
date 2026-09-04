@@ -851,6 +851,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'أعِدّ ملفك الشخصي قبل إضافة عنوان NIP-05.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'إنشاء ملف شخصي';
+
+  @override
   String get profileSetupBackLabel => 'رجوع';
 
   @override

@@ -427,6 +427,7 @@
   "profileLinkCopied": "Đã sao chép liên kết hồ sơ",
   "profileSetupEditProfileTitle": "Chỉnh sửa hồ sơ",
   "nostrSettingsNip05ProfileRequired": "Hãy thiết lập hồ sơ trước khi thêm địa chỉ NIP-05.",
+  "nostrSettingsNip05CreateProfileAction": "Tạo hồ sơ",
   "profileSetupBackLabel": "Quay lại",
   "profileSetupAboutNostr": "Về Nostr",
   "profileSetupProfilePublished": "Đã đăng hồ sơ thành công!",

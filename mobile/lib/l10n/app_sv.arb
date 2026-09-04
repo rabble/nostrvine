@@ -334,6 +334,7 @@
     "profileLinkCopied": "Profillänk kopierad",
     "profileSetupEditProfileTitle": "Redigera profil",
     "nostrSettingsNip05ProfileRequired": "Konfigurera din profil innan du lägger till en NIP-05-adress.",
+    "nostrSettingsNip05CreateProfileAction": "Skapa profil",
     "profileSetupBackLabel": "Tillbaka",
     "profileSetupAboutNostr": "Om Nostr",
     "profileSetupProfilePublished": "Profilen publicerades!",

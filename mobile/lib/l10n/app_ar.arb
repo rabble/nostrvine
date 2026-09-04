@@ -334,6 +334,7 @@
     "profileLinkCopied": "تم نسخ رابط الملف الشخصي",
     "profileSetupEditProfileTitle": "تعديل الملف الشخصي",
     "nostrSettingsNip05ProfileRequired": "أعِدّ ملفك الشخصي قبل إضافة عنوان NIP-05.",
+    "nostrSettingsNip05CreateProfileAction": "إنشاء ملف شخصي",
     "profileSetupBackLabel": "رجوع",
     "profileSetupAboutNostr": "عن Nostr",
     "profileSetupProfilePublished": "تم نشر الملف الشخصي بنجاح!",

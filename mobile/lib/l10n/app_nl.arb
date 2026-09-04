@@ -334,6 +334,7 @@
     "profileLinkCopied": "Profiellink gekopieerd",
     "profileSetupEditProfileTitle": "Profiel bewerken",
     "nostrSettingsNip05ProfileRequired": "Stel je profiel in voordat je een NIP-05-adres toevoegt.",
+    "nostrSettingsNip05CreateProfileAction": "Profiel maken",
     "profileSetupBackLabel": "Terug",
     "profileSetupAboutNostr": "Over Nostr",
     "profileSetupProfilePublished": "Profiel succesvol gepubliceerd!",

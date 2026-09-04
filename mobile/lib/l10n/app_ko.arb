@@ -202,6 +202,7 @@
     "profileLinkCopied": "프로필 링크를 복사했어요",
     "profileSetupEditProfileTitle": "프로필 편집",
     "nostrSettingsNip05ProfileRequired": "NIP-05 주소를 추가하기 전에 프로필을 설정하세요.",
+    "nostrSettingsNip05CreateProfileAction": "프로필 만들기",
     "profileSetupBackLabel": "뒤로",
     "profileSetupAboutNostr": "Nostr란?",
     "profileSetupProfilePublished": "프로필을 게시했어요!",

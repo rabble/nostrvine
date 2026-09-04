@@ -334,6 +334,7 @@
     "profileLinkCopied": "Profil bağlantısı kopyalandı",
     "profileSetupEditProfileTitle": "Profili Düzenle",
     "nostrSettingsNip05ProfileRequired": "NIP-05 adresi eklemeden önce profilini oluştur.",
+    "nostrSettingsNip05CreateProfileAction": "Profil oluştur",
     "profileSetupBackLabel": "Geri",
     "profileSetupAboutNostr": "Nostr Hakkında",
     "profileSetupProfilePublished": "Profil başarıyla yayınlandı!",

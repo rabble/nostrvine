@@ -397,6 +397,7 @@
     "profileLinkCopied": "የመገለጫ አገናኝ ተቀድቷል።",
     "profileSetupEditProfileTitle": "መገለጫ አርትዕ",
     "nostrSettingsNip05ProfileRequired": "የNIP-05 አድራሻ ከማከልዎ በፊት መገለጫዎን ያዘጋጁ።",
+    "nostrSettingsNip05CreateProfileAction": "መገለጫ ይፍጠሩ",
     "profileSetupBackLabel": "ተመለስ",
     "profileSetupAboutNostr": "ስለ Nostr",
     "profileSetupProfilePublished": "መገለጫ በተሳካ ሁኔታ ታትሟል!",
