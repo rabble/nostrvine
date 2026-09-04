@@ -30,6 +30,7 @@ class DmSyncState {
   static const _drainVersionPrefix = 'dm.historyDrainVersion.';
   static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
   static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
+  static const _drainInboxCoveredPrefix = 'dm.drainCoveredOwnInbox.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -340,6 +341,43 @@ class DmSyncState {
     await _prefs.setBool('$_dmRelayListPublishedPrefix$pubkey', true);
   }
 
+  /// Whether the completed history drain for [pubkey] actually knew which
+  /// relays the user advertises for DMs.
+  ///
+  /// A drain that could not read the user's own kind-10050 paged the default
+  /// pool alone. For a user whose advertised inbox is not in that pool — the
+  /// normal case once NIP-65 discovery has found real relays — that means the
+  /// drain declared history complete having never asked the relays most likely
+  /// to hold it, and `historyDrainComplete` is permanent.
+  ///
+  /// Reads `false` for every install that completed before this was recorded,
+  /// which is exactly the stranded population. It is set once the drain
+  /// completes against a conclusive answer — a list it read, or an
+  /// authoritative "there is no list" — so a healthy install pays the recovery
+  /// check at most once and never again.
+  bool drainCoveredOwnInbox(String pubkey) =>
+      _prefs.getBool('$_drainInboxCoveredPrefix$pubkey') ?? false;
+
+  /// Records that the drain for [pubkey] reached a conclusive answer about the
+  /// user's own DM inbox relays. See [drainCoveredOwnInbox].
+  Future<void> setDrainCoveredOwnInbox(String pubkey) async {
+    await _prefs.setBool('$_drainInboxCoveredPrefix$pubkey', true);
+  }
+
+  /// Clears the completion latch for [pubkey] and re-arms the drain from now,
+  /// so a run that completed without ever asking the user's advertised inbox
+  /// relays gets one pass that does ask them.
+  ///
+  /// Seeds the cursor at now for the same reason [upgradeDrainVersionIfNeeded]
+  /// does: removing it would seed from `oldestSyncedAt` and re-read only
+  /// history the install already has.
+  Future<void> rearmDrainForOwnInbox(String pubkey) async {
+    await _armRedrainFromNow(
+      pubkey,
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    );
+  }
+
   /// The group-conversation recovery logic version last run for [pubkey], or
   /// `0` if it has never run (#8407).
   int groupRecoveryVersion(String pubkey) =>
@@ -360,6 +398,7 @@ class DmSyncState {
     await _prefs.remove('$_drainVersionPrefix$pubkey');
     await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
     await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
+    await _prefs.remove('$_drainInboxCoveredPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -378,7 +417,8 @@ class DmSyncState {
               key.startsWith(_drainCursorPrefix) ||
               key.startsWith(_drainVersionPrefix) ||
               key.startsWith(_dmRelayListPublishedPrefix) ||
-              key.startsWith(_groupRecoveryVersionPrefix),
+              key.startsWith(_groupRecoveryVersionPrefix) ||
+              key.startsWith(_drainInboxCoveredPrefix),
         )
         .toList();
     for (final key in keysToRemove) {

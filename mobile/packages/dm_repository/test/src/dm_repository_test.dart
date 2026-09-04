@@ -456,6 +456,9 @@ class _FakeDmSyncState implements DmSyncState {
       <({String pubkey, int createdAt})>[];
   final List<({String pubkey, int createdAt})> recordedWire =
       <({String pubkey, int createdAt})>[];
+  bool drainCoveredOwnInboxOverride = false;
+  final List<String> inboxCoveredPubkeys = <String>[];
+  final List<String> rearmedForInboxPubkeys = <String>[];
 
   @override
   int? newestSyncedAt(String pubkey) => newestOverride;
@@ -474,6 +477,22 @@ class _FakeDmSyncState implements DmSyncState {
     markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
     drainCursorOverride = null;
+  }
+
+  @override
+  bool drainCoveredOwnInbox(String pubkey) => drainCoveredOwnInboxOverride;
+
+  @override
+  Future<void> setDrainCoveredOwnInbox(String pubkey) async {
+    inboxCoveredPubkeys.add(pubkey);
+    drainCoveredOwnInboxOverride = true;
+  }
+
+  @override
+  Future<void> rearmDrainForOwnInbox(String pubkey) async {
+    rearmedForInboxPubkeys.add(pubkey);
+    drainCompleteOverride = false;
+    drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   }
 
   @override
@@ -7167,9 +7186,169 @@ void main() {
         },
       );
 
+      // The fast kind-10050 read cannot tell "the account advertises nothing"
+      // from "a relay stayed silent": a connected relay that never answers is
+      // skipped after the settle window and the read still reports success.
+      // The drain used to act on that guess and latch completion permanently.
+      group('the account\'s own inbox relays gate completion', () {
+        // Answers the kind-10050 lookup differently depending on whether the
+        // caller demanded full settlement, which is the whole distinction.
+        void stubSilentInboxRelay({required bool conclusive}) {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((invocation) async {
+            final filters =
+                invocation.positionalArguments.first
+                    as List<nostr_filter.Filter>;
+            final isInboxLookup =
+                filters.first.kinds?.contains(EventKind.dmRelaysList) ?? false;
+            if (!isInboxLookup) return answeredPage(const <Event>[]);
+            final strict =
+                invocation.namedArguments[#requireAllRelaysSettled] as bool? ??
+                false;
+            if (!strict) return answeredList(const <Event>[]);
+            return conclusive
+                ? answeredList(const <Event>[])
+                : unansweredList(timedOut: true);
+          });
+        }
+
+        test('defers completion when they could not be read', () async {
+          stubSilentInboxRelay(conclusive: false);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+          await createRepository(
+            syncState: syncState,
+          ).backfillHistoryIfNeeded();
+
+          // Latching here is permanent, and the relays that were never asked
+          // are the ones most likely to hold the missing history.
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(syncState.drainCompleteOverride, isFalse);
+        });
+
+        test(
+          'pins the resume cursor so the next run re-reads the window',
+          () async {
+            stubSilentInboxRelay(conclusive: false);
+            final syncState = _FakeDmSyncState()
+              ..oldestOverride = 100
+              ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+            await createRepository(
+              syncState: syncState,
+            ).backfillHistoryIfNeeded();
+
+            // Without the pin the next run seeds from oldestSyncedAt, which this
+            // run's own persisted messages drag below the windows still owed.
+            expect(syncState.persistedDrainCursors, contains(100));
+          },
+        );
+
+        test('still completes when they conclusively do not exist', () async {
+          stubSilentInboxRelay(conclusive: true);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+          await createRepository(
+            syncState: syncState,
+          ).backfillHistoryIfNeeded();
+
+          // Mutation guard against "defer whenever the fast read is not
+          // found": an account that advertises nothing must still finish.
+          expect(syncState.markedCompletePubkeys, contains(_validPubkeyA));
+        });
+      });
+
+      // A run that completed before the drain recorded whether it knew the
+      // account's advertised inbox relays may have declared history complete
+      // having never asked them. Fixing that forward strands every install
+      // already in that state, and there is no user-facing resync.
+      test(
+        'a completed drain that never read the inbox is re-armed once the '
+        'relays are known',
+        () async {
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => answeredList([
+              Event(
+                _validPubkeyA,
+                EventKind.dmRelaysList,
+                const [
+                  ['relay', 'wss://own.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ]),
+          );
+
+          await createRepository(
+            syncState: syncState,
+          ).backfillHistoryIfNeeded();
+
+          expect(syncState.rearmedForInboxPubkeys, contains(_validPubkeyA));
+          expect(syncState.inboxCoveredPubkeys, contains(_validPubkeyA));
+        },
+      );
+
+      test(
+        'a completed drain is left alone when the account genuinely '
+        'advertises no inbox',
+        () async {
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => answeredList(const <Event>[]));
+
+          await createRepository(
+            syncState: syncState,
+          ).backfillHistoryIfNeeded();
+
+          // Conclusively nothing to dial, so the completion was honest. The
+          // bit is still recorded, which is what stops this costing a read on
+          // every inbox open forever.
+          expect(syncState.rearmedForInboxPubkeys, isEmpty);
+          expect(syncState.inboxCoveredPubkeys, contains(_validPubkeyA));
+        },
+      );
+
       test('is a no-op when the drain already completed', () async {
         final syncState = _FakeDmSyncState()
           ..drainCompleteOverride = true
+          // Already knows which relays the account advertises, so there is
+          // nothing left for the recovery pass to find out.
+          ..drainCoveredOwnInboxOverride = true
           ..drainVersionOverride = DmSyncState.currentDrainVersion;
         final repository = createRepository(syncState: syncState);
 

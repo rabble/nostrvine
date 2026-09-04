@@ -1194,6 +1194,68 @@ class DmRepository {
     return res.state == _OwnDmInboxState.found ? res.relays : null;
   }
 
+  /// The user's own kind-10050 inbox relays for the history drain, together
+  /// with whether the answer can be trusted.
+  ///
+  /// [_ownInboxRelays] is the wrong reader here. It collapses "the user
+  /// advertises nothing" and "we could not read what the user advertises" into
+  /// the same `null`, which is free for a caller that merely routes to the
+  /// default pool and wrong for one that latches a permanent flag off the
+  /// result.
+  ///
+  /// The two are easy to confuse because the fast read cannot tell them apart:
+  /// a relay that stays connected and never answers is skipped after the
+  /// settle window and the query still reports success, so a silent relay
+  /// arrives as an ordinary empty list. `absent` then swallows it — and unlike
+  /// `failed`, `absent` is memoized for the rest of the session.
+  ///
+  /// That matters because the advertised inbox is usually NOT in the default
+  /// pool: the relays published in every kind-10050 join the pool only when
+  /// relay discovery came back empty. So a drain that guesses `absent` pages
+  /// the one relay set least likely to hold the missing history, and then
+  /// records that history as fully recovered.
+  ///
+  /// The live subscription cannot afford a conclusive read — it is awaited on
+  /// every login and reconnect (#8212). The drain can: it is unawaited
+  /// background work that already runs fully-settled page queries, and it pays
+  /// this at most once per run, and not at all when the fast read already
+  /// returned a list.
+  Future<({List<String>? relays, bool conclusive})> _drainOwnInboxRelays(
+    String pubkey,
+    int generation,
+  ) async {
+    final memoFuture = _resolveOwnDmInbox();
+    final memo = await memoFuture;
+    if (memo.state == _OwnDmInboxState.found) {
+      return (relays: memo.relays, conclusive: true);
+    }
+    if (_ingestSessionEnded(pubkey, generation)) {
+      return (relays: null, conclusive: true);
+    }
+    final strict = await _queryOwnDmInbox(
+      pubkey,
+      requireAuthoritative: true,
+      source: _DmRelayListSource.selfAuthored,
+    );
+    if (_ingestSessionEnded(pubkey, generation)) {
+      return (relays: null, conclusive: true);
+    }
+    // Repair the session memo with the better answer, so the live
+    // subscription's next re-subscribe stops routing by a silence we have
+    // since resolved. Guarded like the `failed` self-clear so a concurrent
+    // reset wins.
+    if (_ownInboxFuture == null || identical(_ownInboxFuture, memoFuture)) {
+      _ownInboxFuture = strict.state == _OwnDmInboxState.failed
+          ? null
+          : Future.value(strict);
+    }
+    return switch (strict.state) {
+      _OwnDmInboxState.found => (relays: strict.relays, conclusive: true),
+      _OwnDmInboxState.absent => (relays: null, conclusive: true),
+      _OwnDmInboxState.failed => (relays: null, conclusive: false),
+    };
+  }
+
   /// Where the sender's own gift-wrap copy of an outgoing DM should land: the
   /// configured pool UNION the user's advertised kind-10050 DM inbox.
   ///
@@ -1660,6 +1722,32 @@ class DmRepository {
     // the stale flag once so recovery runs again. No-op once at the current
     // version, so it does not loop on every inbox open. See #5202.
     await syncState.upgradeDrainVersionIfNeeded(pubkey);
+    if (syncState.historyDrainComplete(pubkey) &&
+        !syncState.drainCoveredOwnInbox(pubkey)) {
+      // Completed before the drain recorded whether it knew the user's
+      // advertised inbox relays — so it may have declared history complete
+      // having never asked them. Fixing that forward helps nobody already
+      // latched, and there is no user-facing resync, so spend one conclusive
+      // read to find out.
+      final recovery = await _drainOwnInboxRelays(pubkey, gen);
+      if (_ingestSessionEnded(pubkey, gen)) return;
+      if (recovery.conclusive) {
+        // Either answer settles it. A list means the earlier run may have
+        // missed whole relays, so re-arm once. No list means the pool was
+        // always the whole story and the completion was honest. Recording it
+        // either way is what stops this costing a read on every inbox open.
+        await syncState.setDrainCoveredOwnInbox(pubkey);
+        if (recovery.relays != null) {
+          await syncState.rearmDrainForOwnInbox(pubkey);
+          Log.info(
+            'DM history drain re-armed for ${pubkeyForLogs(pubkey)}: the '
+            'completed run never read the account\'s own DM inbox relays, '
+            'which are now known',
+            category: LogCategory.system,
+          );
+        }
+      }
+    }
     if (syncState.historyDrainComplete(pubkey)) {
       Log.info(
         'DM history drain skipped for ${pubkeyForLogs(pubkey)}: already '
@@ -1731,19 +1819,41 @@ class DmRepository {
           DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // Resolve the user's OWN kind-10050 inbox relays once for the whole
-      // drain (memoized, shared with the live subscription) and dial every
-      // page at them as well as the pool, so the backfill reads gift wraps
-      // delivered outside the default pool. `null` keeps default-pool-only
-      // behavior. See #4974.
-      final ownInbox = await _ownInboxRelays();
+      // drain and dial every page at them as well as the pool, so the backfill
+      // reads gift wraps delivered outside the default pool. `null` keeps
+      // default-pool-only behavior. See #4974.
+      final inbox = await _drainOwnInboxRelays(pubkey, gen);
       if (_ingestSessionEnded(pubkey, gen)) return;
+      final ownInbox = inbox.relays;
 
       var reachedEnd = false;
       // Set by any page not every relay settled — empty or not. Freezes the
       // durable cursor and blocks completion for the rest of this run, so a
       // window one relay never answered is re-requested rather than skipped
       // past. See the partial-page guard below. #8209.
-      var sawUnansweredPage = false;
+      //
+      // Seeded true when the inbox itself could not be read: that is the same
+      // defect one level up — the fan-out is missing whole relays rather than
+      // one relay in it staying silent — and it must not latch completion
+      // either.
+      var sawUnansweredPage = !inbox.conclusive;
+      var partialViewReason = 'an earlier page was not fully settled';
+      if (sawUnansweredPage) {
+        partialViewReason =
+            "the account's own DM inbox relays could not be read, so this run "
+            'paged the default pool only';
+        // Pin the resume point before paging, for the same reason the in-loop
+        // pins exist: this run persists messages, which drags oldestSyncedAt
+        // down, and an unpinned next run would seed below the windows the
+        // inbox relays still have to be asked for.
+        await syncState.setHistoryDrainCursor(pubkey, cursor);
+        Log.warning(
+          'DM history drain for ${pubkeyForLogs(pubkey)} could not read the '
+          "account's own DM inbox relays; holding the resume cursor at "
+          '$cursor and deferring completion to the next inbox open.',
+          category: LogCategory.system,
+        );
+      }
       var pagesRun = 0;
       var totalEvents = 0;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
@@ -1868,6 +1978,10 @@ class DmRepository {
         // resumes on the next inbox open instead.
         final nip04Recovered = await _recoverOutgoingNip04(pubkey, gen);
         if (nip04Recovered) {
+          // This run reached a conclusive answer about the account's own
+          // inbox relays — completion is only reachable when it did — so a
+          // later session never has to spend a read finding that out.
+          await syncState.setDrainCoveredOwnInbox(pubkey);
           await syncState.markHistoryDrainComplete(pubkey);
           // Restore read state now that the full conversation set is present:
           // last-sent floor + any read markers stashed during the drain. #4977.
@@ -1894,7 +2008,7 @@ class DmRepository {
         // that window; the next inbox open re-requests it. #8209.
         Log.warning(
           'DM history drain reached the end for ${pubkeyForLogs(pubkey)} but '
-          'an earlier page was not fully settled; deferring completion to the '
+          '$partialViewReason; deferring completion to the '
           'next inbox open.',
           category: LogCategory.system,
         );
