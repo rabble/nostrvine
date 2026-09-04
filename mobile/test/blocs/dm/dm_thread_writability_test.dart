@@ -16,25 +16,27 @@ void main() {
         isBlockedByUs: (pubkey) => pubkey == blockedPeer,
       );
 
-  test('ordinary thread is writable', () {
-    expect(resolve([ordinaryPeer]), DmThreadWritability.writable);
-  });
+  group('resolveDmThreadWritability', () {
+    test('ordinary thread is writable', () {
+      expect(resolve([ordinaryPeer]), DmThreadWritability.writable);
+    });
 
-  test('thread containing a retired moderation peer is closed', () {
-    expect(
-      resolve([ordinaryPeer, kLegacyModerationPubkeys.first]),
-      DmThreadWritability.closedRetired,
-    );
-  });
+    test('thread containing a retired moderation peer is closed', () {
+      expect(
+        resolve([ordinaryPeer, kLegacyModerationPubkeys.first]),
+        DmThreadWritability.closedRetired,
+      );
+    });
 
-  test('blocked first participant makes the thread read-only', () {
-    expect(resolve([blockedPeer]), DmThreadWritability.blockedByUs);
-  });
+    test('blocked first participant makes the thread read-only', () {
+      expect(resolve([blockedPeer]), DmThreadWritability.blockedByUs);
+    });
 
-  test('group block behavior follows the first route participant', () {
-    expect(
-      resolve([ordinaryPeer, blockedPeer]),
-      DmThreadWritability.writable,
-    );
+    test('group block behavior follows the first route participant', () {
+      expect(
+        resolve([ordinaryPeer, blockedPeer]),
+        DmThreadWritability.writable,
+      );
+    });
   });
 }
