@@ -800,7 +800,7 @@ bool _encryptPlaintextMigrationArtifact({
 }
 
 /// Promotes the verified encrypted migration artifact into the canonical DB
-/// path, carrying WAL/SHM sidecars with it.
+/// path, carrying its rollback-journal, WAL, and SHM sidecars with it.
 @visibleForTesting
 void promoteEncryptedMigrationArtifact({
   required String encryptedPath,
@@ -864,10 +864,11 @@ int _userVersion(Database db) =>
 /// When the platform keystore is cleared (OS reset / restore without keychain
 /// migration) the cipher key is gone and the encrypted database is
 /// cryptographically unrecoverable, so it must be replaced. It is renamed to a
-/// timestamped backup (with its `-wal`/`-shm` sidecars) rather than deleted, so
-/// a misclassification or a future recovery path is never catastrophic. A fresh
-/// encrypted database is created under the new key on first open; DMs resync
-/// from relays. See `mobile/docs/sqlcipher_at_rest_plan.md`.
+/// timestamped backup (with its rollback-journal, WAL, and SHM sidecars)
+/// rather than deleted, so a misclassification or a future recovery path is
+/// never catastrophic. A fresh encrypted database is created under the new
+/// key on first open; DMs resync from relays. See
+/// `mobile/docs/sqlcipher_at_rest_plan.md`.
 Future<void> backUpAndRemoveSharedDatabase() async {
   final dbPath = await getSharedDatabasePath();
   if (!File(dbPath).existsSync()) return;
