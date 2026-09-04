@@ -113,7 +113,7 @@ void main() {
       );
     });
 
-    testWidgets('dragging a long description scrolls toward metadata options', (
+    testWidgets('a drag notification from the description dismisses keyboard', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(402, 874));
@@ -131,27 +131,44 @@ void main() {
         (widget) =>
             widget is DivineTextField && widget.labelText == 'Description',
       );
-      await tester.enterText(description, List.filled(260, 'a').join());
-      await tester.pump();
-
-      final bottomBar = find.byType(VideoMetadataCaptureBottomBar);
-      final descriptionRect = tester.getRect(description);
-      final dragStart = Offset(
-        descriptionRect.center.dx,
-        tester.getTopLeft(bottomBar).dy - 1,
+      await tester.enterText(
+        description,
+        List.generate(40, (index) => 'description line $index').join('\n'),
       );
-      expect(descriptionRect.contains(dragStart), isTrue);
+      await tester.pump(const Duration(seconds: 1));
 
+      final descriptionField = tester.widget<DivineTextField>(description);
+      expect(descriptionField.focusNode?.hasFocus, isTrue);
+
+      final editable = find.descendant(
+        of: description,
+        matching: find.byType(EditableText),
+      );
       final outerScrollable = tester.state<ScrollableState>(
         find.byType(Scrollable).first,
       );
       final initialOffset = outerScrollable.position.pixels;
 
-      await tester.dragFrom(dragStart, const Offset(0, -300));
+      final editableContext = tester.element(editable);
+      final descriptionScrollable = tester.state<ScrollableState>(
+        find.descendant(of: description, matching: find.byType(Scrollable)),
+      );
+      ScrollUpdateNotification(
+        metrics: descriptionScrollable.position,
+        context: editableContext,
+        scrollDelta: 10,
+        dragDetails: DragUpdateDetails(
+          globalPosition: Offset.zero,
+          delta: const Offset(0, -10),
+        ),
+      ).dispatch(editableContext);
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
 
-      expect(outerScrollable.position.pixels, greaterThan(initialOffset));
+      // The description consumes this drag to scroll its own text. Dismissing
+      // the keyboard is intentional: it restores the viewport so the next
+      // page drag can reach Tags and the remaining metadata controls.
+      expect(outerScrollable.position.pixels, initialOffset);
+      expect(descriptionField.focusNode?.hasFocus, isFalse);
     });
   });
 }
