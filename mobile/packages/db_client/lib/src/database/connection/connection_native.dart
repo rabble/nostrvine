@@ -1089,12 +1089,7 @@ void _backupDestinationDatabase(String dbPath) {
   );
 
   File(dbPath).renameSync(backupPath);
-  for (final suffix in databaseSidecarSuffixes) {
-    final sidecar = File('$dbPath$suffix');
-    if (sidecar.existsSync()) {
-      sidecar.renameSync('$backupPath$suffix');
-    }
-  }
+  _moveSidecars(fromPath: dbPath, toPath: backupPath);
 }
 
 void _backupLegacyConflictDatabase({
