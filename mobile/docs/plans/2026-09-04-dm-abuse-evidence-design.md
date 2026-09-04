@@ -166,8 +166,13 @@ clearly unverified excerpt.
 - Add explicit, localized consent for sharing the selected message privately.
 - Carry evidence in a dedicated payload that cannot enter public or support
   projections accidentally.
-- Enforce the NIP-17 message-size ceiling before submission and show a useful
-  failure if the private report is too large.
+- Surface the existing rumor-size refusal in the report sheet. `maxDmRumorBytes`
+  (`mobile/packages/dm_repository/lib/src/dm_message_size.dart`) already refuses
+  an oversized rumor before it is enqueued and returns
+  `NIP17SendResult.tooLong`, so the work is rendering that failure on the report
+  path rather than adding a second check. The 40,000-byte bound comes from
+  NIP-44 v2's `u16` length prefix under the double encryption NIP-17 performs;
+  NIP-17 itself specifies no message-size ceiling.
 
 ### Moderation service
 
@@ -200,8 +205,8 @@ The implementation is not complete without tests proving:
 - The moderator receives the selected received message, reason, target, and
   provenance as distinct fields.
 - Unverified evidence cannot trigger automated enforcement.
-- Oversized evidence follows the documented behavior at the 40,000-byte rumor
-  ceiling.
+- Oversized evidence follows the documented `maxDmRumorBytes` behavior at the
+  40,000-byte rumor ceiling.
 - Consent copy exists in every locale and is rendered through `context.l10n`.
 
 If the verifiable second phase is approved, add cross-implementation fixtures
