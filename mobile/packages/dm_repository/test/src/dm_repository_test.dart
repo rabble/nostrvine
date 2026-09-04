@@ -9556,6 +9556,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -9616,6 +9617,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: convId,
             participantPubkeys: jsonEncode(participants),
             isGroup: false,
@@ -9681,6 +9683,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyB,
@@ -9715,6 +9718,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyB,
@@ -9746,6 +9750,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyB,
@@ -10922,6 +10927,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -11241,6 +11247,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyB,
@@ -13282,6 +13289,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: convId,
             participantPubkeys: jsonEncode(participants),
             isGroup: false,
@@ -13965,6 +13973,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: conversationId,
             senderPubkey: _validPubkeyB, // NOT the current user
@@ -14001,6 +14010,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: conversationId,
               senderPubkey: _validPubkeyA, // current user
@@ -14020,6 +14030,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: conversationId,
               participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
               isGroup: false,
@@ -14144,6 +14155,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: conversationId,
               senderPubkey: _validPubkeyA, // current user
@@ -14163,6 +14175,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: conversationId,
               participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
               isGroup: false,
@@ -14292,6 +14305,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: conversationId,
               senderPubkey: _validPubkeyA,
@@ -14343,6 +14357,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: conversationId,
             senderPubkey: _validPubkeyA,
@@ -14361,6 +14376,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: conversationId,
             participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
             isGroup: false,
@@ -14464,6 +14480,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: conversationId,
             senderPubkey: _validPubkeyA,
@@ -14484,6 +14501,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: conversationId,
             participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
             isGroup: false,
@@ -14638,6 +14656,7 @@ void main() {
             if (previewRead == 1) return [];
             return [
               DirectMessageRow(
+                ownerPubkey: '',
                 id: _rumorEventId,
                 conversationId: conversationId,
                 senderPubkey: _validPubkeyA,
@@ -14731,6 +14750,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: conversationId,
             senderPubkey: _validPubkeyA,
@@ -14751,6 +14771,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: conversationId,
             participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
             isGroup: false,
@@ -14781,6 +14802,7 @@ void main() {
         ).thenAnswer(
           (_) async => [
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: conversationId,
               senderPubkey: _validPubkeyA,
@@ -15001,6 +15023,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: conversationId,
               participantPubkeys:
                   '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
@@ -15282,6 +15305,7 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => ConversationRow(
+                ownerPubkey: '',
                 id: conversationId,
                 participantPubkeys:
                     '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
@@ -15340,6 +15364,7 @@ void main() {
         ).thenAnswer(
           (_) async => const [
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: 'conv_1',
               senderPubkey: _validPubkeyA,
@@ -15510,6 +15535,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: canonicalId,
               participantPubkeys: jsonEncode(canonical1to1),
               isGroup: false,
@@ -15817,6 +15843,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: groupId,
               participantPubkeys: jsonEncode(groupParticipants),
               isGroup: true,
@@ -16615,6 +16642,7 @@ void main() {
         ).thenAnswer(
           (_) async => [
             ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -16669,6 +16697,7 @@ void main() {
         ).thenAnswer(
           (_) async => [
             DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyB,
@@ -16718,6 +16747,7 @@ void main() {
           ).thenAnswer(
             (_) => Stream.value([
               ConversationRow(
+                ownerPubkey: '',
                 id: convId,
                 participantPubkeys: jsonEncode(participants),
                 isGroup: false,
@@ -16777,6 +16807,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -16810,6 +16841,7 @@ void main() {
           ).thenAnswer(
             (_) => Stream.value([
               ConversationRow(
+                ownerPubkey: '',
                 id: convId,
                 participantPubkeys: jsonEncode(participants),
                 isGroup: false,
@@ -16871,6 +16903,7 @@ void main() {
           ).thenAnswer(
             (_) => Stream.value([
               ConversationRow(
+                ownerPubkey: '',
                 id: convA,
                 participantPubkeys: jsonEncode(participantsA),
                 isGroup: false,
@@ -16881,6 +16914,7 @@ void main() {
                 lastMessageTimestamp: 1700000900,
               ),
               ConversationRow(
+                ownerPubkey: '',
                 id: convB,
                 participantPubkeys: jsonEncode(participantsB),
                 isGroup: false,
@@ -16918,6 +16952,7 @@ void main() {
         ).thenAnswer(
           (_) => Stream.value([
             ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -17017,6 +17052,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: convId,
             senderPubkey: _validPubkeyB,
@@ -17052,6 +17088,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => ConversationRow(
+            ownerPubkey: '',
             id: convId,
             participantPubkeys: jsonEncode(participants),
             isGroup: false,
@@ -17124,6 +17161,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyA,
@@ -17217,6 +17255,7 @@ void main() {
           ).thenAnswer((invocation) async {
             final id = invocation.positionalArguments.single as String;
             return DirectMessageRow(
+              ownerPubkey: '',
               id: id,
               conversationId: convId,
               senderPubkey: _validPubkeyA,
@@ -17266,6 +17305,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: convId,
             senderPubkey: _validPubkeyB, // B is the author
@@ -17318,6 +17358,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: _rumorEventId,
             conversationId: convId,
             senderPubkey: _validPubkeyB,
@@ -17326,7 +17367,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
             isDeleted: true,
-            twinCollapsed: false, // Already deleted
+            twinCollapsed: false, // Already deleted,
           ),
         );
 
@@ -17653,6 +17694,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => DirectMessageRow(
+            ownerPubkey: '',
             id: id,
             conversationId: convId,
             senderPubkey: senderPubkey,
@@ -18796,6 +18838,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyA,
@@ -18815,6 +18858,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -18856,6 +18900,7 @@ void main() {
           ).thenAnswer(
             (_) async => [
               DirectMessageRow(
+                ownerPubkey: '',
                 id: _giftWrapEventId2,
                 conversationId: convId,
                 senderPubkey: _validPubkeyB,
@@ -18918,6 +18963,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => DirectMessageRow(
+              ownerPubkey: '',
               id: _rumorEventId,
               conversationId: convId,
               senderPubkey: _validPubkeyA,
@@ -18937,6 +18983,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: convId,
               participantPubkeys: jsonEncode(participants),
               isGroup: false,
@@ -18978,6 +19025,7 @@ void main() {
           ).thenAnswer(
             (_) async => [
               DirectMessageRow(
+                ownerPubkey: '',
                 id: _giftWrapEventId2,
                 conversationId: convId,
                 senderPubkey: _validPubkeyB,
@@ -19096,6 +19144,7 @@ void main() {
         ).thenAnswer(
           (_) async => [
             ConversationRow(
+              ownerPubkey: '',
               id: DmRepository.computeConversationId(oneToOne),
               participantPubkeys: jsonEncode(oneToOne),
               isGroup: false,
@@ -19107,6 +19156,7 @@ void main() {
               lastMessageSenderPubkey: _validPubkeyB,
             ),
             ConversationRow(
+              ownerPubkey: '',
               id: groupId,
               participantPubkeys: jsonEncode(groupParticipants),
               isGroup: true,
@@ -19172,6 +19222,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => ConversationRow(
+              ownerPubkey: '',
               id: selfConvId,
               participantPubkeys: jsonEncode([_validPubkeyA, _validPubkeyA]),
               isGroup: false,
@@ -25736,6 +25787,7 @@ void main() {
         String senderPubkey = _validPubkeyA,
         String? sendBatchId,
       }) => DirectMessageRow(
+        ownerPubkey: '',
         id: winnerRumorId,
         conversationId: groupConversationId,
         senderPubkey: senderPubkey,

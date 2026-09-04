@@ -9312,9 +9312,10 @@ class $DirectMessagesTable extends DirectMessages
   late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
     'owner_pubkey',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _sendBatchIdMeta = const VerificationMeta(
     'sendBatchId',
@@ -9602,7 +9603,7 @@ class $DirectMessagesTable extends DirectMessages
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {id, ownerPubkey};
   @override
   DirectMessageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -9698,7 +9699,7 @@ class $DirectMessagesTable extends DirectMessages
       ownerPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
-      ),
+      )!,
       sendBatchId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}send_batch_id'],
@@ -9808,8 +9809,21 @@ class DirectMessageRow extends DataClass
   final bool twinCollapsed;
 
   /// Hex public key of the account that received/sent this message.
-  /// NULL for legacy messages created before multi-account support.
-  final String? ownerPubkey;
+  ///
+  /// Part of the primary key. A NIP-17 group send seals ONE rumor for every
+  /// recipient, so two local accounts in the same room receive distinct gift
+  /// wraps carrying an identical rumor id, and each must be able to hold its
+  /// own row (#6645).
+  ///
+  /// NOT NULL with an empty-string default rather than nullable, because
+  /// SQLite compares NULLs as *distinct* inside a unique constraint: a
+  /// nullable owner in the key would stop two legacy rows that share a rumor
+  /// id from collapsing, silently weakening the dedup this table relies on.
+  /// `''` is already this schema's legacy sentinel — `clearForAccountSwitch`
+  /// and `clearUnowned` have always treated `NULL` and `''` alike. Rows
+  /// written before multi-account support are backfilled to `''` by the v12
+  /// migration.
+  final String ownerPubkey;
 
   /// Durable, collision-proof identity of one send invocation. Set on the
   /// sender's local message for 1:1 sends and shared by the single local
@@ -9868,7 +9882,7 @@ class DirectMessageRow extends DataClass
     this.thumbnailUrl,
     required this.isDeleted,
     required this.twinCollapsed,
-    this.ownerPubkey,
+    required this.ownerPubkey,
     this.sendBatchId,
     this.deletionRumorJson,
     this.deletionPublishStatus,
@@ -9924,9 +9938,7 @@ class DirectMessageRow extends DataClass
     }
     map['is_deleted'] = Variable<bool>(isDeleted);
     map['twin_collapsed'] = Variable<bool>(twinCollapsed);
-    if (!nullToAbsent || ownerPubkey != null) {
-      map['owner_pubkey'] = Variable<String>(ownerPubkey);
-    }
+    map['owner_pubkey'] = Variable<String>(ownerPubkey);
     if (!nullToAbsent || sendBatchId != null) {
       map['send_batch_id'] = Variable<String>(sendBatchId);
     }
@@ -9989,9 +10001,7 @@ class DirectMessageRow extends DataClass
           : Value(thumbnailUrl),
       isDeleted: Value(isDeleted),
       twinCollapsed: Value(twinCollapsed),
-      ownerPubkey: ownerPubkey == null && nullToAbsent
-          ? const Value.absent()
-          : Value(ownerPubkey),
+      ownerPubkey: Value(ownerPubkey),
       sendBatchId: sendBatchId == null && nullToAbsent
           ? const Value.absent()
           : Value(sendBatchId),
@@ -10034,7 +10044,7 @@ class DirectMessageRow extends DataClass
       thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       twinCollapsed: serializer.fromJson<bool>(json['twinCollapsed']),
-      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+      ownerPubkey: serializer.fromJson<String>(json['ownerPubkey']),
       sendBatchId: serializer.fromJson<String?>(json['sendBatchId']),
       deletionRumorJson: serializer.fromJson<String?>(
         json['deletionRumorJson'],
@@ -10070,7 +10080,7 @@ class DirectMessageRow extends DataClass
       'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'twinCollapsed': serializer.toJson<bool>(twinCollapsed),
-      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+      'ownerPubkey': serializer.toJson<String>(ownerPubkey),
       'sendBatchId': serializer.toJson<String?>(sendBatchId),
       'deletionRumorJson': serializer.toJson<String?>(deletionRumorJson),
       'deletionPublishStatus': serializer.toJson<String?>(
@@ -10102,7 +10112,7 @@ class DirectMessageRow extends DataClass
     Value<String?> thumbnailUrl = const Value.absent(),
     bool? isDeleted,
     bool? twinCollapsed,
-    Value<String?> ownerPubkey = const Value.absent(),
+    String? ownerPubkey,
     Value<String?> sendBatchId = const Value.absent(),
     Value<String?> deletionRumorJson = const Value.absent(),
     Value<String?> deletionPublishStatus = const Value.absent(),
@@ -10137,7 +10147,7 @@ class DirectMessageRow extends DataClass
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     isDeleted: isDeleted ?? this.isDeleted,
     twinCollapsed: twinCollapsed ?? this.twinCollapsed,
-    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+    ownerPubkey: ownerPubkey ?? this.ownerPubkey,
     sendBatchId: sendBatchId.present ? sendBatchId.value : this.sendBatchId,
     deletionRumorJson: deletionRumorJson.present
         ? deletionRumorJson.value
@@ -10324,7 +10334,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> thumbnailUrl;
   final Value<bool> isDeleted;
   final Value<bool> twinCollapsed;
-  final Value<String?> ownerPubkey;
+  final Value<String> ownerPubkey;
   final Value<String?> sendBatchId;
   final Value<String?> deletionRumorJson;
   final Value<String?> deletionPublishStatus;
@@ -10477,7 +10487,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? thumbnailUrl,
     Value<bool>? isDeleted,
     Value<bool>? twinCollapsed,
-    Value<String?>? ownerPubkey,
+    Value<String>? ownerPubkey,
     Value<String?>? sendBatchId,
     Value<String?>? deletionRumorJson,
     Value<String?>? deletionPublishStatus,
@@ -11569,9 +11579,10 @@ class $ConversationsTable extends Conversations
   late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
     'owner_pubkey',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _dmProtocolMeta = const VerificationMeta(
     'dmProtocol',
@@ -11718,7 +11729,7 @@ class $ConversationsTable extends Conversations
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {id, ownerPubkey};
   @override
   ConversationRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -11770,7 +11781,7 @@ class $ConversationsTable extends Conversations
       ownerPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
-      ),
+      )!,
       dmProtocol: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}dm_protocol'],
@@ -11825,8 +11836,18 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
   final int createdAt;
 
   /// Hex public key of the account that owns this conversation view.
-  /// NULL for legacy conversations created before multi-account support.
-  final String? ownerPubkey;
+  ///
+  /// Part of the primary key, for the same reason as
+  /// [DirectMessages.ownerPubkey]: the conversation id is derived from the
+  /// participant set, which is owner-independent, so two local accounts in one
+  /// room compute the same id. With a global key the second account's upsert
+  /// did not merely fail — `ownerPubkey` merged as `coalesce(excluded, old)`,
+  /// so the incoming owner won and the room disappeared from the first
+  /// account's inbox (#6645).
+  ///
+  /// NOT NULL with an empty-string default; see [DirectMessages.ownerPubkey]
+  /// for why a nullable column cannot carry this invariant.
+  final String ownerPubkey;
 
   /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
   /// NULL when the protocol is unknown (e.g. conversation created before
@@ -11844,7 +11865,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     this.lastReadTimestamp,
     required this.currentUserHasSent,
     required this.createdAt,
-    this.ownerPubkey,
+    required this.ownerPubkey,
     this.dmProtocol,
   });
   @override
@@ -11873,9 +11894,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     }
     map['current_user_has_sent'] = Variable<bool>(currentUserHasSent);
     map['created_at'] = Variable<int>(createdAt);
-    if (!nullToAbsent || ownerPubkey != null) {
-      map['owner_pubkey'] = Variable<String>(ownerPubkey);
-    }
+    map['owner_pubkey'] = Variable<String>(ownerPubkey);
     if (!nullToAbsent || dmProtocol != null) {
       map['dm_protocol'] = Variable<String>(dmProtocol);
     }
@@ -11905,9 +11924,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
           : Value(lastReadTimestamp),
       currentUserHasSent: Value(currentUserHasSent),
       createdAt: Value(createdAt),
-      ownerPubkey: ownerPubkey == null && nullToAbsent
-          ? const Value.absent()
-          : Value(ownerPubkey),
+      ownerPubkey: Value(ownerPubkey),
       dmProtocol: dmProtocol == null && nullToAbsent
           ? const Value.absent()
           : Value(dmProtocol),
@@ -11939,7 +11956,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       lastReadTimestamp: serializer.fromJson<int?>(json['lastReadTimestamp']),
       currentUserHasSent: serializer.fromJson<bool>(json['currentUserHasSent']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
-      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+      ownerPubkey: serializer.fromJson<String>(json['ownerPubkey']),
       dmProtocol: serializer.fromJson<String?>(json['dmProtocol']),
     );
   }
@@ -11960,7 +11977,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
       'lastReadTimestamp': serializer.toJson<int?>(lastReadTimestamp),
       'currentUserHasSent': serializer.toJson<bool>(currentUserHasSent),
       'createdAt': serializer.toJson<int>(createdAt),
-      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+      'ownerPubkey': serializer.toJson<String>(ownerPubkey),
       'dmProtocol': serializer.toJson<String?>(dmProtocol),
     };
   }
@@ -11977,7 +11994,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
     Value<int?> lastReadTimestamp = const Value.absent(),
     bool? currentUserHasSent,
     int? createdAt,
-    Value<String?> ownerPubkey = const Value.absent(),
+    String? ownerPubkey,
     Value<String?> dmProtocol = const Value.absent(),
   }) => ConversationRow(
     id: id ?? this.id,
@@ -11999,7 +12016,7 @@ class ConversationRow extends DataClass implements Insertable<ConversationRow> {
         : this.lastReadTimestamp,
     currentUserHasSent: currentUserHasSent ?? this.currentUserHasSent,
     createdAt: createdAt ?? this.createdAt,
-    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+    ownerPubkey: ownerPubkey ?? this.ownerPubkey,
     dmProtocol: dmProtocol.present ? dmProtocol.value : this.dmProtocol,
   );
   ConversationRow copyWithCompanion(ConversationsCompanion data) {
@@ -12103,7 +12120,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
   final Value<int?> lastReadTimestamp;
   final Value<bool> currentUserHasSent;
   final Value<int> createdAt;
-  final Value<String?> ownerPubkey;
+  final Value<String> ownerPubkey;
   final Value<String?> dmProtocol;
   final Value<int> rowid;
   const ConversationsCompanion({
@@ -12190,7 +12207,7 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
     Value<int?>? lastReadTimestamp,
     Value<bool>? currentUserHasSent,
     Value<int>? createdAt,
-    Value<String?>? ownerPubkey,
+    Value<String>? ownerPubkey,
     Value<String?>? dmProtocol,
     Value<int>? rowid,
   }) {
@@ -12801,9 +12818,9 @@ class $OutgoingDmsTable extends OutgoingDms
 }
 
 class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
-  /// Primary key. Equal to the rumor's event id (`rumor_event_json` →
-  /// `id`), so a single logical message has exactly one queue row even
-  /// across retries.
+  /// Opaque durable queue-row handle. It equals the rumor event id for 1:1
+  /// and legacy sends. Group sends append the recipient pubkey because one
+  /// shared wire rumor needs separate delivery state for each recipient.
   final String id;
 
   /// Deterministic conversation identifier (SHA-256 of sorted
@@ -22606,7 +22623,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
       Value<bool> twinCollapsed,
-      Value<String?> ownerPubkey,
+      Value<String> ownerPubkey,
       Value<String?> sendBatchId,
       Value<String?> deletionRumorJson,
       Value<String?> deletionPublishStatus,
@@ -22636,7 +22653,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
       Value<bool> twinCollapsed,
-      Value<String?> ownerPubkey,
+      Value<String> ownerPubkey,
       Value<String?> sendBatchId,
       Value<String?> deletionRumorJson,
       Value<String?> deletionPublishStatus,
@@ -23100,7 +23117,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
                 Value<bool> twinCollapsed = const Value.absent(),
-                Value<String?> ownerPubkey = const Value.absent(),
+                Value<String> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
                 Value<String?> deletionRumorJson = const Value.absent(),
                 Value<String?> deletionPublishStatus = const Value.absent(),
@@ -23158,7 +23175,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
                 Value<bool> twinCollapsed = const Value.absent(),
-                Value<String?> ownerPubkey = const Value.absent(),
+                Value<String> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
                 Value<String?> deletionRumorJson = const Value.absent(),
                 Value<String?> deletionPublishStatus = const Value.absent(),
@@ -23588,7 +23605,7 @@ typedef $$ConversationsTableCreateCompanionBuilder =
       Value<int?> lastReadTimestamp,
       Value<bool> currentUserHasSent,
       required int createdAt,
-      Value<String?> ownerPubkey,
+      Value<String> ownerPubkey,
       Value<String?> dmProtocol,
       Value<int> rowid,
     });
@@ -23605,7 +23622,7 @@ typedef $$ConversationsTableUpdateCompanionBuilder =
       Value<int?> lastReadTimestamp,
       Value<bool> currentUserHasSent,
       Value<int> createdAt,
-      Value<String?> ownerPubkey,
+      Value<String> ownerPubkey,
       Value<String?> dmProtocol,
       Value<int> rowid,
     });
@@ -23867,7 +23884,7 @@ class $$ConversationsTableTableManager
                 Value<int?> lastReadTimestamp = const Value.absent(),
                 Value<bool> currentUserHasSent = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
-                Value<String?> ownerPubkey = const Value.absent(),
+                Value<String> ownerPubkey = const Value.absent(),
                 Value<String?> dmProtocol = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion(
@@ -23899,7 +23916,7 @@ class $$ConversationsTableTableManager
                 Value<int?> lastReadTimestamp = const Value.absent(),
                 Value<bool> currentUserHasSent = const Value.absent(),
                 required int createdAt,
-                Value<String?> ownerPubkey = const Value.absent(),
+                Value<String> ownerPubkey = const Value.absent(),
                 Value<String?> dmProtocol = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationsCompanion.insert(

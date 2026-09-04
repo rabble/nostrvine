@@ -71,6 +71,9 @@ class DmSyncState {
   /// [upgradeDrainVersionIfNeeded]: on its own it re-reads history below
   /// [oldestSyncedAt], recovers nothing, and re-latches completion off the
   /// resulting empty page — spending the recovery pass it exists to provide.
+  /// The owner-scoped DM key migration deliberately does not bump this value:
+  /// the processed-wrap ledger records no outcome, so a forced replay could not
+  /// distinguish a stranded message from a legitimate no-message result.
   static const int currentDrainVersion = 5;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM

@@ -129,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -202,6 +202,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         await _repairSchemaV11();
       }
+      if (from < 12) {
+        await _migrateToV12OwnerScopedDmKeys(m);
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -217,12 +220,92 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV8();
         await _repairSchemaV10();
         await _repairSchemaV11();
+        await _migrateToV12OwnerScopedDmKeys();
       }
 
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
+
+  /// Owner-scopes the DM message and conversation keys (#6645).
+  ///
+  /// A NIP-17 group send seals ONE rumor for every recipient, so a device
+  /// holding two local accounts in the same room receives distinct gift wraps
+  /// that decrypt to an identical rumor id. Under the previous global keys the
+  /// second account's `INSERT OR IGNORE` was a no-op and its copy was lost, and
+  /// `conversations` was worse: the id is a hash of the participant set, so the
+  /// second account's upsert took the row and the thread vanished from the
+  /// first account's inbox.
+  ///
+  /// Two steps, in this order, and idempotent throughout:
+  ///
+  /// 1. Backfill `NULL` owners to `''`. This must precede the rebuild, because
+  ///    the new column is NOT NULL. `''` is not a new concept — the
+  ///    account-switch deletes have always treated `NULL` and `''` alike — and
+  ///    it is what keeps legacy dedup working: SQLite compares NULLs as
+  ///    *distinct* inside a unique constraint, so leaving the column nullable
+  ///    would let two legacy rows sharing a rumor id both insert.
+  /// 2. Rebuild both tables so the new composite primary key takes effect, then
+  ///    recreate their indexes — SQLite's table-rebuild drops them with the old
+  ///    table, and these are declared outside Drift's own index handling.
+  /// Processed-wrap ledger rows are deliberately preserved. An unmatched row
+  /// can represent a reaction, deletion, unsupported kind, tombstone-suppressed
+  /// event, or collapsed protocol twin; v11 stored no outcome that would let a
+  /// migration distinguish those legitimate terminal results from a stranded
+  /// message. Absence of a message row is therefore not recovery evidence.
+  Future<void> _migrateToV12OwnerScopedDmKeys([Migrator? migrator]) async {
+    final m = migrator ?? createMigrator();
+
+    await customStatement(
+      "UPDATE direct_messages SET owner_pubkey = '' "
+      'WHERE owner_pubkey IS NULL',
+    );
+    await customStatement(
+      "UPDATE conversations SET owner_pubkey = '' "
+      'WHERE owner_pubkey IS NULL',
+    );
+
+    await m.alterTable(TableMigration(directMessages));
+    await m.alterTable(TableMigration(conversations));
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dm_conversation_id '
+      'ON direct_messages (conversation_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dm_conversation_created '
+      'ON direct_messages (conversation_id, created_at DESC)',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_gift_wrap_id '
+      'ON direct_messages (gift_wrap_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dm_sender '
+      'ON direct_messages (sender_pubkey)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_pubkey '
+      'ON direct_messages (owner_pubkey)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dm_owner_conversation '
+      'ON direct_messages (owner_pubkey, conversation_id, created_at DESC)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_last_message '
+      'ON conversations (last_message_timestamp DESC)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_is_read '
+      'ON conversations (is_read)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey '
+      'ON conversations (owner_pubkey)',
+    );
+  }
 
   /// Adds the durable delete-for-everyone columns to `direct_messages`.
   ///

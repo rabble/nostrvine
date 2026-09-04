@@ -305,18 +305,120 @@ void main() {
             dmProtocol: 'nip04',
           );
 
+          // The owner is part of the key now, so a conflicting upsert is one
+          // that names the same owner. Omitting it would address the legacy
+          // `''` row, which is a different conversation view (#6645).
           await dao.upsertConversation(
             id: 'conv_1',
             participantPubkeys: '["pubkey_a","pubkey_b","pubkey_c"]',
             isGroup: true,
             createdAt: 1700000100,
+            ownerPubkey: 'owner_a',
           );
 
-          final result = await dao.getConversation('conv_1');
+          final result = await dao.getConversation(
+            'conv_1',
+            ownerPubkey: 'owner_a',
+          );
           expect(result, isNotNull);
           expect(result!.subject, equals('Original Subject'));
           expect(result.ownerPubkey, equals('owner_a'));
           expect(result.dmProtocol, equals('nip04'));
+        },
+      );
+
+      test('each local account keeps its own view of one room', () async {
+        // Two local accounts in one NIP-17 room derive the same conversation
+        // id, because it hashes the participant set and carries no owner.
+        // With a global key the second upsert took the row and the thread
+        // vanished from the first account's inbox (#6645).
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer","owner_a","owner_b"]',
+          isGroup: true,
+          createdAt: 1700000000,
+          lastMessageContent: 'as account A sees it',
+          lastMessageTimestamp: 1700000000,
+          lastMessageSenderPubkey: 'peer',
+          ownerPubkey: 'owner_a',
+        );
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer","owner_a","owner_b"]',
+          isGroup: true,
+          createdAt: 1700000001,
+          lastMessageContent: 'as account B sees it',
+          lastMessageTimestamp: 1700000001,
+          lastMessageSenderPubkey: 'peer',
+          ownerPubkey: 'owner_b',
+        );
+
+        final forA = await dao.getConversation(
+          'shared_room',
+          ownerPubkey: 'owner_a',
+        );
+        final forB = await dao.getConversation(
+          'shared_room',
+          ownerPubkey: 'owner_b',
+        );
+
+        expect(forA, isNotNull, reason: 'account A must keep its own room');
+        expect(forA!.lastMessageContent, equals('as account A sees it'));
+        expect(forB, isNotNull);
+        expect(forB!.lastMessageContent, equals('as account B sees it'));
+      });
+
+      test('an owned conversation shadows its legacy copy', () async {
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'legacy copy',
+          lastMessageTimestamp: 1700000000,
+        );
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer","owner_a"]',
+          isGroup: false,
+          createdAt: 1700000001,
+          lastMessageContent: 'owned copy',
+          lastMessageTimestamp: 1700000001,
+          ownerPubkey: 'owner_a',
+        );
+
+        final single = await dao.getConversation(
+          'shared_room',
+          ownerPubkey: 'owner_a',
+        );
+        final listed = await dao.getAllConversations(ownerPubkey: 'owner_a');
+        final watched = await dao
+            .watchAllConversations(ownerPubkey: 'owner_a')
+            .first;
+
+        expect(single!.lastMessageContent, 'owned copy');
+        expect(listed.map((row) => row.lastMessageContent), ['owned copy']);
+        expect(watched.map((row) => row.lastMessageContent), ['owned copy']);
+      });
+
+      test(
+        'a legacy conversation remains a fallback without an owned copy',
+        () async {
+          await dao.upsertConversation(
+            id: 'legacy_room',
+            participantPubkeys: '["peer"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'legacy copy',
+            lastMessageTimestamp: 1700000000,
+          );
+
+          final result = await dao.getConversation(
+            'legacy_room',
+            ownerPubkey: 'owner_a',
+          );
+
+          expect(result!.lastMessageContent, 'legacy copy');
         },
       );
 
@@ -333,20 +435,25 @@ void main() {
             dmProtocol: 'nip04',
           );
 
+          // Same owner: changing it would address a different row now that it
+          // is part of the key (#6645).
           await dao.upsertConversation(
             id: 'conv_1',
             participantPubkeys: '["pubkey_a","pubkey_b"]',
             isGroup: false,
             createdAt: 1700000100,
             subject: 'Updated Subject',
-            ownerPubkey: 'owner_b',
+            ownerPubkey: 'owner_a',
             dmProtocol: 'nip17',
           );
 
-          final result = await dao.getConversation('conv_1');
+          final result = await dao.getConversation(
+            'conv_1',
+            ownerPubkey: 'owner_a',
+          );
           expect(result, isNotNull);
           expect(result!.subject, equals('Updated Subject'));
-          expect(result.ownerPubkey, equals('owner_b'));
+          expect(result.ownerPubkey, equals('owner_a'));
           expect(result.dmProtocol, equals('nip17'));
         },
       );
@@ -654,53 +761,47 @@ void main() {
         expect(result!.lastReadTimestamp, 1700000500);
       });
 
-      test(
-        'applyReadCursor advances the cursor and marks read when it covers '
-        'the latest message',
-        () async {
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["a","b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageTimestamp: 1700000300,
-            lastMessageSenderPubkey: 'b',
-            isRead: false,
-          );
+      test('applyReadCursor advances the cursor and marks read when it covers '
+          'the latest message', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000300,
+          lastMessageSenderPubkey: 'b',
+          isRead: false,
+        );
 
-          // A restored remote marker / last-sent floor at-or-after the latest
-          // message marks the conversation read.
-          final updated = await dao.applyReadCursor('conv_1', 1700000300);
-          expect(updated, isTrue);
+        // A restored remote marker / last-sent floor at-or-after the latest
+        // message marks the conversation read.
+        final updated = await dao.applyReadCursor('conv_1', 1700000300);
+        expect(updated, isTrue);
 
-          final result = await dao.getConversation('conv_1');
-          expect(result!.isRead, isTrue);
-          expect(result.lastReadTimestamp, 1700000300);
-        },
-      );
+        final result = await dao.getConversation('conv_1');
+        expect(result!.isRead, isTrue);
+        expect(result.lastReadTimestamp, 1700000300);
+      });
 
-      test(
-        'applyReadCursor below the latest message advances the cursor but '
-        'leaves a genuinely-unread conversation unread',
-        () async {
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["a","b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageTimestamp: 1700000300,
-            lastMessageSenderPubkey: 'b',
-            isRead: false,
-          );
+      test('applyReadCursor below the latest message advances the cursor but '
+          'leaves a genuinely-unread conversation unread', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000300,
+          lastMessageSenderPubkey: 'b',
+          isRead: false,
+        );
 
-          final updated = await dao.applyReadCursor('conv_1', 1700000100);
-          expect(updated, isTrue);
+        final updated = await dao.applyReadCursor('conv_1', 1700000100);
+        expect(updated, isTrue);
 
-          final result = await dao.getConversation('conv_1');
-          expect(result!.isRead, isFalse);
-          expect(result.lastReadTimestamp, 1700000100);
-        },
-      );
+        final result = await dao.getConversation('conv_1');
+        expect(result!.isRead, isFalse);
+        expect(result.lastReadTimestamp, 1700000100);
+      });
 
       test('applyReadCursor never lowers the cursor', () async {
         await dao.upsertConversation(
@@ -910,40 +1011,37 @@ void main() {
         },
       );
 
-      test(
-        'an older sent wrap during drain does not mark a newer unread '
-        'received conversation read',
-        () async {
-          // Newest message is received and still unread.
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["a","b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageContent: 'Newer received',
-            lastMessageTimestamp: 1700000200,
-            lastMessageSenderPubkey: 'b',
-            isRead: false,
-          );
+      test('an older sent wrap during drain does not mark a newer unread '
+          'received conversation read', () async {
+        // Newest message is received and still unread.
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'Newer received',
+          lastMessageTimestamp: 1700000200,
+          lastMessageSenderPubkey: 'b',
+          isRead: false,
+        );
 
-          // The reinstall drain re-ingests an OLDER message we sent
-          // ourselves: ingest passes isRead: isSentByMe == true (the default
-          // here), but the timestamp is older, so the strict gate must
-          // preserve unread.
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["a","b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageContent: 'Older sent',
-            lastMessageTimestamp: 1700000100,
-            lastMessageSenderPubkey: 'a',
-          );
+        // The reinstall drain re-ingests an OLDER message we sent
+        // ourselves: ingest passes isRead: isSentByMe == true (the default
+        // here), but the timestamp is older, so the strict gate must
+        // preserve unread.
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'Older sent',
+          lastMessageTimestamp: 1700000100,
+          lastMessageSenderPubkey: 'a',
+        );
 
-          final result = await dao.getConversation('conv_1');
-          expect(result!.isRead, isFalse);
-        },
-      );
+        final result = await dao.getConversation('conv_1');
+        expect(result!.isRead, isFalse);
+      });
     });
 
     group('getUnreadCount', () {

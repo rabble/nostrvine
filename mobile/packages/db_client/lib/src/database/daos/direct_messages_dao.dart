@@ -51,13 +51,30 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   static const String deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
-  /// **or** legacy rows with no owner (NULL).
-  Expression<bool> _ownedOrLegacy(
-    GeneratedColumn<String> column,
+  /// **or** legacy rows with no owner.
+  ///
+  /// A legacy row is `''` after the v12 migration and `NULL` before it. Both
+  /// arms are kept: the delete side (`clearForAccountSwitch`, `clearUnowned`)
+  /// has always matched on either, and an older binary writing `NULL` between
+  /// an upgrade and the migration must stay readable. Testing only `IS NULL`
+  /// would make every backfilled row invisible to its own account (#6645).
+  Expression<bool> _visibleToOwner(
+    $DirectMessagesTable row,
     String? ownerPubkey,
   ) {
     if (ownerPubkey == null) return const Constant(true);
-    return column.equals(ownerPubkey) | column.isNull();
+    final exactOwner = row.ownerPubkey.equals(ownerPubkey);
+    final legacy = row.ownerPubkey.equals('') | row.ownerPubkey.isNull();
+    final ownedCopy = directMessages.createAlias('owned_direct_message');
+    final exactCopyExists = existsQuery(
+      selectOnly(ownedCopy)
+        ..addColumns([ownedCopy.id])
+        ..where(
+          ownedCopy.id.equalsExp(row.id) &
+              ownedCopy.ownerPubkey.equals(ownerPubkey),
+        ),
+    );
+    return exactOwner | (legacy & exactCopyExists.not());
   }
 
   /// Rows the sender must still be able to recognize in the conversation.
@@ -79,14 +96,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Insert a decrypted DM, returning whether a row was actually written.
   ///
   /// Uses `INSERT OR IGNORE` so that violations on either the primary key
-  /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
-  /// without throwing. A `false` return means a local uniqueness constraint
-  /// skipped the row, and callers must avoid advancing receive-side state that
-  /// depends on a newly persisted message.
+  /// (`id`, `owner_pubkey`) **or** the UNIQUE index on `gift_wrap_id` are
+  /// handled gracefully without throwing. A `false` return means a local
+  /// uniqueness constraint skipped the row, and callers must avoid advancing
+  /// receive-side state that depends on a newly persisted message.
   ///
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
-  /// the same content. The current message uniqueness constraints are global,
-  /// so callers still need owner-scoped checks where account isolation matters.
+  /// the same content. Rumor uniqueness is owner-scoped, while gift-wrap IDs
+  /// remain globally unique because a wrap has exactly one recipient.
   ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
@@ -137,7 +154,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         dimensions: Value(dimensions),
         blurhash: Value(blurhash),
         thumbnailUrl: Value(thumbnailUrl),
-        ownerPubkey: Value(ownerPubkey),
+        // A caller with no owner is writing an unattributed row; `''` is
+        // this schema's legacy sentinel and is what the composite key
+        // needs, since a NULL cannot participate in it (#6645).
+        ownerPubkey: Value(ownerPubkey ?? ''),
         sendBatchId: Value(sendBatchId),
       ),
       mode: InsertMode.insertOrIgnore,
@@ -164,7 +184,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.conversationId.equals(conversationId) &
-                _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+                _visibleToOwner(t, ownerPubkey),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
         .get();
@@ -186,9 +206,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }) {
     if (messageIds.isEmpty) return Future.value(0);
     return (update(directMessages)..where(
-          (t) =>
-              t.id.isIn(messageIds) &
-              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.isIn(messageIds) & _visibleToOwner(t, ownerPubkey),
         ))
         .write(
           DirectMessagesCompanion(conversationId: Value(toConversationId)),
@@ -210,7 +228,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         (t) =>
             t.conversationId.equals(conversationId) &
             _visibleInThread(t, ownerPubkey) &
-            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            _visibleToOwner(t, ownerPubkey),
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
@@ -238,7 +256,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         (t) =>
             t.conversationId.equals(conversationId) &
             _visibleInThread(t, ownerPubkey) &
-            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            _visibleToOwner(t, ownerPubkey),
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
@@ -262,9 +280,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   Future<bool> markMessageDeleted(String rumorId, {String? ownerPubkey}) async {
     final rows =
         await (update(directMessages)..where(
-              (t) =>
-                  t.id.equals(rumorId) &
-                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+              (t) => t.id.equals(rumorId) & _visibleToOwner(t, ownerPubkey),
             ))
             .write(const DirectMessagesCompanion(isDeleted: Value(true)));
     return rows > 0;
@@ -289,9 +305,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }) async {
     final rows =
         await (update(directMessages)..where(
-              (t) =>
-                  t.id.equals(rumorId) &
-                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+              (t) => t.id.equals(rumorId) & _visibleToOwner(t, ownerPubkey),
             ))
             .write(
               DirectMessagesCompanion(
@@ -369,9 +383,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }) async {
     final rows =
         await (update(directMessages)..where(
-              (t) =>
-                  t.id.equals(rumorId) &
-                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+              (t) => t.id.equals(rumorId) & _visibleToOwner(t, ownerPubkey),
             ))
             .write(
               DirectMessagesCompanion(
@@ -396,7 +408,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return (select(directMessages)
           ..where(
             (t) =>
-                _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+                _visibleToOwner(t, ownerPubkey) &
                 t.senderPubkey.equals(ownerPubkey) &
                 t.isDeleted.equals(true) &
                 t.deletionRumorJson.isNotNull() &
@@ -411,7 +423,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Used to validate sender pubkey before applying a kind 5 deletion.
   Future<DirectMessageRow?> getMessageById(String id, {String? ownerPubkey}) {
     return (select(directMessages)..where(
-          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.equals(id) & _visibleToOwner(t, ownerPubkey),
         ))
         .getSingleOrNull();
   }
@@ -486,8 +498,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// use [claimCrossProtocolTwin] instead. Existence is the wrong question
   /// there: a twin is 1:1, and asking existence let one stored copy swallow
   /// every same-text arrival in the window (#8211). Same-protocol replays need
-  /// no help from either method — the primary key on `id` and the UNIQUE index
-  /// on `gift_wrap_id` already make [insertMessage] a no-op for them.
+  /// no help from either method — the primary key on (`id`, `owner_pubkey`)
+  /// and the UNIQUE index on `gift_wrap_id` already make [insertMessage] a
+  /// no-op for them.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
@@ -537,7 +550,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
           createdAt + windowSeconds,
         ) &
         _arrivedOverCounterpart(counterpart) &
-        _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey);
+        _visibleToOwner(directMessages, ownerPubkey);
   }
 
   /// Claims the cross-protocol twin of an arriving message, marking it so no
@@ -599,7 +612,11 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ..limit(1);
 
     final claimed =
-        await (update(directMessages)..where((t) => t.id.isInQuery(unclaimed)))
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.isInQuery(unclaimed) &
+                  t.ownerPubkey.equals(ownerPubkey ?? ''),
+            ))
             .write(const DirectMessagesCompanion(twinCollapsed: Value(true)));
     return claimed > 0;
   }
@@ -612,7 +629,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// sibling — or the happy-path persist racing a concurrent recovery — asks
   /// this to avoid inserting a second copy.
   ///
-  /// Scoped by strict `owner_pubkey` equality (not `_ownedOrLegacy`): generated
+  /// Scoped by strict `owner_pubkey` equality (not legacy fallback): generated
   /// send ids are only stamped on the owner's sends, including self-wrap echoes
   /// received on another device, so the NULL-owner legacy branch would only
   /// widen the match with nothing to gain.
@@ -641,7 +658,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return (delete(directMessages)..where(
           (t) =>
               t.conversationId.equals(conversationId) &
-              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+              _visibleToOwner(t, ownerPubkey),
         ))
         .go();
   }
@@ -649,7 +666,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Delete a single message by ID.
   Future<int> deleteMessage(String id, {String? ownerPubkey}) {
     return (delete(directMessages)..where(
-          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.equals(id) & _visibleToOwner(t, ownerPubkey),
         ))
         .go();
   }
@@ -663,7 +680,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return (delete(directMessages)..where(
           (t) =>
               t.conversationId.isIn(conversationIds) &
-              _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+              _visibleToOwner(t, ownerPubkey),
         ))
         .go();
   }
@@ -676,7 +693,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     final query = selectOnly(directMessages)
       ..where(
         directMessages.conversationId.equals(conversationId) &
-            _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
+            _visibleToOwner(directMessages, ownerPubkey),
       )
       ..addColumns([directMessages.id.count()]);
     final result = await query.getSingle();

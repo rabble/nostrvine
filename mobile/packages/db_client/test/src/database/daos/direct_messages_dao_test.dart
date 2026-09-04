@@ -266,6 +266,178 @@ void main() {
       });
     });
 
+    group('owner-scoped uniqueness', () {
+      // A NIP-17 group send seals ONE rumor for every recipient, so two local
+      // accounts in the same room receive distinct gift wraps carrying an
+      // identical rumor id. Under the previous global primary key the second
+      // account's insert was a silent no-op and its copy was lost. #6645.
+      const rumorId = 'shared_group_rumor';
+      final ownerA = 'a' * 64;
+      final ownerB = 'b' * 64;
+
+      test(
+        'both local accounts persist their own copy of one group rumor',
+        () async {
+          final insertedForA = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'group hello',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_for_a',
+            ownerPubkey: ownerA,
+          );
+          final insertedForB = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId2,
+            senderPubkey: 'pubkey_peer',
+            content: 'group hello',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_for_b',
+            ownerPubkey: ownerB,
+          );
+
+          expect(insertedForA, isTrue);
+          expect(insertedForB, isTrue);
+        },
+      );
+
+      test('each account reads only its own copy', () async {
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_a',
+          ownerPubkey: ownerA,
+        );
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId2,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_b',
+          ownerPubkey: ownerB,
+        );
+
+        final forA = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+        final forB = await dao.getMessagesForConversation(
+          conversationId2,
+          ownerPubkey: ownerB,
+        );
+
+        expect(forA, hasLength(1));
+        expect(forB, hasLength(1));
+      });
+
+      test('a replay for the SAME owner is still ignored', () async {
+        final first = await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_a',
+          ownerPubkey: ownerA,
+        );
+        final replay = await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello again',
+          createdAt: 1700000001,
+          giftWrapId: 'wrap_for_a_replay',
+          ownerPubkey: ownerA,
+        );
+
+        expect(first, isTrue);
+        expect(replay, isFalse);
+      });
+
+      test(
+        'two legacy unowned rows sharing a rumor id still collapse',
+        () async {
+          // SQLite compares NULLs as distinct inside a unique constraint, so a
+          // nullable owner in the key would have let both of these through. The
+          // column is NOT NULL with an `''` default precisely to stop that.
+          final first = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'legacy',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_legacy_one',
+          );
+          final second = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'legacy duplicate',
+            createdAt: 1700000001,
+            giftWrapId: 'wrap_legacy_two',
+          );
+
+          expect(first, isTrue);
+          expect(second, isFalse);
+        },
+      );
+
+      test('a legacy unowned row stays readable by a real account', () async {
+        // The v12 backfill turns NULL owners into `''`; `_ownedOrLegacy` has to
+        // match that sentinel or every migrated row goes invisible.
+        await dao.insertMessage(
+          id: 'legacy_only',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'written before multi-account support',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_legacy_only',
+        );
+
+        final visible = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+
+        expect(visible, hasLength(1));
+        expect(visible.first.ownerPubkey, isEmpty);
+      });
+
+      test('an owned message shadows its legacy copy', () async {
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'legacy copy',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_legacy',
+        );
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'owned copy',
+          createdAt: 1700000001,
+          giftWrapId: 'wrap_owned',
+          ownerPubkey: ownerA,
+        );
+
+        final single = await dao.getMessageById(rumorId, ownerPubkey: ownerA);
+        final listed = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+
+        expect(single!.content, 'owned copy');
+        expect(listed.map((row) => row.content), ['owned copy']);
+      });
+    });
+
     group('getMessagesForConversation', () {
       test(
         'returns messages sorted by createdAt desc (newest first)',
@@ -1287,34 +1459,31 @@ void main() {
         expect(rendered.map((m) => m.content).toSet(), {text});
       });
 
-      test(
-        'a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
-        'mirrored onto the legacy protocol)',
-        () async {
-          await dao.insertMessage(
-            id: 'ev_nip04_first',
+      test('a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
+          'mirrored onto the legacy protocol)', () async {
+        await dao.insertMessage(
+          id: 'ev_nip04_first',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'ev_nip04_first',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(
+          await dao.hasMatchingMessage(
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'ok',
-            createdAt: 1700000000,
-            giftWrapId: 'ev_nip04_first',
+            createdAt: 1700000002,
             ownerPubkey: 'pubkey_owner',
-          );
-
-          expect(
-            await dao.hasMatchingMessage(
-              conversationId: conversationId1,
-              senderPubkey: 'pubkey_peer',
-              content: 'ok',
-              createdAt: 1700000002,
-              ownerPubkey: 'pubkey_owner',
-              counterpart: DmDedupCounterpart.nip17Copy,
-            ),
-            isFalse,
-            reason: 'a second kind-4 two seconds later is a genuine repeat',
-          );
-        },
-      );
+            counterpart: DmDedupCounterpart.nip17Copy,
+          ),
+          isFalse,
+          reason: 'a second kind-4 two seconds later is a genuine repeat',
+        );
+      });
 
       test('unconstrained matches either arrival shape', () async {
         await dao.insertMessage(
@@ -1463,6 +1632,46 @@ void main() {
         );
 
         expect(claimed, isFalse);
+      });
+
+      test('claiming one owner does not spend another owner copy', () async {
+        for (final (owner, wrap) in [
+          ('pubkey_owner_a', 'wrap_owner_a'),
+          ('pubkey_owner_b', 'wrap_owner_b'),
+        ]) {
+          await dao.insertMessage(
+            id: 'shared_rumor',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000000,
+            giftWrapId: wrap,
+            ownerPubkey: owner,
+          );
+        }
+
+        expect(
+          await dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000001,
+            counterpart: DmDedupCounterpart.nip17Copy,
+            ownerPubkey: 'pubkey_owner_a',
+          ),
+          isTrue,
+        );
+
+        final ownerA = await dao.getMessageById(
+          'shared_rumor',
+          ownerPubkey: 'pubkey_owner_a',
+        );
+        final ownerB = await dao.getMessageById(
+          'shared_rumor',
+          ownerPubkey: 'pubkey_owner_b',
+        );
+        expect(ownerA!.twinCollapsed, isTrue);
+        expect(ownerB!.twinCollapsed, isFalse);
       });
 
       test('still claims a soft-deleted twin', () async {
