@@ -28,9 +28,11 @@ import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../helpers/fake_relay.dart';
@@ -128,7 +130,7 @@ void main() {
     return (repository: repository, db: db, nostr: nostr);
   }
 
-  Widget wrap(DmRepository repository) {
+  Widget wrap(DmRepository repository, SharedPreferences preferences) {
     final reactionsRepo = _MockDmReactionsRepository();
     final auth = _MockAuthService();
     final analytics = _MockScreenAnalyticsService();
@@ -151,6 +153,7 @@ void main() {
         dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
         authServiceProvider.overrideWithValue(auth),
         screenAnalyticsServiceProvider.overrideWithValue(analytics),
+        sharedPreferencesProvider.overrideWithValue(preferences),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -177,8 +180,10 @@ void main() {
         final relay = await FakeRelay.start(okConfirms: false);
         addTearDown(relay.stop);
         final stack = await buildStack(relay);
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final preferences = await SharedPreferences.getInstance();
 
-        await tester.pumpWidget(wrap(stack.repository));
+        await tester.pumpWidget(wrap(stack.repository, preferences));
         await tester.pump();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
