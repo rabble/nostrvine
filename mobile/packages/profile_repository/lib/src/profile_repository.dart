@@ -2435,7 +2435,31 @@ class ProfileRepository implements ProfileReader {
       filtered = filtered.where((p) => !blockFilter(p.pubkey)).toList();
     }
 
-    return _boostProfiles(filtered, boostPubkeys);
+    if (!useServerSort) return _boostProfiles(filtered, boostPubkeys);
+    return _boostBehindExactMatches(query, filtered, boostPubkeys);
+  }
+
+  /// Applies the follow-graph boost without letting it bury an exact account
+  /// match. Exact matches stay first, followed ones ahead of unfollowed, and
+  /// the boost then orders everything else; otherwise three followed partial
+  /// matches would push the exact account out of the three-row preview.
+  List<UserProfile> _boostBehindExactMatches(
+    String query,
+    List<UserProfile> profiles,
+    Set<String>? boostPubkeys,
+  ) {
+    final normalizedQuery = query.trim().toLowerCase();
+    final queryHex = _npubQueryToHex(normalizedQuery);
+    final exact = <UserProfile>[];
+    final rest = <UserProfile>[];
+    for (final profile in profiles) {
+      final relevance = _searchRelevance(profile, normalizedQuery, queryHex);
+      (relevance == _exactMatchRelevance ? exact : rest).add(profile);
+    }
+    return [
+      ..._boostProfiles(exact, boostPubkeys),
+      ..._boostProfiles(rest, boostPubkeys),
+    ];
   }
 
   /// Orders people search by textual relevance before popularity.
@@ -2486,7 +2510,7 @@ class ProfileRepository implements ProfileReader {
         {pubkey, name, displayName, nip05, nip05Name}.contains(
           normalizedQuery,
         )) {
-      return 4;
+      return _exactMatchRelevance;
     }
     if (name.startsWith(normalizedQuery) ||
         displayName.startsWith(normalizedQuery) ||
@@ -2504,6 +2528,10 @@ class ProfileRepository implements ProfileReader {
     }
     return 0;
   }
+
+  /// Relevance tier returned by [_searchRelevance] for an exact identifier,
+  /// username, display name, or NIP-05 match.
+  static const _exactMatchRelevance = 4;
 
   static bool _hasWordPrefix(String value, String query) =>
       value.split(RegExp(r'\s+')).any((word) => word.startsWith(query));
