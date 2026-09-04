@@ -3,8 +3,6 @@
 // ABOUTME: bookmark, mute, dm, comments — plus CuratedListsState notifier
 
 import 'dart:async';
-import 'dart:convert';
-
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:categories_repository/categories_repository.dart';
@@ -69,10 +67,7 @@ final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
 
 final FutureProviderFamily<List<ProfileBadgeViewData>, String>
 profileAcceptedBadgesProvider = FutureProvider.autoDispose
-    .family<List<ProfileBadgeViewData>, String>((
-      ref,
-      pubkey,
-    ) {
+    .family<List<ProfileBadgeViewData>, String>((ref, pubkey) {
       if (pubkey.isEmpty) return const [];
       return ref
           .watch(badgeRepositoryProvider)
@@ -91,13 +86,12 @@ List<String> cachedFollowingList(Ref ref) {
   if (pubkey == null || pubkey.isEmpty) return const [];
 
   final prefs = ref.watch(sharedPreferencesProvider);
-  final key = 'following_list_$pubkey';
+  final key = FollowingCacheRecord.storageKey(pubkey);
   final cached = prefs.getString(key);
   if (cached == null) return const [];
 
   try {
-    final decoded = jsonDecode(cached) as List<dynamic>;
-    return decoded.cast<String>();
+    return FollowingCacheRecord.decode(cached).pubkeys;
   } catch (e) {
     return const [];
   }
@@ -305,9 +299,7 @@ HashtagRepository hashtagRepository(Ref ref) {
 
       addMatches(hashtagService.searchHashtags(query));
       if (results.length < limit) {
-        addMatches(
-          topHashtags.searchHashtags(query, limit: limit),
-        );
+        addMatches(topHashtags.searchHashtags(query, limit: limit));
       }
 
       return results;

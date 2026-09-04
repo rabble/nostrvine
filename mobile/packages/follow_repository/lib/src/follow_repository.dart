@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:cache_sync/cache_sync.dart';
@@ -8,6 +7,7 @@ import 'package:follow_repository/src/follow_list_kind.dart';
 import 'package:follow_repository/src/follow_relationship.dart';
 import 'package:follow_repository/src/follower_stats.dart';
 import 'package:follow_repository/src/followers_snapshot.dart';
+import 'package:follow_repository/src/following_cache_record.dart';
 import 'package:follow_repository/src/following_snapshot.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:meta/meta.dart';
@@ -31,10 +31,7 @@ typedef _FollowerSourceResult = ({
   StackTrace? stackTrace,
 });
 
-typedef _CachedFollowerStats = ({
-  FollowerStats stats,
-  DateTime cachedAt,
-});
+typedef _CachedFollowerStats = ({FollowerStats stats, DateTime cachedAt});
 
 typedef _FollowerCountObservation = ({
   int count,
@@ -128,10 +125,7 @@ class FollowRepository {
   /// Maximum time for connect, response collection, and cleanup combined.
   final Duration _indexerOperationTimeout;
 
-  Duration _remainingIndexerTime(
-    DateTime deadline, {
-    Duration? cap,
-  }) {
+  Duration _remainingIndexerTime(DateTime deadline, {Duration? cap}) {
     final remaining = deadline.difference(DateTime.now());
     if (remaining <= Duration.zero) return Duration.zero;
     if (cap != null && cap < remaining) return cap;
@@ -1211,9 +1205,7 @@ class FollowRepository {
       bool followingAuthoritative,
     })
   >
-  _fetchFollowerStats(
-    String pubkey,
-  ) async {
+  _fetchFollowerStats(String pubkey) async {
     final restResult = await _fetchFollowerStatsViaRest(pubkey);
     // Authority is per field. The two counts come from independent inputs, so
     // a positive value in one is no evidence that zero in the other means
@@ -1681,11 +1673,8 @@ class FollowRepository {
     Future<List<_FollowerRef>> source,
   ) => source.then<_FollowerSourceResult>(
     (refs) => (refs: refs, error: null, stackTrace: null),
-    onError: (Object error, StackTrace stackTrace) => (
-      refs: const <_FollowerRef>[],
-      error: error,
-      stackTrace: stackTrace,
-    ),
+    onError: (Object error, StackTrace stackTrace) =>
+        (refs: const <_FollowerRef>[], error: error, stackTrace: stackTrace),
   );
 
   /// Streams the current user's followers as each source resolves.
@@ -2309,15 +2298,6 @@ class FollowRepository {
     );
   }
 
-  /// Schema version of the persisted contact-list record.
-  ///
-  /// v1 was a bare JSON array of pubkeys with no timestamp, so a cache written
-  /// by it cannot be ordered against a real event. v2 carries the `created_at`
-  /// and id of the kind 3 the list came from, which is what NIP-01 orders by.
-  static const _followingRecordVersion = 2;
-
-  String _followingStorageKey(String pubkey) => 'following_list_$pubkey';
-
   /// Load following list from local storage (SharedPreferences).
   ///
   /// Reads both schema versions: a bare JSON array is the pre-#8266 v1 record
@@ -2329,33 +2309,13 @@ class FollowRepository {
       final currentUserPubkey = _nostrClient.publicKey;
       if (currentUserPubkey.isEmpty) return;
 
-      final cached = prefs.getString(_followingStorageKey(currentUserPubkey));
+      final cached = prefs.getString(
+        FollowingCacheRecord.storageKey(currentUserPubkey),
+      );
       if (cached == null) return;
 
-      final decoded = jsonDecode(cached);
-
-      final List<dynamic> rawPubkeys;
-      int? createdAt;
-      String? eventId;
-      var isLegacyRecord = false;
-
-      if (decoded is List) {
-        rawPubkeys = decoded;
-        isLegacyRecord = true;
-      } else if (decoded is Map<String, dynamic>) {
-        rawPubkeys = (decoded['pubkeys'] as List<dynamic>?) ?? const [];
-        createdAt = decoded['created_at'] as int?;
-        eventId = decoded['id'] as String?;
-      } else {
-        Log.warning(
-          'Ignoring unreadable cached following list',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      final cachedPubkeys = rawPubkeys.cast<String>();
+      final record = FollowingCacheRecord.decode(cached);
+      final cachedPubkeys = record.pubkeys;
       final sanitizedPubkeys = _sanitizePubkeys(
         cachedPubkeys,
         source: 'LocalStorage',
@@ -2363,14 +2323,17 @@ class FollowRepository {
 
       _adoptContactList(
         sanitizedPubkeys,
-        createdAt: createdAt,
-        eventId: eventId,
-        source: isLegacyRecord ? 'LocalStorage (v1)' : 'LocalStorage',
+        createdAt: record.createdAt,
+        eventId: record.eventId,
+        source: record.needsMigration
+            ? 'LocalStorage (legacy)'
+            : 'LocalStorage',
       );
 
       // Rewrite when entries were dropped, and to migrate a v1 record onto the
       // versioned envelope so the next launch can order it.
-      if (isLegacyRecord || sanitizedPubkeys.length != cachedPubkeys.length) {
+      if (record.needsMigration ||
+          sanitizedPubkeys.length != cachedPubkeys.length) {
         await _saveToLocalStorage();
       }
     } catch (e) {
@@ -2467,11 +2430,7 @@ class FollowRepository {
         // The REST index is derived from the kind 3 and carries no
         // `created_at` of its own, so it seeds an empty state and loses to
         // any real event (#8266).
-        if (_adoptContactList(
-          pubkeys,
-          createdAt: null,
-          source: 'REST API',
-        )) {
+        if (_adoptContactList(pubkeys, createdAt: null, source: 'REST API')) {
           // Persist to SharedPreferences so redirect logic can use it
           await _saveToLocalStorage();
         }
@@ -2501,13 +2460,12 @@ class FollowRepository {
       if (currentUserPubkey.isNotEmpty) {
         final provenance = _followingProvenance;
         await prefs.setString(
-          _followingStorageKey(currentUserPubkey),
-          jsonEncode({
-            'v': _followingRecordVersion,
-            'created_at': provenance?.createdAt,
-            'id': provenance?.id,
-            'pubkeys': _followingPubkeys,
-          }),
+          FollowingCacheRecord.storageKey(currentUserPubkey),
+          FollowingCacheRecord(
+            pubkeys: _followingPubkeys,
+            createdAt: provenance?.createdAt,
+            eventId: provenance?.id,
+          ).encode(),
         );
 
         Log.debug(
@@ -2533,7 +2491,8 @@ class FollowRepository {
   ///
   /// Uses [_queryContactList] callback (same proven approach as
   /// SocialService) to do a one-shot query with proper EOSE handling.
-  /// Called when local cache and REST API are both empty.
+  /// Called on every authenticated initialization so the relay's
+  /// authoritative event can supersede stale derived caches.
   Future<void> _loadFromRelay() async {
     try {
       final currentUserPubkey = _nostrClient.publicKey;

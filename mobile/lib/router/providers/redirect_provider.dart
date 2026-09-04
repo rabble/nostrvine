@@ -1,10 +1,9 @@
 // ABOUTME: Riverpod providers for route redirect guards
 // ABOUTME: Checks following cache for redirect logic
 
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -34,7 +33,7 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
     return false;
   }
 
-  final key = 'following_list_$currentUserPubkey';
+  final key = FollowingCacheRecord.storageKey(currentUserPubkey);
   final value = prefs.getString(key);
 
   if (value == null || value.isEmpty) {
@@ -47,13 +46,13 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
   }
 
   try {
-    final decoded = jsonDecode(value) as List<dynamic>;
+    final record = FollowingCacheRecord.decode(value);
     Log.debug(
-      'Current user following list has ${decoded.length} entries',
+      'Current user following list has ${record.pubkeys.length} entries',
       name: 'RedirectGuards',
       category: LogCategory.ui,
     );
-    return decoded.isNotEmpty;
+    return record.pubkeys.isNotEmpty;
   } catch (e) {
     Log.debug(
       'Current user following list has invalid JSON: $e',

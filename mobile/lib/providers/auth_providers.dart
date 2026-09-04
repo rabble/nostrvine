@@ -3,10 +3,10 @@
 // ABOUTME: account deletion, Zendesk and analytics identity sync (eager)
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -158,8 +158,11 @@ AuthService authService(Ref ref) {
           limit: 5000,
         );
         if (result.pubkeys.isNotEmpty) {
-          final key = 'following_list_$pubkeyHex';
-          await prefs.setString(key, jsonEncode(result.pubkeys));
+          final key = FollowingCacheRecord.storageKey(pubkeyHex);
+          await prefs.setString(
+            key,
+            FollowingCacheRecord(pubkeys: result.pubkeys).encode(),
+          );
           Log.info(
             'Pre-fetched ${result.pubkeys.length} following for '
             'router redirect cache',
