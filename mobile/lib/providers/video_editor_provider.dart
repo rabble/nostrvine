@@ -1244,24 +1244,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     try {
       final renderParameters = _buildRenderParameters();
 
-      // Bounded because nothing below it is: a suspended coroutine runs
-      // neither `catch` nor `finally`, so an unresponsive native call latches
-      // isProcessing true forever. Throwing reaches the retry overlay (#8488).
-      final renderTaskId = draftId;
-      final render = VideoEditorRenderService.renderVideoToClip(
+      final result = await VideoEditorRenderService.renderVideoToClip(
         clips: _clips,
         parameters: renderParameters,
         editorStateHistory: state.editorStateHistory,
-        taskId: renderTaskId,
-      );
-      final result = await render.timeout(
-        VideoEditorConstants.renderWatchdogTimeout,
-        onTimeout: () {
-          unawaited(_abandonStalledRender(render, renderTaskId));
-          throw const VideoRenderFailedException(
-            VideoRenderFailureReason.timedOut,
-          );
-        },
+        taskId: draftId,
       );
 
       // A newer render was started or the user cancelled while this one was
@@ -1453,33 +1440,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
       // The re-sign itself errored — offer the prompt again.
       state = state.copyWith(isProcessing: false, c2paSigningFailed: true);
-    }
-  }
-
-  /// Stops the native side of a render the watchdog gave up on, and absorbs
-  /// whatever the abandoned future eventually does.
-  ///
-  /// `Future.timeout` stops waiting, not the encode: without the cancel a
-  /// retry runs alongside the render it replaces, and without the handler a
-  /// late throw lands on a future nobody awaits (#8488).
-  Future<void> _abandonStalledRender(Future<void> render, String taskId) async {
-    try {
-      await VideoEditorRenderService.cancelTask(taskId);
-    } catch (error) {
-      Log.debug(
-        'Cancelling the stalled render returned: $error',
-        name: 'VideoEditorNotifier',
-        category: LogCategory.video,
-      );
-    }
-    try {
-      await render;
-    } catch (error) {
-      Log.debug(
-        'Stalled render settled after the watchdog gave up: $error',
-        name: 'VideoEditorNotifier',
-        category: LogCategory.video,
-      );
     }
   }
 

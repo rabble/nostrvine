@@ -384,9 +384,46 @@ class VideoEditorRenderService {
   ///
   /// * [VideoRenderFailedException] if the render produced no video — the
   ///   reason distinguishes an empty clip list, a failed stop-motion assembly,
-  ///   a native render failure, and a cancellation.
+  ///   a native render failure, a cancellation, and a timed-out export.
   static Future<(DivineVideoClip, String? proofManifestJson)>
   renderVideoToClip({
+    required List<DivineVideoClip> clips,
+    required Map<String, dynamic> editorStateHistory,
+    CompleteParameters? parameters,
+    String? taskId,
+  }) {
+    final render = _renderVideoToClip(
+      clips: clips,
+      editorStateHistory: editorStateHistory,
+      parameters: parameters,
+      taskId: taskId,
+    );
+    final effectiveTaskId = taskId ?? (clips.isEmpty ? null : clips.first.id);
+
+    // Bound the shared final-export operation rather than either caller: a
+    // suspended native call otherwise reaches neither the editor retry overlay
+    // nor the draft-publish error message (#8488).
+    return render.timeout(
+      VideoEditorConstants.renderWatchdogTimeout,
+      onTimeout: () {
+        const failure = VideoRenderFailedException(
+          VideoRenderFailureReason.timedOut,
+        );
+        _reportRenderFailure(
+          failure,
+          StackTrace.current,
+          reportEveryFailure: true,
+        );
+        if (effectiveTaskId != null) {
+          unawaited(_abandonStalledRender(render, effectiveTaskId));
+        }
+        throw failure;
+      },
+    );
+  }
+
+  static Future<(DivineVideoClip, String? proofManifestJson)>
+  _renderVideoToClip({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
     CompleteParameters? parameters,
@@ -564,6 +601,24 @@ class VideoEditorRenderService {
       RenderCancellationRegistry.finish(effectiveTaskId, renderToken);
       await progressTracker.dispose();
       await _cleanupTempFiles(intermediateStopMotionPaths);
+    }
+  }
+
+  /// Stops native work after the watchdog expires, then observes the abandoned
+  /// export so its eventual outcome remains available in diagnostic logs.
+  static Future<void> _abandonStalledRender(
+    Future<Object?> render,
+    String taskId,
+  ) async {
+    await cancelTask(taskId);
+    try {
+      await render;
+    } catch (error) {
+      Log.debug(
+        'Stalled render settled after the watchdog gave up: $error',
+        name: _logName,
+        category: LogCategory.video,
+      );
     }
   }
 

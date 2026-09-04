@@ -544,8 +544,67 @@ void main() {
 
     tearDown(() {
       ProVideoEditor.instance = originalProVideoEditor;
+      VideoEditorRenderService.renderVideoToClipOverride = null;
       VideoEditorRenderService.renderVideoOverride = null;
+      VideoEditorRenderService.crashReporterOverride = null;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       StopMotionRenderService.assembleOverride = null;
+    });
+
+    test('renderVideoToClip times out and cancels the stalled task', () {
+      fakeAsync((async) {
+        final hung = Completer<(DivineVideoClip, String?)>();
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) => hung.future;
+
+        const taskId = 'stalled-final-export';
+        RenderCancellationRegistry.start(taskId);
+        Object? failure;
+        Object? reportedFailure;
+        VideoEditorRenderService.crashReporterOverride = (error, stackTrace) =>
+            reportedFailure = error;
+
+        VideoEditorRenderService.renderVideoToClip(
+          clips: [clip('a', const Duration(seconds: 1))],
+          editorStateHistory: const {},
+          taskId: taskId,
+        ).then<void>(
+          (_) => fail('the stalled export must not complete successfully'),
+          onError: (Object error, StackTrace stackTrace) => failure = error,
+        );
+
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(
+          failure,
+          isA<VideoRenderFailedException>().having(
+            (error) => error.reason,
+            'reason',
+            VideoRenderFailureReason.timedOut,
+          ),
+        );
+        expect(
+          VideoEditorRenderService.isTaskCancellationRequestedForTesting(
+            taskId,
+          ),
+          isTrue,
+          reason: 'a retry must not run beside the abandoned native export',
+        );
+        expect(
+          reportedFailure,
+          same(failure),
+          reason: 'final-export failures are reported for diagnosis (#7125)',
+        );
+
+        hung.completeError(Exception('late native failure'));
+        async.flushMicrotasks();
+      });
     });
 
     test('renderVideoToClip names an empty clip list as the reason', () async {
