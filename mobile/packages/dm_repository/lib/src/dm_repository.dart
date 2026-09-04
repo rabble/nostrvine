@@ -1741,7 +1741,7 @@ class DmRepository {
           await syncState.rearmDrainForOwnInbox(pubkey);
           Log.info(
             'DM history drain re-armed for ${pubkeyForLogs(pubkey)}: the '
-            'completed run never read the account\'s own DM inbox relays, '
+            "completed run never read the account's own DM inbox relays, "
             'which are now known',
             category: LogCategory.system,
           );
@@ -2705,11 +2705,14 @@ class DmRepository {
           return;
         }
 
-        // Accept kind 14 (text) and kind 15 (file). Any other kind is terminally
+        // Accept kind 14 (text) and kind 15 (file). Any other kind is
+        // terminally
         // unsupported — record it so it is not re-decrypted on every launch.
         // Note: the ledger survives upgrades, so a future version that adds
-        // support for a new kind will not reprocess wraps already recorded here;
-        // such a kind would need a one-off backfill. Acceptable vs. re-decrypting
+        // support for a new kind will not reprocess wraps already recorded
+        // here;
+        // such a kind would need a one-off backfill. Acceptable vs.
+        // re-decrypting
         // every unknown wrap on every launch today. #5452.
         if (!_supportedDmKinds.contains(rumor.kind)) {
           await _recordProcessedWrap(
@@ -2787,9 +2790,11 @@ class DmRepository {
         // Only a NIP-04 copy may suppress a peer's rumor: a row that also
         // arrived over NIP-17 is a genuine earlier message (#7324).
         //
-        // Our own self-wrap echo is the exception. A group send persists one row
+        // Our own self-wrap echo is the exception. A group send persists
+        // one row
         // but publishes one self-wrap per recipient for the shared rumor. Every
-        // echo dedups on the batch token, or the unfiltered window when the send
+        // echo dedups on the batch token, or the unfiltered window when
+        // the send
         // predates it (#6046).
         final isSentByMe = rumor.pubkey == ownerPubkey;
         final isGroup = participants.length > 2;
@@ -2823,7 +2828,8 @@ class DmRepository {
         }
         if (isDuplicate) {
           // A twin from the PEER is proof they speak NIP-17, and it is the only
-          // place that proof ever appears: the rumor is about to be dropped as a
+          // place that proof ever appears: the rumor is about to be
+          // dropped as a
           // duplicate, so without this the evidence is discarded and the thread
           // stays latched to 'nip04' forever. That latch is what makes the
           // legacy dual-send the steady state rather than an edge case — every
@@ -2836,13 +2842,15 @@ class DmRepository {
           // invert *this* path into "clear when *I* speak NIP-17". It does not
           // cover a unique self-authored NIP-17, which is not a twin and still
           // hits the persist upsert's `dmProtocol: 'nip17'` below.
-          // Ledger first, unlatch second, and the unlatch can never throw out of
+          // Ledger first, unlatch second, and the unlatch can never throw
+          // out of
           // here. It is an opportunistic upgrade on evidence we happen to be
           // holding; the dedup bookkeeping below it is what stops this wrap
           // being decrypted again on every redelivery. Ordering them the other
           // way round made a failed unlatch abort `_recordProcessedWrap`, so a
           // transient DB error would have cost a signer round trip per replay,
-          // forever. A dropped unlatch costs nothing — the next message from the
+          // forever. A dropped unlatch costs nothing — the next message
+          // from the
           // peer presents the same evidence again.
           await _recordProcessedWrap(
             giftWrapEvent.id,
@@ -2857,7 +2865,8 @@ class DmRepository {
               if (cleared) {
                 Log.info(
                   'Cleared the nip04 protocol latch on conversation '
-                  '$conversationId: ${pubkeyForLogs(rumor.pubkey)} sent NIP-17, '
+                  '$conversationId: ${pubkeyForLogs(rumor.pubkey)} sent '
+                  'NIP-17, '
                   'so the legacy kind-4 copy is no longer published to them',
                   category: LogCategory.system,
                 );
@@ -3016,7 +3025,8 @@ class DmRepository {
         );
 
         Log.debug(
-          'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
+          'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in '
+          'conversation '
           '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
           'createdAt=$persistedCreatedAt',
           category: LogCategory.system,

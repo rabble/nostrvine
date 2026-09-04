@@ -51,7 +51,7 @@ void main() {
         );
       });
 
-      test('sees this account\'s own row', () async {
+      test("sees this account's own row", () async {
         await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
 
         expect(

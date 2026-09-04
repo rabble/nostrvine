@@ -7190,7 +7190,7 @@ void main() {
       // from "a relay stayed silent": a connected relay that never answers is
       // skipped after the settle window and the read still reports success.
       // The drain used to act on that guess and latch completion permanently.
-      group('the account\'s own inbox relays gate completion', () {
+      group("the account's own inbox relays gate completion", () {
         // Answers the kind-10050 lookup differently depending on whether the
         // caller demanded full settlement, which is the whole distinction.
         void stubSilentInboxRelay({required bool conclusive}) {
@@ -7248,7 +7248,8 @@ void main() {
               syncState: syncState,
             ).backfillHistoryIfNeeded();
 
-            // Without the pin the next run seeds from oldestSyncedAt, which this
+            // Without the pin the next run seeds from oldestSyncedAt,
+            // which this
             // run's own persisted messages drag below the windows still owed.
             expect(syncState.persistedDrainCursors, contains(100));
           },
@@ -12734,8 +12735,8 @@ void main() {
         });
       });
 
-      test("a duplicate this account itself stored still advances its wire "
-          'boundary', () async {
+      test('a duplicate this account itself stored still advances its '
+          'wire boundary', () async {
         final nip04Event = createNip04Event();
 
         when(
@@ -12750,7 +12751,7 @@ void main() {
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer(
-          (_) async => DirectMessageRow(
+          (_) async => const DirectMessageRow(
             id: _rumorEventId,
             conversationId: 'own-duplicate',
             senderPubkey: _validPubkeyB,
@@ -12835,7 +12836,7 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
-            (_) async => DirectMessageRow(
+            (_) async => const DirectMessageRow(
               id: _rumorEventId,
               conversationId: 'own-duplicate',
               senderPubkey: _validPubkeyB,
