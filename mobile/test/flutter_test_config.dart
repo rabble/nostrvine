@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 
 import 'helpers/background_activity_reset.dart';
@@ -40,6 +41,16 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     // determine page transitions for every later test in the merged isolate.
     final _ = VineTheme.theme;
     final _ = VineTheme.lightTheme;
+
+    // google_fonts registers bundled faces asynchronously. Preload every
+    // variant used by VineTheme before testMain so the first test selected by
+    // a shard ordering seed measures the same glyphs as later tests (#8485).
+    VineTheme.bodyLargeFont();
+    VineTheme.labelSmallFont();
+    VineTheme.headlineMediumFont();
+    VineTheme.titleLargeFont();
+    VineTheme.codeFont();
+    await GoogleFonts.pendingFonts();
   }
 
   // Under `very_good test --optimization` the whole unit suite runs in one
