@@ -20,12 +20,16 @@ void main() {
     test(
       'isAdultContentVerified is false for a protected minor even if stored true',
       () async {
+        SharedPreferences.setMockInitialValues({
+          'adult_content_verified_$pubkey': true,
+        });
+        preferences = await SharedPreferences.getInstance();
         final service = AgeVerificationService(
           preferences: preferences,
           isProtectedMinor: () => true,
+          currentPubkeyHex: () => pubkey,
         );
         await service.initialize();
-        await service.setAdultContentVerified(true); // rejected below
         expect(service.isAdultContentVerified, false);
       },
     );
@@ -37,9 +41,10 @@ void main() {
         final service = AgeVerificationService(
           preferences: preferences,
           isProtectedMinor: () => protected,
+          currentPubkeyHex: () => pubkey,
         );
         await service.initialize();
-        await service.setAdultContentVerified(true);
+        expect(await service.setAdultContentVerified(true), isFalse);
         // Even after lifting the protection, nothing was persisted as true.
         protected = false;
         expect(service.isAdultContentVerified, false);
