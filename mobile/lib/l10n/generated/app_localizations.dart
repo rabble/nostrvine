@@ -19398,11 +19398,53 @@ abstract class AppLocalizations {
   /// **'Check and link'**
   String get verifyConnectProofCta;
 
-  /// Error shown when the verification service could not find the user's npub in the linked post.
+  /// Fallback error when the verifier refused a proof for a reason this build cannot name — every platform without rejection codes lands here, so the wording must stay true of any refusal, including a wrong account name or an unreachable post.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t check out. Check the link and the account name, then try again.'**
+  String get verifyErrorProofRejected;
+
+  /// Error shown when the proof post exists and belongs to the right account, but does not contain the user's npub.
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t find your npub in that post.'**
-  String get verifyErrorProofRejected;
+  String get verifyErrorProofMissingNpub;
+
+  /// Error shown when the pasted Discord link points at a direct message. No bot can read someone's DMs, so this can never verify.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.'**
+  String get verifyErrorDiscordDmLink;
+
+  /// Error shown when the pasted Discord link points at a channel instead of a specific message.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s a link to the channel, not your message. Long-press your message and pick Copy Message Link.'**
+  String get verifyErrorDiscordChannelLink;
+
+  /// Error shown when Discord has no message at the pasted link, or it was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find that message. Check the link, and make sure the message is still up.'**
+  String get verifyErrorDiscordMessageNotFound;
+
+  /// Error shown when Divine's Discord bot cannot see the channel the proof message was posted in.
+  ///
+  /// In en, this message translates to:
+  /// **'Our bot can\'t read that channel. Post your npub somewhere it can see.'**
+  String get verifyErrorDiscordBotNoAccess;
+
+  /// Error shown when the Discord message was posted by an account other than the one being claimed. Discord usernames are lowercase and differ from the display name shown in chat.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is from a different account. Use your Discord username — the one on your profile, not your display name.'**
+  String get verifyErrorDiscordAuthorMismatch;
+
+  /// Error shown when Discord returns the proof message with empty text, which means Divine's bot is missing a permission. Not the user's mistake.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t read that message\'s text. That\'s on us — please tell support.'**
+  String get verifyErrorDiscordContentUnavailable;
 
   /// Error shown when the verification service could not be reached.
   ///

@@ -3,9 +3,11 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/blocs/verify/verify_proof_input.dart';
+import 'package:openvine/blocs/verify/verify_rejection.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -29,7 +31,9 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     required VerifierPlatform platform,
     required VerifyOAuthLauncher launchOAuth,
     required String oauthReturnUrl,
+    required AnalyticsEventSink analytics,
   }) : _repository = repository,
+       _analytics = analytics,
        _pubkey = pubkey,
        _launchOAuth = launchOAuth,
        _oauthReturnUrl = oauthReturnUrl,
@@ -38,6 +42,7 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
   final IdentityClaimsRepository _repository;
   final String _pubkey;
   final VerifyOAuthLauncher _launchOAuth;
+  final AnalyticsEventSink _analytics;
   final String _oauthReturnUrl;
 
   /// Records the account handle the user is claiming.
@@ -85,16 +90,33 @@ class VerifyConnectCubit extends Cubit<VerifyConnectState> {
     if (isClosed) return;
 
     if (!result.verified) {
-      // The verifier's reason is specific ("author does not match", "npub not
-      // found") but free-form English, so it guides triage rather than the
-      // user. Dropping it entirely leaves a rejection with no way to tell
-      // which of the two happened.
+      // `error` stays free-form English and is only fit for triage, so the log
+      // keeps it. `code` is the stable half, and is what decides which of the
+      // reasons the user is shown — telling someone their npub is missing when
+      // the real problem was their username is what sends them round the loop
+      // of re-posting a message that was already correct.
       Log.warning(
-        'Verifier rejected ${claim.platform}:${claim.identity}: '
+        'Verifier rejected ${claim.platform}:${claim.identity} '
+        '(code: ${result.code ?? 'none'}): '
         '${result.error ?? 'no reason given'}',
         name: 'VerifyConnectCubit',
       );
-      return _fail(VerifyConnectError.proofRejected);
+      // Nothing else counts these. The rejection is an expected domain
+      // outcome, so it is deliberately not a Crashlytics report — see the
+      // reportable-error matrix in .claude/rules/error_handling.md — but with
+      // no signal at all we cannot tell one stuck person from everybody.
+      // `reason` is a fixed vocabulary and `platform` is a platform key, so
+      // neither carries the npub, the handle, the link or the message.
+      unawaited(
+        _analytics.logEvent(
+          name: 'verify_proof_rejected',
+          parameters: {
+            'platform': claim.platform,
+            'reason': result.code ?? 'none',
+          },
+        ),
+      );
+      return _fail(verifyErrorForCode(result.code));
     }
     await _publish(claim);
   }

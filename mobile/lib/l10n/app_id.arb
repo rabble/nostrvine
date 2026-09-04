@@ -4574,7 +4574,6 @@
   "verifyIdentityLabel": "Nama akun",
   "verifyProofLabel": "Tautan ke postinganmu",
   "verifyConnectProofCta": "Cek dan tautkan",
-  "verifyErrorProofRejected": "Kami tidak menemukan npub-mu di postingan itu.",
   "verifyErrorVerifierUnreachable": "Verifier tidak bisa dihubungi. Coba lagi sebentar lagi.",
   "verifyErrorOauthFailed": "Gagal. Coba sekali lagi.",
   "verifyErrorHandleRequired": "Isi handle kamu dulu.",

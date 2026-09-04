@@ -4574,7 +4574,6 @@
   "verifyIdentityLabel": "Numele contului",
   "verifyProofLabel": "Linkul postării tale",
   "verifyConnectProofCta": "Verifică și leagă",
-  "verifyErrorProofRejected": "Nu am găsit npub-ul tău în postarea aia.",
   "verifyErrorVerifierUnreachable": "Verificatorul nu răspunde. Mai încearcă într-o clipă.",
   "verifyErrorOauthFailed": "N-a mers. Mai încearcă o dată.",
   "verifyErrorHandleRequired": "Scrie mai întâi handle-ul tău.",

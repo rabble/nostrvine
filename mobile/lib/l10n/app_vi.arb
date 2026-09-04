@@ -6359,7 +6359,6 @@
   "verifyIdentityLabel": "Tên tài khoản",
   "verifyProofLabel": "Liên kết tới bài đăng",
   "verifyConnectProofCta": "Kiểm tra và liên kết",
-  "verifyErrorProofRejected": "Chúng tôi không tìm thấy npub của bạn trong bài đăng đó.",
   "verifyErrorVerifierUnreachable": "Không liên hệ được dịch vụ xác minh. Thử lại sau chút.",
   "verifyErrorOauthFailed": "Chưa xong. Thử lại lần nữa nhé.",
   "verifyErrorHandleRequired": "Nhập handle của bạn trước đã.",

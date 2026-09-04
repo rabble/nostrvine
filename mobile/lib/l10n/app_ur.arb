@@ -6359,7 +6359,6 @@
   "verifyIdentityLabel": "اکاؤنٹ کا نام",
   "verifyProofLabel": "آپ کی پوسٹ کا لنک",
   "verifyConnectProofCta": "جانچیں اور جوڑیں",
-  "verifyErrorProofRejected": "ہمیں اس پوسٹ میں آپ کا npub نہیں ملا۔",
   "verifyErrorVerifierUnreachable": "تصدیقی سروس تک رسائی نہیں ہوئی۔ تھوڑی دیر بعد کوشش کریں۔",
   "verifyErrorOauthFailed": "بات نہیں بنی۔ ایک بار پھر کوشش کریں۔",
   "verifyErrorHandleRequired": "پہلے اپنا ہینڈل درج کریں۔",

@@ -4574,7 +4574,6 @@
   "verifyIdentityLabel": "Nome da conta",
   "verifyProofLabel": "Link do seu post",
   "verifyConnectProofCta": "Checar e vincular",
-  "verifyErrorProofRejected": "Não achamos seu npub nesse post.",
   "verifyErrorVerifierUnreachable": "Verificador fora do ar. Tente de novo daqui a pouco.",
   "verifyErrorOauthFailed": "Não rolou. Tenta mais uma vez.",
   "verifyErrorHandleRequired": "Digite seu handle primeiro.",

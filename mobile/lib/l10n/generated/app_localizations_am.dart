@@ -11169,7 +11169,36 @@ class AppLocalizationsAm extends AppLocalizations {
   String get verifyConnectProofCta => 'መርምር እና አገናኝ';
 
   @override
-  String get verifyErrorProofRejected => 'በዚያ ልጥፍ ውስጥ npub ህን አላገኘንም።';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
+
+  @override
+  String get verifyErrorProofMissingNpub =>
+      'We couldn\'t find your npub in that post.';
+
+  @override
+  String get verifyErrorDiscordDmLink =>
+      'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.';
+
+  @override
+  String get verifyErrorDiscordChannelLink =>
+      'That\'s a link to the channel, not your message. Long-press your message and pick Copy Message Link.';
+
+  @override
+  String get verifyErrorDiscordMessageNotFound =>
+      'We couldn\'t find that message. Check the link, and make sure the message is still up.';
+
+  @override
+  String get verifyErrorDiscordBotNoAccess =>
+      'Our bot can\'t read that channel. Post your npub somewhere it can see.';
+
+  @override
+  String get verifyErrorDiscordAuthorMismatch =>
+      'That message is from a different account. Use your Discord username — the one on your profile, not your display name.';
+
+  @override
+  String get verifyErrorDiscordContentUnavailable =>
+      'We couldn\'t read that message\'s text. That\'s on us — please tell support.';
 
   @override
   String get verifyErrorVerifierUnreachable => 'አረጋጋጩ አልተገኘም። ትንሽ ቆይተህ ሞክር።';

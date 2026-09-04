@@ -4712,7 +4712,6 @@
   "verifyIdentityLabel": "Име на профила",
   "verifyProofLabel": "Линк към публикацията ти",
   "verifyConnectProofCta": "Провери и свържи",
-  "verifyErrorProofRejected": "Не намерихме твоя npub в тази публикация.",
   "verifyErrorVerifierUnreachable": "Проверяващият не отговаря. Опитай пак след малко.",
   "verifyErrorOauthFailed": "Не се получи. Пробвай отново.",
   "verifyErrorHandleRequired": "Първо въведи своя handle.",

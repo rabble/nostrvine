@@ -3530,7 +3530,6 @@
   "verifyIdentityLabel": "Pangalan ng account",
   "verifyProofLabel": "Link ng post mo",
   "verifyConnectProofCta": "I-check at i-link",
-  "verifyErrorProofRejected": "Hindi namin nakita ang npub mo sa post na 'yon.",
   "verifyErrorVerifierUnreachable": "Hindi maabot ang verifier. Subukan ulit mamaya.",
   "verifyErrorOauthFailed": "Hindi natuloy. Subukan ulit.",
   "verifyErrorHandleRequired": "Ilagay muna ang handle mo.",

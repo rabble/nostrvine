@@ -4574,7 +4574,6 @@
   "verifyIdentityLabel": "اسم الحساب",
   "verifyProofLabel": "رابط منشورك",
   "verifyConnectProofCta": "افحص واربط",
-  "verifyErrorProofRejected": "لم نجد npub الخاص بك في ذلك المنشور.",
   "verifyErrorVerifierUnreachable": "تعذّر الوصول إلى خدمة التوثيق. حاول بعد قليل.",
   "verifyErrorOauthFailed": "لم تنجح العملية. جرّب مرة أخرى.",
   "verifyErrorHandleRequired": "أدخل المُعرّف أولاً.",

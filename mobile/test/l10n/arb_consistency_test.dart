@@ -428,6 +428,20 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Discord proof-rejection reasons (verifier PR #43). Each names a distinct
+  // way a Discord proof can fail, replacing one message that blamed the npub
+  // for all of them. Deferred to the next human pass rather than
+  // machine-translated: verifyErrorDiscordAuthorMismatch turns on the
+  // username/display-name distinction, which each locale has to render in
+  // whatever words Discord itself uses there.
+  'verifyErrorProofRejected',
+  'verifyErrorProofMissingNpub',
+  'verifyErrorDiscordDmLink',
+  'verifyErrorDiscordChannelLink',
+  'verifyErrorDiscordMessageNotFound',
+  'verifyErrorDiscordBotNoAccess',
+  'verifyErrorDiscordAuthorMismatch',
+  'verifyErrorDiscordContentUnavailable',
   // Retraction-in-flight screen-reader label (#8201). Deferred to the next
   // human translation pass rather than machine-translated: its translated
   // siblings dmDeleteRefusedMessage / dmDeleteRefusedDetails each chose a

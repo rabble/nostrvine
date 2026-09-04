@@ -14,6 +14,7 @@ class VerificationResult extends Equatable {
     required this.checkedAt,
     required this.cached,
     this.error,
+    this.code,
   });
 
   /// Parses a [VerificationResult] from the verifier API JSON shape.
@@ -25,6 +26,7 @@ class VerificationResult extends Equatable {
       checkedAt: json['checked_at'] as int,
       cached: json['cached'] as bool? ?? false,
       error: json['error'] as String?,
+      code: json['code'] as String?,
     );
   }
 
@@ -46,6 +48,14 @@ class VerificationResult extends Equatable {
   /// Free-form error string when [verified] is false. Not a stable key.
   final String? error;
 
+  /// Stable machine-readable rejection reason, when the verifier sends one.
+  ///
+  /// Unlike [error], this is safe to branch on: the service treats these as a
+  /// fixed vocabulary. It is null for platforms that have not adopted codes and
+  /// for any deployment older than them, so a caller must have a fallback —
+  /// and must keep it for values a newer service invents.
+  final String? code;
+
   @override
   List<Object?> get props => [
     platform,
@@ -54,5 +64,6 @@ class VerificationResult extends Equatable {
     checkedAt,
     cached,
     error,
+    code,
   ];
 }

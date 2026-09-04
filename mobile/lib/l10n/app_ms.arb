@@ -6359,7 +6359,6 @@
   "verifyIdentityLabel": "Nama akaun",
   "verifyProofLabel": "Pautan ke siaran anda",
   "verifyConnectProofCta": "Semak dan pautkan",
-  "verifyErrorProofRejected": "Kami tidak jumpa npub anda dalam siaran itu.",
   "verifyErrorVerifierUnreachable": "Pengesah tidak dapat dihubungi. Cuba lagi sebentar.",
   "verifyErrorOauthFailed": "Tak menjadi. Cuba sekali lagi.",
   "verifyErrorHandleRequired": "Masukkan handle anda dahulu.",

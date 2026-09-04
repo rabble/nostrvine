@@ -4574,7 +4574,6 @@
   "verifyIdentityLabel": "Hesap adı",
   "verifyProofLabel": "Gönderinin bağlantısı",
   "verifyConnectProofCta": "Kontrol et ve bağla",
-  "verifyErrorProofRejected": "O gönderide npub'ını bulamadık.",
   "verifyErrorVerifierUnreachable": "Doğrulayıcıya ulaşılamadı. Birazdan tekrar dene.",
   "verifyErrorOauthFailed": "Olmadı. Bir daha dene.",
   "verifyErrorHandleRequired": "Önce kullanıcı adını gir.",
