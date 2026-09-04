@@ -339,7 +339,7 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
     });
 
-    testWidgets('session ended reports the deletion before signing out', (
+    testWidgets('completed deletion remains visible until acknowledged', (
       tester,
     ) async {
       const processing = AccountDeletionAttempt(
@@ -354,27 +354,19 @@ void main() {
       await tester.pumpWidget(
         _app(
           cubit,
-          states: Stream.fromIterable(const [
-            AccountDeletionRecoveryState(
-              status: AccountDeletionRecoveryStatus.sessionEnded,
+          states: Stream.value(
+            const AccountDeletionRecoveryState(
+              status: AccountDeletionRecoveryStatus.completed,
               attempt: processing,
             ),
-            AccountDeletionRecoveryState(
-              status: AccountDeletionRecoveryStatus.signingOut,
-              attempt: processing,
-            ),
-            AccountDeletionRecoveryState(
-              status: AccountDeletionRecoveryStatus.resolved,
-            ),
-          ]),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      // The outcome outlives the redirect: it is on screen at Home.
-      expect(find.text('Home'), findsOneWidget);
       expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
     });
   });
 }

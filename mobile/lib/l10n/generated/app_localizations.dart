@@ -11938,10 +11938,10 @@ abstract class AppLocalizations {
   /// **'Delete All Content'**
   String get deleteAccountDeleteAllContentButton;
 
-  /// Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared.
+  /// Title of the full-screen gate that blocks account use while deletion is recoverable, processing, failed, or awaiting acknowledgement.
   ///
   /// In en, this message translates to:
-  /// **'Finish deleting your account'**
+  /// **'Deleting your account'**
   String get accountDeletionRecoveryTitle;
 
   /// Explains that an interrupted deletion left the username safely reserved and recoverable.
@@ -11962,10 +11962,10 @@ abstract class AppLocalizations {
   /// **'Restore my username'**
   String get accountDeletionRestoreUsername;
 
-  /// Shown while the server is durably completing an immediate account deletion.
+  /// Shown while the server is durably completing an account deletion; explains the app lock and that closing the app is safe.
   ///
   /// In en, this message translates to:
-  /// **'Your deletion request is still being processed. Check again before leaving this screen.'**
+  /// **'We\'re deleting your Divine account. You\'re signed out and can\'t use this app until we confirm the result. You can close the app and come back later.'**
   String get accountDeletionFinishingBody;
 
   /// Shown while the server is rolling back an account-deletion attempt the user asked to cancel.
@@ -12100,10 +12100,10 @@ abstract class AppLocalizations {
   /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Try again in a bit.'**
   String get deleteAccountServerDeletionFailed;
 
-  /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
+  /// Confirmation shown only after the coordinator reports that the Divine account deletion completed. Restates that Nostr content deletion cannot be guaranteed everywhere.
   ///
   /// In en, this message translates to:
-  /// **'Deletion requests sent. You\'re signed out on this device.'**
+  /// **'Your Divine account was deleted. Deletion requests were sent for your Nostr posts, but some relays, clients, or caches may keep copies.'**
   String get deleteAccountSuccess;
 
   /// Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion.

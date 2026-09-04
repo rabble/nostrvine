@@ -12,8 +12,10 @@ import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDeletionRepository extends Mock
     implements AccountDeletionRecoveryRepository {}
@@ -38,6 +40,13 @@ class _TestNostrSession extends NostrSession {
 }
 
 void main() {
+  late SharedPreferences preferences;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = await SharedPreferences.getInstance();
+  });
+
   group('currentAccountDeletionAttemptProvider', () {
     test(
       'lookup starts when signing is ready without waiting for relays',
@@ -50,6 +59,7 @@ void main() {
         ).thenReturn(SignerReadiness.ready);
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
             authServiceProvider.overrideWithValue(authService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
             currentAuthRpcCapabilityProvider.overrideWithValue(
@@ -87,6 +97,7 @@ void main() {
       ).thenReturn(SignerReadiness.pending);
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           currentAuthRpcCapabilityProvider.overrideWithValue(
@@ -122,6 +133,7 @@ void main() {
       ).thenReturn(SignerReadiness.unavailable);
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           currentAuthRpcCapabilityProvider.overrideWithValue(
@@ -172,6 +184,7 @@ void main() {
       when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           currentAuthRpcCapabilityProvider.overrideWithValue(
@@ -207,9 +220,13 @@ void main() {
             'Could not authorize deletion attempt request',
           ),
         );
-        container
+        await container
             .read(submittedAccountDeletionAttemptProvider.notifier)
-            .record(pubkeyHex: pubkey, attempt: processing);
+            .record(
+              pubkeyHex: pubkey,
+              attempt: processing,
+              vanishEventId: 'vanish-event-id',
+            );
         keepAlive();
 
         expect(
@@ -220,22 +237,62 @@ void main() {
       },
     );
 
-    test('a record for another account is ignored', () async {
-      container
+    test('a recorded attempt survives a new provider container', () async {
+      await container
           .read(submittedAccountDeletionAttemptProvider.notifier)
-          .record(pubkeyHex: 'someone-else', attempt: processing);
+          .record(
+            pubkeyHex: pubkey,
+            attempt: processing,
+            vanishEventId: 'vanish-event-id',
+          );
+      final restarted = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.unavailable,
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(restarted.dispose);
+
+      final receipt = restarted.read(submittedAccountDeletionAttemptProvider);
+      expect(receipt?.pubkeyHex, pubkey);
+      expect(receipt?.attempt.id, processing.id);
+      expect(receipt?.attempt.status, processing.status);
+      expect(receipt?.vanishEventId, 'vanish-event-id');
+      expect(
+        await restarted.read(currentAccountDeletionAttemptProvider.future),
+        isNotNull,
+      );
+      verifyNever(repository.fetchCurrent);
+    });
+
+    test('a durable record gates before authentication is restored', () async {
+      await container
+          .read(submittedAccountDeletionAttemptProvider.notifier)
+          .record(
+            pubkeyHex: 'someone-else',
+            attempt: processing,
+            vanishEventId: 'vanish-event-id',
+          );
       keepAlive();
 
       expect(
         await container.read(currentAccountDeletionAttemptProvider.future),
-        isNull,
+        same(processing),
       );
-      verify(repository.fetchCurrent).called(1);
+      verifyNever(repository.fetchCurrent);
     });
 
-    test('signing out discards the record', () async {
+    test('signing out preserves the record', () async {
       final probe = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(
             (ref) => ref.watch(_authStateProbe),
@@ -255,25 +312,36 @@ void main() {
         fireImmediately: true,
       );
       addTearDown(subscription.close);
-      probe
+      await probe
           .read(submittedAccountDeletionAttemptProvider.notifier)
-          .record(pubkeyHex: pubkey, attempt: processing);
+          .record(
+            pubkeyHex: pubkey,
+            attempt: processing,
+            vanishEventId: 'vanish-event-id',
+          );
 
       probe.read(_authStateProbe.notifier).set(AuthState.unauthenticated);
       await Future<void>.delayed(Duration.zero);
 
-      expect(probe.read(submittedAccountDeletionAttemptProvider), isNull);
+      expect(
+        probe.read(submittedAccountDeletionAttemptProvider)?.attempt,
+        same(processing),
+      );
     });
 
     test('clearing the record hands the lookup back to the signer', () async {
       final notifier = container.read(
         submittedAccountDeletionAttemptProvider.notifier,
       );
-      notifier.record(pubkeyHex: pubkey, attempt: processing);
+      await notifier.record(
+        pubkeyHex: pubkey,
+        attempt: processing,
+        vanishEventId: 'vanish-event-id',
+      );
       keepAlive();
       await container.read(currentAccountDeletionAttemptProvider.future);
 
-      notifier.clear();
+      await notifier.clear();
 
       expect(
         await container.read(currentAccountDeletionAttemptProvider.future),

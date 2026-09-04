@@ -86,9 +86,13 @@ Future<void> startAccountDeletionFlow({
         // deletes the Keycast user right after accepting, and a lookup signed
         // through that signer fails, which used to leave the user signed in on
         // the settings screen (#8583).
-        onDeletionAccepted: (attempt) => ref
+        onDeletionSubmitted: (attempt, vanishEventId) => ref
             .read(submittedAccountDeletionAttemptProvider.notifier)
-            .record(pubkeyHex: pubkey, attempt: attempt),
+            .record(
+              pubkeyHex: pubkey,
+              attempt: attempt,
+              vanishEventId: vanishEventId,
+            ),
       );
       ref.invalidate(currentAccountDeletionAttemptProvider);
     },

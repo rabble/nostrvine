@@ -6,16 +6,13 @@ enum AccountDeletionRecoveryStatus {
   loadFailed,
   restorable,
   cancelInFlight,
+  confirmingSubmission,
   processing,
   completingLocally,
+  completed,
   cleanupFailed,
   terminalFailure,
 
-  /// The signer is gone while the attempt is past the point of no return.
-  ///
-  /// Transient: the cubit signs out right after emitting it, so the view can
-  /// surface the deletion outcome before the redirect to Welcome.
-  sessionEnded,
   signingOut,
   signOutFailed,
   resolved,

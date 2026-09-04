@@ -65,6 +65,7 @@ void main() {
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkey);
       when(() => authService.hasExistingProfile).thenReturn(true);
       when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+      when(authService.signOut).thenAnswer((_) async {});
 
       final profile = UserProfile(
         pubkey: _pubkey,
@@ -120,7 +121,6 @@ void main() {
       'recovery screen and keeps settings unreachable',
       (tester) async {
         final container = buildContainer();
-        final l10n = lookupAppLocalizations(const Locale('en'));
         await container.read(currentMinorAccountReviewStatusProvider.future);
         await container.read(currentAccountDeletionAttemptProvider.future);
 
@@ -138,7 +138,8 @@ void main() {
 
         final router = container.read(goRouterProvider);
         router.go(NostrSettingsScreen.path);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
         expect(find.byType(NostrSettingsScreen), findsOneWidget);
 
         // From here every lookup fails the way it does in production once
@@ -154,14 +155,20 @@ void main() {
         // invalidate the lookup. Awaiting the value here under real time is
         // what proves the record fed it: the lookup above throws, and a
         // provider that reached it would retry for seconds and then fail.
-        container
+        await container
             .read(submittedAccountDeletionAttemptProvider.notifier)
-            .record(pubkeyHex: _pubkey, attempt: _processing);
+            .record(
+              pubkeyHex: _pubkey,
+              attempt: _processing,
+              vanishEventId:
+                  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            );
         container.invalidate(currentAccountDeletionAttemptProvider);
         await tester.runAsync(
           () => container.read(currentAccountDeletionAttemptProvider.future),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
         expect(
           container.read(currentAccountDeletionAttemptProvider).value,
@@ -174,16 +181,27 @@ void main() {
         );
         expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
         expect(find.byType(NostrSettingsScreen), findsNothing);
-        expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
 
         router.go(NostrSettingsScreen.path);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
         expect(
           router.routeInformationProvider.value.uri.toString(),
           AccountDeletionRecoveryScreen.path,
         );
         expect(find.byType(NostrSettingsScreen), findsNothing);
+        expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
+
+        // Signing out must not expose Welcome: trying to go back and sign in
+        // again remains gated until the deletion result is known.
+        router.go('/welcome');
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          AccountDeletionRecoveryScreen.path,
+        );
         expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
 
         // Unmount before the fake clock is checked so the recovery poll timer

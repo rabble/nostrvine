@@ -387,12 +387,10 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 /// [confirmedPubkey] - When set, aborts before any step if the signed-in
 ///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
-/// [onDeletionAccepted] - Called when the coordinator answered `processing`:
-///   the deletion is committed server-side but this device could not finish
-///   it. The coordinator deletes the Keycast user within seconds of that
-///   answer, so the caller must gate the user on the recovery screen from the
-///   attempt it is handed rather than from a status lookup, which can no
-///   longer be signed (#8583).
+/// [onDeletionSubmitted] - Persists the attempt and vanish event before the
+///   irreversible submit request, then updates it with the coordinator answer.
+///   A lost response is ambiguous, so the caller must keep the user gated from
+///   the receipt rather than returning to normal account use (#8583).
 Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
@@ -401,7 +399,8 @@ Future<void> executeAccountDeletion({
   required Future<DivineUsernameLookup> ownedUsernameLookup,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
-  void Function(AccountDeletionAttempt attempt)? onDeletionAccepted,
+  Future<void> Function(AccountDeletionAttempt attempt, String vanishEventId)?
+  onDeletionSubmitted,
 }) async {
   if (!context.mounted) return;
 
@@ -798,19 +797,17 @@ Future<void> executeAccountDeletion({
         );
         return;
       }
+      await onDeletionSubmitted?.call(attempt, eventId);
+      AccountDeletionAttempt submitted;
       try {
-        final submitted = await deletionRecoveryRepository.submit(
+        submitted = await deletionRecoveryRepository.submit(
           attemptId: attempt.id,
           vanishEventId: eventId,
         );
         deletionAttempt = submitted;
-        if (submitted.status == AccountDeletionAttemptStatus.processing) {
-          dismissProgressSheet();
-          showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
-          onDeletionAccepted?.call(submitted);
-          return;
-        }
-        if (submitted.status != AccountDeletionAttemptStatus.completed) {
+        await onDeletionSubmitted?.call(submitted, eventId);
+        if (submitted.status != AccountDeletionAttemptStatus.processing &&
+            submitted.status != AccountDeletionAttemptStatus.completed) {
           throw AccountDeletionRecoveryException(
             'Submit returned ${submitted.status.name}',
           );
@@ -824,6 +821,13 @@ Future<void> executeAccountDeletion({
         );
         dismissProgressSheet();
         showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+        return;
+      }
+
+      if (submitted.status == AccountDeletionAttemptStatus.processing) {
+        dismissProgressSheet();
+        showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+        await authService.signOut();
         return;
       }
 

@@ -92,6 +92,8 @@ class AccountDeletionRecoveryRepository {
   Uri get _currentAttemptUri => Uri.parse('$_baseUrl$_attemptsPath/current');
   Uri _submitUri(String id) =>
       Uri.parse('$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/submit');
+  Uri _statusUri(String id) =>
+      Uri.parse('$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/status');
   Uri _cancelUri(String id) =>
       Uri.parse('$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/cancel');
   Uri _usernamePreparedUri(String id) => Uri.parse(
@@ -237,6 +239,47 @@ class AccountDeletionRecoveryRepository {
     } on IOException {
       throw const AccountDeletionRecoveryException(
         'Status lookup request failed',
+        isTransportFailure: true,
+      );
+    }
+  }
+
+  /// Reads a submitted attempt after its signer has been removed.
+  Future<AccountDeletionAttempt> fetchStatus({
+    required String attemptId,
+    required String pubkeyHex,
+  }) async {
+    final uri = _statusUri(attemptId);
+    try {
+      final response = await _sendWithRetry(
+        () => _httpClient
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'X-Account-Deletion-Pubkey': pubkeyHex,
+              },
+            )
+            .timeout(_timeout),
+      );
+      if (response.statusCode != 200) {
+        throw _exceptionFromResponse(response, 'Deletion status lookup failed');
+      }
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return AccountDeletionAttempt.fromJson({...json, 'operation': 'none'});
+    } on TimeoutException {
+      throw const AccountDeletionRecoveryException(
+        'Deletion status lookup timed out',
+        isTransportFailure: true,
+      );
+    } on http.ClientException {
+      throw const AccountDeletionRecoveryException(
+        'Deletion status lookup failed',
+        isTransportFailure: true,
+      );
+    } on IOException {
+      throw const AccountDeletionRecoveryException(
+        'Deletion status lookup failed',
         isTransportFailure: true,
       );
     }

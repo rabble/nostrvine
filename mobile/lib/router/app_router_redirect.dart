@@ -380,16 +380,15 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // process of logging in.
   final isAuthRoute = _isAuthEntryLocation(location);
 
-  if (authState == AuthState.authenticated &&
-      deletionRecoveryGateActive &&
+  if (deletionRecoveryGateActive &&
       !isDeletionRecoveryRoute &&
       !isSupportRoute) {
     return AccountDeletionRecoveryScreen.path;
   }
-  if (authState == AuthState.authenticated &&
-      !deletionRecoveryGateActive &&
-      isDeletionRecoveryRoute) {
-    return VideoFeedPage.pathForIndex(0);
+  if (!deletionRecoveryGateActive && isDeletionRecoveryRoute) {
+    return authState == AuthState.authenticated
+        ? VideoFeedPage.pathForIndex(0)
+        : WelcomeScreen.path;
   }
 
   // Only bounce to the loading screen on a true cold load (no value yet).

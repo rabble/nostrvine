@@ -13,12 +13,14 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/owned_divine_username_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
@@ -70,13 +72,17 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(authService.signOut).thenAnswer((_) async {});
     });
 
     testWidgets(
       'a processing answer records the attempt the recovery gate reads',
       (tester) async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(authService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
             currentAuthRpcCapabilityProvider.overrideWithValue(
@@ -143,10 +149,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          container.read(submittedAccountDeletionAttemptProvider),
-          (pubkeyHex: _pubkeyHex, attempt: _processing),
+        final receipt = container.read(
+          submittedAccountDeletionAttemptProvider,
         );
+        expect(receipt?.pubkeyHex, _pubkeyHex);
+        expect(receipt?.attempt, same(_processing));
+        expect(receipt?.vanishEventId, 'event-id');
         // The signer is gone the moment the coordinator accepts: the gate must
         // be fed by the record, never by a lookup. Read under real time so a
         // provider that reached the lookup fails here instead of hanging on
@@ -161,12 +169,7 @@ void main() {
         );
         expect(current, same(_processing));
         verifyNever(repository.fetchCurrent);
-        verifyNever(
-          () => authService.signOut(
-            deleteKeys: any(named: 'deleteKeys'),
-            deleteLocalUserData: any(named: 'deleteLocalUserData'),
-          ),
-        );
+        verify(authService.signOut).called(1);
       },
     );
   });
