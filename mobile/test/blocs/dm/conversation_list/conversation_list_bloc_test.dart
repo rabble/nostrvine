@@ -529,24 +529,25 @@ void main() {
           )..add(const ConversationListStarted());
           addTearDown(bloc.close);
 
-          final states = <ConversationListState>[];
-          final sub = bloc.stream.listen(states.add);
-          addTearDown(sub.cancel);
-
+          final visible = bloc.stream.firstWhere(
+            (state) => state.status == ConversationListStatus.loaded,
+          );
           acceptedController.add([conv]);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          final visibleState = await visible;
           expect(
-            states.last.conversations.map((c) => c.id).toList(),
+            visibleState.conversations.map((c) => c.id).toList(),
             ['c'],
             reason: 'approved counterparty is visible before revocation',
           );
 
           // A revocation fires the gate's changes stream; the list must re-filter
           // and drop the now-unapproved counterparty without any new DAO write.
+          final revoked = bloc.stream.firstWhere(
+            (state) => state.conversations.isEmpty,
+          );
           gate.revoke(_testPubkey2);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
           expect(
-            states.last.conversations,
+            (await revoked).conversations,
             isEmpty,
             reason: 'a verdict flip re-filters the list without a DAO write',
           );
@@ -3307,6 +3308,9 @@ void main() {
         bloc.add(const ConversationListSearchQueryChanged('alice'));
         await bloc.stream.firstWhere((s) => s.searchQuery == 'alice');
 
+        final pendingQueryApplied = bloc.stream.firstWhere(
+          (state) => state.searchQuery == 'alice w',
+        );
         bloc.add(const ConversationListSearchQueryChanged('alice w'));
         acceptedController.add([
           _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
@@ -3317,7 +3321,7 @@ void main() {
           ),
         ]);
 
-        await Future<void>.delayed(const Duration(milliseconds: 350));
+        await pendingQueryApplied;
 
         expect(
           bloc.state.searchQuery,
@@ -3379,6 +3383,9 @@ void main() {
         await bloc.stream.firstWhere((s) => s.searchQuery == 'alice');
 
         // ...then types one more character; still inside the 300ms debounce.
+        final pendingQueryApplied = bloc.stream.firstWhere(
+          (state) => state.searchQuery == 'alice w',
+        );
         bloc.add(const ConversationListSearchQueryChanged('alice w'));
 
         // Nostr becomes ready and the provider hands over the repository.
@@ -3386,7 +3393,7 @@ void main() {
           ConversationListProfileRepositoryChanged(mockProfileRepository),
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 350));
+        await pendingQueryApplied;
 
         expect(
           bloc.state.searchQuery,
