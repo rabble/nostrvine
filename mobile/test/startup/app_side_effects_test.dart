@@ -90,6 +90,8 @@ void main() {
     void Function()? onRelayStatisticsBuilt,
     void Function()? onRelaySetChangeBuilt,
     void Function()? onBlockedFollowReconcilerBuilt,
+    void Function()? onNotificationPreferencesSyncBuilt,
+    void Function()? onPushNotificationSyncBuilt,
   }) => [
     authServiceProvider.overrideWithValue(authService),
     analyticsIdentityCoordinatorProvider.overrideWithValue(
@@ -120,8 +122,14 @@ void main() {
     ),
     relayListDirtyPublishBridgeProvider.overrideWithValue(null),
     contactListDirtyBroadcastBridgeProvider.overrideWithValue(null),
-    notificationPreferencesDirtySyncBridgeProvider.overrideWithValue((_) {}),
-    pushNotificationSyncProvider.overrideWithValue(null),
+    notificationPreferencesDirtySyncBridgeProvider.overrideWith((ref) {
+      onNotificationPreferencesSyncBuilt?.call();
+      return (_) {};
+    }),
+    pushNotificationSyncProvider.overrideWith((ref) {
+      onPushNotificationSyncBuilt?.call();
+      return null;
+    }),
     blocklistSyncBridgeProvider.overrideWithValue(null),
   ];
 
@@ -221,6 +229,30 @@ void main() {
       expect(relaySetChange, isFalse);
       expect(blockedFollowReconciler, isFalse);
     });
+
+    testWidgets('owns push lifecycle without the bottom-nav shell', (
+      tester,
+    ) async {
+      var notificationPreferencesSyncBuilds = 0;
+      var pushNotificationSyncBuilds = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(
+            onNotificationPreferencesSyncBuilt: () {
+              notificationPreferencesSyncBuilds += 1;
+            },
+            onPushNotificationSyncBuilt: () {
+              pushNotificationSyncBuilds += 1;
+            },
+          ),
+          child: const AppRootSideEffects(child: SizedBox.shrink()),
+        ),
+      );
+
+      expect(notificationPreferencesSyncBuilds, 1);
+      expect(pushNotificationSyncBuilds, 1);
+    });
   });
 
   group(AppShellSideEffects, () {
@@ -260,6 +292,28 @@ void main() {
       // reintroduce the shell-mount dependency this split removed.
       expect(analytics.userIds, isEmpty);
       expect(crashUserIds, isEmpty);
+    });
+
+    testWidgets('does not own root-tier push lifecycle', (tester) async {
+      var notificationPreferencesSyncBuilds = 0;
+      var pushNotificationSyncBuilds = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(
+            onNotificationPreferencesSyncBuilt: () {
+              notificationPreferencesSyncBuilds += 1;
+            },
+            onPushNotificationSyncBuilt: () {
+              pushNotificationSyncBuilds += 1;
+            },
+          ),
+          child: const AppShellSideEffects(child: SizedBox.shrink()),
+        ),
+      );
+
+      expect(notificationPreferencesSyncBuilds, isZero);
+      expect(pushNotificationSyncBuilds, isZero);
     });
   });
 

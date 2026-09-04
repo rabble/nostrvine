@@ -231,6 +231,12 @@ Future<void> swapAccount({
         beforePreviousContainerDispose: outgoingPushCoordinator == null
             ? null
             : () async {
+                // The incoming account is live before cleanup starts. The
+                // backend only removes a token when the signed pubkey still
+                // owns it, so a late outgoing 3080 cannot unregister the
+                // incoming 3079. Keep using the captured outgoing coordinator:
+                // after disposal, the replacement container has no access to
+                // the signer that must authorize this cleanup.
                 try {
                   await outgoingPushCoordinator
                       .deregisterLastReadyPubkeyAfterAccountSwitch()
@@ -246,20 +252,6 @@ Future<void> swapAccount({
                 }
               },
       );
-      // The replacement router can remain on a top-level route such as
-      // /settings, where AppShellSideEffects is not mounted. Activate the
-      // keep-alive coordinator after commit so the incoming account registers
-      // without making a failed switch take ownership of the device token.
-      try {
-        container.read(pushNotificationSyncProvider);
-      } catch (error) {
-        // The target container is already mounted, so push startup is
-        // best-effort and cannot roll the account switch back.
-        Log.warning(
-          'Incoming account push registration failed: $error',
-          name: 'swapAccount',
-        );
-      }
       try {
         await container
             .read(authServiceProvider)
