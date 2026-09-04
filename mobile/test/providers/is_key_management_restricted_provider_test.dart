@@ -1,6 +1,5 @@
 // ABOUTME: Tests isKeyManagementRestrictedProvider (#182) — the fail-CLOSED gate
-// ABOUTME: for nsec export + key import/change. Delegates to the #176 DM seam, so
-// ABOUTME: unresolved / suppressed Keycast checks must restrict.
+// ABOUTME: for nsec export + key import/change, independently of the DM gate.
 
 import 'dart:async';
 

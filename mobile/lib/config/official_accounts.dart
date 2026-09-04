@@ -45,7 +45,7 @@ const OfficialAccount kHqAccount = OfficialAccount(
   pubkeyHex: kHqPubkeyHex,
   nip05: '_@divinehq.divine.video',
   role: OfficialAccountRole.hq,
-  minorContactable: true,
+  minorContactable: false,
 );
 
 /// The current Divine moderation pubkey — the report target, the pinned support

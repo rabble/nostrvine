@@ -1,6 +1,5 @@
-// ABOUTME: Tests isDmRestrictedProvider (#176) — the fail-CLOSED DM-restriction
-// ABOUTME: seam: only a positive not-protected verdict (trusted live or
-// ABOUTME: persisted) lifts the restriction; every absent answer restricts.
+// ABOUTME: Tests isDmRestrictedProvider (#176, #8561) — only an affirmative
+// ABOUTME: Greenlight designation restricts DMs, and that designation is sticky.
 
 import 'dart:async';
 
@@ -55,10 +54,10 @@ void main() {
   }
 
   group('unresolved with no verdict', () {
-    test('unauthenticated with no verdict persisted is restricted', () {
+    test('unauthenticated with no verdict persisted is unrestricted', () {
       final container = containerWith(authState: AuthState.unauthenticated);
 
-      expect(container.read(isDmRestrictedProvider), isTrue);
+      expect(container.read(isDmRestrictedProvider), isFalse);
     });
   });
 
@@ -135,59 +134,40 @@ void main() {
       expect(container.read(isDmRestrictedProvider), isFalse);
     });
 
-    test('an unknown resolution never creates a relaxing verdict', () async {
-      final container = containerWith(
-        authState: AuthState.authenticated,
-        status: () async => ProtectedMinorStatus.unknown(),
-      );
-      await container.read(protectedMinorStatusProvider.future);
+    test(
+      'an unknown resolution leaves an undesignated account unrestricted',
+      () async {
+        final container = containerWith(
+          authState: AuthState.authenticated,
+          status: () async => ProtectedMinorStatus.unknown(),
+        );
+        await container.read(protectedMinorStatusProvider.future);
 
-      expect(container.read(isDmRestrictedProvider), isTrue);
-      final store = ProtectedMinorStickyStore(prefs: prefs);
-      expect(store.lastKnownFor(pubkey), isNull);
-    });
+        expect(container.read(isDmRestrictedProvider), isFalse);
+        final store = ProtectedMinorStickyStore(prefs: prefs);
+        expect(store.lastKnownFor(pubkey), isNull);
+      },
+    );
   });
 
-  // The fail direction per auth source with no verdict anywhere (live status
-  // unresolved, nothing persisted). Keycast-backed or not-yet-known sources
-  // fail closed; pure self-custody sources Keycast can never answer for are
-  // unrestricted. Pinning every source stops a refactor from silently moving
-  // one in either direction. An absent OAuth verdict can be suppressed by the
-  // restricted party, while an absent self-custody verdict is structurally
-  // inapplicable.
+  // Authentication source does not confer protected-minor status. With no
+  // affirmative live or persisted designation, every account is unrestricted.
   group('per-auth-source fail direction with an absent verdict', () {
     for (final source in AuthenticationSource.values) {
-      final expectRestricted = switch (source) {
-        // `none` is the initial value while the source restores after the
-        // pubkey on cold start: not yet known whether Keycast applies.
-        AuthenticationSource.none => true,
-        AuthenticationSource.divineOAuth => true,
-        AuthenticationSource.automatic ||
-        AuthenticationSource.importedKeys ||
-        AuthenticationSource.bunker ||
-        AuthenticationSource.amber ||
-        AuthenticationSource.nip07 => false,
-      };
+      test('$source -> unrestricted', () {
+        final container = containerWith(
+          authState: AuthState.authenticated,
+          authSource: source,
+          status: () => Completer<ProtectedMinorStatus>().future,
+        );
 
-      test(
-        '$source -> ${expectRestricted ? 'restricted' : 'unrestricted'}',
-        () {
-          final container = containerWith(
-            authState: AuthState.authenticated,
-            authSource: source,
-            status: () => Completer<ProtectedMinorStatus>().future,
-          );
-
-          expect(container.read(isDmRestrictedProvider), expectRestricted);
-        },
-      );
+        expect(container.read(isDmRestrictedProvider), isFalse);
+      });
     }
   });
 
-  // A pubkey previously seen by Keycast stays fail-closed under any
-  // self-custody source, since the same pubkey can flip auth sources on one
-  // device and Keycast may hold a verdict for it.
-  group('ever-Keycast pubkey stays restricted under self-custody sources', () {
+  // Merely having used Keycast is not an affirmative Greenlight designation.
+  group('ever-Keycast pubkey remains unrestricted without a verdict', () {
     for (final source in [
       AuthenticationSource.automatic,
       AuthenticationSource.importedKeys,
@@ -195,7 +175,7 @@ void main() {
       AuthenticationSource.amber,
       AuthenticationSource.nip07,
     ]) {
-      test('$source with Keycast marker -> restricted', () async {
+      test('$source with Keycast marker -> unrestricted', () async {
         final store = ProtectedMinorStickyStore(prefs: prefs);
         await store.markKeycastAccount(pubkey);
 
@@ -205,14 +185,14 @@ void main() {
           status: () => Completer<ProtectedMinorStatus>().future,
         );
 
-        expect(container.read(isDmRestrictedProvider), isTrue);
+        expect(container.read(isDmRestrictedProvider), isFalse);
       });
     }
   });
 
   group('auth transitions', () {
     test(
-      'a live provider restricts a Keycast account after a self-custody session',
+      'a live provider does not infer Greenlight status after an account switch',
       () async {
         // Regression test for the provider-cache staleness in
         // keycastSignalApplicableProvider: AuthService mutates its pubkey and
@@ -274,18 +254,17 @@ void main() {
         key = '';
         authStateController.add(AuthState.unauthenticated);
         await pumpEventQueue();
-        expect(container.read(isDmRestrictedProvider), isTrue);
+        expect(container.read(isDmRestrictedProvider), isFalse);
 
-        // Sign in as account B: divineOAuth, protected minor, Keycast
-        // unreachable, nothing persisted for B. Must fail closed — a stale
-        // `applicable=false` from A's session would leave B unrestricted.
+        // Sign in as account B: divineOAuth, Keycast unreachable, and no
+        // persisted Greenlight designation. It remains unrestricted.
         state = AuthState.authenticated;
         source = AuthenticationSource.divineOAuth;
         key = pubkeyB;
         authStateController.add(AuthState.authenticated);
         await pumpEventQueue();
 
-        expect(container.read(isDmRestrictedProvider), isTrue);
+        expect(container.read(isDmRestrictedProvider), isFalse);
       },
     );
   });

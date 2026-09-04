@@ -146,10 +146,10 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// account. Returns `true` only for OAuth-authenticated accounts and for
 /// accounts that have previously been marked as Keycast-custodial.
 ///
-/// The #176 DM restriction uses this to distinguish accounts that may have
-/// an unknown verdict from Keycast (and must fail closed) from pure
-/// self-custody accounts that Keycast can never produce a verdict for (and
-/// must not be permanently restricted by an unanswerable check).
+/// The #182 key-management restriction uses this to distinguish accounts that
+/// may have an unknown verdict from Keycast (and must fail closed) from pure
+/// self-custody accounts that Keycast can never produce a verdict for (and must
+/// not be permanently restricted by an unanswerable check).
 final keycastSignalApplicableProvider = Provider<bool>((ref) {
   // AuthService mutates its pubkey and auth-source fields in place, so watch
   // the auth state so applicability recomputes across the current account-swap
@@ -161,20 +161,21 @@ final keycastSignalApplicableProvider = Provider<bool>((ref) {
   final authSource = authService.authenticationSource;
   final store = ref.watch(protectedMinorStickyStoreProvider);
 
-  // OAuth accounts can receive a Keycast verdict; fail closed on unknown.
+  // OAuth accounts can receive a Keycast verdict, so key management fails
+  // closed on unknown.
   if (authSource == AuthenticationSource.divineOAuth) {
     return true;
   }
 
-  // Self-custody accounts that were previously seen by Keycast must stay
-  // fail-closed, since a pubkey can flip between auth sources on the same
-  // device.
+  // Key management stays fail-closed for self-custody accounts that were
+  // previously seen by Keycast, since a pubkey can flip between auth sources
+  // on the same device.
   if (pubkey != null && store.wasKeycastAccountFor(pubkey)) {
     return true;
   }
 
   // Keep this exhaustive so every new auth source requires an explicit
-  // fail-direction decision at this child-safety boundary.
+  // key-management fail-direction decision at this child-safety boundary.
   return switch (authSource) {
     AuthenticationSource.divineOAuth => true,
     AuthenticationSource.none ||
@@ -186,25 +187,35 @@ final keycastSignalApplicableProvider = Provider<bool>((ref) {
   };
 });
 
-/// The #176 DM-restriction seam — fail CLOSED conditionally, a deliberate
-/// divergence from
-/// [isProtectedMinorProvider] (which #175's content lock consumes fail-open):
-/// the restricted party can trivially suppress the input that produces an
-/// absent answer (airplane mode, cleared storage, blocked keycast domain,
-/// expired token), so "no answer" must restrict rather than lift.
+/// Whether the current account has an affirmative protected-minor designation
+/// and must use the restricted DM experience (#176, #8561).
 ///
-/// Keycast-backed accounts are restricted unless a positive not-protected
-/// verdict exists:
-/// - trusted live `notProtected` -> unrestricted (persisted for cold start);
-/// - persisted last-known `notProtected` -> unrestricted, so adults don't eat
-///   a lockout on every network blip;
-/// - everything else (protected, unknown, loading, missing token, never
-///   resolved, unauthenticated, auth source not yet restored) -> restricted.
+/// Divine treats accounts as 16+ for messaging unless Greenlight has marked
+/// them as protected minors. An unavailable or unresolved Keycast check must
+/// therefore not restrict an account with no prior protected verdict. The
+/// sticky behavior in [isProtectedMinorProvider] still keeps a previously
+/// confirmed protected minor restricted through startup, refreshes, and
+/// outages until a trusted not-protected verdict clears the designation.
+final isDmRestrictedProvider = Provider<bool>(
+  (ref) => ref.watch(isProtectedMinorProvider),
+);
+
+/// Whether the current DM restriction comes from a confirmed protected-minor
+/// verdict. DM restrictions now require that affirmative verdict, so this
+/// named seam remains for policy consumers while sharing the same answer.
+final hasConfirmedDmRestrictionProvider = Provider<bool>(
+  (ref) => ref.watch(isDmRestrictedProvider),
+);
+
+/// The #182 key-management seam — gates nsec export ("copy private key") and
+/// key import/change (swapping the account to a self-held key) for protected
+/// minors.
 ///
-/// Pure self-custody accounts that have never been associated with Keycast
-/// are never restricted — they are outside Keycast's verified-minor signal and
-/// must not be permanently blocked by a check Keycast can never produce.
-final isDmRestrictedProvider = Provider<bool>((ref) {
+/// Key management intentionally retains its fail-closed posture independently
+/// of the DM policy: a protected minor — or any Keycast-backed account whose
+/// status cannot be positively cleared — cannot export or replace its key.
+/// Pure self-custody accounts that Keycast has never known remain unrestricted.
+final isKeyManagementRestrictedProvider = Provider<bool>((ref) {
   final authState = ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
   final pubkey = authService.currentPublicKeyHex;
@@ -245,39 +256,3 @@ final isDmRestrictedProvider = Provider<bool>((ref) {
   // Fail closed only when Keycast signals are applicable to this account.
   return keycastApplicable;
 });
-
-/// Whether the current DM restriction comes from a confirmed protected-minor
-/// verdict rather than the fail-closed unknown/loading fallback.
-final hasConfirmedDmRestrictionProvider = Provider<bool>((ref) {
-  final authState = ref.watch(currentAuthStateProvider);
-  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
-  final store = ref.watch(protectedMinorStickyStoreProvider);
-  final live = ref.watch(protectedMinorStatusProvider);
-  final trusted = trustedProtectedMinorStatus(
-    authenticated: authState == AuthState.authenticated,
-    live: live,
-  );
-  if (trusted?.kind == ProtectedMinorStatusKind.protected) return true;
-  if (trusted?.kind == ProtectedMinorStatusKind.notProtected) return false;
-  return store.lastKnownFor(pubkey) == true;
-});
-
-/// The #182 key-management seam — gates nsec export ("copy private key") and
-/// key import/change (swapping the account to a self-held key) for protected
-/// minors.
-///
-/// Deliberately the SAME fail-closed verdict as the #176 DM restriction
-/// ([isDmRestrictedProvider]): a protected minor — or any account whose
-/// protected-minor status can't be positively cleared (unknown, cold start,
-/// suppressed check, missing token) — is restricted. A named passthrough (not
-/// a direct reuse) so the call site documents intent, and the two conditions
-/// can diverge later without touching the screen.
-///
-/// Uses the same signal-applicability boundary as the DM seam: Keycast-backed
-/// accounts fail closed on an absent answer, while pure self-custody accounts
-/// are not restricted by a Keycast verdict that cannot exist for them. This is
-/// why it does NOT reuse the fail-OPEN [isProtectedMinorProvider] that #175's
-/// content lock consumes.
-final isKeyManagementRestrictedProvider = Provider<bool>(
-  (ref) => ref.watch(isDmRestrictedProvider),
-);

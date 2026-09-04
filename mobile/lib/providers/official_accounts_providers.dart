@@ -40,14 +40,15 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 /// these threads by [ConversationPage]'s route guard, since retired keys are
 /// absent from [kPinnedOfficialAccounts].
 ///
-/// Otherwise, keys off [isDmRestrictedProvider], the fail-closed seam: only a
-/// positive not-protected verdict (trusted live or persisted) is unrestricted;
-/// a restricted user may only send to an account currently approved by
-/// [OfficialAccountsService] (pin ∩ live NIP-05). Reads state at call time
-/// (send-time) so the decision is fresh: a mid-session approval/revocation
-/// takes effect on the next send without rebuilding. An unknown/loading
-/// protected-minor status still denies the send, but marks the denial temporary
-/// so a durable queue row is retained until Keycast provides a trusted verdict.
+/// Otherwise, keys off [isDmRestrictedProvider]: an account is restricted
+/// only when it is confirmed as a protected minor, by a trusted live
+/// protected verdict or the persisted last-known protected value. An account
+/// with no confirmed protected status is not restricted, including while the
+/// status is unknown or loading. A restricted user may only send to an
+/// account currently approved by [OfficialAccountsService] (pin ∩ live
+/// NIP-05). Reads state at call time (send-time) so the decision is fresh: a
+/// mid-session approval or revocation takes effect on the next send without
+/// rebuilding. A send to any other recipient is blocked.
 final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
   return (String recipientPubkey) async {
     if (isRetiredModerationAccount(recipientPubkey)) {
