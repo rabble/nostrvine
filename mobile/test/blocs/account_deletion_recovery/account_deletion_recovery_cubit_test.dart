@@ -147,6 +147,112 @@ void main() {
         verifyNever(repository.fetchCurrent);
       },
     );
+
+    test(
+      'unavailable signer with a cancellable attempt keeps the retry path',
+      () async {
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        await cubit.signerUnavailable(attempt: _recoverable);
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.loadFailed);
+        expect(
+          cubit.state.failure,
+          AccountDeletionRecoveryFailure.signerUnavailable,
+        );
+        verifyNever(() => authService.signOut());
+      },
+    );
+
+    test(
+      'unavailable signer with a processing attempt ends the session',
+      () async {
+        when(() => authService.signOut()).thenAnswer((_) async {});
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        final statuses = <AccountDeletionRecoveryStatus>[];
+        final subscription = cubit.stream.listen(
+          (state) => statuses.add(state.status),
+        );
+        addTearDown(subscription.cancel);
+
+        await cubit.signerUnavailable(attempt: _processing);
+        await pumpEventQueue();
+
+        expect(statuses, [
+          AccountDeletionRecoveryStatus.sessionEnded,
+          AccountDeletionRecoveryStatus.signingOut,
+          AccountDeletionRecoveryStatus.resolved,
+        ]);
+        verify(() => authService.signOut()).called(1);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        );
+        verifyNever(repository.fetchCurrent);
+        expect(resolvedCalls, 1);
+      },
+    );
+
+    test(
+      'unavailable signer with a completed attempt finishes local cleanup',
+      () async {
+        when(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        ).thenAnswer((_) async {});
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        await cubit.signerUnavailable(attempt: _completed);
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+        verify(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        ).called(1);
+        verifyNever(repository.fetchCurrent);
+      },
+    );
+  });
+
+  group('resume', () {
+    test('adopts a processing attempt and polls without a lookup', () async {
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await cubit.resume(_processing);
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      expect(cubit.state.attempt, same(_processing));
+      verifyNever(repository.fetchCurrent);
+      expect(timers.timers.where((timer) => timer.isActive), hasLength(1));
+    });
+
+    test('a failed poll keeps the known processing state', () async {
+      when(repository.fetchCurrent).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Could not authorize deletion attempt request',
+        ),
+      );
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await cubit.resume(_processing);
+
+      await timers.fireNext();
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      expect(cubit.state.attempt, same(_processing));
+      expect(cubit.state.pollTickIndex, 1);
+      verify(repository.fetchCurrent).called(1);
+    });
   });
 
   group('load', () {

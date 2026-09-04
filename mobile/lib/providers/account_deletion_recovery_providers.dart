@@ -27,6 +27,38 @@ final accountDeletionRecoveryRepositoryProvider =
       );
     });
 
+/// A deletion attempt this process committed, bound to the account it belongs
+/// to.
+typedef SubmittedAccountDeletionAttempt = ({
+  String pubkeyHex,
+  AccountDeletionAttempt attempt,
+});
+
+/// The attempt the coordinator accepted for processing on this device.
+///
+/// Once `submit` answers `processing`, the coordinator deletes the Keycast
+/// user within seconds, so a status lookup can no longer be signed. The
+/// recovery gate must therefore read the attempt from here rather than from a
+/// refetch (#8583). Cleared when the recovery screen resolves the attempt.
+final submittedAccountDeletionAttemptProvider =
+    NotifierProvider<
+      SubmittedAccountDeletionAttemptNotifier,
+      SubmittedAccountDeletionAttempt?
+    >(SubmittedAccountDeletionAttemptNotifier.new);
+
+class SubmittedAccountDeletionAttemptNotifier
+    extends Notifier<SubmittedAccountDeletionAttempt?> {
+  @override
+  SubmittedAccountDeletionAttempt? build() => null;
+
+  void record({
+    required String pubkeyHex,
+    required AccountDeletionAttempt attempt,
+  }) => state = (pubkeyHex: pubkeyHex, attempt: attempt);
+
+  void clear() => state = null;
+}
+
 final currentAccountDeletionAttemptProvider =
     FutureProvider<AccountDeletionAttempt?>(
       (ref) async {
@@ -35,6 +67,14 @@ final currentAccountDeletionAttemptProvider =
         }
         final authService = ref.watch(authServiceProvider);
         ref.watch(currentAuthRpcCapabilityProvider);
+        // Consulted before the signer: the attempt this process committed is
+        // known without a lookup, and the lookup is exactly what a committed
+        // deletion makes impossible.
+        final submitted = ref.watch(submittedAccountDeletionAttemptProvider);
+        if (submitted != null &&
+            submitted.pubkeyHex == authService.currentPublicKeyHex) {
+          return submitted.attempt;
+        }
         switch (authService.signerReadiness) {
           case SignerReadiness.pending:
             final waitingForReadiness = Completer<AccountDeletionAttempt?>();

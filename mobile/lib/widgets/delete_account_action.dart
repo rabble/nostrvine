@@ -82,6 +82,13 @@ Future<void> startAccountDeletionFlow({
         ownedUsernameLookup: ownedUsernameLookup,
         confirmedPubkey: pubkey,
         screenName: screenName,
+        // The gate reads this record instead of refetching: the coordinator
+        // deletes the Keycast user right after accepting, and a lookup signed
+        // through that signer fails, which used to leave the user signed in on
+        // the settings screen (#8583).
+        onDeletionAccepted: (attempt) => ref
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(pubkeyHex: pubkey, attempt: attempt),
       );
       ref.invalidate(currentAccountDeletionAttemptProvider);
     },

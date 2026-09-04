@@ -141,4 +141,102 @@ void main() {
       verifyNever(repository.fetchCurrent);
     });
   });
+
+  group('submittedAccountDeletionAttemptProvider', () {
+    const pubkey = 'user-pubkey';
+    const processing = AccountDeletionAttempt(
+      id: 'attempt-id',
+      status: AccountDeletionAttemptStatus.processing,
+    );
+
+    late _MockDeletionRepository repository;
+    late _MockAuthService authService;
+    late ProviderContainer container;
+
+    setUp(() {
+      repository = _MockDeletionRepository();
+      authService = _MockAuthService();
+      when(repository.fetchCurrent).thenAnswer((_) async => null);
+      when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+      container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.rpcReady,
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    // Listened after the record is written, the way the router listens
+    // from app start: the lookup must never have been needed.
+    void keepAlive() {
+      final subscription = container.listen(
+        currentAccountDeletionAttemptProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+    }
+
+    test(
+      'a recorded attempt is the current attempt without a lookup',
+      () async {
+        // The signer the deletion just killed: every lookup fails, exactly
+        // as it does once the coordinator has deleted the Keycast user
+        // (#8583).
+        when(repository.fetchCurrent).thenThrow(
+          const AccountDeletionRecoveryException(
+            'Could not authorize deletion attempt request',
+          ),
+        );
+        container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(pubkeyHex: pubkey, attempt: processing);
+        keepAlive();
+
+        expect(
+          await container.read(currentAccountDeletionAttemptProvider.future),
+          same(processing),
+        );
+        verifyNever(repository.fetchCurrent);
+      },
+    );
+
+    test('a record for another account is ignored', () async {
+      container
+          .read(submittedAccountDeletionAttemptProvider.notifier)
+          .record(pubkeyHex: 'someone-else', attempt: processing);
+      keepAlive();
+
+      expect(
+        await container.read(currentAccountDeletionAttemptProvider.future),
+        isNull,
+      );
+      verify(repository.fetchCurrent).called(1);
+    });
+
+    test('clearing the record hands the lookup back to the signer', () async {
+      final notifier = container.read(
+        submittedAccountDeletionAttemptProvider.notifier,
+      );
+      notifier.record(pubkeyHex: pubkey, attempt: processing);
+      keepAlive();
+      await container.read(currentAccountDeletionAttemptProvider.future);
+
+      notifier.clear();
+
+      expect(
+        await container.read(currentAccountDeletionAttemptProvider.future),
+        isNull,
+      );
+      verify(repository.fetchCurrent).called(1);
+    });
+  });
 }

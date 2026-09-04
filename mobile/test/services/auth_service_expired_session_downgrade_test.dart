@@ -1681,5 +1681,81 @@ void main() {
         );
       },
     );
+
+    group('signer token refresh after a mid-session 401', () {
+      KeycastSession liveSession() => KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'live_token',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        refreshToken: 'refresh_token_still_valid',
+        grantType: KeycastSession.authorizationCodeGrant,
+      );
+
+      test('a rejected refresh ends the RPC session', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          liveSession(),
+        );
+        expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+        expect(authService.hasExpiredOAuthSession, isFalse);
+        final capabilities = <AuthRpcCapability>[];
+        final subscription = authService.authRpcCapabilityStream.listen(
+          capabilities.add,
+        );
+        addTearDown(subscription.cancel);
+        // Keycast consumed the token and answered with an error: the account
+        // behind it is gone (an account-deletion coordinator deleted it) or
+        // the grant was revoked. No later attempt can succeed.
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final token = await authService.oauthCoordinator.refreshAccessToken();
+        await pumpEventQueue();
+
+        expect(token, isNull);
+        expect(authService.authRpcCapability, AuthRpcCapability.unavailable);
+        expect(authService.hasExpiredOAuthSession, isTrue);
+        expect(capabilities, [AuthRpcCapability.unavailable]);
+        expect(authService.isAuthenticated, isTrue);
+      });
+
+      test('a network failure leaves the session as it was', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          liveSession(),
+        );
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenThrow(OAuthNetworkException('offline'));
+
+        final token = await authService.oauthCoordinator.refreshAccessToken();
+
+        expect(token, isNull);
+        expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+        expect(authService.hasExpiredOAuthSession, isFalse);
+      });
+
+      test('a successful refresh hands the signer the new token', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          liveSession(),
+        );
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => liveSession().copyWith(accessToken: 'rotated_token'),
+        );
+
+        final token = await authService.oauthCoordinator.refreshAccessToken();
+
+        expect(token, 'rotated_token');
+        expect(authService.authRpcCapability, AuthRpcCapability.rpcReady);
+        expect(authService.hasExpiredOAuthSession, isFalse);
+      });
+    });
   });
 }

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,14 +35,26 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
           repository: repository,
           authService: authService,
           onAttemptResolved: () {
+            ref.read(submittedAccountDeletionAttemptProvider.notifier).clear();
             ref.invalidate(currentAccountDeletionAttemptProvider);
           },
         );
+        // A seed, not a dependency: the attempt the router gated on, which is
+        // the one this process committed when the signer is already gone. The
+        // cubit owns the attempt from here, so a later emission must not
+        // re-create it.
+        final knownAttempt = ref
+            .read(currentAccountDeletionAttemptProvider)
+            .value;
         switch (signerReadiness) {
           case SignerReadiness.ready:
-            cubit.load();
+            if (knownAttempt != null) {
+              cubit.resume(knownAttempt);
+            } else {
+              cubit.load();
+            }
           case SignerReadiness.unavailable:
-            cubit.signerUnavailable();
+            cubit.signerUnavailable(attempt: knownAttempt);
           case SignerReadiness.pending:
             break;
         }
@@ -61,14 +74,27 @@ class AccountDeletionRecoveryView extends StatelessWidget {
     final hasConfirmedDeletionAttempt = context.select(
       (AccountDeletionRecoveryCubit cubit) => cubit.state.attempt != null,
     );
-    return BlocListener<
-      AccountDeletionRecoveryCubit,
-      AccountDeletionRecoveryState
-    >(
-      listenWhen: (previous, current) =>
-          previous.status != AccountDeletionRecoveryStatus.resolved &&
-          current.status == AccountDeletionRecoveryStatus.resolved,
-      listener: (context, _) => context.go(RoutePaths.videoFeedForIndex(0)),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<
+          AccountDeletionRecoveryCubit,
+          AccountDeletionRecoveryState
+        >(
+          listenWhen: (previous, current) =>
+              previous.status != AccountDeletionRecoveryStatus.sessionEnded &&
+              current.status == AccountDeletionRecoveryStatus.sessionEnded,
+          listener: _reportSessionEnded,
+        ),
+        BlocListener<
+          AccountDeletionRecoveryCubit,
+          AccountDeletionRecoveryState
+        >(
+          listenWhen: (previous, current) =>
+              previous.status != AccountDeletionRecoveryStatus.resolved &&
+              current.status == AccountDeletionRecoveryStatus.resolved,
+          listener: (context, _) => context.go(RoutePaths.videoFeedForIndex(0)),
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -89,6 +115,23 @@ class AccountDeletionRecoveryView extends StatelessWidget {
   }
 }
 
+/// Reports the outcome through the app-level messenger, which sits above the
+/// Navigator and outlives the sign-out redirect that takes this screen down.
+void _reportSessionEnded(
+  BuildContext context,
+  AccountDeletionRecoveryState _,
+) {
+  final message = context.l10n.deleteAccountSuccess;
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(DivineSnackbarContainer.snackBar(message));
+  SemanticsService.sendAnnouncement(
+    View.of(context),
+    message,
+    Directionality.of(context),
+  );
+}
+
 class _RecoveryStateContent extends StatelessWidget {
   const _RecoveryStateContent();
 
@@ -102,6 +145,7 @@ class _RecoveryStateContent extends StatelessWidget {
         onSignOut: cubit.signOut,
       ),
       AccountDeletionRecoveryStatus.completingLocally ||
+      AccountDeletionRecoveryStatus.sessionEnded ||
       AccountDeletionRecoveryStatus.signingOut ||
       AccountDeletionRecoveryStatus.resolved => const Center(
         child: CircularProgressIndicator(),

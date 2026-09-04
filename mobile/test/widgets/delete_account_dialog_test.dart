@@ -80,6 +80,7 @@ Future<void> runDeletion({
   Future<DivineUsernameLookup>? lookupFuture,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
+  void Function(AccountDeletionAttempt attempt)? onDeletionAccepted,
 }) => dialog_api.executeAccountDeletion(
   context: context,
   deletionService: deletionService,
@@ -88,6 +89,7 @@ Future<void> runDeletion({
   ownedUsernameLookup: lookupFuture ?? Future.value(lookup),
   confirmedPubkey: confirmedPubkey,
   screenName: screenName,
+  onDeletionAccepted: onDeletionAccepted,
 );
 
 DeleteAccountConfirmation _deleteFallback() => DeleteAccountConfirmation(
@@ -1181,18 +1183,17 @@ void main() {
         when(
           () => recoveryRepository.prepare(username: any(named: 'username')),
         ).thenAnswer((_) async => _recoverableAttempt);
+        const processingAttempt = AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.processing,
+          username: 'alice',
+        );
         when(
           () => recoveryRepository.submit(
             attemptId: any(named: 'attemptId'),
             vanishEventId: any(named: 'vanishEventId'),
           ),
-        ).thenAnswer(
-          (_) async => const AccountDeletionAttempt(
-            id: 'attempt-id',
-            status: AccountDeletionAttemptStatus.processing,
-            username: 'alice',
-          ),
-        );
+        ).thenAnswer((_) async => processingAttempt);
         when(
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
@@ -1213,12 +1214,14 @@ void main() {
           ),
         );
 
+        final accepted = <AccountDeletionAttempt>[];
         await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
           deletionRecoveryRepository: recoveryRepository,
           lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+          onDeletionAccepted: accepted.add,
         );
         await tester.pumpAndSettle();
 
@@ -1237,6 +1240,15 @@ void main() {
             ).accountDeletionRestoreUsername,
           ),
           findsNothing,
+        );
+        // The caller gates the user from this attempt: a lookup can no longer
+        // be signed once the coordinator has the deletion (#8583).
+        expect(accepted, [same(processingAttempt)]);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: any(named: 'deleteKeys'),
+            deleteLocalUserData: any(named: 'deleteLocalUserData'),
+          ),
         );
       },
     );

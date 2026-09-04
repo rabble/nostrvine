@@ -25,17 +25,31 @@ class OAuthSessionCoordinator {
     required Duration expiredSessionRefreshTimeout,
     required String? Function() currentPubkeyFallback,
     required bool Function() hasExpiredSession,
+    String? Function()? signerSessionOwner,
+    void Function()? onSignerSessionRejected,
   }) : _oauthClient = oauthClient,
        _oauthRefreshTimeout = oauthRefreshTimeout,
        _expiredSessionRefreshTimeout = expiredSessionRefreshTimeout,
        _currentPubkeyFallback = currentPubkeyFallback,
-       _hasExpiredSession = hasExpiredSession;
+       _hasExpiredSession = hasExpiredSession,
+       _signerSessionOwner = signerSessionOwner,
+       _onSignerSessionRejected = onSignerSessionRejected;
 
   final KeycastOAuth? _oauthClient;
   final Duration _oauthRefreshTimeout;
   final Duration _expiredSessionRefreshTimeout;
   final String? Function() _currentPubkeyFallback;
   final bool Function() _hasExpiredSession;
+
+  /// The account whose live Keycast signer a mid-session refresh serves, or
+  /// null when no signer is up. Sampled before and after the refresh so a
+  /// sign-out or account switch that raced it never downgrades whichever
+  /// account is active by then.
+  final String? Function()? _signerSessionOwner;
+
+  /// Invoked when Keycast rejects the refresh behind a signer 401. The facade
+  /// marks the OAuth session expired and RPC capability unavailable there.
+  final void Function()? _onSignerSessionRejected;
 
   Future<bool>? _pendingRefresh;
   Future<KeycastSession?>? _pendingOAuthRefresh;
@@ -293,14 +307,34 @@ class OAuthSessionCoordinator {
   /// Delegates to [refreshSession] which deduplicates concurrent callers —
   /// multiple in-flight RPC 401s and app-resume refresh all share a single
   /// refresh token exchange.
+  ///
+  /// A network failure returns null and changes nothing: the signer reports
+  /// the call as transient and a later attempt may still refresh. A rejection
+  /// is different. Keycast consumed the refresh token, so no later attempt
+  /// can succeed, and until the facade flips its flags every signing call
+  /// reads as a transient outage. That case reaches `onSignerSessionRejected`
+  /// when the signer's account is still the active one. The Keycast user
+  /// deleted by an account-deletion coordinator is the worked example
+  /// (#8583).
   Future<String?> refreshAccessToken() async {
+    final owner = _signerSessionOwner?.call();
     final KeycastSession? refreshed;
     try {
       refreshed = await refreshSession();
     } on OAuthNetworkException {
       return null;
     }
-    return refreshed?.accessToken;
+    if (refreshed != null) return refreshed.accessToken;
+    if (owner != null && owner == _signerSessionOwner?.call()) {
+      Log.warning(
+        'refreshAccessToken: Keycast rejected the refresh behind a signer '
+        '401 for ${pubkeyForLogs(owner)}; RPC session ended',
+        name: 'OAuthSessionCoordinator',
+        category: LogCategory.auth,
+      );
+      _onSignerSessionRejected?.call();
+    }
+    return null;
   }
 
   /// Returns an access token only when the stored OAuth session belongs to

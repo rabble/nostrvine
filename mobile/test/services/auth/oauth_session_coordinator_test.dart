@@ -409,6 +409,97 @@ void main() {
 
         expect(token, isNull);
       });
+
+      group('signer session rejection', () {
+        late String? signerOwner;
+        late int rejections;
+
+        setUp(() {
+          signerOwner = 'owner';
+          rejections = 0;
+        });
+
+        OAuthSessionCoordinator buildWithSigner() => OAuthSessionCoordinator(
+          oauthClient: oauthClient,
+          oauthRefreshTimeout: oauthTimeout,
+          expiredSessionRefreshTimeout: expiredTimeout,
+          currentPubkeyFallback: () => pubkeyFallback,
+          hasExpiredSession: () => hasExpired,
+          signerSessionOwner: () => signerOwner,
+          onSignerSessionRejected: () => rejections++,
+        );
+
+        test('a rejected refresh ends the signer session', () async {
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final token = await buildWithSigner().refreshAccessToken();
+
+          expect(token, isNull);
+          expect(rejections, 1);
+        });
+
+        test('a network failure is not a rejection', () async {
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenThrow(OAuthNetworkException('offline'));
+
+          final token = await buildWithSigner().refreshAccessToken();
+
+          expect(token, isNull);
+          expect(rejections, 0);
+        });
+
+        test('a successful refresh is not a rejection', () async {
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) async => _session(accessToken: 'fresh-token'));
+
+          final token = await buildWithSigner().refreshAccessToken();
+
+          expect(token, equals('fresh-token'));
+          expect(rejections, 0);
+        });
+
+        test(
+          'a rejection after the signer changed hands is not reported',
+          () async {
+            final gate = Completer<KeycastSession?>();
+            when(
+              () => oauthClient.refreshSession(
+                userPubkey: any(named: 'userPubkey'),
+              ),
+            ).thenAnswer((_) => gate.future);
+
+            final pending = buildWithSigner().refreshAccessToken();
+            signerOwner = 'someone-else';
+            gate.complete(null);
+
+            expect(await pending, isNull);
+            expect(rejections, 0);
+          },
+        );
+
+        test('a rejection with no live signer is not reported', () async {
+          signerOwner = null;
+          when(
+            () => oauthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          await buildWithSigner().refreshAccessToken();
+
+          expect(rejections, 0);
+        });
+      });
     });
 
     group('detach', () {

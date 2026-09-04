@@ -188,8 +188,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         bootstrapRelayListCallback: () => _onBootstrapRelayListRequested,
       );
   // Owns the single-flight refresh futures + timeouts; the facade keeps the
-  // _hasExpiredOAuthSession flag and all result application, reached here
-  // through ports so restore orchestration stays byte-identical.
+  // _hasExpiredOAuthSession flag and result application, reached via ports.
   late final OAuthSessionCoordinator _oauthCoordinator =
       OAuthSessionCoordinator(
         oauthClient: _oauthClient,
@@ -197,7 +196,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         expiredSessionRefreshTimeout: _expiredSessionRefreshTimeout,
         currentPubkeyFallback: () => _currentProfile?.publicKeyHex,
         hasExpiredSession: () => _hasExpiredOAuthSession,
+        signerSessionOwner: () =>
+            _keycastSigner == null ? null : currentPublicKeyHex,
+        onSignerSessionRejected: () {
+          _hasExpiredOAuthSession = true;
+          _setRpcCapability(AuthRpcCapability.unavailable);
+        },
       );
+
+  @visibleForTesting
+  OAuthSessionCoordinator get oauthCoordinator => _oauthCoordinator;
   // Owns the client-initiated nostrconnect:// session + wait future + callback
   // handoff timers; the facade keeps _bunkerSigner and applies a successful
   // connection through the ports so behavior stays byte-identical.
@@ -995,20 +1003,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return false;
   }
 
-  /// [TokenRefreshCallback] passed to [KeycastRpc] so it can recover
-  /// from mid-session 401s without caller involvement.
-  ///
-  /// Delegates to [OAuthSessionCoordinator.refreshAccessToken] which
-  /// deduplicates concurrent callers — multiple in-flight RPC 401s and
-  /// app-resume refresh all share a single refresh token exchange.
-  Future<String?> _refreshAccessToken() =>
-      _oauthCoordinator.refreshAccessToken();
-
   KeycastRpc _newKeycastSigner(KeycastSession session) =>
       KeycastRpc.fromSession(
         _oauthConfig,
         session,
-        onTokenRefresh: _refreshAccessToken,
+        onTokenRefresh: _oauthCoordinator.refreshAccessToken,
       );
 
   void _setKeycastSigner(KeycastRpc? signer, {bool closePrevious = true}) {

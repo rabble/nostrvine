@@ -100,14 +100,51 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     return load();
   }
 
-  void signerUnavailable() {
-    _beginOperation();
-    emitIfOpen(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.loadFailed,
-        failure: AccountDeletionRecoveryFailure.signerUnavailable,
-      ),
-    );
+  /// Adopts an attempt this process already holds without a status lookup.
+  ///
+  /// After `submit` answers `processing` the coordinator deletes the Keycast
+  /// user, so the lookup [load] starts with cannot be signed. Polling still
+  /// runs from here; a failed poll keeps the known state rather than
+  /// replacing it with a lookup failure.
+  Future<void> resume(AccountDeletionAttempt attempt) async {
+    final generation = _beginOperation();
+    await _handleAttempt(attempt, generation: generation);
+  }
+
+  /// Reports that the signer is permanently unavailable.
+  ///
+  /// With no [attempt], or one the user could still cancel after signing in
+  /// again, this holds the session-expired copy with retry and sign-out. A
+  /// `processing` attempt cannot be cancelled and its Keycast account is what
+  /// the signer just lost, so the session is over: the cubit emits
+  /// [AccountDeletionRecoveryStatus.sessionEnded] and signs out (#8583).
+  /// Terminal states need no signer and are handled as if fetched.
+  Future<void> signerUnavailable({AccountDeletionAttempt? attempt}) async {
+    switch (attempt?.status) {
+      case null:
+      case AccountDeletionAttemptStatus.preparing:
+      case AccountDeletionAttemptStatus.recoverable:
+        _beginOperation();
+        emitIfOpen(
+          const AccountDeletionRecoveryState(
+            status: AccountDeletionRecoveryStatus.loadFailed,
+            failure: AccountDeletionRecoveryFailure.signerUnavailable,
+          ),
+        );
+      case AccountDeletionAttemptStatus.processing:
+        _beginOperation();
+        emitIfOpen(
+          AccountDeletionRecoveryState(
+            status: AccountDeletionRecoveryStatus.sessionEnded,
+            attempt: attempt,
+          ),
+        );
+        await signOut();
+      case AccountDeletionAttemptStatus.completed:
+      case AccountDeletionAttemptStatus.cancelled:
+      case AccountDeletionAttemptStatus.terminalFailure:
+        await resume(attempt!);
+    }
   }
 
   Future<void> cancel() async {

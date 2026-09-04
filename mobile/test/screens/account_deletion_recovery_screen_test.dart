@@ -338,5 +338,43 @@ void main() {
 
       expect(find.text('Home'), findsOneWidget);
     });
+
+    testWidgets('session ended reports the deletion before signing out', (
+      tester,
+    ) async {
+      const processing = AccountDeletionAttempt(
+        id: 'attempt-id',
+        status: AccountDeletionAttemptStatus.processing,
+      );
+      const initial = AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.processing,
+        attempt: processing,
+      );
+      when(() => cubit.state).thenReturn(initial);
+      await tester.pumpWidget(
+        _app(
+          cubit,
+          states: Stream.fromIterable(const [
+            AccountDeletionRecoveryState(
+              status: AccountDeletionRecoveryStatus.sessionEnded,
+              attempt: processing,
+            ),
+            AccountDeletionRecoveryState(
+              status: AccountDeletionRecoveryStatus.signingOut,
+              attempt: processing,
+            ),
+            AccountDeletionRecoveryState(
+              status: AccountDeletionRecoveryStatus.resolved,
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // The outcome outlives the redirect: it is on screen at Home.
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+    });
   });
 }
