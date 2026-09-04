@@ -145,7 +145,8 @@ class PendingCollaboratorInvite extends Equatable {
 
   /// Whether the collaborator-directed wrap still needs recovery.
   bool get requiresRecipientRecovery =>
-      recipientWrapStatus != OutgoingWrapStatus.sent;
+      recipientWrapStatus != OutgoingWrapStatus.sent &&
+      recipientWrapStatus != OutgoingWrapStatus.blocked;
 
   @override
   List<Object?> get props => [

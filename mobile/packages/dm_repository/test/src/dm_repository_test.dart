@@ -25387,6 +25387,45 @@ void main() {
       );
 
       test(
+        'on a retained block: terminalizes the row without deleting the '
+        'sender copy',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.blocked(
+              'blocked: retired recipient',
+              disposition: NIP17BlockedSendDisposition.retain,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.markRecipientBlocked(
+              id: _rumorEventId,
+              lastError: 'blocked: retired recipient',
+            ),
+          ).thenAnswer((_) async => true);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.blockedDisposition, NIP17BlockedSendDisposition.retain);
+          verify(
+            () => mockOutgoingDmsDao.markRecipientBlocked(
+              id: _rumorEventId,
+              lastError: 'blocked: retired recipient',
+            ),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+        },
+      );
+
+      test(
         'on a blocked send: when deleteById throws, swallows the error and '
         'still returns the blocked result (row self-heals on a later sweep)',
         () async {

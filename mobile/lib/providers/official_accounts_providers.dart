@@ -34,8 +34,8 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 /// keys, so a send there is accepted by the relay and reported as delivered
 /// while reaching nobody — worst on an enforcement thread whose own copy
 /// invites a reply. Terminal rather than temporary: a retired recipient can
-/// never become deliverable, so the cold-start drain is right to drop a queued
-/// row instead of retrying forever. Checked ahead of the restriction branch
+/// never become deliverable, so the cold-start drain retains the sender's row
+/// in a non-retryable state. Checked ahead of the restriction branch
 /// because it applies to adults too — a protected minor is already bounced off
 /// these threads by [ConversationPage]'s route guard, since retired keys are
 /// absent from [kPinnedOfficialAccounts].
@@ -51,7 +51,7 @@ final officialAccountsServiceProvider = Provider<OfficialAccountsService>((
 final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
   return (String recipientPubkey) async {
     if (isRetiredModerationAccount(recipientPubkey)) {
-      return DmSendPolicyDecision.terminallyBlocked;
+      return DmSendPolicyDecision.terminallyBlockedRetain;
     }
     if (!ref.read(isDmRestrictedProvider)) {
       return DmSendPolicyDecision.allowed;
@@ -61,7 +61,7 @@ final dmSendPolicyProvider = Provider<DmSendPolicy>((ref) {
         .isApprovedMinorDmRecipient(recipientPubkey);
     if (approved) return DmSendPolicyDecision.allowed;
     return ref.read(hasConfirmedDmRestrictionProvider)
-        ? DmSendPolicyDecision.terminallyBlocked
+        ? DmSendPolicyDecision.terminallyBlockedDiscard
         : DmSendPolicyDecision.temporarilyBlocked;
   };
 });

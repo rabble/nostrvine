@@ -40,6 +40,10 @@ enum OutgoingWrapStatus {
   /// service will replay this wrap (only) until `retry_count` reaches
   /// the policy cap.
   failed,
+
+  /// A terminal policy refusal. The row remains visible as the sender's only
+  /// durable copy, but retry queries must never re-drive it.
+  blocked,
 }
 
 /// Thrown when [OutgoingDmsDao] reads a row whose persisted wrap-status
@@ -370,6 +374,27 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
             recipientWrapLastError: lastError != null
                 ? Value(lastError)
                 : const Value.absent(),
+            lastAttemptAt: Value(DateTime.now()),
+          ),
+        );
+    return rows > 0;
+  }
+
+  /// Retain [id] as a terminal, non-retryable policy refusal.
+  ///
+  /// Both wraps must leave `pending`: the pending-row recovery query selects a
+  /// row when either wrap is pending, and a recipient refusal means the
+  /// self-wrap was never attempted.
+  Future<bool> markRecipientBlocked({
+    required String id,
+    required String lastError,
+  }) async {
+    final rows = await (update(outgoingDms)..where((t) => t.id.equals(id)))
+        .write(
+          OutgoingDmsCompanion(
+            recipientWrapStatus: Value(OutgoingWrapStatus.blocked.name),
+            selfWrapStatus: Value(OutgoingWrapStatus.blocked.name),
+            recipientWrapLastError: Value(lastError),
             lastAttemptAt: Value(DateTime.now()),
           ),
         );

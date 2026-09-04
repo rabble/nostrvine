@@ -269,6 +269,19 @@ void main() {
       );
       expect(failedInvite.requiresRecipientRecovery, isTrue);
       expect(sentInvite.requiresRecipientRecovery, isFalse);
+      expect(
+        PendingCollaboratorInvite(
+          rumorId: 'blocked-a',
+          collaboratorPubkey: _collaboratorA,
+          creatorPubkey: _ownerPubkey,
+          videoAddress: _videoAddress,
+          recipientWrapStatus: OutgoingWrapStatus.blocked,
+          selfWrapStatus: OutgoingWrapStatus.blocked,
+          retryCount: 2,
+          queuedAt: queuedAt,
+        ).requiresRecipientRecovery,
+        isFalse,
+      );
     });
 
     test('pending invite group exposes collaborators and equality', () {

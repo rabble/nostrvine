@@ -4,6 +4,15 @@
 
 import 'package:meta/meta.dart';
 
+/// Durable treatment for a queue row after a terminal policy refusal.
+enum NIP17BlockedSendDisposition {
+  /// Remove the row because the refused intent must not remain visible.
+  discard,
+
+  /// Keep the row as a visible, non-retryable record of the sender's intent.
+  retain,
+}
+
 /// Result of NIP-17 encrypted message sending.
 ///
 /// NIP-17 send is two independent publishes to relays:
@@ -81,8 +90,10 @@ sealed class NIP17SendResult {
   /// Build a policy-block result (protected-minor DM restriction, #176). Unlike
   /// a transient failure, a blocked send must NOT be retried — retrying only
   /// re-hits the same policy — so the UI surfaces distinct, no-retry copy.
-  const factory NIP17SendResult.blocked(String error) =
-      NIP17SendFailure.blocked;
+  const factory NIP17SendResult.blocked(
+    String error, {
+    NIP17BlockedSendDisposition? disposition,
+  }) = NIP17SendFailure.blocked;
 
   /// Build an oversized-message result (#7331): the rumor serializes to more
   /// than the NIP-44 double encryption can carry, so no wrap could be built.
@@ -101,6 +112,11 @@ sealed class NIP17SendResult {
   /// Whether this failure is a policy block (#176), not a transient/network
   /// error. Blocked sends are not retriable. Always `false` for success.
   bool get blocked => false;
+
+  /// How an existing durable row should be treated for a policy block.
+  ///
+  /// `null` for every result other than [NIP17SendFailure.blocked].
+  NIP17BlockedSendDisposition? get blockedDisposition => null;
 
   /// Whether this failure is an oversized message (#7331), refused before any
   /// wrap was built. Not retriable — the size is a property of the rumor, so
@@ -239,17 +255,21 @@ final class NIP17SendFailure extends NIP17SendResult {
     this.retryablePending = false,
     this.queuedRumorId,
   }) : blocked = false,
+       _blockedDisposition = null,
        tooLong = false;
 
   /// A policy block (#176): same non-delivery as a failure, but not retriable.
   ///
   /// Never carries a [queuedRumorId]: the send gate returns before the
   /// enqueue, so a block leaves no row behind to coalesce onto.
-  const NIP17SendFailure.blocked(this.error)
-    : blocked = true,
-      tooLong = false,
-      retryablePending = false,
-      queuedRumorId = null;
+  const NIP17SendFailure.blocked(
+    this.error, {
+    NIP17BlockedSendDisposition? disposition,
+  }) : blocked = true,
+       _blockedDisposition = disposition,
+       tooLong = false,
+       retryablePending = false,
+       queuedRumorId = null;
 
   /// An oversized message (#7331): refused before any wrap build.
   ///
@@ -259,6 +279,7 @@ final class NIP17SendFailure extends NIP17SendResult {
   /// whole retry budget re-running a crypto chain that cannot succeed.
   const NIP17SendFailure.tooLong(this.error)
     : blocked = false,
+      _blockedDisposition = null,
       tooLong = true,
       retryablePending = false,
       queuedRumorId = null;
@@ -268,6 +289,13 @@ final class NIP17SendFailure extends NIP17SendResult {
 
   @override
   final bool blocked;
+
+  final NIP17BlockedSendDisposition? _blockedDisposition;
+
+  @override
+  NIP17BlockedSendDisposition? get blockedDisposition => blocked
+      ? _blockedDisposition ?? NIP17BlockedSendDisposition.discard
+      : null;
 
   @override
   final bool tooLong;
@@ -299,18 +327,26 @@ final class NIP17SendFailure extends NIP17SendResult {
     return other is NIP17SendFailure &&
         other.error == error &&
         other.blocked == blocked &&
+        other.blockedDisposition == blockedDisposition &&
         other.tooLong == tooLong &&
         other.retryablePending == retryablePending &&
         other.queuedRumorId == queuedRumorId;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(error, blocked, tooLong, retryablePending, queuedRumorId);
+  int get hashCode => Object.hash(
+    error,
+    blocked,
+    blockedDisposition,
+    tooLong,
+    retryablePending,
+    queuedRumorId,
+  );
 
   @override
   String toString() =>
       'NIP17SendFailure(error: $error, blocked: $blocked, '
+      'blockedDisposition: $blockedDisposition, '
       'tooLong: $tooLong, '
       'retryablePending: $retryablePending, '
       'queuedRumorId: $queuedRumorId)';
