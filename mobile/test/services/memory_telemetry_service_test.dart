@@ -18,6 +18,8 @@ void main() {
       int Function() readPeakRssBytes = _zero,
       int Function() nativeControllerCount = _zero,
       int Function() queueDepth = _zero,
+      int Function() imageCacheBytes = _zero,
+      int Function() imageCacheLiveCount = _zero,
       Duration interval = const Duration(seconds: 30),
     }) {
       return MemoryTelemetryService(
@@ -25,6 +27,8 @@ void main() {
         readPeakRssBytes: readPeakRssBytes,
         nativeControllerCount: nativeControllerCount,
         queueDepth: queueDepth,
+        imageCacheBytes: imageCacheBytes,
+        imageCacheLiveCount: imageCacheLiveCount,
         emit: emitted.add,
         interval: interval,
       );
@@ -101,11 +105,13 @@ void main() {
       expect(emitted.map((s) => s.peakRssBytes), equals([100, 900, 900]));
     });
 
-    test('snapshot carries the injected controller and queue gauges', () {
+    test('snapshot carries every injected memory gauge', () {
       final service = build(
         readRssBytes: () => 4242,
         nativeControllerCount: () => 3,
         queueDepth: () => 7,
+        imageCacheBytes: () => 8,
+        imageCacheLiveCount: () => 9,
       );
 
       service.sampleOnce();
@@ -116,6 +122,32 @@ void main() {
       expect(snapshot.peakRssBytes, equals(4242));
       expect(snapshot.nativeControllers, equals(3));
       expect(snapshot.queueDepth, equals(7));
+      expect(snapshot.imageCacheBytes, equals(8));
+      expect(snapshot.imageCacheLiveCount, equals(9));
+    });
+
+    test('failed or negative gauges are reported as zero', () {
+      final service = build(
+        readRssBytes: () => throw StateError('rss unavailable'),
+        readPeakRssBytes: () => -1,
+        nativeControllerCount: () => -2,
+        queueDepth: () => throw StateError('queue unavailable'),
+        imageCacheBytes: () => throw StateError('cache unavailable'),
+        imageCacheLiveCount: () => -3,
+      );
+
+      service
+        ..sampleOnce()
+        ..sampleOnce();
+
+      expect(emitted, hasLength(2));
+      final snapshot = emitted.last;
+      expect(snapshot.rssBytes, isZero);
+      expect(snapshot.peakRssBytes, isZero);
+      expect(snapshot.nativeControllers, isZero);
+      expect(snapshot.queueDepth, isZero);
+      expect(snapshot.imageCacheBytes, isZero);
+      expect(snapshot.imageCacheLiveCount, isZero);
     });
 
     test('start samples periodically on the interval', () {

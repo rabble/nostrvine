@@ -125,6 +125,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
   late final StartupSplashReleaseController _splashReleaseController;
   late final MemoryPressureHandler _memoryPressureHandler;
   late final MemoryTelemetryService _memoryTelemetry;
+  int _memoryPressureEvents = 0;
 
   @override
   void initState() {
@@ -139,6 +140,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
       openVineImageCache.cancelInFlightDownloads();
     }
     _memoryPressureHandler = MemoryPressureHandler(
+      onPressureObserved: (eventCount) {
+        _memoryPressureEvents = eventCount;
+        // Capture the cache occupancy that triggered the signal before the
+        // handler clears both keep-alive and live images below.
+        _memoryTelemetry.sampleOnce();
+      },
       clearImageCache: () {
         PaintingBinding.instance.imageCache
           ..clear()
@@ -155,6 +162,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
           DivineVideoPlayerController.liveControllerCount,
       queueDepth: () =>
           ref.read(videoEventServiceProvider).eventRouter?.queuedLength ?? 0,
+      imageCacheBytes: () =>
+          PaintingBinding.instance.imageCache.currentSizeBytes,
+      imageCacheLiveCount: () =>
+          PaintingBinding.instance.imageCache.liveImageCount,
       emit: _emitMemorySnapshot,
     );
     // Subscribe before deferred startup settles auth; routerDelegate reliably
@@ -199,7 +210,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
         _initializeDeepLinkServices();
         _initializeQuickActions();
         _initializeBackgroundServices();
-        _memoryTelemetry.start();
+        _memoryTelemetry
+          ..sampleOnce()
+          ..start();
       }
     });
   }
@@ -281,16 +294,33 @@ class _DivineAppState extends ConsumerState<DivineApp>
   void _emitMemorySnapshot(MemorySnapshot snapshot) {
     final rssMb = _rssMb(snapshot.rssBytes);
     final peakMb = _rssMb(snapshot.peakRssBytes);
+    final imageCacheMb = _rssMb(snapshot.imageCacheBytes);
     Log.info(
       'Memory: rss $rssMb MB (peak $peakMb MB), '
       'vc_native=${snapshot.nativeControllers}, '
-      'ingest_queue_depth=${snapshot.queueDepth}',
+      'ingest_queue_depth=${snapshot.queueDepth}, '
+      'img_cache_mb=$imageCacheMb, '
+      'img_cache_live=${snapshot.imageCacheLiveCount}, '
+      'mem_pressure_events=$_memoryPressureEvents',
       name: 'MemoryTelemetry',
       category: LogCategory.system,
     );
     final crashReporting = CrashReportingService.instance;
     unawaited(crashReporting.setCustomKey('mem_rss_mb', rssMb));
     unawaited(crashReporting.setCustomKey('mem_peak_mb', peakMb));
+    unawaited(crashReporting.setCustomKey('img_cache_mb', imageCacheMb));
+    unawaited(
+      crashReporting.setCustomKey(
+        'img_cache_live',
+        snapshot.imageCacheLiveCount,
+      ),
+    );
+    unawaited(
+      crashReporting.setCustomKey(
+        'mem_pressure_events',
+        _memoryPressureEvents,
+      ),
+    );
     unawaited(
       crashReporting.setCustomKey('vc_native', snapshot.nativeControllers),
     );
