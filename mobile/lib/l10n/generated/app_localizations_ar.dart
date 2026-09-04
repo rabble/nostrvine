@@ -11762,6 +11762,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'أعد تشغيل Divine بعد فتح قفل جهازك. إذا استمر هذا، فحدّث التطبيق أو تواصل مع الدعم.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'جرّب إعادة تشغيل Divine مرة واحدة. إذا استمر ذلك، فحدّث التطبيق أو تواصل مع الدعم. لا تزال بياناتك المحلية محفوظة.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'التشخيص: $code';
   }

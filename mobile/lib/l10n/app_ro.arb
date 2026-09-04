@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "nu am putut debloca baza de date locală",
     "dbFailureAdviceResettable": "O repornire nu rezolvă asta. Resetarea bazei de date locale de mai jos îi oferă lui Divine un start curat — contul tău rămâne.",
     "dbFailureAdviceRestart": "Repornește Divine după ce îți deblochezi dispozitivul. Dacă se repetă, actualizează aplicația sau contactează asistența.",
+    "dbFailureAdviceHotJournal": "Încearcă să repornești Divine o dată. Dacă problema continuă, actualizează aplicația sau contactează asistența. Datele tale locale sunt încă aici.",
     "dbFailureDiagnostic": "Diagnostic: {code}",
     "dbFailureCloseApp": "închide Divine",
     "dbFailureResetAction": "resetează baza de date locală",

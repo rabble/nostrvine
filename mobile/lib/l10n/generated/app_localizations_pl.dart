@@ -12080,6 +12080,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Uruchom Divine ponownie po odblokowaniu urządzenia. Jeśli to się powtarza, zaktualizuj aplikację lub skontaktuj się z pomocą techniczną.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Spróbuj raz ponownie uruchomić Divine. Jeśli problem będzie się powtarzał, zaktualizuj aplikację lub skontaktuj się z pomocą. Twoje lokalne dane nadal są zachowane.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostyka: $code';
   }

@@ -11833,6 +11833,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'اپنا ڈیوائس اَن لاک کرنے کے بعد Divine دوبارہ شروع کریں۔ اگر یہ ہوتا رہے تو ایپ اپ ڈیٹ کریں یا سپورٹ سے رابطہ کریں۔';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divine کو ایک بار دوبارہ شروع کر کے دیکھیں۔ اگر یہ مسئلہ برقرار رہے تو ایپ اپ ڈیٹ کریں یا سپورٹ سے رابطہ کریں۔ آپ کا مقامی ڈیٹا اب بھی محفوظ ہے۔';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'تشخیص: $code';
   }

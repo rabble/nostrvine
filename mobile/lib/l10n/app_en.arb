@@ -8075,6 +8075,10 @@
   "@dbFailureAdviceRestart": {
     "description": "Advice on the database-failure screen when no reset is offered, because the database is intact and only its keystore was unreachable."
   },
+  "dbFailureAdviceHotJournal": "Try restarting Divine once. If this keeps happening, update the app or contact support. Your local data is still here.",
+  "@dbFailureAdviceHotJournal": {
+    "description": "Advice shown when SQLite could not safely replay a hot rollback journal and the app preserves the local database for recovery."
+  },
   "dbFailureDiagnostic": "Diagnostic: {code}",
   "@dbFailureDiagnostic": {
     "description": "Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.",

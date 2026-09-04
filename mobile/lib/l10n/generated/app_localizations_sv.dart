@@ -11847,6 +11847,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Starta om Divine när du har låst upp din enhet. Om det fortsätter, uppdatera appen eller kontakta supporten.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Försök att starta om Divine en gång. Om det fortsätter, uppdatera appen eller kontakta supporten. Dina lokala data finns fortfarande kvar.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostik: $code';
   }

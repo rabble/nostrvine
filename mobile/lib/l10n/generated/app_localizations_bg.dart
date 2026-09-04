@@ -11966,6 +11966,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Рестартирай Divine, след като отключиш устройството си. Ако това продължава, обнови приложението или се свържи с поддръжката.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Опитайте да рестартирате Divine веднъж. Ако това продължи, актуализирайте приложението или се свържете с поддръжката. Локалните ви данни все още са тук.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Диагностика: $code';
   }

@@ -372,6 +372,18 @@ void main() {
       expect(databaseBootstrapDiagnosis(error).allowsLocalDatabaseReset, false);
     });
 
+    test('classifies an unrecovered hot journal without offering reset', () {
+      const error = DatabaseHotJournalRecoveryError(
+        stage: DatabaseHotJournalRecoveryStage.validateIntegrity,
+      );
+
+      expect(
+        databaseBootstrapDiagnosticCode(error),
+        equals('db-journal-unrecovered'),
+      );
+      expect(databaseBootstrapDiagnosis(error).allowsLocalDatabaseReset, false);
+    });
+
     test('falls back to the catch-all for unrecognized failures', () {
       expect(
         databaseBootstrapDiagnosticCode(StateError('something else entirely')),
@@ -409,6 +421,24 @@ void main() {
         find.text(l10n.dbFailureDiagnostic('db-secure-storage')),
         findsOneWidget,
       );
+      expect(find.text(l10n.dbFailureResetAction), findsNothing);
+    });
+
+    testWidgets('shows journal-specific advice without offering reset', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: const DatabaseHotJournalRecoveryError(
+            stage: DatabaseHotJournalRecoveryStage.replayJournal,
+          ),
+          stack: StackTrace.current,
+          onResetLocalDatabase: (_) async {},
+        ),
+      );
+
+      expect(find.text(l10n.dbFailureAdviceHotJournal), findsOneWidget);
+      expect(find.text(l10n.dbFailureAdviceRestart), findsNothing);
       expect(find.text(l10n.dbFailureResetAction), findsNothing);
     });
 

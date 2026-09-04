@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "nie można odblokować lokalnej bazy danych",
     "dbFailureAdviceResettable": "Ponowne uruchomienie tego nie naprawi. Zresetowanie lokalnej bazy danych poniżej da Divine czysty start — Twoje konto zostaje.",
     "dbFailureAdviceRestart": "Uruchom Divine ponownie po odblokowaniu urządzenia. Jeśli to się powtarza, zaktualizuj aplikację lub skontaktuj się z pomocą techniczną.",
+    "dbFailureAdviceHotJournal": "Spróbuj raz ponownie uruchomić Divine. Jeśli problem będzie się powtarzał, zaktualizuj aplikację lub skontaktuj się z pomocą. Twoje lokalne dane nadal są zachowane.",
     "dbFailureDiagnostic": "Diagnostyka: {code}",
     "dbFailureCloseApp": "zamknij Divine",
     "dbFailureResetAction": "zresetuj lokalną bazę danych",

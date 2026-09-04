@@ -11771,6 +11771,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Cihazınızın kilidini açtıktan sonra Divine’ı yeniden başlatın. Bu sürerse uygulamayı güncelleyin veya destekle iletişime geçin.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divine’ı bir kez yeniden başlatmayı deneyin. Bu durum devam ederse uygulamayı güncelleyin veya destek ekibiyle iletişime geçin. Yerel verileriniz hâlâ burada.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Tanılama: $code';
   }

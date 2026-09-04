@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "tidak dapat membuka basis data lokalmu",
     "dbFailureAdviceResettable": "Memulai ulang tidak akan memperbaikinya. Mengatur ulang basis data lokal di bawah memberi Divine awal yang bersih — akunmu tetap ada.",
     "dbFailureAdviceRestart": "Mulai ulang Divine setelah membuka kunci perangkatmu. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan.",
+    "dbFailureAdviceHotJournal": "Coba mulai ulang Divine satu kali. Jika ini terus terjadi, perbarui aplikasi atau hubungi dukungan. Data lokal Anda masih ada.",
     "dbFailureDiagnostic": "Diagnostik: {code}",
     "dbFailureCloseApp": "tutup Divine",
     "dbFailureResetAction": "atur ulang basis data lokal",

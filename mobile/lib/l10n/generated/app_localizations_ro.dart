@@ -12101,6 +12101,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Repornește Divine după ce îți deblochezi dispozitivul. Dacă se repetă, actualizează aplicația sau contactează asistența.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Încearcă să repornești Divine o dată. Dacă problema continuă, actualizează aplicația sau contactează asistența. Datele tale locale sunt încă aici.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostic: $code';
   }

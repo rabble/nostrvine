@@ -12186,6 +12186,10 @@ class AppLocalizationsTe extends AppLocalizations {
       'మీ పరికరాన్ని అన్‌లాక్ చేసిన తర్వాత Divineని పునఃప్రారంభించండి. ఇలాగే జరుగుతూ ఉంటే, యాప్‌ని అప్‌డేట్ చేయండి లేదా సపోర్ట్‌ని సంప్రదించండి.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Divineని ఒకసారి పునఃప్రారంభించి చూడండి. ఇది కొనసాగితే, యాప్‌ని అప్‌డేట్ చేయండి లేదా సపోర్ట్‌ని సంప్రదించండి. మీ స్థానిక డేటా ఇంకా భద్రంగా ఉంది.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'డయాగ్నోస్టిక్: $code';
   }

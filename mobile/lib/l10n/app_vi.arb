@@ -6450,6 +6450,7 @@
   "dbFailureTitle": "không thể mở khóa cơ sở dữ liệu cục bộ của bạn",
   "dbFailureAdviceResettable": "Khởi động lại sẽ không khắc phục được. Đặt lại cơ sở dữ liệu cục bộ bên dưới giúp Divine bắt đầu lại từ đầu — tài khoản của bạn vẫn còn.",
   "dbFailureAdviceRestart": "Khởi động lại Divine sau khi mở khóa thiết bị. Nếu vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ.",
+  "dbFailureAdviceHotJournal": "Hãy thử khởi động lại Divine một lần. Nếu tình trạng này vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ. Dữ liệu cục bộ của bạn vẫn còn nguyên.",
   "dbFailureDiagnostic": "Chẩn đoán: {code}",
   "dbFailureCloseApp": "đóng Divine",
   "dbFailureResetAction": "đặt lại cơ sở dữ liệu cục bộ",

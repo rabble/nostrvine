@@ -11988,6 +11988,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Riavvia Divine dopo aver sbloccato il dispositivo. Se continua a succedere, aggiorna l\'app o contatta l\'assistenza.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Prova a riavviare Divine una volta. Se continua a succedere, aggiorna l’app o contatta l’assistenza. I tuoi dati locali sono ancora presenti.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnostica: $code';
   }

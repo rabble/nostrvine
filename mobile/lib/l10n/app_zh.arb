@@ -6450,6 +6450,7 @@
   "dbFailureTitle": "无法解锁你的本地数据库",
   "dbFailureAdviceResettable": "重启无法解决这个问题。重置下方的本地数据库可以让 Divine 全新开始 — 你的账号会保留。",
   "dbFailureAdviceRestart": "解锁设备后重新启动 Divine。如果问题持续出现，请更新应用或联系支持。",
+  "dbFailureAdviceHotJournal": "请尝试重启一次 Divine。如果问题持续出现，请更新应用或联系支持。你的本地数据仍然保留着。",
   "dbFailureDiagnostic": "诊断：{code}",
   "dbFailureCloseApp": "关闭 Divine",
   "dbFailureResetAction": "重置本地数据库",

@@ -3621,6 +3621,7 @@
     "dbFailureTitle": "hindi ma-unlock ang iyong lokal na database",
     "dbFailureAdviceResettable": "Hindi ito maaayos ng pag-restart. Ang pag-reset ng lokal na database sa ibaba ay nagbibigay sa Divine ng malinis na simula — mananatili ang iyong account.",
     "dbFailureAdviceRestart": "I-restart ang Divine matapos i-unlock ang iyong device. Kung patuloy itong nangyayari, i-update ang app o makipag-ugnayan sa suporta.",
+    "dbFailureAdviceHotJournal": "Subukang i-restart ang Divine nang isang beses. Kung patuloy itong mangyari, i-update ang app o makipag-ugnayan sa support. Nandoon pa rin ang lokal mong data.",
     "dbFailureDiagnostic": "Diagnostic: {code}",
     "dbFailureCloseApp": "isara ang Divine",
     "dbFailureResetAction": "i-reset ang lokal na database",

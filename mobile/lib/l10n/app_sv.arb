@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "kunde inte låsa upp din lokala databas",
     "dbFailureAdviceResettable": "En omstart löser inte det här. Att återställa den lokala databasen nedan ger Divine en ren start — ditt konto finns kvar.",
     "dbFailureAdviceRestart": "Starta om Divine när du har låst upp din enhet. Om det fortsätter, uppdatera appen eller kontakta supporten.",
+    "dbFailureAdviceHotJournal": "Försök att starta om Divine en gång. Om det fortsätter, uppdatera appen eller kontakta supporten. Dina lokala data finns fortfarande kvar.",
     "dbFailureDiagnostic": "Diagnostik: {code}",
     "dbFailureCloseApp": "stäng Divine",
     "dbFailureResetAction": "återställ lokal databas",

@@ -11995,6 +11995,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Starte Divine neu, nachdem du dein Gerät entsperrt hast. Wenn das weiterhin passiert, aktualisiere die App oder wende dich an den Support.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Versuche, Divine einmal neu zu starten. Wenn das weiterhin passiert, aktualisiere die App oder kontaktiere den Support. Deine lokalen Daten sind noch vorhanden.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnose: $code';
   }

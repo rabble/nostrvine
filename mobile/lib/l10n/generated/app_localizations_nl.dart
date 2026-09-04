@@ -11913,6 +11913,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Start Divine opnieuw nadat je je apparaat hebt ontgrendeld. Blijft dit gebeuren, werk de app dan bij of neem contact op met support.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Probeer Divine één keer opnieuw te starten. Als dit blijft gebeuren, werk de app dan bij of neem contact op met support. Je lokale gegevens zijn er nog.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Diagnose: $code';
   }

@@ -4665,6 +4665,7 @@
     "dbFailureTitle": "Lokale Datenbank konnte nicht entsperrt werden",
     "dbFailureAdviceResettable": "Ein Neustart hilft hier nicht. Das Zurücksetzen der lokalen Datenbank unten gibt Divine einen sauberen Start — dein Konto bleibt bestehen.",
     "dbFailureAdviceRestart": "Starte Divine neu, nachdem du dein Gerät entsperrt hast. Wenn das weiterhin passiert, aktualisiere die App oder wende dich an den Support.",
+    "dbFailureAdviceHotJournal": "Versuche, Divine einmal neu zu starten. Wenn das weiterhin passiert, aktualisiere die App oder kontaktiere den Support. Deine lokalen Daten sind noch vorhanden.",
     "dbFailureDiagnostic": "Diagnose: {code}",
     "dbFailureCloseApp": "Divine schließen",
     "dbFailureResetAction": "Lokale Datenbank zurücksetzen",

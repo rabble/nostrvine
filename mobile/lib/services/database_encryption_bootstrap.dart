@@ -137,9 +137,11 @@ class DatabaseEncryptionBootstrap {
   ///   corrupt. Distinct from the deferral above: that one hands back a `null`
   ///   key for a database that genuinely is readable plaintext, this one has no
   ///   readable database to hand a key for.
-  /// * [DatabaseClassificationException] when a transient SQLite failure left
-  ///   the existing file format unknown. Startup fails closed and preserves
-  ///   both the database and cipher key for a later retry.
+  /// * [DatabaseClassificationException] when SQLite could not safely identify
+  ///   the existing file format. Startup fails closed and preserves both the
+  ///   database and cipher key for a later retry.
+  /// * [DatabaseHotJournalRecoveryError] when SQLite found a rollback journal
+  ///   but could not safely replay and validate it under the existing key.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -471,6 +473,7 @@ const _sqliteNotADb = 26;
 bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   if (error is DatabaseCipherUnavailableError) return false;
   if (error is DatabaseClassificationException) return false;
+  if (error is DatabaseHotJournalRecoveryError) return false;
   // The database is fine; only the keystore holding its key was unreachable.
   // Repairing would delete that key and strand a recoverable database.
   if (error is DatabaseCipherStorageUnavailableException) return false;

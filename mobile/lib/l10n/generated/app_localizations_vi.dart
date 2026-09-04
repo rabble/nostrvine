@@ -11794,6 +11794,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khởi động lại Divine sau khi mở khóa thiết bị. Nếu vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ.';
 
   @override
+  String get dbFailureAdviceHotJournal =>
+      'Hãy thử khởi động lại Divine một lần. Nếu tình trạng này vẫn tiếp diễn, hãy cập nhật ứng dụng hoặc liên hệ bộ phận hỗ trợ. Dữ liệu cục bộ của bạn vẫn còn nguyên.';
+
+  @override
   String dbFailureDiagnostic(String code) {
     return 'Chẩn đoán: $code';
   }
