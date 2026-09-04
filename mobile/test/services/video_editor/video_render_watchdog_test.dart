@@ -1,0 +1,117 @@
+// ABOUTME: Tests final-export timeout, cancellation, and failure reporting
+// ABOUTME: Keeps a stalled native export from surviving beside its retry
+
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/services/video_editor/video_render_failures.dart';
+import 'package:openvine/services/video_editor/video_render_watchdog.dart';
+
+void main() {
+  group('VideoRenderWatchdog.run', () {
+    tearDown(() => VideoRenderWatchdog.crashReporterOverride = null);
+
+    test('times out, cancels, reports, and observes a stalled export', () {
+      fakeAsync((async) {
+        final hung = Completer<void>();
+        Object? failure;
+        Object? reportedFailure;
+        String? cancelledTaskId;
+        VideoRenderWatchdog.crashReporterOverride = (error, stackTrace) =>
+            reportedFailure = error;
+
+        VideoRenderWatchdog.run<void>(
+          render: hung.future,
+          taskId: 'stalled-final-export',
+          cancelTask: (taskId) async => cancelledTaskId = taskId,
+        ).then<void>(
+          (_) => fail('the stalled export must not complete successfully'),
+          onError: (Object error, StackTrace stackTrace) => failure = error,
+        );
+
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(
+          failure,
+          isA<VideoRenderFailedException>().having(
+            (error) => error.reason,
+            'reason',
+            VideoRenderFailureReason.timedOut,
+          ),
+        );
+        expect(cancelledTaskId, 'stalled-final-export');
+        expect(reportedFailure, same(failure));
+
+        hung.completeError(Exception('late native failure'));
+        async.flushMicrotasks();
+      });
+    });
+
+    test('returns the result and neither cancels nor reports when the export '
+        'settles in time', () {
+      fakeAsync((async) {
+        var cancelled = false;
+        var reported = false;
+        VideoRenderWatchdog.crashReporterOverride = (_, _) => reported = true;
+
+        int? result;
+        VideoRenderWatchdog.run<int>(
+          render: Future<int>.value(7),
+          taskId: 'fast-export',
+          cancelTask: (_) async => cancelled = true,
+        ).then<void>((value) => result = value);
+
+        async.flushMicrotasks();
+        // Elapse past the bound to prove the timer was cancelled on success
+        // and does not fire a late cancel or report.
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(result, 7);
+        expect(cancelled, isFalse);
+        expect(reported, isFalse);
+      });
+    });
+
+    test('reports and throws without cancelling when a stalled export has no '
+        'task id', () {
+      fakeAsync((async) {
+        final hung = Completer<void>();
+        var cancelCalled = false;
+        Object? reportedFailure;
+        VideoRenderWatchdog.crashReporterOverride = (error, _) =>
+            reportedFailure = error;
+
+        Object? failure;
+        VideoRenderWatchdog.run<void>(
+          render: hung.future,
+          taskId: null,
+          cancelTask: (_) async => cancelCalled = true,
+        ).then<void>(
+          (_) => fail('the stalled export must not complete successfully'),
+          onError: (Object error, StackTrace _) => failure = error,
+        );
+
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(
+          failure,
+          isA<VideoRenderFailedException>().having(
+            (error) => error.reason,
+            'reason',
+            VideoRenderFailureReason.timedOut,
+          ),
+        );
+        expect(cancelCalled, isFalse);
+        expect(reportedFailure, same(failure));
+
+        hung.completeError(Exception('late native failure'));
+        async.flushMicrotasks();
+      });
+    });
+  });
+}

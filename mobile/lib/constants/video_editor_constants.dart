@@ -67,6 +67,13 @@ class VideoEditorConstants {
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
+  /// How long a single export may run before it is treated as never returning.
+  ///
+  /// A liveness bound, not a performance budget: a real export of the
+  /// [maxDuration] ceiling finishes in seconds, so this only has to sit above
+  /// "slow" and below "forever" (#8488).
+  static const Duration renderWatchdogTimeout = Duration(minutes: 5);
+
   /// Frame grid the editor presents to the user.
   ///
   /// The timeline ruler labels sub-second positions in frames at this rate, so

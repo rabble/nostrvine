@@ -503,6 +503,8 @@ void main() {
 
       tearDown(() {
         VideoEditorRenderService.renderVideoToClipOverride = null;
+        VideoEditorRenderService.crashReporterOverride = null;
+        VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       });
 
       DivineVideoClip clip({List<StopMotionClipFrame>? stopMotionFrames}) =>
@@ -635,6 +637,44 @@ void main() {
               'nothing on screen reads the error state, so setError alone just '
               'makes the preparing scrim vanish (#6058)',
         );
+      });
+
+      testWidgets('surfaces a snackbar when the draft render never settles', (
+        tester,
+      ) async {
+        final container = await pumpHarness(tester);
+        final hung = Completer<(DivineVideoClip, String?)>();
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) => hung.future;
+        VideoEditorRenderService.crashReporterOverride = (_, _) {};
+
+        final context = tester.element(find.byType(SizedBox));
+        final publish = container
+            .read(videoPublishProvider.notifier)
+            .publishVideo(context, draft());
+        await tester.pump();
+        await tester.pump(VideoEditorConstants.renderWatchdogTimeout);
+        await publish;
+        await tester.pump();
+
+        expect(
+          find.widgetWithText(
+            SnackBar,
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).publishErrorMessage(PublishErrorKind.generic),
+          ),
+          findsOneWidget,
+          reason: 'a stalled draft export must not leave the preparing scrim',
+        );
+
+        hung.completeError(Exception('late native failure'));
+        await tester.pump();
       });
 
       testWidgets('reports a failed stop-motion assembly in its own words', (

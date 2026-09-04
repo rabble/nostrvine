@@ -6,7 +6,11 @@ enum VideoRenderFailureReason {
   emptyClips('empty_clips'),
   stopMotionAssembly('stop_motion_assembly'),
   nativeRender('native_render'),
-  canceled('canceled');
+  canceled('canceled'),
+
+  /// The export ran past the render watchdog without settling — a native
+  /// call stopped responding (#8488).
+  timedOut('timed_out');
 
   const VideoRenderFailureReason(this.traceValue);
 
