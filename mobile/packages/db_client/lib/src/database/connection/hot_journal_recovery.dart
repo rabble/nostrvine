@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:db_client/src/database/connection/database_integrity.dart';
+import 'package:db_client/src/database/connection/database_sidecars.dart';
 import 'package:db_client/src/database/connection/hot_journal_recovery_models.dart';
+import 'package:meta/meta.dart';
 import 'package:sqlite3/common.dart' show CommonDatabase;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -19,6 +22,9 @@ const _sqliteHeader = 'SQLite format 3\x00';
 void recoverHotRollbackJournal({
   required String databasePath,
   required void Function(CommonDatabase db) configureEncryptedDatabase,
+  @visibleForTesting
+  File Function(File source, String destination) restoreCopyForTesting =
+      _copyFile,
 }) {
   final isPlaintext = _hasPlaintextHeader(databasePath);
   if (!isPlaintext) {
@@ -41,7 +47,7 @@ void recoverHotRollbackJournal({
       configureEncryptedDatabase: configureEncryptedDatabase,
     );
   } on DatabaseHotJournalRecoveryError {
-    snapshot.restore(databasePath);
+    snapshot.restore(databasePath, copy: restoreCopyForTesting);
     rethrow;
   } finally {
     snapshot.dispose();
@@ -58,10 +64,8 @@ void _replayJournal(
     database = sqlite3.open(databasePath, mode: OpenMode.readWrite);
     if (!isPlaintext) configureEncryptedDatabase(database);
     database.select('SELECT count(*) FROM sqlite_master;');
-  } on Object {
-    throw const DatabaseHotJournalRecoveryError(
-      stage: DatabaseHotJournalRecoveryStage.replayJournal,
-    );
+  } on Object catch (error) {
+    throw _recoveryError(DatabaseHotJournalRecoveryStage.replayJournal, error);
   } finally {
     database?.close();
   }
@@ -80,16 +84,16 @@ bool _hasPlaintextHeader(String databasePath) {
       return ascii.decode(bytes.readSync(_sqliteHeader.length)) ==
           _sqliteHeader;
     } on FormatException {
+      // A torn plaintext page-1 header is deliberately treated as ambiguous.
+      // Recovery then refuses it rather than risking an unkeyed writable open.
       return false;
     } finally {
       bytes.closeSync();
     }
   } on DatabaseHotJournalRecoveryError {
     rethrow;
-  } on Object {
-    throw const DatabaseHotJournalRecoveryError(
-      stage: DatabaseHotJournalRecoveryStage.inspectHeader,
-    );
+  } on Object catch (error) {
+    throw _recoveryError(DatabaseHotJournalRecoveryStage.inspectHeader, error);
   }
 }
 
@@ -104,10 +108,11 @@ void _validateEncryptedDatabaseIgnoringJournal(
     ).replace(queryParameters: const {'immutable': '1'}).toString();
     database = sqlite3.open(uri, mode: OpenMode.readOnly, uri: true);
     configureEncryptedDatabase(database);
-    database.select('SELECT count(*) FROM sqlite_master;');
-  } on Object {
-    throw const DatabaseHotJournalRecoveryError(
-      stage: DatabaseHotJournalRecoveryStage.validateCipherKey,
+    database.select('PRAGMA user_version;');
+  } on Object catch (error) {
+    throw _recoveryError(
+      DatabaseHotJournalRecoveryStage.validateCipherKey,
+      error,
     );
   } finally {
     database?.close();
@@ -123,17 +128,17 @@ void _validateRecoveredDatabase(
   try {
     database = sqlite3.open(databasePath, mode: OpenMode.readOnly);
     if (!isPlaintext) configureEncryptedDatabase(database);
-    final result = database.select('PRAGMA integrity_check;');
-    if (result.length != 1 || result.first.values.single != 'ok') {
+    if (!databaseQuickCheckPasses(database)) {
       throw const DatabaseHotJournalRecoveryError(
         stage: DatabaseHotJournalRecoveryStage.validateIntegrity,
       );
     }
   } on DatabaseHotJournalRecoveryError {
     rethrow;
-  } on Object {
-    throw const DatabaseHotJournalRecoveryError(
-      stage: DatabaseHotJournalRecoveryStage.validateIntegrity,
+  } on Object catch (error) {
+    throw _recoveryError(
+      DatabaseHotJournalRecoveryStage.validateIntegrity,
+      error,
     );
   } finally {
     database?.close();
@@ -161,7 +166,7 @@ class _HotJournalSnapshot {
         directory: directory,
         database: File(databasePath).copySync('${directory.path}/database'),
         journal: File(
-          '$databasePath-journal',
+          '$databasePath$rollbackJournalSuffix',
         ).copySync('${directory.path}/journal'),
       );
     } on Object {
@@ -174,13 +179,17 @@ class _HotJournalSnapshot {
     }
   }
 
-  void restore(String databasePath) {
+  void restore(
+    String databasePath, {
+    required File Function(File source, String destination) copy,
+  }) {
     try {
-      database.copySync(databasePath);
-      journal.copySync('$databasePath-journal');
-    } on Object {
-      throw const DatabaseHotJournalRecoveryError(
-        stage: DatabaseHotJournalRecoveryStage.restoreSnapshot,
+      copy(journal, '$databasePath$rollbackJournalSuffix');
+      copy(database, databasePath);
+    } on Object catch (error) {
+      throw _recoveryError(
+        DatabaseHotJournalRecoveryStage.restoreSnapshot,
+        error,
       );
     }
   }
@@ -189,3 +198,15 @@ class _HotJournalSnapshot {
     if (directory.existsSync()) directory.deleteSync(recursive: true);
   }
 }
+
+File _copyFile(File source, String destination) => source.copySync(destination);
+
+DatabaseHotJournalRecoveryError _recoveryError(
+  DatabaseHotJournalRecoveryStage stage,
+  Object error,
+) => DatabaseHotJournalRecoveryError(
+  stage: stage,
+  extendedResultCode: error is SqliteException
+      ? error.extendedResultCode
+      : null,
+);

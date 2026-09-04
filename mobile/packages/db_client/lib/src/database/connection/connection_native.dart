@@ -3,6 +3,7 @@
 
 import 'dart:io';
 import 'package:collection/collection.dart';
+import 'package:db_client/src/database/connection/database_integrity.dart';
 import 'package:db_client/src/database/connection/database_sidecars.dart';
 import 'package:db_client/src/database/connection/hot_journal_recovery.dart';
 import 'package:db_client/src/database/connection/hot_journal_recovery_models.dart';
@@ -158,28 +159,6 @@ Future<bool> encryptedDatabaseKeyDecrypts({
     rethrow;
   } finally {
     db?.close();
-  }
-}
-
-/// Returns whether [db] passes SQLite's `PRAGMA quick_check` — i.e. every
-/// table and index b-tree is structurally sound.
-///
-/// `quick_check` walks the page structure of all b-trees (skipping only the
-/// slower row-content and foreign-key validation that `integrity_check` adds),
-/// so it detects the malformed-index / malformed-page corruption that a bare
-/// `sqlite_master` read misses, while staying cheap enough for a startup
-/// probe. It returns a single `'ok'` row on a healthy database; any other
-/// output — or a thrown [SqliteException] on a badly damaged file — is treated
-/// as corruption.
-@visibleForTesting
-bool databasePassesIntegrityCheck(CommonDatabase db) {
-  try {
-    final rows = db.select('PRAGMA quick_check;');
-    if (rows.length != 1) return false;
-    final result = rows.first.values.first;
-    return result is String && result.toLowerCase() == 'ok';
-  } on SqliteException {
-    return false;
   }
 }
 
@@ -409,6 +388,21 @@ String _buildRowInsert(String table, List<String> columns) {
 /// silently storing plaintext.
 @visibleForTesting
 void applyCipherKey(CommonDatabase rawDb, String rawKeyHex) {
+  keyCipherDatabase(rawDb, rawKeyHex);
+
+  // `PRAGMA key` is processed lazily, so an incorrect key surfaces as
+  // SQLITE_NOTADB on the first real read rather than above. Probe the schema
+  // so a wrong key fails deterministically at open time.
+  rawDb.execute('SELECT count(*) FROM sqlite_master;');
+}
+
+/// Applies the cipher key without reading database schema pages.
+///
+/// Hot-journal recovery uses this before SQLite has rolled back an interrupted
+/// schema transaction. Ordinary opens use [applyCipherKey] so wrong keys still
+/// fail deterministically during open.
+@visibleForTesting
+void keyCipherDatabase(CommonDatabase rawDb, String rawKeyHex) {
   _rawKeyLiteral(rawKeyHex);
   _applySqlCipherCompatibility(rawDb);
   try {
@@ -426,11 +420,6 @@ void applyCipherKey(CommonDatabase rawDb, String rawKeyHex) {
       'sqlite3mc and no dependency links plain sqlite3.',
     );
   }
-
-  // `PRAGMA key` is processed lazily, so an incorrect key surfaces as
-  // SQLITE_NOTADB on the first real read rather than above. Probe the schema
-  // so a wrong key fails deterministically at open time.
-  rawDb.execute('SELECT count(*) FROM sqlite_master;');
 }
 
 void _applySqlCipherCompatibility(CommonDatabase rawDb) {
@@ -504,7 +493,10 @@ enum CipherMigrationOutcome {
 
 /// The keyless classifier operation that could not determine the database
 /// format.
-enum DatabaseClassificationStage { openDatabase, readSchema }
+enum DatabaseClassificationStage {
+  openDatabase,
+  readSchema,
+}
 
 /// SQLite could not safely determine the existing database format.
 ///
@@ -556,6 +548,7 @@ class DatabaseClassificationException implements Exception {
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   required String rawKeyHex,
   String? databasePath,
+  @visibleForTesting void Function()? onHotJournalRecoveryCompletedForTesting,
 }) async {
   _rawKeyLiteral(rawKeyHex); // validate shape up front (never embeds the key)
 
@@ -587,7 +580,11 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
 
   if (!File(dbPath).existsSync()) return CipherMigrationOutcome.noDatabase;
 
-  switch (_classifyDatabase(dbPath, rawKeyHex: rawKeyHex)) {
+  switch (_classifyDatabase(
+    dbPath,
+    rawKeyHex: rawKeyHex,
+    onRecoveryCompleted: onHotJournalRecoveryCompletedForTesting,
+  )) {
     case _DbClassification.encrypted:
       return CipherMigrationOutcome.alreadyEncrypted;
     case _DbClassification.corrupt:
@@ -660,19 +657,33 @@ enum _DbClassification {
 _DbClassification _classifyDatabase(
   String dbPath, {
   required String rawKeyHex,
+  void Function()? onRecoveryCompleted,
 }) {
   try {
     return _classifyDatabaseOnce(dbPath);
   } on DatabaseClassificationException catch (error) {
-    if (error.resultCode != sqliteReadOnly ||
-        error.extendedResultCode != sqliteReadOnlyRollback) {
+    if (!isHotRollbackJournalFailure(error)) {
       rethrow;
     }
 
-    recoverHotRollbackJournal(
-      databasePath: dbPath,
-      configureEncryptedDatabase: (db) => applyCipherKey(db, rawKeyHex),
-    );
+    try {
+      recoverHotRollbackJournal(
+        databasePath: dbPath,
+        configureEncryptedDatabase: (database) =>
+            keyCipherDatabase(database, rawKeyHex),
+      );
+    } on DatabaseHotJournalRecoveryError catch (recoveryError) {
+      // A wrong key proves this is encrypted but must never trigger journal
+      // replay. Returning the ordinary encrypted classification preserves the
+      // existing key-loss recovery path in DatabaseEncryptionBootstrap.
+      if (recoveryError.stage ==
+              DatabaseHotJournalRecoveryStage.validateCipherKey &&
+          recoveryError.resultCode == _sqliteNotADb) {
+        return _DbClassification.encrypted;
+      }
+      rethrow;
+    }
+    onRecoveryCompleted?.call();
 
     try {
       return _classifyDatabaseOnce(dbPath);
@@ -680,12 +691,18 @@ _DbClassification _classifyDatabase(
       if (retryError.extendedResultCode == sqliteReadOnlyRollback) {
         throw const DatabaseHotJournalRecoveryError(
           stage: DatabaseHotJournalRecoveryStage.retryClassification,
+          extendedResultCode: sqliteReadOnlyRollback,
         );
       }
       rethrow;
     }
   }
 }
+
+@visibleForTesting
+bool isHotRollbackJournalFailure(DatabaseClassificationException error) =>
+    error.resultCode == sqliteReadOnly &&
+    error.extendedResultCode == sqliteReadOnlyRollback;
 
 _DbClassification _classifyDatabaseOnce(String dbPath) {
   Database db;

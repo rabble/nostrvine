@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart' show AppDatabase;
 import 'package:db_client/src/database/connection/connection_native.dart';
+import 'package:db_client/src/database/connection/database_integrity.dart';
 import 'package:db_client/src/database/connection/hot_journal_recovery.dart';
 import 'package:db_client/src/database/connection/hot_journal_recovery_models.dart';
 import 'package:drift/drift.dart' show QueryExecutor;
@@ -1371,6 +1372,22 @@ void main() {
       expect(File(dbPath).existsSync(), isTrue);
     });
 
+    test('enters hot-journal recovery only for exact readonly rollback', () {
+      const ordinaryReadOnly = DatabaseClassificationException(
+        stage: DatabaseClassificationStage.readSchema,
+        resultCode: sqliteReadOnly,
+        extendedResultCode: sqliteReadOnly,
+      );
+      const hotRollback = DatabaseClassificationException(
+        stage: DatabaseClassificationStage.readSchema,
+        resultCode: sqliteReadOnly,
+        extendedResultCode: sqliteReadOnlyRollback,
+      );
+
+      expect(isHotRollbackJournalFailure(ordinaryReadOnly), isFalse);
+      expect(isHotRollbackJournalFailure(hotRollback), isTrue);
+    });
+
     test(
       'recovers a plaintext hot rollback journal before migration',
       () async {
@@ -1406,6 +1423,23 @@ void main() {
     );
 
     test(
+      'recovers an encrypted journal whose transaction spilled schema pages',
+      () async {
+        _createSpilledSchemaHotJournalFixture(dbPath, key: validKey);
+        _expectReadOnlyRollback(dbPath);
+
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
+
+        expect(outcome, CipherMigrationOutcome.alreadyEncrypted);
+        expect(File('$dbPath-journal').existsSync(), isFalse);
+        expect(_userTableCount(dbPath, key: validKey), 40);
+      },
+    );
+
+    test(
       'wrong key leaves an encrypted hot journal byte-for-byte intact',
       () async {
         _createHotJournalFixture(dbPath, key: validKey);
@@ -1414,18 +1448,34 @@ void main() {
         const wrongKey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
-        await expectLater(
-          migratePlaintextToEncrypted(
+        expect(
+          await migratePlaintextToEncrypted(
             rawKeyHex: wrongKey,
             databasePath: dbPath,
           ),
-          throwsA(
-            isA<DatabaseHotJournalRecoveryError>().having(
-              (error) => error.stage,
-              'stage',
-              DatabaseHotJournalRecoveryStage.validateCipherKey,
-            ),
+          CipherMigrationOutcome.alreadyEncrypted,
+        );
+
+        expect(File(dbPath).readAsBytesSync(), databaseBefore);
+        expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+      },
+    );
+
+    test(
+      'wrong key leaves a spilled-schema journal byte-for-byte intact',
+      () async {
+        _createSpilledSchemaHotJournalFixture(dbPath, key: validKey);
+        final databaseBefore = File(dbPath).readAsBytesSync();
+        final journalBefore = File('$dbPath-journal').readAsBytesSync();
+        const wrongKey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+        expect(
+          await migratePlaintextToEncrypted(
+            rawKeyHex: wrongKey,
+            databasePath: dbPath,
           ),
+          CipherMigrationOutcome.alreadyEncrypted,
         );
 
         expect(File(dbPath).readAsBytesSync(), databaseBefore);
@@ -1459,6 +1509,133 @@ void main() {
 
       expect(File(dbPath).readAsBytesSync(), databaseBefore);
       expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+    });
+
+    test('SQLite replay failure retains its real result codes', () {
+      _createHotJournalFixture(dbPath, key: validKey);
+      var configurations = 0;
+
+      expect(
+        () => recoverHotRollbackJournal(
+          databasePath: dbPath,
+          configureEncryptedDatabase: (database) {
+            configurations += 1;
+            keyCipherDatabase(database, validKey);
+            if (configurations == 2) {
+              throw SqliteException(
+                extendedResultCode: 778,
+                message: 'injected I/O failure',
+              );
+            }
+          },
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                DatabaseHotJournalRecoveryStage.replayJournal,
+              )
+              .having((error) => error.resultCode, 'resultCode', 10)
+              .having(
+                (error) => error.extendedResultCode,
+                'extendedResultCode',
+                778,
+              ),
+        ),
+      );
+    });
+
+    test('failed validation restores the database and journal snapshot', () {
+      _createHotJournalFixture(dbPath, key: validKey);
+      final databaseBefore = File(dbPath).readAsBytesSync();
+      final journalBefore = File('$dbPath-journal').readAsBytesSync();
+      var configurations = 0;
+
+      expect(
+        () => recoverHotRollbackJournal(
+          databasePath: dbPath,
+          configureEncryptedDatabase: (database) {
+            configurations += 1;
+            keyCipherDatabase(database, validKey);
+            if (configurations == 3) throw StateError('injected failure');
+          },
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>().having(
+            (error) => error.stage,
+            'stage',
+            DatabaseHotJournalRecoveryStage.validateIntegrity,
+          ),
+        ),
+      );
+
+      expect(File(dbPath).readAsBytesSync(), databaseBefore);
+      expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+    });
+
+    test('restores the journal before attempting the database copy', () {
+      _createHotJournalFixture(dbPath, key: validKey);
+      final journalBefore = File('$dbPath-journal').readAsBytesSync();
+      final restoredDestinations = <String>[];
+      var configurations = 0;
+
+      expect(
+        () => recoverHotRollbackJournal(
+          databasePath: dbPath,
+          configureEncryptedDatabase: (database) {
+            configurations += 1;
+            keyCipherDatabase(database, validKey);
+            if (configurations == 2) {
+              throw StateError('injected replay failure');
+            }
+          },
+          restoreCopyForTesting: (source, destination) {
+            restoredDestinations.add(destination);
+            if (destination == dbPath) {
+              throw const FileSystemException('injected database copy failure');
+            }
+            return source.copySync(destination);
+          },
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>().having(
+            (error) => error.stage,
+            'stage',
+            DatabaseHotJournalRecoveryStage.restoreSnapshot,
+          ),
+        ),
+      );
+
+      expect(restoredDestinations, ['$dbPath-journal', dbPath]);
+      expect(File('$dbPath-journal').readAsBytesSync(), journalBefore);
+    });
+
+    test('attempts hot-journal recovery at most once', () async {
+      _createHotJournalFixture(dbPath, key: validKey);
+      final savedJournal = File('$dbPath.saved-journal')
+        ..writeAsBytesSync(File('$dbPath-journal').readAsBytesSync());
+      var recoveryCompletions = 0;
+
+      await expectLater(
+        migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+          onHotJournalRecoveryCompletedForTesting: () {
+            recoveryCompletions += 1;
+            savedJournal.copySync('$dbPath-journal');
+          },
+        ),
+        throwsA(
+          isA<DatabaseHotJournalRecoveryError>().having(
+            (error) => error.stage,
+            'stage',
+            DatabaseHotJournalRecoveryStage.retryClassification,
+          ),
+        ),
+      );
+
+      expect(recoveryCompletions, 1);
     });
 
     test('short database fails closed before writable recovery', () {
@@ -1687,9 +1864,45 @@ void _createHotJournalFixture(String targetPath, {String? key}) {
       ..execute('INSERT INTO hot_journal_rows VALUES (zeroblob(1024));')
       ..execute('BEGIN IMMEDIATE;');
     for (var index = 0; index < 24; index += 1) {
-      source.execute(
-        'INSERT INTO hot_journal_rows VALUES (zeroblob(65536));',
-      );
+      source.execute('INSERT INTO hot_journal_rows VALUES (zeroblob(65536));');
+    }
+    expect(File('$sourcePath-journal').lengthSync(), greaterThan(0));
+    File(sourcePath).copySync(targetPath);
+    File('$sourcePath-journal').copySync('$targetPath-journal');
+  } finally {
+    source
+      ..execute('ROLLBACK;')
+      ..close();
+    File(sourcePath).deleteSync();
+  }
+}
+
+void _createSpilledSchemaHotJournalFixture(String targetPath, {String? key}) {
+  final sourcePath = '$targetPath.source';
+  File(sourcePath).parent.createSync(recursive: true);
+  final source = sqlite3.open(sourcePath);
+  try {
+    if (key != null) applyCipherKey(source, key);
+    source
+      ..execute('PRAGMA journal_mode = DELETE;')
+      ..execute('PRAGMA synchronous = FULL;')
+      ..execute('PRAGMA cache_size = 1;');
+    for (var index = 0; index < 40; index += 1) {
+      source
+        ..execute('CREATE TABLE committed_$index (value INTEGER);')
+        ..execute(
+          'CREATE INDEX committed_${index}_value '
+          'ON committed_$index (value);',
+        );
+    }
+    source.execute('BEGIN IMMEDIATE;');
+    for (var index = 0; index < 360; index += 1) {
+      source
+        ..execute('CREATE TABLE uncommitted_$index (value INTEGER);')
+        ..execute(
+          'CREATE INDEX uncommitted_${index}_value '
+          'ON uncommitted_$index (value);',
+        );
     }
     expect(File('$sourcePath-journal').lengthSync(), greaterThan(0));
     File(sourcePath).copySync(targetPath);
@@ -1727,8 +1940,23 @@ int _hotJournalRowCount(String path, {String? key}) {
   try {
     if (key != null) applyCipherKey(database, key);
     return database
+            .select('SELECT count(*) AS count FROM hot_journal_rows;')
+            .single['count']
+        as int;
+  } finally {
+    database.close();
+  }
+}
+
+int _userTableCount(String path, {String? key}) {
+  final database = sqlite3.open(path, mode: OpenMode.readOnly);
+  try {
+    if (key != null) applyCipherKey(database, key);
+    return database
             .select(
-              'SELECT count(*) AS count FROM hot_journal_rows;',
+              'SELECT count(*) AS count FROM sqlite_master '
+              "WHERE type = 'table' "
+              "AND name NOT LIKE 'sqlite_%';",
             )
             .single['count']
         as int;

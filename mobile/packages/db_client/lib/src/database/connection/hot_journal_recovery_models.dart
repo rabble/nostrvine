@@ -14,13 +14,14 @@ enum DatabaseHotJournalRecoveryStage {
 class DatabaseHotJournalRecoveryError implements Exception {
   const DatabaseHotJournalRecoveryError({
     required this.stage,
-    this.resultCode = 8,
-    this.extendedResultCode = 776,
+    this.extendedResultCode,
   });
 
   final DatabaseHotJournalRecoveryStage stage;
-  final int resultCode;
-  final int extendedResultCode;
+  final int? extendedResultCode;
+
+  int? get resultCode =>
+      extendedResultCode == null ? null : extendedResultCode! & 0xff;
 
   @override
   String toString() =>

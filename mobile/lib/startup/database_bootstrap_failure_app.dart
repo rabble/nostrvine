@@ -428,7 +428,10 @@ class _ResetConfirmView extends StatelessWidget {
 /// app. Supported platforms briefly build this step before closing, keeping
 /// the state transition deterministic and testable.
 class _ResetDoneView extends StatelessWidget {
-  const _ResetDoneView({required this.canCloseApp, required this.onCloseApp});
+  const _ResetDoneView({
+    required this.canCloseApp,
+    required this.onCloseApp,
+  });
 
   final bool canCloseApp;
   final VoidCallback onCloseApp;
