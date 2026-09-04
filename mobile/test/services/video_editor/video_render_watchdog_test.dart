@@ -49,5 +49,69 @@ void main() {
         async.flushMicrotasks();
       });
     });
+
+    test('returns the result and neither cancels nor reports when the export '
+        'settles in time', () {
+      fakeAsync((async) {
+        var cancelled = false;
+        var reported = false;
+        VideoRenderWatchdog.crashReporterOverride = (_, _) => reported = true;
+
+        int? result;
+        VideoRenderWatchdog.run<int>(
+          render: Future<int>.value(7),
+          taskId: 'fast-export',
+          cancelTask: (_) async => cancelled = true,
+        ).then<void>((value) => result = value);
+
+        async.flushMicrotasks();
+        // Elapse past the bound to prove the timer was cancelled on success
+        // and does not fire a late cancel or report.
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(result, 7);
+        expect(cancelled, isFalse);
+        expect(reported, isFalse);
+      });
+    });
+
+    test('reports and throws without cancelling when a stalled export has no '
+        'task id', () {
+      fakeAsync((async) {
+        final hung = Completer<void>();
+        var cancelCalled = false;
+        Object? reportedFailure;
+        VideoRenderWatchdog.crashReporterOverride = (error, _) =>
+            reportedFailure = error;
+
+        Object? failure;
+        VideoRenderWatchdog.run<void>(
+          render: hung.future,
+          taskId: null,
+          cancelTask: (_) async => cancelCalled = true,
+        ).then<void>(
+          (_) => fail('the stalled export must not complete successfully'),
+          onError: (Object error, StackTrace _) => failure = error,
+        );
+
+        async.elapse(VideoEditorConstants.renderWatchdogTimeout);
+        async.flushMicrotasks();
+
+        expect(
+          failure,
+          isA<VideoRenderFailedException>().having(
+            (error) => error.reason,
+            'reason',
+            VideoRenderFailureReason.timedOut,
+          ),
+        );
+        expect(cancelCalled, isFalse);
+        expect(reportedFailure, same(failure));
+
+        hung.completeError(Exception('late native failure'));
+        async.flushMicrotasks();
+      });
+    });
   });
 }
