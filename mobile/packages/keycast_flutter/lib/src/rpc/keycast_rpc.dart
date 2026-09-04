@@ -431,7 +431,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         logHttpErrors: false,
       );
     } on RpcException catch (error) {
-      if (_isUnsupportedSignCanonical(error)) {
+      if (_isUnsupportedMethod(error)) {
         _signCanonicalUnsupported = true;
         Log.info(
           '[Keycast RPC] sign_canonical unsupported by backend; '
@@ -460,18 +460,21 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
   }
 
-  /// Whether [error] is the backend signalling that `sign_canonical` is not
-  /// implemented, as opposed to a transient or auth failure that must stay
-  /// retryable.
+  /// Whether [error] is the backend signalling that a verb is not implemented,
+  /// as opposed to a transient or auth failure that must stay retryable.
   ///
   /// Matched against the exact wordings the login backend returns today: the
-  /// HTTP `Unsupported method: sign_canonical` body and the JSON-RPC
-  /// `method_not_found` error field. The match is deliberately narrow — a
-  /// broader signal (e.g. caching on any 4xx) would risk permanently disabling
-  /// a supported capability after a transient blip. If the backend ever rewords
-  /// this, update the substrings here, otherwise canonical binding silently
-  /// re-requests on every publish.
-  bool _isUnsupportedSignCanonical(RpcException error) {
+  /// HTTP `Unsupported method: <verb>` body and the JSON-RPC `method_not_found`
+  /// error field. The match is deliberately narrow — a broader signal (e.g.
+  /// latching on any 4xx) would risk permanently disabling a supported
+  /// capability after a transient blip. If the backend ever rewords this,
+  /// update the substrings here, otherwise every caller silently re-probes.
+  ///
+  /// Shared by the three capability probes ([signCanonicalPayload],
+  /// [nip17WrapBatch] and [nip17UnwrapBatch]) so they cannot drift apart: two
+  /// byte-identical copies of this predicate had already accumulated, and the
+  /// third caller had none at all, which is #7323.
+  bool _isUnsupportedMethod(RpcException error) {
     final lower = error.message.toLowerCase();
     return lower.contains('unsupported method') ||
         lower.contains('method_not_found') ||
@@ -487,10 +490,12 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// wrap (gift wrap → seal, seal → rumor) with a single round trip per chunk;
   /// the server verifies both signatures and decrypts both layers.
   ///
-  /// Returns `null` (rather than throwing) when the backend does not expose the
-  /// verb yet — method-not-found surfaces as an [RpcException] — so callers fall
-  /// back to the per-wrap decrypt path. A local [TimeoutException] is
-  /// deliberately allowed to propagate so a slow page is retried by the caller
+  /// Returns `null` ONLY when the backend does not expose the verb yet, so
+  /// callers fall back to the per-wrap decrypt path for the rest of the
+  /// session. Everything else throws — a transient 5xx, an expired token or a
+  /// rejected request — because the caller latches on `null` and a single blip
+  /// is not evidence the verb is gone (#7323). A local [TimeoutException] is
+  /// likewise allowed to propagate so a slow page is retried by the caller
   /// rather than being mistaken for an empty result.
   @override
   Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
@@ -510,10 +515,20 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         timeout: batchRequestTimeout,
         classifyLocalTimeout: false,
       );
-    } on RpcException {
-      // Older keycast without the verb, or a server-level error: degrade so the
-      // caller uses the per-wrap fallback. Note: no `catch (_)` here — a
-      // TimeoutException must propagate, not be swallowed into a null result.
+    } on RpcException catch (error) {
+      // Only an absent verb may latch the caller off. A transient 5xx, an
+      // expired token or a rejected request must stay retryable: the caller
+      // caches `null` for the whole session, so swallowing a blip here costs
+      // two decrypt round trips per wrap until the signer is replaced (#7323).
+      // Note: no `catch (_)` — a TimeoutException must propagate too, not be
+      // swallowed into a null result.
+      if (!_isUnsupportedMethod(error)) rethrow;
+      Log.info(
+        '[Keycast RPC] nip17_unwrap_batch unsupported by backend; '
+        'DM history drain will use the per-wrap decrypt path for this session',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
       return null;
     }
   }
@@ -538,12 +553,11 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// caller can stop asking for the rest of the session.
   ///
   /// Everything else throws — a transient 5xx, an expired token, a rejected
-  /// request, or a transient [RpcTimeoutException]. This is a deliberate
-  /// divergence from
-  /// [nip17UnwrapBatch], which collapses every [RpcException] into `null`:
-  /// there, a caller that latches off pays two decrypt RPCs per wrap; here it
-  /// would pay four signing round trips per DM for the rest of the session, and
-  /// a single blip is not evidence the verb is gone.
+  /// request, or a transient [RpcTimeoutException] — because a caller that
+  /// latches off would pay four signing round trips per DM for the rest of the
+  /// session, and a single blip is not evidence the verb is gone.
+  /// [nip17UnwrapBatch] follows the same rule since #7323; before that it
+  /// collapsed every [RpcException] into `null`.
   Future<List<GiftWrapSlot>?> nip17WrapBatch(
     Map<String, dynamic> rumor,
     List<String> recipientPubkeys,
@@ -565,7 +579,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
         timeout: batchRequestTimeout,
       );
     } on RpcException catch (error) {
-      if (!_isUnsupportedWrapBatch(error)) rethrow;
+      if (!_isUnsupportedMethod(error)) rethrow;
       Log.info(
         '[Keycast RPC] nip17_wrap_batch unsupported by backend; '
         'DM sends will use the per-wrap signing path for this session',
@@ -574,14 +588,6 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
       );
       return null;
     }
-  }
-
-  /// Distinguishes an absent batch verb from ordinary HTTP 400 rejections.
-  bool _isUnsupportedWrapBatch(RpcException error) {
-    final lower = error.message.toLowerCase();
-    return lower.contains('unsupported method') ||
-        lower.contains('method_not_found') ||
-        lower.contains('method not found');
   }
 
   static GiftWrapSlot _parseWrapSlot(Map<String, dynamic> slot) {

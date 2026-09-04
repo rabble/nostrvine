@@ -1035,9 +1035,69 @@ void main() {
         expect(await rpc.nip17UnwrapBatch([giftWrap('1')]), isNull);
       });
 
-      test('returns null on an HTTP error response', () async {
+      test('throws rather than returning null on a request-level rejection '
+          'that shares the unsupported-method status code', () async {
+        // Same HTTP 400 as an absent verb, different body. Collapsing this to
+        // null would latch the caller onto the per-wrap decrypt path for the
+        // whole session because of one bad request (#7323).
         mockClient = MockClient((request) async {
           return http.Response('boom', 400);
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<RpcException>()),
+        );
+      });
+
+      test('throws on a transient server error', () async {
+        // A 503 under pool saturation is not evidence the verb is missing.
+        // Before #7323 this latched the drain onto two decrypt round trips per
+        // wrap for the rest of the session.
+        mockClient = MockClient((request) async {
+          return http.Response('Database temporarily unavailable', 503);
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<RpcException>()),
+        );
+      });
+
+      test('throws on an expired token rather than latching the verb '
+          'off', () async {
+        // A 401 that survives refresh is an auth problem, not a capability
+        // one — the verb is still there once the session recovers.
+        mockClient = MockClient((request) async {
+          return http.Response('Unauthorized', 401);
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<RpcException>()),
+        );
+      });
+
+      test('returns null on the plain-text unsupported-method body, not '
+          'only the JSON one', () async {
+        // keycast answers HTTP 400 with a bare body for an unknown method
+        // (`format!("Unsupported method: {}", method)`), so the body — not the
+        // status — identifies an older backend. The sibling nip17WrapBatch
+        // suite pins the same shape.
+        mockClient = MockClient((request) async {
+          return http.Response('Unsupported method: nip17_unwrap_batch', 400);
         });
         final rpc = KeycastRpc(
           nostrApi: 'https://login.divine.video/api/nostr',
