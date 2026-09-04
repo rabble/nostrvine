@@ -63,10 +63,9 @@ jobs:
       #
       # The list is explicit rather than a glob over integration_test/e2e/,
       # because `service` and "runnable on a Linux CI runner" are different
-      # axes. Every suite in that directory is tagged `service`; these eight
+      # axes. Every suite in that directory is tagged `service`; these ten
       # are the ones this runner can actually execute. The remaining four are
-      # excluded
-      # for reasons no workflow change can fix:
+      # excluded for reasons no workflow change can fix:
       #
       #   c2pa_init                         — c2pa_flutter ships android/ and
       #                                       ios/ only, no desktop impl.
@@ -90,7 +89,8 @@ jobs:
             integration_test/e2e/dm_group_delete_for_everyone_test.dart \
             integration_test/e2e/dm_reaction_unreadable_inbox_test.dart \
             integration_test/e2e/dm_deletion_unreadable_inbox_test.dart \
-            integration_test/e2e/dm_oneway_latch_unlatch_test.dart; do
+            integration_test/e2e/dm_oneway_latch_unlatch_test.dart \
+            integration_test/e2e/dm_history_drain_idle_pool_test.dart; do
             echo "── $suite"
             xvfb-run -a flutter test "$suite" --tags service -d linux
           done

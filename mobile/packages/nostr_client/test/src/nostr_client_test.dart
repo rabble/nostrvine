@@ -477,6 +477,9 @@ void main() {
         () async {
           when(() => mockRelayManager.connectedRelays).thenReturn([]);
           when(
+            () => mockRelayManager.configuredRelays,
+          ).thenReturn(['wss://relay.example.com']);
+          when(
             mockRelayManager.retryDisconnectedRelays,
           ).thenAnswer((_) async {});
           when(
@@ -495,6 +498,85 @@ void main() {
               Filter(kinds: const [1059]),
             ],
             tempRelays: const ['wss://temp.example.com'],
+            useCache: false,
+          );
+
+          verifyNever(mockRelayManager.retryDisconnectedRelays);
+        },
+      );
+
+      test(
+        'reconnects before querying when every tempRelay is a disconnected '
+        'pool relay (#8550)',
+        () async {
+          // The DM history drain dials the account's own kind-10050 inbox as
+          // tempRelays, and for a divine account that list names the pool's
+          // own relays. RelayPool resolves those to the pooled relay objects,
+          // so once the pool has idled out nobody can take the REQ: the
+          // tempRelays exemption must not skip the reconnect.
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            () => mockRelayManager.configuredRelays,
+          ).thenReturn(['wss://relay.example.com']);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          await client.queryEvents(
+            [
+              Filter(kinds: const [1059]),
+            ],
+            // Trailing slash: the pool membership check has to normalize.
+            tempRelays: const ['wss://relay.example.com/'],
+            useCache: false,
+          );
+
+          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        },
+      );
+
+      test(
+        'does not reconnect when a tempRelay lies outside the pool, even '
+        'with the pool disconnected',
+        () async {
+          // An outside relay can answer on its own connection, so a lookup
+          // that names one keeps today's no-wait path.
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            () => mockRelayManager.configuredRelays,
+          ).thenReturn(['wss://relay.example.com']);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          await client.queryEvents(
+            [
+              Filter(kinds: const [1059]),
+            ],
+            tempRelays: const [
+              'wss://relay.example.com',
+              'wss://temp.example.com',
+            ],
             useCache: false,
           );
 
