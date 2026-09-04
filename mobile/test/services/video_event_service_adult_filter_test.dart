@@ -10,6 +10,7 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 class MockNostrService extends Mock implements NostrClient {}
 
@@ -48,6 +49,7 @@ void main() {
     videoEventService = VideoEventService(
       mockNostrService,
       subscriptionManager: mockSubscriptionManager,
+      crashReporter: const SilentCrashReporter(),
     );
   });
 

@@ -13,6 +13,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 import 'test_nostr_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 /// Helper class for initializing services in test environment
 class ServiceInitHelper {
@@ -86,6 +87,7 @@ class ServiceInitHelper {
       final videoEventService = VideoEventService(
         nostrService,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
 
       return ServiceBundle(
@@ -111,6 +113,7 @@ class ServiceInitHelper {
     final videoEventService = VideoEventService(
       testNostrService,
       subscriptionManager: subscriptionManager,
+      crashReporter: const SilentCrashReporter(),
     );
 
     return ServiceBundle(

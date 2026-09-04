@@ -23,6 +23,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_pubkeys.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 void main() {
   group('Profile /me/ Redirect Integration', () {
@@ -244,6 +245,7 @@ class _FakeVideoEventService extends VideoEventService {
       super(
         _FakeNostrService(),
         subscriptionManager: _FakeSubscriptionManager(),
+        crashReporter: const SilentCrashReporter(),
       );
 
   final Map<String, List<VideoEvent>> _authorVideos;

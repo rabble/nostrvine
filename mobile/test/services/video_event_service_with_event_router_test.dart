@@ -13,6 +13,7 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
+import 'package:openvine/observability/crash_reporter.dart';
 
 /// Mock NostrService that emits test events
 class MockNostrService implements NostrClient {
@@ -100,6 +101,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
         eventRouter: eventRouter, // NEW: Pass EventRouter to VideoEventService
       );
     });

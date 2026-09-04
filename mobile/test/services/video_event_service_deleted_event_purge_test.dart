@@ -14,6 +14,7 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
+import 'package:openvine/observability/crash_reporter.dart';
 
 /// Emits events on demand so a deletion can be delivered after the video.
 class _StreamingNostrService implements NostrClient {
@@ -137,6 +138,7 @@ void main() {
       service = VideoEventService(
         nostrService,
         subscriptionManager: SubscriptionManager(nostrService),
+        crashReporter: const SilentCrashReporter(),
         eventRouter: eventRouter,
       );
     });

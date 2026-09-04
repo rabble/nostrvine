@@ -6,11 +6,11 @@ import 'dart:async';
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/provider_identity_stream.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/creator_sync/saved_sounds_local_store.dart';
 import 'package:openvine/services/creator_sync/secure_vault_key_cache.dart';
@@ -106,11 +106,13 @@ final soundSyncAvailabilityProvider = FutureProvider<SoundSyncAvailability>((
       local: SavedSoundsLocalStore(savedSoundsService),
       errorReporter: (error, stackTrace, {required site}) {
         unawaited(
-          CrashReportingService.instance.recordError(
-            error,
-            stackTrace,
-            reason: 'SoundSyncRepository.$site',
-          ),
+          ref
+              .read(crashReportingServiceProvider)
+              .recordError(
+                error,
+                stackTrace,
+                reason: 'SoundSyncRepository.$site',
+              ),
         );
       },
     ),

@@ -20,6 +20,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_setup.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 
 /// Sign-in triggers fire-and-forget relay discovery (HTTP + WebSocket to real
 /// indexers), which throws network errors this offline test can't avoid. Runs
@@ -74,8 +75,11 @@ void main() {
         database: database,
         sharedPreferences: prefs,
         switchController: controller,
-        startupPerformance: StartupPerformanceService(),
+        startupPerformance: StartupPerformanceService(
+          crashReporting: CrashReportingService(),
+        ),
         appVersion: 'test',
+        crashReporting: CrashReportingService(),
         documentsPath: '/documents',
       );
 

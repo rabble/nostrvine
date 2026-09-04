@@ -3,7 +3,7 @@
 import 'package:flutter/foundation.dart'; // ABOUTME: Manages service dependencies and tracks performance metrics
 import 'package:openvine/features/app/startup/startup_metrics.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service registration info
@@ -26,6 +26,11 @@ class ServiceRegistration {
 /// Coordinates application startup sequence
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class StartupCoordinator {
+  StartupCoordinator({CrashReporter? crashReporter})
+    : _crashReporter = crashReporter ?? const SilentCrashReporter();
+
+  final CrashReporter _crashReporter;
+
   final Map<String, ServiceRegistration> _services = {};
   final Map<StartupPhase, List<String>> _servicesByPhase = {};
   final Map<String, bool> _completedServices = {};
@@ -141,7 +146,7 @@ class StartupCoordinator {
     }
 
     Log.debug('Initializing ${service.name}', name: 'StartupCoordinator');
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporter.log(
       'Initializing service: ${service.name}',
     );
     _metricsCollector.startService(service.name);
@@ -156,7 +161,7 @@ class StartupCoordinator {
         '✓ ${service.name} initialized in ${_metricsCollector.generateMetrics().serviceTimings[service.name]?.inMilliseconds ?? 0}ms',
         name: 'StartupCoordinator',
       );
-      CrashReportingService.instance.logInitializationStep(
+      _crashReporter.log(
         '✓ ${service.name} initialized successfully',
       );
     } catch (error, stackTrace) {
@@ -167,12 +172,12 @@ class StartupCoordinator {
         stackTrace: stackTrace,
       );
 
-      CrashReportingService.instance.recordError(
+      _crashReporter.recordError(
         error,
         stackTrace,
         reason: 'Service initialization failed: ${service.name}',
       );
-      CrashReportingService.instance.logInitializationStep(
+      _crashReporter.log(
         '✗ ${service.name} failed: $error',
       );
 

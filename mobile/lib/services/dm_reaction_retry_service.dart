@@ -102,18 +102,18 @@ class DmReactionRetryService {
   DmReactionRetryService({
     required DmReactionsRepository reactionsRepository,
     required Stream<bool> appForegroundStream,
+    required CrashReportingService crashReporting,
     Stream<void>? retryTriggerStream,
     OfflineProbe? isOffline,
     DmReactionRetryConfig retryConfig = const DmReactionRetryConfig(),
     DateTime Function() now = DateTime.now,
-    CrashReportingService? crashReporting,
   }) : _repository = reactionsRepository,
        _appForegroundStream = appForegroundStream,
        _retryTriggerStream = retryTriggerStream,
        _isOffline = isOffline,
        _config = retryConfig,
        _now = now,
-       _crashReporting = crashReporting ?? CrashReportingService.instance;
+       _crashReporting = crashReporting;
 
   final DmReactionsRepository _repository;
   final Stream<bool> _appForegroundStream;

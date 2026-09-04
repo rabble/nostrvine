@@ -11,6 +11,7 @@ import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/notifications/notification_tap_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -28,6 +29,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 StartupCoordinator createStartupCoordinator(ProviderContainer container) {
   final startupPerformance = container.read(startupPerformanceServiceProvider);
+  final crashReporting = container.read(crashReportingServiceProvider);
   final coordinator = StartupCoordinator();
 
   coordinator.registerService(
@@ -36,6 +38,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'environment_service',
         initializationStep: 'Initializing environment service',
         task: () async {
@@ -61,6 +64,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'core_services',
         initializationStep: 'Initializing core services',
         task: () => initializeCoreServices(container),
@@ -74,6 +78,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'audio_session',
         initializationStep: 'Configuring playback audio session',
         task: configurePlaybackAudioSession,
@@ -88,6 +93,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'hive_storage',
         initializationStep: 'Initializing Hive storage',
         task: initializeHiveStorage,
@@ -146,6 +152,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'performance_monitoring',
         initializationStep: 'Initializing performance monitoring',
         task: container.read(performanceMonitoringServiceProvider).initialize,
@@ -160,6 +167,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () async {
       await runTimedStartupTask(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
         phaseName: 'logging_config',
         initializationStep: 'Initializing logging configuration',
         task: () async {
@@ -180,8 +188,10 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
   coordinator.registerService(
     name: 'VideoCacheManifest',
     phase: StartupPhase.essential,
-    initialize: () =>
-        initializeVideoCacheManifest(startupPerformance: startupPerformance),
+    initialize: () => initializeVideoCacheManifest(
+      startupPerformance: startupPerformance,
+      crashReporting: crashReporting,
+    ),
     optional: true,
   );
 
@@ -191,6 +201,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
     initialize: () => initializeSeedDataPreload(
       container,
       startupPerformance: startupPerformance,
+      crashReporting: crashReporting,
     ),
     optional: true,
   );
@@ -208,6 +219,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
       phase: StartupPhase.deferred,
       initialize: () => initializeSeedMediaMaintenance(
         startupPerformance: startupPerformance,
+        crashReporting: crashReporting,
       ),
       optional: true,
     );
@@ -216,8 +228,10 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
   coordinator.registerService(
     name: 'ZendeskSupport',
     phase: StartupPhase.deferred,
-    initialize: () =>
-        initializeZendeskSupport(startupPerformance: startupPerformance),
+    initialize: () => initializeZendeskSupport(
+      startupPerformance: startupPerformance,
+      crashReporting: crashReporting,
+    ),
     optional: true,
   );
 

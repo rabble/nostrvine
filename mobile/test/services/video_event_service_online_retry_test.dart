@@ -13,6 +13,7 @@ import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -103,6 +104,7 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
         performanceMonitor: mockPerformanceMonitor,
         connectionService: connectionService,
       );

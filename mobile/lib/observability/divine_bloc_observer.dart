@@ -57,9 +57,9 @@ const String kBlocDiagnosticNotObserved = '<not observed>';
 /// ```
 class DivineBlocObserver extends BlocObserver {
   DivineBlocObserver({
-    CrashReportingService? crashReporting,
+    required CrashReportingService crashReporting,
     bool Function()? isDatabaseCorrupted,
-  }) : _crashReporting = crashReporting ?? CrashReportingService.instance,
+  }) : _crashReporting = crashReporting,
        _isDatabaseCorrupted = isDatabaseCorrupted ?? _databaseIsHealthy;
 
   static bool _databaseIsHealthy() => false;

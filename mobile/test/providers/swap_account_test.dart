@@ -32,6 +32,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -96,7 +97,10 @@ void main() {
       sharedPreferences: prefs,
       switchController: controller,
       appVersion: 'test',
-      startupPerformance: StartupPerformanceService(),
+      crashReporting: CrashReportingService(),
+      startupPerformance: StartupPerformanceService(
+        crashReporting: CrashReportingService(),
+      ),
       documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
@@ -113,7 +117,10 @@ void main() {
       sharedPreferences: deviceScope.sharedPreferences,
       switchController: controller,
       appVersion: 'test',
-      startupPerformance: StartupPerformanceService(),
+      crashReporting: CrashReportingService(),
+      startupPerformance: StartupPerformanceService(
+        crashReporting: CrashReportingService(),
+      ),
       documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
@@ -621,7 +628,10 @@ void main() {
         sharedPreferences: deviceScope.sharedPreferences,
         switchController: controller,
         appVersion: 'test',
-        startupPerformance: StartupPerformanceService(),
+        crashReporting: CrashReportingService(),
+        startupPerformance: StartupPerformanceService(
+          crashReporting: CrashReportingService(),
+        ),
         documentsPath: '/documents',
         accountOverrides: [
           secureKeyStorageProvider.overrideWithValue(keyStorage),

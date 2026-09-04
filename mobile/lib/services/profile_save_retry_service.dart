@@ -85,10 +85,10 @@ class ProfileSaveRetryService {
     required PendingProfileSavesDao pendingProfileSavesDao,
     required String userPubkey,
     required Stream<bool> appForegroundStream,
+    required CrashReportingService crashReporting,
     Stream<void>? retryTriggerStream,
     ProfileSaveRetryConfig retryConfig = const ProfileSaveRetryConfig(),
     DateTime Function() now = DateTime.now,
-    CrashReportingService? crashReporting,
   }) : _profileRepository = profileRepository,
        _dao = pendingProfileSavesDao,
        _userPubkey = userPubkey,
@@ -96,7 +96,7 @@ class ProfileSaveRetryService {
        _retryTriggerStream = retryTriggerStream,
        _retryConfig = retryConfig,
        _now = now,
-       _crashReporting = crashReporting ?? CrashReportingService.instance;
+       _crashReporting = crashReporting;
 
   final ProfileRepository _profileRepository;
   final PendingProfileSavesDao _dao;

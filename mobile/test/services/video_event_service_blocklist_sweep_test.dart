@@ -11,6 +11,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -52,6 +53,7 @@ void main() {
       service = VideoEventService(
         nostrClient,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
       // No prefs — in-memory blocklist for the test.
       blocklistRepo = ContentBlocklistRepository();
@@ -160,6 +162,7 @@ void main() {
       final localService = VideoEventService(
         localNostr,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
       final localRepo = ContentBlocklistRepository();
       addTearDown(localRepo.dispose);
@@ -210,6 +213,7 @@ void main() {
       service = VideoEventService(
         nostrClient,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
       blocklistRepo = ContentBlocklistRepository();
       service.setBlocklistRepository(blocklistRepo);
@@ -266,6 +270,7 @@ void main() {
       final localService = VideoEventService(
         localNostr,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
       addTearDown(localService.dispose);
 

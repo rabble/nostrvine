@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +16,9 @@ void main() {
       // `StartupPerformanceService.instance`, so every test inherited the
       // latch state of the one before it — which is what made the
       // idempotency test below unable to fail.
-      service = StartupPerformanceService();
+      service = StartupPerformanceService(
+        crashReporting: CrashReportingService(),
+      );
     });
 
     group('markAuthShellReady', () {
@@ -74,7 +77,9 @@ void main() {
         service.markAuthShellReady();
         expect(service.authShellReadyTime, isNotNull);
 
-        final other = StartupPerformanceService();
+        final other = StartupPerformanceService(
+          crashReporting: CrashReportingService(),
+        );
 
         expect(other.authShellReadyTime, isNull);
       });

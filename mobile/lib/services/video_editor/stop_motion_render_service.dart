@@ -9,7 +9,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/video_editor/native_render_task_registry.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -19,6 +19,14 @@ import 'package:unified_logger/unified_logger.dart';
 /// Encodes a sequence of captured stop-motion stills into one silent video.
 class StopMotionRenderService {
   StopMotionRenderService._();
+
+  /// Crash reporting for this static utility (#4743).
+  ///
+  /// No instances exist, so there is no constructor to inject through.
+  /// `app_bootstrap` assigns the real reporter at startup; tests assign a
+  /// recording fake. Defaults to a silent reporter only so an unwired test
+  /// cannot NPE — production must assign, or reports are lost.
+  static CrashReporter crashReporter = const SilentCrashReporter();
 
   static const _logName = 'StopMotionRenderService';
   static final RegExp _materializedOutputName = RegExp(
@@ -318,7 +326,7 @@ class StopMotionRenderService {
       // (StateError/TypeError/RangeError — all `Error` subtypes) are worth
       // surfacing to Crashlytics.
       if (e is Error) {
-        CrashReportingService.instance.recordError(
+        crashReporter.recordError(
           e,
           stack,
           reason: 'StopMotionRenderService.assemble failed',

@@ -13,6 +13,7 @@ import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
@@ -335,6 +336,7 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   );
 
   final service = OutgoingDmRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     dmRepository: dmRepository,
     outgoingDmsDao: db.outgoingDmsDao,
     userPubkey: userPubkey,
@@ -401,6 +403,7 @@ final profileSaveRetryServiceProvider = Provider<ProfileSaveRetryService?>((
   ref.onDispose(foregroundController.close);
 
   final service = ProfileSaveRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     profileRepository: profileRepository,
     pendingProfileSavesDao: db.pendingProfileSavesDao,
     userPubkey: userPubkey,
@@ -478,6 +481,7 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
   final retryTriggerStream = _dmRetryConnectivityTriggerStream();
 
   final service = DmReactionRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     reactionsRepository: reactionsRepository,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,

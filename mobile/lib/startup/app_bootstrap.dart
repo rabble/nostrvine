@@ -24,6 +24,8 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/notification_tap_router.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
@@ -45,6 +47,11 @@ import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/services/video_editor/video_render_watchdog.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/startup_coordinator_factory.dart';
 import 'package:openvine/startup/window_size_constants.dart';
@@ -138,6 +145,7 @@ void startShorebirdStartupUpdate({
 /// for.
 Future<void> startOpenVineApp({
   required ErrorWidgetBuilder errorWidgetBuilder,
+  required CrashReportingService crashReporting,
 }) async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -145,7 +153,14 @@ Future<void> startOpenVineApp({
   // Times the bootstrap itself, so it is constructed here rather than read
   // from a container — the ProviderContainer does not exist for another ~420
   // lines. Pinned device-scoped via DeviceScope.overrides below (#4743).
-  final startupPerformance = StartupPerformanceService();
+  // [crashReporting] is built by main() so the runZonedGuarded handler, which
+  // is installed before this function runs, reports through the same instance.
+  // Timing is constructed here for the same reason it cannot come from a
+  // container: none exists for another ~420 lines. Both are pinned
+  // device-scoped via DeviceScope.overrides below (#4743).
+  final startupPerformance = StartupPerformanceService(
+    crashReporting: crashReporting,
+  );
   AppUptime.markStarted();
 
   // Ensure bindings are initialized first (required for everything)
@@ -215,7 +230,7 @@ Future<void> startOpenVineApp({
 
   // Initialize crash reporting ASAP so we can use it for logging
   startupPerformance.startPhase('crash_reporting');
-  await CrashReportingService.instance.initialize();
+  await crashReporting.initialize();
   startupPerformance.completePhase('crash_reporting');
 
   // Now we can start logging
@@ -224,7 +239,18 @@ Future<void> startOpenVineApp({
     name: 'Main',
     category: LogCategory.system,
   );
-  CrashReportingService.instance.logInitializationStep('Bindings initialized');
+  // Static utility classes have no constructor to inject through, so their
+  // reporter seams are assigned here. Without this they keep their silent
+  // default and their reports are lost (#4743).
+  _shorebirdCrashReporter = crashReporting;
+  VideoThumbnailService.crashReporter = crashReporting;
+  ZendeskSupportService.crashlytics = crashReporting;
+  VideoRenderWatchdog.crashReporter = crashReporting;
+  StopMotionRenderService.crashReporter = crashReporting;
+  VideoEditorRenderService.crashReporter = crashReporting;
+  NotificationRefreshCoordinator.crashReporter = crashReporting;
+
+  crashReporting.logInitializationStep('Bindings initialized');
   startupPerformance.checkpoint('crash_reporting_ready');
 
   // DEFER window manager initialization until after UI is ready to avoid blocking
@@ -234,7 +260,7 @@ Future<void> startOpenVineApp({
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         startupPerformance.startPhase('window_manager');
-        CrashReportingService.instance.logInitializationStep(
+        crashReporting.logInitializationStep(
           'Initializing window manager',
         );
         await windowManager.ensureInitialized();
@@ -358,7 +384,7 @@ Future<void> startOpenVineApp({
         name: 'Main',
       );
       unawaited(
-        CrashReportingService.instance.recordError(
+        crashReporting.recordError(
           details.exception,
           details.stack,
           reason: 'Cache manager JSON corruption',
@@ -385,7 +411,7 @@ Future<void> startOpenVineApp({
       // Record as non-fatal in Crashlytics (if available) instead of
       // letting it propagate as a fatal crash.
       unawaited(
-        CrashReportingService.instance.recordError(
+        crashReporting.recordError(
           details.exception,
           details.stack,
           reason: 'Video player disposed race condition',
@@ -405,7 +431,7 @@ Future<void> startOpenVineApp({
       );
       if (recoverable.report) {
         unawaited(
-          CrashReportingService.instance.recordError(
+          crashReporting.recordError(
             details.exception,
             details.stack,
             reason: recoverable.reason,
@@ -463,7 +489,7 @@ Future<void> startOpenVineApp({
   ) async {
     if (didRecordDatabaseBootstrapFailure) return;
     didRecordDatabaseBootstrapFailure = true;
-    await CrashReportingService.instance.recordError(
+    await crashReporting.recordError(
       error,
       stack,
       reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
@@ -476,7 +502,7 @@ Future<void> startOpenVineApp({
   // halves — detection and recovery — share one instance. (#570)
   final databaseCorruptionService = DatabaseCorruptionService(
     preferences: sharedPreferences,
-    recordError: (error, stack) => CrashReportingService.instance.recordError(
+    recordError: (error, stack) => crashReporting.recordError(
       error,
       stack,
       reason: 'Runtime database corruption',
@@ -527,8 +553,11 @@ Future<void> startOpenVineApp({
         // Recovery succeeds silently (returns a key, never throws), so record
         // it as a non-fatal to surface the corruption rate and any
         // recover-every-launch loop in Crashlytics.
-        recordRecovery: (error, stack) => CrashReportingService.instance
-            .recordError(error, stack, reason: 'DB startup recovery'),
+        recordRecovery: (error, stack) => crashReporting.recordError(
+          error,
+          stack,
+          reason: 'DB startup recovery',
+        ),
         persistRecoveryOutcome: databaseRecoveryStore.record,
         // A previous session's runtime corruption report forces the salvage.
         // The probe below is reactive and already missed this corruption once,
@@ -571,7 +600,7 @@ Future<void> startOpenVineApp({
       } catch (error, stack) {
         // The screen keeps the user on it and says the reset failed; without
         // this the only report of a failed recovery would be that sentence.
-        await CrashReportingService.instance.recordError(
+        await crashReporting.recordError(
           error,
           stack,
           reason: 'Manual local database reset from the bootstrap failure app',
@@ -619,6 +648,7 @@ Future<void> startOpenVineApp({
     appVersion: packageInfo.version,
     documentsPath: documentsPath,
     startupPerformance: startupPerformance,
+    crashReporting: crashReporting,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,
@@ -648,10 +678,10 @@ Future<void> startOpenVineApp({
   Log.info('Divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
   final initDuration = DateTime.now().difference(startTime).inMilliseconds;
-  CrashReportingService.instance.log(
+  crashReporting.log(
     '[STARTUP] Blocking setup took ${initDuration}ms',
   );
-  CrashReportingService.instance.logInitializationStep(
+  crashReporting.logInitializationStep(
     'Blocking startup complete',
   );
   startupPerformance.checkpoint('pre_app_launch');
@@ -662,6 +692,7 @@ Future<void> startOpenVineApp({
   // failures) to Crashlytics + UnifiedLogger. Surfaced during the #3503
   // investigation as a missing observability hook. See #3526.
   Bloc.observer = DivineBlocObserver(
+    crashReporting: crashReporting,
     // Once the database has reported corruption, the service above has already
     // recorded the incident and scheduled the next-launch salvage, so the
     // Drift failures every downstream bloc then hits are echoes of a handled
@@ -673,7 +704,7 @@ Future<void> startOpenVineApp({
   // have to cross-reference the release dashboard. Set once, not per-error.
   // See #3758.
   final buildTag = '${packageInfo.version}+${packageInfo.buildNumber}';
-  unawaited(CrashReportingService.instance.setCustomKey('build_tag', buildTag));
+  unawaited(crashReporting.setCustomKey('build_tag', buildTag));
 
   // Provenance is diagnostic, so it waits for the first frame. Reuse the
   // updater constructed by the earlier recovery-critical callback when that
@@ -683,6 +714,7 @@ Future<void> startOpenVineApp({
     final shorebirdUpdater = startupShorebirdUpdater ??= ShorebirdUpdater();
     unawaited(
       _recordBuildProvenance(
+        crashReporting: crashReporting,
         packageInfo: packageInfo,
         installSource: installSource,
         environment: environment,
@@ -704,6 +736,7 @@ Future<void> startOpenVineApp({
 }
 
 Future<void> _recordBuildProvenance({
+  required CrashReportingService crashReporting,
   required PackageInfo packageInfo,
   required InstallSource installSource,
   required AppEnvironment environment,
@@ -721,33 +754,33 @@ Future<void> _recordBuildProvenance({
           (await shorebirdUpdater.readCurrentPatch())?.number,
     ).resolve();
     Log.info(provenance.summary, name: 'Main', category: LogCategory.system);
-    CrashReportingService.instance.log(provenance.summary);
+    crashReporting.log(provenance.summary);
     unawaited(
-      CrashReportingService.instance.setCustomKey(
+      crashReporting.setCustomKey(
         'environment',
         provenance.environment.name,
       ),
     );
     unawaited(
-      CrashReportingService.instance.setCustomKey(
+      crashReporting.setCustomKey(
         'build_mode',
         provenance.buildMode.name,
       ),
     );
     unawaited(
-      CrashReportingService.instance.setCustomKey(
+      crashReporting.setCustomKey(
         'install_source',
         provenance.installSource.name,
       ),
     );
     unawaited(
-      CrashReportingService.instance.setCustomKey(
+      crashReporting.setCustomKey(
         'shorebird_available',
         provenance.shorebirdAvailable,
       ),
     );
     unawaited(
-      CrashReportingService.instance.setCustomKey(
+      crashReporting.setCustomKey(
         'shorebird_patch',
         provenance.patchLabel,
       ),
@@ -759,7 +792,7 @@ Future<void> _recordBuildProvenance({
       category: LogCategory.system,
     );
     unawaited(
-      CrashReportingService.instance.recordError(
+      crashReporting.recordError(
         error,
         stack,
         reason: 'Build provenance logging failed',
@@ -767,6 +800,12 @@ Future<void> _recordBuildProvenance({
     );
   }
 }
+
+/// Reporter used by [_reportUnexpectedShorebirdStartupError], which is a
+/// default argument value and so must stay a bare top-level function matching
+/// [UnexpectedShorebirdErrorReporter]. Assigned once by [startOpenVineApp]
+/// (#4743); tests pass `reportUnexpectedError` instead of touching this.
+CrashReporter _shorebirdCrashReporter = const SilentCrashReporter();
 
 @visibleForTesting
 Future<void> updateShorebirdFromSubscribedTrack({
@@ -803,7 +842,7 @@ Future<void> updateShorebirdFromSubscribedTrack({
 Future<void> _reportUnexpectedShorebirdStartupError(
   Object error,
   StackTrace stackTrace,
-) => CrashReportingService.instance.recordError(
+) => _shorebirdCrashReporter.recordError(
   error,
   stackTrace,
   reason: 'Automatic Shorebird update failed',
@@ -839,6 +878,7 @@ typedef ZoneErrorRecorder =
 Future<void> handleUncaughtZoneError(
   Object error,
   StackTrace stack, {
+  required CrashReportingService crashReporting,
   ZoneErrorRecorder? recordError,
 }) async {
   if (isExpectedNetworkFailure(error)) {
@@ -851,6 +891,6 @@ Future<void> handleUncaughtZoneError(
 
   // CrashReportingService.recordError self-guards (no-ops if uninitialized)
   // and logs its own failure internally, so no outer catch is needed here.
-  final record = recordError ?? CrashReportingService.instance.recordError;
+  final record = recordError ?? crashReporting.recordError;
   await record(error, stack, reason: 'runZonedGuarded');
 }

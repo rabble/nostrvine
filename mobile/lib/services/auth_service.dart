@@ -23,6 +23,7 @@ import 'package:openvine/models/auth_user_profile.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/models/signer_readiness.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
@@ -32,7 +33,6 @@ import 'package:openvine/services/auth/signer_factory.dart';
 import 'package:openvine/services/auth/signer_readiness_resolver.dart';
 import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip07_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -113,6 +113,7 @@ const _kBeforeSessionTeardownTimeout = Duration(seconds: 5);
 class AuthService implements BackgroundAwareService, BlockListSigner {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
+    CrashReporter? crashReporter,
     SecureKeyStorage? keyStorage,
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
@@ -129,7 +130,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     Duration oauthRefreshTimeout = defaultOAuthRefreshTimeout,
     Duration expiredSessionRefreshTimeout = defaultExpiredSessionRefreshTimeout,
     Duration? startupNetworkOperationTimeout,
-  }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
+  }) : _crashReporter = crashReporter ?? const SilentCrashReporter(),
+       _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
@@ -217,6 +219,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final PreFetchFollowingCallback? _preFetchFollowing;
   final AuthUrlLauncher? _launchAuthUrl;
   final BackgroundActivityManager _backgroundActivityManager;
+
+  final CrashReporter _crashReporter;
   final String? _profileCheckIndexerUrl;
   final RemoteSignerFactory _remoteSignerFactory;
   final Duration _startupNetworkOperationTimeout;
@@ -1095,7 +1099,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     required String reason,
     required String logMessage,
   }) {
-    final crashlytics = CrashReportingService.instance;
+    final crashlytics = _crashReporter;
     crashlytics.log(logMessage);
     unawaited(crashlytics.setCustomKey('auth_source', _authSource.code));
     unawaited(crashlytics.recordError(error, stack, reason: reason));

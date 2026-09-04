@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/features/app/startup/startup_profiler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:openvine/features/app/startup/startup_phase_mapper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,11 +22,11 @@ void main() {
       final startTime = DateTime.now();
 
       // Initialize crash reporting first
-      await CrashReportingService.instance.initialize();
+      await CrashReportingService().initialize();
 
       // Should not throw
-      CrashReportingService.instance.logInitializationStep('Test step');
-      CrashReportingService.instance.log('Test message');
+      CrashReportingService().logInitializationStep('Test step');
+      CrashReportingService().log('Test message');
 
       // Initialize logging config
       await LoggingConfigService().initialize();
@@ -37,7 +37,7 @@ void main() {
 
     test('Startup breadcrumbs can be logged safely', () async {
       // Initialize the service
-      await CrashReportingService.instance.initialize();
+      await CrashReportingService().initialize();
 
       // Test various breadcrumb formats used in the app
       final testBreadcrumbs = [
@@ -50,11 +50,11 @@ void main() {
 
       // None of these should throw
       testBreadcrumbs.forEach(
-        CrashReportingService.instance.logInitializationStep,
+        CrashReportingService().logInitializationStep,
       );
 
       // Also test regular logging
-      CrashReportingService.instance.log('Startup timeout detected');
+      CrashReportingService().log('Startup timeout detected');
     });
 
     test('Logging can handle early startup phase', () {

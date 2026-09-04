@@ -11,6 +11,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 // Mock classes
 class MockNostrService extends Mock implements NostrClient {}
@@ -80,6 +81,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: testSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
     });
 

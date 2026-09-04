@@ -7,6 +7,8 @@ import 'package:openvine/startup/app_bootstrap.dart' as bootstrap;
 import 'package:openvine/startup/startup_coordinator_factory.dart' as app;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 
 class _FakeUpdater implements ShorebirdUpdater {
   _FakeUpdater({this.status = UpdateStatus.upToDate, this.updateError});
@@ -213,13 +215,17 @@ void main() {
   });
 }
 
-/// A container with the device-scoped startup-performance override that
-/// `DeviceScope` supplies in production (#4743). The provider is override-only,
-/// so a bare `ProviderContainer` cannot build the coordinator.
-ProviderContainer _containerWithStartupPerformance() => ProviderContainer(
-  overrides: [
-    startupPerformanceServiceProvider.overrideWithValue(
-      StartupPerformanceService(),
-    ),
-  ],
-);
+/// A container carrying the device-scoped overrides `DeviceScope` supplies in
+/// production (#4743). Both providers are override-only, so a bare
+/// `ProviderContainer` cannot build the coordinator.
+ProviderContainer _containerWithStartupPerformance() {
+  final crashReporting = CrashReportingService();
+  return ProviderContainer(
+    overrides: [
+      crashReportingServiceProvider.overrideWithValue(crashReporting),
+      startupPerformanceServiceProvider.overrideWithValue(
+        StartupPerformanceService(crashReporting: crashReporting),
+      ),
+    ],
+  );
+}

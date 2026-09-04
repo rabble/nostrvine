@@ -3,6 +3,7 @@
 // ABOUTME: bookmark, mute, dm, comments — plus CuratedListsState notifier
 
 import 'dart:async';
+
 import 'package:badge_repository/badge_repository.dart';
 import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:categories_repository/categories_repository.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/bookmark_signer_adapter.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -37,7 +39,6 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/pending_action_service.dart';
@@ -626,11 +627,13 @@ DmReactionsRepository dmReactionsRepository(Ref ref) {
     directMessagesDao: db.directMessagesDao,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'DmReactionsRepository.$site',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'DmReactionsRepository.$site',
+            ),
       );
     },
   );
@@ -676,11 +679,13 @@ FeedTuningRepository feedTuningRepository(Ref ref) {
     nostrClient: ref.watch(nostrServiceProvider),
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'FeedTuningRepository.$site',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'FeedTuningRepository.$site',
+            ),
       );
     },
   );
@@ -727,11 +732,13 @@ DmRepository dmRepository(Ref ref) {
     dmInboxDiscoveryRelays: IndexerRelayConfig.dmInboxDiscoveryRelays,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'DmRepository.$site',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'DmRepository.$site',
+            ),
       );
     },
   );

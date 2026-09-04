@@ -4,23 +4,15 @@
 import 'dart:async';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/firebase_initialization.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Crash reporting service for production error tracking
-class CrashReportingService {
-  static CrashReportingService? _instance;
-
-  // A constructor cannot be a getter, and the alternative the rule implies —
-  // `factory CrashReportingService()` — would hide that every call hands back
-  // the same object. `.instance` is the repo-wide singleton accessor.
-  // ignore: prefer_constructors_over_static_methods
-  static CrashReportingService get instance =>
-      _instance ??= CrashReportingService._();
-
-  CrashReportingService._();
+class CrashReportingService implements CrashReporter {
+  CrashReportingService();
 
   bool _initialized = false;
 
@@ -113,6 +105,7 @@ class CrashReportingService {
   }
 
   /// Log a non-fatal error to Crashlytics
+  @override
   Future<void> recordError(
     dynamic exception,
     StackTrace? stack, {
@@ -135,6 +128,7 @@ class CrashReportingService {
   }
 
   /// Log a custom message to Crashlytics
+  @override
   void log(String message) {
     if (!_initialized) return;
 
@@ -163,6 +157,7 @@ class CrashReportingService {
   }
 
   /// Add custom key-value pair to crash reports
+  @override
   Future<void> setCustomKey(String key, dynamic value) async {
     if (!_initialized) return;
 

@@ -26,6 +26,7 @@ import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -34,7 +35,6 @@ import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
@@ -930,11 +930,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         stackTrace: stackTrace,
       );
       unawaited(
-        CrashReportingService.instance.recordError(
-          e,
-          stackTrace,
-          reason: 'VideoEditorNotifier.saveAsDraft',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              e,
+              stackTrace,
+              reason: 'VideoEditorNotifier.saveAsDraft',
+            ),
       );
       return DraftSaveOutcome.failed;
     } finally {

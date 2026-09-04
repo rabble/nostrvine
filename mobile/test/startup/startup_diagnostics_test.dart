@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/features/app/startup/startup_profiler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -99,18 +98,15 @@ void main() {
 
     test('should log breadcrumbs for each initialization step', () async {
       // Arrange
-      final profiler = StartupProfiler.instance;
-      profiler.markAppStart();
-
       coordinator.registerService(
         name: 'AuthService',
         phase: StartupPhase.critical,
         initialize: () async {
-          CrashReportingService.instance.logInitializationStep(
+          CrashReportingService().logInitializationStep(
             'Initializing service: AuthService',
           );
           await Future.delayed(const Duration(milliseconds: 10));
-          CrashReportingService.instance.logInitializationStep(
+          CrashReportingService().logInitializationStep(
             '✓ AuthService initialized successfully',
           );
         },
@@ -120,11 +116,11 @@ void main() {
         name: 'NostrService',
         phase: StartupPhase.essential,
         initialize: () async {
-          CrashReportingService.instance.logInitializationStep(
+          CrashReportingService().logInitializationStep(
             'Initializing service: NostrService',
           );
           await Future.delayed(const Duration(milliseconds: 10));
-          CrashReportingService.instance.logInitializationStep(
+          CrashReportingService().logInitializationStep(
             '✓ NostrService initialized successfully',
           );
         },
@@ -132,7 +128,6 @@ void main() {
 
       // Act
       await coordinator.initialize();
-      profiler.markAppReady();
 
       // Assert - breadcrumbs should be logged (would be captured by mock)
       // In production, these would be sent to Crashlytics
@@ -216,7 +211,7 @@ void main() {
               warnings.add(
                 'WARNING: SlowService initialization taking > 2 seconds',
               );
-              CrashReportingService.instance.log(
+              CrashReportingService().log(
                 'Startup timeout detected for SlowService',
               );
             });

@@ -21,6 +21,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_setup.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 
 /// Sign-in fires relay discovery this offline test cannot avoid; swallow only
 /// that noise so real failures still surface.
@@ -84,8 +85,11 @@ void main() {
           database: database,
           sharedPreferences: prefs,
           switchController: controller,
-          startupPerformance: StartupPerformanceService(),
+          startupPerformance: StartupPerformanceService(
+            crashReporting: CrashReportingService(),
+          ),
           appVersion: 'test',
+          crashReporting: CrashReportingService(),
           documentsPath: '/documents',
         );
 
@@ -188,8 +192,11 @@ void main() {
           database: database,
           sharedPreferences: prefs,
           switchController: controller,
-          startupPerformance: StartupPerformanceService(),
+          startupPerformance: StartupPerformanceService(
+            crashReporting: CrashReportingService(),
+          ),
           appVersion: 'test',
+          crashReporting: CrashReportingService(),
           documentsPath: '/documents',
         );
 

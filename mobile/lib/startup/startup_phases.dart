@@ -141,11 +141,13 @@ Future<void> initializeHiveStorage() => HiveStorageService.initialize();
 
 Future<void> initializeVideoCacheManifest({
   required StartupPerformanceService startupPerformance,
+  required CrashReportingService crashReporting,
 }) async {
   if (kIsWeb) return;
 
   await runTimedStartupTask(
     startupPerformance: startupPerformance,
+    crashReporting: crashReporting,
     phaseName: 'video_cache',
     initializationStep: 'Initializing video cache manifest',
     task: () async {
@@ -177,9 +179,11 @@ Future<void> sweepC2paDebris() async {
 Future<void> initializeSeedDataPreload(
   ProviderContainer container, {
   required StartupPerformanceService startupPerformance,
+  required CrashReportingService crashReporting,
 }) async {
   await runTimedStartupTask(
     startupPerformance: startupPerformance,
+    crashReporting: crashReporting,
     phaseName: 'seed_data_preload',
     initializationStep: 'Loading bundled seed data',
     task: () async {
@@ -204,9 +208,11 @@ Future<void> initializeSeedDataPreload(
 
 Future<void> initializeSeedMediaMaintenance({
   required StartupPerformanceService startupPerformance,
+  required CrashReportingService crashReporting,
 }) async {
   await runTimedStartupTask(
     startupPerformance: startupPerformance,
+    crashReporting: crashReporting,
     phaseName: 'seed_media_maintenance',
     initializationStep: 'Cleaning up seed media',
     task: () async {
@@ -244,9 +250,11 @@ Future<void> initializeSeedMediaMaintenance({
 
 Future<void> initializeZendeskSupport({
   required StartupPerformanceService startupPerformance,
+  required CrashReportingService crashReporting,
 }) async {
   await runTimedStartupTask(
     startupPerformance: startupPerformance,
+    crashReporting: crashReporting,
     phaseName: 'zendesk',
     initializationStep: 'Initializing Zendesk Support SDK',
     task: () async {
@@ -262,7 +270,7 @@ Future<void> initializeZendeskSupport({
             name: 'Main',
             category: LogCategory.system,
           );
-          CrashReportingService.instance.logInitializationStep(
+          crashReporting.logInitializationStep(
             '✓ Zendesk initialized',
           );
         } else {
@@ -271,7 +279,7 @@ Future<void> initializeZendeskSupport({
             name: 'Main',
             category: LogCategory.system,
           );
-          CrashReportingService.instance.logInitializationStep(
+          crashReporting.logInitializationStep(
             '○ Zendesk skipped (no credentials)',
           );
         }
@@ -281,7 +289,7 @@ Future<void> initializeZendeskSupport({
           name: 'Main',
           category: LogCategory.system,
         );
-        CrashReportingService.instance.logInitializationStep(
+        crashReporting.logInitializationStep(
           '✗ Zendesk failed: $e',
         );
       }

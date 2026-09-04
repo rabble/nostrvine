@@ -7,6 +7,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 
 /// Creates a VideoEventService with mocked dependencies for testing
 VideoEventService createTestVideoEventService({
@@ -21,6 +22,7 @@ VideoEventService createTestVideoEventService({
   return VideoEventService(
     mockNostrService,
     subscriptionManager: mockSubscriptionManager,
+    crashReporter: const SilentCrashReporter(),
   );
 }
 

@@ -14,6 +14,7 @@ import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +32,10 @@ void main() {
       sharedPreferences: prefs,
       switchController: AccountSwitchController(),
       appVersion: '1.2.3',
-      startupPerformance: StartupPerformanceService(),
+      crashReporting: CrashReportingService(),
+      startupPerformance: StartupPerformanceService(
+        crashReporting: CrashReportingService(),
+      ),
       documentsPath: '/documents',
       installSource: InstallSource.playStore,
     );

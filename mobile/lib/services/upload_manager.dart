@@ -14,6 +14,7 @@ import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -43,18 +44,20 @@ export 'package:openvine/services/upload/upload_session_errors.dart'
 /// they can move into a pure-Dart package; the manager injects this adapter
 /// by default.
 class CrashReportingUploadReporter implements UploadCrashReporter {
-  const CrashReportingUploadReporter();
+  const CrashReportingUploadReporter(this._reporter);
+
+  final CrashReporter _reporter;
 
   @override
   Future<void> setCustomKey(String key, Object value) =>
-      CrashReportingService.instance.setCustomKey(key, value);
+      _reporter.setCustomKey(key, value);
 
   @override
-  void log(String message) => CrashReportingService.instance.log(message);
+  void log(String message) => _reporter.log(message);
 
   @override
   Future<void> recordError(Object error, StackTrace? stack, {String? reason}) =>
-      CrashReportingService.instance.recordError(error, stack, reason: reason);
+      _reporter.recordError(error, stack, reason: reason);
 }
 
 /// What the thumbnail leg produces: the CDN URL of the uploaded frame, and the
@@ -99,6 +102,7 @@ class UploadManager implements BackgroundAwareService {
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
     UploadCrashReporter? crashReporter,
+    CrashReporter crashReporting = const SilentCrashReporter(),
     this.useBackgroundUpload = false,
     BackgroundActivityManager? backgroundActivityManager,
     ThumbnailExtractor? thumbnailExtractor,
@@ -125,7 +129,8 @@ class UploadManager implements BackgroundAwareService {
       store: _store,
       circuitBreaker: _circuitBreaker,
       retryConfig: _retryConfig,
-      crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
+      crashReporter:
+          crashReporter ?? CrashReportingUploadReporter(crashReporting),
     );
   }
 

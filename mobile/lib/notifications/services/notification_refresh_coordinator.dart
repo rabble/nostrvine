@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -28,6 +29,10 @@ typedef NotificationRefreshErrorReporter =
 /// Coalesces notification refresh calls so independent liveness triggers do
 /// not stampede Funnelcake.
 class NotificationRefreshCoordinator {
+  /// Crash reporting for the static fallback path (#4743). Assigned by
+  /// `app_bootstrap`; tests assign a recording fake.
+  static CrashReporter crashReporter = const SilentCrashReporter();
+
   /// Creates a refresh coordinator.
   ///
   /// [errorReporter] defaults to [CrashReportingService.recordError]; tests
@@ -217,7 +222,7 @@ class NotificationRefreshCoordinator {
     String? reason,
   }) {
     unawaited(
-      CrashReportingService.instance.recordError(
+      NotificationRefreshCoordinator.crashReporter.recordError(
         error,
         stackTrace,
         reason: reason,
