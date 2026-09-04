@@ -52,7 +52,18 @@ the stored `rumor_event_json` and republish it verbatim:
 - `DmRepository.recoverSelfWrap` — replays the sender's cross-device copy
 
 Both preserve `id` and `created_at`, so a receiver collapses the retry on its
-rumor-id primary key. This is now locked by
+rumor-id primary key. Every retry entry point routes through them — the
+background sweep, the red-bubble "resend", the partial-delivery self-wrap
+retry, and the inline reel-reply retry — and `outgoing_dm_retry_service.dart`
+contains no rumor-building call at all.
+
+Stated precisely: **Divine never re-mints a rumor it has stored.** Two paths do
+mint a fresh rumor for the same text, and neither is a retry of a stored one:
+`InlineReelReplyCubit.retry` falls back to a fresh `submit` when nothing was
+parked (`inline_reel_reply_cubit.dart:192`), and `sendMessage` skips the
+durable enqueue when no `outgoing_dms` DAO is wired. In both cases there is no
+stored rumor and no wire copy in flight, so no duplicate can result. This is
+now locked by
 `dm_retry_rumor_identity_test.dart`; before that test it was protected only by
 a doc comment, and a refactor that rebuilt the rumor through `buildRumor`
 instead would have silently turned Divine into a source of this defect for
@@ -106,6 +117,36 @@ clients adopt it. Adoption is outside our control. This is why B exists.
 
 Only worth pursuing if A is rejected upstream, or if field evidence shows
 re-minting is common enough that waiting on adoption is unacceptable.
+
+**Divine already ships a tag in this exact position, and it is instructive that
+it cannot be reused.** `sendMessage` and `sendGroupMessage` both inject
+`['batch', <256-bit secure-random hex>]` into the rumor
+(`dm_repository.dart:570`, minted at `:4184` / `:5861`, injected at `:4199` /
+`:5887`), and the receive path parses it at `:2587`. Its own doc comment notes
+that it "travels inside the encrypted rumor" and that "other clients ignore
+unrecognised rumor tags, so it is inert on the wire" — so the extension point
+is proven in production, not hypothetical.
+
+Two properties stop it being the answer, and any correlation design has to
+resolve both:
+
+1. **Wrong polarity.** The token is minted once per *invocation*
+   (`final sendBatchId = _newSendBatchId();`), and its documented purpose is
+   "so two identical sends in the same Unix second produce distinct rumor ids."
+   It is a **uniqueness nonce** — its job is to make two sends *differ*. Retry
+   correlation needs the opposite: a token **stable across re-mints**. Because
+   Divine replays the stored rumor on retry, the existing token has never been
+   exercised as a correlator at all.
+2. **Peer-authored tokens are deliberately refused, with a stated attack.**
+   Ingest honours the tag only when `rumor.pubkey == ownerPubkey`
+   (`dm_repository.dart:2588`), because — quoting the code — "accepting a
+   peer-authored `'batch'` tag would let a sender suppress the local user's own
+   in-flight group persist." Honouring a peer's token is precisely what #6522
+   needs, so **any cross-client correlation contract must answer this
+   suppression vector before it can ship.** This is the strongest argument for
+   preferring A: a contract that says "reuse your own rumor" grants a peer no
+   new power over the receiver's database, whereas any honoured peer-authored
+   token does.
 
 **Wire shape** — a tag inside the kind-14 rumor:
 
@@ -181,3 +222,9 @@ logged.
 ## Recommendation
 
 Adopt A. Specify B and hold it. Do not ship any receiver-side suppression.
+
+A is not merely cheaper than B — it is safer. B requires honouring a token
+authored by the peer, which is the one thing the current ingest path refuses on
+purpose (`dm_repository.dart:2588`); designing that safely is a larger problem
+than the duplicate bubble it would fix. A grants the peer no new authority over
+the receiver's database at all.
