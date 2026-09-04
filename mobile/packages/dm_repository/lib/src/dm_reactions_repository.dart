@@ -113,9 +113,9 @@ class DmReactionRetryTarget {
 /// The state travels with the relays because `null` relays mean two different
 /// things: [DmInboxResolution.absent] (the recipient reads the default pool,
 /// so a pool `OK` is delivery) and [DmInboxResolution.unreadable] (we never
-/// read their inbox, so a pool `OK` proves nothing). The narrower
-/// `DmRepository.resolveDmInboxRelays` flattens both to `null` and must not be
-/// wired here — that flattening is #8443.
+/// read their inbox, so a pool `OK` proves nothing). A resolver that returns
+/// only the relay list would flatten both to `null` and must not be wired here
+/// — that flattening is #8443.
 ///
 /// Contract: **must not throw**. `DmRepository.resolveDmInboxRelaysDetailed`
 /// satisfies this — its whole body is wrapped in `on Object catch`. A resolver

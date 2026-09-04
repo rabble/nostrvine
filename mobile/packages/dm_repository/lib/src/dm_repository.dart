@@ -3532,16 +3532,14 @@ class DmRepository {
   // Send - Text (Kind 14)
   // -------------------------------------------------------------------------
 
-  /// Resolves [pubkey]'s NIP-17 DM inbox relays from their kind-10050
-  /// "DM relays list" event.
+  /// Resolves [pubkey]'s NIP-17 DM inbox relays and reports whether the lookup
+  /// found an inbox, conclusively found none, or could not be completed.
   ///
-  /// Returns the relay URLs the recipient prefers to receive gift-wrapped
-  /// DMs on, or `null` when no kind-10050 event is found (NIP-17: such a
-  /// user "is not ready to receive messages"). Callers route the gift
-  /// wrap to these relays; a `null` result lets the caller fall back to
-  /// the default relay pool so reachability is preserved for recipients
-  /// who have not advertised a DM inbox. Resolution failures degrade to
-  /// `null` rather than throwing, so a relay hiccup never blocks a send.
+  /// The returned relays are the recipient's preferred gift-wrap targets, or
+  /// `null` when the caller must fall back to the default relay pool. The state
+  /// preserves whether that fallback means the recipient advertised no inbox
+  /// or the lookup was unreadable, because those cases route identically but
+  /// carry different delivery evidence (#7317).
   ///
   /// The list is admitted on remote-supplied terms and capped at
   /// [RelayListCaps.dmInbox]: each entry becomes an outbound connection from
@@ -3553,19 +3551,6 @@ class DmRepository {
   /// degrades to the default pool whether the list is absent or unreadable,
   /// and overwrites nothing — so it keeps the cache and the first answer it
   /// gets rather than waiting for full relay settlement (#8212).
-  ///
-  /// Routing only needs the relays, so this signature stays. A caller that
-  /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
-  /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
-  /// #7317. Every publisher that reports delivery now resolves through the
-  /// detailed reader — the 1:1 send and its retry, the reaction fan-out, the
-  /// deletion fan-out, and the group send (#8434) — so this remains as the
-  /// routing-only contract for callers that never score an `OK`.
-  Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
-    return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
-  }
-
-  /// [resolveDmInboxRelays], plus why it returned what it did.
   ///
   /// Callers that route a gift wrap need the relays; callers that also report
   /// delivery need the reason. A `null` list from [DmInboxResolution.absent]
@@ -3659,10 +3644,8 @@ class DmRepository {
   /// Queries [pubkey]'s kind-10050 DM inbox relay list and reports a
   /// found / absent / failed outcome (#4974).
   ///
-  /// Collapsing absent and failed to `null` (as the public
-  /// [resolveDmInboxRelays] does) is safe for anything that only ROUTES —
-  /// both fall back to the default pool either way. Anything that reports
-  /// delivery, or replaces the list it read, must tell them apart: see
+  /// Absent and failed both route through the default pool, but anything that
+  /// reports delivery or replaces the list it read must tell them apart: see
   /// [resolveDmInboxRelaysDetailed] (#7317) and [ensureDmRelayListPublished]
   /// (#8212) respectively.
   ///
@@ -3774,7 +3757,8 @@ class DmRepository {
       // ANOTHER client, and some clients write `r` tags; within a
       // kind-10050 event both unambiguously denote DM inbox relays. Matches
       // divine-web's resolveDmReadRelays. Shared with the send path via
-      // resolveDmInboxRelays, so it also widens recipient resolution there.
+      // resolveDmInboxRelaysDetailed, so it also widens recipient resolution
+      // there.
       final relays = _admitDmRelays(
         [
           for (final tag in matchingEvents.first.tags)
@@ -3794,9 +3778,7 @@ class DmRepository {
       // means the user "is not ready to receive messages"; a read we abandoned
       // says nothing about them. Collapsing the two is #7317, and routing a
       // new timeout into `absent` would make that defect more reachable.
-      // `resolveDmInboxRelays` still flattens both to null, so behaviour here
-      // is unchanged — the distinction is preserved for the caller that needs
-      // it rather than acted on now.
+      // The detailed result preserves that distinction for every caller.
       Log.warning(
         'DM inbox resolution for ${pubkeyForLogs(pubkey)} exceeded '
         '${inboxResolutionBudget.inMilliseconds}ms; treating as unread',

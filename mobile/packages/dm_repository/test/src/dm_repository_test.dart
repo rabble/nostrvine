@@ -4482,7 +4482,10 @@ void main() {
       );
     });
 
-    group('resolveDmInboxRelays', () {
+    group('resolveDmInboxRelaysDetailed routing', () {
+      Future<List<String>?> resolveRelays(DmRepository repository) async =>
+          (await repository.resolveDmInboxRelaysDetailed(_validPubkeyB)).relays;
+
       Event kind10050Event(
         List<String> relays, {
         int createdAt = 1700000000,
@@ -4548,7 +4551,7 @@ void main() {
           final repository = createRepository();
 
           expect(
-            await repository.resolveDmInboxRelays(_validPubkeyB),
+            await resolveRelays(repository),
             isNull,
             reason: 'an unread inbox degrades to the default pool, as today',
           );
@@ -4561,7 +4564,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://inbox.example', 'wss://inbox2.example'],
         );
       });
@@ -4569,13 +4572,13 @@ void main() {
       test('returns null when no kind-10050 event exists', () async {
         // setUp already stubs queryEventsDetailed -> [].
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test('returns null when the event has no relay tags', () async {
         stubQuery([kind10050Event(const [])]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test(
@@ -4593,7 +4596,7 @@ void main() {
             ),
           ]);
           final repository = createRepository();
-          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+          expect(await resolveRelays(repository), isNull);
         },
       );
 
@@ -4603,7 +4606,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://a.example'],
         );
       });
@@ -4620,7 +4623,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+        expect(await resolveRelays(repository), [
           'wss://valid.example',
         ]);
       });
@@ -4648,7 +4651,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+        expect(await resolveRelays(repository), [
           'wss://valid.example',
         ]);
       });
@@ -4660,7 +4663,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        final resolved = await repository.resolveDmInboxRelays(_validPubkeyB);
+        final resolved = await resolveRelays(repository);
 
         expect(resolved, hasLength(RelayListCaps.dmInbox));
         // Deterministic: first-N in tag order, not an arbitrary subset.
@@ -4683,7 +4686,7 @@ void main() {
             ]),
           ]);
           final repository = createRepository();
-          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+          expect(await resolveRelays(repository), isNull);
         },
       );
 
@@ -4694,7 +4697,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://new.example'],
         );
       });
@@ -4702,7 +4705,7 @@ void main() {
       test('queries kind-10050 for the requested author', () async {
         stubQuery(const []);
         final repository = createRepository();
-        await repository.resolveDmInboxRelays(_validPubkeyB);
+        await resolveRelays(repository);
         final captured =
             verify(
                   () => mockNostrClient.queryEventsDetailed(
@@ -4741,7 +4744,7 @@ void main() {
         );
         expect(resolved.relays, isNull);
         expect(resolved.state, DmInboxResolution.unreadable);
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test('accepts both `relay` and `r` tags (#4974 cross-client)', () async {
@@ -4772,7 +4775,7 @@ void main() {
         );
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://relay-tag.example', 'wss://r-tag.example'],
         );
       });
@@ -5932,7 +5935,7 @@ void main() {
             stubOwnInbox(answeredList(const <Event>[]));
 
             final repository = createRepository(syncState: _FakeDmSyncState());
-            await repository.resolveDmInboxRelays(_validPubkeyB);
+            await repository.resolveDmInboxRelaysDetailed(_validPubkeyB);
 
             final captured = verify(
               () => mockNostrClient.queryEventsDetailed(

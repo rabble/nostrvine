@@ -168,9 +168,9 @@ void main() {
       addTearDown(relay.stop);
       final stack = await buildStack(relay);
 
-      final resolved = await stack.repository.resolveDmInboxRelays(
+      final resolved = (await stack.repository.resolveDmInboxRelaysDetailed(
         recipientPubkey,
-      );
+      )).relays;
 
       expect(resolved, hasLength(RelayListCaps.dmInbox));
       // First-N in tag order: the two admitted hosts, then surplus.
@@ -232,7 +232,9 @@ void main() {
       final stack = await buildStack(relay);
 
       expect(
-        await stack.repository.resolveDmInboxRelays(recipientPubkey),
+        (await stack.repository.resolveDmInboxRelaysDetailed(
+          recipientPubkey,
+        )).relays,
         isNull,
       );
 
