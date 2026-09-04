@@ -889,8 +889,11 @@ Future<void> handleUncaughtZoneError(
     return;
   }
 
-  // CrashReportingService.recordError self-guards (no-ops if uninitialized)
-  // and logs its own failure internally, so no outer catch is needed here.
+  // NOTE: recordError returns early when the service is not initialized, and
+  // that early return happens BEFORE its internal Log.error, which sits in the
+  // catch around the Crashlytics call. So on the pre-init path this sink is
+  // silent — there is no local log to fall back on. Tracked in #8616; do not
+  // read the guard as "it logs anyway".
   final record = recordError ?? crashReporting.recordError;
   await record(error, stack, reason: 'runZonedGuarded');
 }
