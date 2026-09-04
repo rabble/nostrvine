@@ -1,5 +1,5 @@
-// ABOUTME: Hosts whose image content is verified-dead at the origin and must
-// ABOUTME: never be requested — the placeholder is the correct render.
+// ABOUTME: Central policy for profile/media image URLs requested by the app.
+// ABOUTME: Requires HTTPS and excludes origins verified dead at the source.
 
 /// Whether [url] points at a host whose content is known to be permanently
 /// unavailable, so no request should ever be attempted.
@@ -12,4 +12,17 @@
 bool isKnownDeadImageHost(String url) {
   final host = Uri.tryParse(url)?.host.toLowerCase();
   return host == 'v.cdn.vine.co';
+}
+
+/// Whether [url] is eligible for a direct image request from the app.
+///
+/// Profile metadata is untrusted. Only HTTPS URLs with an authority are
+/// fetched, and origins known to be permanently unavailable are rejected
+/// before an image provider or cache operation is created.
+bool isUsableNetworkImageUrl(String url) {
+  final uri = Uri.tryParse(url);
+  return uri != null &&
+      uri.scheme.toLowerCase() == 'https' &&
+      uri.hasAuthority &&
+      !isKnownDeadImageHost(url);
 }

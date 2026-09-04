@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
 
@@ -4384,6 +4385,51 @@ void main() {
     });
 
     group('searchUsersProgressive', () {
+      test('logs privacy-safe terminal source diagnostics', () async {
+        await LogCaptureService().clearAllLogs();
+        const privateName = 'Private Search Identity';
+        const privatePicture = 'https://identity.example/avatar.jpg';
+        final cachedProfile = UserProfile(
+          pubkey: testPubkey,
+          displayName: privateName,
+          picture: privatePicture,
+          rawData: const {
+            'display_name': privateName,
+            'picture': privatePicture,
+          },
+          createdAt: DateTime(2026),
+          eventId: testEventId,
+        );
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [cachedProfile]);
+        when(
+          () => mockNostrClient.queryUsers(
+            privateName,
+            limit: 200,
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await profileRepository
+            .searchUsersProgressive(query: privateName)
+            .toList();
+
+        final messages = LogCaptureService()
+            .getRecentLogs()
+            .map((entry) => entry.message)
+            .toList();
+        final summary = messages.singleWhere(
+          (message) => message.startsWith('Search summary:'),
+        );
+        expect(summary, contains('total=1'));
+        expect(summary, contains('local=success(count=1,latencyMs='));
+        expect(summary, contains('api=skipped'));
+        expect(summary, contains('relay=success(count=0,latencyMs='));
+        expect(messages.join('\n'), isNot(contains(privateName)));
+        expect(messages.join('\n'), isNot(contains(privatePicture)));
+      });
+
       test('returns empty stream for empty query', () async {
         final results = await profileRepository
             .searchUsersProgressive(query: '')

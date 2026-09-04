@@ -228,6 +228,13 @@ class BugReportConfig {
       r'\b[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
       caseSensitive: false,
     ),
+    // Root NIP-05 identifiers (`_@domain`) are displayed as a bare domain.
+    // That display form remains identity-linked data and must not escape into
+    // a support artifact beside the reporter pubkey.
+    RegExp(
+      r'(?<![A-Z0-9._%+-])@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
+      caseSensitive: false,
+    ),
     // Filesystem paths rooted at a user or app-sandbox directory. See
     // [_filesystemPathRoot]. Quote-specific rules run first so a quoted path
     // with a spaced basename is redacted whole before the unquoted rule can

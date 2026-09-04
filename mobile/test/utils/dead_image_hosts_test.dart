@@ -41,4 +41,29 @@ void main() {
       expect(isKnownDeadImageHost(''), isFalse);
     });
   });
+
+  group(isUsableNetworkImageUrl, () {
+    test('accepts HTTPS URLs with an authority', () {
+      expect(
+        isUsableNetworkImageUrl('https://images.example/avatar.jpg'),
+        isTrue,
+      );
+      expect(
+        isUsableNetworkImageUrl('HTTPS://images.example/avatar.jpg'),
+        isTrue,
+      );
+    });
+
+    test('rejects insecure, malformed, and known-dead URLs', () {
+      expect(
+        isUsableNetworkImageUrl('http://images.example/avatar.jpg'),
+        isFalse,
+      );
+      expect(isUsableNetworkImageUrl('not a url'), isFalse);
+      expect(
+        isUsableNetworkImageUrl('https://v.cdn.vine.co/avatar.jpg'),
+        isFalse,
+      );
+    });
+  });
 }

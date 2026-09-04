@@ -158,6 +158,24 @@ void main() {
       );
     });
 
+    testWidgets('skips insecure pending avatar URLs in the preview', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: 'http://images.example/staged.jpg',
+        ),
+      );
+
+      await pump(tester);
+
+      expect(
+        tester.widget<UserAvatar>(find.byType(UserAvatar)).imageProvider,
+        isNull,
+      );
+    });
+
     testWidgets('skips dead persisted avatar URLs in the preview', (
       tester,
     ) async {

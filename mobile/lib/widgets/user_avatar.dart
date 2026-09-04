@@ -132,7 +132,7 @@ class UserAvatar extends StatelessWidget {
   bool get _hasNetworkImage =>
       imageUrl != null &&
       imageUrl!.isNotEmpty &&
-      !isKnownDeadImageHost(imageUrl!);
+      isUsableNetworkImageUrl(imageUrl!);
 
   bool get _isSvgImageUrl => isSvgImageUrl(imageUrl);
 
@@ -210,12 +210,12 @@ class UserAvatar extends StatelessWidget {
 
           if (failureKind == AvatarFailureKind.deterministic) {
             UnifiedLogger.warning(
-              '🖼️ Invalid image data for avatar URL: $url - Error: $error',
+              'Avatar image data was invalid; showing placeholder',
               name: 'UserAvatar',
             );
           } else {
             UnifiedLogger.debug(
-              'Avatar image failed to load URL: $url - Error: $error',
+              'Avatar image request failed; showing placeholder',
               name: 'UserAvatar',
             );
           }
@@ -257,7 +257,7 @@ class _AvatarSvgContent extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               UnifiedLogger.debug(
-                'Avatar SVG failed to render URL: $imageUrl - Error: $error',
+                'Avatar SVG failed to render; showing placeholder',
                 name: 'UserAvatar',
               );
               AvatarFailureCache.instance.recordFailureForError(
