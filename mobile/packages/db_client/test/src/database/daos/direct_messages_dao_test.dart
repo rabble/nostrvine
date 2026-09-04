@@ -407,6 +407,35 @@ void main() {
         expect(visible, hasLength(1));
         expect(visible.first.ownerPubkey, isEmpty);
       });
+
+      test('an owned message shadows its legacy copy', () async {
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'legacy copy',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_legacy',
+        );
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'owned copy',
+          createdAt: 1700000001,
+          giftWrapId: 'wrap_owned',
+          ownerPubkey: ownerA,
+        );
+
+        final single = await dao.getMessageById(rumorId, ownerPubkey: ownerA);
+        final listed = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+
+        expect(single!.content, 'owned copy');
+        expect(listed.map((row) => row.content), ['owned copy']);
+      });
     });
 
     group('getMessagesForConversation', () {
@@ -1430,34 +1459,31 @@ void main() {
         expect(rendered.map((m) => m.content).toSet(), {text});
       });
 
-      test(
-        'a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
-        'mirrored onto the legacy protocol)',
-        () async {
-          await dao.insertMessage(
-            id: 'ev_nip04_first',
+      test('a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
+          'mirrored onto the legacy protocol)', () async {
+        await dao.insertMessage(
+          id: 'ev_nip04_first',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'ev_nip04_first',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(
+          await dao.hasMatchingMessage(
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'ok',
-            createdAt: 1700000000,
-            giftWrapId: 'ev_nip04_first',
+            createdAt: 1700000002,
             ownerPubkey: 'pubkey_owner',
-          );
-
-          expect(
-            await dao.hasMatchingMessage(
-              conversationId: conversationId1,
-              senderPubkey: 'pubkey_peer',
-              content: 'ok',
-              createdAt: 1700000002,
-              ownerPubkey: 'pubkey_owner',
-              counterpart: DmDedupCounterpart.nip17Copy,
-            ),
-            isFalse,
-            reason: 'a second kind-4 two seconds later is a genuine repeat',
-          );
-        },
-      );
+            counterpart: DmDedupCounterpart.nip17Copy,
+          ),
+          isFalse,
+          reason: 'a second kind-4 two seconds later is a genuine repeat',
+        );
+      });
 
       test('unconstrained matches either arrival shape', () async {
         await dao.insertMessage(
@@ -1606,6 +1632,46 @@ void main() {
         );
 
         expect(claimed, isFalse);
+      });
+
+      test('claiming one owner does not spend another owner copy', () async {
+        for (final (owner, wrap) in [
+          ('pubkey_owner_a', 'wrap_owner_a'),
+          ('pubkey_owner_b', 'wrap_owner_b'),
+        ]) {
+          await dao.insertMessage(
+            id: 'shared_rumor',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000000,
+            giftWrapId: wrap,
+            ownerPubkey: owner,
+          );
+        }
+
+        expect(
+          await dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000001,
+            counterpart: DmDedupCounterpart.nip17Copy,
+            ownerPubkey: 'pubkey_owner_a',
+          ),
+          isTrue,
+        );
+
+        final ownerA = await dao.getMessageById(
+          'shared_rumor',
+          ownerPubkey: 'pubkey_owner_a',
+        );
+        final ownerB = await dao.getMessageById(
+          'shared_rumor',
+          ownerPubkey: 'pubkey_owner_b',
+        );
+        expect(ownerA!.twinCollapsed, isTrue);
+        expect(ownerB!.twinCollapsed, isFalse);
       });
 
       test('still claims a soft-deleted twin', () async {

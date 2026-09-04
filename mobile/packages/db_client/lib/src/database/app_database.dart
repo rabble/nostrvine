@@ -238,7 +238,7 @@ class AppDatabase extends _$AppDatabase {
   /// second account's upsert took the row and the thread vanished from the
   /// first account's inbox.
   ///
-  /// Three steps, in this order, and idempotent throughout:
+  /// Two steps, in this order, and idempotent throughout:
   ///
   /// 1. Backfill `NULL` owners to `''`. This must precede the rebuild, because
   ///    the new column is NOT NULL. `''` is not a new concept — the
@@ -249,16 +249,11 @@ class AppDatabase extends _$AppDatabase {
   /// 2. Rebuild both tables so the new composite primary key takes effect, then
   ///    recreate their indexes — SQLite's table-rebuild drops them with the old
   ///    table, and these are declared outside Drift's own index handling.
-  /// 3. Drop processed-wrap ledger rows that never produced a message. That set
-  ///    is exactly what the old key stranded: the inbound path recorded a wrap
-  ///    as terminally processed when the insert was ignored, and
-  ///    `_alreadyProcessed` consults the ledger *before* paying a decrypt, so
-  ///    those wraps would be skipped by every future history drain. Clearing
-  ///    them, together with the `DmSyncState.currentDrainVersion` bump that
-  ///    ships with this migration, is what makes the loss recoverable; either
-  ///    half alone recovers nothing. Wraps that did produce a message stay
-  ///    deduped by `DirectMessagesDao.hasGiftWrap`, so the re-decrypt cost is
-  ///    bounded to the wraps we actually want back.
+  /// Processed-wrap ledger rows are deliberately preserved. An unmatched row
+  /// can represent a reaction, deletion, unsupported kind, tombstone-suppressed
+  /// event, or collapsed protocol twin; v11 stored no outcome that would let a
+  /// migration distinguish those legitimate terminal results from a stranded
+  /// message. Absence of a message row is therefore not recovery evidence.
   Future<void> _migrateToV12OwnerScopedDmKeys([Migrator? migrator]) async {
     final m = migrator ?? createMigrator();
 
@@ -309,11 +304,6 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey '
       'ON conversations (owner_pubkey)',
-    );
-
-    await customStatement(
-      'DELETE FROM processed_gift_wraps WHERE gift_wrap_id NOT IN '
-      '(SELECT gift_wrap_id FROM direct_messages)',
     );
   }
 

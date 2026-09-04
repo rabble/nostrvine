@@ -70,16 +70,10 @@ class DmSyncState {
   /// [upgradeDrainVersionIfNeeded]: on its own it re-reads history below
   /// [oldestSyncedAt], recovers nothing, and re-latches completion off the
   /// resulting empty page — spending the recovery pass it exists to provide.
-  /// Bumped to 6 for #6645: the DM message and conversation keys were global,
-  /// so on a device holding two local accounts in one NIP-17 room the second
-  /// account's copy of a shared rumor could not be stored — and the inbound
-  /// path then recorded its gift wrap as terminally processed. That ledger row
-  /// is read by `_alreadyProcessed` *before* a decrypt is paid, so the wrap was
-  /// invisible to every later drain. The v12 migration deletes the ledger rows
-  /// that never produced a message; this bump is the other half, re-running the
-  /// drain once so those wraps are fetched again. Neither half recovers
-  /// anything on its own.
-  static const int currentDrainVersion = 6;
+  /// The owner-scoped DM key migration deliberately does not bump this value:
+  /// the processed-wrap ledger records no outcome, so a forced replay could not
+  /// distinguish a stranded message from a legitimate no-message result.
+  static const int currentDrainVersion = 5;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
   /// `created_at` before callers should stop treating it as an honest send

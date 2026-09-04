@@ -27,20 +27,30 @@ CASE
 END
 ''';
 
-  /// Build a filter expression that returns rows owned by [ownerPubkey]
-  /// **or** legacy rows with no owner.
+  /// Returns the account's row, falling back to an unattributed legacy row.
   ///
   /// A legacy row is `''` after the v12 migration and `NULL` before it. Both
   /// arms are kept: the delete side (`clearForAccountSwitch`, `clearUnowned`)
   /// has always matched on either, and an older binary writing `NULL` between
   /// an upgrade and the migration must stay readable. Testing only `IS NULL`
   /// would make every backfilled row invisible to its own account (#6645).
-  Expression<bool> _ownedOrLegacy(
-    GeneratedColumn<String> column,
+  Expression<bool> _visibleToOwner(
+    $ConversationsTable row,
     String? ownerPubkey,
   ) {
     if (ownerPubkey == null) return const Constant(true);
-    return column.equals(ownerPubkey) | column.equals('') | column.isNull();
+    final exactOwner = row.ownerPubkey.equals(ownerPubkey);
+    final legacy = row.ownerPubkey.equals('') | row.ownerPubkey.isNull();
+    final ownedCopy = conversations.createAlias('owned_conversation');
+    final exactCopyExists = existsQuery(
+      selectOnly(ownedCopy)
+        ..addColumns([ownedCopy.id])
+        ..where(
+          ownedCopy.id.equalsExp(row.id) &
+              ownedCopy.ownerPubkey.equals(ownerPubkey),
+        ),
+    );
+    return exactOwner | (legacy & exactCopyExists.not());
   }
 
   /// Upsert a conversation (create or update last-message metadata).
@@ -163,7 +173,7 @@ END
     String? ownerPubkey,
   }) {
     final query = select(conversations)
-      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
+      ..where((t) => _visibleToOwner(t, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -181,7 +191,7 @@ END
     String? ownerPubkey,
   }) {
     final query = select(conversations)
-      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
+      ..where((t) => _visibleToOwner(t, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastMessageTimestamp,
@@ -204,8 +214,7 @@ END
     final query = select(conversations)
       ..where(
         (t) =>
-            t.currentUserHasSent.equals(true) &
-            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            t.currentUserHasSent.equals(true) & _visibleToOwner(t, ownerPubkey),
       )
       ..orderBy([
         (t) => OrderingTerm(
@@ -230,7 +239,7 @@ END
       ..where(
         (t) =>
             t.currentUserHasSent.equals(false) &
-            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            _visibleToOwner(t, ownerPubkey),
       )
       ..orderBy([
         (t) => OrderingTerm(
@@ -246,7 +255,7 @@ END
     final query = selectOnly(conversations)
       ..where(
         conversations.currentUserHasSent.equals(false) &
-            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+            _visibleToOwner(conversations, ownerPubkey),
       )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
@@ -257,7 +266,7 @@ END
   /// Get a single conversation by ID.
   Future<ConversationRow?> getConversation(String id, {String? ownerPubkey}) {
     return (select(conversations)..where(
-          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.equals(id) & _visibleToOwner(t, ownerPubkey),
         ))
         .getSingleOrNull();
   }
@@ -265,7 +274,7 @@ END
   /// Watch a single conversation by ID.
   Stream<ConversationRow?> watchConversation(String id, {String? ownerPubkey}) {
     return (select(conversations)..where(
-          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.equals(id) & _visibleToOwner(t, ownerPubkey),
         ))
         .watchSingleOrNull();
   }
@@ -348,7 +357,7 @@ END
     return rows > 0;
   }
 
-  /// Owner filter as a raw-SQL fragment matching [_ownedOrLegacy]: empty when
+  /// Owner filter for raw SQL retained by legacy repair queries: empty when
   /// [ownerPubkey] is null (all rows), else owner-or-legacy.
   String _ownerSqlClause(String? ownerPubkey) => ownerPubkey == null
       ? ''
@@ -386,7 +395,7 @@ END
     final query = selectOnly(conversations)
       ..where(
         conversations.isRead.equals(false) &
-            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+            _visibleToOwner(conversations, ownerPubkey),
       )
       ..addColumns([conversations.id.count()]);
     final result = await query.getSingle();
@@ -398,7 +407,7 @@ END
     final query = selectOnly(conversations)
       ..where(
         conversations.isRead.equals(false) &
-            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+            _visibleToOwner(conversations, ownerPubkey),
       )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
@@ -416,7 +425,7 @@ END
       ..where(
         conversations.isRead.equals(false) &
             conversations.currentUserHasSent.equals(true) &
-            _ownedOrLegacy(conversations.ownerPubkey, ownerPubkey),
+            _visibleToOwner(conversations, ownerPubkey),
       )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
@@ -450,7 +459,7 @@ END
   /// Delete a conversation by ID.
   Future<int> deleteConversation(String id, {String? ownerPubkey}) {
     return (delete(conversations)..where(
-          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.equals(id) & _visibleToOwner(t, ownerPubkey),
         ))
         .go();
   }
@@ -459,7 +468,7 @@ END
   Future<int> deleteMultiple(List<String> ids, {String? ownerPubkey}) {
     if (ids.isEmpty) return Future.value(0);
     return (delete(conversations)..where(
-          (t) => t.id.isIn(ids) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+          (t) => t.id.isIn(ids) & _visibleToOwner(t, ownerPubkey),
         ))
         .go();
   }

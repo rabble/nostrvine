@@ -419,55 +419,50 @@ void main() {
       },
     );
 
-    test(
-      'v12 backfills a NULL DM owner to the legacy sentinel and keeps the '
-      'row readable',
-      () async {
-        // The column becomes NOT NULL because SQLite compares NULLs as
-        // distinct inside a unique constraint, so a nullable owner in the key
-        // would stop two legacy rows sharing a rumor id from collapsing.
-        // `''` is the sentinel the account-switch deletes already used. See
-        // #6645.
-        await verifier.testWithDataIntegrity(
-          oldVersion: 11,
-          newVersion: 12,
-          createOld: v11.DatabaseAtV11.new,
-          createNew: v12.DatabaseAtV12.new,
-          openTestedDatabase: AppDatabase.new,
-          createItems: (batch, oldDb) {
-            batch.insert(
-              oldDb.directMessages,
-              v11.DirectMessagesCompanion.insert(
-                id: 'c' * 64,
-                conversationId: 'd' * 64,
-                senderPubkey: 'a' * 64,
-                content: 'a message that predates owner scoping',
-                createdAt: 1700000000,
-                giftWrapId: '9' * 64,
-              ),
-            );
-            batch.insert(
-              oldDb.conversations,
-              v11.ConversationsCompanion.insert(
-                id: 'd' * 64,
-                participantPubkeys: '["' + 'a' * 64 + '"]',
-                createdAt: 1700000000,
-              ),
-            );
-          },
-          validateItems: (newDb) async {
-            final message = await newDb
-                .select(newDb.directMessages)
-                .getSingle();
-            expect(message.ownerPubkey, isEmpty);
-            final conversation = await newDb
-                .select(newDb.conversations)
-                .getSingle();
-            expect(conversation.ownerPubkey, isEmpty);
-          },
-        );
-      },
-    );
+    test('v12 backfills a NULL DM owner to the legacy sentinel and keeps the '
+        'row readable', () async {
+      // The column becomes NOT NULL because SQLite compares NULLs as
+      // distinct inside a unique constraint, so a nullable owner in the key
+      // would stop two legacy rows sharing a rumor id from collapsing.
+      // `''` is the sentinel the account-switch deletes already used. See
+      // #6645.
+      await verifier.testWithDataIntegrity(
+        oldVersion: 11,
+        newVersion: 12,
+        createOld: v11.DatabaseAtV11.new,
+        createNew: v12.DatabaseAtV12.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insert(
+            oldDb.directMessages,
+            v11.DirectMessagesCompanion.insert(
+              id: 'c' * 64,
+              conversationId: 'd' * 64,
+              senderPubkey: 'a' * 64,
+              content: 'a message that predates owner scoping',
+              createdAt: 1700000000,
+              giftWrapId: '9' * 64,
+            ),
+          );
+          batch.insert(
+            oldDb.conversations,
+            v11.ConversationsCompanion.insert(
+              id: 'd' * 64,
+              participantPubkeys: '["' + 'a' * 64 + '"]',
+              createdAt: 1700000000,
+            ),
+          );
+        },
+        validateItems: (newDb) async {
+          final message = await newDb.select(newDb.directMessages).getSingle();
+          expect(message.ownerPubkey, isEmpty);
+          final conversation = await newDb
+              .select(newDb.conversations)
+              .getSingle();
+          expect(conversation.ownerPubkey, isEmpty);
+        },
+      );
+    });
 
     test('v12 keeps the DM indexes the table rebuild drops', () async {
       // SQLite's table rebuild takes the old table's indexes with it, and
@@ -498,14 +493,12 @@ void main() {
     });
 
     test(
-      'v12 drops ledger rows that never produced a message and keeps the rest',
+      'v12 preserves ledger rows without guessing their processing outcome',
       () async {
-        // The stranded set: the inbound path recorded a wrap as terminally
-        // processed when its insert was ignored, and `_alreadyProcessed` reads
-        // that ledger before paying a decrypt — so the wrap was invisible to
-        // every later drain. Wraps that did produce a message keep being
-        // deduplicated by `hasGiftWrap`, so dropping their ledger row costs
-        // nothing. #6645.
+        // An unmatched ledger row can be a reaction, deletion, unsupported
+        // kind, tombstone-suppressed event, or collapsed protocol twin. The v11
+        // schema records no outcome, so v12 must preserve it rather than infer
+        // that it represents a stranded message. #6645.
         await verifier.testWithDataIntegrity(
           oldVersion: 11,
           newVersion: 12,
@@ -546,9 +539,9 @@ void main() {
             final ledgered = rows.map((row) => row.giftWrapId).toSet();
             expect(
               ledgered,
-              isNot(contains('lost' * 16)),
+              containsAll(['kept' * 16, 'lost' * 16]),
               reason:
-                  'a wrap that persisted nothing must become drainable again',
+                  'absence of a message row is not evidence of failed ingest',
             );
           },
         );

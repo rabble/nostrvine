@@ -166,33 +166,34 @@ B is defensible but makes the key invisible at the declaration site and removes
 a declared primary key for no gain over A once the backfill is written.
 Approaches C and D each fix one invariant by breaking another.
 
-**Recovery** (the issue's third acceptance criterion): the v12 migration
-deletes `processed_gift_wraps` rows whose `gift_wrap_id` has no matching
-`direct_messages` row — precisely the "ledgered but nothing persisted" set —
-and `DmSyncState.currentDrainVersion` goes 5 → 6 so every account re-drains
-from now. Wraps that *did* persist stay deduped by
-`DirectMessagesDao.hasGiftWrap`, so the re-decrypt cost is bounded to the wraps
-we actually want back. A drain bump on its own recovers nothing, because
-`_alreadyProcessed` reads the ledger before paying a decrypt.
+**Recovery:** v12 preserves `processed_gift_wraps` and does not force a history
+re-drain. The v11 ledger records that a wrap reached a terminal outcome, but not
+which outcome: an unmatched row can be a reaction, deletion, unsupported kind,
+tombstone-suppressed event, collapsed cross-protocol twin, or a message whose
+insert was stranded by the old key. A migration cannot distinguish those cases
+from the absence of a `direct_messages` row, so deleting unmatched entries would
+guess that valid terminal decisions were failures. Historical recovery needs
+positive outcome provenance; this migration fixes future persistence without
+destroying evidence that prevents duplicate processing.
 
 ## Open Questions for /plan
 
 - [x] Composite PK vs expression index — **A**, confirmed.
 - [x] Include `conversations` — **yes**, same PR.
-- [x] Recovery shape — ledger surgery scoped to unmatched wraps + drain bump.
+- [x] Recovery shape — preserve the outcome-ambiguous ledger; no drain bump.
 - [x] The `signOut` trigger (`auth_service.dart:3199` / `:3397`) — reported,
       not fixed here.
-- [ ] Does `idx_dm_gift_wrap_id` stay globally unique, or become
+- [x] Does `idx_dm_gift_wrap_id` stay globally unique, or become
       `(gift_wrap_id, owner_pubkey)`? Global is currently correct because a
       wrap has one recipient; leaving it alone is the smaller diff.
-- [ ] Does `processed_gift_wraps` need an owner-scoped key, or is its global
+- [x] Does `processed_gift_wraps` need an owner-scoped key, or is its global
       key still right for the same reason?
-- [ ] Do `hasGiftWrap` / `giftWrapIdsPresent` stay global once the message key
+- [x] Do `hasGiftWrap` / `giftWrapIdsPresent` stay global once the message key
       is owner-scoped?
 
 ## Prerequisites
 
-- [ ] Regenerate the drift schema snapshot (`drift_schemas/app_database/drift_schema_v12.json`)
+- [x] Regenerate the drift schema snapshot (`drift_schemas/app_database/drift_schema_v12.json`)
       and the migration-test helper (`test/drift/app_database/generated/schema_v12.dart`).
 
 ## Next Step
