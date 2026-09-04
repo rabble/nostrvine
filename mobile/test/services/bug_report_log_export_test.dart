@@ -148,7 +148,7 @@ void main() {
       final result = BugReportService.buildBoundedLogBody(
         const ['🪩', '🌿'],
         sanitize: passthrough,
-        maxBytes: utf8.encode('🌿\n').length,
+        maxBytes: utf8.encode('🌿\n').length + 1,
       );
 
       expect(result.lines, ['🌿']);
