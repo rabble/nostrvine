@@ -126,7 +126,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     var trackedFirst = false;
     var latestUnfilteredCount = 0;
     int? nextRestOffset;
-    bool? restHasMore;
+    var restHasMore = false;
     var latestSourceOutcomes = _pendingSourceOutcomes();
     // Snapshot of sources whose terminal status has already been
     // forwarded to feedTracker — prevents duplicate events when a
@@ -217,7 +217,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         state.copyWith(
           status: UserSearchStatus.success,
           offset: nextRestOffset ?? latestUnfilteredCount,
-          hasMore: restHasMore ?? latestUnfilteredCount == _pageSize,
+          hasMore: restHasMore,
           isLoadingMore: false,
         ),
       );
@@ -314,7 +314,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         state.copyWith(
           results: allResults,
           offset: result.nextRestOffset ?? state.offset + unfilteredPageCount,
-          hasMore: result.restHasMore ?? unfilteredPageCount == _pageSize,
+          hasMore: result.restHasMore,
           isLoadingMore: false,
         ),
       );

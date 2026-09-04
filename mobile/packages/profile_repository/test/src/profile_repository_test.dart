@@ -4582,7 +4582,7 @@ void main() {
       });
 
       test(
-        'applies search and block filters to bounded local candidates',
+        'applies search and block filters once to bounded local candidates',
         () async {
           final included = UserProfile(
             pubkey: testPubkey,

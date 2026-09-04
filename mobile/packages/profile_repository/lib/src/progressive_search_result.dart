@@ -110,7 +110,7 @@ class ProgressiveSearchResult {
     required this.sources,
     required this.isComplete,
     this.nextRestOffset,
-    this.restHasMore,
+    this.restHasMore = false,
   });
 
   /// Accumulated, deduplicated, filter+boost-applied profile list.
@@ -129,5 +129,5 @@ class ProgressiveSearchResult {
   final int? nextRestOffset;
 
   /// Whether Funnelcake may have another page.
-  final bool? restHasMore;
+  final bool restHasMore;
 }

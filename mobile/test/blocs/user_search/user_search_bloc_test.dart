@@ -91,12 +91,14 @@ void main() {
       List<UserProfile> profiles, {
       Map<SearchSource, SearchSourceStatus>? sources,
       bool isComplete = true,
+      bool restHasMore = false,
     }) {
       return Stream.value(
         ProgressiveSearchResult(
           profiles: profiles,
           sources: sources ?? const {},
           isComplete: isComplete,
+          restHasMore: restHasMore,
         ),
       );
     }
@@ -234,7 +236,9 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => progressive(createTestProfiles(50)));
+          ).thenAnswer(
+            (_) => progressive(createTestProfiles(50), restHasMore: true),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
@@ -752,7 +756,9 @@ void main() {
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) => progressive(createTestProfiles(50)));
+          ).thenAnswer(
+            (_) => progressive(createTestProfiles(50), restHasMore: true),
+          );
         },
         build: createBloc,
         seed: () => UserSearchState(

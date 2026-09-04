@@ -293,12 +293,7 @@ class ProfileRepository implements ProfileReader {
       return searchUsersLocally(query: query, limit: limit);
     }
     final candidates = await localSearch(_localSearchTerm(query), limit);
-    final filtered =
-        _profileSearchFilter?.call(query, candidates) ?? candidates;
-    final blockFilter = _blockFilter;
-    return blockFilter == null
-        ? filtered
-        : filtered.where((profile) => !blockFilter(profile.pubkey)).toList();
+    return _profileSearchFilter?.call(query, candidates) ?? candidates;
   }
 
   /// Translates a full `npub` query into the hex form the bounded local
