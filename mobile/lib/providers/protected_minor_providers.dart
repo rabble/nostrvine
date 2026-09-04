@@ -146,10 +146,10 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
 /// account. Returns `true` only for OAuth-authenticated accounts and for
 /// accounts that have previously been marked as Keycast-custodial.
 ///
-/// The #176 DM restriction uses this to distinguish accounts that may have
-/// an unknown verdict from Keycast (and must fail closed) from pure
-/// self-custody accounts that Keycast can never produce a verdict for (and
-/// must not be permanently restricted by an unanswerable check).
+/// The #182 key-management restriction uses this to distinguish accounts that
+/// may have an unknown verdict from Keycast (and must fail closed) from pure
+/// self-custody accounts that Keycast can never produce a verdict for (and must
+/// not be permanently restricted by an unanswerable check).
 final keycastSignalApplicableProvider = Provider<bool>((ref) {
   // AuthService mutates its pubkey and auth-source fields in place, so watch
   // the auth state so applicability recomputes across the current account-swap
@@ -161,20 +161,21 @@ final keycastSignalApplicableProvider = Provider<bool>((ref) {
   final authSource = authService.authenticationSource;
   final store = ref.watch(protectedMinorStickyStoreProvider);
 
-  // OAuth accounts can receive a Keycast verdict; fail closed on unknown.
+  // OAuth accounts can receive a Keycast verdict, so key management fails
+  // closed on unknown.
   if (authSource == AuthenticationSource.divineOAuth) {
     return true;
   }
 
-  // Self-custody accounts that were previously seen by Keycast must stay
-  // fail-closed, since a pubkey can flip between auth sources on the same
-  // device.
+  // Key management stays fail-closed for self-custody accounts that were
+  // previously seen by Keycast, since a pubkey can flip between auth sources
+  // on the same device.
   if (pubkey != null && store.wasKeycastAccountFor(pubkey)) {
     return true;
   }
 
   // Keep this exhaustive so every new auth source requires an explicit
-  // fail-direction decision at this child-safety boundary.
+  // key-management fail-direction decision at this child-safety boundary.
   return switch (authSource) {
     AuthenticationSource.divineOAuth => true,
     AuthenticationSource.none ||
