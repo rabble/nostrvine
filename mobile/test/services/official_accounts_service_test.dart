@@ -11,8 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockResolver extends Mock implements Nip05Resolver {}
 
 void main() {
-  const hqHex =
-      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
   const modHex =
       '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
   const strangerHex =
@@ -39,7 +37,7 @@ void main() {
         accounts: accounts,
       );
 
-  const hqNip05 = '_@divinehq.divine.video';
+  const modNip05 = 'moderation@divine.video';
 
   group('isApprovedMinorDmRecipient', () {
     test('unpinned pubkey is never an approved recipient', () async {
@@ -56,64 +54,72 @@ void main() {
         final svc = build(
           accounts: const [
             OfficialAccount(
-              pubkeyHex: hqHex,
-              nip05: hqNip05,
-              role: 'hq',
+              pubkeyHex: modHex,
+              nip05: modNip05,
+              role: 'moderation',
               minorContactable: false,
             ),
           ],
         );
-        expect(svc.isPinnedMinorContactable(hqHex), isFalse);
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+        expect(svc.isPinnedMinorContactable(modHex), isFalse);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
         verifyNever(() => resolver.resolve(any(), any()));
       },
     );
 
+    test('Divine HQ is not an approved minor DM recipient', () async {
+      final svc = build();
+
+      expect(svc.isPinnedMinorContactable(kHqPubkeyHex), isFalse);
+      expect(await svc.isApprovedMinorDmRecipient(kHqPubkeyHex), isFalse);
+      verifyNever(() => resolver.resolve(any(), any()));
+    });
+
     test('pinned + NIP-05 matches -> approved', () async {
       when(
-        () => resolver.resolve(hqNip05, hqHex),
-      ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+        () => resolver.resolve(modNip05, modHex),
+      ).thenAnswer((_) async => const Nip05Resolution.matched(modHex));
 
       final svc = build();
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
     });
 
     test(
       'pinned but NIP-05 resolves to a DIFFERENT key -> dropped immediately and persisted',
       () async {
-        when(() => resolver.resolve(hqNip05, hqHex)).thenAnswer(
+        when(() => resolver.resolve(modNip05, modHex)).thenAnswer(
           (_) async => const Nip05Resolution.differentKey(attackerHex),
         );
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
         // persisted revoked: the sync hot path now rejects without re-resolving
-        expect(svc.isApprovedMinorDmRecipientSync(hqHex), isFalse);
+        expect(svc.isApprovedMinorDmRecipientSync(modHex), isFalse);
       },
     );
 
     test('a single absence never drops (keeps last-known approved)', () async {
       when(
-        () => resolver.resolve(hqNip05, hqHex),
+        () => resolver.resolve(modNip05, modHex),
       ).thenAnswer((_) async => const Nip05Resolution.absent());
 
       final svc = build();
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-      expect(svc.isApprovedMinorDmRecipientSync(hqHex), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+      expect(svc.isApprovedMinorDmRecipientSync(modHex), isTrue);
     });
 
     test(
       'absence within the recheck window does not re-resolve or drop',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
+          () => resolver.resolve(modNip05, modHex),
         ).thenAnswer((_) async => const Nip05Resolution.absent());
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
         clock = clock.add(const Duration(minutes: 2));
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-        verify(() => resolver.resolve(hqNip05, hqHex)).called(1);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+        verify(() => resolver.resolve(modNip05, modHex)).called(1);
       },
     );
 
@@ -121,32 +127,32 @@ void main() {
       'a confirming absence after the recheck window drops and persists',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
+          () => resolver.resolve(modNip05, modHex),
         ).thenAnswer((_) async => const Nip05Resolution.absent());
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
         clock = clock.add(const Duration(minutes: 6));
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
-        expect(svc.isApprovedMinorDmRecipientSync(hqHex), isFalse);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
+        expect(svc.isApprovedMinorDmRecipientSync(modHex), isFalse);
       },
     );
 
     test('absence recovers if a later resolution matches again', () async {
       final answers = <Nip05Resolution>[
         const Nip05Resolution.absent(),
-        const Nip05Resolution.matched(hqHex),
+        const Nip05Resolution.matched(modHex),
       ];
       var i = 0;
       when(
-        () => resolver.resolve(hqNip05, hqHex),
+        () => resolver.resolve(modNip05, modHex),
       ).thenAnswer((_) async => answers[i++]);
 
       final svc = build();
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
       clock = clock.add(const Duration(minutes: 6));
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-      expect(svc.isApprovedMinorDmRecipientSync(hqHex), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+      expect(svc.isApprovedMinorDmRecipientSync(modHex), isTrue);
     });
 
     test('networkError keeps a previously revoked verdict', () async {
@@ -156,59 +162,59 @@ void main() {
       ];
       var i = 0;
       when(
-        () => resolver.resolve(hqNip05, hqHex),
+        () => resolver.resolve(modNip05, modHex),
       ).thenAnswer((_) async => answers[i++]);
 
       final svc = build();
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
       clock = clock.add(const Duration(hours: 2));
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
     });
 
     test(
       'networkError with no record defaults to pin-trusted and retries',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
+          () => resolver.resolve(modNip05, modHex),
         ).thenAnswer((_) async => const Nip05Resolution.networkError());
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
         // nothing cached -> the next call resolves again rather than trusting a non-answer
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-        verify(() => resolver.resolve(hqNip05, hqHex)).called(2);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+        verify(() => resolver.resolve(modNip05, modHex)).called(2);
       },
     );
 
     test('a fresh verdict is reused without re-resolving (TTL)', () async {
       when(
-        () => resolver.resolve(hqNip05, hqHex),
-      ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+        () => resolver.resolve(modNip05, modHex),
+      ).thenAnswer((_) async => const Nip05Resolution.matched(modHex));
 
       final svc = build();
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
       clock = clock.add(const Duration(minutes: 30));
-      expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-      verify(() => resolver.resolve(hqNip05, hqHex)).called(1);
+      expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+      verify(() => resolver.resolve(modNip05, modHex)).called(1);
     });
 
     test(
       'a stale verdict triggers a fresh resolution (send-time freshness)',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
-        ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+          () => resolver.resolve(modNip05, modHex),
+        ).thenAnswer((_) async => const Nip05Resolution.matched(modHex));
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
         clock = clock.add(const Duration(hours: 2));
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-        verify(() => resolver.resolve(hqNip05, hqHex)).called(2);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+        verify(() => resolver.resolve(modNip05, modHex)).called(2);
       },
     );
 
     test(
-      'moderation account is independently approved (both pins live)',
+      'moderation account is approved by the shipped policy',
       () async {
         when(
           () => resolver.resolve('moderation@divine.video', modHex),
@@ -224,11 +230,11 @@ void main() {
       'caller hex is normalized (mixed-case + surrounding whitespace)',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
-        ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+          () => resolver.resolve(modNip05, modHex),
+        ).thenAnswer((_) async => const Nip05Resolution.matched(modHex));
 
         final svc = build();
-        final messy = '  ${hqHex.toUpperCase()}\n';
+        final messy = '  ${modHex.toUpperCase()}\n';
         expect(svc.isPinnedMinorContactable(messy), isTrue);
         expect(await svc.isApprovedMinorDmRecipient(messy), isTrue);
       },
@@ -249,18 +255,18 @@ void main() {
       () async {
         final answers = <Nip05Resolution>[
           const Nip05Resolution.differentKey(attackerHex),
-          const Nip05Resolution.matched(hqHex),
+          const Nip05Resolution.matched(modHex),
         ];
         var i = 0;
         when(
-          () => resolver.resolve(hqNip05, hqHex),
+          () => resolver.resolve(modNip05, modHex),
         ).thenAnswer((_) async => answers[i++]);
 
         final svc = build();
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
         clock = clock.add(const Duration(hours: 2));
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isTrue);
-        expect(svc.isApprovedMinorDmRecipientSync(hqHex), isTrue);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isTrue);
+        expect(svc.isApprovedMinorDmRecipientSync(modHex), isTrue);
       },
     );
 
@@ -274,29 +280,29 @@ void main() {
         ];
         var i = 0;
         when(
-          () => resolver.resolve(hqNip05, hqHex),
+          () => resolver.resolve(modNip05, modHex),
         ).thenAnswer((_) async => answers[i++]);
 
         final svc = build();
         expect(
-          await svc.isApprovedMinorDmRecipient(hqHex),
+          await svc.isApprovedMinorDmRecipient(modHex),
           isTrue,
         ); // absence #1
         clock = clock.add(const Duration(minutes: 6));
         expect(
-          await svc.isApprovedMinorDmRecipient(hqHex),
+          await svc.isApprovedMinorDmRecipient(modHex),
           isTrue,
         ); // networkError
         clock = clock.add(const Duration(minutes: 1));
         // firstAbsentAt preserved from #1, so this confirming absence (>5m later) drops
-        expect(await svc.isApprovedMinorDmRecipient(hqHex), isFalse);
+        expect(await svc.isApprovedMinorDmRecipient(modHex), isFalse);
       },
     );
   });
 
   group('onVerdictChanged', () {
     test('onVerdictChanged fires when a verdict flips to revoked', () async {
-      when(() => resolver.resolve(hqNip05, hqHex)).thenAnswer(
+      when(() => resolver.resolve(modNip05, modHex)).thenAnswer(
         (_) async => const Nip05Resolution.differentKey(attackerHex),
       );
       final svc = build();
@@ -305,7 +311,7 @@ void main() {
       final sub = svc.onVerdictChanged.listen(fired.add);
       addTearDown(sub.cancel);
 
-      await svc.isApprovedMinorDmRecipient(hqHex);
+      await svc.isApprovedMinorDmRecipient(modHex);
       await Future<void>.delayed(Duration.zero);
 
       expect(fired, hasLength(1));
@@ -315,8 +321,8 @@ void main() {
       'onVerdictChanged does not fire when a resolution confirms the verdict',
       () async {
         when(
-          () => resolver.resolve(hqNip05, hqHex),
-        ).thenAnswer((_) async => const Nip05Resolution.matched(hqHex));
+          () => resolver.resolve(modNip05, modHex),
+        ).thenAnswer((_) async => const Nip05Resolution.matched(modHex));
         final svc = build();
         addTearDown(svc.dispose);
         final fired = <void>[];
@@ -324,7 +330,7 @@ void main() {
         addTearDown(sub.cancel);
 
         // matched == the pin-trusted default (approved), so no observable flip.
-        await svc.isApprovedMinorDmRecipient(hqHex);
+        await svc.isApprovedMinorDmRecipient(modHex);
         await Future<void>.delayed(Duration.zero);
 
         expect(fired, isEmpty);

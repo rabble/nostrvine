@@ -23,8 +23,6 @@ class _MockOfficials extends Mock implements OfficialAccountsService {}
 class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
-  const hqHex =
-      'c4a39f1291291d452405cd8ddd798c4a29a3858c52cd0d843f1f6852cf17682e';
   const strangerHex =
       'deadbeef00000000000000000000000000000000000000000000000000000000';
 
@@ -123,12 +121,15 @@ void main() {
 
   test('a restricted user may send to an approved official', () async {
     when(
-      () => officials.isApprovedMinorDmRecipient(hqHex),
+      () => officials.isApprovedMinorDmRecipient(kModerationPubkeyHex),
     ).thenAnswer((_) async => true);
     final container = containerWith(isRestricted: true);
     final policy = container.read(dmSendPolicyProvider);
 
-    expect(await policy(hqHex), DmSendPolicyDecision.allowed);
+    expect(
+      await policy(kModerationPubkeyHex),
+      DmSendPolicyDecision.allowed,
+    );
   });
 
   test('a restricted user may not send to a non-approved recipient', () async {
@@ -142,13 +143,8 @@ void main() {
   });
 
   test(
-    'fail-closed: unresolved status with no persisted verdict denies a '
-    'stranger (never unrestricted before a trusted not-protected answer)',
+    'an unresolved status without a Greenlight designation allows DMs',
     () async {
-      // The exact hole from review: while Keycast is loading / unknown /
-      // token-missing AND the sticky store has never seen this account, the
-      // policy must restrict — not fall through to unrestricted. Spec
-      // "Fail-safe posture": only a positive not-protected signal lifts.
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final authService = _MockAuthService();
@@ -156,20 +152,12 @@ void main() {
       when(
         () => authService.authenticationSource,
       ).thenReturn(AuthenticationSource.divineOAuth);
-      when(
-        () => officials.isApprovedMinorDmRecipient(strangerHex),
-      ).thenAnswer((_) async => false);
-      when(
-        () => officials.isApprovedMinorDmRecipient(hqHex),
-      ).thenAnswer((_) async => true);
-
       final container = ProviderContainer(
         overrides: [
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           sharedPreferencesProvider.overrideWithValue(prefs),
           authServiceProvider.overrideWithValue(authService),
-          // Keycast never answers (outage / suppressed by the restricted party).
-          // Keycast accounts must not wait on this to fail closed.
+          // Keycast never answers (startup, outage, or missing token).
           protectedMinorStatusProvider.overrideWith(
             (ref) => Completer<ProtectedMinorStatus>().future,
           ),
@@ -181,19 +169,15 @@ void main() {
 
       expect(
         await policy(strangerHex),
-        DmSendPolicyDecision.temporarilyBlocked,
-        reason: 'unresolved + never-seen must restrict (fail closed)',
-      );
-      expect(
-        await policy(hqHex),
         DmSendPolicyDecision.allowed,
-        reason: 'a pinned approved official stays reachable while restricted',
+        reason: 'no affirmative Greenlight designation exists',
       );
+      verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
     },
   );
 
   test(
-    'unresolved fail-closed denial is temporary, not a terminal policy block',
+    'unknown status does not manufacture a temporary policy block',
     () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -202,10 +186,6 @@ void main() {
       when(
         () => authService.authenticationSource,
       ).thenReturn(AuthenticationSource.divineOAuth);
-      when(
-        () => officials.isApprovedMinorDmRecipient(strangerHex),
-      ).thenAnswer((_) async => false);
-
       final container = ProviderContainer(
         overrides: [
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
@@ -221,7 +201,8 @@ void main() {
 
       final decision = await container.read(dmSendPolicyProvider)(strangerHex);
 
-      expect(decision, DmSendPolicyDecision.temporarilyBlocked);
+      expect(decision, DmSendPolicyDecision.allowed);
+      verifyNever(() => officials.isApprovedMinorDmRecipient(any()));
     },
   );
 }
