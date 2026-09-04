@@ -2,6 +2,7 @@
 // ABOUTME: Rebuilds with the Funnelcake client so a relay/env swap propagates.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/repositories/featured_tabs_repository.dart';
@@ -19,8 +20,15 @@ final featuredTabsRepositoryProvider = Provider<FeaturedTabsRepository>((ref) {
 });
 
 /// Whether the current viewer has completed Divine's existing 18+ verification.
+///
+/// Verification is scoped per account (#7816) and the service reads it live,
+/// but this provider caches its answer. Watching the auth state re-evaluates
+/// it on every account switch so a verified account's answer never carries
+/// over to the next account on the same device.
 final featuredTabViewerIsAdultProvider = FutureProvider<bool>((ref) async {
-  ref.watch(adultContentVerificationVersionProvider);
+  ref
+    ..watch(currentAuthStateProvider)
+    ..watch(adultContentVerificationVersionProvider);
   final service = ref.watch(ageVerificationServiceProvider);
   await service.initialized;
   return service.isAdultContentVerified;
