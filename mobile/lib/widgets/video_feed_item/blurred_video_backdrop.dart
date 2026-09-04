@@ -115,24 +115,44 @@ class _BackdropContent extends StatelessWidget {
     }
     final posterUrl = url;
     final posterPath = filePath;
-    final Widget poster;
     if (posterUrl != null && posterUrl.isNotEmpty) {
-      poster = VineCachedImage(
-        imageUrl: posterUrl,
-        // Fall back to nothing on error — the parent
-        // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
-        errorWidget: (_, _, _) => const SizedBox.shrink(),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+          return _blurredPoster(
+            VineCachedImage(
+              imageUrl: posterUrl,
+              memCacheWidth:
+                  constraints.hasBoundedWidth && constraints.maxWidth > 0
+                  ? (constraints.maxWidth * pixelRatio).ceil()
+                  : null,
+              memCacheHeight:
+                  constraints.hasBoundedHeight && constraints.maxHeight > 0
+                  ? (constraints.maxHeight * pixelRatio).ceil()
+                  : null,
+              resizePolicy: ResizeImagePolicy.fit,
+              // Fall back to nothing on error — the parent
+              // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
+              errorWidget: (_, _, _) => const SizedBox.shrink(),
+            ),
+          );
+        },
       );
-    } else if (posterPath != null && posterPath.isNotEmpty) {
-      poster = ClipThumbnailImage(
-        path: posterPath,
-        fit: BoxFit.cover,
-        excludeFromSemantics: true,
-        placeholder: const SizedBox.shrink(),
-      );
-    } else {
-      return const SizedBox.shrink();
     }
+    if (posterPath != null && posterPath.isNotEmpty) {
+      return _blurredPoster(
+        ClipThumbnailImage(
+          path: posterPath,
+          fit: BoxFit.cover,
+          excludeFromSemantics: true,
+          placeholder: const SizedBox.shrink(),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _blurredPoster(Widget poster) {
     return ClipRect(
       // `ImageFiltered` applies the blur on the GPU side; `ClipRect`
       // keeps the bleeding edge of the blur kernel from leaking

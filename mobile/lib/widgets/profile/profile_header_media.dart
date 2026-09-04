@@ -200,9 +200,23 @@ class _BannerImage extends StatelessWidget {
       foregroundDecoration: scrimDecoration,
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(color: context.vineColors.surface),
-      child: VineCachedImage(
-        imageUrl: bannerUrl,
-        errorWidget: (_, _, _) => fallback,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+          return VineCachedImage(
+            imageUrl: bannerUrl,
+            memCacheWidth:
+                constraints.hasBoundedWidth && constraints.maxWidth > 0
+                ? (constraints.maxWidth * pixelRatio).ceil()
+                : null,
+            memCacheHeight:
+                constraints.hasBoundedHeight && constraints.maxHeight > 0
+                ? (constraints.maxHeight * pixelRatio).ceil()
+                : null,
+            resizePolicy: ResizeImagePolicy.fit,
+            errorWidget: (_, _, _) => fallback,
+          );
+        },
       ),
     );
   }

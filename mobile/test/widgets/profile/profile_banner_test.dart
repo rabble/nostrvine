@@ -9,6 +9,43 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   group(ProfileBanner, () {
+    testWidgets('bounds banner decode to its physical layout size', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 2;
+      addTearDown(() {
+        tester.view
+          ..resetPhysicalSize()
+          ..resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 400,
+              height: 334,
+              child: ProfileBanner(
+                bannerUrl: 'https://cdn.example.com/banner.jpg',
+                height: 334,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+      expect(image.memCacheWidth, 800);
+      expect(image.memCacheHeight, 668);
+      expect(image.resizePolicy, ResizeImagePolicy.fit);
+    });
+
     testWidgets('image load error renders the profile color fallback', (
       tester,
     ) async {
