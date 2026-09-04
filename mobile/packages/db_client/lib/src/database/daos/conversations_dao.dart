@@ -349,10 +349,10 @@ END
   }
 
   /// Owner filter as a raw-SQL fragment matching [_ownedOrLegacy]: empty when
-  /// [ownerPubkey] is null (all rows), else owner-or-legacy-NULL.
+  /// [ownerPubkey] is null (all rows), else owner-or-legacy.
   String _ownerSqlClause(String? ownerPubkey) => ownerPubkey == null
       ? ''
-      : ' AND (owner_pubkey = ? OR owner_pubkey = \'\' '
+      : " AND (owner_pubkey = ? OR owner_pubkey = '' "
             'OR owner_pubkey IS NULL)';
 
   List<Variable<Object>> _ownerSqlVariables(String? ownerPubkey) =>
