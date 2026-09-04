@@ -10896,6 +10896,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get verifyErrorProofRejected => 'その投稿に npub が見つからなかった。';
 
   @override
+  String get verifyErrorDiscordChannelLink =>
+      'That\'s a link to the channel, not your message. Long-press your message and pick Copy Message Link.';
+
+  @override
+  String get verifyErrorDiscordMessageNotFound =>
+      'We couldn\'t find that message. Check the link, and make sure the message is still up.';
+
+  @override
+  String get verifyErrorDiscordBotNoAccess =>
+      'Our bot can\'t read that channel. Post your npub somewhere it can see.';
+
+  @override
+  String get verifyErrorDiscordAuthorMismatch =>
+      'That message is from a different account. Use your Discord username — the one on your profile, not your display name.';
+
+  @override
+  String get verifyErrorDiscordContentUnavailable =>
+      'We couldn\'t read that message\'s text. That\'s on us — please tell support.';
+
+  @override
   String get verifyErrorVerifierUnreachable => '認証サービスにつながらなかった。少ししてからもう一度。';
 
   @override

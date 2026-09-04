@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for the single-platform verify connect form.
 // ABOUTME: Covers the manual account fallback used when a proof link is opaque.
 
+import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,8 @@ import 'package:profile_repository/profile_repository.dart';
 
 class _MockIdentityClaimsRepository extends Mock
     implements IdentityClaimsRepository {}
+
+class _MockAnalyticsEventSink extends Mock implements AnalyticsEventSink {}
 
 const _pubkey =
     '1111111111111111111111111111111111111111111111111111111111111111';
@@ -33,15 +36,24 @@ const _bluesky = VerifierPlatform(
 void main() {
   group(VerifyConnectView, () {
     late _MockIdentityClaimsRepository repository;
+    late _MockAnalyticsEventSink analytics;
     late VerifyConnectCubit cubit;
 
     setUp(() {
       repository = _MockIdentityClaimsRepository();
+      analytics = _MockAnalyticsEventSink();
+      when(
+        () => analytics.logEvent(
+          name: any(named: 'name'),
+          parameters: any(named: 'parameters'),
+        ),
+      ).thenAnswer((_) async {});
       cubit = VerifyConnectCubit(
         repository: repository,
         pubkey: _pubkey,
         platform: _telegram,
         oauthReturnUrl: _returnUrl,
+        analytics: analytics,
         launchOAuth: (_) async => null,
       );
     });
@@ -125,6 +137,116 @@ void main() {
     });
   });
 
+  group('$VerifyConnectView rejection copy', () {
+    late _MockIdentityClaimsRepository repository;
+    late _MockAnalyticsEventSink analytics;
+    late VerifyConnectCubit cubit;
+
+    const discord = VerifierPlatform(
+      key: 'discord',
+      label: 'Discord',
+      supported: true,
+    );
+
+    setUpAll(() {
+      registerFallbackValue(
+        const IdentityClaim(
+          pubkey: _pubkey,
+          platform: 'discord',
+          identity: 'alice',
+          proof: 'x',
+        ),
+      );
+    });
+
+    setUp(() {
+      repository = _MockIdentityClaimsRepository();
+      analytics = _MockAnalyticsEventSink();
+      when(
+        () => analytics.logEvent(
+          name: any(named: 'name'),
+          parameters: any(named: 'parameters'),
+        ),
+      ).thenAnswer((_) async {});
+      cubit = VerifyConnectCubit(
+        repository: repository,
+        pubkey: _pubkey,
+        platform: discord,
+        oauthReturnUrl: _returnUrl,
+        launchOAuth: (_) async => null,
+        analytics: analytics,
+      );
+    });
+
+    tearDown(() async {
+      await cubit.close();
+    });
+
+    Future<void> submit(WidgetTester tester, {required String? code}) async {
+      when(() => repository.verifyClaim(any())).thenAnswer(
+        (_) async => VerificationResult(
+          platform: 'discord',
+          identity: 'alice',
+          verified: false,
+          checkedAt: 1,
+          cached: false,
+          code: code,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: BlocProvider<VerifyConnectCubit>.value(
+            value: cubit,
+            child: const VerifyConnectView(npub: _npub),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField).first, 'alice');
+      await tester.enterText(
+        find.byType(TextField).last,
+        'https://discord.com/channels/1/2/3',
+      );
+      await tester.pump();
+
+      await tester.tap(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).verifyConnectProofCta,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('names the account when the author does not match', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await submit(tester, code: 'discord_author_mismatch');
+
+      expect(find.text(l10n.verifyErrorDiscordAuthorMismatch), findsOneWidget);
+      // The old behaviour showed this for every rejection, which is what sent
+      // people back to re-post an npub that was already there.
+      expect(find.text(l10n.verifyErrorProofRejected), findsNothing);
+    });
+
+    testWidgets('keeps the generic copy when the verifier sends no code', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await submit(tester, code: null);
+
+      expect(find.text(l10n.verifyErrorProofRejected), findsOneWidget);
+    });
+  });
+
   group('$VerifyConnectView OAuth support arriving late', () {
     late VerifyConnectCubit cubit;
 
@@ -134,6 +256,8 @@ void main() {
         pubkey: _pubkey,
         platform: _bluesky,
         oauthReturnUrl: _returnUrl,
+        // This group never rejects a proof, so the sink is never reached.
+        analytics: const NoOpAnalyticsEventSink(),
         launchOAuth: (_) async => null,
       );
     });

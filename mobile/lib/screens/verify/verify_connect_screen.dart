@@ -11,6 +11,7 @@ import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/features/oauth/app_oauth_callback.dart';
 import 'package:openvine/features/oauth/app_oauth_support.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/screens/verify/verify_platform_labels.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
@@ -74,6 +75,9 @@ class VerifyConnectPage extends ConsumerWidget {
         platform: platform,
         launchOAuth: launchAppOAuth,
         oauthReturnUrl: appOAuthCallbackUrl,
+        // A plain Provider whose identity never changes, so it is read rather
+        // than watched and stays out of the ValueKey above.
+        analytics: ref.read(analyticsEventSinkProvider),
       ),
       child: VerifyConnectView(
         npub: NostrKeyUtils.encodePubKey(pubkey),
@@ -129,6 +133,16 @@ class VerifyConnectView extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(switch (error) {
         VerifyConnectError.proofRejected => l10n.verifyErrorProofRejected,
+        VerifyConnectError.discordChannelLink =>
+          l10n.verifyErrorDiscordChannelLink,
+        VerifyConnectError.discordMessageNotFound =>
+          l10n.verifyErrorDiscordMessageNotFound,
+        VerifyConnectError.discordBotNoAccess =>
+          l10n.verifyErrorDiscordBotNoAccess,
+        VerifyConnectError.discordAuthorMismatch =>
+          l10n.verifyErrorDiscordAuthorMismatch,
+        VerifyConnectError.discordContentUnavailable =>
+          l10n.verifyErrorDiscordContentUnavailable,
         VerifyConnectError.verifierUnreachable =>
           l10n.verifyErrorVerifierUnreachable,
         VerifyConnectError.oauthFailed => l10n.verifyErrorOauthFailed,

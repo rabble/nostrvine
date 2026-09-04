@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart' hide VerificationResult;
@@ -11,6 +12,8 @@ import 'package:profile_repository/profile_repository.dart';
 
 class _MockIdentityClaimsRepository extends Mock
     implements IdentityClaimsRepository {}
+
+class _MockAnalyticsEventSink extends Mock implements AnalyticsEventSink {}
 
 const _pubkey =
     '1111111111111111111111111111111111111111111111111111111111111111';
@@ -47,17 +50,20 @@ const _youtube = VerifierPlatform(
   supported: true,
 );
 
-VerificationResult _result({required bool verified}) => VerificationResult(
-  platform: 'github',
-  identity: 'octocat',
-  verified: verified,
-  checkedAt: 1,
-  cached: false,
-);
+VerificationResult _result({required bool verified, String? code}) =>
+    VerificationResult(
+      platform: 'github',
+      identity: 'octocat',
+      verified: verified,
+      checkedAt: 1,
+      cached: false,
+      code: code,
+    );
 
 void main() {
   group(VerifyConnectCubit, () {
     late _MockIdentityClaimsRepository repository;
+    late _MockAnalyticsEventSink analytics;
     late List<Uri> launched;
     late Uri? callback;
 
@@ -74,6 +80,13 @@ void main() {
 
     setUp(() {
       repository = _MockIdentityClaimsRepository();
+      analytics = _MockAnalyticsEventSink();
+      when(
+        () => analytics.logEvent(
+          name: any(named: 'name'),
+          parameters: any(named: 'parameters'),
+        ),
+      ).thenAnswer((_) async {});
       launched = [];
       callback = Uri.parse(
         '$_returnUrl?oauth_verified=true&platform=twitter&identity=jack',
@@ -99,6 +112,7 @@ void main() {
       pubkey: _pubkey,
       platform: platform,
       oauthReturnUrl: _returnUrl,
+      analytics: analytics,
       launchOAuth: (uri) async {
         launched.add(uri);
         return callback;
@@ -106,6 +120,75 @@ void main() {
     );
 
     group('submitProof', () {
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'shows the reason the verifier gave rather than blaming the npub',
+        setUp: () {
+          when(() => repository.verifyClaim(any())).thenAnswer(
+            (_) async =>
+                _result(verified: false, code: 'discord_author_mismatch'),
+          );
+        },
+        build: () => build(_discord),
+        act: (cubit) => cubit
+          ..identityChanged('alice')
+          ..proofChanged('https://discord.com/channels/1/2/3')
+          ..submitProof(),
+        verify: (cubit) {
+          expect(
+            cubit.state.error,
+            VerifyConnectError.discordAuthorMismatch,
+          );
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'counts the rejection by reason, carrying nothing that identifies anyone',
+        setUp: () {
+          when(() => repository.verifyClaim(any())).thenAnswer(
+            (_) async =>
+                _result(verified: false, code: 'discord_bot_no_access'),
+          );
+        },
+        build: () => build(_discord),
+        act: (cubit) => cubit
+          ..identityChanged('alice')
+          ..proofChanged('https://discord.com/channels/1/2/3')
+          ..submitProof(),
+        verify: (_) {
+          verify(
+            () => analytics.logEvent(
+              name: 'verify_proof_rejected',
+              parameters: {
+                'platform': 'discord',
+                'reason': 'discord_bot_no_access',
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VerifyConnectCubit, VerifyConnectState>(
+        'names an absent code rather than dropping the event',
+        setUp: () {
+          when(
+            () => repository.verifyClaim(any()),
+          ).thenAnswer((_) async => _result(verified: false));
+        },
+        build: () => build(_github),
+        act: (cubit) => cubit
+          ..identityChanged('octocat')
+          ..proofChanged('abc')
+          ..submitProof(),
+        verify: (_) {
+          verify(
+            () => analytics.logEvent(
+              name: 'verify_proof_rejected',
+              parameters: {'platform': 'github', 'reason': 'none'},
+            ),
+          ).called(1);
+        },
+      );
+
       blocTest<VerifyConnectCubit, VerifyConnectState>(
         'publishes the claim once the verifier confirms it',
         build: () => build(_github),
@@ -479,6 +562,7 @@ void main() {
           pubkey: _pubkey,
           platform: _twitter,
           oauthReturnUrl: _returnUrl,
+          analytics: analytics,
           launchOAuth: (_) async => throw const FormatException('bad callback'),
         ),
         act: (cubit) => cubit.connectWithOAuth(),
@@ -495,6 +579,7 @@ void main() {
           pubkey: _pubkey,
           platform: _twitter,
           oauthReturnUrl: _returnUrl,
+          analytics: analytics,
           launchOAuth: (uri) {
             launched.add(uri);
             return browser.future;

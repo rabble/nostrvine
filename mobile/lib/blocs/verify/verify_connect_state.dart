@@ -23,8 +23,27 @@ enum VerifyConnectStatus {
 
 /// Why a link attempt did not land.
 enum VerifyConnectError {
-  /// The verifier could not find the npub in the proof post.
+  /// The verifier refused the proof for a reason this build cannot name.
+  ///
+  /// The fallback for every unmapped or absent code, so its copy has to stay
+  /// true of any rejection.
   proofRejected,
+
+  /// The link points at the channel rather than at a message in it.
+  discordChannelLink,
+
+  /// Discord has no such message, or it has since been deleted.
+  discordMessageNotFound,
+
+  /// The bot cannot see the channel the message was posted in.
+  discordBotNoAccess,
+
+  /// The message exists but somebody else wrote it.
+  discordAuthorMismatch,
+
+  /// The message exists and its text came back empty, which is our own
+  /// misconfiguration rather than anything the user did.
+  discordContentUnavailable,
 
   /// The verifier could not be reached.
   verifierUnreachable,
