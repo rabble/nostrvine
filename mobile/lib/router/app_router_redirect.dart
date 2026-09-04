@@ -521,6 +521,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // awaitingTosAcceptance has no dedicated screen, so treat it like
   // unauthenticated.
   if (!isAuthRoute &&
+      !isDeletionRecoveryRoute &&
       !isPublicSupportRoute &&
       !_isPublicRecorderLocation(location) &&
       (authState == AuthState.unauthenticated ||

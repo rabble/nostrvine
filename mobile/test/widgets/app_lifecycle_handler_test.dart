@@ -1,5 +1,7 @@
-// ABOUTME: Regression tests for app-level lifecycle autosave handling
-// ABOUTME: Verifies pending editor autosaves flush before background kills
+// ABOUTME: Regression tests for app-level startup and lifecycle transitions
+// ABOUTME: Verifies auth waiting, badge clearing, and pending autosave handling
+
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +67,40 @@ class _FlushTrackingVideoEditorNotifier extends VideoEditorNotifier {
 void main() {
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  group('startup', () {
+    testWidgets('handles auth stream closing before authentication', (
+      tester,
+    ) async {
+      final authService = _MockAuthService();
+      final authStates = StreamController<AuthState>();
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => authStates.stream);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            appBadgeServiceProvider.overrideWithValue(
+              _CountingAppBadgeClearer(),
+            ),
+            notificationRefreshCoordinatorProvider.overrideWithValue(null),
+          ],
+          child: const MaterialApp(
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await authStates.close();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('lifecycle transitions', () {

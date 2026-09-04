@@ -349,6 +349,44 @@ void main() {
       },
     );
 
+    testWidgets('keeps a signed-out user on the deletion recovery gate', (
+      tester,
+    ) async {
+      when(
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.unauthenticated);
+      final container = ProviderContainer(
+        overrides: [
+          ...routerOverrides(
+            deletionAttempt: const AccountDeletionAttempt(
+              id: 'attempt-id',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+          ),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (_) async => MinorAccountReviewStatus.active(),
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            _MockDeletionRepository(),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await container.read(currentAccountDeletionAttemptProvider.future);
+      await pumpRouter(tester, container, settle: false);
+
+      final router = container.read(goRouterProvider);
+      router.go(AccountDeletionRecoveryScreen.path);
+      await tester.pump();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        AccountDeletionRecoveryScreen.path,
+      );
+    });
+
     testWidgets('terminal deletion failure still allows support', (
       tester,
     ) async {
