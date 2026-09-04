@@ -103,10 +103,18 @@ void main() {
       expect(scaffold.backgroundColor, equals(VineTheme.surfaceContainerHigh));
     });
 
-    testWidgetsWithSurfaceSize('body is scrollable', (tester) async {
+    testWidgetsWithSurfaceSize('body scroll dismisses the keyboard', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(
+        scrollView.keyboardDismissBehavior,
+        ScrollViewKeyboardDismissBehavior.onDrag,
+      );
     });
 
     testWidgetsWithSurfaceSize(
