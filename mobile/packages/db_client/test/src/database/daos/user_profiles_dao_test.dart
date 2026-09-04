@@ -469,12 +469,22 @@ void main() {
             ),
           ]);
 
-          final results = await dao.searchProfilesByIdentity('ALICE', limit: 2);
+          // A generous bound so the biography-only row is excluded by the
+          // WHERE clause, not merely truncated past the limit.
+          final results = await dao.searchProfilesByIdentity(
+            'ALICE',
+            limit: 10,
+          );
 
           expect(results.map((profile) => profile.displayName), [
             'Exact',
             'Prefix',
           ]);
+          expect(
+            results.any((profile) => profile.name == 'other'),
+            isFalse,
+            reason: 'a biography-only match must not be returned',
+          );
         },
       );
 
