@@ -4543,6 +4543,50 @@ void main() {
         },
       );
 
+      test(
+        'decodes a full npub query to hex for the bounded local search',
+        () async {
+          final npub = Nip19.encodePubKey(testPubkey);
+          String? receivedTerm;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedTerm = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: npub).toList();
+
+          expect(receivedTerm, testPubkey);
+        },
+      );
+
+      test(
+        'leaves an undecodable npub-length query untouched for local search',
+        () async {
+          // 63 chars, starts with npub1, but 'o' is outside the bech32
+          // charset so it cannot decode.
+          final invalid = 'npub1${'o' * 58}';
+          String? receivedTerm;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedTerm = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: invalid).toList();
+
+          expect(receivedTerm, invalid);
+        },
+      );
+
       test('yields local results first then remote results', () async {
         // Arrange - local cache has a profile
         final cachedProfile = UserProfile(

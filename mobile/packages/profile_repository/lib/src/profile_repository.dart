@@ -71,6 +71,9 @@ bool _isSearchCancelled(SearchCancellationToken? token) =>
 typedef LocalProfileSearch =
     Future<List<UserProfile>> Function(String query, int limit);
 
+/// Length of a bech32 `npub` string (`npub1` prefix + 58 data chars).
+const int _npubStringLength = 63;
+
 /// Default indexer relays for kind 0 profile lookups.
 ///
 /// Production wiring overrides this via
@@ -292,13 +295,30 @@ class ProfileRepository implements ProfileReader {
     if (localSearch == null) {
       return searchUsersLocally(query: query, limit: limit);
     }
-    final candidates = await localSearch(query, limit);
+    final candidates = await localSearch(_localSearchTerm(query), limit);
     final filtered =
         _profileSearchFilter?.call(query, candidates) ?? candidates;
     final blockFilter = _blockFilter;
     return blockFilter == null
         ? filtered
         : filtered.where((profile) => !blockFilter(profile.pubkey)).toList();
+  }
+
+  /// Translates a full `npub` query into the hex form the bounded local
+  /// identity search matches on.
+  ///
+  /// The DAO search matches the stored `pubkey` column on hex only, so an
+  /// `npub` query would otherwise return no local candidates even when the
+  /// account is cached. A partial `npub` prefix cannot be decoded and is
+  /// left for the raw-query path.
+  static String _localSearchTerm(String query) {
+    final trimmed = query.trim();
+    if (trimmed.length != _npubStringLength ||
+        !trimmed.toLowerCase().startsWith('npub1')) {
+      return query;
+    }
+    final hex = Nip19.decode(trimmed);
+    return hex.isEmpty ? query : hex;
   }
 
   /// Whether the given pubkey is known to have no Kind 0 profile.
