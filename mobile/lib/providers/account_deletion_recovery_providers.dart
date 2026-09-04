@@ -39,7 +39,9 @@ typedef SubmittedAccountDeletionAttempt = ({
 /// Once `submit` answers `processing`, the coordinator deletes the Keycast
 /// user within seconds, so a status lookup can no longer be signed. The
 /// recovery gate must therefore read the attempt from here rather than from a
-/// refetch (#8583). Cleared when the recovery screen resolves the attempt.
+/// refetch (#8583). Cleared when the recovery screen resolves the attempt,
+/// and on sign-out, so a later sign-in never inherits a gate that the sign-out
+/// redirect tore down before the recovery screen could resolve it.
 final submittedAccountDeletionAttemptProvider =
     NotifierProvider<
       SubmittedAccountDeletionAttemptNotifier,
@@ -49,7 +51,12 @@ final submittedAccountDeletionAttemptProvider =
 class SubmittedAccountDeletionAttemptNotifier
     extends Notifier<SubmittedAccountDeletionAttempt?> {
   @override
-  SubmittedAccountDeletionAttempt? build() => null;
+  SubmittedAccountDeletionAttempt? build() {
+    ref.listen(currentAuthStateProvider, (_, next) {
+      if (next != AuthState.authenticated) state = null;
+    });
+    return null;
+  }
 
   void record({
     required String pubkeyHex,

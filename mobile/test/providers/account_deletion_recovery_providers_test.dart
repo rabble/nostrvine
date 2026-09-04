@@ -20,6 +20,17 @@ class _MockDeletionRepository extends Mock
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _AuthStateProbe extends Notifier<AuthState> {
+  @override
+  AuthState build() => AuthState.authenticated;
+
+  void set(AuthState next) => state = next;
+}
+
+final _authStateProbe = NotifierProvider<_AuthStateProbe, AuthState>(
+  _AuthStateProbe.new,
+);
+
 class _TestNostrSession extends NostrSession {
   @override
   NostrSessionReadiness build() =>
@@ -220,6 +231,38 @@ void main() {
         isNull,
       );
       verify(repository.fetchCurrent).called(1);
+    });
+
+    test('signing out discards the record', () async {
+      final probe = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWith(
+            (ref) => ref.watch(_authStateProbe),
+          ),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.rpcReady,
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(probe.dispose);
+      final subscription = probe.listen(
+        submittedAccountDeletionAttemptProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      probe
+          .read(submittedAccountDeletionAttemptProvider.notifier)
+          .record(pubkeyHex: pubkey, attempt: processing);
+
+      probe.read(_authStateProbe.notifier).set(AuthState.unauthenticated);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(probe.read(submittedAccountDeletionAttemptProvider), isNull);
     });
 
     test('clearing the record hands the lookup back to the signer', () async {

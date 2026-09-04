@@ -1,0 +1,173 @@
+// ABOUTME: Tests the shared account-deletion entry point end to end.
+// ABOUTME: Pins that a coordinator-accepted deletion feeds the recovery gate.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/signer_readiness.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/owned_divine_username_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
+import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/delete_account_action.dart';
+import 'package:profile_repository/profile_repository.dart';
+
+class _MockAccountDeletionService extends Mock
+    implements AccountDeletionService {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockDeletionRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
+const _pubkeyHex =
+    '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
+const _recoverable = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+);
+
+const _processing = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.processing,
+);
+
+void main() {
+  group('startAccountDeletionFlow', () {
+    late _MockAccountDeletionService deletionService;
+    late _MockAuthService authService;
+    late _MockDeletionRepository repository;
+
+    setUp(() {
+      deletionService = _MockAccountDeletionService();
+      authService = _MockAuthService();
+      repository = _MockDeletionRepository();
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+      when(() => authService.authState).thenReturn(AuthState.authenticated);
+      when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(repository.prepare).thenAnswer((_) async => _recoverable);
+      when(
+        () => repository.submit(
+          attemptId: any(named: 'attemptId'),
+          vanishEventId: any(named: 'vanishEventId'),
+        ),
+      ).thenAnswer((_) async => _processing);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+    });
+
+    testWidgets(
+      'a processing answer records the attempt the recovery gate reads',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+            currentAuthRpcCapabilityProvider.overrideWithValue(
+              AuthRpcCapability.rpcReady,
+            ),
+            accountDeletionServiceProvider.overrideWithValue(deletionService),
+            accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+              repository,
+            ),
+            ownedDivineUsernameProvider.overrideWith(
+              (ref) async => const DivineUsernameNotFound(),
+            ),
+            fetchUserProfileProvider(
+              _pubkeyHex,
+            ).overrideWith((ref) async => null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // The confirmation sheet closes through GoRouter, so the host needs one.
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => Scaffold(
+                body: Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    key: const Key('delete'),
+                    onPressed: () => startAccountDeletionFlow(
+                      context: context,
+                      ref: ref,
+                      screenName: 'Test',
+                    ),
+                    child: const Text('Delete'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+
+        await tester.tap(find.byKey(const Key('delete')));
+        await tester.pumpAndSettle();
+        // No handle in the profile, so the sheet asks for the DELETE token.
+        await tester.enterText(find.byType(TextField), 'DELETE');
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.widgetWithText(
+            DivineButton,
+            l10n.deleteAccountDeleteAllContentButton,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(submittedAccountDeletionAttemptProvider),
+          (pubkeyHex: _pubkeyHex, attempt: _processing),
+        );
+        // The signer is gone the moment the coordinator accepts: the gate must
+        // be fed by the record, never by a lookup. Read under real time so a
+        // provider that reached the lookup fails here instead of hanging on
+        // its retry timers.
+        when(repository.fetchCurrent).thenThrow(
+          const AccountDeletionRecoveryException(
+            'Could not authorize deletion attempt request',
+          ),
+        );
+        final current = await tester.runAsync(
+          () => container.read(currentAccountDeletionAttemptProvider.future),
+        );
+        expect(current, same(_processing));
+        verifyNever(repository.fetchCurrent);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: any(named: 'deleteKeys'),
+            deleteLocalUserData: any(named: 'deleteLocalUserData'),
+          ),
+        );
+      },
+    );
+  });
+}
