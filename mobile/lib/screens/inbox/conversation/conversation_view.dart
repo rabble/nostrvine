@@ -605,11 +605,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          message,
-          error: true,
-          duration: const Duration(seconds: 4),
-        ),
+        DivineSnackbarContainer.snackBar(message, error: true),
       );
     SemanticsService.sendAnnouncement(
       View.of(context),
@@ -1259,7 +1255,14 @@ class _MessageList extends StatelessWidget {
             // recovery bottom sheet; every other bubble keeps its default tap.
             // Withheld in a blocked thread, where resending would publish to
             // the blocked account (see [sendRecoveryEnabled]).
-            onTap: message.retractionStatus == DmRetractionStatus.failed
+            //
+            // The retraction arm is gated on [retractionsEnabled] for the same
+            // reason `showDelete` is: on a retired moderation thread the send
+            // policy refuses every kind 5, so offering Try again would loop
+            // straight back to failed.
+            onTap:
+                retractionsEnabled &&
+                    message.retractionStatus == DmRetractionStatus.failed
                 ? () => _onFailedRetractionTap(context, message)
                 : sendRecoveryEnabled &&
                       isSent &&

@@ -1381,6 +1381,52 @@ void main() {
         expect(find.text('Hello there!'), findsOneWidget);
       });
 
+      // The whole retry affordance lived only in the view: the bloc test
+      // covers the event's effects and the bubble test covers the icon, but
+      // nothing proved a tap ever produces the event. That gap is how a
+      // retry that could never run shipped green.
+      testWidgets('tapping a failed retraction dispatches the retry', (
+        tester,
+      ) async {
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: currentPubkey,
+          content: 'Still recognizable',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+          retractionStatus: DmRetractionStatus.failed,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Still recognizable'));
+        await tester.pumpAndSettle();
+
+        // The sheet explains the partial-delivery caveat before offering
+        // the retry — that wording is the whole point of the affordance.
+        expect(find.text(l10n.dmDeleteRefusedDetails), findsOneWidget);
+
+        await tester.tap(find.text(l10n.authTryAgain));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            ConversationMessageDeletionRetryRequested(rumorId: message.id),
+          ),
+        ).called(1);
+      });
+
       // Regression for #4193 — the user-visible bubble list reads from
       // `state.displayedMessages`, which projects in-flight queue rows
       // (`state.pendingOutgoing`, sourced from `DmRepository.watchOutgoing`)
