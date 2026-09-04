@@ -32,6 +32,10 @@ void main() {
         verifyErrorForCode('discord_message_content_unavailable'),
         VerifyConnectError.discordContentUnavailable,
       );
+      expect(
+        verifyErrorForCode('discord_npub_not_in_message'),
+        VerifyConnectError.proofMissingNpub,
+      );
     });
 
     test('falls back when the verifier sends no code', () {

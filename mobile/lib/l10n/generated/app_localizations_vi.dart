@@ -11427,6 +11427,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chúng tôi không tìm thấy npub của bạn trong bài đăng đó.';
 
   @override
+  String get verifyErrorProofMissingNpub =>
+      'We couldn\'t find your npub in that post.';
+
+  @override
   String get verifyErrorDiscordDmLink =>
       'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.';
 

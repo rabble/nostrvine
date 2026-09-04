@@ -20,6 +20,7 @@ import 'package:openvine/blocs/verify/verify_connect_cubit.dart';
 /// explainer, and the rest name a service-side condition the user cannot act
 /// on, so the generic rejection is the honest answer.
 VerifyConnectError verifyErrorForCode(String? code) => switch (code) {
+  'discord_npub_not_in_message' => VerifyConnectError.proofMissingNpub,
   'discord_dm_link' => VerifyConnectError.discordDmLink,
   'discord_channel_link' => VerifyConnectError.discordChannelLink,
   'discord_message_not_found' => VerifyConnectError.discordMessageNotFound,

@@ -29,6 +29,12 @@ enum VerifyConnectError {
   /// true of any rejection.
   proofRejected,
 
+  /// The proof post exists and is the right account's, but has no npub in it.
+  ///
+  /// Named for the reason rather than the platform: every verifier looks for
+  /// the npub in the post, so this copy is true on all of them.
+  proofMissingNpub,
+
   /// The link points at a direct message, which no bot can read.
   discordDmLink,
 

@@ -7696,9 +7696,13 @@
   "@verifyConnectProofCta": {
     "description": "Button that verifies the proof post and, if it checks out, publishes the link."
   },
-  "verifyErrorProofRejected": "We couldn't find your npub in that post.",
+  "verifyErrorProofRejected": "That didn't check out. Check the link and the account name, then try again.",
   "@verifyErrorProofRejected": {
-    "description": "Error shown when the verification service could not find the user's npub in the linked post."
+    "description": "Fallback error when the verifier refused a proof for a reason this build cannot name — every platform without rejection codes lands here, so the wording must stay true of any refusal, including a wrong account name or an unreachable post."
+  },
+  "verifyErrorProofMissingNpub": "We couldn't find your npub in that post.",
+  "@verifyErrorProofMissingNpub": {
+    "description": "Error shown when the proof post exists and belongs to the right account, but does not contain the user's npub."
   },
   "verifyErrorDiscordDmLink": "That's a link to a DM, which our bot can't read. Post your npub in a server channel instead.",
   "@verifyErrorDiscordDmLink": {

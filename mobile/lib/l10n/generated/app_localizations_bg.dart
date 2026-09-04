@@ -11592,6 +11592,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не намерихме твоя npub в тази публикация.';
 
   @override
+  String get verifyErrorProofMissingNpub =>
+      'We couldn\'t find your npub in that post.';
+
+  @override
   String get verifyErrorDiscordDmLink =>
       'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.';
 

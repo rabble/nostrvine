@@ -245,6 +245,29 @@ void main() {
 
       expect(find.text(l10n.verifyErrorProofRejected), findsOneWidget);
     });
+
+    testWidgets('the fallback does not blame the npub', (tester) async {
+      // Every platform without rejection codes lands here, including a GitHub
+      // gist-owner mismatch and a Mastodon author mismatch. Naming the npub
+      // there reproduces the original bug for those platforms.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await submit(tester, code: null);
+
+      expect(l10n.verifyErrorProofRejected, isNot(contains('npub')));
+      expect(find.text(l10n.verifyErrorProofMissingNpub), findsNothing);
+    });
+
+    testWidgets('says the npub is missing only when that is the reason', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await submit(tester, code: 'discord_npub_not_in_message');
+
+      expect(find.text(l10n.verifyErrorProofMissingNpub), findsOneWidget);
+      expect(find.text(l10n.verifyErrorProofRejected), findsNothing);
+    });
   });
 
   group('$VerifyConnectView OAuth support arriving late', () {

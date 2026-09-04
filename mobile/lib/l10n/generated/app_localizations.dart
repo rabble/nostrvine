@@ -19392,11 +19392,17 @@ abstract class AppLocalizations {
   /// **'Check and link'**
   String get verifyConnectProofCta;
 
-  /// Error shown when the verification service could not find the user's npub in the linked post.
+  /// Fallback error when the verifier refused a proof for a reason this build cannot name — every platform without rejection codes lands here, so the wording must stay true of any refusal, including a wrong account name or an unreachable post.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t check out. Check the link and the account name, then try again.'**
+  String get verifyErrorProofRejected;
+
+  /// Error shown when the proof post exists and belongs to the right account, but does not contain the user's npub.
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t find your npub in that post.'**
-  String get verifyErrorProofRejected;
+  String get verifyErrorProofMissingNpub;
 
   /// Error shown when the pasted Discord link points at a direct message. No bot can read someone's DMs, so this can never verify.
   ///
