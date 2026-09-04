@@ -46,10 +46,11 @@ abstract interface class GiftWrapBatchUnwrapper {
   /// Unwraps [giftWraps] — a list of kind:1059 gift-wrap events as JSON — into
   /// ordered, index-aligned [GiftWrapUnwrapSlot]s.
   ///
-  /// Returns `null` when the server does not support the verb (e.g. an older
-  /// backend), so the caller can fall back to the per-wrap path. May throw
-  /// [TimeoutException] when the request times out — callers should treat that
-  /// as a transient failure to retry, never as "no messages".
+  /// Returns `null` only when the server does not support the verb (e.g. an
+  /// older backend), so the caller can fall back to the per-wrap path. Request
+  /// failures, including [TimeoutException], are thrown instead; callers should
+  /// treat them as transient batch failures rather than evidence that the
+  /// capability is unavailable.
   Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
     List<Map<String, dynamic>> giftWraps,
   );
