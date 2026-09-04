@@ -1165,6 +1165,130 @@ void main() {
           reason: 'full settlement is reached, so nothing has to be waited out',
         );
       });
+
+      // A relay that TOOK the REQ and then went dark records none of the three
+      // facts the settlement guard consults, so the peers' answers alone used
+      // to complete the query and report it as conclusive. For a caller about
+      // to republish a replaceable event, that is an empty box read as "every
+      // relay says there is nothing".
+      test('reports a relay that dropped its socket as a timeout, not an empty '
+          'answer', () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        final dropping = _SilentRelay('wss://drops.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+        expect(await nostr.relayPool.add(dropping), isTrue);
+
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final subId = await answering.awaitPendingQuery();
+        await dropping.awaitPendingQuery();
+        dropping.onError('socket closed', reconnect: true);
+        await answering.deliver(['EOSE', subId]);
+
+        final result = await pending;
+
+        expect(result.events, isEmpty);
+        expect(
+          result.timedOut,
+          isTrue,
+          reason:
+              'the relay that went dark may be the only one holding the '
+              'list, and it never got to say so',
+        );
+        expect(
+          result.noRelaysParticipated,
+          isFalse,
+          reason: 'both relays took the REQ — one of them then died',
+        );
+      });
+
+      // The same hole reached through the other entry point: the drop arrives
+      // after the peer has already answered, so the release runs through the
+      // path that records nothing at all.
+      test('a socket that drops after its peer answered still holds the query '
+          'open', () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        final dropping = _SilentRelay('wss://drops.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+        expect(await nostr.relayPool.add(dropping), isTrue);
+
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final subId = await answering.awaitPendingQuery();
+        await dropping.awaitPendingQuery();
+        await answering.deliver(['EOSE', subId]);
+        dropping.onError('socket closed', reconnect: true);
+
+        final result = await pending;
+
+        expect(result.timedOut, isTrue);
+        expect(result.noRelaysParticipated, isFalse);
+      });
+
+      // Not a driver for the fix — a guard against over-applying it. A relay
+      // that comes back and answers inside the caller's budget has settled,
+      // and reporting that as inconclusive would roll back writes that
+      // succeeded. This is what a recorded flag would get wrong.
+      test('a relay that reconnects and answers still settles the query '
+          'conclusively', () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        final flapping = _SilentRelay('wss://flaps.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+        expect(await nostr.relayPool.add(flapping), isTrue);
+
+        final stopwatch = Stopwatch()..start();
+        final pending = nostr.queryEventsDetailed(
+          [
+            {
+              'kinds': [10003],
+            },
+          ],
+          timeout: timeout,
+          requireAllRelaysSettled: true,
+        );
+
+        final subId = await answering.awaitPendingQuery();
+        await flapping.awaitPendingQuery();
+        flapping.onError('socket closed', reconnect: true);
+        await answering.deliver(['EOSE', subId]);
+        expect(await flapping.connect(), isTrue);
+        await flapping.deliver(['EOSE', subId]);
+
+        final result = await pending;
+        stopwatch.stop();
+
+        expect(
+          result.timedOut,
+          isFalse,
+          reason:
+              'the reconnect re-issued the REQ under the same id and the '
+              'relay answered it, so full settlement was reached',
+        );
+        expect(
+          stopwatch.elapsed,
+          lessThan(timeout),
+          reason: 'a settled query must not be held to the deadline',
+        );
+      });
     });
   });
 }

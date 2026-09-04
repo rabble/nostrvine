@@ -25,6 +25,40 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
     return (await query.get()).isNotEmpty;
   }
 
+  /// Has [giftWrapId] been terminally processed *by [ownerPubkey]*?
+  ///
+  /// [hasGiftWrap] answers "has any local account handled this", which is the
+  /// right question for deciding whether to pay a decrypt again. This answers
+  /// "did THIS account handle it", which is the right question for deciding
+  /// whether the account may move its own sync boundary past the event.
+  ///
+  /// The global form rests on a gift-wrap id being unique to one recipient,
+  /// which holds for kind 1059 because NIP-59 mints a fresh ephemeral key and
+  /// a separate wrap per recipient. It does not hold for an unwrapped kind 4,
+  /// whose single event id is shared by sender and recipient — so when both
+  /// are accounts on this device the ledger genuinely holds one id for two
+  /// accounts. See #8209 for why moving a boundary for a message this account
+  /// never stored is permanent damage.
+  ///
+  /// Rows with no owner are treated as this account's, matching
+  /// [clearForAccountSwitch] and `DirectMessagesDao`'s legacy handling, so an
+  /// upgrade does not reclassify an account's own history as somebody else's.
+  Future<bool> hasGiftWrapForOwner({
+    required String giftWrapId,
+    required String ownerPubkey,
+  }) async {
+    final query = selectOnly(processedGiftWraps)
+      ..addColumns([processedGiftWraps.giftWrapId])
+      ..where(
+        processedGiftWraps.giftWrapId.equals(giftWrapId) &
+            (processedGiftWraps.ownerPubkey.equals(ownerPubkey) |
+                processedGiftWraps.ownerPubkey.isNull() |
+                processedGiftWraps.ownerPubkey.equals('')),
+      )
+      ..limit(1);
+    return (await query.get()).isNotEmpty;
+  }
+
   /// Which of [giftWrapIds] are already recorded in the ledger. Batched
   /// counterpart to [hasGiftWrap]: one `IN` query instead of N single-id
   /// lookups, used by the history-drain dedup probe to avoid a per-wrap DB
