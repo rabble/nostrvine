@@ -1139,7 +1139,7 @@ void _moveSidecars({
 
 @visibleForTesting
 void deleteDatabaseAndSidecars(String dbPath) {
-  for (final suffix in ['', ...databaseSidecarSuffixes]) {
+  for (final suffix in const ['', ...databaseSidecarSuffixes]) {
     final file = File('$dbPath$suffix');
     if (file.existsSync()) file.deleteSync();
   }
