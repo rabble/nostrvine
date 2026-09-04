@@ -4605,6 +4605,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chỉ văn bản — không thể đính kèm ảnh hoặc GIF ở đây.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam hoặc nội dung không mong muốn';
 
   @override

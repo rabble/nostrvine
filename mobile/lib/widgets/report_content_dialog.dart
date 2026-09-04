@@ -248,6 +248,13 @@ class _ReportContentViewState extends State<_ReportContentView> {
   /// display text, which is exactly what must not live in cubit state.
   String? _errorMessage;
 
+  /// Whether the reporter just tried to insert an image the report cannot
+  /// carry. Held here, not in the details field, because reselecting the
+  /// reason unmounts and rebuilds that field from scratch, which would drop
+  /// this one-shot notice if it lived there. The notice renders above the
+  /// field (see [_ReportFormBody]) so the keyboard cannot cover it.
+  bool _imageInsertionRejected = false;
+
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
 
@@ -305,6 +312,26 @@ class _ReportContentViewState extends State<_ReportContentView> {
     }
   }
 
+  void _onImageInsertionRejected() {
+    // Reports are text only; there is no attachment path, so a keyboard-
+    // inserted image is intentionally dropped and never touches the field or
+    // any report state (#8210). Android-only: the engine implements
+    // commitContent nowhere else. Surface the drop so the reporter uses words.
+    if (!mounted) return;
+    if (!_imageInsertionRejected) {
+      setState(() => _imageInsertionRejected = true);
+    }
+    // Announce on every attempt, not via liveRegion (which fires once per
+    // appearance): each commit is a discrete action, and the spoken notice is
+    // the channel that still lands when the visual one is briefly behind the
+    // keyboard.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      context.l10n.reportDetailsImageNotAttached,
+      Directionality.of(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = context.select(
@@ -331,7 +358,9 @@ class _ReportContentViewState extends State<_ReportContentView> {
                     detailsFocusNode: _detailsFocusNode,
                     detailsFieldKey: _detailsFieldKey,
                     otherCardKey: _otherCardKey,
-                    onDetailsChanged: _clearErrorMessage,
+                    onDetailsChanged: _onDetailsChanged,
+                    imageInsertionRejected: _imageInsertionRejected,
+                    onImageInserted: _onImageInsertionRejected,
                   ),
           ),
         ),
@@ -370,9 +399,12 @@ class _ReportContentViewState extends State<_ReportContentView> {
     );
   }
 
-  void _clearErrorMessage() {
-    if (_errorMessage == null) return;
-    setState(() => _errorMessage = null);
+  void _onDetailsChanged() {
+    if (_errorMessage == null && !_imageInsertionRejected) return;
+    setState(() {
+      _errorMessage = null;
+      _imageInsertionRejected = false;
+    });
   }
 
   void _handleSubmitReport() {
@@ -471,6 +503,8 @@ class _ReportFormBody extends StatelessWidget {
     required this.detailsFieldKey,
     required this.otherCardKey,
     required this.onDetailsChanged,
+    required this.imageInsertionRejected,
+    required this.onImageInserted,
   });
 
   final ContentFilterReason? selectedReason;
@@ -483,8 +517,16 @@ class _ReportFormBody extends StatelessWidget {
   /// keyboard pushes the details field up.
   final GlobalKey otherCardKey;
 
-  /// Clears a pending validation error as soon as the user edits the details.
+  /// Clears a pending validation error (and the image-rejection notice) as
+  /// soon as the user edits the details.
   final VoidCallback onDetailsChanged;
+
+  /// Whether the reporter tried to insert an image; drives the not-attached
+  /// notice shown above the field.
+  final bool imageInsertionRejected;
+
+  /// Forwarded to the details field's content-insertion handler.
+  final VoidCallback onImageInserted;
 
   @override
   Widget build(BuildContext context) {
@@ -544,11 +586,13 @@ class _ReportFormBody extends StatelessWidget {
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
+                  if (imageInsertionRejected) const _ImageNotAttachedNotice(),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
                     controller: detailsController,
                     focusNode: detailsFocusNode,
                     onChanged: onDetailsChanged,
+                    onImageInserted: onImageInserted,
                   ),
                 ],
               ),
@@ -722,12 +766,17 @@ class _CappedDetailsField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    required this.onImageInserted,
   });
 
   final GlobalKey fieldKey;
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onChanged;
+
+  /// Called when the keyboard commits image content, so the durable parent
+  /// records the rejection and announces it.
+  final VoidCallback onImageInserted;
 
   @override
   State<_CappedDetailsField> createState() => _CappedDetailsFieldState();
@@ -769,6 +818,15 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           textInputAction: TextInputAction.newline,
           textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
+          // Without a configuration Flutter advertises an empty mime-type
+          // list, so Android refuses the insert itself and shows a system
+          // toast that vanishes and never mentions the report. Declaring the
+          // default image types moves that moment into the app, where the
+          // handler can answer it in our own words. #8223 chose not to hide
+          // the keyboard's image button, so it stays live.
+          contentInsertionConfiguration: ContentInsertionConfiguration(
+            onContentInserted: (_) => widget.onImageInserted(),
+          ),
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
           maxLines: 5,
@@ -791,6 +849,23 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The one-shot notice shown when the keyboard tries to insert an image the
+/// report cannot carry. Rendered above the field (in [_ReportFormBody]) so it
+/// is not occluded by the keyboard's media panel at the moment it fires
+/// (measured on device in #8511's review).
+class _ImageNotAttachedNotice extends StatelessWidget {
+  const _ImageNotAttachedNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.vineColors;
+    return Text(
+      context.l10n.reportDetailsImageNotAttached,
+      style: VineTheme.labelSmallFont(color: palette.onSurfaceVariant),
     );
   }
 }

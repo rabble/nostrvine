@@ -4671,6 +4671,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Text lang — hindi puwedeng mag-attach ng mga litrato o GIF dito.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam o Hindi Gustong Content';
 
   @override

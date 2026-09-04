@@ -4726,6 +4726,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Text only — photos and GIFs can’t be attached here.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam or Unwanted Content';
 
   @override

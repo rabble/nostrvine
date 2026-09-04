@@ -4639,6 +4639,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Teks sahaja — foto dan GIF tidak boleh dilampirkan di sini.';
 
   @override
+  String get reportDetailsImageNotAttached =>
+      'That wasn’t attached. Reports are text only, so describe it in words.';
+
+  @override
   String get reportReasonSpam => 'Spam atau Kandungan Tidak Diingini';
 
   @override

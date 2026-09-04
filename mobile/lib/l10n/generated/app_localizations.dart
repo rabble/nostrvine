@@ -7951,6 +7951,12 @@ abstract class AppLocalizations {
   /// **'Text only — photos and GIFs can’t be attached here.'**
   String get reportDetailsTextOnly;
 
+  /// Shown in the content report details field the moment the user tries to insert a photo or GIF from the keyboard. Reports carry no attachments, so the image is intentionally dropped; this confirms it was not attached and redirects the reporter to describing the issue in words.
+  ///
+  /// In en, this message translates to:
+  /// **'That wasn’t attached. Reports are text only, so describe it in words.'**
+  String get reportDetailsImageNotAttached;
+
   /// No description provided for @reportReasonSpam.
   ///
   /// In en, this message translates to:
