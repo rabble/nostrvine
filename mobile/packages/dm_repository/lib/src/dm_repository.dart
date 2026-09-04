@@ -3961,13 +3961,23 @@ class DmRepository {
       // relay that settled before another relay timed out.
       final _OwnDmInboxState absentOrFailed;
       String? inconclusiveReason;
-      // NOT gated on [requireAuthoritative]: `noRelays` and `timedOut` are
-      // computed identically in both read modes (`Nostr.queryEventsDetailed`),
-      // so the send path can tell an unreadable inbox from an absent one at no
-      // cost — no extra round trip, no settle wait, so #8220's decision to keep
-      // the strict read off the send path is untouched (#7317). What
-      // `requireAllRelaysSettled` still buys the authoritative caller is the
-      // CLOSED-refusal case, which completes early and remains `absent` here.
+      // NOT gated on [requireAuthoritative], so the send path can tell an
+      // unreadable inbox from an absent one at no extra round trip and no
+      // settle wait — #8220's decision to keep the strict read off the send
+      // path is untouched (#7317).
+      //
+      // But the two modes do NOT produce the same flags, and treating a fast
+      // read's `absent` as conclusive is a real defect rather than a
+      // conservative approximation. `Nostr.queryEventsDetailed` composes
+      // `timedOut` with `requireAllRelaysSettled` in the expression itself,
+      // and more importantly the two modes complete at different moments: a
+      // relay that stays connected and never sends a terminal frame is skipped
+      // after the settle window for a fast caller, which still reports
+      // `timedOut: false`. So a silent relay reaches here as an ordinary empty
+      // answer and is classified `absent`. Only a full-settlement caller sees
+      // that as `failed`. Callers that merely route to the default pool can
+      // live with the guess; callers that latch something permanent must make
+      // their own strict read — see [_drainOwnInboxRelays].
       if (result.noRelays || result.timedOut) {
         absentOrFailed = _OwnDmInboxState.failed;
         // `noRelays` first: an offline device sets both flags, and reporting
