@@ -3025,10 +3025,20 @@ class DmRepository {
         );
 
         Log.debug(
+          // contentLength is here for #6522. A peer that retries by
+          // re-minting its rumor produces a NEW id and created_at, so nothing
+          // on this path can collapse it and the receiver renders a second
+          // bubble. That is deliberate — collapsing it is what caused #7324's
+          // silent, unrecoverable message loss — but without a content
+          // dimension the two persist lines for a re-mint are
+          // indistinguishable in a support log from two genuinely different
+          // messages. The plaintext itself must never be logged: these lines
+          // travel in bug reports.
           'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in '
           'conversation '
           '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
-          'createdAt=$persistedCreatedAt',
+          'createdAt=$persistedCreatedAt '
+          'contentLength=${rumor.content.length}',
           category: LogCategory.system,
         );
       } on Object catch (e, stackTrace) {
