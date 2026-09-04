@@ -20,6 +20,7 @@ import 'package:openvine/services/video_editor/render_cancellation_registry.dart
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_render_failures.dart';
+import 'package:openvine/services/video_editor/video_render_watchdog.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -359,13 +360,14 @@ class VideoEditorRenderService {
   })?
   renderVideoOverride;
 
-  /// Test-only override for the Crashlytics report a failed render files.
-  ///
-  /// When set, [_reportRenderFailure] delegates to this callback instead of
-  /// [CrashReportingService]. Reset to `null` in `tearDown`.
   @visibleForTesting
   static void Function(Object error, StackTrace stackTrace)?
-  crashReporterOverride;
+  get crashReporterOverride => VideoRenderWatchdog.crashReporterOverride;
+
+  @visibleForTesting
+  static set crashReporterOverride(
+    void Function(Object error, StackTrace stackTrace)? value,
+  ) => VideoRenderWatchdog.crashReporterOverride = value;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
@@ -403,22 +405,10 @@ class VideoEditorRenderService {
     // Bound the shared final-export operation rather than either caller: a
     // suspended native call otherwise reaches neither the editor retry overlay
     // nor the draft-publish error message (#8488).
-    return render.timeout(
-      VideoEditorConstants.renderWatchdogTimeout,
-      onTimeout: () {
-        const failure = VideoRenderFailedException(
-          VideoRenderFailureReason.timedOut,
-        );
-        _reportRenderFailure(
-          failure,
-          StackTrace.current,
-          reportEveryFailure: true,
-        );
-        if (effectiveTaskId != null) {
-          unawaited(_abandonStalledRender(render, effectiveTaskId));
-        }
-        throw failure;
-      },
+    return VideoRenderWatchdog.run(
+      render: render,
+      taskId: effectiveTaskId,
+      cancelTask: cancelTask,
     );
   }
 
@@ -601,24 +591,6 @@ class VideoEditorRenderService {
       RenderCancellationRegistry.finish(effectiveTaskId, renderToken);
       await progressTracker.dispose();
       await _cleanupTempFiles(intermediateStopMotionPaths);
-    }
-  }
-
-  /// Stops native work after the watchdog expires, then observes the abandoned
-  /// export so its eventual outcome remains available in diagnostic logs.
-  static Future<void> _abandonStalledRender(
-    Future<Object?> render,
-    String taskId,
-  ) async {
-    await cancelTask(taskId);
-    try {
-      await render;
-    } catch (error) {
-      Log.debug(
-        'Stalled render settled after the watchdog gave up: $error',
-        name: _logName,
-        category: LogCategory.video,
-      );
     }
   }
 
@@ -848,44 +820,16 @@ class VideoEditorRenderService {
     } catch (e, stack) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
       unawaited(_cleanupTempFiles(tempFilePaths));
-      _reportRenderFailure(e, stack, reportEveryFailure: reportEveryFailure);
+      VideoRenderWatchdog.reportFailure(
+        e,
+        stack,
+        reportEveryFailure: reportEveryFailure,
+      );
       throw VideoRenderFailedException(
         VideoRenderFailureReason.nativeRender,
         cause: e,
       );
     }
-  }
-
-  /// Files a failed render to Crashlytics, unless the caller treats a failure
-  /// as recoverable.
-  ///
-  /// The final export reports everything, not just `Error` subtypes: it is a
-  /// dead end for the user, and the native pipeline signals its failures as
-  /// `PlatformException`, which is not an `Error` — gating on `Error` left the
-  /// entire population invisible in Crashlytics (#7125).
-  ///
-  /// Every other [renderVideo] caller stays on the `Error` gate. A transition
-  /// seam falls back to a hard cut and is never negative-cached, so
-  /// `_ensureSeamsRendered` re-attempts a failing boundary on each timeline
-  /// change — reporting each attempt would bury the export failures this is
-  /// meant to surface.
-  static void _reportRenderFailure(
-    Object error,
-    StackTrace stackTrace, {
-    required bool reportEveryFailure,
-  }) {
-    if (!reportEveryFailure && error is! Error) return;
-
-    final override = crashReporterOverride;
-    if (override != null) {
-      override(error, stackTrace);
-      return;
-    }
-    CrashReportingService.instance.recordError(
-      error,
-      stackTrace,
-      reason: 'renderVideo failed',
-    );
   }
 
   /// Limits a clip's duration to a specified length.
