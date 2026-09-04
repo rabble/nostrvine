@@ -12,8 +12,12 @@ class MemorySnapshot {
     required this.nativeControllers,
     required this.queueDepth,
     required this.imageCacheBytes,
+    required this.peakImageCacheBytes,
     required this.imageCacheLiveCount,
   });
+
+  /// Sentinel used when a gauge could not be read.
+  static const int unavailableGauge = -1;
 
   /// Resident set size at sample time, in bytes.
   final int rssBytes;
@@ -32,12 +36,23 @@ class MemorySnapshot {
   final int queueDepth;
 
   /// Decoded image bytes retained by Flutter's keep-alive image cache.
+  ///
+  /// This is [unavailableGauge] when the cache could not be read.
   final int imageCacheBytes;
+
+  /// Highest decoded-image cache occupancy observed during this process.
+  ///
+  /// Flutter clears [imageCacheBytes] before notifying memory-pressure
+  /// observers. This high-water mark preserves the last meaningful occupancy
+  /// across that framework clear. It is [unavailableGauge] until the first
+  /// successful reading.
+  final int peakImageCacheBytes;
 
   /// Decoded images with at least one live listener.
   ///
   /// Live images are tracked separately from [imageCacheBytes], so this is a
-  /// count rather than an estimate of their memory footprint.
+  /// count rather than an estimate of their memory footprint. This is
+  /// [unavailableGauge] when the cache could not be read.
   final int imageCacheLiveCount;
 
   @override
@@ -45,6 +60,7 @@ class MemorySnapshot {
       'MemorySnapshot(rssBytes: $rssBytes, peakRssBytes: $peakRssBytes, '
       'nativeControllers: $nativeControllers, queueDepth: $queueDepth, '
       'imageCacheBytes: $imageCacheBytes, '
+      'peakImageCacheBytes: $peakImageCacheBytes, '
       'imageCacheLiveCount: $imageCacheLiveCount)';
 }
 
@@ -91,6 +107,7 @@ class MemoryTelemetryService {
 
   Timer? _timer;
   int _peakRssBytes = 0;
+  int _peakImageCacheBytes = MemorySnapshot.unavailableGauge;
 
   /// Reads every gauge once, updates the running peak, and emits a snapshot.
   ///
@@ -98,6 +115,16 @@ class MemoryTelemetryService {
   /// so a platform without an OS gauge still reports something monotonic.
   void sampleOnce() {
     final rss = _readGauge(_readRssBytes);
+    final imageCacheBytes = _readGauge(
+      _imageCacheBytes,
+      unavailable: MemorySnapshot.unavailableGauge,
+    );
+    if (imageCacheBytes != MemorySnapshot.unavailableGauge) {
+      _peakImageCacheBytes = math.max(
+        _peakImageCacheBytes,
+        imageCacheBytes,
+      );
+    }
     _peakRssBytes = math.max(
       math.max(_peakRssBytes, rss),
       _readGauge(_readPeakRssBytes),
@@ -108,18 +135,26 @@ class MemoryTelemetryService {
         peakRssBytes: _peakRssBytes,
         nativeControllers: _readGauge(_nativeControllerCount),
         queueDepth: _readGauge(_queueDepth),
-        imageCacheBytes: _readGauge(_imageCacheBytes),
-        imageCacheLiveCount: _readGauge(_imageCacheLiveCount),
+        imageCacheBytes: imageCacheBytes,
+        peakImageCacheBytes: _peakImageCacheBytes,
+        imageCacheLiveCount: _readGauge(
+          _imageCacheLiveCount,
+          unavailable: MemorySnapshot.unavailableGauge,
+        ),
       ),
     );
   }
 
-  static int _readGauge(int Function() read) {
+  /// Isolates gauge failures so telemetry cannot prevent memory shedding.
+  ///
+  /// Some platforms do not implement every gauge, and cache access must stay
+  /// distinguishable from a genuinely empty cache.
+  static int _readGauge(int Function() read, {int unavailable = 0}) {
     try {
       final value = read();
-      return value < 0 ? 0 : value;
+      return value < 0 ? unavailable : value;
     } on Object catch (_) {
-      return 0;
+      return unavailable;
     }
   }
 
