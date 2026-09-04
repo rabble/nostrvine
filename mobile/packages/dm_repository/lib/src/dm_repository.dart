@@ -2177,9 +2177,15 @@ class DmRepository {
     }
 
     // A self-wrap proves that another device requested the retraction, not
-    // that every recipient accepted it. Keep the sender's bubble visible and
-    // retryable until the normal fan-out records a terminal outcome.
+    // that every recipient accepted it. Start a local pending lifecycle only
+    // when this row has no deletion lifecycle of its own. An echo carries a
+    // distinct kind-5 from the local attempt, so overwriting an existing
+    // pending/blocked rumor would defeat replay identity; reopening `sent`
+    // would resurrect a confirmed-deleted bubble and re-publish it.
     if (deletion.pubkey == _ownerPubkey) {
+      if (row.deletionPublishStatus != null) {
+        return DmWrapOutcome.processed;
+      }
       await _directMessagesDao.markMessageDeletionPending(
         rumorId,
         deletionRumorJson: jsonEncode(deletion.toJson()),
@@ -6574,9 +6580,9 @@ class DmRepository {
     // Terminal-refused only when every failure was a policy block — the
     // non-blocked members have all confirmed by then, and no retry can change
     // a refusal. A mixed outcome is still recorded blocked rather than sent,
-    // because `sent` is the claim that would be false. `anyRecipientAccepted`
-    // is what separates the two for the caller, which must not un-hide a
-    // message some recipients have already dropped (#8201).
+    // because `sent` is the claim that would be false. The accepted-recipient
+    // bit is retained for diagnostics; the UI deliberately presents both
+    // wholly refused and mixed outcomes as uncertain (#8201).
     return (
       result: failures.every((f) => f.blocked)
           ? NIP17SendResult.blocked(summary)

@@ -344,12 +344,19 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 listener: _onSendOutcome,
               ),
               BlocListener<ConversationBloc, ConversationState>(
-                // The bloc removes an id from the pending set only when its
-                // bubble transitions to failed, so the shrink is the
-                // refusal — and two refusals on consecutive ticks each fire.
-                listenWhen: (previous, current) => previous.awaitingRetraction
-                    .difference(current.awaitingRetraction)
-                    .isNotEmpty,
+                // A shrink can mean refusal or confirmed delivery. Announce
+                // only removed ids whose bubble is still visible as failed;
+                // confirmed retractions leave the thread silently.
+                listenWhen: (previous, current) {
+                  final removed = previous.awaitingRetraction.difference(
+                    current.awaitingRetraction,
+                  );
+                  return current.messages.any(
+                    (message) =>
+                        removed.contains(message.id) &&
+                        message.retractionStatus == DmRetractionStatus.failed,
+                  );
+                },
                 listener: _onRetractionRefused,
               ),
             ],
@@ -493,7 +500,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 
   /// Briefly announces an unconfirmed "Delete for everyone" (#8201).
   ///
-  /// The durable affordance is the warning beside the muted bubble; this
+  /// The durable affordance is the warning beside the visible bubble; this
   /// toast is only immediate feedback and dismisses on the standard timer.
   void _onRetractionRefused(BuildContext context, ConversationState state) {
     _showErrorToastAndAnnounce(context, context.l10n.dmDeleteRefusedMessage);
@@ -998,12 +1005,14 @@ class _MessageList extends StatelessWidget {
       content: StringUtils.sanitizeUtf16(message.content),
       sharedVideoRef: resolveOwnShareVideoRef(message),
     );
-    // Reaction picker hidden on failed-send own DMs — reacting to a
-    // message the recipient never received is meaningless (#4633 round 25).
+    // Reaction picker hidden on failed-send own DMs and messages whose
+    // retraction is unresolved — reacting to a message the recipient may not
+    // have is meaningless (#4633 round 25, #8201).
     // A failed bubble's resend/delete affordance lives on a single TAP
     // (see [_onFailedMessageTap]), not this long-press menu.
     final showPicker =
         reactionsEnabled &&
+        retractionStatus == DmRetractionStatus.none &&
         !(isSent && deliveryStatus == DmDeliveryStatus.failed);
     final result = await ReactionPickerOverlay.show(
       context: context,
@@ -1051,7 +1060,7 @@ class _MessageList extends StatelessWidget {
     }
   }
 
-  Future<void> _onFailedRetractionTap(
+  Future<void> _onUnconfirmedRetractionTap(
     BuildContext context,
     DmMessage message,
   ) async {
@@ -1059,7 +1068,9 @@ class _MessageList extends StatelessWidget {
     final retry = await VineBottomSheetPrompt.show<bool>(
       context: context,
       sticker: DivineStickerName.alert,
-      title: context.l10n.dmDeleteRefusedMessage,
+      title: message.retractionStatus == DmRetractionStatus.pending
+          ? context.l10n.dmDeletePendingLabel
+          : context.l10n.dmDeleteRefusedMessage,
       subtitle: context.l10n.dmDeleteRefusedDetails,
       primaryButtonText: context.l10n.authTryAgain,
       onPrimaryPressed: () => Navigator.of(context).pop(true),
@@ -1262,8 +1273,8 @@ class _MessageList extends StatelessWidget {
             // straight back to failed.
             onTap:
                 retractionsEnabled &&
-                    message.retractionStatus == DmRetractionStatus.failed
-                ? () => _onFailedRetractionTap(context, message)
+                    message.retractionStatus != DmRetractionStatus.none
+                ? () => _onUnconfirmedRetractionTap(context, message)
                 : sendRecoveryEnabled &&
                       isSent &&
                       status == DmDeliveryStatus.failed

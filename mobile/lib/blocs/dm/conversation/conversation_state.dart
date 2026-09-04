@@ -117,9 +117,10 @@ class ConversationState extends Equatable {
 
   /// Rumor ids this screen is actively trying to retract (#8201).
   ///
-  /// An id is removed when its visible bubble transitions to failed. The view
-  /// uses that removal for the one-time toast, while failures that predate the
-  /// current screen remain quiet.
+  /// An id is removed when its visible bubble transitions to failed or leaves
+  /// the thread after confirmed delivery. The view checks the resulting bubble
+  /// state before announcing, so confirmed retractions stay quiet while
+  /// failures that predate the current screen also remain quiet.
   final Set<String> awaitingRetraction;
 
   /// The last send attempt that delivered to recipients but failed to

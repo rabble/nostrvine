@@ -317,6 +317,22 @@ void main() {
           },
         );
 
+        blocTest<ConversationBloc, ConversationState>(
+          'releases a retraction after the confirmed bubble leaves the thread',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([testMessage]);
+            await tapDelete(bloc);
+            await tick([_pending(testMessage)]);
+            await tick(const []);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
         // Retrying a refused delete: the bubble is ALREADY on screen carrying
         // failed retraction state from the previous attempt, and arming happens at
         // tap time, before the repository hides anything. Matching presence
@@ -436,7 +452,8 @@ void main() {
         );
 
         // The flag is the gate: a row that returns to the thread without it
-        // was not refused, whatever un-hid it.
+        // was not refused, whatever un-hid it. The disappearance still
+        // completes this screen's tracking, so the id does not leak.
         blocTest<ConversationBloc, ConversationState>(
           'ignores a message that comes back without the refusal flag',
           build: buildBloc,
@@ -449,7 +466,7 @@ void main() {
             await tick([testMessage]);
           },
           verify: (bloc) {
-            expect(bloc.state.awaitingRetraction, contains(messageId));
+            expect(bloc.state.awaitingRetraction, isEmpty);
           },
         );
 

@@ -148,13 +148,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           unawaited(_dmRepository.markConversationAsRead(_conversationId));
         }
         final refused = _refusedRetractions(tick.messages);
+        final confirmed = _confirmedRetractions(tick.messages);
+        final completed = {...refused, ...confirmed};
         return state.copyWith(
           status: ConversationStatus.loaded,
           messages: tick.messages,
           pendingOutgoing: tick.pendingOutgoing,
-          awaitingRetraction: refused.isEmpty
+          awaitingRetraction: completed.isEmpty
               ? state.awaitingRetraction
-              : state.awaitingRetraction.difference(refused),
+              : state.awaitingRetraction.difference(completed),
         );
       },
       onError: (error, stackTrace) {
@@ -193,6 +195,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
                 DmRetractionStatus.failed)
           message.id,
     };
+  }
+
+  /// Retractions confirmed by the bubble leaving the visible projection.
+  /// Pending rows remain visible, so absence after a visible/pending tick is
+  /// the terminal sent transition rather than the old optimistic hide.
+  Set<String> _confirmedRetractions(List<DmMessage> next) {
+    if (state.awaitingRetraction.isEmpty) return const {};
+    final previousIds = {for (final message in state.messages) message.id};
+    final nextIds = {for (final message in next) message.id};
+    return state.awaitingRetraction
+        .where(previousIds.contains)
+        .where((id) => !nextIds.contains(id))
+        .toSet();
   }
 
   Future<void> _onMessageDeletionRetryRequested(
@@ -270,9 +285,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       if (e is ArgumentError) {
         // No persisted row. For a queue-only bubble whose row we just
         // cancelled this is the EXPECTED outcome, not an error.
-        if (cancelledQueueRow) return;
+        if (cancelledQueueRow) {
+          _releaseAwaitingRetraction(emit, event.rumorId);
+          return;
+        }
         // Rumor gone or not ours — recoverable; matrix-NO.
         addError(e, stackTrace);
+        _releaseAwaitingRetraction(emit, event.rumorId);
         return;
       }
       // Anything else (e.g. the uninitialized-repository `StateError`) is
@@ -286,7 +305,20 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         stackTrace,
       );
+      _releaseAwaitingRetraction(emit, event.rumorId);
     }
+  }
+
+  void _releaseAwaitingRetraction(
+    Emitter<ConversationState> emit,
+    String rumorId,
+  ) {
+    if (!state.awaitingRetraction.contains(rumorId)) return;
+    emit(
+      state.copyWith(
+        awaitingRetraction: {...state.awaitingRetraction}..remove(rumorId),
+      ),
+    );
   }
 
   Future<void> _onMessageSent(

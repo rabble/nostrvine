@@ -1029,12 +1029,21 @@ void main() {
       testWidgets('a refused retraction shows a transient explanation', (
         tester,
       ) async {
+        final refusedMessage = DmMessage(
+          id: 'message',
+          conversationId: 'conversation',
+          senderPubkey: currentPubkey,
+          content: 'Refused',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId: 'wrap',
+          retractionStatus: DmRetractionStatus.failed,
+        );
         await tester.pumpWidget(
           buildSubject(
             previousState: const ConversationState(
               awaitingRetraction: {'message'},
             ),
-            state: const ConversationState(),
+            state: ConversationState(messages: <DmMessage>[refusedMessage]),
           ),
         );
         await tester.pump();
@@ -1061,16 +1070,42 @@ void main() {
         expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
       });
 
-      testWidgets('consecutive refusals each raise a retraction toast', (
+      testWidgets('a confirmed retraction raises no refusal toast', (
         tester,
       ) async {
         await tester.pumpWidget(
           buildSubject(
             previousState: const ConversationState(
+              awaitingRetraction: {'message'},
+            ),
+            state: const ConversationState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('consecutive refusals each raise a retraction toast', (
+        tester,
+      ) async {
+        final refusedMessage = DmMessage(
+          id: 'first',
+          conversationId: 'conversation',
+          senderPubkey: currentPubkey,
+          content: 'First refusal',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId: 'wrap',
+          retractionStatus: DmRetractionStatus.failed,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
               awaitingRetraction: {'first', 'second'},
             ),
-            state: const ConversationState(
-              awaitingRetraction: {'second'},
+            state: ConversationState(
+              awaitingRetraction: const {'second'},
+              messages: <DmMessage>[refusedMessage],
             ),
           ),
         );
@@ -1419,6 +1454,49 @@ void main() {
 
         await tester.tap(find.text(l10n.authTryAgain));
         await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            ConversationMessageDeletionRetryRequested(rumorId: message.id),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('tapping a pending retraction dispatches the retry', (
+        tester,
+      ) async {
+        final message = DmMessage(
+          id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: currentPubkey,
+          content: 'Still deleting',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+          retractionStatus: DmRetractionStatus.pending,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Still deleting'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(l10n.dmDeletePendingLabel), findsOneWidget);
+        expect(find.text(l10n.dmDeleteRefusedDetails), findsOneWidget);
+
+        await tester.tap(find.text(l10n.authTryAgain));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         verify(
           () => mockBloc.add(

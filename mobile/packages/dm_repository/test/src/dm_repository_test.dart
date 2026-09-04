@@ -16488,6 +16488,68 @@ void main() {
         },
       );
 
+      test(
+        'an own-device kind 5 does not reopen an existing deletion lifecycle',
+        () async {
+          final controller = StreamController<Event>();
+          stubSubscription(controller);
+          const sentId =
+              '111111111111111111111111111111111111111111111111'
+              '1111111111111111';
+          const blockedId =
+              '222222222222222222222222222222222222222222222222'
+              '2222222222222222';
+          final deletion = createDeletionEvent(
+            authorPubkey: _validPubkeyA,
+            deletedRumorIds: const [sentId, blockedId],
+          );
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.positionalArguments.single as String;
+            return DirectMessageRow(
+              id: id,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: true,
+              twinCollapsed: false,
+              deletionPublishStatus: id == sentId
+                  ? 'deletion_sent'
+                  : DirectMessagesDao.deletionBlocked,
+            );
+          });
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+          );
+          await repository.startListening();
+          controller.add(deletion);
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              any(),
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       test('ignores kind 5 from non-author (NIP-09 mismatch)', () async {
         final controller = StreamController<Event>();
         stubSubscription(controller);
