@@ -16,6 +16,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
+import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -492,7 +493,9 @@ class _BlockedUserTile extends ConsumerWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(11),
-          child: profile?.picture != null && profile!.picture!.isNotEmpty
+          child:
+              profile?.picture != null &&
+                  isUsableNetworkImageUrl(profile!.picture!)
               ? VineCachedImage(
                   imageUrl: profile.picture!,
                   width: 38,

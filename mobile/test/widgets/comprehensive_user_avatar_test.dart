@@ -207,9 +207,9 @@ void main() {
       });
 
       testWidgets(
-        'renders the placeholder without requesting a dead http vine.co URL',
+        'renders the placeholder without requesting an insecure URL',
         (tester) async {
-          const deadUrl = 'http://v.cdn.vine.co/v/avatars/dead.jpg';
+          const deadUrl = 'http://images.example/avatar.jpg';
 
           await tester.pumpWidget(
             const MaterialApp(
@@ -219,9 +219,8 @@ void main() {
             ),
           );
 
-          // The origin is verified dead (403 on cleartext, expired cert on
-          // 443), so the request must never be attempted — the placeholder
-          // is the correct render.
+          // Profile metadata is untrusted, so cleartext image requests are
+          // rejected before constructing the cached-image widget.
           expect(find.byType(VineCachedImage), findsNothing);
           expect(_gradientFinder(), findsWidgets);
         },

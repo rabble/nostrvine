@@ -1097,7 +1097,7 @@ class ProfileRepository implements ProfileReader {
       if (event != null) {
         final profile = UserProfile.fromNostrEvent(event);
         Log.debug(
-          'Fetched from relay: ${profile.bestDisplayName}',
+          'Fetched profile from connected relay',
           name: 'ProfileRepository.fetchFreshProfile',
           category: LogCategory.relay,
         );
@@ -1135,7 +1135,7 @@ class ProfileRepository implements ProfileReader {
         );
         final profile = UserProfile.fromNostrEvent(newest);
         Log.debug(
-          'Fetched from indexer relay: ${profile.bestDisplayName}',
+          'Fetched profile from indexer relay',
           name: 'ProfileRepository.fetchFreshProfile',
           category: LogCategory.relay,
         );
@@ -2198,7 +2198,7 @@ class ProfileRepository implements ProfileReader {
           latencyMs: phase1Watch.elapsedMilliseconds,
         );
         Log.warning(
-          'Local cache search failed: $e',
+          'Local cache search failed (${e.runtimeType})',
           name: 'ProfileRepository.searchUsersProgressive',
           category: LogCategory.api,
         );
@@ -2236,7 +2236,7 @@ class ProfileRepository implements ProfileReader {
           latencyMs: phase2Watch.elapsedMilliseconds,
         );
         Log.warning(
-          'REST search failed: $e',
+          'REST search failed (${e.runtimeType})',
           name: 'ProfileRepository.searchUsersProgressive',
           category: LogCategory.api,
         );
@@ -2286,7 +2286,7 @@ class ProfileRepository implements ProfileReader {
           latencyMs: phase3Watch.elapsedMilliseconds,
         );
         Log.warning(
-          'NIP-50 search failed: $e',
+          'NIP-50 search failed (${e.runtimeType})',
           name: 'ProfileRepository.searchUsersProgressive',
           category: LogCategory.relay,
         );
@@ -2294,7 +2294,7 @@ class ProfileRepository implements ProfileReader {
 
       if (resultMap.length > preWsCount) {
         final enriched = await _enrichFromCache(resultMap.values.toList());
-        yield snapshot(
+        final result = snapshot(
           isComplete: true,
           enriched: _applyFilter(
             trimmed,
@@ -2304,6 +2304,8 @@ class ProfileRepository implements ProfileReader {
             sortBy: sortBy,
           ),
         );
+        _logSearchSummary(result);
+        yield result;
         return;
       }
     } else {
@@ -2313,7 +2315,7 @@ class ProfileRepository implements ProfileReader {
     // Final yield: enriched + filtered (when WS didn't add anything or
     // was skipped due to offset > 0)
     final enriched = await _enrichFromCache(resultMap.values.toList());
-    yield snapshot(
+    final result = snapshot(
       isComplete: true,
       enriched: _applyFilter(
         trimmed,
@@ -2322,6 +2324,28 @@ class ProfileRepository implements ProfileReader {
         boostPubkeys,
         sortBy: sortBy,
       ),
+    );
+    _logSearchSummary(result);
+    yield result;
+  }
+
+  void _logSearchSummary(ProgressiveSearchResult result) {
+    String describe(SearchSourceStatus status) => switch (status) {
+      SearchSourcePending() => 'pending',
+      SearchSourceSkipped() => 'skipped',
+      SearchSourceSuccess(:final resultCount, :final latencyMs) =>
+        'success(count=$resultCount,latencyMs=$latencyMs)',
+      SearchSourceFailed(:final reason, :final latencyMs) =>
+        'failed(reason=${reason.name},latencyMs=$latencyMs)',
+    };
+
+    Log.info(
+      'Search summary: total=${result.profiles.length}, '
+      'local=${describe(result.sources[SearchSource.localCache]!)}, '
+      'api=${describe(result.sources[SearchSource.funnelcakeApi]!)}, '
+      'relay=${describe(result.sources[SearchSource.nip50Relay]!)}',
+      name: 'ProfileRepository.searchUsersProgressive',
+      category: LogCategory.api,
     );
   }
 

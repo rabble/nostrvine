@@ -103,7 +103,7 @@ class _VineCachedImageState extends State<VineCachedImage> {
   }
 
   void _resolveImageStream() {
-    if (isKnownDeadImageHost(widget.imageUrl)) {
+    if (!isUsableNetworkImageUrl(widget.imageUrl)) {
       _removeImageListener();
       _error = null;
       _hasImage = false;
@@ -167,11 +167,10 @@ class _VineCachedImageState extends State<VineCachedImage> {
 
   @override
   Widget build(BuildContext context) {
-    // A known-dead host must never be resolved: the origin is gone, so the
-    // request would only burn a failure before landing here anyway.
-    if (isKnownDeadImageHost(widget.imageUrl)) {
+    // Invalid, insecure, and known-dead origins must never be resolved.
+    if (!isUsableNetworkImageUrl(widget.imageUrl)) {
       return _ErrorWidget(
-        error: StateError('known-dead image host: ${widget.imageUrl}'),
+        error: StateError('image URL is not eligible for a network request'),
         imageUrl: widget.imageUrl,
         width: widget.width,
         height: widget.height,

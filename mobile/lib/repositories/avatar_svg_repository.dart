@@ -79,7 +79,7 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
       return bytes;
     } on Object catch (error) {
       UnifiedLogger.warning(
-        'Avatar SVG validation failed for URL: $url - Error: $error',
+        'Avatar SVG validation failed (${error.runtimeType})',
         name: 'AvatarSvgRepository',
       );
       _writeCache(url, null, AvatarSvgRepositoryConfig.negativeTtl);
@@ -263,7 +263,7 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
 
   void _logRejected(Uri uri, String? contentType, String reason) {
     UnifiedLogger.warning(
-      'Avatar SVG rejected: url=$uri contentType=${contentType ?? '<none>'} reason=$reason',
+      'Avatar SVG rejected: contentType=${contentType ?? '<none>'} reason=$reason',
       name: 'AvatarSvgRepository',
     );
   }

@@ -180,7 +180,7 @@ class _HttpDownload implements CancellableDownload {
       final uri = Uri.parse(_url);
       if (uri.scheme.toLowerCase() != 'https') {
         Log.warning(
-          'CancellableDownload: rejecting non-https url $_url',
+          'CancellableDownload: rejected non-https URL',
           name: 'MediaCache',
           category: LogCategory.video,
         );
@@ -210,7 +210,7 @@ class _HttpDownload implements CancellableDownload {
       }
       if (response.statusCode != HttpStatus.ok) {
         Log.warning(
-          'CancellableDownload: $_url returned HTTP ${response.statusCode}',
+          'CancellableDownload: request returned HTTP ${response.statusCode}',
           name: 'MediaCache',
           category: LogCategory.video,
         );
@@ -260,7 +260,8 @@ class _HttpDownload implements CancellableDownload {
           // teardown, not a download failure — only warn for real errors.
           if (!_isCancelled) {
             Log.warning(
-              'CancellableDownload: stream error for $_url: $error',
+              'CancellableDownload: response stream failed '
+              '(${error.runtimeType})',
               name: 'MediaCache',
               category: LogCategory.video,
             );
@@ -313,7 +314,7 @@ class _HttpDownload implements CancellableDownload {
       // failure, and must not pollute bug-report logs with false warnings.
       if (!_isCancelled) {
         Log.warning(
-          'CancellableDownload: request failed for $_url: $error',
+          'CancellableDownload: request failed (${error.runtimeType})',
           name: 'MediaCache',
           category: LogCategory.video,
         );
@@ -335,7 +336,7 @@ class _HttpDownload implements CancellableDownload {
     _sink = null;
     if (!alreadyFailed && !_isCancelled) {
       Log.warning(
-        'CancellableDownload: write failed for $_url: $error',
+        'CancellableDownload: cache write failed (${error.runtimeType})',
         name: 'MediaCache',
         category: LogCategory.video,
       );

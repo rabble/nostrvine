@@ -228,9 +228,9 @@ class BugReportConfig {
       r'\b[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
       caseSensitive: false,
     ),
-    // Malformed or partially redacted NIP-05 values can lose their local
-    // part and appear as a bare `@domain`. They remain identity-linked data
-    // and must not escape into a support artifact beside the reporter pubkey.
+    // Root NIP-05 identifiers (`_@domain`) are displayed as a bare domain.
+    // That display form remains identity-linked data and must not escape into
+    // a support artifact beside the reporter pubkey.
     RegExp(
       r'(?<![A-Z0-9._%+-])@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b',
       caseSensitive: false,

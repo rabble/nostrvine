@@ -499,13 +499,13 @@ void main() {
     // surface a captured warning. If the capture path is ever gated or
     // refactored away, this fails loudly instead of letting the
     // "does not log a warning" test quietly go vacuous.
-    test('a genuine non-2xx failure logs a captured warning', () async {
+    test('a rate-limited response logs status without the URL', () async {
       await LogCaptureService().clearAllLogs();
 
       final client = _CallbackClient(
         (_) async => http.StreamedResponse(
           Stream<List<int>>.value(utf8.encode('not found')),
-          404,
+          429,
         ),
       );
       final downloader = HttpCancellableDownloader(client);
@@ -522,7 +522,34 @@ void main() {
           .where((entry) => entry.message.contains('CancellableDownload'))
           .toList();
       expect(downloaderWarnings, isNotEmpty);
-      expect(downloaderWarnings.first.message, contains('returned HTTP 404'));
+      expect(downloaderWarnings.first.message, contains('returned HTTP 429'));
+      expect(
+        downloaderWarnings.first.message,
+        isNot(contains('https://example.com/missing.mp4')),
+      );
+    });
+
+    test('non-https rejection does not log the URL', () async {
+      await LogCaptureService().clearAllLogs();
+      final downloader = HttpCancellableDownloader(
+        _CallbackClient((_) async {
+          throw StateError('request must not start');
+        }),
+      );
+
+      final file = await downloader
+          .download(
+            url: 'http://private.example/avatar.jpg?identity=alice',
+            targetFile: File('${tempDir.path}/insecure.jpg'),
+          )
+          .file;
+
+      expect(file, isNull);
+      final warning = LogCaptureService().getRecentLogs().singleWhere(
+        (entry) => entry.message.contains('non-https'),
+      );
+      expect(warning.message, isNot(contains('private.example')));
+      expect(warning.message, isNot(contains('alice')));
     });
 
     test('close waits for active response stream cancellation', () async {

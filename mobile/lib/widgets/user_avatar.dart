@@ -132,8 +132,7 @@ class UserAvatar extends StatelessWidget {
   bool get _hasNetworkImage =>
       imageUrl != null &&
       imageUrl!.isNotEmpty &&
-      Uri.tryParse(imageUrl!)?.scheme == 'https' &&
-      !isKnownDeadImageHost(imageUrl!);
+      isUsableNetworkImageUrl(imageUrl!);
 
   bool get _isSvgImageUrl => isSvgImageUrl(imageUrl);
 

@@ -153,7 +153,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     final pending = editorState.pendingPictureUrl;
     if (pending != null &&
         pending.isNotEmpty &&
-        !isKnownDeadImageHost(pending)) {
+        isUsableNetworkImageUrl(pending)) {
       return NetworkImage(pending);
     }
 
@@ -164,7 +164,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     final persisted = editorState.persistedPictureUrl;
     if (persisted != null &&
         persisted.isNotEmpty &&
-        !isKnownDeadImageHost(persisted)) {
+        isUsableNetworkImageUrl(persisted)) {
       return NetworkImage(persisted);
     }
 

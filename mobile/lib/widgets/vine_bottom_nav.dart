@@ -25,6 +25,7 @@ import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
+import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -641,7 +642,7 @@ class _ProfileTabButton extends ConsumerWidget {
         ? null
         : ref.watch(userProfileReactiveProvider(pubkey)).value;
     final imageUrl = profile?.picture;
-    final hasAvatar = imageUrl != null && imageUrl.isNotEmpty;
+    final hasAvatar = imageUrl != null && isUsableNetworkImageUrl(imageUrl);
 
     final iconBox = SizedBox.square(
       dimension: kMinInteractiveDimension,

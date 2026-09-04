@@ -943,7 +943,7 @@ class MediaCacheManager extends CacheManager {
         if (!completer.isCompleted) completer.complete(downloadResult);
       } on Object catch (error) {
         Log.warning(
-          'MediaCacheManager: download setup failed for $url: $error',
+          'MediaCacheManager: download setup failed (${error.runtimeType})',
           name: 'MediaCache',
           category: LogCategory.video,
         );
