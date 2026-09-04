@@ -6899,7 +6899,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Hapus Semua Konten';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Selesaikan penghapusan akunmu';
+  String get accountDeletionRecoveryTitle => 'Akunmu sedang dihapus';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6915,7 +6915,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Permintaan penghapusanmu masih diproses. Cek lagi sebelum kamu meninggalkan layar ini.';
+      'Permintaan penghapusanmu masih diproses. Kamu bisa menggunakan akun lain sementara kami menyelesaikannya.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Penghapusan akun lain masih diproses di perangkat ini. Tunggu hingga selesai sebelum menghapus akun ini.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7003,7 +7007,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.';
+      'Akun Divine-mu telah dihapus. Permintaan penghapusan telah dikirim untuk postingan Nostr-mu, tetapi beberapa relay, klien, atau cache mungkin masih menyimpan salinannya.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

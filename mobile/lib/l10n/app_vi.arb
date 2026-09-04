@@ -3695,10 +3695,11 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
-  "accountDeletionRecoveryTitle": "Hoàn tất xóa tài khoản của bạn",
+  "accountDeletionRecoveryTitle": "Đang xóa tài khoản của bạn",
   "accountDeletionRecoveryBody": "Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.",
   "accountDeletionRestoreUsername": "Lấy lại tên người dùng của mình",
-  "accountDeletionFinishingBody": "Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.",
+  "accountDeletionFinishingBody": "Yêu cầu xóa tài khoản của bạn vẫn đang được xử lý. Bạn có thể dùng một tài khoản khác trong lúc chúng tôi hoàn tất.",
+  "accountDeletionOtherAccountPending": "Việc xóa một tài khoản khác vẫn đang được xử lý trên thiết bị này. Hãy đợi quá trình đó hoàn tất trước khi xóa tài khoản này.",
   "accountDeletionCancellingBody": "Chúng tôi đang hủy yêu cầu xóa của bạn. Kiểm tra lại trước khi rời màn hình này nhé.",
   "accountDeletionRecoveryFailed": "Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.",
   "accountDeletionUsernameRestored": "Tên người dùng của bạn đã được lấy lại. Tài khoản của bạn chưa bị xóa.",
@@ -3726,7 +3727,7 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.",
-  "deleteAccountSuccess": "Đã gửi yêu cầu xóa. Bạn đã đăng xuất trên thiết bị này.",
+  "deleteAccountSuccess": "Tài khoản Divine của bạn đã bị xóa. Yêu cầu xóa các bài đăng Nostr của bạn đã được gửi, nhưng một số relay, ứng dụng khách hoặc bộ nhớ đệm có thể vẫn giữ bản sao.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
   },

@@ -325,6 +325,20 @@ void main() {
       expect(resolvedCalls, 0);
       verify(authService.signOut).called(1);
     });
+
+    test('a failed account switch exposes the sign-out failure', () async {
+      when(authService.signOut).thenThrow(StateError('sign out failed'));
+      final cubit = buildCubit(withReceipt: true);
+      addTearDown(cubit.close);
+      await cubit.resume(_processing);
+
+      final switched = await cubit.switchAccount();
+
+      expect(switched, isFalse);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.signOutFailed);
+      expect(cubit.state.failure, AccountDeletionRecoveryFailure.signOut);
+      expect(cubit.state.attempt, same(_processing));
+    });
   });
 
   group('load', () {

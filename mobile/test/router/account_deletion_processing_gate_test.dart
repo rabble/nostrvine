@@ -15,12 +15,14 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart'
     show AuthService, AuthState;
 import 'package:profile_repository/profile_repository.dart';
@@ -34,6 +36,8 @@ class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 class _MockDeletionRepository extends Mock
     implements AccountDeletionRecoveryRepository {}
+
+class _MockAnalyticsService extends Mock implements AnalyticsService {}
 
 const _pubkey =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -65,6 +69,11 @@ void main() {
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkey);
       when(() => authService.hasExistingProfile).thenReturn(true);
       when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+      when(() => authService.userRelays).thenReturn(const []);
+      when(authService.getKnownAccounts).thenAnswer((_) async => []);
+      when(
+        authService.getSessionRecoveryAnchorNpub,
+      ).thenAnswer((_) async => null);
       when(authService.signOut).thenAnswer((_) async {});
 
       final profile = UserProfile(
@@ -91,6 +100,8 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(authService),
+          appVersionProvider.overrideWithValue('test'),
+          analyticsServiceProvider.overrideWithValue(_MockAnalyticsService()),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           currentAuthRpcCapabilityProvider.overrideWithValue(
             AuthRpcCapability.rpcReady,
@@ -193,12 +204,17 @@ void main() {
         expect(find.byType(NostrSettingsScreen), findsNothing);
         expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
 
-        // Once signed out, another account may use Welcome. Selecting the
-        // deleting identity there routes back to this recovery gate.
+        clearInteractions(deletionRepository);
+        await tester.pump(const Duration(seconds: 3));
+        verify(deletionRepository.fetchCurrent).called(1);
+
+        // Once signed out, another account may use Welcome while the deleting
+        // identity remains protected by the durable receipt.
         when(
           () => authService.authState,
         ).thenReturn(AuthState.unauthenticated);
         router.go('/welcome');
+        await tester.pump();
         expect(
           router.routeInformationProvider.value.uri.toString(),
           '/welcome',

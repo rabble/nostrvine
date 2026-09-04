@@ -6971,7 +6971,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
 
   @override
-  String get accountDeletionRecoveryTitle => 'اپنے اکاؤنٹ کا حذف مکمل کریں';
+  String get accountDeletionRecoveryTitle => 'آپ کا اکاؤنٹ حذف کیا جا رہا ہے';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6987,7 +6987,11 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'آپ کی حذف کی درخواست پر ابھی کام ہو رہا ہے۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔';
+      'آپ کے اکاؤنٹ کو حذف کرنے کی درخواست پر ابھی کارروائی ہو رہی ہے۔ ہمارے مکمل کرنے تک آپ کوئی دوسرا اکاؤنٹ استعمال کر سکتے ہیں۔';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'اس ڈیوائس پر کسی دوسرے اکاؤنٹ کو حذف کرنے کی کارروائی ابھی جاری ہے۔ اس اکاؤنٹ کو حذف کرنے سے پہلے اس کے مکمل ہونے کا انتظار کریں۔';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7075,7 +7079,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'حذف کی درخواستیں بھیج دی گئیں۔ آپ اس ڈیوائس پر سائن آؤٹ ہو گئے۔';
+      'آپ کا Divine اکاؤنٹ حذف کر دیا گیا ہے۔ آپ کی Nostr پوسٹس کے لیے حذف کرنے کی درخواستیں بھیج دی گئی ہیں، لیکن کچھ ریلے، کلائنٹس یا کیشز ان کی نقول محفوظ رکھ سکتے ہیں۔';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

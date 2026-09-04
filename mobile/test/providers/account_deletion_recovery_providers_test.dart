@@ -14,6 +14,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -325,6 +326,78 @@ void main() {
       );
       verify(repository.fetchCurrent).called(1);
     });
+
+    test(
+      'a different account is not gated by a retained receipt after lookup '
+      'failure',
+      () async {
+        final probe = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            authServiceProvider.overrideWithValue(authService),
+            currentAuthStateProvider.overrideWith(
+              (ref) => ref.watch(_authStateProbe),
+            ),
+            currentAuthRpcCapabilityProvider.overrideWithValue(
+              AuthRpcCapability.rpcReady,
+            ),
+            accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+              repository,
+            ),
+          ],
+        );
+        addTearDown(probe.dispose);
+        probe.read(_authStateProbe.notifier).set(AuthState.unauthenticated);
+        await probe
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: pubkey,
+              attempt: processing,
+              vanishEventId: 'vanish-event-id',
+            );
+        final subscription = probe.listen(
+          currentAccountDeletionAttemptProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        expect(
+          await probe.read(currentAccountDeletionAttemptProvider.future),
+          same(processing),
+        );
+
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenReturn('different-account-pubkey');
+        when(repository.fetchCurrent).thenThrow(
+          const AccountDeletionStatusUnavailable(),
+        );
+        probe.read(_authStateProbe.notifier).set(AuthState.authenticated);
+        await expectLater(
+          probe.read(currentAccountDeletionAttemptProvider.future),
+          throwsA(isA<AccountDeletionStatusUnavailable>()),
+        );
+
+        final retained = probe.read(currentAccountDeletionAttemptProvider);
+        expect(retained.hasError, isTrue);
+        expect(retained.value, same(processing));
+        expect(
+          probe.read(currentSubmittedAccountDeletionAttemptProvider),
+          isNull,
+        );
+        expect(
+          accountDeletionRecoveryGateActive(
+            retained,
+            submittedAttempt: probe.read(
+              submittedAccountDeletionAttemptProvider,
+            ),
+            authState: AuthState.authenticated,
+            currentPubkeyHex: 'different-account-pubkey',
+          ),
+          isFalse,
+        );
+      },
+    );
 
     test('a second account cannot overwrite the pending receipt', () async {
       final notifier = container.read(

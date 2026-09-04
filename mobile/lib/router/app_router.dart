@@ -126,9 +126,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     }
     refreshListenable.refresh();
   });
+  bool deletionGateActiveForCurrentAccount(
+    AsyncValue<AccountDeletionAttempt?>? attempt,
+  ) {
+    final submitted = ref.read(submittedAccountDeletionAttemptProvider);
+    return accountDeletionRecoveryGateActive(
+      attempt,
+      submittedAttempt: submitted,
+      authState: authService.authState,
+      currentPubkeyHex: authService.currentPublicKeyHex,
+    );
+  }
+
   ref.listen(currentAccountDeletionAttemptProvider, (previous, next) {
-    final before = accountDeletionRecoveryGateActive(previous);
-    final after = accountDeletionRecoveryGateActive(next);
+    final before = deletionGateActiveForCurrentAccount(previous);
+    final after = deletionGateActiveForCurrentAccount(next);
     if (before != after) refreshListenable.refresh();
   });
   ref.onDispose(refreshListenable.dispose);

@@ -12,7 +12,6 @@ enum AccountDeletionRecoveryStatus {
   completed,
   cleanupFailed,
   terminalFailure,
-
   signingOut,
   signOutFailed,
   resolved,

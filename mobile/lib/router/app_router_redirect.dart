@@ -9,9 +9,18 @@ bool _suppressNextAuthenticatedAuthRouteRedirect = false;
 
 @visibleForTesting
 bool accountDeletionRecoveryGateActive(
-  AsyncValue<AccountDeletionAttempt?>? attempt,
-) {
+  AsyncValue<AccountDeletionAttempt?>? attempt, {
+  SubmittedAccountDeletionAttempt? submittedAttempt,
+  AuthState? authState,
+  String? currentPubkeyHex,
+}) {
   if (attempt == null || !attempt.hasValue) return false;
+  if (authState == AuthState.authenticated &&
+      submittedAttempt != null &&
+      submittedAttempt.pubkeyHex != currentPubkeyHex &&
+      identical(attempt.value, submittedAttempt.attempt)) {
+    return false;
+  }
   return attempt.value?.requiresRecoveryScreen ?? false;
 }
 
@@ -339,8 +348,16 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
 
   final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
   final deletionAttemptAsync = ref.read(currentAccountDeletionAttemptProvider);
+  final submittedDeletion =
+      authState == AuthState.authenticated &&
+          deletionAttemptAsync.value?.requiresRecoveryScreen == true
+      ? ref.read(submittedAccountDeletionAttemptProvider)
+      : null;
   final deletionRecoveryGateActive = accountDeletionRecoveryGateActive(
     deletionAttemptAsync,
+    submittedAttempt: submittedDeletion,
+    authState: authState,
+    currentPubkeyHex: authService.currentPublicKeyHex,
   );
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(

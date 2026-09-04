@@ -6926,7 +6926,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
 
   @override
-  String get accountDeletionRecoveryTitle => 'إكمال حذف حسابك';
+  String get accountDeletionRecoveryTitle => 'جارٍ حذف حسابك';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6942,7 +6942,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.';
+      'لا يزال طلب حذف حسابك قيد المعالجة. يمكنك استخدام حساب آخر إلى أن ننتهي.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'لا تزال عملية حذف حساب آخر قيد المعالجة على هذا الجهاز. انتظر حتى تنتهي قبل حذف هذا الحساب.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7029,7 +7033,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.';
+      'تم حذف حسابك على Divine. أُرسلت طلبات لحذف منشوراتك على Nostr، لكن قد تحتفظ بعض المرحّلات أو التطبيقات أو ذاكرات التخزين المؤقت بنسخ منها.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

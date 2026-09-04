@@ -6983,7 +6983,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Selesaikan pemadaman akaun anda';
+  String get accountDeletionRecoveryTitle => 'Akaun anda sedang dipadamkan';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6999,7 +6999,11 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Permintaan pemadaman anda masih diproses. Semak semula sebelum anda meninggalkan skrin ini.';
+      'Permintaan pemadaman anda masih diproses. Anda boleh menggunakan akaun lain sementara kami menyelesaikannya.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Pemadaman akaun lain masih diproses pada peranti ini. Tunggu sehingga selesai sebelum memadamkan akaun ini.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7087,7 +7091,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Permintaan pemadaman dihantar. Anda telah dilog keluar pada peranti ini.';
+      'Akaun Divine anda telah dipadamkan. Permintaan pemadaman telah dihantar untuk siaran Nostr anda, tetapi sesetengah geganti, klien atau cache mungkin menyimpan salinannya.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

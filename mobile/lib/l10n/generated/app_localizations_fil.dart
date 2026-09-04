@@ -7022,8 +7022,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';
 
   @override
-  String get accountDeletionRecoveryTitle =>
-      'Tapusin ang pag-delete ng account mo';
+  String get accountDeletionRecoveryTitle => 'Dine-delete ang account mo';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7039,7 +7038,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Pinoproseso pa ang delete request mo. Tingnan ulit bago ka umalis sa screen na ito.';
+      'Pinoproseso pa ang request na i-delete ang account mo. Puwede kang gumamit ng ibang account habang tinatapos namin ito.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Pinoproseso pa sa device na ito ang pag-delete ng ibang account. Hintayin itong matapos bago i-delete ang account na ito.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7128,7 +7131,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
+      'Na-delete na ang Divine account mo. Naipadala na ang mga request na i-delete ang mga Nostr post mo, pero maaaring may mga relay, client, o cache na nagpapanatili ng mga kopya.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

@@ -6810,7 +6810,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
 
   @override
-  String get accountDeletionRecoveryTitle => 'የመለያዎን መሰረዝ ያጠናቅቁ';
+  String get accountDeletionRecoveryTitle => 'መለያዎ በመሰረዝ ላይ';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6826,7 +6826,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'የመሰረዝ ጥያቄዎ አሁንም እየተሰራ ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
+      'የመለያዎ ስረዛ ጥያቄ አሁንም በሂደት ላይ ነው። እስክናጠናቅቅ ድረስ ሌላ መለያ መጠቀም ይችላሉ።';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'በዚህ መሣሪያ ላይ የሌላ መለያ ስረዛ አሁንም በሂደት ላይ ነው። ይህን መለያ ከመሰረዝዎ በፊት እስኪጠናቀቅ ይጠብቁ።';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -6912,7 +6916,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ትንሽ ቆይተው እንደገና ይሞክሩ።';
 
   @override
-  String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
+  String get deleteAccountSuccess =>
+      'የDivine መለያዎ ተሰርዟል። ለNostr ልጥፎችዎ የስረዛ ጥያቄዎች ተልከዋል፣ ነገር ግን አንዳንድ ሪሌዎች፣ ደንበኞች ወይም መሸጎጫዎች ቅጂዎችን ሊያቆዩ ይችላሉ።';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

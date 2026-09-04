@@ -7097,6 +7097,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your deletion request is still being processed. You can use another account while we finish.';
 
   @override
+  String get accountDeletionOtherAccountPending =>
+      'Another account deletion is still being processed on this device. Wait for it to finish before deleting this account.';
+
+  @override
   String get accountDeletionCancellingBody =>
       'We\'re cancelling your deletion. Check again before leaving this screen.';
 

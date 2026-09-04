@@ -11968,6 +11968,12 @@ abstract class AppLocalizations {
   /// **'Your deletion request is still being processed. You can use another account while we finish.'**
   String get accountDeletionFinishingBody;
 
+  /// Snackbar shown when this installation already holds a pending deletion receipt for a different account.
+  ///
+  /// In en, this message translates to:
+  /// **'Another account deletion is still being processed on this device. Wait for it to finish before deleting this account.'**
+  String get accountDeletionOtherAccountPending;
+
   /// Shown while the server is rolling back an account-deletion attempt the user asked to cancel.
   ///
   /// In en, this message translates to:

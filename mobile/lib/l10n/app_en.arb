@@ -4488,6 +4488,8 @@
   "@accountDeletionRestoreUsername": {"description": "Button that cancels an interrupted account deletion and restores its pending username."},
   "accountDeletionFinishingBody": "Your deletion request is still being processed. You can use another account while we finish.",
   "@accountDeletionFinishingBody": {"description": "Shown while the server is durably completing an account deletion."},
+  "accountDeletionOtherAccountPending": "Another account deletion is still being processed on this device. Wait for it to finish before deleting this account.",
+  "@accountDeletionOtherAccountPending": {"description": "Snackbar shown when this installation already holds a pending deletion receipt for a different account."},
   "accountDeletionCancellingBody": "We're cancelling your deletion. Check again before leaving this screen.",
   "@accountDeletionCancellingBody": {"description": "Shown while the server is rolling back an account-deletion attempt the user asked to cancel."},
   "accountDeletionRecoveryFailed": "We couldn't restore your username yet. Check your connection and try again.",

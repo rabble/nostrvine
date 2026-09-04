@@ -41,7 +41,7 @@ Future<void> startAccountDeletionFlow({
   final pendingDeletion = ref.read(submittedAccountDeletionAttemptProvider);
   if (pendingDeletion != null && pendingDeletion.pubkeyHex != pubkey) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.accountDeletionFinishingBody)),
+      SnackBar(content: Text(context.l10n.accountDeletionOtherAccountPending)),
     );
     return;
   }

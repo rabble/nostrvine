@@ -4407,7 +4407,7 @@
     "description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."
   },
   "deleteAccountDeleteAllContentButton": "మొత్తం కంటెంట్‌ను తొలగించండి",
-  "accountDeletionRecoveryTitle": "మీ ఖాతాను తొలగించడం ముగించండి",
+  "accountDeletionRecoveryTitle": "మీ ఖాతా తొలగించబడుతోంది",
   "@accountDeletionRecoveryTitle": {
     "description": "Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared."
   },
@@ -4428,10 +4428,11 @@
   "@accountDeletionRestoreUsername": {
     "description": "Button that cancels an interrupted account deletion and restores its pending username."
   },
-  "accountDeletionFinishingBody": "మీ తొలగింపు అభ్యర్థన ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. ఈ స్క్రీన్ నుండి నిష్క్రమించే ముందు మళ్లీ తనిఖీ చేయండి.",
+  "accountDeletionFinishingBody": "మీ ఖాతా తొలగింపు అభ్యర్థన ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. మేము దీన్ని పూర్తి చేసే వరకు మీరు మరొక ఖాతాను ఉపయోగించవచ్చు.",
   "@accountDeletionFinishingBody": {
     "description": "Shown while the server is durably completing an immediate account deletion."
   },
+  "accountDeletionOtherAccountPending": "ఈ పరికరంలో మరొక ఖాతా తొలగింపు ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. ఈ ఖాతాను తొలగించే ముందు అది పూర్తయ్యే వరకు వేచి ఉండండి.",
   "accountDeletionCancellingBody": "మేము మీ తొలగింపును రద్దు చేస్తున్నాము. ఈ స్క్రీన్ నుండి నిష్క్రమించే ముందు మళ్లీ తనిఖీ చేయండి.",
   "@accountDeletionCancellingBody": {
     "description": "Shown while the server is rolling back an account-deletion attempt the user asked to cancel."
@@ -4506,7 +4507,7 @@
   "@deleteAccountServerDeletionFailed": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure."
   },
-  "deleteAccountSuccess": "తొలగింపు అభ్యర్థనలు పంపబడ్డాయి. మీరు ఈ పరికరంలో సైన్ అవుట్ చేసారు.",
+  "deleteAccountSuccess": "మీ Divine ఖాతా తొలగించబడింది. మీ Nostr పోస్ట్‌ల కోసం తొలగింపు అభ్యర్థనలు పంపబడ్డాయి, కానీ కొన్ని రిలేలు, క్లయింట్లు లేదా క్యాష్‌లు కాపీలను ఉంచవచ్చు.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
   },

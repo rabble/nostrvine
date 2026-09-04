@@ -7045,7 +7045,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Довърши изтриването на акаунта';
+  String get accountDeletionRecoveryTitle => 'Изтриване на акаунта ти';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7061,7 +7061,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Заявката ти за изтриване още се обработва. Провери пак, преди да напуснеш този екран.';
+      'Заявката ти за изтриване все още се обработва. Можеш да използваш друг акаунт, докато приключим.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Изтриването на друг акаунт все още се обработва на това устройство. Изчакай да приключи, преди да изтриеш този акаунт.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7149,7 +7153,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Заявките за изтриване са изпратени. Отписан си на това устройство.';
+      'Твоят Divine акаунт беше изтрит. Изпратени бяха заявки за изтриване на публикациите ти в Nostr, но някои релейни сървъри, клиенти или кешове може да запазят копия.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

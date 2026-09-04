@@ -7149,7 +7149,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finalizează ștergerea contului';
+  String get accountDeletionRecoveryTitle =>
+      'Contul tău este în curs de ștergere';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7166,7 +7167,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Cererea ta de ștergere este încă în curs. Verifică din nou înainte să părăsești acest ecran.';
+      'Cererea ta de ștergere este încă în curs de procesare. Poți folosi alt cont până terminăm.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Ștergerea altui cont este încă în curs de procesare pe acest dispozitiv. Așteaptă să se termine înainte de a șterge acest cont.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7254,7 +7259,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.';
+      'Contul tău Divine a fost șters. Au fost trimise cereri de ștergere pentru postările tale Nostr, dar unele relee, aplicații client sau memorii cache pot păstra copii.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

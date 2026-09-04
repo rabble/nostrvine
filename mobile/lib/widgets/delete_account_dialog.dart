@@ -797,9 +797,9 @@ Future<void> executeAccountDeletion({
         );
         return;
       }
-      await onDeletionSubmitted?.call(attempt, eventId);
       AccountDeletionAttempt submitted;
       try {
+        await onDeletionSubmitted?.call(attempt, eventId);
         submitted = await deletionRecoveryRepository.submit(
           attemptId: attempt.id,
           vanishEventId: eventId,

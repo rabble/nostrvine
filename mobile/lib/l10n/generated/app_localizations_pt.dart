@@ -7026,7 +7026,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Excluir todo o conteúdo';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Concluir a exclusão da sua conta';
+  String get accountDeletionRecoveryTitle => 'Excluindo sua conta';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7042,7 +7042,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Seu pedido de exclusão ainda está sendo processado. Confira de novo antes de sair desta tela.';
+      'Seu pedido de exclusão ainda está sendo processado. Você pode usar outra conta enquanto concluímos.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'A exclusão de outra conta ainda está sendo processada neste dispositivo. Aguarde a conclusão antes de excluir esta conta.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7130,7 +7134,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.';
+      'Sua conta Divine foi excluída. Foram enviadas solicitações de exclusão para suas publicações no Nostr, mas alguns relays, clientes ou caches podem manter cópias.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

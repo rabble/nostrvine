@@ -304,10 +304,12 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     } on Object catch (error, stackTrace) {
       addError(error, stackTrace);
       if (!_isCurrent(generation)) return false;
-      _emitPollingState(
-        AccountDeletionRecoveryStatus.processing,
-        attempt,
-        generation,
+      emitIfOpen(
+        AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.signOutFailed,
+          attempt: attempt,
+          failure: AccountDeletionRecoveryFailure.signOut,
+        ),
       );
       return false;
     }
@@ -367,7 +369,7 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
         await _signOutForProcessing(submitted);
         return;
       }
-      await _handleAttempt(submitted, generation: _generation);
+      await _handleAttempt(submitted, generation: generation);
     } on Object catch (error, stackTrace) {
       addError(error, stackTrace);
       if (!_isCurrent(generation)) return;

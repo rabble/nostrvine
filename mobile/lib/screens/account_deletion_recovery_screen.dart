@@ -31,7 +31,14 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
     final receipt = ref.watch(currentSubmittedAccountDeletionAttemptProvider);
 
     return BlocProvider<AccountDeletionRecoveryCubit>(
-      key: ValueKey((repository, authService, signerReadiness, receipt)),
+      key: ValueKey((
+        repository,
+        authService,
+        signerReadiness,
+        receipt?.pubkeyHex,
+        receipt?.attempt.id,
+        receipt?.vanishEventId,
+      )),
       create: (_) {
         final cubit = AccountDeletionRecoveryCubit(
           repository: repository,

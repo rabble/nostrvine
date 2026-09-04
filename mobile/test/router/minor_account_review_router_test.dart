@@ -105,6 +105,47 @@ void main() {
       );
     });
 
+    test('ignores another account retained by a failed refresh', () async {
+      final retained = await _retainedRecoveryError();
+      expect(
+        accountDeletionRecoveryGateActive(
+          retained,
+          submittedAttempt: SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: retained.value!,
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isFalse,
+      );
+    });
+
+    test('uses a different account fresh recovery result', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(
+            AccountDeletionAttempt(
+              id: 'different-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+          ),
+          submittedAttempt: const SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: AccountDeletionAttempt(
+              id: 'first-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isTrue,
+      );
+    });
+
     test('stays inactive when a ready lookup finds no attempt', () {
       expect(
         accountDeletionRecoveryGateActive(

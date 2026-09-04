@@ -228,7 +228,10 @@ void main() {
       await tester.pump();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+      expect(
+        find.text(l10n.accountDeletionOtherAccountPending),
+        findsOneWidget,
+      );
       verifyNever(repository.prepare);
       verifyNever(
         () => deletionService.deleteAccount(

@@ -6631,7 +6631,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
 
   @override
-  String get accountDeletionRecoveryTitle => '계정 삭제 마무리하기';
+  String get accountDeletionRecoveryTitle => '계정 삭제 중';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6647,7 +6647,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      '삭제 요청을 아직 처리하고 있어요. 이 화면을 나가기 전에 다시 확인해 주세요.';
+      '계정 삭제 요청이 아직 처리 중이에요. 처리가 완료될 때까지 다른 계정을 사용할 수 있어요.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      '이 기기에서 다른 계정의 삭제가 아직 처리 중이에요. 처리가 완료된 후 이 계정을 삭제해 주세요.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -6731,7 +6735,8 @@ class AppLocalizationsKo extends AppLocalizations {
       '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
-  String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
+  String get deleteAccountSuccess =>
+      'Divine 계정이 삭제됐어요. Nostr 게시물에 대한 삭제 요청도 전송했지만, 일부 릴레이, 클라이언트 또는 캐시에 사본이 남아 있을 수 있어요.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

@@ -7005,8 +7005,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
 
   @override
-  String get accountDeletionRecoveryTitle =>
-      'Verwijderen van je account afronden';
+  String get accountDeletionRecoveryTitle => 'Je account wordt verwijderd';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7023,7 +7022,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Je verwijderverzoek wordt nog verwerkt. Controleer het opnieuw voordat je dit scherm verlaat.';
+      'Je verwijderverzoek wordt nog verwerkt. Je kunt een ander account gebruiken terwijl wij dit afronden.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'De verwijdering van een ander account wordt nog verwerkt op dit apparaat. Wacht tot die is afgerond voordat je dit account verwijdert.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7111,7 +7114,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.';
+      'Je Divine-account is verwijderd. Voor je Nostr-posts zijn verwijderverzoeken verstuurd, maar sommige relays, clients of caches bewaren mogelijk kopieën.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>
