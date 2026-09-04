@@ -282,11 +282,8 @@ class _RenderProgressTracker {
 ///
 /// Handles video rendering with aspect ratio cropping and clip concatenation.
 class VideoEditorRenderService {
-  /// Crash reporting for this static utility (#4743). Assigned by
-  /// `app_bootstrap`; tests assign a recording fake.
-  static CrashReporter crashReporter = const SilentCrashReporter();
-
   VideoEditorRenderService._();
+  static CrashReporter crashReporter = const SilentCrashReporter();
 
   static const _logName = 'VideoEditorRenderService';
 

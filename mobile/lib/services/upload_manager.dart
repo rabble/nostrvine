@@ -45,7 +45,6 @@ export 'package:openvine/services/upload/upload_session_errors.dart'
 /// by default.
 class CrashReportingUploadReporter implements UploadCrashReporter {
   const CrashReportingUploadReporter(this._reporter);
-
   final CrashReporter _reporter;
 
   @override
@@ -119,7 +118,6 @@ class UploadManager implements BackgroundAwareService {
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
        ),
-
        _backgroundActivityManager = backgroundActivityManager {
     _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(

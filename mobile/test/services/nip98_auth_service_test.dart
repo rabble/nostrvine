@@ -10,7 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 

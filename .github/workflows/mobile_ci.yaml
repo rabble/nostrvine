@@ -210,6 +210,13 @@ jobs:
           bash scripts/check_future_delayed_production_ceiling.sh
       - name: 🧱 Verify untested-services count does not increase (floor ratchet)
         run: bash scripts/check_untested_services_floor.sh
+      - name: 🧱 Verify singleton services do not regrow (DI ratchet)
+        run: |
+          # #4743: lazy-static singletons cannot be replaced in a test without
+          # reaching into static state. The set drifts when nothing watches it —
+          # #3623 counted 13, #4743 counted 14, and only 5 were left by the time
+          # either was re-read. Epic: #4338.
+          bash scripts/check_singleton_services.sh
       - name: 🧱 Verify service god-files do not grow (architecture ratchet)
         run: |
           # Hard architecture guard for #4338: the broad 800-line file-size
