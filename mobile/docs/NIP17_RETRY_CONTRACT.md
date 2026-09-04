@@ -120,9 +120,9 @@ re-minting is common enough that waiting on adoption is unacceptable.
 
 **Divine already ships a tag in this exact position, and it is instructive that
 it cannot be reused.** `sendMessage` and `sendGroupMessage` both inject
-`['batch', <256-bit secure-random hex>]` into the rumor
-(`dm_repository.dart:570`, minted at `:4184` / `:5861`, injected at `:4199` /
-`:5887`), and the receive path parses it at `:2587`. Its own doc comment notes
+`['batch', <256-bit secure-random hex>]` into the rumor. The
+`_sendBatchTagKey` declaration, `_newSendBatchId` call sites, and receive-path
+tag parsing show the complete lifecycle. Its own doc comment notes
 that it "travels inside the encrypted rumor" and that "other clients ignore
 unrecognised rumor tags, so it is inert on the wire" — so the extension point
 is proven in production, not hypothetical.
@@ -138,8 +138,8 @@ resolve both:
    Divine replays the stored rumor on retry, the existing token has never been
    exercised as a correlator at all.
 2. **Peer-authored tokens are deliberately refused, with a stated attack.**
-   Ingest honours the tag only when `rumor.pubkey == ownerPubkey`
-   (`dm_repository.dart:2588`), because — quoting the code — "accepting a
+   Ingest honours the tag only when `rumor.pubkey == ownerPubkey`, because —
+   quoting the code — "accepting a
    peer-authored `'batch'` tag would let a sender suppress the local user's own
    in-flight group persist." Honouring a peer's token is precisely what #6522
    needs, so **any cross-client correlation contract must answer this
@@ -214,10 +214,11 @@ Coracle, NDK and rust-nostr were not read. This does not change which design is
 correct, but it does change how urgent B is. It would be settled by reading
 those retry paths, or by field evidence. The change shipped alongside this
 document is what makes that evidence collectable: each `Persisted NIP-17 DM`
-line now records `contentLength`, so two persist lines with the same
-conversation, the same sender and the same length seconds apart are a re-mint
-signature that support can grep out of a bug report. The plaintext is never
-logged.
+line now records a process-local, keyed `contentCorrelation` token. Equal
+tokens for the same conversation and sender, seconds apart, are evidence of a
+possible re-mint that support can grep from a bug report. The plaintext, its
+length, and the temporary key are never logged, and the token changes after an
+app restart.
 
 ## Recommendation
 
@@ -225,6 +226,6 @@ Adopt A. Specify B and hold it. Do not ship any receiver-side suppression.
 
 A is not merely cheaper than B — it is safer. B requires honouring a token
 authored by the peer, which is the one thing the current ingest path refuses on
-purpose (`dm_repository.dart:2588`); designing that safely is a larger problem
+purpose; designing that safely is a larger problem
 than the duplicate bubble it would fix. A grants the peer no new authority over
 the receiver's database at all.

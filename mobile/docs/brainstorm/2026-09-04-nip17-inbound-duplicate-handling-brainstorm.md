@@ -11,7 +11,7 @@ per-message correlation signal, so the receiver renders two bubbles for one
 logical message. #6522 asks for "a protocol-level correlation signal, or another
 sender/receiver contract that makes a retry distinguishable from a new send."
 
-## What is already settled (see `tasks/findings_6522.md`)
+## What is already settled
 
 Reproduced end-to-end on an iPhone 17 Simulator against the `local_stack`
 funnelcake relay, with a hand-built NIP-59 peer: two gift wraps, identical
@@ -27,8 +27,8 @@ one conversation; the thread rendered two identical bubbles.
   would not even reach this case — an independent reason the issue's first
   rejected approach is a dead end.
 - **Divine never re-mints.** The retry path rebuilds from `row.rumorEventJson`
-  via `Event.fromJson`, preserving the rumor id verbatim
-  (`dm_repository.dart:4833-4841`, `:4934-4937`). Divine cannot cause this bug.
+  via `Event.fromJson` in `recoverSelfWrap` and `recoverFullSend`, preserving the
+  rumor id verbatim. Divine cannot cause this bug.
 - **No NIP defines a correlator, and none has been proposed.** Verified against
   a `nostr-protocol/nips` clone at HEAD. kind 14 carries only `p`, `e`,
   `subject`, `q`.
@@ -178,9 +178,12 @@ fell through to `null` and threw `type 'Null' is not a subtype of type
 debug log is the wrong trade, and guarding the call in a try/catch would have
 made the suite green while the observation silently never ran — the precise
 trap #8399 documents. The shipped version therefore adds no query at all: it
-appends `contentLength` to the persist line that already exists, which carries
-the rumor id, conversation id, sender and `created_at`. Same signature, zero
-hot-path cost, no test churn.
+appends a process-local, keyed `contentCorrelation` token to the persist line
+that already exists, which carries the rumor id, conversation id, sender and
+`created_at`. An equal token for the same conversation and sender, seconds
+apart, is evidence of a possible re-mint. The plaintext, its length, and the
+temporary key are not logged. This keeps the hot path query-free and avoids
+broad mock churn.
 
 **Complexity:** Low.
 

@@ -26,6 +26,8 @@ const _owner =
     'a4f5c1b2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8';
 const _peer =
     'b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9a0';
+const _otherPeer =
+    'c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1';
 const _privateKey =
     '5426e5b8b4b0e2a1f5e8d3c7a9b2f4e6d8c0a2b4f6e8d0c2a4b6f8e0d2c4a6b8';
 
@@ -223,44 +225,41 @@ void main() {
       );
     });
 
-    test(
-      "the self-wrap recovery re-wraps the same rumor too, so the user's "
-      'other device sees one message',
-      () async {
-        // recoverSelfWrap is the SECOND place a rumor is rebuilt from stored
-        // JSON. It replays the sender's own cross-device copy, so a fresh
-        // mint here duplicates the message on the user's other device rather
-        // than on a peer's — the same defect, pointed inward.
-        await outgoingDao.enqueue(
-          OutgoingDm(
-            id: _storedRumorId,
-            conversationId: conversationId,
-            recipientPubkey: _peer,
-            content: 'are we still on for tomorrow?',
-            createdAt: _baseCreatedAt,
-            rumorEventJson: jsonEncode(storedRumor().toJson()),
-            recipientWrapStatus: OutgoingWrapStatus.sent,
-            selfWrapStatus: OutgoingWrapStatus.failed,
-            queuedAt: DateTime.now(),
-            ownerPubkey: _owner,
-          ),
-        );
+    test("the self-wrap recovery re-wraps the same rumor too, so the user's "
+        'other device sees one message', () async {
+      // recoverSelfWrap is the SECOND place a rumor is rebuilt from stored
+      // JSON. It replays the sender's own cross-device copy, so a fresh
+      // mint here duplicates the message on the user's other device rather
+      // than on a peer's — the same defect, pointed inward.
+      await outgoingDao.enqueue(
+        OutgoingDm(
+          id: _storedRumorId,
+          conversationId: conversationId,
+          recipientPubkey: _peer,
+          content: 'are we still on for tomorrow?',
+          createdAt: _baseCreatedAt,
+          rumorEventJson: jsonEncode(storedRumor().toJson()),
+          recipientWrapStatus: OutgoingWrapStatus.sent,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          queuedAt: DateTime.now(),
+          ownerPubkey: _owner,
+        ),
+      );
 
-        final _ = await repository.recoverSelfWrap(rumorId: _storedRumorId);
+      final _ = await repository.recoverSelfWrap(rumorId: _storedRumorId);
 
-        final captured =
-            verify(
-                  () => messageService.publishSelfWrap(
-                    rumorEvent: captureAny(named: 'rumorEvent'),
-                    targetRelays: any(named: 'targetRelays'),
-                  ),
-                ).captured.single
-                as Event;
+      final captured =
+          verify(
+                () => messageService.publishSelfWrap(
+                  rumorEvent: captureAny(named: 'rumorEvent'),
+                  targetRelays: any(named: 'targetRelays'),
+                ),
+              ).captured.single
+              as Event;
 
-        expect(captured.id, _storedRumorId);
-        expect(captured.createdAt, _baseCreatedAt);
-      },
-    );
+      expect(captured.id, _storedRumorId);
+      expect(captured.createdAt, _baseCreatedAt);
+    });
   });
 
   group("a peer's re-minted retry is observable, not suppressed (#6522)", () {
@@ -345,10 +344,11 @@ void main() {
       required String rumorId,
       required String text,
       required int createdAt,
+      String senderPubkey = _peer,
     }) async {
       rumorByWrapId[wrapId] = Event.fromJson({
         'id': rumorId,
-        'pubkey': _peer,
+        'pubkey': senderPubkey,
         'created_at': createdAt,
         'kind': EventKind.privateDirectMessage,
         'tags': [
@@ -395,63 +395,17 @@ void main() {
         )
         .toList();
 
-    test(
-      'a re-minted retry 30s later persists BOTH rows, because the receiver '
-      'cannot tell it from a genuine repeat',
-      () async {
-        await deliverNip17(
-          wrapId: 'w' * 64,
-          rumorId: 'a' * 64,
-          text: 'are we still on for tomorrow?',
-          createdAt: _baseCreatedAt,
-        );
-        await deliverNip17(
-          wrapId: 'x' * 64,
-          rumorId: 'b' * 64,
-          text: 'are we still on for tomorrow?',
-          createdAt: _baseCreatedAt + 30,
-        );
+    String contentCorrelationFor(String rumorId) {
+      final line = persistLinesFor(rumorId).single;
+      final match = RegExp(
+        r'contentCorrelation=([0-9a-f]{16})(?:\s|$)',
+      ).firstMatch(line);
+      expect(match, isNotNull);
+      return match!.group(1)!;
+    }
 
-        // Pins the deliberate half of #6522. Collapsing the second row is
-        // exactly the silent, unrecoverable loss #7324 fixed, so this must
-        // not change without a protocol-level correlation signal.
-        expect(
-          await storedMessages(),
-          hasLength(2),
-          reason: 'no gate can match a fresh rumor id and created_at',
-        );
-      },
-    );
-
-    test(
-      'each persist line carries contentLength, so a re-mint is greppable '
-      'from a support log',
-      () async {
-        await deliverNip17(
-          wrapId: 'w' * 64,
-          rumorId: 'a' * 64,
-          text: 'are we still on for tomorrow?',
-          createdAt: _baseCreatedAt,
-        );
-        await deliverNip17(
-          wrapId: 'x' * 64,
-          rumorId: 'b' * 64,
-          text: 'are we still on for tomorrow?',
-          createdAt: _baseCreatedAt + 30,
-        );
-
-        // Same conversation, same sender, same content length, seconds
-        // apart: that IS the re-mint signature, and it is the only thing
-        // that separates it in a log from two different messages. Without
-        // the length dimension the two lines are indistinguishable.
-        final first = persistLinesFor('a' * 64).single;
-        final second = persistLinesFor('b' * 64).single;
-        expect(first, contains('contentLength=29'));
-        expect(second, contains('contentLength=29'));
-      },
-    );
-
-    test('a different message reports a different contentLength', () async {
+    test('a re-minted retry 30s later persists BOTH rows, because the receiver '
+        'cannot tell it from a genuine repeat', () async {
       await deliverNip17(
         wrapId: 'w' * 64,
         rumorId: 'a' * 64,
@@ -461,14 +415,96 @@ void main() {
       await deliverNip17(
         wrapId: 'x' * 64,
         rumorId: 'b' * 64,
-        text: 'yes, 6pm works',
+        text: 'are we still on for tomorrow?',
         createdAt: _baseCreatedAt + 30,
       );
 
-      // The negative control: without this, a log line that always printed a
-      // constant would satisfy the test above.
-      expect(persistLinesFor('a' * 64).single, contains('contentLength=29'));
-      expect(persistLinesFor('b' * 64).single, contains('contentLength=14'));
+      // Pins the deliberate half of #6522. Collapsing the second row is
+      // exactly the silent, unrecoverable loss #7324 fixed, so this must
+      // not change without a protocol-level correlation signal.
+      expect(
+        await storedMessages(),
+        hasLength(2),
+        reason: 'no gate can match a fresh rumor id and created_at',
+      );
+    });
+
+    test(
+      'equal content has the same private correlation token, so a re-mint is '
+      'greppable from a support log',
+      () async {
+        await deliverNip17(
+          wrapId: 'w' * 64,
+          rumorId: 'a' * 64,
+          text: 'are we still on for tomorrow?',
+          createdAt: _baseCreatedAt,
+        );
+        await deliverNip17(
+          wrapId: 'x' * 64,
+          rumorId: 'b' * 64,
+          text: 'are we still on for tomorrow?',
+          createdAt: _baseCreatedAt + 30,
+        );
+
+        expect(
+          contentCorrelationFor('a' * 64),
+          contentCorrelationFor('b' * 64),
+        );
+        for (final line in [
+          ...persistLinesFor('a' * 64),
+          ...persistLinesFor('b' * 64),
+        ]) {
+          expect(line, isNot(contains('are we still on for tomorrow?')));
+          expect(line, isNot(contains('contentLength')));
+        }
+      },
+    );
+
+    test(
+      'different content of the same length has a different private token',
+      () async {
+        await deliverNip17(
+          wrapId: 'w' * 64,
+          rumorId: 'a' * 64,
+          text: 'are we still on for tomorrow?',
+          createdAt: _baseCreatedAt,
+        );
+        await deliverNip17(
+          wrapId: 'x' * 64,
+          rumorId: 'b' * 64,
+          text: 'meet me by the station at six',
+          createdAt: _baseCreatedAt + 30,
+        );
+
+        // This proves the token correlates content, not length or a constant.
+        expect('are we still on for tomorrow?'.length, 29);
+        expect('meet me by the station at six'.length, 29);
+        expect(
+          contentCorrelationFor('a' * 64),
+          isNot(contentCorrelationFor('b' * 64)),
+        );
+      },
+    );
+
+    test('equal content from another contact cannot be correlated', () async {
+      await deliverNip17(
+        wrapId: 'w' * 64,
+        rumorId: 'a' * 64,
+        text: 'are we still on for tomorrow?',
+        createdAt: _baseCreatedAt,
+      );
+      await deliverNip17(
+        wrapId: 'x' * 64,
+        rumorId: 'b' * 64,
+        text: 'are we still on for tomorrow?',
+        createdAt: _baseCreatedAt + 30,
+        senderPubkey: _otherPeer,
+      );
+
+      expect(
+        contentCorrelationFor('a' * 64),
+        isNot(contentCorrelationFor('b' * 64)),
+      );
     });
   });
 }
