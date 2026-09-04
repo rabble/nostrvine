@@ -26,8 +26,8 @@ class CameraFAB extends ConsumerWidget {
           if (!scaffoldContext.mounted) return;
           final result = await AgeVerificationDialog.show(scaffoldContext);
           if (result) {
-            await ageVerificationService.setAgeVerified(true);
-            if (scaffoldContext.mounted) {
+            final saved = await ageVerificationService.setAgeVerified(true);
+            if (saved && scaffoldContext.mounted) {
               await scaffoldContext.pushToCameraWithPermission();
             }
           } else {

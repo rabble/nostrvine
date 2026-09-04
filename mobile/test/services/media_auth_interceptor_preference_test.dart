@@ -12,6 +12,9 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _testPubkey =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
 
@@ -55,8 +58,12 @@ void main() {
       'even after unlock',
       () async {
         SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
 
-        final realAgeVerificationService = AgeVerificationService();
+        final realAgeVerificationService = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => _testPubkey,
+        );
         await realAgeVerificationService.initialize();
         await realAgeVerificationService.setAdultContentVerified(true);
 
@@ -107,8 +114,12 @@ void main() {
       'adult-category opt-in',
       () async {
         SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
 
-        final realAgeVerificationService = AgeVerificationService();
+        final realAgeVerificationService = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => _testPubkey,
+        );
         await realAgeVerificationService.initialize();
         await realAgeVerificationService.setAdultContentVerified(true);
 
@@ -159,8 +170,12 @@ void main() {
       'per-category opt-in',
       () async {
         SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
 
-        final realAgeVerificationService = AgeVerificationService();
+        final realAgeVerificationService = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => _testPubkey,
+        );
         await realAgeVerificationService.initialize();
         await realAgeVerificationService.setAdultContentVerified(true);
 

@@ -3,26 +3,38 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
+  const pubkey =
+      '1111111111111111111111111111111111111111111111111111111111111111';
+  const pubkeyB =
+      '2222222222222222222222222222222222222222222222222222222222222222';
+
   group('ageVerificationServiceProvider', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    // ageVerificationServiceProvider now consults isProtectedMinorProvider,
-    // which needs sharedPreferencesProvider and an auth state. Pin auth to
-    // unauthenticated so the protected-minor signal resolves to false, leaving
-    // these tests' adult-content assertions unaffected.
+    // ageVerificationServiceProvider consults isProtectedMinorProvider (needs
+    // sharedPreferencesProvider and an auth state) and scopes verification to
+    // the active account's pubkey (#7816). Pin auth to unauthenticated so the
+    // protected-minor signal resolves to false without a network fetch, and
+    // supply a mock AuthService pubkey so per-account writes persist.
     Future<ProviderContainer> buildContainer() async {
       final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
         ],
       );
@@ -77,8 +89,8 @@ void main() {
 
       // First, set up verification in SharedPreferences
       SharedPreferences.setMockInitialValues({
-        'adult_content_verified': true,
-        'adult_content_verification_date':
+        'adult_content_verified_$pubkey': true,
+        'adult_content_verification_date_$pubkey':
             DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -135,6 +147,49 @@ void main() {
           reason: 'Verification should persist across reads (iteration $i)',
         );
       }
+    });
+
+    test('same service reads the newly active account after a switch', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final serviceA = container.read(ageVerificationServiceProvider);
+      await serviceA.initialize();
+      await serviceA.setAdultContentVerified(true);
+      expect(serviceA.isAdultContentVerified, isTrue);
+
+      // Account swap: the service reads through the live pubkey accessor, so it
+      // does not need a provider rebuild or an asynchronous cache reload.
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkeyB);
+      container.updateOverrides([
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        authServiceProvider.overrideWithValue(authService),
+        currentAuthStateProvider.overrideWithValue(AuthState.authenticating),
+      ]);
+
+      final serviceB = container.read(ageVerificationServiceProvider);
+      await serviceB.initialize();
+
+      expect(
+        identical(serviceA, serviceB),
+        isTrue,
+        reason: 'account swap must not require a service rebuild',
+      );
+      expect(
+        serviceB.isAdultContentVerified,
+        isFalse,
+        reason: 'the switched-in account must not inherit prior verification',
+      );
     });
   });
 }

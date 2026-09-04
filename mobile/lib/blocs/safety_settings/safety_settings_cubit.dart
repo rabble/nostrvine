@@ -112,7 +112,13 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState>
     final previous = state.isAgeVerified;
     emit(state.copyWith(isAgeVerified: value));
     try {
-      await _ageVerificationService.setAdultContentVerified(value);
+      final saved = await _ageVerificationService.setAdultContentVerified(
+        value,
+      );
+      if (!saved) {
+        emitIfOpen(state.copyWith(isAgeVerified: previous));
+        return;
+      }
       if (value) {
         await _contentFilterService.unlockAdultCategories();
       } else {

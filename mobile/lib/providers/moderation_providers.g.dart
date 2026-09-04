@@ -188,15 +188,15 @@ final class CanTargetUserFamily extends $Family
 }
 
 /// Age verification service for content creation restrictions
-/// keepAlive ensures the service persists and maintains in-memory verification state
-/// even when widgets that watch it dispose and rebuild
+/// keepAlive preserves one coordinator and callback instance. Verification
+/// values are read synchronously from preferences for the active account.
 
 @ProviderFor(ageVerificationService)
 final ageVerificationServiceProvider = AgeVerificationServiceProvider._();
 
 /// Age verification service for content creation restrictions
-/// keepAlive ensures the service persists and maintains in-memory verification state
-/// even when widgets that watch it dispose and rebuild
+/// keepAlive preserves one coordinator and callback instance. Verification
+/// values are read synchronously from preferences for the active account.
 
 final class AgeVerificationServiceProvider
     extends
@@ -207,8 +207,8 @@ final class AgeVerificationServiceProvider
         >
     with $Provider<AgeVerificationService> {
   /// Age verification service for content creation restrictions
-  /// keepAlive ensures the service persists and maintains in-memory verification state
-  /// even when widgets that watch it dispose and rebuild
+  /// keepAlive preserves one coordinator and callback instance. Verification
+  /// values are read synchronously from preferences for the active account.
   AgeVerificationServiceProvider._()
     : super(
         from: null,
@@ -244,7 +244,7 @@ final class AgeVerificationServiceProvider
 }
 
 String _$ageVerificationServiceHash() =>
-    r'95d51cda0ad3f784cc0aee7eec46478bd4e6139c';
+    r'2b83bb9538d76af5d6c9c0a67255e983a346dc93';
 
 /// Content filter service for per-category Show/Warn/Hide preferences.
 /// keepAlive ensures preferences persist and are consistent across the app.

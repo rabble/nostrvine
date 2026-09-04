@@ -15,7 +15,8 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/auth_service.dart' show AuthState;
+import 'package:openvine/services/auth_service.dart'
+    show AuthService, AuthState;
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
@@ -56,6 +57,8 @@ class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
 }
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 class _MockMediaViewerAuthService extends Mock
     implements MediaViewerAuthService {}
@@ -670,13 +673,20 @@ void main() {
           (_) async =>
               const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
         );
+        final authService = _MockAuthService();
+        when(() => authService.currentPublicKeyHex).thenReturn(
+          '1111111111111111111111111111111111111111111111111111111111111111',
+        );
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: _passiveAuthProviderOverridesWithRealServices(
-              mediaViewerAuthService: mediaViewerAuthService,
-              sharedPreferences: sharedPreferences,
-            ),
+            overrides: [
+              ..._passiveAuthProviderOverridesWithRealServices(
+                mediaViewerAuthService: mediaViewerAuthService,
+                sharedPreferences: sharedPreferences,
+              ),
+              authServiceProvider.overrideWithValue(authService),
+            ],
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,

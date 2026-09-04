@@ -4,9 +4,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/featured_tabs_providers.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/auth_service.dart';
 
 class _MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
@@ -26,10 +28,27 @@ void main() {
         ageVerificationServiceProvider.overrideWithValue(
           ageVerificationService,
         ),
+        currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
       ],
     );
     addTearDown(container.dispose);
     return container;
+  }
+
+  /// Every account swap transits a non-authenticated auth state before the
+  /// new account reports authenticated (see isProtectedMinorProvider).
+  void switchAccount(ProviderContainer container) {
+    for (final authState in [
+      AuthState.authenticating,
+      AuthState.authenticated,
+    ]) {
+      container.updateOverrides([
+        ageVerificationServiceProvider.overrideWithValue(
+          ageVerificationService,
+        ),
+        currentAuthStateProvider.overrideWithValue(authState),
+      ]);
+    }
   }
 
   group('featuredTabAgeGateProvider', () {
@@ -75,5 +94,26 @@ void main() {
 
       expect(container.read(featuredTabAgeGateProvider), isFalse);
     });
+
+    test(
+      're-gates when the auth state changes to an unverified account',
+      () async {
+        var verified = true;
+        when(
+          () => ageVerificationService.isAdultContentVerified,
+        ).thenAnswer((_) => verified);
+        final container = createContainer();
+        await container.read(featuredTabViewerIsAdultProvider.future);
+        expect(container.read(featuredTabAgeGateProvider), isFalse);
+
+        // Account switch: the service now answers for the new account, but
+        // nothing bumps the verification version. Only the auth state moves.
+        verified = false;
+        switchAccount(container);
+        await container.read(featuredTabViewerIsAdultProvider.future);
+
+        expect(container.read(featuredTabAgeGateProvider), isTrue);
+      },
+    );
   });
 }

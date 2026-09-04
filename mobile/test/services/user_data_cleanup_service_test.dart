@@ -114,6 +114,47 @@ void main() {
     });
 
     group('clearUserSpecificData', () {
+      const verificationPubkey =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+      test('destructive delete purges only that account verification', () async {
+        const otherPubkey =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        await prefs.setBool(
+          'adult_content_verified_$verificationPubkey',
+          true,
+        );
+        await prefs.setBool('adult_content_verified_$otherPubkey', true);
+
+        await service.clearUserSpecificData(
+          deleteUserData: true,
+          userPubkey: verificationPubkey,
+        );
+
+        expect(
+          prefs.containsKey('adult_content_verified_$verificationPubkey'),
+          isFalse,
+        );
+        expect(prefs.getBool('adult_content_verified_$otherPubkey'), isTrue);
+      });
+
+      test('account switch preserves scoped verification', () async {
+        await prefs.setBool(
+          'adult_content_verified_$verificationPubkey',
+          true,
+        );
+
+        await service.clearUserSpecificData(
+          isIdentityChange: true,
+          userPubkey: verificationPubkey,
+        );
+
+        expect(
+          prefs.getBool('adult_content_verified_$verificationPubkey'),
+          isTrue,
+        );
+      });
+
       test('clears all user-specific keys from SharedPreferences', () async {
         // Set up some user-specific data
         await prefs.setStringList('curated_lists', ['list1']);

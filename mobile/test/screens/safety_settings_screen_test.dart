@@ -406,7 +406,7 @@ void main() {
         // Arrange - stub the methods the screen will call
         when(
           () => mockAgeVerificationService.setAdultContentVerified(true),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           mockContentFilterService.unlockAdultCategories,
         ).thenAnswer((_) async {});

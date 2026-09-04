@@ -6,14 +6,22 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _testPubkey =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
 void main() {
   group(ContentFilterService, () {
     late ContentFilterService service;
     late AgeVerificationService ageService;
+    late SharedPreferences preferences;
 
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      ageService = AgeVerificationService();
+      preferences = await SharedPreferences.getInstance();
+      ageService = AgeVerificationService(
+        preferences: preferences,
+        currentPubkeyHex: () => _testPubkey,
+      );
       service = ContentFilterService(ageVerificationService: ageService);
     });
 
@@ -490,7 +498,10 @@ void main() {
 
         await service.unlockAdultCategories();
 
-        final newAgeService = AgeVerificationService();
+        final newAgeService = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => _testPubkey,
+        );
         await newAgeService.initialize();
         final newService = ContentFilterService(
           ageVerificationService: newAgeService,
@@ -683,7 +694,10 @@ void main() {
         'clears caches when passive adult thumbnail access is revoked',
         () async {
           var clearCount = 0;
-          ageService = AgeVerificationService();
+          ageService = AgeVerificationService(
+            preferences: preferences,
+            currentPubkeyHex: () => _testPubkey,
+          );
           service = ContentFilterService(
             ageVerificationService: ageService,
             onAdultMediaAccessRevoked: () async {
@@ -812,7 +826,10 @@ void main() {
         );
         await migrationService.initialize();
 
-        final restartedAgeService = AgeVerificationService();
+        final restartedAgeService = AgeVerificationService(
+          preferences: preferences,
+          currentPubkeyHex: () => _testPubkey,
+        );
         await restartedAgeService.initialize();
         final restartedService = ContentFilterService(
           ageVerificationService: restartedAgeService,
