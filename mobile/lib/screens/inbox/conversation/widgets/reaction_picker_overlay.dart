@@ -55,6 +55,7 @@ class ReactionPickerOverlay {
     required bool isSent,
     bool showPicker = true,
     bool showDelete = true,
+    bool deleteForEveryone = true,
     bool isVideoShare = false,
     List<String> emojis = kDefaultDmReactionEmojis,
   }) async {
@@ -93,6 +94,7 @@ class ReactionPickerOverlay {
                 _ActionList(
                   isSent: isSent,
                   showDelete: showDelete,
+                  deleteForEveryone: deleteForEveryone,
                   isVideoShare: isVideoShare,
                   onSelected: (action) => sheetContext.popModalIfMounted(
                     ReactionPickerResult(action: action),
@@ -222,6 +224,7 @@ class _ActionList extends StatelessWidget {
   const _ActionList({
     required this.isSent,
     required this.showDelete,
+    required this.deleteForEveryone,
     required this.isVideoShare,
     required this.onSelected,
   });
@@ -232,6 +235,7 @@ class _ActionList extends StatelessWidget {
   /// closed thread, where the kind-5 cannot be published and the tile would
   /// only drop the local copy.
   final bool showDelete;
+  final bool deleteForEveryone;
   final bool isVideoShare;
   final ValueChanged<MessageAction> onSelected;
 
@@ -259,7 +263,9 @@ class _ActionList extends StatelessWidget {
       if (isSent && showDelete)
         _ActionTile(
           icon: DivineIconName.trash,
-          label: l10n.dmMessageActionDeleteForEveryone,
+          label: deleteForEveryone
+              ? l10n.dmMessageActionDeleteForEveryone
+              : l10n.dmMessageActionCancelSend,
           onTap: () => onSelected(MessageAction.delete),
           color: VineTheme.error,
         ),

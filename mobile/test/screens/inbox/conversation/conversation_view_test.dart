@@ -647,6 +647,70 @@ void main() {
           ),
         );
       });
+
+      testWidgets(
+        'a retained blocked bubble is visible, non-retryable, and locally '
+        'deletable',
+        (tester) async {
+          final retired = kLegacyModerationPubkeys.first;
+          const ownConversationId =
+              '3434343434343434343434343434343434343434343434343434343434343434';
+          const content = 'my retained appeal';
+          final blockedRow = OutgoingDm(
+            id: 'rumor-blocked-retired',
+            conversationId: ownConversationId,
+            recipientPubkey: retired,
+            content: content,
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+            rumorEventJson: '{}',
+            recipientWrapStatus: OutgoingWrapStatus.blocked,
+            selfWrapStatus: OutgoingWrapStatus.blocked,
+            queuedAt: DateTime(2026),
+            ownerPubkey: currentPubkey,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              counterparty: retired,
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                pendingOutgoing: [blockedRow],
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text(content), findsOneWidget);
+          expect(find.text(l10n.dmSendBlockedRetiredMessage), findsOneWidget);
+
+          await tester.tap(find.text(content));
+          await tester.pumpAndSettle();
+          expect(find.text(l10n.dmMessageActionRetrySend), findsNothing);
+
+          await tester.longPress(find.text(content));
+          await tester.pumpAndSettle();
+          expect(find.text(l10n.dmMessageActionCancelSend), findsOneWidget);
+          expect(
+            find.text(l10n.dmMessageActionDeleteForEveryone),
+            findsNothing,
+          );
+
+          await tester.tap(find.text(l10n.dmMessageActionCancelSend));
+          await tester.pumpAndSettle();
+          verify(
+            () => mockBloc.add(
+              const ConversationMessageDeleted(
+                rumorId: 'rumor-blocked-retired',
+              ),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockBloc.add(
+              any(that: isA<ConversationFullSendRecoveryRequested>()),
+            ),
+          );
+        },
+      );
     });
 
     // #6416. Nothing has read a retired moderation key since the rotation, so

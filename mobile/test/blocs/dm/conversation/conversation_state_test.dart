@@ -142,6 +142,22 @@ void main() {
         );
       });
 
+      test('a retained terminal block renders as blocked, not delivered', () {
+        final blocked = _outgoingDm(
+          id: 'blocked-rumor',
+          rumorId: 'blocked-rumor',
+          recipientWrap: OutgoingWrapStatus.blocked,
+        );
+        final state = ConversationState(pendingOutgoing: [blocked]);
+
+        expect(state.displayedMessages.single.id, 'blocked-rumor');
+        expect(
+          state.statusFor('blocked-rumor'),
+          DmDeliveryStatus.blocked,
+        );
+        expect(state.failedSiblingRumorIdsFor('blocked-rumor'), isEmpty);
+      });
+
       test(
         'partial group delivery renders exactly ONE bubble with the '
         'combined status — the persisted winner suppresses the surviving '

@@ -523,6 +523,32 @@ void main() {
         expect(find.text(strings.dmStatusFailed), findsOneWidget);
       });
 
+      testWidgets('renders closed-thread copy for blocked status', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Retained appeal',
+                timestamp: '2:30 PM',
+                isSent: true,
+                deliveryStatus: DmDeliveryStatus.blocked,
+              ),
+            ),
+          ),
+        );
+
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+        expect(
+          find.text(strings.dmSendBlockedRetiredMessage),
+          findsOneWidget,
+        );
+        expect(find.text(strings.dmStatusFailed), findsNothing);
+      });
+
       testWidgets(
         'does not render indicator for received messages even when '
         'a non-delivered status is passed',

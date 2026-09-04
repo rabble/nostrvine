@@ -92,7 +92,7 @@ role uses the shared support identity.
 | Composer closed; banner routes replies to the current support key | `conversation_view.dart`, via `isRetiredModerationAccount` and `kModerationPubkeyHex` |
 | Pinned support row, unread partition, and retired predicates wired into list state | `inbox_page.dart`, `message_requests_page.dart`, `app_shell_badge_scope.dart`, and `ConversationListBloc` |
 | Destructive request action withheld for moderation threads | `request_preview_view.dart`, via `isModerationAccount` |
-| Outbound sends refused at the lowest repository send primitive | `dmSendPolicyProvider` → `DmSendPolicyDecision.terminallyBlocked` |
+| Outbound sends refused and retained as non-retryable evidence | `dmSendPolicyProvider` → `DmSendPolicyDecision.terminallyBlockedRetain` |
 | Pre-rotation threads excluded from pinned-support adoption | `DmRepository.extractPinnedSupport` |
 | Labeler subscription migrated to the current key | `ModerationLabelService._migrateLegacyPubkey` |
 

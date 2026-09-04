@@ -11,7 +11,8 @@ import 'package:dm_repository/src/dm_send_budget.dart';
 import 'package:dm_repository/src/dm_send_policy.dart';
 import 'package:dm_repository/src/gift_wrap_build_worker.dart';
 import 'package:meta/meta.dart';
-import 'package:models/models.dart' show NIP17SendResult;
+import 'package:models/models.dart'
+    show NIP17BlockedSendDisposition, NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
@@ -622,8 +623,12 @@ class NIP17MessageService {
             'temporarily blocked: protected-minor status unresolved',
           );
         }
-        return const NIP17SendResult.blocked(
+        return NIP17SendResult.blocked(
           'blocked: recipient not permitted by send policy',
+          disposition:
+              policyDecision == DmSendPolicyDecision.terminallyBlockedRetain
+              ? NIP17BlockedSendDisposition.retain
+              : NIP17BlockedSendDisposition.discard,
         );
       }
 

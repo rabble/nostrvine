@@ -611,9 +611,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   void _showErrorToastAndAnnounce(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        DivineSnackbarContainer.snackBar(message, error: true),
-      );
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -983,10 +981,8 @@ class _MessageList extends StatelessWidget {
   /// This flag removes the affordance only — the bubble itself stays rendered,
   /// so the evidence is intact and nothing is force-deleted here. On a blocked
   /// thread that holds end to end, and unblocking restores the sheet along with
-  /// the composer. On a retired thread it does not: the first retry sweep after
-  /// the rotation deletes the queue row outright, so the bubble disappears on
-  /// its own. That is a separate defect in the terminal-blocked queue
-  /// transition, tracked in #8492, not something this flag can reach.
+  /// the composer. On a retired thread a terminal queue state preserves the
+  /// bubble without exposing a retry action.
   ///
   /// This closes the user-initiated path only. TODO(#7047): Decide whether a
   /// block cancels queued outgoing sends; the reconnect sweep still re-drives
@@ -1000,6 +996,7 @@ class _MessageList extends StatelessWidget {
     bool isSent,
     DmDeliveryStatus deliveryStatus,
     DmRetractionStatus retractionStatus,
+    bool isPersisted,
   ) async {
     final videoTarget = resolveDmVideoTarget(
       content: StringUtils.sanitizeUtf16(message.content),
@@ -1013,14 +1010,18 @@ class _MessageList extends StatelessWidget {
     final showPicker =
         reactionsEnabled &&
         retractionStatus == DmRetractionStatus.none &&
-        !(isSent && deliveryStatus == DmDeliveryStatus.failed);
+        !(isSent &&
+            (deliveryStatus == DmDeliveryStatus.failed ||
+                deliveryStatus == DmDeliveryStatus.blocked));
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
       isVideoShare: videoTarget != null,
       showPicker: showPicker,
       showDelete:
-          retractionsEnabled && retractionStatus == DmRetractionStatus.none,
+          (retractionsEnabled || !isPersisted) &&
+          retractionStatus == DmRetractionStatus.none,
+      deleteForEveryone: isPersisted,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -1261,6 +1262,9 @@ class _MessageList extends StatelessWidget {
               isSent,
               status,
               message.retractionStatus,
+              context.read<ConversationBloc>().state.messages.any(
+                (persisted) => persisted.id == message.id,
+              ),
             ),
             // A single tap on a failed own bubble opens the resend/stop-trying
             // recovery bottom sheet; every other bubble keeps its default tap.
@@ -1286,7 +1290,9 @@ class _MessageList extends StatelessWidget {
             onDoubleTap:
                 !reactionsEnabled ||
                     message.retractionStatus != DmRetractionStatus.none ||
-                    (isSent && status == DmDeliveryStatus.failed)
+                    (isSent &&
+                        (status == DmDeliveryStatus.failed ||
+                            status == DmDeliveryStatus.blocked))
                 ? null
                 : () => _likeOnDoubleTap(context, message),
             deliveryStatus: status,

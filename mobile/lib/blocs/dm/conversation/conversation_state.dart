@@ -54,8 +54,9 @@ enum SendStatus {
 ///
 /// Bubbles flow through this enum: [pending] → [delivered] on full
 /// success, [pending] → [deliveredSelfFailed] on a partial delivery,
-/// [pending] → [failed] on a recipient-side publish failure. Persisted
-/// rows with no queue row remaining are always [delivered].
+/// [pending] → [failed] on a retryable recipient-side publish failure, or
+/// [pending] → [blocked] on a terminal refusal whose local record is retained.
+/// Persisted rows with no queue row remaining are always [delivered].
 enum DmDeliveryStatus {
   /// Neither wrap has landed yet. Renders as a plain sent bubble — sends are
   /// optimistic, so there is no in-flight indicator (only [failed] is shown).
@@ -72,10 +73,14 @@ enum DmDeliveryStatus {
   /// self-wrap recovery runs silently); no distinct indicator.
   deliveredSelfFailed,
 
-  /// Recipient gift wrap failed. The only status with a visible indicator:
-  /// the bubble shows the red "Not delivered" row and is tappable to
-  /// resend/cancel, and the retry service replays it on reconnect.
+  /// Recipient gift wrap failed. The bubble shows the red "Not delivered" row
+  /// and is tappable to resend/cancel; the retry service replays it on
+  /// reconnect.
   failed,
+
+  /// Recipient delivery is permanently blocked. The bubble stays visible as
+  /// the sender's record, shows closed-thread copy, and cannot be retried.
+  blocked,
 }
 
 /// Snapshot of the rumor ids whose recipient publish landed but whose
@@ -248,8 +253,9 @@ class ConversationState extends Equatable {
   /// queue-row deletion with persisted-row insertion).
   ///
   /// Group bubbles aggregate their whole fan-out batch, worst first:
-  /// any sibling hard-failed → [DmDeliveryStatus.failed]; else any still
-  /// pending → [DmDeliveryStatus.pending]; else any self-wrap failure →
+  /// any sibling blocked → [DmDeliveryStatus.blocked]; else any sibling
+  /// hard-failed → [DmDeliveryStatus.failed]; else any still pending →
+  /// [DmDeliveryStatus.pending]; else any self-wrap failure →
   /// [DmDeliveryStatus.deliveredSelfFailed]. This also lets the PERSISTED
   /// group bubble (inserted when the first recipient confirmed) surface a
   /// remaining sibling's failure as the red tap-to-resend affordance.
@@ -263,6 +269,9 @@ class ConversationState extends Equatable {
     var anyPending = false;
     var anySelfFailed = false;
     for (final q in rows) {
+      if (q.recipientWrapStatus == OutgoingWrapStatus.blocked) {
+        return DmDeliveryStatus.blocked;
+      }
       if (q.recipientWrapStatus == OutgoingWrapStatus.failed) {
         return DmDeliveryStatus.failed;
       }

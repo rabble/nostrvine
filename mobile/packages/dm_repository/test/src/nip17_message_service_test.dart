@@ -8,7 +8,8 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show NIP17SendFailure, NIP17SendResult;
+import 'package:models/models.dart'
+    show NIP17BlockedSendDisposition, NIP17SendFailure, NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
@@ -100,11 +101,15 @@ class _RefusesToSignSigner implements NostrSigner {
 /// Denies every recipient — stands in for a protected minor's policy where the
 /// counterparty is not in the approved official set.
 Future<DmSendPolicyDecision> _denyAllPolicy(String recipientPubkey) async =>
-    DmSendPolicyDecision.terminallyBlocked;
+    DmSendPolicyDecision.terminallyBlockedDiscard;
 
 Future<DmSendPolicyDecision> _temporarilyDenyPolicy(
   String recipientPubkey,
 ) async => DmSendPolicyDecision.temporarilyBlocked;
+
+Future<DmSendPolicyDecision> _retainBlockedPolicy(
+  String recipientPubkey,
+) async => DmSendPolicyDecision.terminallyBlockedRetain;
 
 /// A local-key signer that advertises the isolate-offload capability,
 /// delegating all crypto to a real [LocalNostrSigner]. Used to exercise the
@@ -289,6 +294,10 @@ void main() {
           // conversation view and tells the cold-start drain to drop the row
           // instead of retrying a send that can never succeed.
           expect(result.blocked, isTrue);
+          expect(
+            result.blockedDisposition,
+            NIP17BlockedSendDisposition.discard,
+          );
           verifyNever(() => mockNostrClient.publishEvent(any()));
           verifyNever(
             () => mockNostrClient.publishEvent(
@@ -298,6 +307,31 @@ void main() {
           );
         },
       );
+
+      test('sendRumor carries a retained terminal disposition', () async {
+        final blocked = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: _testPublicKey,
+          nostrService: mockNostrClient,
+          sendPolicy: _retainBlockedPolicy,
+        );
+        final rumor = blocked.buildRumor(
+          recipientPubkey: _recipientPubkey,
+          content: 'keep my local copy',
+        );
+
+        final result = await blocked.sendRumor(
+          rumorEvent: rumor,
+          recipientPubkey: _recipientPubkey,
+        );
+
+        expect(result.blocked, isTrue);
+        expect(
+          result.blockedDisposition,
+          NIP17BlockedSendDisposition.retain,
+        );
+        verifyNever(() => mockNostrClient.publishEvent(any()));
+      });
 
       test(
         'canSendTo surfaces the policy verdict for pre-enqueue/group checks',

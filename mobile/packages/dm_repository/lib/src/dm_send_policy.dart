@@ -10,12 +10,17 @@ enum DmSendPolicyDecision {
   /// Fail closed for now, but the missing account-state verdict may resolve.
   temporarilyBlocked,
 
-  /// A confirmed policy blocks this recipient — the send can never succeed.
+  /// A confirmed policy blocks this recipient — the send can never succeed —
+  /// and any existing queue row should be discarded.
   ///
   /// The reason is deliberately not carried here: the app owns the policy and
   /// therefore owns the copy. A caller that needs to explain the refusal
   /// re-derives it from the recipient it already holds.
-  terminallyBlocked,
+  terminallyBlockedDiscard,
+
+  /// A confirmed policy blocks this recipient permanently, but an existing
+  /// queue row is the sender's only durable copy and must be retained.
+  terminallyBlockedRetain,
 }
 
 /// Decides whether the current sender may deliver a DM to [recipientPubkey].

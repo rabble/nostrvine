@@ -383,6 +383,28 @@ void main() {
         },
       );
 
+      test('terminal block leaves neither wrap retryable or pending', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+
+        final ok = await dao.markRecipientBlocked(
+          id: 'aaaa',
+          lastError: 'recipient retired',
+        );
+
+        expect(ok, isTrue);
+        final fetched = await dao.getById('aaaa');
+        expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.blocked);
+        expect(fetched.selfWrapStatus, OutgoingWrapStatus.blocked);
+        expect(fetched.recipientWrapLastError, 'recipient retired');
+        expect(fetched.hasRetryableFailure, isFalse);
+        expect(fetched.isFullyDelivered, isFalse);
+        expect(
+          await dao.getRetryableForOwner(ownerPubkey: ownerA, maxRetries: 5),
+          isEmpty,
+        );
+        expect(await dao.getStillPendingForOwner(ownerA), isEmpty);
+      });
+
       test('returns false when the row does not exist', () async {
         final ok = await dao.markRecipientWrapStatus(
           id: 'missing',
@@ -748,6 +770,14 @@ void main() {
               queuedAt: DateTime.utc(2026, 5, 4),
             ),
           );
+          await dao.enqueue(
+            makeDm(
+              id: 'blocked',
+              recipientStatus: OutgoingWrapStatus.blocked,
+              selfStatus: OutgoingWrapStatus.blocked,
+              queuedAt: DateTime.utc(2026, 5, 4, 12),
+            ),
+          );
           // Failed but past the retry cap: excluded.
           await dao.enqueue(
             makeDm(
@@ -834,6 +864,14 @@ void main() {
               recipientStatus: OutgoingWrapStatus.failed,
               selfStatus: OutgoingWrapStatus.failed,
               queuedAt: DateTime.utc(2026, 5, 4),
+            ),
+          );
+          await dao.enqueue(
+            makeDm(
+              id: 'blocked',
+              recipientStatus: OutgoingWrapStatus.blocked,
+              selfStatus: OutgoingWrapStatus.blocked,
+              queuedAt: DateTime.utc(2026, 5, 5),
             ),
           );
 

@@ -70,7 +70,7 @@ void main() {
       for (final retired in kLegacyModerationPubkeys) {
         expect(
           await policy(retired),
-          DmSendPolicyDecision.terminallyBlocked,
+          DmSendPolicyDecision.terminallyBlockedRetain,
           reason: 'retired key $retired must never be a send target',
         );
       }
@@ -104,7 +104,7 @@ void main() {
 
       expect(
         decision,
-        DmSendPolicyDecision.terminallyBlocked,
+        DmSendPolicyDecision.terminallyBlockedRetain,
         reason: 'a stubbed approval must not reopen a retired identity',
       );
     });
@@ -138,7 +138,10 @@ void main() {
     final container = containerWith(isRestricted: true);
     final policy = container.read(dmSendPolicyProvider);
 
-    expect(await policy(strangerHex), DmSendPolicyDecision.terminallyBlocked);
+    expect(
+      await policy(strangerHex),
+      DmSendPolicyDecision.terminallyBlockedDiscard,
+    );
   });
 
   test(

@@ -249,6 +249,8 @@ class MessageBubble extends StatelessWidget {
     // win the gesture arena over the card's dominant surface and swallow that
     // sole resend affordance, so their taps are disabled on a failed own send.
     final isFailedOwnSend = isSent && deliveryStatus == DmDeliveryStatus.failed;
+    final isBlockedOwnSend =
+        isSent && deliveryStatus == DmDeliveryStatus.blocked;
     final hasUnconfirmedRetraction =
         isSent && retractionStatus != DmRetractionStatus.none;
 
@@ -347,9 +349,7 @@ class MessageBubble extends StatelessWidget {
                             // Video messages need a bigger breath between the
                             // date header and the thumbnail; text messages
                             // keep the tighter 4 px rhythm.
-                            padding: EdgeInsets.only(
-                              bottom: hasVideo ? 12 : 4,
-                            ),
+                            padding: EdgeInsets.only(bottom: hasVideo ? 12 : 4),
                             child: Text(
                               timestamp,
                               style: VineTheme.labelSmallFont(
@@ -415,6 +415,11 @@ class MessageBubble extends StatelessWidget {
                           const Padding(
                             padding: EdgeInsets.only(top: 4),
                             child: _NotDeliveredIndicator(),
+                          ),
+                        if (isBlockedOwnSend)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: _BlockedDeliveryIndicator(),
                           ),
                       ],
                     ),
@@ -1279,9 +1284,10 @@ class _VideoCard extends ConsumerWidget {
 /// Small trailing icon at the bottom of a sent bubble that surfaces
 /// The in-bubble "Not delivered" affordance for a hard-failed own send.
 ///
-/// Sends are optimistic, so this is the ONLY delivery state ever shown on a
-/// bubble — pending, delivered, and self-wrap-failed all render as a plain
-/// sent message. The enclosing bubble is tappable to resend or delete.
+/// Sends are optimistic, so ordinary pending, delivered, and self-wrap-failed
+/// states render as a plain sent message. The enclosing failed bubble is
+/// tappable to resend or delete; a terminal blocked bubble uses the distinct
+/// [_BlockedDeliveryIndicator].
 class _NotDeliveredIndicator extends StatelessWidget {
   const _NotDeliveredIndicator();
 
@@ -1300,6 +1306,36 @@ class _NotDeliveredIndicator extends StatelessWidget {
             color: VineTheme.error,
           ),
           Text(label, style: VineTheme.labelSmallFont(color: VineTheme.error)),
+        ],
+      ),
+    );
+  }
+}
+
+/// The in-bubble terminal status for a send retained on a closed thread.
+class _BlockedDeliveryIndicator extends StatelessWidget {
+  const _BlockedDeliveryIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.dmSendBlockedRetiredMessage;
+    return Semantics(
+      label: label,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 14,
+            color: VineTheme.error,
+          ),
+          Flexible(
+            child: Text(
+              label,
+              style: VineTheme.labelSmallFont(color: VineTheme.error),
+            ),
+          ),
         ],
       ),
     );

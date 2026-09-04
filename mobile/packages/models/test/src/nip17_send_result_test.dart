@@ -343,6 +343,23 @@ void main() {
         expect(transient.hashCode, isNot(equals(blocked.hashCode)));
       });
 
+      test('blocked disposition defaults to discard and participates in '
+          'value equality', () {
+        const discard = NIP17SendFailure.blocked('policy');
+        const retain = NIP17SendFailure.blocked(
+          'policy',
+          disposition: NIP17BlockedSendDisposition.retain,
+        );
+
+        expect(
+          discard.blockedDisposition,
+          NIP17BlockedSendDisposition.discard,
+        );
+        expect(retain.blockedDisposition, NIP17BlockedSendDisposition.retain);
+        expect(discard, isNot(equals(retain)));
+        expect(discard.hashCode, isNot(equals(retain.hashCode)));
+      });
+
       test('value equality: success and failure are never equal', () {
         final success = NIP17SendSuccess(
           rumorEventId: rumorEventId,

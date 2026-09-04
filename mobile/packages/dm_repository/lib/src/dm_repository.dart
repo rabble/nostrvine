@@ -4748,6 +4748,7 @@ class DmRepository {
       await _finalizeAfterRecipientBlocked(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
+        result: result,
       );
     } else if (result.retryablePending && outgoingDao != null) {
       // Soft retry: either the recipient frame was written but no NIP-20 OK
@@ -5507,7 +5508,11 @@ class DmRepository {
       // A confirmed #176 policy block is terminal, not a transient error:
       // drop the row so the retry sweep stops re-attempting a send the gate
       // refuses every time. This attempt delivered nothing.
-      await _finalizeAfterRecipientBlocked(outgoingDao: dao, rumorId: rumorId);
+      await _finalizeAfterRecipientBlocked(
+        outgoingDao: dao,
+        rumorId: rumorId,
+        result: result,
+      );
     } else if (result.retryablePending) {
       // Soft retry: frame written with no OK yet, or a pre-publish wrap build
       // timeout while a human-gated signer approval may still be pending. Keep
@@ -5896,22 +5901,30 @@ class DmRepository {
     }
   }
 
-  /// Apply the terminal queue-row transition for a policy-blocked (#176)
-  /// recipient publish. Unlike [_finalizeAfterRecipientFailure], a block is
-  /// terminal — the send gate refuses every retry — so the row is deleted
-  /// rather than left retryable. Non-rethrowing to match the failure path: the
-  /// caller still returns the blocked result. A failed delete leaves the row in
-  /// place (still `failed` or `pending`, depending on the drain arm), which
-  /// self-heals on a later sweep — the gate re-blocks and re-drops it.
+  /// Apply the terminal queue-row transition for a policy-blocked recipient.
+  ///
+  /// Protected-minor refusals discard the row because the intent must not
+  /// remain visible. A retired moderation recipient retains it in the
+  /// non-retryable `blocked` state because the row is the sender's only copy.
+  /// Non-rethrowing to match the failure path: the caller still receives the
+  /// blocked result when the durable transition fails.
   Future<void> _finalizeAfterRecipientBlocked({
     required OutgoingDmsDao outgoingDao,
     required String rumorId,
+    required NIP17SendResult result,
   }) async {
     try {
-      await outgoingDao.deleteById(rumorId);
+      if (result.blockedDisposition == NIP17BlockedSendDisposition.retain) {
+        await outgoingDao.markRecipientBlocked(
+          id: rumorId,
+          lastError: result.error ?? 'Blocked by send policy',
+        );
+      } else {
+        await outgoingDao.deleteById(rumorId);
+      }
     } on Object catch (e, stackTrace) {
       Log.error(
-        'Failed to delete blocked outgoing_dms row $rumorId: $e',
+        'Failed to terminalize blocked outgoing_dms row $rumorId: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
@@ -6479,6 +6492,7 @@ class DmRepository {
           await _finalizeAfterRecipientBlocked(
             outgoingDao: outgoingDao,
             rumorId: queueIds[i],
+            result: result,
           );
         } else if (result.retryablePending) {
           await _finalizeAfterRecipientUnconfirmed(
