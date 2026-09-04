@@ -133,6 +133,7 @@ class VerifyConnectView extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(switch (error) {
         VerifyConnectError.proofRejected => l10n.verifyErrorProofRejected,
+        VerifyConnectError.discordDmLink => l10n.verifyErrorDiscordDmLink,
         VerifyConnectError.discordChannelLink =>
           l10n.verifyErrorDiscordChannelLink,
         VerifyConnectError.discordMessageNotFound =>

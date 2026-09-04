@@ -434,6 +434,7 @@ const _knownUntranslatedDebt = <String>{
   // machine-translated: verifyErrorDiscordAuthorMismatch turns on the
   // username/display-name distinction, which each locale has to render in
   // whatever words Discord itself uses there.
+  'verifyErrorDiscordDmLink',
   'verifyErrorDiscordChannelLink',
   'verifyErrorDiscordMessageNotFound',
   'verifyErrorDiscordBotNoAccess',

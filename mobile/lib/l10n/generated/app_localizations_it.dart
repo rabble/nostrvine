@@ -11614,6 +11614,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non abbiamo trovato il tuo npub in quel post.';
 
   @override
+  String get verifyErrorDiscordDmLink =>
+      'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.';
+
+  @override
   String get verifyErrorDiscordChannelLink =>
       'That\'s a link to the channel, not your message. Long-press your message and pick Copy Message Link.';
 

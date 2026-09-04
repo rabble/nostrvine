@@ -29,6 +29,9 @@ enum VerifyConnectError {
   /// true of any rejection.
   proofRejected,
 
+  /// The link points at a direct message, which no bot can read.
+  discordDmLink,
+
   /// The link points at the channel rather than at a message in it.
   discordChannelLink,
 

@@ -7700,6 +7700,10 @@
   "@verifyErrorProofRejected": {
     "description": "Error shown when the verification service could not find the user's npub in the linked post."
   },
+  "verifyErrorDiscordDmLink": "That's a link to a DM, which our bot can't read. Post your npub in a server channel instead.",
+  "@verifyErrorDiscordDmLink": {
+    "description": "Error shown when the pasted Discord link points at a direct message. No bot can read someone's DMs, so this can never verify."
+  },
   "verifyErrorDiscordChannelLink": "That's a link to the channel, not your message. Long-press your message and pick Copy Message Link.",
   "@verifyErrorDiscordChannelLink": {
     "description": "Error shown when the pasted Discord link points at a channel instead of a specific message."

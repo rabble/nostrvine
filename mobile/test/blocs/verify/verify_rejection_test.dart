@@ -9,6 +9,10 @@ void main() {
   group('verifyErrorForCode', () {
     test('gives each known Discord reason its own error', () {
       expect(
+        verifyErrorForCode('discord_dm_link'),
+        VerifyConnectError.discordDmLink,
+      );
+      expect(
         verifyErrorForCode('discord_channel_link'),
         VerifyConnectError.discordChannelLink,
       );

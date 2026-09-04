@@ -19398,6 +19398,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t find your npub in that post.'**
   String get verifyErrorProofRejected;
 
+  /// Error shown when the pasted Discord link points at a direct message. No bot can read someone's DMs, so this can never verify.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s a link to a DM, which our bot can\'t read. Post your npub in a server channel instead.'**
+  String get verifyErrorDiscordDmLink;
+
   /// Error shown when the pasted Discord link points at a channel instead of a specific message.
   ///
   /// In en, this message translates to:
