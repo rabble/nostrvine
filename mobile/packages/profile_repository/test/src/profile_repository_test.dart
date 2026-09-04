@@ -4292,10 +4292,53 @@ void main() {
       );
 
       test(
+        'searchUsersProgressive keeps an exact match ahead of followed '
+        'partial matches',
+        () async {
+          ProfileSearchResult followed(String pubkey, String name) =>
+              ProfileSearchResult(
+                pubkey: pubkey,
+                name: name,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+                followerCount: 500,
+                videoCount: 5,
+              );
+          stubRestResults([
+            followed(pk18Videos, 'alice_b'),
+            followed(pk4Videos, 'alice_c'),
+            followed(pkCachedVine, 'alice_d'),
+            ProfileSearchResult(
+              pubkey: pk1Video,
+              name: 'alice',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: 'alice',
+                sortBy: 'followers',
+                boostPubkeys: {pk18Videos, pk4Videos, pkCachedVine},
+              )
+              .last;
+
+          expect(result.profiles.map((profile) => profile.pubkey), [
+            pk1Video,
+            pk18Videos,
+            pk4Videos,
+            pkCachedVine,
+          ]);
+        },
+      );
+
+      test(
         'searchUsersProgressive puts the account whose npub was pasted first',
         () async {
           const pkPasted =
-              'b01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b';
+              'b01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b'
+              '2c3d4e5f6a1b2c3d4e5f6a1b';
           stubRestResults([
             ProfileSearchResult(
               pubkey: pk18Videos,
