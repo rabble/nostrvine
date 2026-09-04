@@ -176,6 +176,38 @@ void main() {
       expect(tapHints, isNot(contains(l10n.dmMessageBubbleFailedTapHint)));
     });
 
+    testWidgets('names the retry action for a PENDING retraction too', (
+      tester,
+    ) async {
+      // The tap is wired for any unconfirmed retraction, and both states open
+      // the same Try again sheet — so keying the hint on `failed` alone left
+      // a pending bubble announcing the resend hint.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessageBubble(
+              message: 'Still recognizable',
+              timestamp: '2:30 PM',
+              isSent: true,
+              retractionStatus: DmRetractionStatus.pending,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      final l10n = AppLocalizationsEn();
+      final tapHints = tester
+          .widgetList<Semantics>(find.byType(Semantics))
+          .map((s) => s.properties.hintOverrides?.onTapHint)
+          .whereType<String>()
+          .toList();
+      expect(tapHints, contains(l10n.authTryAgain));
+      expect(tapHints, isNot(contains(l10n.dmMessageBubbleFailedTapHint)));
+    });
+
     testWidgets('announces an in-flight retraction to assistive tech', (
       tester,
     ) async {

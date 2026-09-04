@@ -9913,7 +9913,7 @@ abstract class AppLocalizations {
   /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
   String get dmSendBlockedRetiredMessage;
 
-  /// Screen-reader label on the spinner beside an own message whose delete-for-everyone is still in flight. Never rendered as visible text — the visual channel is the spinner itself.
+  /// Names an own message whose delete-for-everyone is still in flight. Used twice: as the screen-reader label on the bubble's spinner, and as the visible title of the sheet that offers to try again. Keep it short enough to read as a sheet title.
   ///
   /// In en, this message translates to:
   /// **'Deleting for everyone'**

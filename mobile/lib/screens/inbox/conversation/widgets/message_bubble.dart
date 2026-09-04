@@ -269,13 +269,14 @@ class MessageBubble extends StatelessWidget {
               : context.l10n.dmMessageBubbleReceivedHint,
           // The tap affordance is otherwise invisible to assistive tech, so
           // key the button semantics off it. Two different sheets hang off
-          // this one callback: a failed retraction opens "Couldn't delete for
-          // everyone / Try again", every other wired case opens
-          // resend/delete — so the hint has to say which.
+          // this one callback: any unconfirmed retraction — pending or
+          // failed — opens the retraction sheet, whose action is Try again,
+          // while every other wired case opens resend/delete. The hint has
+          // to say which.
           button: onTap != null,
           onTapHint: onTap == null
               ? null
-              : retractionStatus == DmRetractionStatus.failed
+              : retractionStatus != DmRetractionStatus.none
               ? context.l10n.authTryAgain
               : context.l10n.dmMessageBubbleFailedTapHint,
           onLongPressHint: onLongPress != null
