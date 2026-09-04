@@ -267,13 +267,17 @@ class MessageBubble extends StatelessWidget {
           hint: isSent
               ? context.l10n.dmMessageBubbleSentHint
               : context.l10n.dmMessageBubbleReceivedHint,
-          // The failed-own-bubble tap affordance (resend/delete) is
-          // otherwise invisible to assistive tech — onTap is only wired
-          // for that case, so key the button semantics off it.
+          // The tap affordance is otherwise invisible to assistive tech, so
+          // key the button semantics off it. Two different sheets hang off
+          // this one callback: a failed retraction opens "Couldn't delete for
+          // everyone / Try again", every other wired case opens
+          // resend/delete — so the hint has to say which.
           button: onTap != null,
-          onTapHint: onTap != null
-              ? context.l10n.dmMessageBubbleFailedTapHint
-              : null,
+          onTapHint: onTap == null
+              ? null
+              : retractionStatus == DmRetractionStatus.failed
+              ? context.l10n.authTryAgain
+              : context.l10n.dmMessageBubbleFailedTapHint,
           onLongPressHint: onLongPress != null
               ? context.l10n.dmMessageBubbleLongPressHint
               : null,
@@ -454,9 +458,14 @@ class _RetractionIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (status) {
       DmRetractionStatus.none => const SizedBox.shrink(),
-      DmRetractionStatus.pending => const SizedBox.square(
+      // The spinner is the only visual signal that a retraction is in flight,
+      // so without a label the state is conveyed to sighted users alone.
+      DmRetractionStatus.pending => SizedBox.square(
         dimension: 16,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          semanticsLabel: context.l10n.dmDeletePendingLabel,
+        ),
       ),
       DmRetractionStatus.failed => Semantics(
         label: context.l10n.dmDeleteRefusedMessage,

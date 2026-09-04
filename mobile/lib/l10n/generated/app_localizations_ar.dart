@@ -5712,6 +5712,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا أحد يقرأ هذه المحادثة. راسل Divine Moderation بدلاً من ذلك.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'تعذّر الحذف لدى الجميع.';
 
   @override

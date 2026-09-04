@@ -144,6 +144,70 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    testWidgets('names the retry action rather than the resend one', (
+      tester,
+    ) async {
+      // One onTap serves two sheets. A failed retraction opens "Couldn't
+      // delete for everyone / Try again", so announcing the resend hint here
+      // tells a screen-reader user the wrong thing about what will happen.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessageBubble(
+              message: 'Still recognizable',
+              timestamp: '2:30 PM',
+              isSent: true,
+              retractionStatus: DmRetractionStatus.failed,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      final l10n = AppLocalizationsEn();
+      final tapHints = tester
+          .widgetList<Semantics>(find.byType(Semantics))
+          .map((s) => s.properties.hintOverrides?.onTapHint)
+          .whereType<String>()
+          .toList();
+      expect(tapHints, contains(l10n.authTryAgain));
+      expect(tapHints, isNot(contains(l10n.dmMessageBubbleFailedTapHint)));
+    });
+
+    testWidgets('announces an in-flight retraction to assistive tech', (
+      tester,
+    ) async {
+      // The spinner is the only visual signal; without a label the state is
+      // conveyed to sighted users alone.
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessageBubble(
+              message: 'Still recognizable',
+              timestamp: '2:30 PM',
+              isSent: true,
+              retractionStatus: DmRetractionStatus.pending,
+            ),
+          ),
+        ),
+      );
+
+      // Asserted on the indicator's own label rather than through
+      // find.bySemanticsLabel: the enclosing bubble Semantics absorbs it, so
+      // the tree finder reports nothing even when the label is set.
+      final indicator = tester.widget<CircularProgressIndicator>(
+        find.byType(CircularProgressIndicator),
+      );
+      expect(
+        indicator.semanticsLabel,
+        equals(AppLocalizationsEn().dmDeletePendingLabel),
+      );
+    });
+
     testWidgets('shows progress without a warning while deletion is pending', (
       tester,
     ) async {

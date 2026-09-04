@@ -5623,6 +5623,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'ለሁሉም ሰው መሰረዝ አልተቻለም።';
 
   @override

@@ -5917,6 +5917,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nimeni nu citește această conversație. Scrie către Divine Moderation.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage =>
       'Ștergerea pentru toată lumea nu a reușit.';
 

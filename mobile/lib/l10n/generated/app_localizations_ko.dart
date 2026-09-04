@@ -5464,6 +5464,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 대화는 아무도 읽지 않습니다. 대신 Divine Moderation에 메시지를 보내세요.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => '모두에게서 삭제하지 못했어요.';
 
   @override

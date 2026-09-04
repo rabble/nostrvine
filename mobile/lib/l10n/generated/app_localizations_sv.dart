@@ -5753,6 +5753,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen läser den här konversationen. Skriv till Divine Moderation i stället.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'Det gick inte att radera för alla.';
 
   @override

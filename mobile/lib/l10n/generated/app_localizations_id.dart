@@ -5689,6 +5689,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'Gagal menghapus untuk semua orang.';
 
   @override

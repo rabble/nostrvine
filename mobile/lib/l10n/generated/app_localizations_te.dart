@@ -5949,6 +5949,9 @@ class AppLocalizationsTe extends AppLocalizations {
       'ఈ సంభాషణను ఎవరూ చదవడం లేదు. బదులుగా Divine మోడరేషన్ అని సందేశం పంపండి.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'అందరి కోసం తొలగించడం సాధ్యపడలేదు.';
 
   @override

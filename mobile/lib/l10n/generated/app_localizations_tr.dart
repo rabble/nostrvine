@@ -5691,6 +5691,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu sohbeti kimse okumuyor. Bunun yerine Divine Moderation\'a yazın.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
   String get dmDeleteRefusedMessage => 'Herkesten silinemedi.';
 
   @override

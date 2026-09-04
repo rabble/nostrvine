@@ -9913,6 +9913,12 @@ abstract class AppLocalizations {
   /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
   String get dmSendBlockedRetiredMessage;
 
+  /// Screen-reader label on the spinner beside an own message whose delete-for-everyone is still in flight. Never rendered as visible text — the visual channel is the spinner itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting for everyone'**
+  String get dmDeletePendingLabel;
+
   /// Temporary SnackBar text and failed-retraction sheet title shown when Delete for everyone was not confirmed for every recipient (#8201).
   ///
   /// In en, this message translates to:
