@@ -618,6 +618,84 @@ void main() {
       }
 
       blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'a removal retry replays the stored deletion, not the reaction',
+        build: () {
+          when(
+            () => repo.retryDeletion(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) => cubit.add(
+          const ConversationReactionRemovalRetryRequested(
+            rumorId: 'own-❤️',
+            messageAuthorPubkey: _peer,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => repo.retryDeletion(
+              rumorId: 'own-❤️',
+              targetMessageAuthor: _peer,
+            ),
+          ).called(1);
+          verifyNever(
+            () => repo.retry(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'a refused deletion row clears the optimistic removal overlay',
+        build: () => ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        ),
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([ownReaction('❤️')]);
+          await Future<void>.delayed(Duration.zero);
+          when(
+            () => repo.removeOwn(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async {});
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '❤️',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+        },
+        verify: (cubit) {
+          expect(cubit.state.optimistic, isEmpty);
+          expect(
+            cubit.state.reactionsFor(_msgId).single.publishStatus,
+            DmReactionPublishStatus.removalRefused,
+          );
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
         'keeps the optimistic chip on a durable-row publish failure '
         '(before the DAO stream ticks)',
         build: () {

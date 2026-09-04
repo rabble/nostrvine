@@ -103,6 +103,7 @@ void main() {
 
     DmReactionRow makeRow({
       String id = _reactionRumorId,
+      String conversationId = _conversationId,
       String reactorPubkey = _ownerPubkey,
       String emoji = '🔥',
       String? giftWrapId,
@@ -115,7 +116,7 @@ void main() {
     }) {
       return DmReactionRow(
         id: id,
-        conversationId: _conversationId,
+        conversationId: conversationId,
         targetMessageId: targetMessageId,
         targetMessageAuthor: targetAuthor,
         reactorPubkey: reactorPubkey,
@@ -1038,6 +1039,150 @@ void main() {
       },
     );
 
+    test('removeOwn records a blocked first attempt as refused', () async {
+      final deletionRumor = reactionRumor(
+        id: _giftWrapId,
+        content: '',
+        kind: EventKind.eventDeletion,
+        tags: [
+          ['e', _reactionRumorId],
+          ['k', EventKind.reaction.toString()],
+        ],
+      );
+      when(
+        () => mockDao.markOwnDeletionPending(
+          id: _reactionRumorId,
+          ownerPubkey: _ownerPubkey,
+          deletionRumorJson: any(named: 'deletionRumorJson'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMessageService.buildRumor(
+          recipientPubkey: _otherPubkey,
+          content: '',
+          eventKind: EventKind.eventDeletion,
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).thenReturn(deletionRumor);
+      when(
+        () => mockMessageService.sendRumor(
+          rumorEvent: deletionRumor,
+          recipientPubkey: _otherPubkey,
+          awaitRecipientOk: any(named: 'awaitRecipientOk'),
+        ),
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.blocked('policy refused'),
+      );
+      when(
+        () => mockDao.markDeletionRefused(
+          id: _reactionRumorId,
+          ownerPubkey: _ownerPubkey,
+        ),
+      ).thenAnswer((_) async {});
+
+      await createRepository().removeOwn(
+        rumorId: _reactionRumorId,
+        targetMessageAuthor: _otherPubkey,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      verify(
+        () => mockDao.markDeletionRefused(
+          id: _reactionRumorId,
+          ownerPubkey: _ownerPubkey,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockDao.markDeletionSent(
+          id: any(named: 'id'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      );
+    });
+
+    test(
+      'the initial deletion and a concurrent retry share one fan-out',
+      () async {
+        final deletionRumor = reactionRumor(
+          id: _giftWrapId,
+          content: '',
+          kind: EventKind.eventDeletion,
+          tags: [
+            ['e', _reactionRumorId],
+            ['k', EventKind.reaction.toString()],
+          ],
+        );
+        final send = Completer<NIP17SendResult>();
+        when(
+          () => mockDao.getById(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer(
+          (_) async => makeRow(
+            isDeleted: true,
+            publishStatus: 'deletion_pending',
+            rumorEventJson: jsonEncode(deletionRumor.toJson()),
+          ),
+        );
+        when(
+          () => mockDao.markOwnDeletionPending(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: _otherPubkey,
+            content: '',
+            eventKind: EventKind.eventDeletion,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(deletionRumor);
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) => send.future);
+        when(
+          () => mockDao.markDeletionSent(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        await repository.removeOwn(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+        await Future<void>.delayed(Duration.zero);
+        final retry = repository.retryDeletion(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+        send.complete(
+          NIP17SendResult.success(
+            rumorEventId: deletionRumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+
+        expect(await retry, DmReactionDeletionOutcome.sent);
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).called(1);
+      },
+    );
+
     test(
       'retryableDeletions projects pending own deletions from the dao',
       () async {
@@ -1110,7 +1255,7 @@ void main() {
           targetMessageAuthor: _otherPubkey,
         );
 
-        expect(result.success, isTrue);
+        expect(result, DmReactionDeletionOutcome.sent);
         verify(
           () => mockDao.markDeletionSent(
             id: _reactionRumorId,
@@ -1121,9 +1266,7 @@ void main() {
     );
 
     test(
-      'retryDeletion TERMINALIZES a policy-blocked removal instead of looping '
-      "— a blocked recipient can't receive the kind-5 and never had the "
-      'reaction, so the sweep must stop re-driving it',
+      'retryDeletion preserves a policy-refused removal for manual retry',
       () async {
         final deletionRumor = reactionRumor(
           id: _giftWrapId,
@@ -1154,7 +1297,7 @@ void main() {
           (_) async => const NIP17SendResult.blocked('policy refused'),
         );
         when(
-          () => mockDao.markDeletionSent(
+          () => mockDao.markDeletionRefused(
             id: _reactionRumorId,
             ownerPubkey: _ownerPubkey,
           ),
@@ -1166,11 +1309,9 @@ void main() {
           targetMessageAuthor: _otherPubkey,
         );
 
-        // Terminal — the sweep drops it from tracking (success) and the row
-        // leaves the retryable-deletion set.
-        expect(result.success, isTrue);
+        expect(result, DmReactionDeletionOutcome.refused);
         verify(
-          () => mockDao.markDeletionSent(
+          () => mockDao.markDeletionRefused(
             id: _reactionRumorId,
             ownerPubkey: _ownerPubkey,
           ),
@@ -1186,8 +1327,7 @@ void main() {
         targetMessageAuthor: _otherPubkey,
       );
 
-      expect(result.success, isFalse);
-      expect(result.errorMessage, contains('No stored deletion'));
+      expect(result, DmReactionDeletionOutcome.unavailable);
     });
 
     test('persistIncoming validates event shape before upsert', () async {
@@ -1610,6 +1750,99 @@ void main() {
       const thirdPubkey =
           '1111111111111111111111111111111111111111111111111111111111111111';
       const groupConversationId = 'group-convo-id';
+
+      test(
+        'a mixed confirmed and policy-blocked deletion is recorded refused',
+        () async {
+          final mockConversationsDao = _MockConversationsDao();
+          when(
+            () => mockConversationsDao.getConversation(
+              groupConversationId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupConversationId,
+              participantPubkeys: jsonEncode([
+                _ownerPubkey,
+                _otherPubkey,
+                thirdPubkey,
+              ]),
+              isGroup: true,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+              ownerPubkey: _ownerPubkey,
+            ),
+          );
+          final deletionRumor = reactionRumor(
+            id: _giftWrapId,
+            content: '',
+            kind: EventKind.eventDeletion,
+            tags: [
+              ['e', _reactionRumorId],
+              ['k', EventKind.reaction.toString()],
+            ],
+          );
+          when(
+            () => mockDao.getById(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => makeRow(
+              conversationId: groupConversationId,
+              isDeleted: true,
+              publishStatus: 'deletion_pending',
+              rumorEventJson: jsonEncode(deletionRumor.toJson()),
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: deletionRumor,
+              recipientPubkey: _otherPubkey,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: deletionRumor.id,
+              messageEventId: _giftWrapId,
+              recipientPubkey: _otherPubkey,
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: deletionRumor,
+              recipientPubkey: thirdPubkey,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.blocked('policy refused'),
+          );
+          when(
+            () => mockDao.markDeletionRefused(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer((_) async {});
+
+          final outcome =
+              await createRepository(
+                conversationsDao: mockConversationsDao,
+              ).retryDeletion(
+                rumorId: _reactionRumorId,
+                targetMessageAuthor: _otherPubkey,
+              );
+
+          expect(outcome, DmReactionDeletionOutcome.refused);
+          verify(
+            () => mockDao.markDeletionRefused(
+              id: _reactionRumorId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'publish fans the reaction wrap out to every group member',
@@ -2497,7 +2730,7 @@ void main() {
             targetMessageAuthor: _otherPubkey,
           );
 
-          expect(result.success, isFalse);
+          expect(result, DmReactionDeletionOutcome.unconfirmed);
           verifyNever(
             () => mockDao.markDeletionSent(
               id: any(named: 'id'),

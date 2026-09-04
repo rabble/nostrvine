@@ -195,13 +195,15 @@ class _ReactionPill extends StatelessWidget {
         ownReaction?.publishStatus == DmReactionPublishStatus.pending;
     final isOwnFailed =
         ownReaction?.publishStatus == DmReactionPublishStatus.failed;
+    final isOwnRemovalRefused =
+        ownReaction?.publishStatus == DmReactionPublishStatus.removalRefused;
 
-    final background = isOwnFailed
+    final background = isOwnFailed || isOwnRemovalRefused
         ? context.vineColors.errorContainer
         : hasOwn
         ? context.vineColors.primaryContainer
         : context.vineColors.containerLow;
-    final borderColor = isOwnFailed
+    final borderColor = isOwnFailed || isOwnRemovalRefused
         ? VineTheme.error
         : hasOwn
         ? context.vineColors.accentPositive

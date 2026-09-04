@@ -3766,6 +3766,23 @@
   "@dmReactionChipRetryAnnouncement": {
     "description": "Live-region announcement on chip retry."
   },
+  "dmReactionRemovalRefusedA11yLabel": "Couldn't remove your {emoji} reaction. Double tap to try again",
+  "@dmReactionRemovalRefusedA11yLabel": {
+    "description": "Screen-reader label for an own reaction whose removal was refused.",
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
+  "dmReactionRemovalRefusedTitle": "Couldn't remove your reaction.",
+  "@dmReactionRemovalRefusedTitle": {
+    "description": "Title of the retry prompt for a refused DM reaction removal."
+  },
+  "dmReactionRemovalRefusedDetails": "Some people may still be able to see this reaction.",
+  "@dmReactionRemovalRefusedDetails": {
+    "description": "Detail text explaining that a refused DM reaction removal may remain visible to recipients."
+  },
   "dmReactionsSheetTitle": "Reactions",
   "@dmReactionsSheetTitle": {
     "description": "Title of the bottom sheet listing everyone who reacted to a DM message."

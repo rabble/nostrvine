@@ -874,12 +874,10 @@ class DirectMessages extends Table {
   /// (confirmed, terminal), `deletion_blocked` (send policy blocked every
   /// failed recipient, terminal; other recipients may have succeeded).
   ///
-  /// `deletion_blocked` is deliberately distinct from `deletion_sent`, unlike
-  /// the reaction path which collapses the two. A blocked *reaction* removal
-  /// is moot because the reaction never arrived either; a *message* may well
-  /// have been delivered before the block took effect, so claiming the
-  /// deletion was sent would be a lie. The distinct value stops the sweep
-  /// without asserting delivery.
+  /// Reaction removals likewise record a distinct `deletion_refused` status
+  /// in their publish-status column. A block describes the current attempt,
+  /// not whether the original message or reaction was previously delivered.
+  /// Both distinct values stop automatic retries without asserting delivery.
   TextColumn get deletionPublishStatus =>
       text().nullable().named('deletion_publish_status')();
 
@@ -986,7 +984,8 @@ class DmMessageReactions extends Table {
   /// Publish status for outgoing rows; null for incoming (received from
   /// relay). Values: `pending`, `sent`, `failed`, `blocked` (send-policy
   /// refused, terminal), `deletion_pending` (soft-deleted, kind-5 awaiting
-  /// durable delivery), `deletion_sent` (kind-5 confirmed, terminal).
+  /// durable delivery), `deletion_sent` (kind-5 confirmed, terminal), and
+  /// `deletion_refused` (automatic retries stopped, retained for user retry).
   TextColumn get publishStatus => text().nullable().named('publish_status')();
 
   @override

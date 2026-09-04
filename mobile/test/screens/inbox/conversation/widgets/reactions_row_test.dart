@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -121,6 +122,35 @@ void main() {
       expect(find.text('😂'), findsOneWidget);
       // One avatar per reactor.
       expect(find.byType(UserAvatar), findsNWidgets(2));
+    });
+
+    testWidgets('a refused own removal renders the error warning pill', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(
+            id: '1',
+            reactorPubkey: ownerPubkey,
+            emoji: '🔥',
+            publishStatus: DmReactionPublishStatus.removalRefused,
+          ),
+        ]),
+      );
+
+      await tester.pumpWidget(buildSubject(cubit));
+      await tester.pump();
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((widget) => widget.decoration)
+          .whereType<BoxDecoration>();
+      expect(
+        decorations.any(
+          (decoration) => decoration.border?.top.color == VineTheme.error,
+        ),
+        isTrue,
+      );
     });
 
     testWidgets('reactor avatar is vertically centered against the emoji', (

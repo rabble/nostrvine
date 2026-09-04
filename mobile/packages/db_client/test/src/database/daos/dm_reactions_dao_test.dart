@@ -540,6 +540,43 @@ void main() {
     );
 
     test(
+      'markDeletionRefused retains the rumor and surfaces a warning row '
+      'without returning it to the automatic retry set',
+      () async {
+        await insertPending();
+        await dao.markOwnDeletionPending(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+
+        await dao.markDeletionRefused(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+        );
+
+        final row = await dao.getById(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+        );
+        expect(row!.publishStatus, DmReactionsDao.deletionRefused);
+        expect(row.isDeleted, isTrue);
+        expect(row.rumorEventJson, '{"kind":5}');
+        expect(
+          await dao.getRetryableOwnDeletions(ownerPubkey: _ownerA),
+          isEmpty,
+        );
+        final visible = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(visible.map((reaction) => reaction.id), [_pendingId]);
+      },
+    );
+
+    test(
       'getRetryableOwnDeletions is owner-scoped',
       () async {
         await insertPending(ownerPubkey: _ownerB, reactorPubkey: _ownerB);
@@ -1043,12 +1080,16 @@ void main() {
             '5555555555555555555555555555555555555555555555555555555555555555';
         const otherOwnerId =
             '6666666666666666666666666666666666666666666666666666666666666666';
+        const refusedId =
+            'abababababababababababababababababababababababababababababababab';
         const target2 =
             '7777777777777777777777777777777777777777777777777777777777777777';
         const target3 =
             '8888888888888888888888888888888888888888888888888888888888888888';
         const target4 =
             '9999999999999999999999999999999999999999999999999999999999999999';
+        const target5 =
+            'acacacacacacacacacacacacacacacacacacacacacacacacacacacacacac';
 
         await insertPending();
         await insertPending(id: failedId, targetMessageId: target2);
@@ -1061,6 +1102,13 @@ void main() {
         );
         await insertPending(id: blockedId, targetMessageId: target4);
         await dao.markBlocked(id: blockedId, ownerPubkey: _ownerA);
+        await insertPending(id: refusedId, targetMessageId: target5);
+        await dao.markOwnDeletionPending(
+          id: refusedId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+        await dao.markDeletionRefused(id: refusedId, ownerPubkey: _ownerA);
         await dao.upsertIncoming(
           id: incomingId,
           conversationId: _conversationId,
@@ -1091,6 +1139,10 @@ void main() {
         );
         expect(
           await dao.getById(id: deletionId, ownerPubkey: _ownerA),
+          isNotNull,
+        );
+        expect(
+          await dao.getById(id: refusedId, ownerPubkey: _ownerA),
           isNotNull,
         );
         expect(await dao.getById(id: incomingId, ownerPubkey: _ownerA), isNull);

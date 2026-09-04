@@ -1,6 +1,7 @@
 // ABOUTME: "Who reacted" bottom sheet for a DM message — one row per reactor
 // ABOUTME: (avatar + name + emoji). The current account's row removes its
-// ABOUTME: reaction (or retries when failed); other rows are read-only.
+// ABOUTME: reaction (or retries a failed add/refused removal); other rows are
+// ABOUTME: read-only.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -183,6 +184,8 @@ class _ReactorRow extends ConsumerWidget {
 
     final isFailed = reaction.publishStatus == DmReactionPublishStatus.failed;
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
+    final isRemovalRefused =
+        reaction.publishStatus == DmReactionPublishStatus.removalRefused;
 
     final canRetract = isOwn && removalEnabled;
 
@@ -204,6 +207,8 @@ class _ReactorRow extends ConsumerWidget {
           context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
         DmReactionPublishStatus.failed =>
           context.l10n.dmReactionChipFailedA11yLabel,
+        DmReactionPublishStatus.removalRefused =>
+          context.l10n.dmReactionRemovalRefusedA11yLabel(reaction.emoji),
         _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
       };
     }
@@ -247,19 +252,54 @@ class _ReactorRow extends ConsumerWidget {
           trailing: _Trailing(
             emoji: reaction.emoji,
             showAction: canRetract,
-            isFailed: isFailed,
+            isFailed: isFailed || isRemovalRefused,
             isPending: isPending,
           ),
           onTap: (canRetract && !isPending)
-              ? () => _onOwnTap(context, isFailed: isFailed)
+              ? () => _onOwnTap(
+                  context,
+                  isFailed: isFailed,
+                  isRemovalRefused: isRemovalRefused,
+                )
               : null,
         ),
       ),
     );
   }
 
-  void _onOwnTap(BuildContext context, {required bool isFailed}) {
+  Future<void> _onOwnTap(
+    BuildContext context, {
+    required bool isFailed,
+    required bool isRemovalRefused,
+  }) async {
     final cubit = context.read<ConversationReactionsCubit>();
+    if (isRemovalRefused) {
+      final retry = await VineBottomSheetPrompt.show<bool>(
+        context: context,
+        sticker: DivineStickerName.alert,
+        title: context.l10n.dmReactionRemovalRefusedTitle,
+        subtitle: context.l10n.dmReactionRemovalRefusedDetails,
+        primaryButtonText: context.l10n.authTryAgain,
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        secondaryButtonText: context.l10n.commonCancel,
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
+      );
+      if (retry != true || cubit.isClosed) return;
+      if (context.mounted) {
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          context.l10n.dmReactionChipRetryAnnouncement,
+          Directionality.of(context),
+        );
+      }
+      cubit.add(
+        ConversationReactionRemovalRetryRequested(
+          rumorId: reaction.id,
+          messageAuthorPubkey: messageAuthorPubkey,
+        ),
+      );
+      return;
+    }
     if (isFailed) {
       SemanticsService.sendAnnouncement(
         View.of(context),

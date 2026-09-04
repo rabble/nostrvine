@@ -86,6 +86,7 @@ void main() {
 
     setUp(() {
       cubit = _MockConversationReactionsCubit();
+      when(() => cubit.isClosed).thenReturn(false);
     });
 
     void primeState(List<DmReaction> reactions) {
@@ -285,6 +286,39 @@ void main() {
             messageId: messageId,
             messageAuthorPubkey: otherPubkey,
             emoji: '🔥',
+          ),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('a refused removal offers a confirmed kind-5 retry', (
+      tester,
+    ) async {
+      primeState([
+        makeReaction(
+          id: 'own1',
+          reactorPubkey: ownerPubkey,
+          emoji: '🔥',
+          publishStatus: DmReactionPublishStatus.removalRefused,
+        ),
+      ]);
+
+      await open(tester);
+      expect(find.text(l10n.dmReactionRetryAction), findsOneWidget);
+
+      await tester.tap(find.text(l10n.dmReactionRetryAction));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
+      expect(find.text(l10n.dmReactionRemovalRefusedDetails), findsOneWidget);
+
+      await tester.tap(find.text(l10n.authTryAgain));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => cubit.add(
+          const ConversationReactionRemovalRetryRequested(
+            rumorId: 'own1',
+            messageAuthorPubkey: otherPubkey,
           ),
         ),
       ).called(1);

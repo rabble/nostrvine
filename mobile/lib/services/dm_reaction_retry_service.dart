@@ -244,19 +244,21 @@ class DmReactionRetryService {
         reactionTargets,
         phase: _addPhase,
         applyPendingMinAge: true,
-        driver: (t) => _repository.retry(
+        driver: (t) async => (await _repository.retry(
           rumorId: t.rumorId,
           targetMessageAuthor: t.targetMessageAuthor,
-        ),
+        )).success,
       );
       final d = await _driveTargets(
         deletionTargets,
         phase: _deletionPhase,
         applyPendingMinAge: false,
-        driver: (t) => _repository.retryDeletion(
-          rumorId: t.rumorId,
-          targetMessageAuthor: t.targetMessageAuthor,
-        ),
+        driver: (t) async =>
+            await _repository.retryDeletion(
+              rumorId: t.rumorId,
+              targetMessageAuthor: t.targetMessageAuthor,
+            ) ==
+            DmReactionDeletionOutcome.sent,
       );
 
       Log.info(
@@ -308,8 +310,7 @@ class DmReactionRetryService {
     List<DmReactionRetryTarget> targets, {
     required String phase,
     required bool applyPendingMinAge,
-    required Future<DmReactionPublishResult> Function(DmReactionRetryTarget)
-    driver,
+    required Future<bool> Function(DmReactionRetryTarget) driver,
   }) async {
     var recovered = 0;
     var failed = 0;
@@ -349,8 +350,8 @@ class DmReactionRetryService {
       }
 
       try {
-        final result = await driver(target);
-        if (result.success) {
+        final success = await driver(target);
+        if (success) {
           _attempts.remove(id);
           _lastAttempt.remove(id);
           recovered++;

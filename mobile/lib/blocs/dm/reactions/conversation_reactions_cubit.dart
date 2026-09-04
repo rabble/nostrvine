@@ -42,6 +42,10 @@ class ConversationReactionsCubit
       _onRetryRequested,
       transformer: sequential(),
     );
+    on<ConversationReactionRemovalRetryRequested>(
+      _onRemovalRetryRequested,
+      transformer: sequential(),
+    );
     on<_ConversationReactionsSubscriptionTicked>(_onSubscriptionTicked);
   }
 
@@ -364,6 +368,20 @@ class ConversationReactionsCubit
     }
   }
 
+  Future<void> _onRemovalRetryRequested(
+    ConversationReactionRemovalRetryRequested event,
+    Emitter<ConversationReactionsState> emit,
+  ) async {
+    try {
+      await _reactionsRepository.retryDeletion(
+        rumorId: event.rumorId,
+        targetMessageAuthor: event.messageAuthorPubkey,
+      );
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+    }
+  }
+
   void _onSubscriptionTicked(
     _ConversationReactionsSubscriptionTicked event,
     Emitter<ConversationReactionsState> emit,
@@ -398,7 +416,15 @@ class ConversationReactionsCubit
       final ownHasEmoji = rows.any((r) => r.isOwn && r.emoji == key.emoji);
       return switch (intent) {
         OptimisticReactionAdded() => ownHasEmoji,
-        OptimisticReactionRemoved() => !ownHasEmoji,
+        OptimisticReactionRemoved() =>
+          !ownHasEmoji ||
+              rows.any(
+                (reaction) =>
+                    reaction.isOwn &&
+                    reaction.emoji == key.emoji &&
+                    reaction.publishStatus ==
+                        DmReactionPublishStatus.removalRefused,
+              ),
       };
     });
     return next;
