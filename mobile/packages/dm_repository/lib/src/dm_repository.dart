@@ -223,6 +223,21 @@ const Duration _messagePublishTimeout = DmBatchSendBudget.messagePublishTimeout;
 /// don't conflate them: the live subscription / drain fall back to the
 /// default pool on either, but RC3 must only publish-when-`absent` and never
 /// overwrite a real list when the lookup merely `failed`.
+/// Which local account terminally handled an already-processed event.
+///
+/// Only meaningful for NIP-04. A kind-1059 wrap id belongs to exactly one
+/// recipient, so "processed" and "processed by us" are the same fact there.
+enum _Nip04DedupHit {
+  /// Not processed by anyone on this device.
+  none,
+
+  /// Processed by the account that is receiving it now.
+  thisAccount,
+
+  /// Processed by a different local account, so this one never stored it.
+  otherAccount,
+}
+
 enum _OwnDmInboxState {
   /// The user advertises a kind-10050 with at least one allowed relay.
   found,
@@ -2287,6 +2302,49 @@ class DmRepository {
     return ledger.hasGiftWrap(giftWrapId);
   }
 
+  /// Attributes an already-processed kind-4 to a local account.
+  ///
+  /// [_alreadyProcessed] is global on the documented reasoning that a
+  /// gift-wrap event id is globally unique. That holds for kind 1059, where
+  /// NIP-59 mints a fresh ephemeral key and a separate wrap per recipient, so
+  /// one id can only ever belong to one local account. A kind 4 has no
+  /// envelope — one signed event, one author, one `p` recipient — so when both
+  /// ends are accounts on this device they genuinely share an id, and
+  /// `_recoverOutgoingNip04` makes that concrete by paging the whole outgoing
+  /// history of one account into tables the other one reads.
+  ///
+  /// The global probe still runs first and still decides whether to pay for a
+  /// decrypt: the event is terminally handled on this device either way. What
+  /// this adds is who handled it, which is what decides whether this account
+  /// may move its own sync boundary past it.
+  Future<_Nip04DedupHit> _nip04DedupHit(
+    String eventId, {
+    required String ownerPubkey,
+  }) async {
+    if (!await _alreadyProcessed(eventId)) return _Nip04DedupHit.none;
+    if (ownerPubkey.isEmpty) return _Nip04DedupHit.thisAccount;
+    // The kind-4 insert writes the same id into both `id` and `giftWrapId`,
+    // so an owner-scoped lookup by id is the exact counterpart of the global
+    // `hasGiftWrap` probe on this path — and it already applies the legacy
+    // unowned-row allowance.
+    if (await _directMessagesDao.getMessageById(
+          eventId,
+          ownerPubkey: ownerPubkey,
+        ) !=
+        null) {
+      return _Nip04DedupHit.thisAccount;
+    }
+    final ledger = _processedGiftWrapsDao;
+    if (ledger != null &&
+        await ledger.hasGiftWrapForOwner(
+          giftWrapId: eventId,
+          ownerPubkey: ownerPubkey,
+        )) {
+      return _Nip04DedupHit.thisAccount;
+    }
+    return _Nip04DedupHit.otherAccount;
+  }
+
   /// Batched form of [_alreadyProcessed] for the history-drain dedup probe.
   /// Resolves which of [giftWrapIds] are already persisted or in the dedup
   /// ledger with TWO `IN` queries instead of 2×N sequential single-id lookups,
@@ -3321,14 +3379,33 @@ class DmRepository {
       // processed-wraps ledger also carries NIP-04 event ids that were
       // suppressed by a removed-conversation tombstone, so replays skip
       // decryption entirely — matching the terminal NIP-17 behavior. #7804.
-      if (await _alreadyProcessed(nip04Event.id)) {
-        // Advance the wire boundary for the same reason the gift-wrap dedup
-        // path does. A kind 4 is its own envelope, so the stamp the relay
-        // filtered to deliver this replay is the event's own `created_at`.
-        await _syncState?.recordWireSeen(
-          ownerPubkey,
-          createdAt: nip04Event.createdAt,
-        );
+      final dedupHit = await _nip04DedupHit(
+        nip04Event.id,
+        ownerPubkey: ownerPubkey,
+      );
+      if (dedupHit != _Nip04DedupHit.none) {
+        if (dedupHit == _Nip04DedupHit.thisAccount) {
+          // Advance the wire boundary for the same reason the gift-wrap dedup
+          // path does. A kind 4 is its own envelope, so the stamp the relay
+          // filtered to deliver this replay is the event's own `created_at`.
+          await _syncState?.recordWireSeen(
+            ownerPubkey,
+            createdAt: nip04Event.createdAt,
+          );
+        } else {
+          // A different local account processed this kind 4 — its id is shared
+          // by both ends, unlike a gift wrap's. This account never stored the
+          // message, so moving its boundary past the event would raise the
+          // floor of every future window over a message it does not have, and
+          // the boundary only ever rises. See #8209.
+          Log.warning(
+            'Skipping kind-4 ${nip04Event.id} for '
+            '${pubkeyForLogs(ownerPubkey)}: another local account processed '
+            'it, so this account is not advancing its sync boundary past a '
+            'message it never stored',
+            category: LogCategory.system,
+          );
+        }
         if (_historyDrain == null) {
           Log.debug(
             'Skipping already-processed NIP-04 event ${nip04Event.id}',

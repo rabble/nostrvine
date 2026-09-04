@@ -35,6 +35,55 @@ void main() {
   });
 
   group(ProcessedGiftWrapsDao, () {
+    group('hasGiftWrapForOwner', () {
+      test("does not see another account's row", () async {
+        await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+        // An unwrapped kind 4 carries one event id shared by both ends, so
+        // this is how the ledger looks when the other party is also a local
+        // account. B never stored it and must not act as though it had.
+        expect(
+          await dao.hasGiftWrapForOwner(
+            giftWrapId: wrap1,
+            ownerPubkey: ownerB,
+          ),
+          isFalse,
+        );
+      });
+
+      test('sees this account\'s own row', () async {
+        await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+        expect(
+          await dao.hasGiftWrapForOwner(
+            giftWrapId: wrap1,
+            ownerPubkey: ownerA,
+          ),
+          isTrue,
+        );
+      });
+
+      test('leaves the global probe answering for every account', () async {
+        await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+        // The cost decision stays global: the event is terminally handled on
+        // this device, so nobody pays to decrypt it again.
+        expect(await dao.hasGiftWrap(wrap1), isTrue);
+      });
+
+      test('is false for an id nobody recorded', () async {
+        await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+        expect(
+          await dao.hasGiftWrapForOwner(
+            giftWrapId: wrap2,
+            ownerPubkey: ownerA,
+          ),
+          isFalse,
+        );
+      });
+    });
+
     test('hasGiftWrap is false before any record', () async {
       expect(await dao.hasGiftWrap(wrap1), isFalse);
     });

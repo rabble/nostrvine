@@ -12479,12 +12479,110 @@ void main() {
         await repository.stopListening();
       });
 
-      test('duplicate NIP-04 events still advance the wire boundary', () async {
+      // A kind-1059 id belongs to one recipient, so "some account processed
+      // this" and "we processed this" are the same fact. A kind 4 has no
+      // envelope: sender and recipient share one event id, so when both are
+      // accounts on this device the dedup tables hold one id for two accounts.
+      group('a kind-4 another local account processed', () {
+        late _MockProcessedGiftWrapsDao ledger;
+
+        setUp(() {
+          ledger = _MockProcessedGiftWrapsDao();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+        });
+
+        Future<_FakeDmSyncState> deliverDuplicate() async {
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) async => 'should not reach',
+            syncState: syncState,
+            processedGiftWrapsDao: ledger,
+          );
+          await repository.startListening();
+          controller.add(createNip04Event());
+          await Future<void>.delayed(Duration.zero);
+          await controller.close();
+          await repository.stopListening();
+          return syncState;
+        }
+
+        test("does not advance this account's wire boundary", () async {
+          when(
+            () => ledger.hasGiftWrapForOwner(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+
+          final syncState = await deliverDuplicate();
+
+          // The boundary only ever rises, so raising it over a message this
+          // account never stored puts every future window above it.
+          expect(syncState.recordedWire, isEmpty);
+        });
+
+        test('still advances it when this account ledgered the event '
+            'itself', () async {
+          when(
+            () => ledger.hasGiftWrapForOwner(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final syncState = await deliverDuplicate();
+
+          // Mutation guard: "never advance on a dedup hit" would regress the
+          // account's own suppressed history, which the 2-day overlap
+          // re-delivers on every launch.
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+        });
+      });
+
+      test("a duplicate this account itself stored still advances its wire "
+          'boundary', () async {
         final nip04Event = createNip04Event();
 
         when(
           () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
         ).thenAnswer((_) async => true);
+
+        // This account's OWN duplicate: the row is in direct_messages under
+        // this owner, which is what entitles it to move its boundary.
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: 'own-duplicate',
+            senderPubkey: _validPubkeyB,
+            content: 'duplicate',
+            createdAt: 1700000000,
+            giftWrapId: _rumorEventId,
+            messageKind: 4,
+            isDeleted: false,
+            twinCollapsed: false,
+          ),
+        );
 
         final controller = StreamController<Event>();
         when(
@@ -12552,6 +12650,24 @@ void main() {
             dedupStarted.complete();
             return dedupResult.future;
           });
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: 'own-duplicate',
+              senderPubkey: _validPubkeyB,
+              content: 'duplicate',
+              createdAt: 1700000000,
+              giftWrapId: _rumorEventId,
+              messageKind: 4,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
 
           final controller = StreamController<Event>();
           when(
