@@ -1230,7 +1230,7 @@ class DmRepository {
       return (relays: memo.relays, conclusive: true);
     }
     if (_ingestSessionEnded(pubkey, generation)) {
-      return (relays: null, conclusive: true);
+      return (relays: null, conclusive: false);
     }
     final strict = await _queryOwnDmInbox(
       pubkey,
@@ -1238,7 +1238,7 @@ class DmRepository {
       source: _DmRelayListSource.selfAuthored,
     );
     if (_ingestSessionEnded(pubkey, generation)) {
-      return (relays: null, conclusive: true);
+      return (relays: null, conclusive: false);
     }
     // Repair the session memo with the better answer, so the live
     // subscription's next re-subscribe stops routing by a silence we have
@@ -3522,13 +3522,18 @@ class DmRepository {
           // message, so moving its boundary past the event would raise the
           // floor of every future window over a message it does not have, and
           // the boundary only ever rises. See #8209.
-          Log.warning(
-            'Skipping kind-4 ${nip04Event.id} for '
-            '${pubkeyForLogs(ownerPubkey)}: another local account processed '
-            'it, so this account is not advancing its sync boundary past a '
-            'message it never stored',
-            category: LogCategory.system,
-          );
+          // A drain deliberately re-requests this event while its cursor stays
+          // above it. Logging every replay would fill the capture ring and
+          // evict the persist diagnostics the warning is meant to support.
+          if (_historyDrain == null) {
+            Log.warning(
+              'Skipping kind-4 ${nip04Event.id} for '
+              '${pubkeyForLogs(ownerPubkey)}: another local account processed '
+              'it, so this account is not advancing its sync boundary past a '
+              'message it never stored',
+              category: LogCategory.system,
+            );
+          }
         }
         if (_historyDrain == null) {
           Log.debug(
