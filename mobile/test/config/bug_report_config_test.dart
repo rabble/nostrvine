@@ -29,6 +29,11 @@ const _deepLinkLogLine =
 
 void main() {
   group('sanitizeDiagnosticText', () {
+    test('redacts a bare NIP-05 domain fragment', () {
+      const input = 'profile nip05: @example.test';
+
+      expect(sanitizeDiagnosticText(input), 'profile nip05: [REDACTED]');
+    });
     group('redacts the whole credential value', () {
       // Serialized shapes are how credentials actually reach the log buffer,
       // so a quote between the key and the separator must not defeat the rule,

@@ -2685,14 +2685,6 @@ class ProfileRepository implements ProfileReader {
       final cachedHasPicture = cached.picture != null;
       final willEnrichPicture = !hadPicture && cachedHasPicture;
       if (willEnrichPicture) pictureEnriched++;
-      Log.debug(
-        'Cache hit for ${profile.bestDisplayName}: '
-        'search picture=${profile.picture ?? "null"}, '
-        'cached picture=${cached.picture ?? "null"}, '
-        'will enrich=$willEnrichPicture',
-        name: 'ProfileRepository._enrichFromCache',
-        category: LogCategory.storage,
-      );
       enriched.add(
         profile.copyWith(
           name: profile.name ?? cached.name,

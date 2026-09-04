@@ -163,6 +163,26 @@ void main() {
     });
 
     group('Image Loading States', () {
+      testWidgets('uses placeholder for an insecure archive avatar URL', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UserAvatar(
+                imageUrl: 'http://web.archive.org/avatar.jpg',
+                placeholderSeed: 'stable-user',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(VineCachedImage), findsNothing);
+        expect(_gradientFinder(), findsWidgets);
+      });
+
       testWidgets('shows VineCachedImage when imageUrl is provided', (
         tester,
       ) async {
