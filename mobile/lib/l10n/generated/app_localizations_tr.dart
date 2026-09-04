@@ -11398,7 +11398,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get verifyConnectProofCta => 'Kontrol et ve bağla';
 
   @override
-  String get verifyErrorProofRejected => 'O gönderide npub\'ını bulamadık.';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

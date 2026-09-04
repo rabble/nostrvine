@@ -4573,7 +4573,6 @@
   "verifyIdentityLabel": "Accountnaam",
   "verifyProofLabel": "Link naar je post",
   "verifyConnectProofCta": "Controleren en koppelen",
-  "verifyErrorProofRejected": "We konden je npub niet vinden in die post.",
   "verifyErrorVerifierUnreachable": "Verifier niet bereikbaar. Probeer het zo nog eens.",
   "verifyErrorOauthFailed": "Dat ging niet door. Probeer het nog eens.",
   "verifyErrorHandleRequired": "Vul eerst je handle in.",

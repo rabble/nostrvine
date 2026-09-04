@@ -4705,7 +4705,6 @@
   "verifyIdentityLabel": "የመለያ ስም",
   "verifyProofLabel": "የልጥፍህ አገናኝ",
   "verifyConnectProofCta": "መርምር እና አገናኝ",
-  "verifyErrorProofRejected": "በዚያ ልጥፍ ውስጥ npub ህን አላገኘንም።",
   "verifyErrorVerifierUnreachable": "አረጋጋጩ አልተገኘም። ትንሽ ቆይተህ ሞክር።",
   "verifyErrorOauthFailed": "አልተሳካም። እንደገና ሞክር።",
   "verifyErrorHandleRequired": "መጀመሪያ ሃንድልህን አስገባ።",

@@ -11643,7 +11643,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'On n\'a pas trouvé ton npub dans ce post.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

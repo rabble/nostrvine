@@ -11580,7 +11580,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'Hindi namin nakita ang npub mo sa post na \'yon.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

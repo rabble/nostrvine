@@ -11722,7 +11722,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'Nu am găsit npub-ul tău în postarea aia.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

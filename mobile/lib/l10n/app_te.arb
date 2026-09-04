@@ -7713,10 +7713,6 @@
   "@verifyConnectProofCta": {
     "description": "Button that verifies the proof post and, if it checks out, publishes the link."
   },
-  "verifyErrorProofRejected": "మేము ఆ పోస్ట్‌లో మీ npubని కనుగొనలేకపోయాము.",
-  "@verifyErrorProofRejected": {
-    "description": "Error shown when the verification service could not find the user's npub in the linked post."
-  },
   "verifyErrorVerifierUnreachable": "వెరిఫైయర్‌ని చేరుకోలేకపోయింది. క్షణంలో మళ్లీ ప్రయత్నించండి.",
   "@verifyErrorVerifierUnreachable": {
     "description": "Error shown when the verification service could not be reached."

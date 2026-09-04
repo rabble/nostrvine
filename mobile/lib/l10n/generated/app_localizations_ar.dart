@@ -11391,7 +11391,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get verifyConnectProofCta => 'افحص واربط';
 
   @override
-  String get verifyErrorProofRejected => 'لم نجد npub الخاص بك في ذلك المنشور.';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

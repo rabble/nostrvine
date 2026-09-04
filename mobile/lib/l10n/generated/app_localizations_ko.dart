@@ -10907,7 +10907,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get verifyConnectProofCta => '확인하고 연결';
 
   @override
-  String get verifyErrorProofRejected => '그 게시물에서 npub을 찾지 못했어.';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

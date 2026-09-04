@@ -10772,7 +10772,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get verifyConnectProofCta => '核查并关联';
 
   @override
-  String get verifyErrorProofRejected => '我们在那条帖子里没找到你的 npub。';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

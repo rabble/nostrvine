@@ -11808,7 +11808,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'మేము ఆ పోస్ట్‌లో మీ npubని కనుగొనలేకపోయాము.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

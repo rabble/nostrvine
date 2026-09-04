@@ -4573,7 +4573,6 @@
   "verifyIdentityLabel": "Nombre de la cuenta",
   "verifyProofLabel": "Enlace a tu publicación",
   "verifyConnectProofCta": "Comprobar y vincular",
-  "verifyErrorProofRejected": "No encontramos tu npub en esa publicación.",
   "verifyErrorVerifierUnreachable": "No pudimos contactar al verificador. Probá de nuevo en un momento.",
   "verifyErrorOauthFailed": "No salió. Probá otra vez.",
   "verifyErrorHandleRequired": "Escribí tu handle primero.",

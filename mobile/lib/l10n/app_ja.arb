@@ -4573,7 +4573,6 @@
   "verifyIdentityLabel": "アカウント名",
   "verifyProofLabel": "投稿のリンク",
   "verifyConnectProofCta": "確認して連携",
-  "verifyErrorProofRejected": "その投稿に npub が見つからなかった。",
   "verifyErrorVerifierUnreachable": "認証サービスにつながらなかった。少ししてからもう一度。",
   "verifyErrorOauthFailed": "うまくいかなかった。もう一度試してみて。",
   "verifyErrorHandleRequired": "先にハンドルを入力してね。",

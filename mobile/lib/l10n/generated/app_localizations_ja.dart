@@ -10893,7 +10893,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get verifyConnectProofCta => '確認して連携';
 
   @override
-  String get verifyErrorProofRejected => 'その投稿に npub が見つからなかった。';
+  String get verifyErrorProofRejected =>
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

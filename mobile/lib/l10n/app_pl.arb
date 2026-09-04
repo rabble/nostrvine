@@ -4573,7 +4573,6 @@
   "verifyIdentityLabel": "Nazwa konta",
   "verifyProofLabel": "Link do twojego wpisu",
   "verifyConnectProofCta": "Sprawdź i połącz",
-  "verifyErrorProofRejected": "Nie znaleźliśmy twojego npub w tym wpisie.",
   "verifyErrorVerifierUnreachable": "Weryfikator nieosiągalny. Spróbuj za chwilę.",
   "verifyErrorOauthFailed": "Nie poszło. Spróbuj jeszcze raz.",
   "verifyErrorHandleRequired": "Najpierw podaj swój handle.",

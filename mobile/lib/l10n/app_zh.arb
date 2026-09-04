@@ -6358,7 +6358,6 @@
   "verifyIdentityLabel": "账号名称",
   "verifyProofLabel": "帖子链接",
   "verifyConnectProofCta": "核查并关联",
-  "verifyErrorProofRejected": "我们在那条帖子里没找到你的 npub。",
   "verifyErrorVerifierUnreachable": "连不上验证服务。过一会儿再试。",
   "verifyErrorOauthFailed": "没成功。再试一次吧。",
   "verifyErrorHandleRequired": "先填你的 handle。",

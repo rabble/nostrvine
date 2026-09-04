@@ -11481,7 +11481,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'Kami tidak jumpa npub anda dalam siaran itu.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

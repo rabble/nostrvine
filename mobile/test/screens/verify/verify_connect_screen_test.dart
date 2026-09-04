@@ -246,7 +246,9 @@ void main() {
       expect(find.text(l10n.verifyErrorProofRejected), findsOneWidget);
     });
 
-    testWidgets('the fallback does not blame the npub', (tester) async {
+    testWidgets('the fallback does not blame the npub in any locale', (
+      tester,
+    ) async {
       // Every platform without rejection codes lands here, including a GitHub
       // gist-owner mismatch and a Mastodon author mismatch. Naming the npub
       // there reproduces the original bug for those platforms.
@@ -254,7 +256,13 @@ void main() {
 
       await submit(tester, code: null);
 
-      expect(l10n.verifyErrorProofRejected, isNot(contains('npub')));
+      for (final locale in AppLocalizations.supportedLocales) {
+        expect(
+          lookupAppLocalizations(locale).verifyErrorProofRejected,
+          isNot(contains('npub')),
+          reason: '$locale must use the generic rejection fallback',
+        );
+      }
       expect(find.text(l10n.verifyErrorProofMissingNpub), findsNothing);
     });
 

@@ -11589,7 +11589,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get verifyErrorProofRejected =>
-      'Не намерихме твоя npub в тази публикация.';
+      'That didn\'t check out. Check the link and the account name, then try again.';
 
   @override
   String get verifyErrorProofMissingNpub =>

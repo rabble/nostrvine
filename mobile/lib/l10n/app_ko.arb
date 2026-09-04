@@ -4111,7 +4111,6 @@
   "verifyIdentityLabel": "계정 이름",
   "verifyProofLabel": "게시물 링크",
   "verifyConnectProofCta": "확인하고 연결",
-  "verifyErrorProofRejected": "그 게시물에서 npub을 찾지 못했어.",
   "verifyErrorVerifierUnreachable": "인증 서비스에 연결하지 못했어. 잠시 후 다시 시도해.",
   "verifyErrorOauthFailed": "잘 안 됐어. 한 번 더 해봐.",
   "verifyErrorHandleRequired": "핸들부터 입력해.",

@@ -4573,7 +4573,6 @@
   "verifyIdentityLabel": "Kontonamn",
   "verifyProofLabel": "Länk till ditt inlägg",
   "verifyConnectProofCta": "Kolla och länka",
-  "verifyErrorProofRejected": "Vi hittade inte din npub i det inlägget.",
   "verifyErrorVerifierUnreachable": "Nådde inte verifieraren. Försök igen om en stund.",
   "verifyErrorOauthFailed": "Det gick inte igenom. Testa igen.",
   "verifyErrorHandleRequired": "Fyll i ditt handle först.",
