@@ -2,6 +2,8 @@
 // ABOUTME: Maintains a ring buffer of recent logs without file I/O overhead
 
 import 'dart:collection';
+import 'dart:convert';
+
 import 'package:models/models.dart' show LogEntry, LogLevel;
 
 /// Service for capturing and storing log entries in memory for bug reports
@@ -92,18 +94,20 @@ class LogCaptureService {
   }
 
   /// Get statistics about log storage
-  Future<Map<String, dynamic>> getLogStatistics() async {
-    final allLogLines = await getAllLogsAsText();
-    final totalSize = allLogLines.fold<int>(
+  Future<Map<String, dynamic>> getLogStatistics({
+    List<String>? logLines,
+  }) async {
+    final lines = logLines ?? await getAllLogsAsText();
+    final totalSize = lines.fold<int>(
       0,
-      (sum, line) => sum + line.length,
+      (sum, line) => sum + utf8.encode(line).length,
     );
 
     return {
       'fileCount': 0, // No file storage
       'totalSizeBytes': totalSize,
       'totalSizeMB': (totalSize / (1024 * 1024)).toStringAsFixed(2),
-      'totalLogLines': allLogLines.length,
+      'totalLogLines': lines.length,
       'memoryBufferSize': _memoryBuffer.length,
       'totalEntriesWritten': _totalEntriesWritten,
     };

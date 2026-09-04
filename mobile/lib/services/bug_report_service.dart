@@ -24,9 +24,46 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
+typedef LogExportHeaderBuilder =
+    String Function({
+      required int exportedCount,
+      required int omittedCount,
+    });
+
+@immutable
+class LogExportBody {
+  const LogExportBody({
+    required this.lines,
+    required this.body,
+    required this.exportedCount,
+    required this.omittedCount,
+  });
+
+  final List<String> lines;
+  final String body;
+  final int exportedCount;
+  final int omittedCount;
+}
+
+@immutable
+class LogExportContent {
+  const LogExportContent({
+    required this.content,
+    required this.exportedCount,
+    required this.omittedCount,
+  });
+
+  final String content;
+  final int exportedCount;
+  final int omittedCount;
+}
+
 /// Service for creating and managing bug reports
 class BugReportService {
   static const _logExportShareSubject = 'Divine Full Logs';
+
+  /// Maximum UTF-8 size of a log export, including its diagnostic header.
+  static const int maxLogExportBytes = 2 * 1024 * 1024;
 
   BugReportService({
     ErrorAnalyticsTracker? errorTracker,
@@ -283,14 +320,7 @@ class BugReportService {
         category: LogCategory.system,
       );
 
-      // Get comprehensive statistics about logs
-      final stats = await LogCaptureService().getLogStatistics();
-      Log.info(
-        'Log stats: ${stats['totalLogLines']} lines, ${stats['totalSizeMB']} MB across ${stats['fileCount']} files',
-        category: LogCategory.system,
-      );
-
-      // Get ALL logs from persistent storage (hundreds of thousands of entries)
+      // Take one formatted snapshot so statistics and exported records agree.
       final allLogLines = await LogCaptureService().getAllLogsAsText();
 
       if (allLogLines.isEmpty) {
@@ -301,37 +331,41 @@ class BugReportService {
         return const LogExportResult.noLogs();
       }
 
+      final stats = await LogCaptureService().getLogStatistics(
+        logLines: allLogLines,
+      );
+      Log.info(
+        'Log stats: ${stats['totalLogLines']} lines, ${stats['totalSizeMB']} MB across ${stats['fileCount']} files',
+        category: LogCategory.system,
+      );
+
       final exportTime = DateTime.now().toUtc();
-      final buffer = StringBuffer()
-        ..write(
-          await _buildLogHeader(
-            stats: stats,
-            lineCount: allLogLines.length,
-            exportTime: exportTime,
-            currentScreen: currentScreen,
-            userPubkey: userPubkey,
-          ),
-        );
-
-      // Add all log lines (already formatted by LogCaptureService)
-      for (final line in allLogLines) {
-        // Sanitize each line for sensitive data
-        buffer.writeln(_sanitizeString(line));
-      }
-
-      final content = buffer.toString();
+      final headerBuilder = await _createLogHeaderBuilder(
+        stats: stats,
+        lineCount: allLogLines.length,
+        exportTime: exportTime,
+        currentScreen: currentScreen,
+        userPubkey: userPubkey,
+      );
+      final export = buildBoundedLogContent(
+        allLogLines,
+        buildHeader: headerBuilder,
+        sanitize: _sanitizeString,
+        maxBytes: maxLogExportBytes,
+      );
+      final content = export.content;
       final fileName = buildLogExportFileName(exportTime);
 
       if (kIsWeb) {
-        return _exportLogsWeb(content, fileName, allLogLines.length);
+        return _exportLogsWeb(content, fileName, export.exportedCount);
       }
       if (_isDesktop) {
-        return _exportLogsDesktop(content, fileName, allLogLines.length);
+        return _exportLogsDesktop(content, fileName, export.exportedCount);
       }
       return _exportLogsNative(
         content,
         fileName,
-        allLogLines.length,
+        export.exportedCount,
         sharePositionOrigin: sharePositionOrigin,
       );
     } catch (e, stackTrace) {
@@ -640,9 +674,8 @@ class BugReportService {
     }
   }
 
-  /// The diagnostic preamble the exported log file starts with,
-  /// terminated by a blank line.
-  Future<String> _buildLogHeader({
+  /// Loads diagnostics once and returns a pure header builder.
+  Future<LogExportHeaderBuilder> _createLogHeaderBuilder({
     required Map<String, dynamic> stats,
     required int lineCount,
     required DateTime exportTime,
@@ -650,33 +683,136 @@ class BugReportService {
     String? userPubkey,
   }) async {
     final packageInfo = await _packageInfoLoader();
-    final buffer = StringBuffer()
-      ..writeln('OpenVine Comprehensive Log Export')
-      ..writeln('═' * 80)
-      ..writeln('Export Time: ${formatLogExportTimestamp(exportTime)}')
-      ..writeln(
-        'App Version: ${packageInfo.version}+${packageInfo.buildNumber}',
-      )
-      ..writeln('Total Log Lines: $lineCount')
-      ..writeln('Log Files: ${stats['fileCount']}')
-      ..writeln('Total Size: ${stats['totalSizeMB']} MB');
     final deviceDescription = await buildDeviceDescription();
-    if (deviceDescription != null) {
-      buffer.writeln('Device: $deviceDescription');
+    final runtimeDiagnostics = buildRuntimeDiagnostics();
+    final environmentDiagnostics = await buildEnvironmentDiagnostics();
+    final formattedPubkey = userPubkey == null
+        ? null
+        : pubkeyForLogs(userPubkey);
+
+    return ({required int exportedCount, required int omittedCount}) {
+      final buffer = StringBuffer()
+        ..writeln('OpenVine Comprehensive Log Export')
+        ..writeln('═' * 80)
+        ..writeln('Export Time: ${formatLogExportTimestamp(exportTime)}')
+        ..writeln(
+          'App Version: ${packageInfo.version}+${packageInfo.buildNumber}',
+        )
+        ..writeln('Total Log Lines: $lineCount')
+        ..writeln('Log Files: ${stats['fileCount']}')
+        ..writeln('Captured Log Size: ${stats['totalSizeMB']} MB')
+        ..write(
+          buildLogExportRecordSummary(
+            totalCount: lineCount,
+            exportedCount: exportedCount,
+            omittedCount: omittedCount,
+          ),
+        );
+      if (deviceDescription != null) {
+        buffer.writeln('Device: $deviceDescription');
+      }
+      buffer
+        ..write(runtimeDiagnostics)
+        ..write(environmentDiagnostics);
+      if (currentScreen != null) {
+        buffer.writeln('Current Screen: $currentScreen');
+      }
+      if (formattedPubkey != null) {
+        buffer.writeln('User Pubkey: $formattedPubkey');
+      }
+      return (buffer
+            ..writeln('═' * 80)
+            ..writeln())
+          .toString();
+    };
+  }
+
+  @visibleForTesting
+  static String buildLogExportRecordSummary({
+    required int totalCount,
+    required int exportedCount,
+    required int omittedCount,
+  }) {
+    final limitMegabytes = (maxLogExportBytes / (1024 * 1024)).toStringAsFixed(
+      1,
+    );
+    return 'Records Exported: $exportedCount of $totalCount\n'
+        'Omitted Records: $omittedCount '
+        '(oldest first, export size limit $limitMegabytes MB)\n';
+  }
+
+  /// Builds a newest-first bounded selection in chronological order.
+  @visibleForTesting
+  static LogExportBody buildBoundedLogBody(
+    List<String> lines, {
+    required String Function(String) sanitize,
+    required int maxBytes,
+  }) {
+    if (maxBytes < 0) {
+      throw ArgumentError.value(maxBytes, 'maxBytes', 'must not be negative');
     }
-    buffer
-      ..write(buildRuntimeDiagnostics())
-      ..write(await buildEnvironmentDiagnostics());
-    if (currentScreen != null) {
-      buffer.writeln('Current Screen: $currentScreen');
+
+    final retainedLines = <String>[];
+    var retainedBytes = 0;
+    for (var index = lines.length - 1; index >= 0; index--) {
+      final sanitizedLine = sanitize(lines[index]);
+      final lineBytes = utf8.encode(sanitizedLine).length + 1;
+      if (retainedBytes + lineBytes > maxBytes) break;
+      retainedLines.add(sanitizedLine);
+      retainedBytes += lineBytes;
     }
-    if (userPubkey != null) {
-      buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
+
+    final chronologicalLines = retainedLines.reversed.toList(growable: false);
+    final body = chronologicalLines.isEmpty
+        ? ''
+        : '${chronologicalLines.join('\n')}\n';
+    return LogExportBody(
+      lines: chronologicalLines,
+      body: body,
+      exportedCount: chronologicalLines.length,
+      omittedCount: lines.length - chronologicalLines.length,
+    );
+  }
+
+  /// Builds a complete export whose UTF-8 encoding fits within [maxBytes].
+  @visibleForTesting
+  static LogExportContent buildBoundedLogContent(
+    List<String> lines, {
+    required LogExportHeaderBuilder buildHeader,
+    required String Function(String) sanitize,
+    required int maxBytes,
+  }) {
+    final provisionalHeader = buildHeader(
+      exportedCount: lines.length,
+      omittedCount: lines.length,
+    );
+    final provisionalHeaderBytes = utf8.encode(provisionalHeader).length;
+    if (provisionalHeaderBytes > maxBytes) {
+      throw ArgumentError.value(
+        maxBytes,
+        'maxBytes',
+        'is smaller than the export header',
+      );
     }
-    return (buffer
-          ..writeln('═' * 80)
-          ..writeln())
-        .toString();
+
+    final body = buildBoundedLogBody(
+      lines,
+      sanitize: sanitize,
+      maxBytes: maxBytes - provisionalHeaderBytes,
+    );
+    final header = buildHeader(
+      exportedCount: body.exportedCount,
+      omittedCount: body.omittedCount,
+    );
+    final content = '$header${body.body}';
+    if (utf8.encode(content).length > maxBytes) {
+      throw StateError('The final log export exceeded its byte ceiling');
+    }
+    return LogExportContent(
+      content: content,
+      exportedCount: body.exportedCount,
+      omittedCount: body.omittedCount,
+    );
   }
 
   /// Export logs on mobile platforms using the system share sheet.
