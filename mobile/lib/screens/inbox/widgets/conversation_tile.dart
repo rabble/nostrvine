@@ -10,6 +10,7 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -278,7 +279,11 @@ _PreviewPayload _previewPayload(BuildContext context, String rawContent) {
   // layout. This preview renders through plain `Text`/`Text.rich` rather than
   // `LinkifiedText`, so it does not inherit the span builder's guard and
   // sanitizes once here, ahead of every split and both output paths.
-  final content = StringUtils.sanitizeUtf16(rawContent);
+  final boundedContent = sliceDmDisplayText(
+    rawContent,
+    dmPreviewDisplayCodeUnits,
+  ).text;
+  final content = StringUtils.sanitizeUtf16(boundedContent);
 
   // The structured collaborator-invite card carries a deterministic
   // plaintext fallback ("...Open Divine to review and accept.", and its

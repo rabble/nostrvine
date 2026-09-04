@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -234,6 +235,36 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Hey, how are you?'), findsOneWidget);
+      });
+
+      testWidgets('bounds an oversized last-message preview', (tester) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final prefix = 'a' * dmPreviewDisplayCodeUnits;
+        final testConversation = createTestConversation(
+          lastMessageContent: '${prefix}hidden suffix',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(prefix), findsOneWidget);
+        expect(find.textContaining('hidden suffix'), findsNothing);
       });
 
       testWidgets(

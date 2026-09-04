@@ -754,6 +754,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileShowLess => 'Ipakita nang mas kaunti';
 
   @override
+  String get dmMessageShowMore => 'Ipakita pa';
+
+  @override
+  String get dmMessageShowLess => 'Ipakita nang mas kaunti';
+
+  @override
+  String get dmMessageDisplayLimitReached =>
+      'Hindi ipinapakita ang natitirang bahagi ng mensaheng ito.';
+
+  @override
   String get profileCompleteYourProfile => 'Kumpletuhin ang iyong profile';
 
   @override

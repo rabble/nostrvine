@@ -748,6 +748,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileShowLess => 'Thu gọn';
 
   @override
+  String get dmMessageShowMore => 'Xem thêm';
+
+  @override
+  String get dmMessageShowLess => 'Thu gọn';
+
+  @override
+  String get dmMessageDisplayLimitReached =>
+      'Phần còn lại của tin nhắn này không được hiển thị.';
+
+  @override
   String get profileCompleteYourProfile => 'Hoàn thiện hồ sơ của bạn';
 
   @override

@@ -19,6 +19,7 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -30,6 +31,15 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 Finder _divineIcon(DivineIconName icon) => find.byWidgetPredicate(
   (widget) => widget is DivineIcon && widget.icon == icon,
 );
+
+String _longestRenderedText(WidgetTester tester) {
+  final values = tester
+      .widgetList<RichText>(find.byType(RichText))
+      .map((widget) => widget.text.toPlainText())
+      .toList();
+  values.sort((first, second) => second.length.compareTo(first.length));
+  return values.first;
+}
 
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -287,6 +297,107 @@ void main() {
         );
 
         expect(find.text('Hello there'), findsOneWidget);
+      });
+
+      testWidgets('renders only the bounded prefix of an oversized message', (
+        tester,
+      ) async {
+        final prefix = 'a' * dmInitialDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${prefix}hidden suffix',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(_longestRenderedText(tester), prefix);
+        expect(find.textContaining('hidden suffix'), findsNothing);
+        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
+        expect(find.text(strings.dmMessageShowLess), findsNothing);
+      });
+
+      testWidgets('reveals one bounded increment and can collapse again', (
+        tester,
+      ) async {
+        final first = 'a' * dmInitialDisplayCodeUnits;
+        final second = 'b' * dmDisplayIncrementCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '$first${second}tail',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
+        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), '$first$second');
+        expect(find.textContaining('tail'), findsNothing);
+        expect(find.text(strings.dmMessageShowMore), findsNothing);
+        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
+        expect(
+          find.text(strings.dmMessageDisplayLimitReached),
+          findsOneWidget,
+        );
+
+        await tester.ensureVisible(find.text(strings.dmMessageShowLess));
+        await tester.tap(find.text(strings.dmMessageShowLess));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), first);
+        expect(find.text(strings.dmMessageShowLess), findsNothing);
+      });
+
+      testWidgets('stops expansion at the hard display ceiling', (
+        tester,
+      ) async {
+        final visible = 'a' * dmMaxDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${visible}hidden suffix',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
+        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), visible);
+        expect(find.textContaining('hidden suffix'), findsNothing);
+        expect(
+          find.text(strings.dmMessageDisplayLimitReached),
+          findsOneWidget,
+        );
+        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
       });
 
       testWidgets('bounds painted hearts across markdown leaves', (

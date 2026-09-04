@@ -798,6 +798,16 @@ class AppLocalizationsTe extends AppLocalizations {
   String get profileShowLess => 'తక్కువ చూపు';
 
   @override
+  String get dmMessageShowMore => 'మరింత చూపించు';
+
+  @override
+  String get dmMessageShowLess => 'తక్కువ చూపు';
+
+  @override
+  String get dmMessageDisplayLimitReached =>
+      'ఈ సందేశంలోని మిగిలిన భాగం చూపబడదు.';
+
+  @override
   String get profileCompleteYourProfile => 'మీ ప్రొఫైల్‌ను పూర్తి చేయండి';
 
   @override

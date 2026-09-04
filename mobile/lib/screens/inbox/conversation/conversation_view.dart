@@ -1245,6 +1245,7 @@ class _MessageList extends StatelessWidget {
 
         Widget buildBubbleWithReactions(DmDeliveryStatus status) {
           final bubble = MessageBubble(
+            key: ValueKey(message.id),
             message: message.content,
             timestamp: LocalizedTimeFormatter.formatMessageTime(
               context.l10n,

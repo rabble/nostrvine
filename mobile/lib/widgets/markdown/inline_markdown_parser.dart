@@ -29,6 +29,26 @@ class InlineMarkdownParser {
   }
 }
 
+/// Retains the most recent pure parse result for a stateful render path.
+///
+/// The visual spans built from these nodes may depend on theme and reactive
+/// profile labels, so callers cache the AST rather than the spans themselves.
+class MemoizedInlineMarkdownParser {
+  MemoizedInlineMarkdownParser({
+    InlineMarkdownParser parser = const InlineMarkdownParser(),
+  }) : _parser = parser;
+
+  final InlineMarkdownParser _parser;
+  String? _cachedText;
+  late List<InlineMarkdownNode> _cachedNodes;
+
+  List<InlineMarkdownNode> parse(String text) {
+    if (text == _cachedText) return _cachedNodes;
+    _cachedText = text;
+    return _cachedNodes = _parser.parse(text);
+  }
+}
+
 /// Terminator sentinel meaning "consume to end of input".
 const String _terminatorEnd = '';
 

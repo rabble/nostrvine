@@ -681,6 +681,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileShowLess => '閉じる';
 
   @override
+  String get dmMessageShowMore => 'もっと見る';
+
+  @override
+  String get dmMessageShowLess => '閉じる';
+
+  @override
+  String get dmMessageDisplayLimitReached => 'このメッセージの残りは表示されません。';
+
+  @override
   String get profileCompleteYourProfile => 'プロフィールを完成させよう';
 
   @override

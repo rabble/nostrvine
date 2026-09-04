@@ -1310,6 +1310,24 @@ abstract class AppLocalizations {
   /// **'Show less'**
   String get profileShowLess;
 
+  /// No description provided for @dmMessageShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get dmMessageShowMore;
+
+  /// No description provided for @dmMessageShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get dmMessageShowLess;
+
+  /// No description provided for @dmMessageDisplayLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'The rest of this message isn\'t displayed.'**
+  String get dmMessageDisplayLimitReached;
+
   /// No description provided for @profileCompleteYourProfile.
   ///
   /// In en, this message translates to:
