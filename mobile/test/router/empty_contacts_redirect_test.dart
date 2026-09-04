@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -101,6 +102,25 @@ void main() {
           expect(hasFollowing, isTrue);
         },
       );
+
+      test('returns true for the versioned repository cache record', () async {
+        SharedPreferences.setMockInitialValues({
+          'current_user_pubkey_hex': testUserPubkey,
+          FollowingCacheRecord.storageKey(testUserPubkey): FollowingCacheRecord(
+            pubkeys: const ['pubkey1'],
+            createdAt: 1234,
+            eventId: 'a' * 64,
+          ).encode(),
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
+
+        expect(container.read(hasFollowingInCacheProvider), isTrue);
+      });
 
       test(
         'ignores other users following_list - only checks current user',

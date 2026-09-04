@@ -12,4 +12,5 @@ export 'src/follow_repository.dart';
 export 'src/follow_sort_order.dart';
 export 'src/follower_stats.dart';
 export 'src/followers_snapshot.dart';
+export 'src/following_cache_record.dart';
 export 'src/following_snapshot.dart';

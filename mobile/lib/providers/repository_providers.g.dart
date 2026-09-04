@@ -65,7 +65,7 @@ final class CachedFollowingListProvider
 }
 
 String _$cachedFollowingListHash() =>
-    r'9aae18333a2883db193f61b69a4d12a5e58899ac';
+    r'45bc25e8c158362536dd5373b4f70bbbfae54a83';
 
 /// Provider for FollowRepository instance
 ///

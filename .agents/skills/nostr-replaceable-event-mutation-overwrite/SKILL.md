@@ -10,7 +10,7 @@ description: |
   client using React, Flutter, or similar reactive frameworks where query state may not be loaded
   when a mutation fires.
 author: Claude Code
-version: 1.0.0
+version: 1.1.0
 date: 2026-03-23
 ---
 
@@ -61,15 +61,24 @@ mutationFn: async ({ targetPubkey, currentContactList }) => {
       .sort((a, b) => b.created_at - a.created_at)[0] || null;
 
     if (relayContactList) {
-      // Use whichever has more data to prevent loss
-      const relayCount = relayContactList.tags.filter(t => t[0] === 'p').length;
-      const passedCount = currentContactList?.tags.filter(t => t[0] === 'p').length ?? 0;
-      if (relayCount >= passedCount) {
+      // NIP-01 already fixes which copy of a replaceable event wins:
+      // the higher created_at, and on an exact tie the lower event id.
+      // Never compare tag counts — a shorter list is what a legitimate
+      // unfollow produces.
+      const passed = currentContactList;
+      const isNewer =
+        !passed ||
+        relayContactList.created_at > passed.created_at ||
+        (relayContactList.created_at === passed.created_at &&
+          relayContactList.id < passed.id);
+      if (isNewer) {
         bestContactList = relayContactList;
       }
     }
   } catch {
-    // Fall back to passed contact list
+    // The read failed. It cannot be told apart from "the relay holds
+    // nothing", so refuse to publish rather than replacing from a guess.
+    throw new Error('Could not confirm the current list. Please try again.');
   }
 
   if (!bestContactList) {
@@ -80,13 +89,24 @@ mutationFn: async ({ targetPubkey, currentContactList }) => {
 }
 ```
 
-### 2. "Best of Both" Strategy
+### 2. Newest Wins, Per NIP-01
 
-Compare the relay's version against the UI's cached version and use whichever has MORE data
-(more tags, more fields, etc.). This protects against:
-- Stale relay (UI cache is newer from a recent local action)
-- Stale UI cache (relay has updates from another client)
-- Null UI cache (query hasn't loaded on fresh session)
+Order the relay's version against the cached one by `created_at`, and on an exact tie by
+the lower event id. That is the rule relays themselves apply, so it is the only choice
+that converges.
+
+**Do not compare tag counts.** "Use whichever has MORE data" looks safe and is not: the
+newer, authoritative list is *shorter* whenever the user removed someone, so preferring
+the longer copy silently resurrects every unfollow, unmuted account, or deleted relay —
+and republishes it. The heuristic cannot tell "this copy is stale" from "the user removed
+something", because those two produce the identical shape.
+
+A source that carries no timestamp at all — a bare cached array, a derived REST index —
+has unknowable freshness, not old freshness. It may seed an empty state, but it must lose
+to any copy that can name a `created_at`.
+
+Worked example, including the persistence migration that gives the local cache a
+timestamp to be ordered by: divinevideo/divine-mobile#8266.
 
 ### 3. Refuse to Publish on Total Failure
 
@@ -101,10 +121,19 @@ update AND clear profile fields). The unfollow path is just as dangerous as foll
 
 ## Verification
 
+Cold-start overwrite:
+
 1. Open the app in a private/incognito browser window
 2. Log in with an account that has multiple follows
 3. Navigate to a profile and tap Follow IMMEDIATELY (before the page fully loads)
 4. Check that the follow count increased by 1 (not reset to 1)
+
+Cross-device removal — the case a tag-count heuristic passes and still corrupts:
+
+5. On a second client, unfollow two of several accounts
+6. Cold-start the first client and confirm the removals are still gone
+7. Follow one new account there, then read the relay's kind 3 back and confirm
+   the two removed accounts did not reappear in its `p` tags
 
 ## Example
 
