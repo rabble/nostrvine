@@ -204,7 +204,30 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         awaitingRetraction: {...state.awaitingRetraction, event.rumorId},
       ),
     );
-    await _dmRepository.retryMessageDeletion(rumorId: event.rumorId);
+
+    DmMessageDeletionOutcome outcome;
+    try {
+      outcome = await _dmRepository.retryMessageDeletion(
+        rumorId: event.rumorId,
+      );
+    } on Object catch (e, stackTrace) {
+      addError(e, stackTrace);
+      outcome = DmMessageDeletionOutcome.unavailable;
+    }
+
+    // Every other outcome moves the row, so the bubble's own pending-to-failed
+    // transition both tells the user and releases the armed id. `unavailable`
+    // moves nothing — no signer, no row, no recipient — so without this the
+    // tap produces no spinner, no toast and no error, and the id stays armed
+    // for the life of the bloc.
+    if (outcome == DmMessageDeletionOutcome.unavailable) {
+      emit(
+        state.copyWith(
+          awaitingRetraction: {...state.awaitingRetraction}
+            ..remove(event.rumorId),
+        ),
+      );
+    }
   }
 
   Future<void> _onMessageDeleted(

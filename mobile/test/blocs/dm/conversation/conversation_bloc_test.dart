@@ -375,6 +375,66 @@ void main() {
           },
         );
 
+        // `unavailable` moves no row, so no bubble transition follows and the
+        // tick-driven release never runs. Leaving the id armed makes the tap
+        // silent AND permanent: releasing it here is the shrink the view
+        // listens for to toast.
+        blocTest<ConversationBloc, ConversationState>(
+          'releases the armed id when the retry could not be driven at all',
+          build: () {
+            when(
+              () => mockDmRepository.retryMessageDeletion(rumorId: messageId),
+            ).thenAnswer((_) async => DmMessageDeletionOutcome.unavailable);
+            return buildBloc();
+          },
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await untilCalled(
+              () => mockDmRepository.retryMessageDeletion(
+                rumorId: messageId,
+              ),
+            );
+            // Deliberately NO further tick: the point is that nothing else
+            // arrives to clear it.
+            await Future<void>.delayed(Duration.zero);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'releases the armed id and reports when the retry throws',
+          build: () {
+            when(
+              () => mockDmRepository.retryMessageDeletion(rumorId: messageId),
+            ).thenThrow(StateError('signer unavailable'));
+            return buildBloc();
+          },
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+          },
+          errors: () => [isA<StateError>()],
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
         // The flag is the gate: a row that returns to the thread without it
         // was not refused, whatever un-hid it.
         blocTest<ConversationBloc, ConversationState>(
