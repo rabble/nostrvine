@@ -6376,6 +6376,11 @@ class DmRepository {
   /// keyed on gift-wrap id, and NIP-59 gives every wrap a fresh ephemeral key
   /// and `created_at` — so what makes a replay safe is that re-applying a
   /// deletion is a no-op.
+  ///
+  /// When there is no stored rumor to replay — nulled by the settle helper
+  /// before #8232, or unreadable — it mints one, because that row has no
+  /// other route back: [deleteMessageForEveryone] returns early on
+  /// `is_deleted` and the sweep's worklist requires a non-null rumor (#8284).
   Future<DmMessageDeletionOutcome> retryMessageDeletion({
     required String rumorId,
   }) {
@@ -6399,35 +6404,60 @@ class DmRepository {
       rumorId,
       ownerPubkey: owner,
     );
-    final storedRumor = row?.deletionRumorJson;
-    if (row == null || storedRumor == null) {
-      return DmMessageDeletionOutcome.unavailable;
-    }
+    if (row == null) return DmMessageDeletionOutcome.unavailable;
     final recipients = await _deletionWrapRecipients(row.conversationId);
     if (recipients.isEmpty) return DmMessageDeletionOutcome.unavailable;
 
-    final Event deletion;
-    try {
-      deletion = Event.fromJson(
-        jsonDecode(storedRumor) as Map<String, dynamic>,
-      );
-    } on Object catch (e) {
-      Log.warning(
-        'Stored deletion rumor for $rumorId is unreadable ($e)',
-        category: LogCategory.system,
-      );
-      return DmMessageDeletionOutcome.unavailable;
+    final storedRumor = row.deletionRumorJson;
+    Event? replayable;
+    if (storedRumor != null) {
+      try {
+        replayable = Event.fromJson(
+          jsonDecode(storedRumor) as Map<String, dynamic>,
+        );
+      } on Object catch (e) {
+        Log.warning(
+          'Stored deletion rumor for $rumorId is unreadable ($e) - '
+          'minting a fresh kind 5',
+          category: LogCategory.system,
+        );
+      }
     }
 
+    // Nothing to replay. A row blocked before #8232 had its rumor nulled by
+    // the settle helper, and an unreadable payload dead-ends the same way, so
+    // minting a fresh kind 5 is the only route left for them.
+    // [deleteMessageForEveryone] cannot serve it: that path returns early on
+    // `is_deleted`, which every such row carries, and the sweep's worklist
+    // requires a non-null rumor. Without this the restored bubble offers a
+    // Try again that can never do anything (#8284).
+    final mintedFresh = replayable == null;
+    final deletion =
+        replayable ??
+        _messageService!.buildRumor(
+          recipientPubkey: recipients.first,
+          content: '',
+          eventKind: EventKind.eventDeletion,
+          additionalTags: [
+            ['e', rumorId],
+            ['k', row.messageKind.toString()],
+          ],
+        );
+
     // A user-driven retry moves a blocked row back through pending so the
-    // bubble swaps its warning icon for progress. Sweep retries are already
-    // pending and do not need another write.
-    if (row.deletionPublishStatus == DirectMessagesDao.deletionBlocked) {
+    // bubble swaps its warning icon for progress. A freshly minted rumor must
+    // also cross the durability boundary before the wire, so the sweep can
+    // re-drive it. Sweep retries of an already-pending row need neither.
+    if (mintedFresh ||
+        row.deletionPublishStatus == DirectMessagesDao.deletionBlocked) {
       await _directMessagesDao.markMessageDeletionPending(
         rumorId,
-        deletionRumorJson: storedRumor,
+        deletionRumorJson: mintedFresh
+            ? jsonEncode(deletion.toJson())
+            : storedRumor!,
         ownerPubkey: _ownerPubkey,
       );
+      if (mintedFresh) _notifyRetryableWork();
     }
 
     return _driveMessageDeletion(
