@@ -2808,10 +2808,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(l10n.reportDetailsImageNotAttached), findsOneWidget);
 
-        // Leaving "Other" unmounts the details field; returning builds a fresh
-        // _CappedDetailsField State. That is the same class of rebuild that
-        // dropped the notice on Android (#8511 review) — a State-local flag
-        // would be lost here.
+        // Leaving "Other" unmounts the details block and returning rebuilds it
+        // from scratch. A notice flag stored in the field's State would be
+        // lost across that; the parent-owned flag survives it.
         await tester.tap(find.text(l10n.reportReasonSpam));
         await tester.pumpAndSettle();
         expect(find.byType(TextField), findsNothing);
@@ -2823,6 +2822,28 @@ void main() {
           find.text(l10n.reportDetailsImageNotAttached),
           findsOneWidget,
           reason: 'the notice must survive a fresh details-field State',
+        );
+      },
+    );
+
+    testWidgets(
+      'renders the not-attached notice above the field, not below, so the '
+      'keyboard cannot cover it the moment it fires',
+      (tester) async {
+        await openDetailsField(tester);
+        await commitKeyboardImage(tester);
+        await tester.pumpAndSettle();
+
+        final noticeBottom = tester
+            .getRect(find.text(l10n.reportDetailsImageNotAttached))
+            .bottom;
+        final fieldTop = tester.getRect(find.byType(TextField)).top;
+        expect(
+          noticeBottom,
+          lessThanOrEqualTo(fieldTop),
+          reason:
+              'below the field the notice lands behind the keyboard media '
+              'panel at the instant it fires (#8511 review)',
         );
       },
     );

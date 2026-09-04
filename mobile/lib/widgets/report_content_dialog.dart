@@ -249,10 +249,10 @@ class _ReportContentViewState extends State<_ReportContentView> {
   String? _errorMessage;
 
   /// Whether the reporter just tried to insert an image the report cannot
-  /// carry. Held here, above the details field, because that field's [State]
-  /// can be rebuilt from scratch mid-interaction (a reason reselection, or the
-  /// Android rebuild in #8511's review), which would otherwise drop this
-  /// one-shot notice while the announcement had already fired.
+  /// carry. Held here, not in the details field, because reselecting the
+  /// reason unmounts and rebuilds that field from scratch, which would drop
+  /// this one-shot notice if it lived there. The notice renders above the
+  /// field (see [_ReportFormBody]) so the keyboard cannot cover it.
   bool _imageInsertionRejected = false;
 
   bool _scrollWhenKeyboardOpens = false;
@@ -321,8 +321,10 @@ class _ReportContentViewState extends State<_ReportContentView> {
     if (!_imageInsertionRejected) {
       setState(() => _imageInsertionRejected = true);
     }
-    // Announce on every attempt, not once: each commit is a discrete,
-    // deliberate action worth confirming to a screen reader.
+    // Announce on every attempt, not via liveRegion (which fires once per
+    // appearance): each commit is a discrete action, and the spoken notice is
+    // the channel that still lands when the visual one is briefly behind the
+    // keyboard.
     SemanticsService.sendAnnouncement(
       View.of(context),
       context.l10n.reportDetailsImageNotAttached,
@@ -519,7 +521,8 @@ class _ReportFormBody extends StatelessWidget {
   /// soon as the user edits the details.
   final VoidCallback onDetailsChanged;
 
-  /// Whether the reporter tried to insert an image; drives the field's notice.
+  /// Whether the reporter tried to insert an image; drives the not-attached
+  /// notice shown above the field.
   final bool imageInsertionRejected;
 
   /// Forwarded to the details field's content-insertion handler.
@@ -583,12 +586,12 @@ class _ReportFormBody extends StatelessWidget {
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
+                  if (imageInsertionRejected) const _ImageNotAttachedNotice(),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
                     controller: detailsController,
                     focusNode: detailsFocusNode,
                     onChanged: onDetailsChanged,
-                    imageInsertionRejected: imageInsertionRejected,
                     onImageInserted: onImageInserted,
                   ),
                 ],
@@ -763,7 +766,6 @@ class _CappedDetailsField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.onChanged,
-    required this.imageInsertionRejected,
     required this.onImageInserted,
   });
 
@@ -771,11 +773,6 @@ class _CappedDetailsField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onChanged;
-
-  /// Whether the reporter tried to insert an image, which reports cannot carry.
-  /// Lives in the durable parent so a rebuild of this field's [State] cannot
-  /// drop the one-shot notice mid-interaction (#8511 review).
-  final bool imageInsertionRejected;
 
   /// Called when the keyboard commits image content, so the durable parent
   /// records the rejection and announces it.
@@ -851,14 +848,24 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
               color: context.vineColors.onSurfaceVariant,
             ),
           ),
-        if (widget.imageInsertionRejected)
-          Text(
-            context.l10n.reportDetailsImageNotAttached,
-            style: VineTheme.labelSmallFont(
-              color: context.vineColors.onSurfaceVariant,
-            ),
-          ),
       ],
+    );
+  }
+}
+
+/// The one-shot notice shown when the keyboard tries to insert an image the
+/// report cannot carry. Rendered above the field (in [_ReportFormBody]) so it
+/// is not occluded by the keyboard's media panel at the moment it fires
+/// (measured on device in #8511's review).
+class _ImageNotAttachedNotice extends StatelessWidget {
+  const _ImageNotAttachedNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.vineColors;
+    return Text(
+      context.l10n.reportDetailsImageNotAttached,
+      style: VineTheme.labelSmallFont(color: palette.onSurfaceVariant),
     );
   }
 }
