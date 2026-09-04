@@ -33,23 +33,6 @@ void main() {
 
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
-      when(
-        () => mockProfileRepo.searchUsersProgressive(
-          query: any(named: 'query'),
-          limit: any(named: 'limit'),
-          sortBy: any(named: 'sortBy'),
-          hasVideos: any(named: 'hasVideos'),
-          boostPubkeys: any(named: 'boostPubkeys'),
-          cancellationToken: any(named: 'cancellationToken'),
-        ),
-      ).thenAnswer((invocation) {
-        return mockProfileRepo.searchUsersProgressive(
-          query: invocation.namedArguments[#query] as String,
-          limit: invocation.namedArguments[#limit] as int,
-          sortBy: invocation.namedArguments[#sortBy] as String?,
-          hasVideos: invocation.namedArguments[#hasVideos] as bool,
-        );
-      });
     });
 
     Widget createTestWidget({
@@ -190,6 +173,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer((_) => controller.stream);
 
@@ -224,6 +208,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -262,6 +247,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -307,6 +293,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -347,6 +334,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -385,6 +373,7 @@ void main() {
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
+              cancellationToken: any(named: 'cancellationToken'),
             ),
           ).thenAnswer(
             (_) => Stream.value(
@@ -413,6 +402,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) =>
@@ -437,6 +427,7 @@ void main() {
             limit: any(named: 'limit'),
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
+            cancellationToken: any(named: 'cancellationToken'),
           ),
         ).thenAnswer(
           (_) => Stream.value(
@@ -580,6 +571,7 @@ void main() {
               query: any(named: 'query'),
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
+              cancellationToken: any(named: 'cancellationToken'),
             ),
           ).thenAnswer(
             (_) => Stream.value(
@@ -605,6 +597,7 @@ void main() {
               query: 'test',
               limit: 50,
               sortBy: 'followers',
+              cancellationToken: any(named: 'cancellationToken'),
             ),
           ).called(1);
         },
@@ -654,24 +647,21 @@ void main() {
         expect(find.text('Aeontropy'), findsNothing);
       });
 
-      testWidgets(
-        "hides a vanished peer's handle, which identifies them too",
-        (
+      testWidgets("hides a vanished peer's handle, which identifies them too", (
+        tester,
+      ) async {
+        await openWith(
           tester,
-        ) async {
-          await openWith(
-            tester,
-            contact: const ShareableUser(
-              pubkey: vanishedPubkey,
-              displayName: 'Aeontropy',
-              handle: '@aeontropy',
-            ),
-            isVanished: true,
-          );
+          contact: const ShareableUser(
+            pubkey: vanishedPubkey,
+            displayName: 'Aeontropy',
+            handle: '@aeontropy',
+          ),
+          isVanished: true,
+        );
 
-          expect(find.text('@aeontropy'), findsNothing);
-        },
-      );
+        expect(find.text('@aeontropy'), findsNothing);
+      });
 
       testWidgets('gives the moderation account its bundled wordmark and '
           'shared name', (tester) async {

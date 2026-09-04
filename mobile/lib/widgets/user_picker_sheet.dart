@@ -179,7 +179,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
-      enableCancellation: true,
       followRepository: ref.read(followRepositoryProvider),
     );
 
@@ -1104,9 +1103,7 @@ class _SelectedChipsRow extends ConsumerWidget {
               key: ValueKey(profile.pubkey),
               label: vanishedAccountName(
                 context,
-                isVanished: ref.watch(
-                  profileVanishedProvider(profile.pubkey),
-                ),
+                isVanished: ref.watch(profileVanishedProvider(profile.pubkey)),
                 fallbackName: profile.bestDisplayName,
               ),
               onRemove: () => onRemove(profile),
