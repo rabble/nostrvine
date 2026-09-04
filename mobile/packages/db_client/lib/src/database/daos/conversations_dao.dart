@@ -28,13 +28,19 @@ END
 ''';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
-  /// **or** legacy rows with no owner (NULL).
+  /// **or** legacy rows with no owner.
+  ///
+  /// A legacy row is `''` after the v12 migration and `NULL` before it. Both
+  /// arms are kept: the delete side (`clearForAccountSwitch`, `clearUnowned`)
+  /// has always matched on either, and an older binary writing `NULL` between
+  /// an upgrade and the migration must stay readable. Testing only `IS NULL`
+  /// would make every backfilled row invisible to its own account (#6645).
   Expression<bool> _ownedOrLegacy(
     GeneratedColumn<String> column,
     String? ownerPubkey,
   ) {
     if (ownerPubkey == null) return const Constant(true);
-    return column.equals(ownerPubkey) | column.isNull();
+    return column.equals(ownerPubkey) | column.equals('') | column.isNull();
   }
 
   /// Upsert a conversation (create or update last-message metadata).
@@ -47,8 +53,13 @@ END
   ///   preserved. Notably NOT written under [forceUpdateLastMessage]: a
   ///   deletion preview refresh must not change read state. Flip read
   ///   state explicitly via [markAsRead] / [markMultipleAsRead].
-  /// * `subject`, `ownerPubkey`, `dmProtocol` — updated only when the
-  ///   incoming value is non-null; existing non-null value is preserved.
+  /// * `subject`, `dmProtocol` — updated only when the incoming value is
+  ///   non-null; an existing non-null value is preserved.
+  /// * `ownerPubkey` — cannot change on a conflict, because it is part of the
+  ///   primary key: a conflicting row is by definition the same owner's view.
+  ///   An upsert naming a different owner inserts that account's own row
+  ///   rather than taking this one, which is the point of #6645. A caller
+  ///   passing no owner addresses the legacy `''` view.
   /// * `currentUserHasSent` — one-way ratchet: once `true` it is never
   ///   cleared back to `false` by an incoming `false`.
   /// * `lastMessageContent`, `lastMessageTimestamp`,
@@ -90,7 +101,10 @@ END
       subject: Value(subject),
       isRead: Value(isRead),
       currentUserHasSent: Value(currentUserHasSent),
-      ownerPubkey: Value(ownerPubkey),
+      // A caller with no owner is writing an unattributed row; `''` is
+      // this schema's legacy sentinel and is what the composite key
+      // needs, since a NULL cannot participate in it (#6645).
+      ownerPubkey: Value(ownerPubkey ?? ''),
       dmProtocol: Value(dmProtocol),
     );
 
@@ -338,7 +352,8 @@ END
   /// [ownerPubkey] is null (all rows), else owner-or-legacy-NULL.
   String _ownerSqlClause(String? ownerPubkey) => ownerPubkey == null
       ? ''
-      : ' AND (owner_pubkey = ? OR owner_pubkey IS NULL)';
+      : ' AND (owner_pubkey = ? OR owner_pubkey = \'\' '
+            'OR owner_pubkey IS NULL)';
 
   List<Variable<Object>> _ownerSqlVariables(String? ownerPubkey) =>
       ownerPubkey == null ? const [] : [Variable(ownerPubkey)];
@@ -486,10 +501,12 @@ END
     return customUpdate(
       'UPDATE conversations SET current_user_has_sent = 1 '
       'WHERE current_user_has_sent = 0 '
-      'AND (owner_pubkey = ? OR owner_pubkey IS NULL) '
+      "AND (owner_pubkey = ? OR owner_pubkey = '' "
+      'OR owner_pubkey IS NULL) '
       'AND id IN (SELECT DISTINCT conversation_id '
       'FROM direct_messages WHERE sender_pubkey = ? '
-      'AND (owner_pubkey = ? OR owner_pubkey IS NULL))',
+      "AND (owner_pubkey = ? OR owner_pubkey = '' "
+      'OR owner_pubkey IS NULL))',
       variables: [
         Variable(userPubkey),
         Variable(userPubkey),
@@ -512,12 +529,14 @@ END
   Future<int> backfillLatestMessagePreviews({String? ownerPubkey}) {
     final scopedConversationFilter = ownerPubkey == null
         ? '1 = 1'
-        : '(c.owner_pubkey = ? OR c.owner_pubkey IS NULL)';
+        : "(c.owner_pubkey = ? OR c.owner_pubkey = '' "
+              'OR c.owner_pubkey IS NULL)';
     // Legacy conversation rows may still be ownerless, but scoped reads expose
     // them to the current user alongside that user's messages.
     final latestMessageOwnerFilter = ownerPubkey == null
         ? '1 = 1'
-        : '(dm.owner_pubkey = ? OR dm.owner_pubkey IS NULL)';
+        : "(dm.owner_pubkey = ? OR dm.owner_pubkey = '' "
+              'OR dm.owner_pubkey IS NULL)';
     final latestPreviewContentSubquery =
         '''
 SELECT $_latestMessagePreviewCase

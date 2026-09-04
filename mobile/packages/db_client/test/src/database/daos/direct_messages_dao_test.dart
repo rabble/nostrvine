@@ -266,6 +266,149 @@ void main() {
       });
     });
 
+    group('owner-scoped uniqueness', () {
+      // A NIP-17 group send seals ONE rumor for every recipient, so two local
+      // accounts in the same room receive distinct gift wraps carrying an
+      // identical rumor id. Under the previous global primary key the second
+      // account's insert was a silent no-op and its copy was lost. #6645.
+      const rumorId = 'shared_group_rumor';
+      final ownerA = 'a' * 64;
+      final ownerB = 'b' * 64;
+
+      test(
+        'both local accounts persist their own copy of one group rumor',
+        () async {
+          final insertedForA = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'group hello',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_for_a',
+            ownerPubkey: ownerA,
+          );
+          final insertedForB = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId2,
+            senderPubkey: 'pubkey_peer',
+            content: 'group hello',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_for_b',
+            ownerPubkey: ownerB,
+          );
+
+          expect(insertedForA, isTrue);
+          expect(insertedForB, isTrue);
+        },
+      );
+
+      test('each account reads only its own copy', () async {
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_a',
+          ownerPubkey: ownerA,
+        );
+        await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId2,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_b',
+          ownerPubkey: ownerB,
+        );
+
+        final forA = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+        final forB = await dao.getMessagesForConversation(
+          conversationId2,
+          ownerPubkey: ownerB,
+        );
+
+        expect(forA, hasLength(1));
+        expect(forB, hasLength(1));
+      });
+
+      test('a replay for the SAME owner is still ignored', () async {
+        final first = await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_for_a',
+          ownerPubkey: ownerA,
+        );
+        final replay = await dao.insertMessage(
+          id: rumorId,
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'group hello again',
+          createdAt: 1700000001,
+          giftWrapId: 'wrap_for_a_replay',
+          ownerPubkey: ownerA,
+        );
+
+        expect(first, isTrue);
+        expect(replay, isFalse);
+      });
+
+      test(
+        'two legacy unowned rows sharing a rumor id still collapse',
+        () async {
+          // SQLite compares NULLs as distinct inside a unique constraint, so a
+          // nullable owner in the key would have let both of these through. The
+          // column is NOT NULL with an `''` default precisely to stop that.
+          final first = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'legacy',
+            createdAt: 1700000000,
+            giftWrapId: 'wrap_legacy_one',
+          );
+          final second = await dao.insertMessage(
+            id: rumorId,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'legacy duplicate',
+            createdAt: 1700000001,
+            giftWrapId: 'wrap_legacy_two',
+          );
+
+          expect(first, isTrue);
+          expect(second, isFalse);
+        },
+      );
+
+      test('a legacy unowned row stays readable by a real account', () async {
+        // The v12 backfill turns NULL owners into `''`; `_ownedOrLegacy` has to
+        // match that sentinel or every migrated row goes invisible.
+        await dao.insertMessage(
+          id: 'legacy_only',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'written before multi-account support',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_legacy_only',
+        );
+
+        final visible = await dao.getMessagesForConversation(
+          conversationId1,
+          ownerPubkey: ownerA,
+        );
+
+        expect(visible, hasLength(1));
+        expect(visible.first.ownerPubkey, isEmpty);
+      });
+    });
+
     group('getMessagesForConversation', () {
       test(
         'returns messages sorted by createdAt desc (newest first)',

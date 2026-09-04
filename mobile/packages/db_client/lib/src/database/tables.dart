@@ -829,8 +829,22 @@ class DirectMessages extends Table {
       boolean().withDefault(const Constant(false)).named('twin_collapsed')();
 
   /// Hex public key of the account that received/sent this message.
-  /// NULL for legacy messages created before multi-account support.
-  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+  ///
+  /// Part of the primary key. A NIP-17 group send seals ONE rumor for every
+  /// recipient, so two local accounts in the same room receive distinct gift
+  /// wraps carrying an identical rumor id, and each must be able to hold its
+  /// own row (#6645).
+  ///
+  /// NOT NULL with an empty-string default rather than nullable, because
+  /// SQLite compares NULLs as *distinct* inside a unique constraint: a
+  /// nullable owner in the key would stop two legacy rows that share a rumor
+  /// id from collapsing, silently weakening the dedup this table relies on.
+  /// `''` is already this schema's legacy sentinel — `clearForAccountSwitch`
+  /// and `clearUnowned` have always treated `NULL` and `''` alike. Rows
+  /// written before multi-account support are backfilled to `''` by the v12
+  /// migration.
+  TextColumn get ownerPubkey =>
+      text().withDefault(const Constant('')).named('owner_pubkey')();
 
   /// Durable, collision-proof identity of one send invocation. Set on the
   /// sender's local message for 1:1 sends and shared by the single local
@@ -869,8 +883,13 @@ class DirectMessages extends Table {
   TextColumn get deletionPublishStatus =>
       text().nullable().named('deletion_publish_status')();
 
+  /// Owner-scoped so the same immutable rumor id can be represented once per
+  /// local account. NIP-17 seals one rumor per group message and NIP-59 wraps
+  /// it separately for each recipient, so on a device holding two accounts in
+  /// the same room both wraps decrypt to one id — which a global key could
+  /// only store once, dropping the second account's copy (#6645).
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, ownerPubkey};
 
   List<Index> get indexes => [
     Index(
@@ -1065,16 +1084,30 @@ class Conversations extends Table {
   IntColumn get createdAt => integer().named('created_at')();
 
   /// Hex public key of the account that owns this conversation view.
-  /// NULL for legacy conversations created before multi-account support.
-  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+  ///
+  /// Part of the primary key, for the same reason as
+  /// [DirectMessages.ownerPubkey]: the conversation id is derived from the
+  /// participant set, which is owner-independent, so two local accounts in one
+  /// room compute the same id. With a global key the second account's upsert
+  /// did not merely fail — `ownerPubkey` merged as `coalesce(excluded, old)`,
+  /// so the incoming owner won and the room disappeared from the first
+  /// account's inbox (#6645).
+  ///
+  /// NOT NULL with an empty-string default; see [DirectMessages.ownerPubkey]
+  /// for why a nullable column cannot carry this invariant.
+  TextColumn get ownerPubkey =>
+      text().withDefault(const Constant('')).named('owner_pubkey')();
 
   /// The DM protocol used for this conversation: 'nip04' or 'nip17'.
   /// NULL when the protocol is unknown (e.g. conversation created before
   /// protocol tracking was added).
   TextColumn get dmProtocol => text().nullable().named('dm_protocol')();
 
+  /// Owner-scoped for the same reason as [DirectMessages]: the id is a hash of
+  /// the participant set and carries no owner, so two local accounts in one
+  /// room derive the same value (#6645).
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, ownerPubkey};
 
   List<Index> get indexes => [
     Index(

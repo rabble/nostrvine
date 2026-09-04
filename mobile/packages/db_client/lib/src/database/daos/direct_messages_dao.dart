@@ -51,13 +51,19 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   static const String deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
-  /// **or** legacy rows with no owner (NULL).
+  /// **or** legacy rows with no owner.
+  ///
+  /// A legacy row is `''` after the v12 migration and `NULL` before it. Both
+  /// arms are kept: the delete side (`clearForAccountSwitch`, `clearUnowned`)
+  /// has always matched on either, and an older binary writing `NULL` between
+  /// an upgrade and the migration must stay readable. Testing only `IS NULL`
+  /// would make every backfilled row invisible to its own account (#6645).
   Expression<bool> _ownedOrLegacy(
     GeneratedColumn<String> column,
     String? ownerPubkey,
   ) {
     if (ownerPubkey == null) return const Constant(true);
-    return column.equals(ownerPubkey) | column.isNull();
+    return column.equals(ownerPubkey) | column.equals('') | column.isNull();
   }
 
   /// Rows the sender must still be able to recognize in the conversation.
@@ -137,7 +143,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         dimensions: Value(dimensions),
         blurhash: Value(blurhash),
         thumbnailUrl: Value(thumbnailUrl),
-        ownerPubkey: Value(ownerPubkey),
+        // A caller with no owner is writing an unattributed row; `''` is
+        // this schema's legacy sentinel and is what the composite key
+        // needs, since a NULL cannot participate in it (#6645).
+        ownerPubkey: Value(ownerPubkey ?? ''),
         sendBatchId: Value(sendBatchId),
       ),
       mode: InsertMode.insertOrIgnore,

@@ -305,20 +305,68 @@ void main() {
             dmProtocol: 'nip04',
           );
 
+          // The owner is part of the key now, so a conflicting upsert is one
+          // that names the same owner. Omitting it would address the legacy
+          // `''` row, which is a different conversation view (#6645).
           await dao.upsertConversation(
             id: 'conv_1',
             participantPubkeys: '["pubkey_a","pubkey_b","pubkey_c"]',
             isGroup: true,
             createdAt: 1700000100,
+            ownerPubkey: 'owner_a',
           );
 
-          final result = await dao.getConversation('conv_1');
+          final result = await dao.getConversation(
+            'conv_1',
+            ownerPubkey: 'owner_a',
+          );
           expect(result, isNotNull);
           expect(result!.subject, equals('Original Subject'));
           expect(result.ownerPubkey, equals('owner_a'));
           expect(result.dmProtocol, equals('nip04'));
         },
       );
+
+      test('each local account keeps its own view of one room', () async {
+        // Two local accounts in one NIP-17 room derive the same conversation
+        // id, because it hashes the participant set and carries no owner.
+        // With a global key the second upsert took the row and the thread
+        // vanished from the first account's inbox (#6645).
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer","owner_a","owner_b"]',
+          isGroup: true,
+          createdAt: 1700000000,
+          lastMessageContent: 'as account A sees it',
+          lastMessageTimestamp: 1700000000,
+          lastMessageSenderPubkey: 'peer',
+          ownerPubkey: 'owner_a',
+        );
+        await dao.upsertConversation(
+          id: 'shared_room',
+          participantPubkeys: '["peer","owner_a","owner_b"]',
+          isGroup: true,
+          createdAt: 1700000001,
+          lastMessageContent: 'as account B sees it',
+          lastMessageTimestamp: 1700000001,
+          lastMessageSenderPubkey: 'peer',
+          ownerPubkey: 'owner_b',
+        );
+
+        final forA = await dao.getConversation(
+          'shared_room',
+          ownerPubkey: 'owner_a',
+        );
+        final forB = await dao.getConversation(
+          'shared_room',
+          ownerPubkey: 'owner_b',
+        );
+
+        expect(forA, isNotNull, reason: 'account A must keep its own room');
+        expect(forA!.lastMessageContent, equals('as account A sees it'));
+        expect(forB, isNotNull);
+        expect(forB!.lastMessageContent, equals('as account B sees it'));
+      });
 
       test(
         'overwrites nullable fields when conflict update provides values',
@@ -333,20 +381,25 @@ void main() {
             dmProtocol: 'nip04',
           );
 
+          // Same owner: changing it would address a different row now that it
+          // is part of the key (#6645).
           await dao.upsertConversation(
             id: 'conv_1',
             participantPubkeys: '["pubkey_a","pubkey_b"]',
             isGroup: false,
             createdAt: 1700000100,
             subject: 'Updated Subject',
-            ownerPubkey: 'owner_b',
+            ownerPubkey: 'owner_a',
             dmProtocol: 'nip17',
           );
 
-          final result = await dao.getConversation('conv_1');
+          final result = await dao.getConversation(
+            'conv_1',
+            ownerPubkey: 'owner_a',
+          );
           expect(result, isNotNull);
           expect(result!.subject, equals('Updated Subject'));
-          expect(result.ownerPubkey, equals('owner_b'));
+          expect(result.ownerPubkey, equals('owner_a'));
           expect(result.dmProtocol, equals('nip17'));
         },
       );
