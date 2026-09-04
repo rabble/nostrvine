@@ -151,6 +151,12 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Biography text is deliberately excluded: people discovery should not
   /// turn a short query into an unbounded scan of incidental prose.
+  ///
+  /// Public keys match by prefix only. A hex substring is not something a
+  /// person types, and a two-character hex query would otherwise sweep a
+  /// share of every cached pubkey into the bounded candidate set ahead of
+  /// real name matches. Prefix hits rank after name prefixes and before
+  /// name substrings.
   Future<List<UserProfile>> searchProfilesByIdentity(
     String query, {
     required int limit,
@@ -163,7 +169,7 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
         WHERE instr(lower(coalesce(name, '')), ?) > 0
            OR instr(lower(coalesce(display_name, '')), ?) > 0
            OR instr(lower(coalesce(nip05, '')), ?) > 0
-           OR instr(lower(pubkey), ?) > 0
+           OR instr(lower(pubkey), ?) = 1
         ORDER BY
           CASE
             WHEN lower(coalesce(name, '')) = ? THEN 0
@@ -172,15 +178,14 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
             WHEN lower(pubkey) = ? THEN 0
             WHEN instr(lower(coalesce(name, '')), ?) = 1 THEN 1
             WHEN instr(lower(coalesce(display_name, '')), ?) = 1 THEN 1
-            ELSE 2
+            WHEN instr(lower(pubkey), ?) = 1 THEN 2
+            ELSE 3
           END,
           created_at DESC
         LIMIT ?
       ''',
       variables: [
-        for (var i = 0; i < 8; i++) Variable.withString(normalized),
-        Variable.withString(normalized),
-        Variable.withString(normalized),
+        for (var i = 0; i < 11; i++) Variable.withString(normalized),
         Variable.withInt(limit),
       ],
       readsFrom: {userProfiles},

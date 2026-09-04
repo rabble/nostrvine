@@ -488,6 +488,44 @@ void main() {
         },
       );
 
+      test(
+        'matches a public key by prefix, ranked after name prefixes',
+        () async {
+          await dao.upsertProfiles([
+            createProfile(name: 'unfed'),
+            createProfile(
+              pubkey: testPubkey2,
+              eventId: 'event2',
+              name: 'unrelated',
+            ),
+            createProfile(pubkey: 'a' * 64, eventId: 'event3', name: 'fedora'),
+          ]);
+
+          final results = await dao.searchProfilesByIdentity('fed', limit: 10);
+
+          expect(results.map((profile) => profile.pubkey), [
+            'a' * 64,
+            testPubkey2,
+            testPubkey,
+          ]);
+        },
+      );
+
+      test('does not match a hex substring inside a public key', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'someone'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'other',
+          ),
+        ]);
+
+        final results = await dao.searchProfilesByIdentity('3210', limit: 10);
+
+        expect(results, isEmpty);
+      });
+
       test('honors the requested bound', () async {
         await dao.upsertProfiles([
           createProfile(name: 'match-one'),
