@@ -314,8 +314,11 @@ typedef DmInboxLookup = ({List<String>? relays, DmInboxResolution state});
 /// be sitting on relays the recipient never queries, so it is reported
 /// soft-unconfirmed and the durable row is kept for the sweep to re-resolve
 /// (#7317). Shared by every gift-wrap publisher that also reports delivery —
-/// the 1:1 send, its retry, and the reaction fan-out (#8443) — so no sweep can
-/// undo what the send path preserved.
+/// the 1:1 send, its retry, the reaction fan-out (#8443), the deletion
+/// fan-out (#8515), and the group send (#8434) — so no sweep can undo what a
+/// send path preserved. A fan-out applies it per recipient: NIP-17 states the
+/// rule against "the recipient's kind 10050 event" (17.md:77), so a readable
+/// member is delivered even when a sibling in the same batch is not.
 ///
 /// Logs the hold. The message service has already logged `Successfully
 /// published` for this wrap — the relay did confirm it — so without this line
@@ -3830,16 +3833,14 @@ class DmRepository {
   // Send - Text (Kind 14)
   // -------------------------------------------------------------------------
 
-  /// Resolves [pubkey]'s NIP-17 DM inbox relays from their kind-10050
-  /// "DM relays list" event.
+  /// Resolves [pubkey]'s NIP-17 DM inbox relays and reports whether the lookup
+  /// found an inbox, conclusively found none, or could not be completed.
   ///
-  /// Returns the relay URLs the recipient prefers to receive gift-wrapped
-  /// DMs on, or `null` when no kind-10050 event is found (NIP-17: such a
-  /// user "is not ready to receive messages"). Callers route the gift
-  /// wrap to these relays; a `null` result lets the caller fall back to
-  /// the default relay pool so reachability is preserved for recipients
-  /// who have not advertised a DM inbox. Resolution failures degrade to
-  /// `null` rather than throwing, so a relay hiccup never blocks a send.
+  /// The returned relays are the recipient's preferred gift-wrap targets, or
+  /// `null` when the caller must fall back to the default relay pool. The state
+  /// preserves whether that fallback means the recipient advertised no inbox
+  /// or the lookup was unreadable, because those cases route identically but
+  /// carry different delivery evidence (#7317).
   ///
   /// The list is admitted on remote-supplied terms and capped at
   /// [RelayListCaps.dmInbox]: each entry becomes an outbound connection from
@@ -3851,17 +3852,6 @@ class DmRepository {
   /// degrades to the default pool whether the list is absent or unreadable,
   /// and overwrites nothing — so it keeps the cache and the first answer it
   /// gets rather than waiting for full relay settlement (#8212).
-  ///
-  /// Routing only needs the relays, so this signature stays. A caller that
-  /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
-  /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
-  /// #7317. `sendGroupMessage` (#8434) still resolves through here and
-  /// inherits that collapse.
-  Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
-    return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
-  }
-
-  /// [resolveDmInboxRelays], plus why it returned what it did.
   ///
   /// Callers that route a gift wrap need the relays; callers that also report
   /// delivery need the reason. A `null` list from [DmInboxResolution.absent]
@@ -3955,10 +3945,8 @@ class DmRepository {
   /// Queries [pubkey]'s kind-10050 DM inbox relay list and reports a
   /// found / absent / failed outcome (#4974).
   ///
-  /// Collapsing absent and failed to `null` (as the public
-  /// [resolveDmInboxRelays] does) is safe for anything that only ROUTES —
-  /// both fall back to the default pool either way. Anything that reports
-  /// delivery, or replaces the list it read, must tell them apart: see
+  /// Absent and failed both route through the default pool, but anything that
+  /// reports delivery or replaces the list it read must tell them apart: see
   /// [resolveDmInboxRelaysDetailed] (#7317) and [ensureDmRelayListPublished]
   /// (#8212) respectively.
   ///
@@ -4080,7 +4068,8 @@ class DmRepository {
       // ANOTHER client, and some clients write `r` tags; within a
       // kind-10050 event both unambiguously denote DM inbox relays. Matches
       // divine-web's resolveDmReadRelays. Shared with the send path via
-      // resolveDmInboxRelays, so it also widens recipient resolution there.
+      // resolveDmInboxRelaysDetailed, so it also widens recipient resolution
+      // there.
       final relays = _admitDmRelays(
         [
           for (final tag in matchingEvents.first.tags)
@@ -4100,9 +4089,7 @@ class DmRepository {
       // means the user "is not ready to receive messages"; a read we abandoned
       // says nothing about them. Collapsing the two is #7317, and routing a
       // new timeout into `absent` would make that defect more reachable.
-      // `resolveDmInboxRelays` still flattens both to null, so behaviour here
-      // is unchanged — the distinction is preserved for the caller that needs
-      // it rather than acted on now.
+      // The detailed result preserves that distinction for every caller.
       Log.warning(
         'DM inbox resolution for ${pubkeyForLogs(pubkey)} exceeded '
         '${inboxResolutionBudget.inMilliseconds}ms; treating as unread',
@@ -6131,10 +6118,20 @@ class DmRepository {
     // keeps N sequential ~5s inbox queries from stacking and delaying the
     // visible group bubble. Resolution never throws (it degrades to null →
     // default pool), so a failed lookup just falls back.
-    final inboxByRecipient = <String, List<String>?>{};
+    //
+    // Resolved through the DETAILED reader: routing only needs the relays, but
+    // this fan-out also REPORTS delivery, and `absent` and `unreadable` both
+    // route to the pool while meaning opposite things (#8434). Kept per
+    // recipient rather than collapsed to one batch verdict because NIP-17
+    // states the rule per recipient — "the relays listed in the recipient's
+    // kind 10050 event" (17.md:77) — and the queue already holds one row per
+    // member, so a readable sibling stays genuinely delivered.
+    final inboxByRecipient = <String, DmInboxLookup>{};
     await Future.wait([
       for (final pubkey in recipientPubkeys)
-        resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
+        resolveDmInboxRelaysDetailed(
+          pubkey,
+        ).then((inbox) => inboxByRecipient[pubkey] = inbox),
     ]);
 
     // One destination for every self-copy in the batch — it is addressed to
@@ -6340,17 +6337,38 @@ class DmRepository {
       // failure so one bad join cannot abort the rest of the batch —
       // _sendRumorWithTimeout itself classifies instead of throwing.
       NIP17SendResult result;
+      final inbox = inboxByRecipient[pubkey];
       try {
-        result = await _joinOrStartRecovery(
-          'full:${queueIds[i]}',
-          () => _sendRumorWithTimeout(
+        result = await _joinOrStartRecovery('full:${queueIds[i]}', () async {
+          final published = await _sendRumorWithTimeout(
             rumor: groupRumor,
             recipientPubkey: pubkey,
-            targetRelays: inboxByRecipient[pubkey],
+            targetRelays: inbox?.relays,
             selfWrapTargetRelays: selfWrapRelays,
             awaitRecipientOk: true,
-          ),
-        );
+          );
+          // An `OK` from the DEFAULT POOL is not delivery for a recipient
+          // whose inbox we never read: their wrap may sit on relays they never
+          // query, and finalizing this sibling deletes the one handle that
+          // could re-resolve and republish it (#8434). Per recipient, because
+          // the batch holds one queue row per member — a sibling we DID reach
+          // on its advertised inbox is still genuinely delivered.
+          //
+          // Applied INSIDE the closure, not around the join. A second entrant
+          // does not run this attempt; it awaits an in-flight recovery that
+          // resolved its own inbox and already applied this same rule. Judging
+          // that outcome out here would re-judge it against this send's older
+          // snapshot, and could hold a wrap that did reach the advertised
+          // inbox.
+          //
+          // Only when the queue is wired, mirroring `sendMessage`: with no row
+          // to preserve there is nothing to gain, and downgrading every
+          // sibling would leave `results.any(success)` false, skipping the
+          // local persist that puts the message in the sender's own thread.
+          return outgoingDao == null || inbox == null
+              ? published
+              : downgradeFallbackPoolDelivery(published, inbox.state);
+        });
       } on Object catch (e) {
         result = NIP17SendResult.failure(
           'joined in-flight recovery failed: $e',

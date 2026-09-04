@@ -155,7 +155,9 @@ void main() {
       // admitted inbox, so their wrap goes to the plain pool and cannot be
       // what reaches _senderOnlyInbox.
       expect(
-        await stack.repository.resolveDmInboxRelays(recipientPubkey),
+        (await stack.repository.resolveDmInboxRelaysDetailed(
+          recipientPubkey,
+        )).relays,
         isNull,
         reason:
             'the served kind-10050 is authored by the sender, so it must be '

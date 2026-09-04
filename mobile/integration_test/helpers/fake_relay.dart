@@ -27,6 +27,7 @@ class FakeRelay {
     this.okConfirms,
     this.broadcast,
     this.stallReqForKinds,
+    this.stallReqForAuthors,
   );
 
   /// Starts a relay on a loopback port — ephemeral unless [port] is given.
@@ -44,6 +45,12 @@ class FakeRelay {
   /// `queryEventsDetailed` report `timedOut` — an `EOSE` is a conclusive
   /// "nothing here", so a relay answering EOSE cannot stand in for one that
   /// could not be read.
+  /// [stallReqForAuthors] does the same, but keyed on the `authors` a `REQ`
+  /// names rather than its kinds. A group fan-out resolves each recipient's
+  /// kind-10050 in its own `REQ`, so this is what lets ONE recipient's inbox
+  /// read as `found` while another's is `unreadable` in the same send — the
+  /// partially-unreadable fan-out #8434 is about. A kind-keyed stall cannot
+  /// express that: it stalls every recipient at once.
   /// Pass a stopped relay's [FakeRelay.port] as [port] to bring "the same
   /// relay" back, which is what a client that remembers the URL sees when a
   /// relay recovers.
@@ -53,6 +60,7 @@ class FakeRelay {
     bool okConfirms = true,
     bool broadcast = false,
     Set<int> stallReqForKinds = const <int>{},
+    Set<String> stallReqForAuthors = const <String>{},
     int port = 0,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
@@ -63,6 +71,7 @@ class FakeRelay {
       okConfirms,
       broadcast,
       stallReqForKinds,
+      stallReqForAuthors,
     );
     server.listen(relay._handle, onError: (_) {});
     return relay;
@@ -90,6 +99,13 @@ class FakeRelay {
   /// `EOSE`, so the read never settles and the client reports it as timed out
   /// rather than empty. Other subscriptions on the same socket are unaffected.
   final Set<int> stallReqForKinds;
+
+  /// Authors whose `REQ` is swallowed rather than answered.
+  ///
+  /// Same shape as [stallReqForKinds] — neither `EVENT` nor `EOSE`, so the
+  /// read times out instead of settling empty — but selective per pubkey, so a
+  /// fan-out can have a readable recipient and an unreadable one at once.
+  final Set<String> stallReqForAuthors;
 
   /// Whether a published `EVENT` is forwarded to other open subscriptions.
   ///
@@ -194,9 +210,12 @@ class FakeRelay {
     );
   }
 
-  /// Whether this `REQ` frame names a kind in [stallReqForKinds].
+  /// Whether this `REQ` frame names a kind in [stallReqForKinds] or an author
+  /// in [stallReqForAuthors].
   bool _isStalled(List<dynamic> frame) =>
-      stallReqForKinds.isNotEmpty && _namesAnyKind(frame, stallReqForKinds);
+      (stallReqForKinds.isNotEmpty && _namesAnyKind(frame, stallReqForKinds)) ||
+      (stallReqForAuthors.isNotEmpty &&
+          _namesAnyAuthor(frame, stallReqForAuthors));
 
   /// Whether [reply] is owed to this `REQ` frame; see [replyForKinds].
   bool _wantsReply(List<dynamic> frame) =>
@@ -209,6 +228,18 @@ class FakeRelay {
       if (kinds is! List) continue;
       for (final kind in kinds) {
         if (kind is int && wanted.contains(kind)) return true;
+      }
+    }
+    return false;
+  }
+
+  bool _namesAnyAuthor(List<dynamic> frame, Set<String> wanted) {
+    for (final filter in frame.skip(2)) {
+      if (filter is! Map) continue;
+      final authors = filter['authors'];
+      if (authors is! List) continue;
+      for (final author in authors) {
+        if (author is String && wanted.contains(author)) return true;
       }
     }
     return false;

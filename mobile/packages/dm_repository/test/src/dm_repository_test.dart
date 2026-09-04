@@ -4637,7 +4637,10 @@ void main() {
       );
     });
 
-    group('resolveDmInboxRelays', () {
+    group('resolveDmInboxRelaysDetailed routing', () {
+      Future<List<String>?> resolveRelays(DmRepository repository) async =>
+          (await repository.resolveDmInboxRelaysDetailed(_validPubkeyB)).relays;
+
       Event kind10050Event(
         List<String> relays, {
         int createdAt = 1700000000,
@@ -4703,7 +4706,7 @@ void main() {
           final repository = createRepository();
 
           expect(
-            await repository.resolveDmInboxRelays(_validPubkeyB),
+            await resolveRelays(repository),
             isNull,
             reason: 'an unread inbox degrades to the default pool, as today',
           );
@@ -4716,7 +4719,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://inbox.example', 'wss://inbox2.example'],
         );
       });
@@ -4724,13 +4727,13 @@ void main() {
       test('returns null when no kind-10050 event exists', () async {
         // setUp already stubs queryEventsDetailed -> [].
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test('returns null when the event has no relay tags', () async {
         stubQuery([kind10050Event(const [])]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test(
@@ -4748,7 +4751,7 @@ void main() {
             ),
           ]);
           final repository = createRepository();
-          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+          expect(await resolveRelays(repository), isNull);
         },
       );
 
@@ -4758,7 +4761,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://a.example'],
         );
       });
@@ -4775,7 +4778,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+        expect(await resolveRelays(repository), [
           'wss://valid.example',
         ]);
       });
@@ -4803,7 +4806,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+        expect(await resolveRelays(repository), [
           'wss://valid.example',
         ]);
       });
@@ -4815,7 +4818,7 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        final resolved = await repository.resolveDmInboxRelays(_validPubkeyB);
+        final resolved = await resolveRelays(repository);
 
         expect(resolved, hasLength(RelayListCaps.dmInbox));
         // Deterministic: first-N in tag order, not an arbitrary subset.
@@ -4838,7 +4841,7 @@ void main() {
             ]),
           ]);
           final repository = createRepository();
-          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+          expect(await resolveRelays(repository), isNull);
         },
       );
 
@@ -4849,7 +4852,7 @@ void main() {
         ]);
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://new.example'],
         );
       });
@@ -4857,7 +4860,7 @@ void main() {
       test('queries kind-10050 for the requested author', () async {
         stubQuery(const []);
         final repository = createRepository();
-        await repository.resolveDmInboxRelays(_validPubkeyB);
+        await resolveRelays(repository);
         final captured =
             verify(
                   () => mockNostrClient.queryEventsDetailed(
@@ -4896,7 +4899,7 @@ void main() {
         );
         expect(resolved.relays, isNull);
         expect(resolved.state, DmInboxResolution.unreadable);
-        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        expect(await resolveRelays(repository), isNull);
       });
 
       test('accepts both `relay` and `r` tags (#4974 cross-client)', () async {
@@ -4927,7 +4930,7 @@ void main() {
         );
         final repository = createRepository();
         expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
+          await resolveRelays(repository),
           ['wss://relay-tag.example', 'wss://r-tag.example'],
         );
       });
@@ -6087,7 +6090,7 @@ void main() {
             stubOwnInbox(answeredList(const <Event>[]));
 
             final repository = createRepository(syncState: _FakeDmSyncState());
-            await repository.resolveDmInboxRelays(_validPubkeyB);
+            await repository.resolveDmInboxRelaysDetailed(_validPubkeyB);
 
             final captured = verify(
               () => mockNostrClient.queryEventsDetailed(
@@ -23588,6 +23591,164 @@ void main() {
               sendBatchId: any(named: 'sendBatchId'),
             ),
           );
+        },
+      );
+
+      test(
+        'an unreadable recipient inbox is NOT delivery for that sibling, '
+        'while a readable sibling in the SAME fan-out still is (#8434)',
+        () async {
+          // B advertises an inbox we can read; nothing ever answers for C.
+          // Both wraps are OK-confirmed - but C's OK came from the default
+          // pool, which is exactly the false positive.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((invocation) async {
+            final filters = invocation.positionalArguments.first as List;
+            final authors =
+                (filters.first as nostr_filter.Filter).authors ?? const [];
+            if (authors.contains(_validPubkeyC)) {
+              return unansweredList(noRelays: true);
+            }
+            return answeredList([
+              Event(
+                _validPubkeyB,
+                EventKind.dmRelaysList,
+                [
+                  ['relay', 'wss://inbox.example'],
+                ],
+                '',
+                createdAt: 1700000000,
+              ),
+            ]);
+          });
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap-$recipientPubkey',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'one readable recipient, one unreadable',
+          );
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueuedB = captured.first as OutgoingDm;
+          final enqueuedC = captured.last as OutgoingDm;
+
+          expect(results, hasLength(2));
+          expect(
+            results.first.success,
+            isTrue,
+            reason:
+                "the wrap went to the inbox B advertises, so B's OK is "
+                'real delivery and must not be held by a sibling',
+          );
+          expect(results.last.success, isFalse);
+          expect(results.last.retryablePending, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            equals(enqueuedC.id),
+            reason: 'the caller needs the durable handle to re-drive this row',
+          );
+
+          // B's handle is consumed; C's SURVIVES. Without it no sweep can
+          // ever re-resolve C's inbox and republish.
+          verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(enqueuedC.id));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueuedC.id),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a recipient who genuinely advertises no inbox is still delivered - '
+        'the pool is where they read, so #8434 must not regress it',
+        () async {
+          // The shared setUp answers every lookup with answeredList([]): the
+          // relays replied and there is no kind-10050. Conclusive absence is
+          // a fact about the recipient, not about our read.
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap-$recipientPubkey',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'nobody advertises an inbox',
+          );
+
+          expect(results.every((r) => r.success), isTrue);
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          for (final row in captured.cast<OutgoingDm>()) {
+            verify(() => mockOutgoingDmsDao.deleteById(row.id)).called(1);
+          }
+        },
+      );
+
+      test(
+        'with NO durable queue an unreadable inbox stays delivered - there is '
+        'no row to preserve, and holding every sibling would drop the '
+        'message from the sender own thread',
+        () async {
+          // The contrast case for this group: `sendMessage` guards the
+          // downgrade on the queue being wired, and the fan-out mirrors it.
+          // Without the guard `results.any(success)` is false, the local
+          // persist is skipped, and no queue row exists to project a bubble
+          // from - so the message vanishes for the sender.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => unansweredList(timedOut: true));
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: rumorEvent.id,
+              messageEventId: 'wrap-$recipientPubkey',
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository();
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'no queue wired',
+          );
+
+          expect(results, hasLength(2));
+          expect(results.every((r) => r.success), isTrue);
         },
       );
     });
