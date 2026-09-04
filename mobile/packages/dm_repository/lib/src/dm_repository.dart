@@ -274,8 +274,11 @@ typedef DmInboxLookup = ({List<String>? relays, DmInboxResolution state});
 /// be sitting on relays the recipient never queries, so it is reported
 /// soft-unconfirmed and the durable row is kept for the sweep to re-resolve
 /// (#7317). Shared by every gift-wrap publisher that also reports delivery —
-/// the 1:1 send, its retry, and the reaction fan-out (#8443) — so no sweep can
-/// undo what the send path preserved.
+/// the 1:1 send, its retry, the reaction fan-out (#8443), the deletion
+/// fan-out (#8515), and the group send (#8434) — so no sweep can undo what a
+/// send path preserved. A fan-out applies it per recipient: NIP-17 states the
+/// rule against "the recipient's kind 10050 event" (17.md:77), so a readable
+/// member is delivered even when a sibling in the same batch is not.
 ///
 /// Logs the hold. The message service has already logged `Successfully
 /// published` for this wrap — the relay did confirm it — so without this line
@@ -3554,8 +3557,10 @@ class DmRepository {
   /// Routing only needs the relays, so this signature stays. A caller that
   /// also REPORTS delivery must use [resolveDmInboxRelaysDetailed] instead:
   /// scoring a fallback-pool `OK` as delivered on an unreadable inbox is
-  /// #7317. `sendGroupMessage` (#8434) still resolves through here and
-  /// inherits that collapse.
+  /// #7317. Every publisher that reports delivery now resolves through the
+  /// detailed reader — the 1:1 send and its retry, the reaction fan-out, the
+  /// deletion fan-out, and the group send (#8434) — so this remains as the
+  /// routing-only contract for callers that never score an `OK`.
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
     return (await resolveDmInboxRelaysDetailed(pubkey)).relays;
   }
@@ -5804,10 +5809,20 @@ class DmRepository {
     // keeps N sequential ~5s inbox queries from stacking and delaying the
     // visible group bubble. Resolution never throws (it degrades to null →
     // default pool), so a failed lookup just falls back.
-    final inboxByRecipient = <String, List<String>?>{};
+    //
+    // Resolved through the DETAILED reader: routing only needs the relays, but
+    // this fan-out also REPORTS delivery, and `absent` and `unreadable` both
+    // route to the pool while meaning opposite things (#8434). Kept per
+    // recipient rather than collapsed to one batch verdict because NIP-17
+    // states the rule per recipient — "the relays listed in the recipient's
+    // kind 10050 event" (17.md:77) — and the queue already holds one row per
+    // member, so a readable sibling stays genuinely delivered.
+    final inboxByRecipient = <String, DmInboxLookup>{};
     await Future.wait([
       for (final pubkey in recipientPubkeys)
-        resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
+        resolveDmInboxRelaysDetailed(
+          pubkey,
+        ).then((inbox) => inboxByRecipient[pubkey] = inbox),
     ]);
 
     // One destination for every self-copy in the batch — it is addressed to
@@ -6013,17 +6028,38 @@ class DmRepository {
       // failure so one bad join cannot abort the rest of the batch —
       // _sendRumorWithTimeout itself classifies instead of throwing.
       NIP17SendResult result;
+      final inbox = inboxByRecipient[pubkey];
       try {
-        result = await _joinOrStartRecovery(
-          'full:${queueIds[i]}',
-          () => _sendRumorWithTimeout(
+        result = await _joinOrStartRecovery('full:${queueIds[i]}', () async {
+          final published = await _sendRumorWithTimeout(
             rumor: groupRumor,
             recipientPubkey: pubkey,
-            targetRelays: inboxByRecipient[pubkey],
+            targetRelays: inbox?.relays,
             selfWrapTargetRelays: selfWrapRelays,
             awaitRecipientOk: true,
-          ),
-        );
+          );
+          // An `OK` from the DEFAULT POOL is not delivery for a recipient
+          // whose inbox we never read: their wrap may sit on relays they never
+          // query, and finalizing this sibling deletes the one handle that
+          // could re-resolve and republish it (#8434). Per recipient, because
+          // the batch holds one queue row per member — a sibling we DID reach
+          // on its advertised inbox is still genuinely delivered.
+          //
+          // Applied INSIDE the closure, not around the join. A second entrant
+          // does not run this attempt; it awaits an in-flight recovery that
+          // resolved its own inbox and already applied this same rule. Judging
+          // that outcome out here would re-judge it against this send's older
+          // snapshot, and could hold a wrap that did reach the advertised
+          // inbox.
+          //
+          // Only when the queue is wired, mirroring `sendMessage`: with no row
+          // to preserve there is nothing to gain, and downgrading every
+          // sibling would leave `results.any(success)` false, skipping the
+          // local persist that puts the message in the sender's own thread.
+          return outgoingDao == null || inbox == null
+              ? published
+              : downgradeFallbackPoolDelivery(published, inbox.state);
+        });
       } on Object catch (e) {
         result = NIP17SendResult.failure(
           'joined in-flight recovery failed: $e',
