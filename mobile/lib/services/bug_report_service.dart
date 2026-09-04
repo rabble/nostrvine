@@ -782,6 +782,8 @@ class BugReportService {
     required String Function(String) sanitize,
     required int maxBytes,
   }) {
+    // Reserve against the widest possible counts so the header budget can
+    // only over-estimate: the real header is never larger than this probe.
     final provisionalHeader = buildHeader(
       exportedCount: lines.length,
       omittedCount: lines.length,
