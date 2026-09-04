@@ -382,7 +382,8 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
 
   if (deletionRecoveryGateActive &&
       !isDeletionRecoveryRoute &&
-      !isSupportRoute) {
+      !isSupportRoute &&
+      !(authState != AuthState.authenticated && isAuthRoute)) {
     return AccountDeletionRecoveryScreen.path;
   }
   if (!deletionRecoveryGateActive && isDeletionRecoveryRoute) {

@@ -11962,10 +11962,10 @@ abstract class AppLocalizations {
   /// **'Restore my username'**
   String get accountDeletionRestoreUsername;
 
-  /// Shown while the server is durably completing an account deletion; explains the app lock and that closing the app is safe.
+  /// Shown while the server is durably completing an account deletion.
   ///
   /// In en, this message translates to:
-  /// **'We\'re deleting your Divine account. You\'re signed out and can\'t use this app until we confirm the result. You can close the app and come back later.'**
+  /// **'Your deletion request is still being processed. You can use another account while we finish.'**
   String get accountDeletionFinishingBody;
 
   /// Shown while the server is rolling back an account-deletion attempt the user asked to cancel.

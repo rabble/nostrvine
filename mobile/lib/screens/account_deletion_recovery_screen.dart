@@ -28,7 +28,7 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     ref.watch(currentAuthRpcCapabilityProvider);
     final signerReadiness = authService.signerReadiness;
-    final receipt = ref.watch(submittedAccountDeletionAttemptProvider);
+    final receipt = ref.watch(currentSubmittedAccountDeletionAttemptProvider);
 
     return BlocProvider<AccountDeletionRecoveryCubit>(
       key: ValueKey((repository, authService, signerReadiness, receipt)),
@@ -164,9 +164,13 @@ class _RecoveryStateContent extends StatelessWidget {
                 body: context.l10n.accountDeletionFinishingBody,
                 actionLabel: context.l10n.supportContactSupport,
                 onPressed: () => context.push(RoutePaths.supportCenter),
+                secondaryActionLabel: context.l10n.authUseAnotherAccount,
+                onSecondaryPressed: () => _switchAccount(context, cubit),
               )
-            : _PassiveRecoveryContent(
+            : _RecoveryContent(
                 body: context.l10n.accountDeletionFinishingBody,
+                actionLabel: context.l10n.authUseAnotherAccount,
+                onPressed: () => _switchAccount(context, cubit),
               ),
       AccountDeletionRecoveryStatus.completed => _RecoveryContent(
         body: context.l10n.deleteAccountSuccess,
@@ -189,6 +193,14 @@ class _RecoveryStateContent extends StatelessWidget {
       ),
     };
   }
+}
+
+Future<void> _switchAccount(
+  BuildContext context,
+  AccountDeletionRecoveryCubit cubit,
+) async {
+  final signedOut = await cubit.switchAccount();
+  if (signedOut && context.mounted) context.go(RoutePaths.welcome);
 }
 
 class _PassiveRecoveryContent extends StatelessWidget {

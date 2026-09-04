@@ -352,9 +352,6 @@ void main() {
     testWidgets('keeps a signed-out user on the deletion recovery gate', (
       tester,
     ) async {
-      when(
-        () => mockAuthService.authState,
-      ).thenReturn(AuthState.unauthenticated);
       final container = ProviderContainer(
         overrides: [
           ...routerOverrides(
@@ -376,6 +373,9 @@ void main() {
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await container.read(currentAccountDeletionAttemptProvider.future);
       await pumpRouter(tester, container, settle: false);
+      when(
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.unauthenticated);
 
       final router = container.read(goRouterProvider);
       router.go(AccountDeletionRecoveryScreen.path);

@@ -193,16 +193,16 @@ void main() {
         expect(find.byType(NostrSettingsScreen), findsNothing);
         expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
 
-        // Signing out must not expose Welcome: trying to go back and sign in
-        // again remains gated until the deletion result is known.
+        // Once signed out, another account may use Welcome. Selecting the
+        // deleting identity there routes back to this recovery gate.
+        when(
+          () => authService.authState,
+        ).thenReturn(AuthState.unauthenticated);
         router.go('/welcome');
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
         expect(
           router.routeInformationProvider.value.uri.toString(),
-          AccountDeletionRecoveryScreen.path,
+          '/welcome',
         );
-        expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
 
         // Unmount before the fake clock is checked so the recovery poll timer
         // is cancelled with its cubit.

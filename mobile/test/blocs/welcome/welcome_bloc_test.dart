@@ -305,6 +305,30 @@ void main() {
           ),
         ],
       );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'keeps an account with a pending deletion receipt selectable',
+        setUp: () {
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount, _testKnownAccount2]);
+        },
+        build: () => WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+          deletionPendingPubkeyHex: _testPubkeyHex,
+        ),
+        act: (bloc) => bloc.add(
+          const WelcomeStarted(initialSelectedPubkeyHex: _testPubkeyHex),
+        ),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex,
+          ),
+        ],
+      );
     });
 
     group('$WelcomeLastUserDismissed', () {
@@ -321,6 +345,35 @@ void main() {
     });
 
     group('$WelcomeLogBackInRequested', () {
+      blocTest<WelcomeBloc, WelcomeState>(
+        'routes a pending deletion account to recovery without signing in',
+        build: () => WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+          deletionPendingPubkeyHex: _testPubkeyHex,
+        ),
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount],
+        ),
+        act: (bloc) => bloc.add(const WelcomeLogBackInRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.navigatingToAccountDeletionRecovery,
+            previousAccounts: [_testPreviousAccount],
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount],
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockAuthService.signInForAccount(any(), any()),
+          );
+        },
+      );
+
       blocTest<WelcomeBloc, WelcomeState>(
         'emits accepting and calls signInForAccount with selected account',
         build: buildBloc,
@@ -496,6 +549,38 @@ void main() {
     });
 
     group('$WelcomeCancelSwitchRequested', () {
+      blocTest<WelcomeBloc, WelcomeState>(
+        'routes a pending previous account to recovery without signing in',
+        build: () => WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+          deletionPendingPubkeyHex: _testPubkeyHex,
+        ),
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+          selectedPubkeyHex: _testPubkeyHex2,
+        ),
+        act: (bloc) => bloc.add(const WelcomeCancelSwitchRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.navigatingToAccountDeletionRecovery,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockAuthService.signInForAccount(any(), any()),
+          );
+        },
+      );
+
       blocTest<WelcomeBloc, WelcomeState>(
         'restores the previous account regardless of selected account',
         build: buildBloc,

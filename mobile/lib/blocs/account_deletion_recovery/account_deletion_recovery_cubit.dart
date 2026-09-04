@@ -282,6 +282,37 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     await _resolve();
   }
 
+  Future<bool> switchAccount() async {
+    final attempt = state.attempt;
+    if (attempt == null) return false;
+    final generation = _beginOperation();
+    emitIfOpen(
+      AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.signingOut,
+        attempt: attempt,
+      ),
+    );
+    try {
+      await _authService.signOut();
+      if (!_isCurrent(generation)) return false;
+      _emitPollingState(
+        AccountDeletionRecoveryStatus.processing,
+        attempt,
+        generation,
+      );
+      return true;
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      if (!_isCurrent(generation)) return false;
+      _emitPollingState(
+        AccountDeletionRecoveryStatus.processing,
+        attempt,
+        generation,
+      );
+      return false;
+    }
+  }
+
   Future<void> _signOutForProcessing(AccountDeletionAttempt attempt) async {
     final generation = _beginOperation();
     emitIfOpen(
@@ -481,7 +512,11 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     final tickIndex = state.pollTickIndex + 1;
     try {
       final receiptPubkeyHex = _receiptPubkeyHex;
-      final current = receiptPubkeyHex == null
+      final canUseAuthenticatedLookup =
+          receiptPubkeyHex == null ||
+          (_authService.signerReadiness == SignerReadiness.ready &&
+              _authService.currentPublicKeyHex == receiptPubkeyHex);
+      final current = canUseAuthenticatedLookup
           ? await _repository.fetchCurrent()
           : await _repository.fetchStatus(
               attemptId: expectedAttemptId!,

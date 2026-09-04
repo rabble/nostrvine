@@ -273,10 +273,43 @@ void main() {
     });
 
     test('a durable record gates before authentication is restored', () async {
-      await container
+      final preAuth = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.unavailable,
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(preAuth.dispose);
+      await preAuth
           .read(submittedAccountDeletionAttemptProvider.notifier)
           .record(
             pubkeyHex: 'someone-else',
+            attempt: processing,
+            vanishEventId: 'vanish-event-id',
+          );
+
+      expect(
+        await preAuth.read(currentAccountDeletionAttemptProvider.future),
+        same(processing),
+      );
+      verifyNever(repository.fetchCurrent);
+    });
+
+    test('a different authenticated account ignores the receipt', () async {
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenReturn('different-account-pubkey');
+      await container
+          .read(submittedAccountDeletionAttemptProvider.notifier)
+          .record(
+            pubkeyHex: pubkey,
             attempt: processing,
             vanishEventId: 'vanish-event-id',
           );
@@ -284,9 +317,34 @@ void main() {
 
       expect(
         await container.read(currentAccountDeletionAttemptProvider.future),
-        same(processing),
+        isNull,
       );
-      verifyNever(repository.fetchCurrent);
+      expect(
+        container.read(currentSubmittedAccountDeletionAttemptProvider),
+        isNull,
+      );
+      verify(repository.fetchCurrent).called(1);
+    });
+
+    test('a second account cannot overwrite the pending receipt', () async {
+      final notifier = container.read(
+        submittedAccountDeletionAttemptProvider.notifier,
+      );
+      await notifier.record(
+        pubkeyHex: pubkey,
+        attempt: processing,
+        vanishEventId: 'vanish-event-id',
+      );
+
+      await expectLater(
+        notifier.record(
+          pubkeyHex: 'different-account-pubkey',
+          attempt: processing,
+          vanishEventId: 'other-vanish-event-id',
+        ),
+        throwsStateError,
+      );
+      expect(notifier.state?.pubkeyHex, pubkey);
     });
 
     test('signing out preserves the record', () async {

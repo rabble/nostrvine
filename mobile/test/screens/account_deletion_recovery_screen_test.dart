@@ -42,6 +42,10 @@ Widget _app(
         path: '/home/0',
         builder: (_, _) => const Scaffold(body: Text('Home')),
       ),
+      GoRoute(
+        path: '/welcome',
+        builder: (_, _) => const Scaffold(body: Text('Welcome')),
+      ),
     ],
   );
   return MaterialApp.router(
@@ -59,6 +63,7 @@ void main() {
     when(cubit.cancel).thenAnswer((_) async {});
     when(cubit.retry).thenAnswer((_) async {});
     when(cubit.signOut).thenAnswer((_) async {});
+    when(cubit.switchAccount).thenAnswer((_) async => true);
     when(cubit.completeLocalCleanup).thenAnswer((_) async {});
   });
 
@@ -132,6 +137,32 @@ void main() {
       );
     });
 
+    testWidgets('paused processing keeps support and account switch actions', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.processing,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+          ),
+          pollingPaused: true,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.widgetWithText(DivineButton, l10n.supportContactSupport),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('processing remains non-cancellable', (tester) async {
       when(() => cubit.state).thenReturn(
         const AccountDeletionRecoveryState(
@@ -150,6 +181,13 @@ void main() {
         find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
         findsNothing,
       );
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+      );
+      await tester.pumpAndSettle();
+
+      verify(cubit.switchAccount).called(1);
+      expect(find.text('Welcome'), findsOneWidget);
     });
 
     testWidgets('cleanup failures distinguish keychain from local data', (

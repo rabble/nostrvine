@@ -7094,7 +7094,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'We\'re deleting your Divine account. You\'re signed out and can\'t use this app until we confirm the result. You can close the app and come back later.';
+      'Your deletion request is still being processed. You can use another account while we finish.';
 
   @override
   String get accountDeletionCancellingBody =>

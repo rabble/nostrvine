@@ -99,6 +99,12 @@ class SubmittedAccountDeletionAttemptNotifier
     required AccountDeletionAttempt attempt,
     required String vanishEventId,
   }) async {
+    final existing = state;
+    if (existing != null && existing.pubkeyHex != pubkeyHex) {
+      throw StateError(
+        'Another account deletion receipt is already pending',
+      );
+    }
     final receipt = SubmittedAccountDeletionAttempt(
       pubkeyHex: pubkeyHex,
       attempt: attempt,
@@ -130,17 +136,32 @@ class SubmittedAccountDeletionAttemptNotifier
   }
 }
 
+final currentSubmittedAccountDeletionAttemptProvider =
+    Provider<SubmittedAccountDeletionAttempt?>((ref) {
+      final submitted = ref.watch(submittedAccountDeletionAttemptProvider);
+      if (submitted == null) return null;
+      final authState = ref.watch(currentAuthStateProvider);
+      if (authState != AuthState.authenticated) return submitted;
+      final authService = ref.watch(authServiceProvider);
+      return authService.currentPublicKeyHex == submitted.pubkeyHex
+          ? submitted
+          : null;
+    });
+
 final currentAccountDeletionAttemptProvider =
     FutureProvider<AccountDeletionAttempt?>(
       (ref) async {
-        final submitted = ref.watch(submittedAccountDeletionAttemptProvider);
+        final submitted = ref.watch(
+          currentSubmittedAccountDeletionAttemptProvider,
+        );
+        final authState = ref.watch(currentAuthStateProvider);
+        final authService = ref.watch(authServiceProvider);
         if (submitted != null) {
           return submitted.attempt;
         }
-        if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
+        if (authState != AuthState.authenticated) {
           return null;
         }
-        final authService = ref.watch(authServiceProvider);
         ref.watch(currentAuthRpcCapabilityProvider);
         switch (authService.signerReadiness) {
           case SignerReadiness.pending:

@@ -172,5 +172,70 @@ void main() {
         verify(authService.signOut).called(1);
       },
     );
+
+    testWidgets('a pending receipt blocks deletion for another account', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.rpcReady,
+          ),
+          accountDeletionServiceProvider.overrideWithValue(deletionService),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(submittedAccountDeletionAttemptProvider.notifier)
+          .record(
+            pubkeyHex: 'different-account-pubkey',
+            attempt: _processing,
+            vanishEventId: 'other-vanish-event-id',
+          );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  key: const Key('delete'),
+                  onPressed: () => startAccountDeletionFlow(
+                    context: context,
+                    ref: ref,
+                    screenName: 'Test',
+                  ),
+                  child: const Text('Delete'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('delete')));
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+      verifyNever(repository.prepare);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
   });
 }

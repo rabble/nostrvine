@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/owned_divine_username_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -37,6 +38,13 @@ Future<void> startAccountDeletionFlow({
   );
   final pubkey = authService.currentPublicKeyHex;
   if (pubkey == null || pubkey.isEmpty) return;
+  final pendingDeletion = ref.read(submittedAccountDeletionAttemptProvider);
+  if (pendingDeletion != null && pendingDeletion.pubkeyHex != pubkey) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.accountDeletionFinishingBody)),
+    );
+    return;
+  }
 
   // Kick off the owned-name lookup but do not await it here: the dialog opens
   // immediately and the future is resolved at the deletion boundary, where an

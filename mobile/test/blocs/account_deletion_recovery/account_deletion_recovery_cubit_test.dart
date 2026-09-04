@@ -110,6 +110,7 @@ void main() {
     timers = _ManualTimers();
     resolvedCalls = 0;
     when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+    when(() => authService.currentPublicKeyHex).thenReturn(null);
   });
 
   group('signer readiness', () {
@@ -290,6 +291,39 @@ void main() {
         ),
       ).called(1);
       verifyNever(repository.fetchCurrent);
+    });
+
+    test('a signed-in receipt polls with the authenticated endpoint', () async {
+      when(() => authService.currentPublicKeyHex).thenReturn('a' * 64);
+      when(repository.fetchCurrent).thenAnswer((_) async => _processing);
+      final cubit = buildCubit(withReceipt: true);
+      addTearDown(cubit.close);
+
+      await cubit.resume(_processing);
+      await timers.fireNext();
+
+      verify(repository.fetchCurrent).called(1);
+      verifyNever(
+        () => repository.fetchStatus(
+          attemptId: any(named: 'attemptId'),
+          pubkeyHex: any(named: 'pubkeyHex'),
+        ),
+      );
+    });
+
+    test('switching accounts preserves the processing receipt', () async {
+      when(authService.signOut).thenAnswer((_) async {});
+      final cubit = buildCubit(withReceipt: true);
+      addTearDown(cubit.close);
+      await cubit.resume(_processing);
+
+      final switched = await cubit.switchAccount();
+
+      expect(switched, isTrue);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      expect(cubit.state.attempt, same(_processing));
+      expect(resolvedCalls, 0);
+      verify(authService.signOut).called(1);
     });
   });
 
