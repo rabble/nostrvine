@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
@@ -97,11 +98,26 @@ void main() {
       documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
+        pushNotificationSyncProvider.overrideWithValue(null),
       ],
     );
   });
 
   tearDown(() => database.close());
+
+  void overridePushSync(PushNotificationSessionCoordinator? coordinator) {
+    deviceScope = DeviceScope(
+      database: database,
+      sharedPreferences: deviceScope.sharedPreferences,
+      switchController: controller,
+      appVersion: 'test',
+      documentsPath: '/documents',
+      accountOverrides: [
+        secureKeyStorageProvider.overrideWithValue(keyStorage),
+        pushNotificationSyncProvider.overrideWithValue(coordinator),
+      ],
+    );
+  }
 
   group('accountSwitchInitialLocation', () {
     test('retargets the leaving account own-profile route', () {
@@ -409,8 +425,11 @@ void main() {
         goRouterProvider.overrideWithValue(router),
         authServiceProvider.overrideWithValue(auth),
       ],
-      childBuilder: (container) =>
-          MaterialApp.router(routerConfig: container.read(goRouterProvider)),
+      childBuilder: (container) => MaterialApp.router(
+        routerConfig: container.read(goRouterProvider),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     );
 
     String? seeded;
@@ -449,56 +468,54 @@ void main() {
     );
   });
 
-  testWidgets('deregisters outgoing push after target swap succeeds', (
-    tester,
-  ) async {
-    ProviderContainer? signedInto;
-    final events = <String>[];
-    final cleanupCompleter = Completer<void>();
-    final pushCoordinator = _MockPushNotificationSessionCoordinator();
-    when(
-      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
-    ).thenAnswer((
-      _,
-    ) async {
-      expect(controller.currentContainer, same(signedInto));
-      events.add('deregister outgoing');
-      await cleanupCompleter.future;
-    });
-    final initial = await pumpHost(
+  group('push lifecycle', () {
+    testWidgets('deregisters outgoing push after target swap succeeds', (
       tester,
-      accountOverrides: [
-        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-      ],
-    );
-    initial.read(pushNotificationSyncProvider);
+    ) async {
+      ProviderContainer? signedInto;
+      final events = <String>[];
+      final cleanupCompleter = Completer<void>();
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((
+        _,
+      ) async {
+        expect(controller.currentContainer, same(signedInto));
+        events.add('deregister outgoing');
+        await cleanupCompleter.future;
+      });
+      overridePushSync(pushCoordinator);
+      final initial = await pumpHost(tester);
+      initial.read(pushNotificationSyncProvider);
 
-    await swapAccount(
-      deviceScope: deviceScope,
-      controller: controller,
-      currentAuthService: currentAuthService,
-      account: account,
-      signIn: (container, acct) async {
-        signedInto = container;
-        events.add('sign in target');
-        expect(acct, equals(account));
-      },
-    );
-    await tester.pump();
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, acct) async {
+          signedInto = container;
+          events.add('sign in target');
+          expect(acct, equals(account));
+        },
+      );
+      await tester.pump();
 
-    // Signed into a freshly-built container, not the initial one.
-    expect(signedInto, isNotNull);
-    expect(signedInto, isNot(same(initial)));
-    // The target is live, but the old container still owns the signer needed by
-    // the outgoing cleanup and cannot be disposed until that work settles.
-    expect(_isDisposed(signedInto!), isFalse);
-    expect(_isDisposed(initial), isFalse);
-    expect(events, ['sign in target', 'deregister outgoing']);
+      // Signed into a freshly-built container, not the initial one.
+      expect(signedInto, isNotNull);
+      expect(signedInto, isNot(same(initial)));
+      // The target is live, but the old container still owns the signer needed by
+      // the outgoing cleanup and cannot be disposed until that work settles.
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isFalse);
+      expect(events, ['sign in target', 'deregister outgoing']);
 
-    cleanupCompleter.complete();
-    await tester.pump();
+      cleanupCompleter.complete();
+      await tester.pump();
 
-    expect(_isDisposed(initial), isTrue);
+      expect(_isDisposed(initial), isTrue);
+    });
   });
 
   group('account swap failure boundaries', () {
@@ -509,12 +526,8 @@ void main() {
       when(
         pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
       ).thenAnswer((_) async => throw Exception('relay unavailable'));
-      final initial = await pumpHost(
-        tester,
-        accountOverrides: [
-          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-        ],
-      );
+      overridePushSync(pushCoordinator);
+      final initial = await pumpHost(tester);
       initial.read(pushNotificationSyncProvider);
       ProviderContainer? signedInto;
 
@@ -541,12 +554,8 @@ void main() {
       when(
         pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
       ).thenAnswer((_) => cleanupCompleter.future);
-      final initial = await pumpHost(
-        tester,
-        accountOverrides: [
-          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-        ],
-      );
+      overridePushSync(pushCoordinator);
+      final initial = await pumpHost(tester);
       initial.read(pushNotificationSyncProvider);
 
       await swapAccount(
@@ -572,12 +581,8 @@ void main() {
       when(
         pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
       ).thenAnswer((_) async {});
-      final initial = await pumpHost(
-        tester,
-        accountOverrides: [
-          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-        ],
-      );
+      overridePushSync(pushCoordinator);
+      final initial = await pumpHost(tester);
       initial.read(pushNotificationSyncProvider);
       ProviderContainer? attempted;
 
@@ -617,6 +622,7 @@ void main() {
         accountOverrides: [
           secureKeyStorageProvider.overrideWithValue(keyStorage),
           authServiceProvider.overrideWithValue(targetAuthService),
+          pushNotificationSyncProvider.overrideWithValue(null),
         ],
       );
       final initial = await pumpHost(tester);
@@ -645,12 +651,8 @@ void main() {
     when(
       pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
     ).thenAnswer((_) async {});
-    final initial = await pumpHost(
-      tester,
-      accountOverrides: [
-        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-      ],
-    );
+    overridePushSync(pushCoordinator);
+    final initial = await pumpHost(tester);
     initial.read(pushNotificationSyncProvider);
     ProviderContainer? attempted;
     keyStorage.primary = _FakeSecureKeyContainer(

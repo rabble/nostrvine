@@ -77,6 +77,14 @@ class AppRootSideEffects extends ConsumerWidget {
     // pays construction only.
     ref.watch(connectivityRelayReconnectProvider);
 
+    // Registers the FCM token and drains notification preferences once the
+    // signer-backed session is ready. Push must remain correct on top-level
+    // routes such as Settings, where [AppShellSideEffects] is not mounted.
+    // Both providers gate network work on session readiness, so a signed-out
+    // launch pays construction only and never requests notification permission.
+    ref.watch(notificationPreferencesDirtySyncBridgeProvider);
+    ref.watch(pushNotificationSyncProvider);
+
     return child;
   }
 }
@@ -122,13 +130,6 @@ class AppShellSideEffects extends ConsumerWidget {
     // Retries a kind 3 contact-list broadcast withheld by an unreadable
     // relay, once the session is ready or the app returns to the foreground.
     ref.watch(contactListDirtyBroadcastBridgeProvider);
-
-    // Drains notification preferences marked dirty while offline, then
-    // registers the FCM token for the ready signer.
-    // TODO(#4338): remove when NotificationPreferencesCubit owns this
-    // lifecycle.
-    ref.watch(notificationPreferencesDirtySyncBridgeProvider);
-    ref.watch(pushNotificationSyncProvider);
 
     // Syncs block/mute lists after login, then reconciles follows that
     // contradict a block. The reconciler builds `followRepositoryProvider`.

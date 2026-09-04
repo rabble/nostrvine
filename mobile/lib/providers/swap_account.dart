@@ -231,6 +231,12 @@ Future<void> swapAccount({
         beforePreviousContainerDispose: outgoingPushCoordinator == null
             ? null
             : () async {
+                // The incoming account is live before cleanup starts. The
+                // backend only removes a token when the signed pubkey still
+                // owns it, so a late outgoing 3080 cannot unregister the
+                // incoming 3079. Keep using the captured outgoing coordinator:
+                // after disposal, the replacement container has no access to
+                // the signer that must authorize this cleanup.
                 try {
                   await outgoingPushCoordinator
                       .deregisterLastReadyPubkeyAfterAccountSwitch()
