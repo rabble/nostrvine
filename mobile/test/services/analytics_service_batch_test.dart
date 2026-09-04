@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 void main() {
   group('AnalyticsService Batch Tracking', () {
@@ -12,7 +13,10 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({'analytics_enabled': true});
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
+      analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+      );
       await analyticsService.initialize();
     });
 

@@ -24,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_pubkeys.dart';
 import 'package:openvine/observability/crash_reporter.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 void main() {
   group('Profile /me/ Redirect Integration', () {
@@ -279,6 +280,9 @@ class _FakeSubscriptionManager extends SubscriptionManager {
 
 /// NoOp AnalyticsService that prevents network calls and timer leaks
 class NoopAnalyticsService extends AnalyticsService {
+  NoopAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   @override
   Future<void> trackVideoView(
     VideoEvent video, {

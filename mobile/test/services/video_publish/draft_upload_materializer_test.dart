@@ -19,6 +19,7 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -111,6 +112,7 @@ void main() {
         ),
       );
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         // The default config sleeps 2+4+8+16+32s of real time before giving
         // up, so each failure-path test below burned ~62s. Only the retry

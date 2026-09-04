@@ -34,6 +34,7 @@ import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 // Mock classes (public because they are imported by many test files)
 class MockSharedPreferences extends Mock implements SharedPreferences {}
@@ -71,7 +72,11 @@ class MockVideoEventService extends Mock implements VideoEventService {
 /// Prevents unrelated widget tests from starting timers or sending analytics.
 class TestAnalyticsService extends AnalyticsService {
   TestAnalyticsService()
-    : super(disableNostrPublishing: true, productAnalyticsEnabled: false);
+    : super(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+        productAnalyticsEnabled: false,
+      );
 
   @override
   Future<void> initialize() async {}

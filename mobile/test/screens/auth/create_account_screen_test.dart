@@ -30,6 +30,7 @@ import 'package:openvine/widgets/auth_back_button.dart';
 
 import '../../helpers/autofill_context_mock.dart';
 import '../../helpers/test_provider_overrides.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
@@ -43,6 +44,9 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
 
 class _RecordingRegistrationAnalyticsService extends AnalyticsService {
+  _RecordingRegistrationAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   final entryPoints = <ProductAnalyticsV2RegistrationEntryPoint>[];
 
   @override
@@ -97,7 +101,10 @@ void main() {
           mockAuthService: mockAuthService,
           analyticsService:
               analyticsService ??
-              AnalyticsService(disableNostrPublishing: true),
+              AnalyticsService(
+                backgroundActivityManager: BackgroundActivityManager(),
+                disableNostrPublishing: true,
+              ),
         ),
         oauthClientProvider.overrideWithValue(mockOAuth),
         pendingVerificationServiceProvider.overrideWithValue(
@@ -372,6 +379,7 @@ void main() {
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
                       analyticsService: AnalyticsService(
+                        backgroundActivityManager: BackgroundActivityManager(),
                         disableNostrPublishing: true,
                       ),
                     ),
@@ -469,6 +477,7 @@ void main() {
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
                       analyticsService: AnalyticsService(
+                        backgroundActivityManager: BackgroundActivityManager(),
                         disableNostrPublishing: true,
                       ),
                     ),

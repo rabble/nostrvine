@@ -104,7 +104,7 @@ class UploadManager implements BackgroundAwareService {
     UploadCrashReporter? crashReporter,
     CrashReporter crashReporting = const SilentCrashReporter(),
     this.useBackgroundUpload = false,
-    BackgroundActivityManager? backgroundActivityManager,
+    required BackgroundActivityManager backgroundActivityManager,
     ThumbnailExtractor? thumbnailExtractor,
     TransientRenderCleaner? transientRenderCleaner,
   }) : _blossomService = blossomService,
@@ -119,11 +119,8 @@ class UploadManager implements BackgroundAwareService {
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
        ),
-       // Defaults to the process-global singleton; injectable so lifecycle
-       // tests can verify register/unregister with a fake (mirrors AuthService
-       // per #4743 B3).
-       _backgroundActivityManager =
-           backgroundActivityManager ?? BackgroundActivityManager() {
+
+       _backgroundActivityManager = backgroundActivityManager {
     _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(
       store: _store,

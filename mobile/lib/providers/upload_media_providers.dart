@@ -10,6 +10,7 @@ import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/background_activity_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -297,6 +298,7 @@ UploadManager uploadManager(Ref ref) {
   final currentPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final env = ref.read(currentEnvironmentProvider);
   final manager = UploadManager(
+    backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
     blossomService: blossomService,
     defaultBlossomUrl: env.blossomUrl,
     currentNostrPubkey: currentPubkey,

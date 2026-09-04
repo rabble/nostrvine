@@ -16,6 +16,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -62,6 +63,7 @@ void main() {
       // thumbnail leg proceeds to the upload step.
       final thumbnailPath = '${testDir.path}/thumb.jpg';
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossom,
         // Zero delays so the retry test does not sleep the default 2s backoff.
         retryConfig: const UploadRetryConfig(

@@ -211,7 +211,7 @@ final class UploadManagerProvider
   }
 }
 
-String _$uploadManagerHash() => r'4f30b7e592133c381c01fcf4d55e046d31c3e8c1';
+String _$uploadManagerHash() => r'1d584b18c1d9d332c93247c298832fe566003ac7';
 
 /// API service depends on auth service and the current environment
 /// (relay-manager URL is env-aware; watching keeps env switches applied)

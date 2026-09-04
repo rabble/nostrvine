@@ -17,6 +17,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
@@ -203,7 +204,10 @@ class _MockAuthService extends AuthService {
     required UserDataCleanupService cleanupService,
     required this.pubkey,
     required this.authenticated,
-  }) : super(userDataCleanupService: cleanupService);
+  }) : super(
+         userDataCleanupService: cleanupService,
+         backgroundActivityManager: BackgroundActivityManager(),
+       );
 
   final String? pubkey;
   final bool authenticated;

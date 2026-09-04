@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -77,6 +78,7 @@ void main() {
       _mockConnectivity('wifi');
 
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         retryConfig: const UploadRetryConfig(
           initialDelay: Duration.zero,
@@ -758,6 +760,7 @@ void main() {
         uploadManager.dispose();
 
         uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
           blossomService: mockBlossomService,
           retryConfig: const UploadRetryConfig(
             initialDelay: Duration.zero,
@@ -804,7 +807,10 @@ void main() {
         () => mockBlossomService.isBlossomEnabled(),
       ).thenAnswer((_) async => false);
 
-      uploadManager = UploadManager(blossomService: mockBlossomService);
+      uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
       await uploadManager.initialize();
       await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
     });

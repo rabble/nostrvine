@@ -52,6 +52,7 @@ void main() {
     ).thenAnswer((_) async => null);
 
     authService = AuthService(
+      backgroundActivityManager: BackgroundActivityManager(),
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
       flutterSecureStorage: mockFlutterSecureStorage,
@@ -265,6 +266,7 @@ void main() {
       ).thenAnswer((_) => Future<String?>.delayed(const Duration(hours: 1)));
 
       authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
         flutterSecureStorage: mockFlutterSecureStorage,
@@ -306,6 +308,7 @@ void main() {
       ).thenAnswer((_) => neverResolves.future);
 
       authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
         flutterSecureStorage: mockFlutterSecureStorage,

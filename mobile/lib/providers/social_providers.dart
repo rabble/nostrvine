@@ -13,6 +13,7 @@ import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/background_activity_provider.dart';
 import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -618,6 +619,7 @@ AnalyticsService analyticsService(Ref ref) {
     stagingOverride: const String.fromEnvironment('PRODUCT_ANALYTICS_RELEASE'),
   );
   final service = AnalyticsService(
+    backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,

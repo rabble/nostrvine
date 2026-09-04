@@ -45,6 +45,7 @@ import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockVideoPlaybackStatusCubit extends MockCubit<VideoPlaybackStatusState>
     implements VideoPlaybackStatusCubit {}
@@ -75,6 +76,9 @@ class _MockCommentsRepository extends Mock implements CommentsRepository {}
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 class _NoopAnalyticsService extends AnalyticsService {
+  _NoopAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   @override
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {

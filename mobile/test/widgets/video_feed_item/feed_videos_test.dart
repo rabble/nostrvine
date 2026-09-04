@@ -63,6 +63,7 @@ import 'package:reposts_repository/reposts_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -124,6 +125,9 @@ class _MockCommunityContentLabelRepository extends Mock
 class _MockContentFilterService extends Mock implements ContentFilterService {}
 
 class _NoopAnalyticsService extends AnalyticsService {
+  _NoopAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   @override
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {

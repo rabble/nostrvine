@@ -15,6 +15,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_setup.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
@@ -118,6 +119,7 @@ void main() {
     ).thenAnswer((_) async {});
 
     authService = AuthService(
+      backgroundActivityManager: BackgroundActivityManager(),
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
       flutterSecureStorage: mockSecureStorage,

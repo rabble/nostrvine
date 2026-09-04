@@ -26,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -89,6 +90,7 @@ void main() {
       await TestHelpers.initHiveHome();
 
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: blossomUploadService,
         currentNostrPubkey: _pubkeyB,
         scopeUploadsToCurrentUser: true,

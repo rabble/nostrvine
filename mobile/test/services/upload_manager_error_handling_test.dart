@@ -14,6 +14,7 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 import '../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -49,7 +50,10 @@ void main() {
     }
 
     mockBlossomService = _MockBlossomUploadService();
-    uploadManager = UploadManager(blossomService: mockBlossomService);
+    uploadManager = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
+      blossomService: mockBlossomService,
+    );
 
     mockConnectivity('wifi');
   });
@@ -776,6 +780,7 @@ void main() {
 
       // Zero delays so the test completes instantly.
       retryUploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: retryMockBlossom,
         retryConfig: const UploadRetryConfig(
           initialDelay: Duration.zero,

@@ -28,6 +28,7 @@ import 'package:uuid/uuid.dart';
 /// - GET /api/videos/{id}/stats - Retrieve engagement stats
 class AnalyticsService implements BackgroundAwareService {
   AnalyticsService({
+    required BackgroundActivityManager backgroundActivityManager,
     ViewEventPublisher? viewEventPublisher,
     PendingViewEventsDao? pendingViewEventsDao,
     Future<void> Function()? flushPendingViewEvents,
@@ -40,7 +41,8 @@ class AnalyticsService implements BackgroundAwareService {
     DateTime Function()? now,
     bool? productAnalyticsEnabled,
     @visibleForTesting bool? disableNostrPublishing,
-  }) : _viewEventPublisher = viewEventPublisher,
+  }) : _backgroundActivityManager = backgroundActivityManager,
+       _viewEventPublisher = viewEventPublisher,
        _pendingViewEventsDao = pendingViewEventsDao,
        _flushPendingViewEvents = flushPendingViewEvents,
        _productEventQueue = productEventQueue,
@@ -105,6 +107,8 @@ class AnalyticsService implements BackgroundAwareService {
   /// Whether this instance is in [BackgroundActivityManager]'s registry.
   /// Registration is best-effort (see [initialize]), so the flag records
   /// whether it actually succeeded rather than whether it was attempted.
+  final BackgroundActivityManager _backgroundActivityManager;
+
   bool _isBackgroundRegistered = false;
 
   /// Update the view event publisher (e.g. when Nostr client reconnects).
@@ -160,7 +164,7 @@ class AnalyticsService implements BackgroundAwareService {
 
       // Register with background activity manager
       try {
-        BackgroundActivityManager().registerService(this);
+        _backgroundActivityManager.registerService(this);
         _isBackgroundRegistered = true;
       } catch (e) {
         Log.warning(
@@ -847,7 +851,7 @@ class AnalyticsService implements BackgroundAwareService {
     // lifecycle callbacks forever — across provider rebuilds in the app, and
     // across every later suite in the merged test isolate (#6880).
     if (_isBackgroundRegistered) {
-      BackgroundActivityManager().unregisterService(this);
+      _backgroundActivityManager.unregisterService(this);
       _isBackgroundRegistered = false;
     }
     _isDisposed = true;

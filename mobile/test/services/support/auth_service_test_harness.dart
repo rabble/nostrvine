@@ -24,6 +24,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 
 import '../../test_setup.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 const _secureStorageChannel = MethodChannel(
   'plugins.it_nomads.com/flutter_secure_storage',
@@ -142,6 +143,7 @@ AuthService buildTestAuthService({
   KeycastOAuth? oauthClient,
 }) {
   return AuthService(
+    backgroundActivityManager: BackgroundActivityManager(),
     userDataCleanupService: cleanupService,
     keyStorage: SecureKeyStorage(
       securityConfig: const SecurityConfig(requireHardwareBacked: false),

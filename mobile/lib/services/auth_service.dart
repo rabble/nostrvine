@@ -120,7 +120,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     OAuthConfig? oauthConfig,
     PreFetchFollowingCallback? preFetchFollowing,
     AuthUrlLauncher? launchAuthUrl,
-    BackgroundActivityManager? backgroundActivityManager,
+    required BackgroundActivityManager backgroundActivityManager,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
     String? primaryRelayUrl,
@@ -137,10 +137,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _flutterSecureStorage = flutterSecureStorage,
        _preFetchFollowing = preFetchFollowing,
        _launchAuthUrl = launchAuthUrl,
-       // Defaults to the process-global singleton; injectable per #4743 (B3)
-       // so lifecycle tests can verify register/unregister with a fake.
-       _backgroundActivityManager =
-           backgroundActivityManager ?? BackgroundActivityManager(),
+       _backgroundActivityManager = backgroundActivityManager,
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
        _primaryRelayUrl = primaryRelayUrl ?? AppConstants.defaultRelayUrl,
        _relayDiscoveryService =

@@ -15,6 +15,7 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_version_provider.dart';
+import 'package:openvine/providers/background_activity_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -122,6 +123,7 @@ AuthService authService(Ref ref) {
   // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
   final authEnv = ref.read(currentEnvironmentProvider);
   final authService = AuthService(
+    backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
     oauthClient: oauthClient,

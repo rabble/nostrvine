@@ -18,6 +18,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/shared_channel_override.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
@@ -143,6 +144,7 @@ void main() {
         securityConfig: const SecurityConfig(requireHardwareBacked: false),
       );
       final authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,

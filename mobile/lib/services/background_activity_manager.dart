@@ -8,10 +8,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Background activity manager to control network and battery usage
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class BackgroundActivityManager {
-  static final BackgroundActivityManager _instance =
-      BackgroundActivityManager._internal();
-  factory BackgroundActivityManager() => _instance;
-  BackgroundActivityManager._internal();
+  BackgroundActivityManager();
 
   bool _isAppInForeground = true;
   bool _isInitialized = false;

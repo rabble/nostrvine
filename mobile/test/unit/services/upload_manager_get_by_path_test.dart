@@ -18,6 +18,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import '../../helpers/real_integration_test_helper.dart';
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_path_provider_platform.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -85,12 +86,18 @@ void main() {
     // so clearing after initialize leaves stale uploads visible through
     // pendingUploads. Open and clear with a throwaway manager first, then read
     // the empty box with the one under test so memory matches disk.
-    final boxOpener = UploadManager(blossomService: mockUploadService);
+    final boxOpener = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
+      blossomService: mockUploadService,
+    );
     await boxOpener.initialize();
     await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
     boxOpener.dispose();
 
-    uploadManager = UploadManager(blossomService: mockUploadService);
+    uploadManager = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
+      blossomService: mockUploadService,
+    );
     await uploadManager.initialize();
     expect(
       uploadManager.pendingUploads,

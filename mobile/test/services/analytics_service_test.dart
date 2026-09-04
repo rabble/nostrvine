@@ -33,17 +33,22 @@ void main() {
   });
   group('AnalyticsService', () {
     late AnalyticsService analyticsService;
+    late BackgroundActivityManager backgroundActivityManager;
     AppDatabase? database;
     String? tempDbPath;
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
+      backgroundActivityManager = BackgroundActivityManager();
+      analyticsService = AnalyticsService(
+        backgroundActivityManager: backgroundActivityManager,
+        disableNostrPublishing: true,
+      );
     });
 
     group('background activity registration', () {
       List<String> registeredServiceNames() =>
-          (BackgroundActivityManager().getStatus()['serviceNames']! as List)
+          (backgroundActivityManager.getStatus()['serviceNames']! as List)
               .cast<String>();
 
       test(
@@ -55,24 +60,24 @@ void main() {
         },
       );
 
-      test('dispose unregisters from the background activity manager', () async {
-        await analyticsService.initialize();
-        expect(registeredServiceNames(), contains('AnalyticsService'));
+      test(
+        'dispose unregisters from the background activity manager',
+        () async {
+          await analyticsService.initialize();
+          expect(registeredServiceNames(), contains('AnalyticsService'));
 
-        analyticsService.dispose();
+          analyticsService.dispose();
 
-        // The manager is a process-global singleton, so an instance left in
-        // its registry keeps receiving lifecycle callbacks for the life of the
-        // process — across provider rebuilds in the app, and across every
-        // later suite in the merged test isolate (#6880).
-        expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
-      });
+          // A service left registered keeps receiving lifecycle callbacks for
+          // as long as the manager lives, so dispose must remove it (#6880).
+          expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
+        },
+      );
 
       test('dispose is safe when initialize never ran', () {
         expect(analyticsService.dispose, returnsNormally);
-        // Scoped to this service rather than asserting the whole registry is
-        // empty: it is a process-global shared by every suite in the merged
-        // isolate, so `isEmpty` would fail here for another test's leak.
+        // This test owns its manager (#4743), so nothing else can register
+        // into it.
         expect(registeredServiceNames(), isNot(contains('AnalyticsService')));
       });
 
@@ -218,6 +223,7 @@ void main() {
         ).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
           currentUserPubkey: () =>
@@ -276,6 +282,7 @@ void main() {
         final queue = _MockProductEventQueue();
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: false,
           currentUserPubkey: () => 'a' * 64,
@@ -300,6 +307,7 @@ void main() {
       final queue = _MockProductEventQueue();
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         productEventQueue: queue,
         productAnalyticsEnabled: true,
         currentUserPubkey: () => null,
@@ -326,6 +334,7 @@ void main() {
       ).thenAnswer((_) async {});
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         productEventQueue: queue,
         productAnalyticsEnabled: true,
         currentUserPubkey: () => 'a' * 64,
@@ -366,6 +375,7 @@ void main() {
       ).thenAnswer((_) async {});
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         productEventQueue: queue,
         productAnalyticsEnabled: true,
         currentUserPubkey: () => null,
@@ -419,6 +429,7 @@ void main() {
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
         );
@@ -454,6 +465,7 @@ void main() {
         when(queue.clear).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
         );
@@ -478,6 +490,7 @@ void main() {
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
           currentUserPubkey: () => 'a' * 64,
@@ -510,6 +523,7 @@ void main() {
         final queue = _MockProductEventQueue();
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
           currentUserPubkey: () => 'a' * 64,
@@ -542,6 +556,7 @@ void main() {
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
           currentUserPubkey: () => 'a' * 64,
@@ -590,6 +605,7 @@ void main() {
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           productEventQueue: queue,
           productAnalyticsEnabled: true,
           currentUserPubkey: () => null,
@@ -632,6 +648,7 @@ void main() {
       var flushCount = 0;
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         pendingViewEventsDao: database!.pendingViewEventsDao,
         flushPendingViewEvents: () async {
           flushCount++;
@@ -694,6 +711,7 @@ void main() {
         final dao = _MockPendingViewEventsDao();
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           viewEventPublisher: publisher,
           pendingViewEventsDao: dao,
         );
@@ -741,6 +759,7 @@ void main() {
       database = AppDatabase.test(NativeDatabase(File(tempDbPath!)));
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         pendingViewEventsDao: database!.pendingViewEventsDao,
         flushPendingViewEvents: () async {},
       );
@@ -790,6 +809,7 @@ void main() {
         database = AppDatabase.test(NativeDatabase(File(tempDbPath!)));
         analyticsService.dispose();
         analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
           pendingViewEventsDao: database!.pendingViewEventsDao,
           flushPendingViewEvents: () async {},
         );
@@ -840,6 +860,7 @@ void main() {
       var flushCount = 0;
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         pendingViewEventsDao: database!.pendingViewEventsDao,
         flushPendingViewEvents: () async {
           flushCount++;
@@ -891,6 +912,7 @@ void main() {
       ).thenAnswer((_) async => true);
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         viewEventPublisher: publisher,
         pendingViewEventsDao: dao,
       );
@@ -935,6 +957,7 @@ void main() {
       final publisher = _MockViewEventPublisher();
       analyticsService.dispose();
       analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
         viewEventPublisher: publisher,
         pendingViewEventsDao: database!.pendingViewEventsDao,
         flushPendingViewEvents: () async => throw StateError('flush failed'),

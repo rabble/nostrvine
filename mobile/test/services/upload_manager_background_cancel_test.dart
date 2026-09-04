@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -58,6 +59,7 @@ void main() {
     ).thenAnswer((_) async {});
 
     uploadManager = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
       blossomService: mockBlossomService,
       crashReporter: mockCrashReporter,
       useBackgroundUpload: true,

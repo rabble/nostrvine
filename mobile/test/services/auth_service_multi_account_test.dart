@@ -16,6 +16,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_setup.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
@@ -147,6 +148,7 @@ void main() {
     when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
 
     authService = AuthService(
+      backgroundActivityManager: BackgroundActivityManager(),
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
       flutterSecureStorage: mockSecureStorage,
@@ -2128,6 +2130,7 @@ void main() {
       () async {
         await authService.dispose();
         authService = AuthService(
+          backgroundActivityManager: BackgroundActivityManager(),
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
           oauthClient: mockOAuthClient,
@@ -2235,6 +2238,7 @@ void main() {
       () async {
         var prefetchCalls = 0;
         authService = AuthService(
+          backgroundActivityManager: BackgroundActivityManager(),
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
           flutterSecureStorage: mockSecureStorage,
@@ -2266,6 +2270,7 @@ void main() {
     test('prefetches following before auth when cache is missing', () async {
       final prefetchedPubkeys = <String>[];
       authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
         flutterSecureStorage: mockSecureStorage,
@@ -2884,6 +2889,7 @@ void main() {
         });
 
         final localAuthService = AuthService(
+          backgroundActivityManager: BackgroundActivityManager(),
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
           flutterSecureStorage: mockSecureStorage,
@@ -2971,6 +2977,7 @@ void main() {
         });
 
         final localAuthService = AuthService(
+          backgroundActivityManager: BackgroundActivityManager(),
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
           flutterSecureStorage: mockSecureStorage,
