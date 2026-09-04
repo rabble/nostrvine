@@ -27,6 +27,7 @@ class _MockPeopleListsRepository extends Mock
 void main() {
   setUpAll(() {
     registerFallbackValue(defaultVideoSearchSort);
+    registerFallbackValue(SearchCancellationToken('test-search'));
   });
 
   group(SearchResultsPage, () {
@@ -78,6 +79,7 @@ void main() {
           sortBy: any(named: 'sortBy'),
           hasVideos: any(named: 'hasVideos'),
           boostPubkeys: any(named: 'boostPubkeys'),
+          cancellationToken: any(named: 'cancellationToken'),
         ),
       ).thenAnswer((_) => const Stream<ProgressiveSearchResult>.empty());
       when(

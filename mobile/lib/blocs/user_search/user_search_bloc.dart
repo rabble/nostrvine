@@ -12,12 +12,24 @@ import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'user_search_event.dart';
 part 'user_search_state.dart';
 
 /// Number of results per page
 const _pageSize = 50;
+int _nextSearchCorrelationId = 0;
+
+typedef UserSearchRunner =
+    Stream<ProgressiveSearchResult> Function({
+      required String query,
+      required int limit,
+      required String sortBy,
+      required bool hasVideos,
+      required Set<String>? boostPubkeys,
+      required SearchCancellationToken cancellationToken,
+    });
 
 Map<SearchSource, SearchSourceStatus> _pendingSourceOutcomes() {
   return {
@@ -35,9 +47,12 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     this.searchTimeout = userSearchOuterTimeout,
     this.excludedPubkey,
     FeedPerformanceTracker? feedTracker,
+    UserSearchRunner? searchRunner,
+    this.enableCancellation = false,
   }) : _profileRepository = profileRepository,
        _followRepository = followRepository,
        _feedTracker = feedTracker,
+       _searchRunner = searchRunner,
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
       _onQueryChanged,
@@ -54,6 +69,9 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   final FollowRepository? _followRepository;
 
   final FeedPerformanceTracker? _feedTracker;
+  final UserSearchRunner? _searchRunner;
+
+  final bool enableCancellation;
 
   /// Whether to filter results to users who have uploaded videos.
   final bool hasVideos;
@@ -118,15 +136,42 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     // repository (see ProfileRepository.searchUsersProgressive), keeping
     // ranking logic out of the BLoC.
     final followedPubkeys = _followRepository?.followingPubkeys.toSet();
+    final cancellationToken = SearchCancellationToken(
+      'user-search-${++_nextSearchCorrelationId}',
+    );
+    var reachedTerminalState = false;
+    Log.debug(
+      '${cancellationToken.correlationId} started; queryLength=${query.length}',
+      name: 'UserSearchBloc',
+      category: LogCategory.api,
+    );
 
     try {
-      final searchStream = _profileRepository.searchUsersProgressive(
-        query: query,
-        limit: _pageSize,
-        sortBy: profileSearchSortFollowers,
-        hasVideos: hasVideos,
-        boostPubkeys: followedPubkeys,
-      );
+      final searchStream =
+          _searchRunner?.call(
+            query: query,
+            limit: _pageSize,
+            sortBy: profileSearchSortFollowers,
+            hasVideos: hasVideos,
+            boostPubkeys: followedPubkeys,
+            cancellationToken: cancellationToken,
+          ) ??
+          (enableCancellation
+              ? _profileRepository.searchUsersProgressive(
+                  query: query,
+                  limit: _pageSize,
+                  sortBy: profileSearchSortFollowers,
+                  hasVideos: hasVideos,
+                  boostPubkeys: followedPubkeys,
+                  cancellationToken: cancellationToken,
+                )
+              : _profileRepository.searchUsersProgressive(
+                  query: query,
+                  limit: _pageSize,
+                  sortBy: profileSearchSortFollowers,
+                  hasVideos: hasVideos,
+                  boostPubkeys: followedPubkeys,
+                ));
 
       await emit.forEach<ProgressiveSearchResult>(
         searchTimeout == null
@@ -146,6 +191,12 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             if (entry.value is! SearchSourcePending &&
                 trackedSources.add(entry.key)) {
               _feedTracker?.trackSearchSource(entry.key, entry.value);
+              Log.debug(
+                '${cancellationToken.correlationId} source=${entry.key.name} '
+                'outcome=${entry.value.runtimeType}',
+                name: 'UserSearchBloc',
+                category: LogCategory.api,
+              );
             }
           }
           latestSourceOutcomes = result.sources;
@@ -168,6 +219,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       );
 
       _feedTracker?.markFeedDisplayed('user_search', state.results.length);
+      reachedTerminalState = true;
     } on TimeoutException {
       // Outer stream timed out. Promote every source still in pending
       // (or absent from the latest snapshot) to failed(timeout) so the
@@ -201,6 +253,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
           sourceOutcomes: updatedOutcomes,
         ),
       );
+      reachedTerminalState = true;
     } on Exception catch (e, stackTrace) {
       _feedTracker?.trackFeedError(
         'user_search',
@@ -213,6 +266,16 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       // — those land in the TimeoutException branch above.
       addError(Reportable(e, context: '_onQueryChanged'), stackTrace);
       emit(state.copyWith(status: UserSearchStatus.failure));
+      reachedTerminalState = true;
+    } finally {
+      cancellationToken.cancel();
+      Log.debug(
+        '${cancellationToken.correlationId} '
+        '${reachedTerminalState ? "completed" : "cancelled"}; '
+        'resultCount=${state.results.length}',
+        name: 'UserSearchBloc',
+        category: LogCategory.api,
+      );
     }
   }
 

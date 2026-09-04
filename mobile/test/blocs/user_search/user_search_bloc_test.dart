@@ -38,6 +38,21 @@ void main() {
       ).thenAnswer((_) async => 0);
     });
 
+    Stream<ProgressiveSearchResult> mockSearchRunner({
+      required String query,
+      required int limit,
+      required String sortBy,
+      required bool hasVideos,
+      required Set<String>? boostPubkeys,
+      required SearchCancellationToken cancellationToken,
+    }) => mockProfileRepository.searchUsersProgressive(
+      query: query,
+      limit: limit,
+      sortBy: sortBy,
+      hasVideos: hasVideos,
+      boostPubkeys: boostPubkeys,
+    );
+
     UserSearchBloc createBloc({
       Duration? searchTimeout = const Duration(seconds: 20),
       String? excludedPubkey,
@@ -45,6 +60,7 @@ void main() {
       profileRepository: mockProfileRepository,
       searchTimeout: searchTimeout,
       excludedPubkey: excludedPubkey,
+      searchRunner: mockSearchRunner,
     );
 
     UserProfile createTestProfile(String pubkey, String displayName) {
@@ -97,6 +113,42 @@ void main() {
       expect(bloc.state.hasMore, isFalse);
       expect(bloc.state.isLoadingMore, isFalse);
       bloc.close();
+    });
+
+    test('superseding a running query cancels its repository token', () async {
+      final tokens = <SearchCancellationToken>[];
+      final controllers = <StreamController<ProgressiveSearchResult>>[];
+      final bloc = UserSearchBloc(
+        profileRepository: mockProfileRepository,
+        searchRunner:
+            ({
+              required query,
+              required limit,
+              required sortBy,
+              required hasVideos,
+              required boostPubkeys,
+              required cancellationToken,
+            }) {
+              tokens.add(cancellationToken);
+              final controller = StreamController<ProgressiveSearchResult>();
+              controllers.add(controller);
+              return controller.stream;
+            },
+      );
+
+      bloc.add(const UserSearchQueryChanged('first'));
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      bloc.add(const UserSearchQueryChanged('second'));
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+
+      expect(tokens, hasLength(2));
+      expect(tokens.first.isCancelled, isTrue);
+      expect(tokens.last.isCancelled, isFalse);
+      await bloc.close();
+      expect(tokens.last.isCancelled, isTrue);
+      for (final controller in controllers) {
+        await controller.close();
+      }
     });
 
     blocTest<UserSearchBloc, UserSearchState>(
@@ -827,6 +879,7 @@ void main() {
           UserSearchBloc(
             profileRepository: mockProfileRepository,
             followRepository: followRepository,
+            searchRunner: mockSearchRunner,
           );
 
       blocTest<UserSearchBloc, UserSearchState>(
@@ -999,6 +1052,7 @@ void main() {
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
           hasVideos: true,
+          searchRunner: mockSearchRunner,
         ),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
         wait: debounceDuration,
@@ -1244,7 +1298,10 @@ void main() {
             (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
         },
-        build: () => UserSearchBloc(profileRepository: mockProfileRepository),
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+          searchRunner: mockSearchRunner,
+        ),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
         wait: debounceDuration,
         expect: () => [
@@ -1340,8 +1397,25 @@ void main() {
         mockTracker = _MockFeedPerformanceTracker();
       });
 
-      UserSearchBloc createBlocWithTracker() =>
-          UserSearchBloc(profileRepository: mockRepo, feedTracker: mockTracker);
+      UserSearchBloc createBlocWithTracker() => UserSearchBloc(
+        profileRepository: mockRepo,
+        feedTracker: mockTracker,
+        searchRunner:
+            ({
+              required query,
+              required limit,
+              required sortBy,
+              required hasVideos,
+              required boostPubkeys,
+              required cancellationToken,
+            }) => mockRepo.searchUsersProgressive(
+              query: query,
+              limit: limit,
+              sortBy: sortBy,
+              hasVideos: hasVideos,
+              boostPubkeys: boostPubkeys,
+            ),
+      );
 
       blocTest<UserSearchBloc, UserSearchState>(
         'calls startFeedLoad, markFirstVideosReceived, and '
