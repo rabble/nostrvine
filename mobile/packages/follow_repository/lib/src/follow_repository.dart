@@ -2812,11 +2812,10 @@ class FollowRepository {
   /// That is a publish-boundary property, not a durable one. The filtered
   /// event is what relays hold from then on, so the next [initialize] reads
   /// it back and [_processContactListEvent] replaces the local list with it
-  /// — a filtered list is a strict subset, so the catastrophic-reduction
-  /// guard correctly declines to merge. In practice the follow survives
-  /// locally for the rest of the session that blocked, and is gone after
-  /// the next launch. Whether it should be restorable at all is open with
-  /// T&S (#6903).
+  /// — the newest event is adopted wholesale, so the filtered list stands.
+  /// In practice the follow survives locally for the rest of the session
+  /// that blocked, and is gone after the next launch. Whether it should be
+  /// restorable at all is open with T&S (#6903).
   List<String> _publishableFollows() {
     final blocked = _blockedPubkeys?.call(_nostrClient.publicKey);
     if (blocked == null || blocked.isEmpty) return _followingPubkeys;

@@ -2981,9 +2981,9 @@ void main() {
           await repository.initialize();
           expect(repository.followingCount, 12);
 
-          // Remote event keeps only 3 of the original 12 — drastic but all
-          // entries are a subset of the local list (no new pubkeys), so this
-          // is a legitimate mass unfollow on another client.
+          // Remote event keeps only 3 of the original 12 — a mass unfollow
+          // on another client. Nothing about the size of the drop matters;
+          // the newer event is authoritative.
           final remoteEvent = Event(
             testCurrentUserPubkey,
             3,
@@ -2995,7 +2995,7 @@ void main() {
           realTimeStreamController.add(remoteEvent);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Should accept as-is (not merge) because no new pubkeys
+          // Adopted as-is: the newer event replaces the local list.
           expect(repository.followingCount, 3);
         },
       );
@@ -3110,7 +3110,7 @@ void main() {
           await repository.initialize();
           expect(repository.followingCount, 1);
 
-          // Remote event with only 1 follow — drastic but below threshold
+          // A one-entry list replaced by a different one-entry list.
           final remoteEvent = Event(
             testCurrentUserPubkey,
             3,
@@ -3124,7 +3124,7 @@ void main() {
           realTimeStreamController.add(remoteEvent);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Should replace (not merge) because local list is below threshold
+          // Replaced outright: the newer event is authoritative.
           expect(repository.followingCount, 1);
           expect(repository.followingPubkeys, equals([testTargetPubkey]));
         },
