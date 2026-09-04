@@ -488,28 +488,25 @@ void main() {
         },
       );
 
-      test(
-        'matches a public key by prefix, ranked after name prefixes',
-        () async {
-          await dao.upsertProfiles([
-            createProfile(name: 'unfed'),
-            createProfile(
-              pubkey: testPubkey2,
-              eventId: 'event2',
-              name: 'unrelated',
-            ),
-            createProfile(pubkey: 'a' * 64, eventId: 'event3', name: 'fedora'),
-          ]);
+      test('matches a public key only when the whole key is given', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'someone'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'other',
+          ),
+        ]);
 
-          final results = await dao.searchProfilesByIdentity('fed', limit: 10);
+        final whole = await dao.searchProfilesByIdentity(
+          testPubkey2.toUpperCase(),
+          limit: 10,
+        );
+        final prefix = await dao.searchProfilesByIdentity('fedc', limit: 10);
 
-          expect(results.map((profile) => profile.pubkey), [
-            'a' * 64,
-            testPubkey2,
-            testPubkey,
-          ]);
-        },
-      );
+        expect(whole.map((profile) => profile.pubkey), [testPubkey2]);
+        expect(prefix, isEmpty);
+      });
 
       test('does not match a hex substring inside a public key', () async {
         await dao.upsertProfiles([
