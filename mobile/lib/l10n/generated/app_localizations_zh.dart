@@ -5414,6 +5414,15 @@ class AppLocalizationsZh extends AppLocalizations {
       '没有人会看到这个对话。请改为给 Divine Moderation 发私信。';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
+  String get dmDeleteRefusedMessage => '无法对所有人删除。';
+
+  @override
+  String get dmDeleteRefusedDetails => '有些人可能仍然能看到这条消息。';
+
+  @override
   String get dmRetiredThreadClosedTitle => '此对话已关闭。';
 
   @override

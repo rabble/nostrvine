@@ -2145,6 +2145,8 @@
     "dmSendNoRecipientMessage": "この会話の相手がわかりませんでした。受信トレイから開き直してください。",
     "dmSendBlockedMessage": "メッセージを送れるのは公式 Divine アカウントのみです",
     "dmSendBlockedRetiredMessage": "このスレッドは誰も読んでいません。Divine Moderation にメッセージを送ってください。",
+    "dmDeleteRefusedMessage": "全員から削除できませんでした。",
+    "dmDeleteRefusedDetails": "一部の人には、このメッセージがまだ表示されている可能性があります。",
     "dmRetiredThreadClosedTitle": "このスレッドは終了しました。",
     "messageRequestModerationNoticeCannotBeRemoved": "このDivine Moderationのお知らせは削除できません。",
     "dmRetiredThreadClosedBody": "Divine Moderation は新しいアカウントに移りました。こちらはもう誰も読んでいません。",

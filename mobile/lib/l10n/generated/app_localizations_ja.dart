@@ -5446,6 +5446,15 @@ class AppLocalizationsJa extends AppLocalizations {
       'このスレッドは誰も読んでいません。Divine Moderation にメッセージを送ってください。';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
+  String get dmDeleteRefusedMessage => '全員から削除できませんでした。';
+
+  @override
+  String get dmDeleteRefusedDetails => '一部の人には、このメッセージがまだ表示されている可能性があります。';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'このスレッドは終了しました。';
 
   @override

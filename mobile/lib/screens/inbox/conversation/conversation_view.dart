@@ -317,28 +317,49 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         listener: _onSharedVideoSaveState,
         child: Scaffold(
           backgroundColor: context.vineColors.surface,
-          body: BlocListener<ConversationBloc, ConversationState>(
-            // A hard failure is shown on the bubble itself (tap → resend/delete),
-            // so this listener only handles the toasts that have no bubble —
-            // a policy block, a recipient-less send (#7335), and a partial
-            // (self-wrap) delivery — plus a screen-reader announcement (no
-            // toast) for hard failures, since the red in-bubble row is silent
-            // to assistive tech until focused.
-            // Also fire on a sentPartial → sentPartial transition whose rumor-id
-            // set changed: with concurrent() sends, a second overlapping partial
-            // keeps the same sendStatus and would otherwise never surface its
-            // recovery snackbar.
-            listenWhen: (previous, current) =>
-                (previous.sendStatus != current.sendStatus ||
-                    (current.sendStatus == SendStatus.sentPartial &&
-                        previous.lastPartialSend != current.lastPartialSend)) &&
-                (current.sendStatus == SendStatus.sentPartial ||
-                    current.sendStatus == SendStatus.blocked ||
-                    current.sendStatus == SendStatus.noRecipient ||
-                    current.sendStatus == SendStatus.resendFailed ||
-                    current.sendStatus == SendStatus.tooLong ||
-                    current.sendStatus == SendStatus.failed),
-            listener: _onSendOutcome,
+          body: MultiBlocListener(
+            listeners: [
+              BlocListener<ConversationBloc, ConversationState>(
+                // A hard failure is shown on the bubble itself (tap → resend/delete),
+                // so this listener only handles the toasts that have no bubble —
+                // a policy block, a recipient-less send (#7335), and a partial
+                // (self-wrap) delivery — plus a screen-reader announcement (no
+                // toast) for hard failures, since the red in-bubble row is silent
+                // to assistive tech until focused.
+                // Also fire on a sentPartial → sentPartial transition whose rumor-id
+                // set changed: with concurrent() sends, a second overlapping partial
+                // keeps the same sendStatus and would otherwise never surface its
+                // recovery snackbar.
+                listenWhen: (previous, current) =>
+                    (previous.sendStatus != current.sendStatus ||
+                        (current.sendStatus == SendStatus.sentPartial &&
+                            previous.lastPartialSend !=
+                                current.lastPartialSend)) &&
+                    (current.sendStatus == SendStatus.sentPartial ||
+                        current.sendStatus == SendStatus.blocked ||
+                        current.sendStatus == SendStatus.noRecipient ||
+                        current.sendStatus == SendStatus.resendFailed ||
+                        current.sendStatus == SendStatus.tooLong ||
+                        current.sendStatus == SendStatus.failed),
+                listener: _onSendOutcome,
+              ),
+              BlocListener<ConversationBloc, ConversationState>(
+                // A shrink can mean refusal or confirmed delivery. Announce
+                // only removed ids whose bubble is still visible as failed;
+                // confirmed retractions leave the thread silently.
+                listenWhen: (previous, current) {
+                  final removed = previous.awaitingRetraction.difference(
+                    current.awaitingRetraction,
+                  );
+                  return current.messages.any(
+                    (message) =>
+                        removed.contains(message.id) &&
+                        message.retractionStatus == DmRetractionStatus.failed,
+                  );
+                },
+                listener: _onRetractionRefused,
+              ),
+            ],
             child: Column(
               children: [
                 // Wrap the AppBar + messages region in a Listener so any
@@ -477,6 +498,14 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     }
   }
 
+  /// Briefly announces an unconfirmed "Delete for everyone" (#8201).
+  ///
+  /// The durable affordance is the warning beside the visible bubble; this
+  /// toast is only immediate feedback and dismisses on the standard timer.
+  void _onRetractionRefused(BuildContext context, ConversationState state) {
+    _showErrorToastAndAnnounce(context, context.l10n.dmDeleteRefusedMessage);
+  }
+
   void _onSendOutcome(BuildContext context, ConversationState state) {
     final l10n = context.l10n;
 
@@ -582,7 +611,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   void _showErrorToastAndAnnounce(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(message, error: true),
+      );
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -968,24 +999,28 @@ class _MessageList extends StatelessWidget {
     DmMessage message,
     bool isSent,
     DmDeliveryStatus deliveryStatus,
+    DmRetractionStatus retractionStatus,
   ) async {
     final videoTarget = resolveDmVideoTarget(
       content: StringUtils.sanitizeUtf16(message.content),
       sharedVideoRef: resolveOwnShareVideoRef(message),
     );
-    // Reaction picker hidden on failed-send own DMs — reacting to a
-    // message the recipient never received is meaningless (#4633 round 25).
+    // Reaction picker hidden on failed-send own DMs and messages whose
+    // retraction is unresolved — reacting to a message the recipient may not
+    // have is meaningless (#4633 round 25, #8201).
     // A failed bubble's resend/delete affordance lives on a single TAP
     // (see [_onFailedMessageTap]), not this long-press menu.
     final showPicker =
         reactionsEnabled &&
+        retractionStatus == DmRetractionStatus.none &&
         !(isSent && deliveryStatus == DmDeliveryStatus.failed);
     final result = await ReactionPickerOverlay.show(
       context: context,
       isSent: isSent,
       isVideoShare: videoTarget != null,
       showPicker: showPicker,
-      showDelete: retractionsEnabled,
+      showDelete:
+          retractionsEnabled && retractionStatus == DmRetractionStatus.none,
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -1023,6 +1058,27 @@ class _MessageList extends StatelessWidget {
           senderPubkey: message.senderPubkey,
         );
     }
+  }
+
+  Future<void> _onUnconfirmedRetractionTap(
+    BuildContext context,
+    DmMessage message,
+  ) async {
+    final bloc = context.read<ConversationBloc>();
+    final retry = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: DivineStickerName.alert,
+      title: message.retractionStatus == DmRetractionStatus.pending
+          ? context.l10n.dmDeletePendingLabel
+          : context.l10n.dmDeleteRefusedMessage,
+      subtitle: context.l10n.dmDeleteRefusedDetails,
+      primaryButtonText: context.l10n.authTryAgain,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      secondaryButtonText: context.l10n.commonCancel,
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+    if (retry != true || bloc.isClosed) return;
+    bloc.add(ConversationMessageDeletionRetryRequested(rumorId: message.id));
   }
 
   /// Tapping a failed own bubble opens a recovery bottom sheet offering a
@@ -1199,16 +1255,29 @@ class _MessageList extends StatelessWidget {
             isSent: isSent,
             isFirstInGroup: isFirstInGroup,
             isLastInGroup: isLastInGroup,
-            onLongPress: () =>
-                _onMessageLongPress(context, message, isSent, status),
+            onLongPress: () => _onMessageLongPress(
+              context,
+              message,
+              isSent,
+              status,
+              message.retractionStatus,
+            ),
             // A single tap on a failed own bubble opens the resend/stop-trying
             // recovery bottom sheet; every other bubble keeps its default tap.
             // Withheld in a blocked thread, where resending would publish to
             // the blocked account (see [sendRecoveryEnabled]).
+            //
+            // The retraction arm is gated on [retractionsEnabled] for the same
+            // reason `showDelete` is: on a retired moderation thread the send
+            // policy refuses every kind 5, so offering Try again would loop
+            // straight back to failed.
             onTap:
-                sendRecoveryEnabled &&
-                    isSent &&
-                    status == DmDeliveryStatus.failed
+                retractionsEnabled &&
+                    message.retractionStatus != DmRetractionStatus.none
+                ? () => _onUnconfirmedRetractionTap(context, message)
+                : sendRecoveryEnabled &&
+                      isSent &&
+                      status == DmDeliveryStatus.failed
                 ? () => _onFailedMessageTap(context, message)
                 : null,
             // Double-tap-to-like, hidden on failed own sends to mirror the
@@ -1216,10 +1285,12 @@ class _MessageList extends StatelessWidget {
             // never received is meaningless).
             onDoubleTap:
                 !reactionsEnabled ||
+                    message.retractionStatus != DmRetractionStatus.none ||
                     (isSent && status == DmDeliveryStatus.failed)
                 ? null
                 : () => _likeOnDoubleTap(context, message),
             deliveryStatus: status,
+            retractionStatus: message.retractionStatus,
             dmReplyContext: dmReplyContext,
             sharedVideoRef: ownShareVideoRef,
             quotedVideoRef: quotedVideoRef,

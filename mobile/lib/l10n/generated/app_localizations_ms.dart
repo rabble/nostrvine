@@ -5764,6 +5764,16 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tiada sesiapa membaca perbualan ini. Hantar mesej kepada Divine Moderation sebaliknya.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
+  String get dmDeleteRefusedMessage => 'Tidak dapat memadam untuk semua orang.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Sesetengah orang mungkin masih dapat melihat mesej ini.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Perbualan ini telah ditutup.';
 
   @override

@@ -2155,6 +2155,8 @@
     "dmSendNoRecipientMessage": "Nu am putut afla cu cine e această conversație. Deschide-o din nou din inbox.",
     "dmSendBlockedMessage": "Poți trimite mesaje doar conturilor oficiale Divine",
     "dmSendBlockedRetiredMessage": "Nimeni nu citește această conversație. Scrie către Divine Moderation.",
+    "dmDeleteRefusedMessage": "Ștergerea pentru toată lumea nu a reușit.",
+    "dmDeleteRefusedDetails": "Este posibil ca unele persoane să vadă în continuare acest mesaj.",
     "dmRetiredThreadClosedTitle": "Această conversație este închisă.",
     "messageRequestModerationNoticeCannotBeRemoved": "Această notificare de la Divine Moderation nu poate fi eliminată.",
     "dmRetiredThreadClosedBody": "Am mutat Divine Moderation pe un cont nou. Acesta nu mai este citit de nimeni.",

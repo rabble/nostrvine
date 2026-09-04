@@ -767,6 +767,12 @@ class DmRepository {
   final Map<String, Future<NIP17SendResult>> _recoveriesInFlight =
       <String, Future<NIP17SendResult>>{};
 
+  /// Message retractions have their own result type, but need the same
+  /// per-rumor join: a tap on Try again can race the background sweep.
+  final Map<String, Future<DmMessageDeletionOutcome>>
+  _messageDeletionRecoveriesInFlight =
+      <String, Future<DmMessageDeletionOutcome>>{};
+
   /// Runs [attempt] under the per-row in-flight key [key], or joins an
   /// attempt already running under the same key. Exceptions propagate to
   /// every joiner (both callers handle the documented [StateError] /
@@ -2120,7 +2126,7 @@ class DmRepository {
         if (tag.length < 2 || tag[0] != 'e') continue;
         await _applyMessageDeletion(
           rumorId: tag[1],
-          deleterPubkey: deletionEvent.pubkey,
+          deletion: deletionEvent,
         );
       }
     } on Object catch (e, stackTrace) {
@@ -2172,7 +2178,7 @@ class DmRepository {
         giftWrapId: giftWrapId,
       );
       Future<DmWrapOutcome?> asMessage() async =>
-          _applyMessageDeletion(rumorId: rumorId, deleterPubkey: rumor.pubkey);
+          _applyMessageDeletion(rumorId: rumorId, deletion: rumor);
 
       final resolved = tryReactionsFirst
           ? await asReaction() ?? await asMessage()
@@ -2199,7 +2205,7 @@ class DmRepository {
     return false;
   }
 
-  /// Soft-deletes the message [rumorId] on behalf of [deleterPubkey], the
+  /// Applies [deletion] to [rumorId], the
   /// single place the NIP-09 author rule is enforced for messages.
   ///
   /// Returns `null` when this account holds no message with that id, so the
@@ -2211,13 +2217,13 @@ class DmRepository {
   /// deleted, or refused for author mismatch. A mismatch will never become
   /// valid, so re-decrypting it forever buys nothing.
   ///
-  /// [deleterPubkey] must be the rumor's authenticated author. For a wrapped
+  /// The deletion author's pubkey must be authenticated. For a wrapped
   /// deletion that is `rumor.pubkey`, which `getRumorEvent` rebuilds from the
   /// signed seal — never the gift wrap's own pubkey, which is an ephemeral
   /// NIP-59 key carrying no identity.
   Future<DmWrapOutcome?> _applyMessageDeletion({
     required String rumorId,
-    required String deleterPubkey,
+    required Event deletion,
   }) async {
     final row = await _directMessagesDao.getMessageById(
       rumorId,
@@ -2226,13 +2232,32 @@ class DmRepository {
     if (row == null) return null;
 
     // NIP-09: only the original author may delete.
-    if (row.senderPubkey != deleterPubkey) {
+    if (row.senderPubkey != deletion.pubkey) {
       Log.debug(
         'Ignoring kind 5 for $rumorId: author mismatch '
-        '(event=${pubkeyForLogs(deleterPubkey)}, '
+        '(event=${pubkeyForLogs(deletion.pubkey)}, '
         'sender=${pubkeyForLogs(row.senderPubkey)})',
         category: LogCategory.system,
       );
+      return DmWrapOutcome.processed;
+    }
+
+    // A self-wrap proves that another device requested the retraction, not
+    // that every recipient accepted it. Start a local pending lifecycle only
+    // when this row has no deletion lifecycle of its own. An echo carries a
+    // distinct kind-5 from the local attempt, so overwriting an existing
+    // pending/blocked rumor would defeat replay identity; reopening `sent`
+    // would resurrect a confirmed-deleted bubble and re-publish it.
+    if (deletion.pubkey == _ownerPubkey) {
+      if (row.deletionPublishStatus != null) {
+        return DmWrapOutcome.processed;
+      }
+      await _directMessagesDao.markMessageDeletionPending(
+        rumorId,
+        deletionRumorJson: jsonEncode(deletion.toJson()),
+        ownerPubkey: _ownerPubkey,
+      );
+      await _refreshConversationPreview(row.conversationId);
       return DmWrapOutcome.processed;
     }
 
@@ -6283,6 +6308,7 @@ class DmRepository {
     unawaited(
       _driveMessageDeletion(
         rumorId: rumorId,
+        conversationId: row.conversationId,
         deletion: deletion,
         recipients: recipients,
       ),
@@ -6322,11 +6348,12 @@ class DmRepository {
   /// of reporting the message retracted (#8165).
   Future<DmMessageDeletionOutcome> _driveMessageDeletion({
     required String rumorId,
+    required String conversationId,
     required Event deletion,
     required List<String> recipients,
   }) async {
     try {
-      final result = await _fanOutDeletion(
+      final (:result, :anyRecipientAccepted) = await _fanOutDeletion(
         deletion: deletion,
         recipients: recipients,
       );
@@ -6343,12 +6370,32 @@ class DmRepository {
           return DmMessageDeletionOutcome.sent;
         case NIP17SendFailure(:final error, :final blocked):
           if (blocked) {
+            // Until every recipient confirms, keep the sender's recognizable
+            // bubble in the thread with failed-retraction styling. This is
+            // also honest for a mixed fan-out: the UI says only that deletion
+            // for everyone was not confirmed, not who still has it (#8201).
             await _directMessagesDao.markMessageDeletionBlocked(
               rumorId,
+              restoreToThread: true,
               ownerPubkey: _ownerPubkey,
             );
+            try {
+              await _refreshConversationPreview(conversationId);
+            } on Object catch (e, stackTrace) {
+              // The durable outcome is already blocked. A denormalized
+              // preview failure must not relabel it unconfirmed and invite
+              // retries.
+              Log.error(
+                'Failed to restore conversation preview after blocked '
+                'deletion of $rumorId: $e',
+                category: LogCategory.system,
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
             Log.info(
-              'Deletion of $rumorId refused by send policy; not retrying',
+              'Deletion of $rumorId refused by send policy; not retrying '
+              '(partiallyDelivered=$anyRecipientAccepted)',
               category: LogCategory.system,
             );
             return DmMessageDeletionOutcome.blocked;
@@ -6401,7 +6448,24 @@ class DmRepository {
   /// keyed on gift-wrap id, and NIP-59 gives every wrap a fresh ephemeral key
   /// and `created_at` — so what makes a replay safe is that re-applying a
   /// deletion is a no-op.
+  ///
+  /// When there is no stored rumor to replay — nulled by the settle helper
+  /// before #8232, or unreadable — it mints one, because that row has no
+  /// other route back: [deleteMessageForEveryone] returns early on
+  /// `is_deleted` and the sweep's worklist requires a non-null rumor (#8284).
   Future<DmMessageDeletionOutcome> retryMessageDeletion({
+    required String rumorId,
+  }) {
+    final existing = _messageDeletionRecoveriesInFlight[rumorId];
+    if (existing != null) return existing;
+    final future = _retryMessageDeletion(rumorId: rumorId);
+    _messageDeletionRecoveriesInFlight[rumorId] = future;
+    return future.whenComplete(
+      () => _messageDeletionRecoveriesInFlight.remove(rumorId),
+    );
+  }
+
+  Future<DmMessageDeletionOutcome> _retryMessageDeletion({
     required String rumorId,
   }) async {
     if (_messageService == null || _userPubkey.isEmpty) {
@@ -6412,28 +6476,65 @@ class DmRepository {
       rumorId,
       ownerPubkey: owner,
     );
-    final storedRumor = row?.deletionRumorJson;
-    if (row == null || storedRumor == null) {
-      return DmMessageDeletionOutcome.unavailable;
-    }
+    if (row == null) return DmMessageDeletionOutcome.unavailable;
     final recipients = await _deletionWrapRecipients(row.conversationId);
     if (recipients.isEmpty) return DmMessageDeletionOutcome.unavailable;
 
-    final Event deletion;
-    try {
-      deletion = Event.fromJson(
-        jsonDecode(storedRumor) as Map<String, dynamic>,
+    final storedRumor = row.deletionRumorJson;
+    Event? replayable;
+    if (storedRumor != null) {
+      try {
+        replayable = Event.fromJson(
+          jsonDecode(storedRumor) as Map<String, dynamic>,
+        );
+      } on Object catch (e) {
+        Log.warning(
+          'Stored deletion rumor for $rumorId is unreadable ($e) - '
+          'minting a fresh kind 5',
+          category: LogCategory.system,
+        );
+      }
+    }
+
+    // Nothing to replay. A row blocked before #8232 had its rumor nulled by
+    // the settle helper, and an unreadable payload dead-ends the same way, so
+    // minting a fresh kind 5 is the only route left for them.
+    // [deleteMessageForEveryone] cannot serve it: that path returns early on
+    // `is_deleted`, which every such row carries, and the sweep's worklist
+    // requires a non-null rumor. Without this the restored bubble offers a
+    // Try again that can never do anything (#8284).
+    final mintedFresh = replayable == null;
+    final deletion =
+        replayable ??
+        _messageService!.buildRumor(
+          recipientPubkey: recipients.first,
+          content: '',
+          eventKind: EventKind.eventDeletion,
+          additionalTags: [
+            ['e', rumorId],
+            ['k', row.messageKind.toString()],
+          ],
+        );
+
+    // A user-driven retry moves a blocked row back through pending so the
+    // bubble swaps its warning icon for progress. A freshly minted rumor must
+    // also cross the durability boundary before the wire, so the sweep can
+    // re-drive it. Sweep retries of an already-pending row need neither.
+    if (mintedFresh ||
+        row.deletionPublishStatus == DirectMessagesDao.deletionBlocked) {
+      await _directMessagesDao.markMessageDeletionPending(
+        rumorId,
+        deletionRumorJson: mintedFresh
+            ? jsonEncode(deletion.toJson())
+            : storedRumor!,
+        ownerPubkey: _ownerPubkey,
       );
-    } on Object catch (e) {
-      Log.warning(
-        'Stored deletion rumor for $rumorId is unreadable ($e)',
-        category: LogCategory.system,
-      );
-      return DmMessageDeletionOutcome.unavailable;
+      if (mintedFresh) _notifyRetryableWork();
     }
 
     return _driveMessageDeletion(
       rumorId: rumorId,
+      conversationId: row.conversationId,
       deletion: deletion,
       recipients: recipients,
     );
@@ -6467,8 +6568,11 @@ class DmRepository {
   /// Unlike `_fanOutRumor`, the aggregate failure does NOT carry
   /// `retryablePending`. Nothing can observe it here: this result is consumed
   /// only by [_driveMessageDeletion], which branches on `blocked` alone and
-  /// returns a [DmMessageDeletionOutcome], so the flag would be dead weight.
-  Future<NIP17SendResult> _fanOutDeletion({
+  /// returns a [DmMessageDeletionOutcome]. The record also reports whether
+  /// any post-downgrade recipient result was accepted, so the caller can
+  /// distinguish wholly refused from partly delivered fan-outs (#8201).
+  Future<({NIP17SendResult result, bool anyRecipientAccepted})>
+  _fanOutDeletion({
     required Event deletion,
     required List<String> recipients,
   }) async {
@@ -6529,19 +6633,28 @@ class DmRepository {
           failures.add(result);
       }
     }
+    final anyRecipientAccepted = lastSuccess != null;
     if (failures.isEmpty) {
-      return lastSuccess ??
-          const NIP17SendResult.failure('No deletion wrap recipients');
+      return (
+        result:
+            lastSuccess ??
+            const NIP17SendResult.failure('No deletion wrap recipients'),
+        anyRecipientAccepted: anyRecipientAccepted,
+      );
     }
     final summary = failures.map((f) => f.error).join('; ');
     // Terminal-refused only when every failure was a policy block — the
     // non-blocked members have all confirmed by then, and no retry can change
     // a refusal. A mixed outcome is still recorded blocked rather than sent,
-    // because `sent` is the claim that would be false.
-    if (failures.every((f) => f.blocked)) {
-      return NIP17SendResult.blocked(summary);
-    }
-    return NIP17SendResult.failure(summary);
+    // because `sent` is the claim that would be false. The accepted-recipient
+    // bit is retained for diagnostics; the UI deliberately presents both
+    // wholly refused and mixed outcomes as uncertain (#8201).
+    return (
+      result: failures.every((f) => f.blocked)
+          ? NIP17SendResult.blocked(summary)
+          : NIP17SendResult.failure(summary),
+      anyRecipientAccepted: anyRecipientAccepted,
+    );
   }
 
   /// Refreshes the denormalized preview columns of [conversationId] from its
@@ -8268,6 +8381,11 @@ class DmRepository {
       fileMetadata: fileMetadata,
       sharedVideoRef: DmSharedVideoCitation.parse(tags),
       sendBatchId: row.sendBatchId,
+      retractionStatus: switch (row.deletionPublishStatus) {
+        DirectMessagesDao.deletionPending => DmRetractionStatus.pending,
+        DirectMessagesDao.deletionBlocked => DmRetractionStatus.failed,
+        _ => DmRetractionStatus.none,
+      },
     );
   }
 

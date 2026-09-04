@@ -102,6 +102,7 @@ class ConversationState extends Equatable {
     this.status = ConversationStatus.initial,
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
+    this.awaitingRetraction = const <String>{},
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -113,6 +114,14 @@ class ConversationState extends Equatable {
   /// Replaced wholesale on every watch tick.
   final List<DmMessage> messages;
   final SendStatus sendStatus;
+
+  /// Rumor ids this screen is actively trying to retract (#8201).
+  ///
+  /// An id is removed when its visible bubble transitions to failed or leaves
+  /// the thread after confirmed delivery. The view checks the resulting bubble
+  /// state before announcing, so confirmed retractions stay quiet while
+  /// failures that predate the current screen also remain quiet.
+  final Set<String> awaitingRetraction;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -329,6 +338,7 @@ class ConversationState extends Equatable {
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
+    Set<String>? awaitingRetraction,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
     bool clearLastPartialSend = false,
@@ -337,6 +347,7 @@ class ConversationState extends Equatable {
       status: status ?? this.status,
       messages: messages ?? this.messages,
       sendStatus: sendStatus ?? this.sendStatus,
+      awaitingRetraction: awaitingRetraction ?? this.awaitingRetraction,
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -349,6 +360,7 @@ class ConversationState extends Equatable {
     status,
     messages,
     sendStatus,
+    awaitingRetraction,
     lastPartialSend,
     pendingOutgoing,
   ];

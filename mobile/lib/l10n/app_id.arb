@@ -2152,6 +2152,8 @@
     "dmSendNoRecipientMessage": "Kami tidak tahu percakapan ini dengan siapa. Buka lagi dari kotak masuk.",
     "dmSendBlockedMessage": "Kamu hanya bisa mengirim pesan ke akun resmi Divine",
     "dmSendBlockedRetiredMessage": "Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.",
+    "dmDeleteRefusedMessage": "Gagal menghapus untuk semua orang.",
+    "dmDeleteRefusedDetails": "Beberapa orang mungkin masih dapat melihat pesan ini.",
     "dmRetiredThreadClosedTitle": "Percakapan ini sudah ditutup.",
     "messageRequestModerationNoticeCannotBeRemoved": "Pemberitahuan Divine Moderation ini tidak dapat dihapus.",
     "dmRetiredThreadClosedBody": "Kami memindahkan Divine Moderation ke akun baru. Akun ini tidak dibaca lagi.",

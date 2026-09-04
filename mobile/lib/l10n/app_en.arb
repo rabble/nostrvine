@@ -3574,6 +3574,18 @@
   "@dmSendBlockedRetiredMessage": {
     "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
   },
+  "dmDeletePendingLabel": "Deleting for everyone",
+  "@dmDeletePendingLabel": {
+    "description": "Names an own message whose delete-for-everyone is still in flight. Used twice: as the screen-reader label on the bubble's spinner, and as the visible title of the sheet that offers to try again. Keep it short enough to read as a sheet title."
+  },
+  "dmDeleteRefusedMessage": "Couldn't delete for everyone.",
+  "@dmDeleteRefusedMessage": {
+    "description": "Temporary SnackBar text and failed-retraction sheet title shown when Delete for everyone was not confirmed for every recipient (#8201)."
+  },
+  "dmDeleteRefusedDetails": "Some people may still be able to see this message.",
+  "@dmDeleteRefusedDetails": {
+    "description": "Explanation in the action sheet opened from the warning icon beside an own message whose deletion was not confirmed for everyone."
+  },
   "dmRetiredThreadClosedTitle": "This conversation is closed.",
   "@dmRetiredThreadClosedTitle": {
     "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."

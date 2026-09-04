@@ -4,6 +4,18 @@
 import 'package:equatable/equatable.dart';
 import 'package:models/src/dm_shared_video_ref.dart';
 
+/// Delivery state of an own-message "Delete for everyone" request.
+enum DmRetractionStatus {
+  /// No deletion is in progress.
+  none,
+
+  /// Delivery has not yet been confirmed for every recipient.
+  pending,
+
+  /// Delivery was refused for at least one recipient.
+  failed,
+}
+
 /// A decrypted NIP-17 direct message.
 ///
 /// Represents a single message in a conversation after the three-layer
@@ -27,6 +39,7 @@ class DmMessage extends Equatable {
     this.fileMetadata,
     this.sharedVideoRef,
     this.sendBatchId,
+    this.retractionStatus = DmRetractionStatus.none,
   });
 
   /// The rumor event ID (kind 14 or 15).
@@ -79,6 +92,13 @@ class DmMessage extends Equatable {
   /// bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
+  /// Delivery state for this sender-authored message's retraction.
+  ///
+  /// Pending and failed retractions remain recognizable in the sender's
+  /// thread with subdued styling and a compact status affordance. Only a
+  /// retraction confirmed for every recipient disappears (#8201).
+  final DmRetractionStatus retractionStatus;
+
   /// Whether this is a file message (kind 15).
   bool get isFileMessage => messageKind == 15;
 
@@ -103,6 +123,7 @@ class DmMessage extends Equatable {
     fileMetadata,
     sharedVideoRef,
     sendBatchId,
+    retractionStatus,
   ];
 }
 

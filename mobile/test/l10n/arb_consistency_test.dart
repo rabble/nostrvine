@@ -428,6 +428,12 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Retraction-in-flight screen-reader label (#8201). Deferred to the next
+  // human translation pass rather than machine-translated: its translated
+  // siblings dmDeleteRefusedMessage / dmDeleteRefusedDetails each chose a
+  // per-locale verb for "delete for everyone", and this label has to match
+  // whichever one that locale picked.
+  'dmDeletePendingLabel',
   // Deletion prep-failure copy (feature #6126). Deferred to the l10n
   // translation-debt pass (#7632) rather than machine-translating a
   // safety-critical "nothing was deleted" message. Mirror the translated

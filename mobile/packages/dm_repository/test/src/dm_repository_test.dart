@@ -9353,6 +9353,70 @@ void main() {
         );
       });
 
+      test('maps a refused retraction to failed bubble state', () async {
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
+        when(
+          () => mockDirectMessagesDao.watchMessagesForConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value([
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+              deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+            ),
+          ]),
+        );
+
+        final messages = await createRepository().watchMessages(convId).first;
+
+        expect(
+          messages.single.retractionStatus,
+          DmRetractionStatus.failed,
+        );
+      });
+
+      test('maps an ordinary message to no retraction state', () async {
+        final convId = DmRepository.computeConversationId(
+          [_validPubkeyA, _validPubkeyB],
+        );
+        when(
+          () => mockDirectMessagesDao.watchMessagesForConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value([
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyB,
+              content: 'Hello!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          ]),
+        );
+
+        final messages = await createRepository().watchMessages(convId).first;
+
+        expect(messages.single.retractionStatus, DmRetractionStatus.none);
+      });
+
       test('maps $DirectMessageRow to $DmMessage', () async {
         final convId = DmRepository.computeConversationId(
           [_validPubkeyA, _validPubkeyB],
@@ -13889,6 +13953,7 @@ void main() {
         when(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: any(named: 'restoreToThread'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
@@ -13952,6 +14017,104 @@ void main() {
         },
       );
 
+      // #8201. A refused retraction leaves the row visible and un-deleted, so
+      // tapping Delete again must re-drive it. Nothing may special-case
+      // `deletion_blocked` into an early return — that would make the restored
+      // bubble's only affordance a no-op, which is the state this issue is
+      // about.
+      test('re-drives a message whose retraction was refused', () async {
+        final repo = createRepository();
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: conversationId,
+            senderPubkey: _validPubkeyA,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: false,
+            twinCollapsed: false,
+            deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+            deletionRumorJson: '{"kind":5}',
+          ),
+        );
+        when(
+          () => mockConversationsDao.getConversation(
+            conversationId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: conversationId,
+            participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            isRead: true,
+            currentUserHasSent: true,
+          ),
+        );
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+            rumorEventId: rumorEvent.id,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: recipientPubkey,
+          ),
+        );
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionPending(
+            _rumorEventId,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionSent(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            conversationId,
+            limit: 1,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repo.deleteMessageForEveryone(_rumorEventId);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeletionPending(
+            _rumorEventId,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+      });
+
       test('nudges the retry sweep after storing the deletion', () async {
         stubDeletableMessage();
         stubSendRumor(
@@ -13989,6 +14152,7 @@ void main() {
           verifyNever(
             () => mockDirectMessagesDao.markMessageDeletionBlocked(
               _rumorEventId,
+              restoreToThread: any(named: 'restoreToThread'),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           );
@@ -14012,6 +14176,7 @@ void main() {
           verify(
             () => mockDirectMessagesDao.markMessageDeletionBlocked(
               _rumorEventId,
+              restoreToThread: any(named: 'restoreToThread'),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
@@ -14021,6 +14186,59 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           );
+        },
+      );
+
+      test(
+        'restores the blocked message to the conversation preview',
+        () async {
+          stubDeletableMessage();
+          stubSendRumor((_, _) => const NIP17SendResult.blocked('blocked'));
+          var previewRead = 0;
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async {
+            previewRead++;
+            if (previewRead == 1) return [];
+            return [
+              DirectMessageRow(
+                id: _rumorEventId,
+                conversationId: conversationId,
+                senderPubkey: _validPubkeyA,
+                content: 'Hello',
+                createdAt: 1700000000,
+                giftWrapId: _giftWrapEventId,
+                messageKind: 14,
+                isDeleted: false,
+                twinCollapsed: false,
+                deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+              ),
+            ];
+          });
+
+          final repo = createRepository();
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: conversationId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
+            ),
+          ).called(1);
         },
       );
 
@@ -14118,9 +14336,48 @@ void main() {
         when(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: any(named: 'restoreToThread'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            conversationId,
+            limit: 1,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+              deletionRumorJson: rumorJson,
+              deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+            ),
+          ],
+        );
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+          ),
+        ).thenAnswer((_) async {});
       }
 
       test('replays the STORED rumor rather than minting a new one', () async {
@@ -14159,6 +14416,41 @@ void main() {
                 as Event;
         expect(captured.id, equals(_rumorEventId));
         expect(captured.kind, equals(EventKind.eventDeletion));
+      });
+
+      test('joins a manual retry racing the background sweep', () async {
+        final repo = createRepository();
+        stubPendingDeletion();
+        final publish = Completer<NIP17SendResult>();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final first = repo.retryMessageDeletion(rumorId: _rumorEventId);
+        final second = repo.retryMessageDeletion(rumorId: _rumorEventId);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).called(1);
+        publish.complete(
+          NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+
+        expect(await first, DmMessageDeletionOutcome.sent);
+        expect(await second, DmMessageDeletionOutcome.sent);
       });
 
       test('requires a relay OK before settling the row', () async {
@@ -14229,10 +14521,27 @@ void main() {
         );
 
         expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+        // Nothing was retracted anywhere, so the message comes back.
         verify(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: true,
             ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationsDao.upsertConversation(
+            id: conversationId,
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyA,
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: true,
           ),
         ).called(1);
         verifyNever(
@@ -14243,9 +14552,157 @@ void main() {
         );
       });
 
-      test('reports unavailable when no rumor was stored', () async {
+      test(
+        'keeps a partially delivered retraction visible as failed',
+        () async {
+          // #8201. `_fanOutDeletion` records blocked whenever
+          // every FAILED recipient was blocked, so a group where one member
+          // accepted the kind-5 and another refused lands here. The retraction
+          // happened for one member but not everyone, so the sender keeps a
+          // recognizable failed-retraction bubble without claiming who has it.
+          final repo = createRepository();
+          stubPendingDeletion();
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys:
+                  '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
+              isGroup: true,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyB,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _validPubkeyC,
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
+
+          final outcome = await repo.retryMessageDeletion(
+            rumorId: _rumorEventId,
+          );
+
+          expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+          verify(
+            () => mockDirectMessagesDao.markMessageDeletionBlocked(
+              _rumorEventId,
+              restoreToThread: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: conversationId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'mints a fresh kind 5 when no rumor was stored, so a row blocked '
+        'before #8232 is still recoverable (#8284)',
+        () async {
+          // Every deletion_blocked row on a shipped build has a NULL rumor:
+          // #8232 merged after the newest release. Returning unavailable here
+          // left the restored bubble offering a Try again that did nothing,
+          // and no other route reaches these rows — deleteMessageForEveryone
+          // returns early on is_deleted, and the sweep's worklist requires a
+          // non-null rumor.
+          final repo = createRepository();
+          stubPendingDeletion(rumorJson: null);
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+
+          final outcome = await repo.retryMessageDeletion(
+            rumorId: _rumorEventId,
+          );
+
+          expect(outcome, equals(DmMessageDeletionOutcome.sent));
+          final captured =
+              verify(
+                    () => mockMessageService.sendRumor(
+                      rumorEvent: captureAny(named: 'rumorEvent'),
+                      recipientPubkey: any(named: 'recipientPubkey'),
+                      awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                    ),
+                  ).captured.single
+                  as Event;
+          expect(captured.kind, equals(EventKind.eventDeletion));
+          expect(
+            captured.tags.any((t) => t.first == 'e' && t[1] == _rumorEventId),
+            isTrue,
+            reason: 'the minted kind 5 must name the message it retracts',
+          );
+
+          // Stored before the wire, so the sweep can re-drive it if this
+          // attempt goes unconfirmed.
+          verify(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('reports unavailable when the row is gone entirely', () async {
         final repo = createRepository();
-        stubPendingDeletion(rumorJson: null);
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
 
         final outcome = await repo.retryMessageDeletion(
           rumorId: _rumorEventId,
@@ -16217,6 +16674,154 @@ void main() {
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'an own-device kind 5 keeps the message pending and replayable',
+        () async {
+          final controller = StreamController<Event>();
+          stubSubscription(controller);
+          final deletion = createDeletionEvent(
+            authorPubkey: _validPubkeyA,
+            deletedRumorIds: [_rumorEventId],
+          );
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              twinCollapsed: false,
+            ),
+          );
+          when(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              _rumorEventId,
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              convId,
+              limit: 1,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockConversationsDao.getConversation(
+              convId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+          );
+          await repository.startListening();
+          controller.add(deletion);
+          await Future<void>.delayed(Duration.zero);
+
+          final captured =
+              verify(
+                    () => mockDirectMessagesDao.markMessageDeletionPending(
+                      _rumorEventId,
+                      deletionRumorJson: captureAny(
+                        named: 'deletionRumorJson',
+                      ),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(
+            Event.fromJson(jsonDecode(captured) as Map<String, dynamic>).id,
+            deletion.id,
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'an own-device kind 5 does not reopen an existing deletion lifecycle',
+        () async {
+          final controller = StreamController<Event>();
+          stubSubscription(controller);
+          const sentId =
+              '111111111111111111111111111111111111111111111111'
+              '1111111111111111';
+          const blockedId =
+              '222222222222222222222222222222222222222222222222'
+              '2222222222222222';
+          final deletion = createDeletionEvent(
+            authorPubkey: _validPubkeyA,
+            deletedRumorIds: const [sentId, blockedId],
+          );
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.positionalArguments.single as String;
+            return DirectMessageRow(
+              id: id,
+              conversationId: convId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: true,
+              twinCollapsed: false,
+              deletionPublishStatus: id == sentId
+                  ? 'deletion_sent'
+                  : DirectMessagesDao.deletionBlocked,
+            );
+          });
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+          );
+          await repository.startListening();
+          controller.add(deletion);
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeletionPending(
+              any(),
+              deletionRumorJson: any(named: 'deletionRumorJson'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('ignores kind 5 from non-author (NIP-09 mismatch)', () async {
         final controller = StreamController<Event>();

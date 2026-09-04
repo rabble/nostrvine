@@ -85,6 +85,7 @@ class MessageBubble extends StatelessWidget {
     this.onDoubleTap,
     this.onTap,
     this.deliveryStatus = DmDeliveryStatus.delivered,
+    this.retractionStatus = DmRetractionStatus.none,
     this.dmReplyContext,
     this.sharedVideoRef,
     this.quotedVideoRef,
@@ -126,6 +127,9 @@ class MessageBubble extends StatelessWidget {
   /// fixtures and call sites that don't track outgoing-queue state work
   /// without churn.
   final DmDeliveryStatus deliveryStatus;
+
+  /// State of this own message's delete-for-everyone delivery.
+  final DmRetractionStatus retractionStatus;
 
   /// Context for the in-player reply/reaction bar, used when this bubble's
   /// shared reel is tapped open. Null in non-DM call sites / tests.
@@ -245,6 +249,8 @@ class MessageBubble extends StatelessWidget {
     // win the gesture arena over the card's dominant surface and swallow that
     // sole resend affordance, so their taps are disabled on a failed own send.
     final isFailedOwnSend = isSent && deliveryStatus == DmDeliveryStatus.failed;
+    final hasUnconfirmedRetraction =
+        isSent && retractionStatus != DmRetractionStatus.none;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -261,13 +267,18 @@ class MessageBubble extends StatelessWidget {
           hint: isSent
               ? context.l10n.dmMessageBubbleSentHint
               : context.l10n.dmMessageBubbleReceivedHint,
-          // The failed-own-bubble tap affordance (resend/delete) is
-          // otherwise invisible to assistive tech — onTap is only wired
-          // for that case, so key the button semantics off it.
+          // The tap affordance is otherwise invisible to assistive tech, so
+          // key the button semantics off it. Two different sheets hang off
+          // this one callback: any unconfirmed retraction — pending or
+          // failed — opens the retraction sheet, whose action is Try again,
+          // while every other wired case opens resend/delete. The hint has
+          // to say which.
           button: onTap != null,
-          onTapHint: onTap != null
-              ? context.l10n.dmMessageBubbleFailedTapHint
-              : null,
+          onTapHint: onTap == null
+              ? null
+              : retractionStatus != DmRetractionStatus.none
+              ? context.l10n.authTryAgain
+              : context.l10n.dmMessageBubbleFailedTapHint,
           onLongPressHint: onLongPress != null
               ? context.l10n.dmMessageBubbleLongPressHint
               : null,
@@ -282,113 +293,142 @@ class MessageBubble extends StatelessWidget {
             // fires once that window elapses (~300 ms delay to tap-to-open).
             // Text bubbles keep double-tap-to-like.
             onDoubleTap: hasVideo || hasQuotedVideo ? null : onDoubleTap,
-            child: Container(
-              // Video bubbles cap their max width at the thumbnail's
-              // own width (248) plus the symmetric 16 px padding so the
-              // bubble doesn't grow wider than the card when a personal
-              // message wraps below it. Text-only bubbles stay at the
-              // chat-typical 75 % of screen width.
-              constraints: BoxConstraints(
-                maxWidth: hasVideo
-                    ? _videoCardWidth + 32
-                    : MediaQuery.sizeOf(context).width * 0.75,
-              ),
-              // Both text and video bubbles use 16 px horizontal / 12 px
-              // vertical padding (Figma spacing/16 + spacing/12) so the
-              // thumbnail and text sit in the same frame rhythm.
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                // Shared-video bubbles sit on a neutral frame in both
-                // directions so the thumbnail reads as a media card rather
-                // than a bright accent pill — matching the Figma
-                // `part/video thumbnail` share bubble.
-                // Text bubbles keep the sent/received accent split.
-                color: hasVideo
-                    ? context.vineColors.mediaCard
-                    : isSent
-                    ? VineTheme.primaryAccessible
-                    : context.vineColors.surfaceContainer,
-                borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
-              ),
-              child: Column(
-                crossAxisAlignment: isSent
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  if (effectiveIsFirstInGroup)
-                    Padding(
-                      // Video messages need a bigger breath between the
-                      // date header and the thumbnail; text messages
-                      // keep the tighter 4 px rhythm.
-                      padding: EdgeInsets.only(bottom: hasVideo ? 12 : 4),
-                      child: Text(
-                        timestamp,
-                        style: VineTheme.labelSmallFont(
-                          color: context.vineColors.onSurfaceMuted,
-                        ),
-                      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Flexible(
+                  // Deliberately NOT dimmed for an unconfirmed retraction.
+                  // `Opacity` here composites the text and its own fill toward
+                  // the page together, so the ratio between them collapses:
+                  // white on primaryAccessible measures 3.17:1 at full
+                  // opacity and 1.94:1 at 0.55 over the light message list.
+                  // Any dimming makes an already-marginal pair worse, so the
+                  // state is carried by [_RetractionIndicator] and its
+                  // semantics instead of by contrast.
+                  child: Container(
+                    // Video bubbles cap their max width at the thumbnail's
+                    // own width (248) plus the symmetric 16 px padding so the
+                    // bubble doesn't grow wider than the card when a personal
+                    // message wraps below it. Text-only bubbles stay at the
+                    // chat-typical 75 % of screen width.
+                    constraints: BoxConstraints(
+                      maxWidth: hasVideo
+                          ? _videoCardWidth + 32
+                          : MediaQuery.sizeOf(context).width * 0.75,
                     ),
-                  if (videoStableId != null) ...[
-                    _VideoLinkPreview(
-                      videoStableId: videoStableId,
-                      authorPubkey: videoAuthorPubkey,
-                      videoKind: videoKind,
-                      isSent: isSent,
-                      enableTap: !isFailedOwnSend,
-                      dmReplyContext: dmReplyContext,
+                    // Both text and video bubbles use 16 px horizontal / 12 px
+                    // vertical padding (Figma spacing/16 + spacing/12) so the
+                    // thumbnail and text sit in the same frame rhythm.
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    // Optional personal note (text before the URL minus
-                    // the quoted title) sits directly under the
-                    // thumbnail, inside the same bubble pill.
-                    if (personalMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _MessageText(
-                          message: personalMessage,
-                          isSent: isSent,
-                          dmReplyContext: dmReplyContext,
-                        ),
-                      ),
-                    if (textAfterUrl != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _MessageText(
-                          message: textAfterUrl,
-                          isSent: isSent,
-                          dmReplyContext: dmReplyContext,
-                        ),
-                      ),
-                  ] else ...[
-                    if (hasQuotedVideo)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          bottom: quotedReplyText.isEmpty ? 0 : 6,
-                        ),
-                        child: _QuotedVideoPreview(
-                          quotedVideoRef: quotedVideoRef!,
-                          isSent: isSent,
-                          enableTap: !isFailedOwnSend,
-                          dmReplyContext: dmReplyContext,
-                        ),
-                      ),
-                    if (quotedReplyText.isNotEmpty)
-                      _MessageText(
-                        message: quotedReplyText,
-                        isSent: isSent,
-                        dmReplyContext: dmReplyContext,
-                      ),
-                  ],
-                  // Sends are optimistic: pending / delivered / self-wrap
-                  // states show nothing — the message just looks sent. Only a
-                  // hard failure surfaces, as an in-bubble "Not delivered" row
-                  // (the whole bubble is tappable to resend or delete).
-                  if (isFailedOwnSend)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 4),
-                      child: _NotDeliveredIndicator(),
+                    decoration: BoxDecoration(
+                      // Shared-video bubbles sit on a neutral frame in both
+                      // directions so the thumbnail reads as a media card rather
+                      // than a bright accent pill — matching the Figma
+                      // `part/video thumbnail` share bubble.
+                      // Text bubbles keep the sent/received accent split.
+                      color: hasVideo
+                          ? context.vineColors.mediaCard
+                          : isSent
+                          ? VineTheme.primaryAccessible
+                          : context.vineColors.surfaceContainer,
+                      borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
                     ),
-                ],
-              ),
+                    child: Column(
+                      crossAxisAlignment: isSent
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        if (effectiveIsFirstInGroup)
+                          Padding(
+                            // Video messages need a bigger breath between the
+                            // date header and the thumbnail; text messages
+                            // keep the tighter 4 px rhythm.
+                            padding: EdgeInsets.only(
+                              bottom: hasVideo ? 12 : 4,
+                            ),
+                            child: Text(
+                              timestamp,
+                              style: VineTheme.labelSmallFont(
+                                color: context.vineColors.onSurfaceMuted,
+                              ),
+                            ),
+                          ),
+                        if (videoStableId != null) ...[
+                          _VideoLinkPreview(
+                            videoStableId: videoStableId,
+                            authorPubkey: videoAuthorPubkey,
+                            videoKind: videoKind,
+                            isSent: isSent,
+                            enableTap: !isFailedOwnSend,
+                            dmReplyContext: dmReplyContext,
+                          ),
+                          // Optional personal note (text before the URL minus
+                          // the quoted title) sits directly under the
+                          // thumbnail, inside the same bubble pill.
+                          if (personalMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _MessageText(
+                                message: personalMessage,
+                                isSent: isSent,
+                                dmReplyContext: dmReplyContext,
+                              ),
+                            ),
+                          if (textAfterUrl != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: _MessageText(
+                                message: textAfterUrl,
+                                isSent: isSent,
+                                dmReplyContext: dmReplyContext,
+                              ),
+                            ),
+                        ] else ...[
+                          if (hasQuotedVideo)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: quotedReplyText.isEmpty ? 0 : 6,
+                              ),
+                              child: _QuotedVideoPreview(
+                                quotedVideoRef: quotedVideoRef!,
+                                isSent: isSent,
+                                enableTap: !isFailedOwnSend,
+                                dmReplyContext: dmReplyContext,
+                              ),
+                            ),
+                          if (quotedReplyText.isNotEmpty)
+                            _MessageText(
+                              message: quotedReplyText,
+                              isSent: isSent,
+                              dmReplyContext: dmReplyContext,
+                            ),
+                        ],
+                        // Sends are optimistic: pending / delivered / self-wrap
+                        // states show nothing — the message just looks sent. Only a
+                        // hard failure surfaces, as an in-bubble "Not delivered" row
+                        // (the whole bubble is tappable to resend or delete).
+                        if (isFailedOwnSend)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: _NotDeliveredIndicator(),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (hasUnconfirmedRetraction)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      start: 6,
+                      bottom: 8,
+                    ),
+                    child: _RetractionIndicator(status: retractionStatus),
+                  ),
+              ],
             ),
           ),
         ),
@@ -406,6 +446,37 @@ class MessageBubble extends StatelessWidget {
       bottomLeft: Radius.circular(isSent ? 16 : 4),
       bottomRight: Radius.circular(isSent ? 4 : 16),
     );
+  }
+}
+
+/// Compact status beside an own bubble whose retraction is not confirmed.
+class _RetractionIndicator extends StatelessWidget {
+  const _RetractionIndicator({required this.status});
+
+  final DmRetractionStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      DmRetractionStatus.none => const SizedBox.shrink(),
+      // The spinner is the only visual signal that a retraction is in flight,
+      // so without a label the state is conveyed to sighted users alone.
+      DmRetractionStatus.pending => SizedBox.square(
+        dimension: 16,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          semanticsLabel: context.l10n.dmDeletePendingLabel,
+        ),
+      ),
+      DmRetractionStatus.failed => Semantics(
+        label: context.l10n.dmDeleteRefusedMessage,
+        child: const DivineIcon(
+          icon: DivineIconName.warningCircle,
+          size: 18,
+          color: VineTheme.error,
+        ),
+      ),
+    };
   }
 }
 
@@ -1228,10 +1299,7 @@ class _NotDeliveredIndicator extends StatelessWidget {
             size: 14,
             color: VineTheme.error,
           ),
-          Text(
-            label,
-            style: VineTheme.labelSmallFont(color: VineTheme.error),
-          ),
+          Text(label, style: VineTheme.labelSmallFont(color: VineTheme.error)),
         ],
       ),
     );

@@ -2155,6 +2155,8 @@
     "dmSendNoRecipientMessage": "Wir konnten nicht erkennen, mit wem diese Unterhaltung ist. Öffne sie noch mal aus deinem Postfach.",
     "dmSendBlockedMessage": "Du kannst nur offiziellen Divine-Konten schreiben",
     "dmSendBlockedRetiredMessage": "Diese Unterhaltung liest niemand. Schreib stattdessen an Divine Moderation.",
+    "dmDeleteRefusedMessage": "Für alle löschen hat nicht geklappt.",
+    "dmDeleteRefusedDetails": "Einige Personen können diese Nachricht möglicherweise noch sehen.",
     "dmRetiredThreadClosedTitle": "Diese Unterhaltung ist geschlossen.",
     "messageRequestModerationNoticeCannotBeRemoved": "Dieser Hinweis von Divine Moderation kann nicht entfernt werden.",
     "dmRetiredThreadClosedBody": "Wir haben Divine Moderation auf ein neues Konto umgezogen. Dieses hier liest niemand mehr.",

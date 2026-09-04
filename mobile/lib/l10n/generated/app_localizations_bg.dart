@@ -5814,6 +5814,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Никой не чете този разговор. Вместо това пишете на Divine Moderation.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
+  String get dmDeleteRefusedMessage => 'Изтриването за всички не се получи.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Някои хора все още може да виждат това съобщение.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Този разговор е затворен.';
 
   @override

@@ -5796,6 +5796,16 @@ class AppLocalizationsFil extends AppLocalizations {
       'Walang nagbabasa ng usapang ito. Mag-message na lang sa Divine Moderation.';
 
   @override
+  String get dmDeletePendingLabel => 'Deleting for everyone';
+
+  @override
+  String get dmDeleteRefusedMessage => 'Hindi na-delete para sa lahat.';
+
+  @override
+  String get dmDeleteRefusedDetails =>
+      'Maaaring nakikita pa rin ng ilang tao ang mensaheng ito.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Sarado na ang usapang ito.';
 
   @override

@@ -261,6 +261,234 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      // #8201. The bubble remains visible throughout the attempt, changing
+      // from ordinary to pending to failed.
+      group('refused retraction', () {
+        late StreamController<List<DmMessage>> thread;
+
+        setUp(() {
+          thread = StreamController<List<DmMessage>>();
+          addTearDown(() async {
+            if (!thread.isClosed) await thread.close();
+          });
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => thread.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.retryMessageDeletion(rumorId: messageId),
+          ).thenAnswer((_) async => DmMessageDeletionOutcome.blocked);
+        });
+
+        Future<void> tick(List<DmMessage> next) async {
+          thread.add(next);
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        Future<void> tapDelete(ConversationBloc bloc) async {
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await untilCalled(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          );
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        blocTest<ConversationBloc, ConversationState>(
+          'reports a refusal when a pending bubble becomes failed',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([testMessage]);
+            await tapDelete(bloc);
+            await tick([_pending(testMessage)]);
+            await tick([_blocked(testMessage)]);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'releases a retraction after the confirmed bubble leaves the thread',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([testMessage]);
+            await tapDelete(bloc);
+            await tick([_pending(testMessage)]);
+            await tick(const []);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        // Retrying a refused delete: the bubble is ALREADY on screen carrying
+        // failed retraction state from the previous attempt, and arming happens at
+        // tap time, before the repository hides anything. Matching presence
+        // alone would fire the toast for an attempt that has not been made
+        // and consume the id — so the real outcome then passes in silence.
+        blocTest<ConversationBloc, ConversationState>(
+          'stays quiet until a retried refusal actually comes back',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            // Opening on an already-refused bubble, as after a first refusal.
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await untilCalled(
+              () => mockDmRepository.retryMessageDeletion(
+                rumorId: messageId,
+              ),
+            );
+            // A tick arrives while the row is still visible and still stale-
+            // blocked — this is the window the bug fired in.
+            await tick([_blocked(testMessage)]);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, contains(messageId));
+          },
+        );
+
+        // ...and once the retry genuinely resolves, the toast still fires.
+        blocTest<ConversationBloc, ConversationState>(
+          'reports the retried refusal once the row has actually cycled',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await untilCalled(
+              () => mockDmRepository.retryMessageDeletion(
+                rumorId: messageId,
+              ),
+            );
+            await tick([_pending(testMessage)]);
+            await tick([_blocked(testMessage)]);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        // `unavailable` moves no row, so no bubble transition follows and the
+        // tick-driven release never runs. Leaving the id armed makes the tap
+        // silent AND permanent: releasing it here is the shrink the view
+        // listens for to toast.
+        blocTest<ConversationBloc, ConversationState>(
+          'releases the armed id when the retry could not be driven at all',
+          build: () {
+            when(
+              () => mockDmRepository.retryMessageDeletion(rumorId: messageId),
+            ).thenAnswer((_) async => DmMessageDeletionOutcome.unavailable);
+            return buildBloc();
+          },
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await untilCalled(
+              () => mockDmRepository.retryMessageDeletion(
+                rumorId: messageId,
+              ),
+            );
+            // Deliberately NO further tick: the point is that nothing else
+            // arrives to clear it.
+            await Future<void>.delayed(Duration.zero);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'releases the armed id and reports when the retry throws',
+          build: () {
+            when(
+              () => mockDmRepository.retryMessageDeletion(rumorId: messageId),
+            ).thenThrow(StateError('signer unavailable'));
+            return buildBloc();
+          },
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+            bloc.add(
+              const ConversationMessageDeletionRetryRequested(
+                rumorId: messageId,
+              ),
+            );
+            await Future<void>.delayed(Duration.zero);
+          },
+          errors: () => [isA<StateError>()],
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        // The flag is the gate: a row that returns to the thread without it
+        // was not refused, whatever un-hid it. The disappearance still
+        // completes this screen's tracking, so the id does not leak.
+        blocTest<ConversationBloc, ConversationState>(
+          'ignores a message that comes back without the refusal flag',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([testMessage]);
+            await tapDelete(bloc);
+            await tick(const []);
+            await tick([testMessage]);
+          },
+          verify: (bloc) {
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+
+        // A refusal from an earlier session is already on the row when the
+        // thread opens. Nothing was asked for on this open, so nothing may be
+        // armed by it — announcing it would toast on every cold open of any
+        // thread that ever had one.
+        blocTest<ConversationBloc, ConversationState>(
+          'stays quiet about a refusal that predates the thread opening',
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            await Future<void>.delayed(Duration.zero);
+            await tick([_blocked(testMessage)]);
+          },
+          verify: (bloc) {
+            expect(bloc.state.messages, [_blocked(testMessage)]);
+            expect(bloc.state.awaitingRetraction, isEmpty);
+          },
+        );
+      });
+
       blocTest<ConversationBloc, ConversationState>(
         'emits updated messages when stream emits multiple times',
         setUp: () {
@@ -2117,6 +2345,7 @@ void main() {
           ConversationStatus.initial,
           <DmMessage>[],
           SendStatus.idle,
+          <String>{},
           null,
           <OutgoingDm>[],
         ]),
@@ -2523,3 +2752,37 @@ void main() {
     });
   });
 }
+
+DmMessage _blocked(DmMessage m) => DmMessage(
+  id: m.id,
+  conversationId: m.conversationId,
+  senderPubkey: m.senderPubkey,
+  content: m.content,
+  createdAt: m.createdAt,
+  giftWrapId: m.giftWrapId,
+  messageKind: m.messageKind,
+  replyToId: m.replyToId,
+  subject: m.subject,
+  tags: m.tags,
+  fileMetadata: m.fileMetadata,
+  sharedVideoRef: m.sharedVideoRef,
+  sendBatchId: m.sendBatchId,
+  retractionStatus: DmRetractionStatus.failed,
+);
+
+DmMessage _pending(DmMessage m) => DmMessage(
+  id: m.id,
+  conversationId: m.conversationId,
+  senderPubkey: m.senderPubkey,
+  content: m.content,
+  createdAt: m.createdAt,
+  giftWrapId: m.giftWrapId,
+  messageKind: m.messageKind,
+  replyToId: m.replyToId,
+  subject: m.subject,
+  tags: m.tags,
+  fileMetadata: m.fileMetadata,
+  sharedVideoRef: m.sharedVideoRef,
+  sendBatchId: m.sendBatchId,
+  retractionStatus: DmRetractionStatus.pending,
+);

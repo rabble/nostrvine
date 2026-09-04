@@ -1023,6 +1023,121 @@ void main() {
       });
     });
 
+    group('refused retraction', () {
+      // #8201. The warning icon is the durable status; the toast is only the
+      // immediate announcement and must not remain on screen indefinitely.
+      testWidgets('a refused retraction shows a transient explanation', (
+        tester,
+      ) async {
+        final refusedMessage = DmMessage(
+          id: 'message',
+          conversationId: 'conversation',
+          senderPubkey: currentPubkey,
+          content: 'Refused',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId: 'wrap',
+          retractionStatus: DmRetractionStatus.failed,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              awaitingRetraction: {'message'},
+            ),
+            state: ConversationState(messages: <DmMessage>[refusedMessage]),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('an ordinary tick raises no retraction toast', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(),
+            state: const ConversationState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('a confirmed retraction raises no refusal toast', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              awaitingRetraction: {'message'},
+            ),
+            state: const ConversationState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+
+      testWidgets('consecutive refusals each raise a retraction toast', (
+        tester,
+      ) async {
+        final refusedMessage = DmMessage(
+          id: 'first',
+          conversationId: 'conversation',
+          senderPubkey: currentPubkey,
+          content: 'First refusal',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId: 'wrap',
+          retractionStatus: DmRetractionStatus.failed,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              awaitingRetraction: {'first', 'second'},
+            ),
+            state: ConversationState(
+              awaitingRetraction: const {'second'},
+              messages: <DmMessage>[refusedMessage],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
+      });
+
+      testWidgets('a send outcome does not replay a prior retraction refusal', (
+        tester,
+      ) async {
+        final previousAwaiting = Set<String>.of(const {'message'});
+        final currentAwaiting = Set<String>.of(const {'message'});
+
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: ConversationState(
+              awaitingRetraction: previousAwaiting,
+            ),
+            state: ConversationState(
+              sendStatus: SendStatus.blocked,
+              awaitingRetraction: currentAwaiting,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmSendBlockedMessage), findsOneWidget);
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
+    });
+
     group('renders', () {
       testWidgets('renders $ConversationAppBar', (tester) async {
         await tester.pumpWidget(buildSubject());
@@ -1299,6 +1414,95 @@ void main() {
 
         expect(find.byType(MessageBubble), findsOneWidget);
         expect(find.text('Hello there!'), findsOneWidget);
+      });
+
+      // The whole retry affordance lived only in the view: the bloc test
+      // covers the event's effects and the bubble test covers the icon, but
+      // nothing proved a tap ever produces the event. That gap is how a
+      // retry that could never run shipped green.
+      testWidgets('tapping a failed retraction dispatches the retry', (
+        tester,
+      ) async {
+        final message = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: currentPubkey,
+          content: 'Still recognizable',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+          retractionStatus: DmRetractionStatus.failed,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Still recognizable'));
+        await tester.pumpAndSettle();
+
+        // The sheet explains the partial-delivery caveat before offering
+        // the retry — that wording is the whole point of the affordance.
+        expect(find.text(l10n.dmDeleteRefusedDetails), findsOneWidget);
+
+        await tester.tap(find.text(l10n.authTryAgain));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            ConversationMessageDeletionRetryRequested(rumorId: message.id),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('tapping a pending retraction dispatches the retry', (
+        tester,
+      ) async {
+        final message = DmMessage(
+          id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: currentPubkey,
+          content: 'Still deleting',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+          retractionStatus: DmRetractionStatus.pending,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Still deleting'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(l10n.dmDeletePendingLabel), findsOneWidget);
+        expect(find.text(l10n.dmDeleteRefusedDetails), findsOneWidget);
+
+        await tester.tap(find.text(l10n.authTryAgain));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        verify(
+          () => mockBloc.add(
+            ConversationMessageDeletionRetryRequested(rumorId: message.id),
+          ),
+        ).called(1);
       });
 
       // Regression for #4193 — the user-visible bubble list reads from

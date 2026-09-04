@@ -9913,6 +9913,24 @@ abstract class AppLocalizations {
   /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
   String get dmSendBlockedRetiredMessage;
 
+  /// Names an own message whose delete-for-everyone is still in flight. Used twice: as the screen-reader label on the bubble's spinner, and as the visible title of the sheet that offers to try again. Keep it short enough to read as a sheet title.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting for everyone'**
+  String get dmDeletePendingLabel;
+
+  /// Temporary SnackBar text and failed-retraction sheet title shown when Delete for everyone was not confirmed for every recipient (#8201).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete for everyone.'**
+  String get dmDeleteRefusedMessage;
+
+  /// Explanation in the action sheet opened from the warning icon beside an own message whose deletion was not confirmed for everyone.
+  ///
+  /// In en, this message translates to:
+  /// **'Some people may still be able to see this message.'**
+  String get dmDeleteRefusedDetails;
+
   /// Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416).
   ///
   /// In en, this message translates to:
