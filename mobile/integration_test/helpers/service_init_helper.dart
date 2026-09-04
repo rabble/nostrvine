@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 import 'test_nostr_service.dart';
-import 'package:openvine/observability/crash_reporter.dart';
 
 /// Helper class for initializing services in test environment
 class ServiceInitHelper {

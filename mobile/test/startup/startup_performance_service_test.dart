@@ -2,8 +2,8 @@
 // ABOUTME: Each test builds its own instance, so no state crosses tests
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

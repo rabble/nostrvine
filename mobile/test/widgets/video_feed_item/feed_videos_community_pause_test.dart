@@ -35,6 +35,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/repositories/community_content_label_repository.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -45,7 +46,6 @@ import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockVideoPlaybackStatusCubit extends MockCubit<VideoPlaybackStatusState>
     implements VideoPlaybackStatusCubit {}

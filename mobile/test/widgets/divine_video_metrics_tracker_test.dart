@@ -15,9 +15,9 @@ import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 

@@ -7,11 +7,11 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/observability/crash_reporter.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

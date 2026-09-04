@@ -113,6 +113,7 @@ const _kBeforeSessionTeardownTimeout = Duration(seconds: 5);
 class AuthService implements BackgroundAwareService, BlockListSigner {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
+    required BackgroundActivityManager backgroundActivityManager,
     CrashReporter? crashReporter,
     SecureKeyStorage? keyStorage,
     KeycastOAuth? oauthClient,
@@ -120,7 +121,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     OAuthConfig? oauthConfig,
     PreFetchFollowingCallback? preFetchFollowing,
     AuthUrlLauncher? launchAuthUrl,
-    required BackgroundActivityManager backgroundActivityManager,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
     String? primaryRelayUrl,

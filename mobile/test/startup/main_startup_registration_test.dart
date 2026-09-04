@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/startup_performance_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/startup/app_bootstrap.dart' as bootstrap;
 import 'package:openvine/startup/startup_coordinator_factory.dart' as app;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/providers/crash_reporting_provider.dart';
 
 class _FakeUpdater implements ShorebirdUpdater {
   _FakeUpdater({this.status = UpdateStatus.upToDate, this.updateError});

@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/features/app/startup/startup_phase_mapper.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:unified_logger/unified_logger.dart';
-import 'package:openvine/features/app/startup/startup_phase_mapper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

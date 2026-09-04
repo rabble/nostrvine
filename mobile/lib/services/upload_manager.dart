@@ -95,6 +95,7 @@ class StopMotionTransientRenderCleaner implements TransientRenderCleaner {
 class UploadManager implements BackgroundAwareService {
   UploadManager({
     required BlossomUploadService blossomService,
+    required BackgroundActivityManager backgroundActivityManager,
     String? defaultBlossomUrl,
     String? currentNostrPubkey,
     bool scopeUploadsToCurrentUser = false,
@@ -103,7 +104,6 @@ class UploadManager implements BackgroundAwareService {
     UploadCrashReporter? crashReporter,
     CrashReporter crashReporting = const SilentCrashReporter(),
     this.useBackgroundUpload = false,
-    required BackgroundActivityManager backgroundActivityManager,
     ThumbnailExtractor? thumbnailExtractor,
     TransientRenderCleaner? transientRenderCleaner,
   }) : _blossomService = blossomService,

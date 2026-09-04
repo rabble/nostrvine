@@ -16,11 +16,11 @@ import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_setup.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 
 /// Sign-in triggers fire-and-forget relay discovery (HTTP + WebSocket to real
 /// indexers), which throws network errors this offline test can't avoid. Runs

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -16,7 +17,6 @@ import 'package:unified_logger/unified_logger.dart';
 
 import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 

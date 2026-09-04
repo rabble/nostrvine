@@ -25,6 +25,7 @@ import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -32,7 +33,6 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 

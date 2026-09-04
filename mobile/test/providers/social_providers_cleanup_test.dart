@@ -19,6 +19,7 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -26,7 +27,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 

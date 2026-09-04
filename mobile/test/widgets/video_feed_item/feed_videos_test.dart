@@ -42,6 +42,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -63,7 +64,6 @@ import 'package:reposts_repository/reposts_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 // ---------------------------------------------------------------------------
 // Mocks

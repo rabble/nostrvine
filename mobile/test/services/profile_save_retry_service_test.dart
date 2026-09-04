@@ -8,9 +8,9 @@ import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/profile_save_retry_service.dart';
 import 'package:profile_repository/profile_repository.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 

@@ -8,9 +8,9 @@ import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as sdk;
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/observability/crash_reporter.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

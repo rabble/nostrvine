@@ -25,12 +25,12 @@ import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
 import '../../helpers/autofill_context_mock.dart';
 import '../../helpers/test_provider_overrides.dart';
-import 'package:openvine/services/background_activity_manager.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 

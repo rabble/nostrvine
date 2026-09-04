@@ -12,9 +12,9 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

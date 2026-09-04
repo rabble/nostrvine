@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/analytics_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Analytics Service Comprehensive Tests', () {
