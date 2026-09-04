@@ -46,5 +46,53 @@ void main() {
       final result = VerificationResult.fromJson(json);
       expect(result.cached, isFalse);
     });
+
+    group('code', () {
+      test('parses the verifier rejection code when one is sent', () {
+        final result = VerificationResult.fromJson(const {
+          'platform': 'discord',
+          'identity': 'alice',
+          'verified': false,
+          'checked_at': 1,
+          'cached': false,
+          'error': 'Message not found — check the message link or ID',
+          'code': 'discord_message_not_found',
+        });
+
+        expect(result.code, 'discord_message_not_found');
+      });
+
+      test('is null when the verifier omits it', () {
+        final result = VerificationResult.fromJson(const {
+          'platform': 'discord',
+          'identity': 'alice',
+          'verified': false,
+          'checked_at': 1,
+          'cached': false,
+        });
+
+        expect(result.code, isNull);
+      });
+
+      test('is part of equality, so a changed reason is a changed result', () {
+        VerificationResult withCode(String? code) => VerificationResult(
+          platform: 'discord',
+          identity: 'alice',
+          verified: false,
+          checkedAt: 1,
+          cached: false,
+          code: code,
+        );
+
+        expect(
+          withCode('discord_bot_no_access'),
+          withCode('discord_bot_no_access'),
+        );
+        expect(
+          withCode('discord_bot_no_access'),
+          isNot(withCode('discord_message_not_found')),
+        );
+      });
+    });
   });
 }
