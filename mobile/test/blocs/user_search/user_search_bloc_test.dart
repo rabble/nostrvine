@@ -25,6 +25,7 @@ void main() {
     // matcher for the `SearchSourceStatus` parameter of `trackSearchSource`.
     registerFallbackValue(const SearchSourcePending());
     registerFallbackValue(SearchSource.localCache);
+    registerFallbackValue(SearchCancellationToken('test-search'));
   });
 
   group('UserSearchBloc', () {
@@ -152,6 +153,39 @@ void main() {
         await controller.close();
       }
     });
+
+    blocTest<UserSearchBloc, UserSearchState>(
+      'passes a cancellation token to the repository by default',
+      setUp: () {
+        when(
+          () => mockProfileRepository.searchUsersProgressive(
+            query: 'alice',
+            limit: 50,
+            sortBy: profileSearchSortFollowers,
+            cancellationToken: any(named: 'cancellationToken'),
+          ),
+        ).thenAnswer((_) => progressive([]));
+      },
+      build: () => UserSearchBloc(
+        profileRepository: mockProfileRepository,
+        searchTimeout: null,
+      ),
+      act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+      wait: debounceDuration,
+      verify: (_) {
+        final token =
+            verify(
+                  () => mockProfileRepository.searchUsersProgressive(
+                    query: 'alice',
+                    limit: 50,
+                    sortBy: profileSearchSortFollowers,
+                    cancellationToken: captureAny(named: 'cancellationToken'),
+                  ),
+                ).captured.single
+                as SearchCancellationToken;
+        expect(token.isCancelled, isTrue);
+      },
+    );
 
     blocTest<UserSearchBloc, UserSearchState>(
       'omits the excluded pubkey case-insensitively',

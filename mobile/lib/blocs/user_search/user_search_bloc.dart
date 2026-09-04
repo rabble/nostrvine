@@ -48,7 +48,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     this.excludedPubkey,
     FeedPerformanceTracker? feedTracker,
     UserSearchRunner? searchRunner,
-    this.enableCancellation = false,
   }) : _profileRepository = profileRepository,
        _followRepository = followRepository,
        _feedTracker = feedTracker,
@@ -70,8 +69,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   final FeedPerformanceTracker? _feedTracker;
   final UserSearchRunner? _searchRunner;
-
-  final bool enableCancellation;
 
   /// Whether to filter results to users who have uploaded videos.
   final bool hasVideos;
@@ -158,22 +155,14 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             boostPubkeys: followedPubkeys,
             cancellationToken: cancellationToken,
           ) ??
-          (enableCancellation
-              ? _profileRepository.searchUsersProgressive(
-                  query: query,
-                  limit: _pageSize,
-                  sortBy: profileSearchSortFollowers,
-                  hasVideos: hasVideos,
-                  boostPubkeys: followedPubkeys,
-                  cancellationToken: cancellationToken,
-                )
-              : _profileRepository.searchUsersProgressive(
-                  query: query,
-                  limit: _pageSize,
-                  sortBy: profileSearchSortFollowers,
-                  hasVideos: hasVideos,
-                  boostPubkeys: followedPubkeys,
-                ));
+          _profileRepository.searchUsersProgressive(
+            query: query,
+            limit: _pageSize,
+            sortBy: profileSearchSortFollowers,
+            hasVideos: hasVideos,
+            boostPubkeys: followedPubkeys,
+            cancellationToken: cancellationToken,
+          );
 
       await emit.forEach<ProgressiveSearchResult>(
         searchTimeout == null
