@@ -149,6 +149,40 @@ void main() {
       expect(textField.textInputAction, TextInputAction.search);
     });
 
+    testWidgets('forwards content insertion configuration', (tester) async {
+      final configuration = ContentInsertionConfiguration(
+        onContentInserted: (_) {},
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: DivineTextField(
+              contentInsertionConfiguration: configuration,
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField))
+            .contentInsertionConfiguration,
+        same(configuration),
+      );
+    });
+
+    testWidgets('does not advertise rich content by default', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(
+        tester
+            .widget<TextField>(find.byType(TextField))
+            .contentInsertionConfiguration,
+        isNull,
+      );
+    });
+
     testWidgets('uses focus node when provided', (tester) async {
       final focusNode = FocusNode();
       await tester.pumpWidget(buildTestWidget(focusNode: focusNode));

@@ -34,6 +34,7 @@ class DivineTextField extends StatelessWidget {
     this.primaryWhenFilled = false,
     this.autofocus = false,
     this.spellCheckConfiguration,
+    this.contentInsertionConfiguration,
     this.filled = false,
     this.fillColor,
     this.fillBorderRadius = defaultFillBorderRadius,
@@ -157,6 +158,11 @@ class DivineTextField extends StatelessWidget {
   /// technical inputs (search, keys, URLs) where spell check adds noise.
   final SpellCheckConfiguration? spellCheckConfiguration;
 
+  /// Configures rich content inserted through the system keyboard.
+  ///
+  /// Null preserves Flutter's default text-only behavior.
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
+
   /// The spell check configuration used when [spellCheckConfiguration] is not
   /// provided.
   ///
@@ -236,6 +242,7 @@ class DivineTextField extends StatelessWidget {
       autofocus: autofocus,
       spellCheckConfiguration:
           spellCheckConfiguration ?? defaultSpellCheckConfiguration,
+      contentInsertionConfiguration: contentInsertionConfiguration,
       onTap: onTap,
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(

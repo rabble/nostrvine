@@ -24,6 +24,7 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
+import '../helpers/keyboard_content_insertion.dart';
 import '../helpers/scroll.dart';
 import '../helpers/test_provider_overrides.dart';
 import '../helpers/test_pubkeys.dart';
@@ -2638,37 +2639,6 @@ void main() {
         home: Scaffold(body: ReportContentDialog(video: testVideo)),
       ),
     );
-
-    // Simulates a keyboard committing rich content (a GIF/image) into the
-    // focused field, exactly as Gboard does. Mirrors the framework's own
-    // content-insertion test in editable_text_test.dart: a
-    // `TextInputClient.performAction` / `TextInputAction.commitContent`
-    // platform message. Client id -1 is the debug-mode magic id that bypasses
-    // the connection-id check.
-    Future<void> commitKeyboardImage(
-      WidgetTester tester, {
-      String mimeType = 'image/gif',
-    }) {
-      const uri =
-          'content://com.google.android.inputmethod.latin.fileprovider/report.gif';
-      final message = const JSONMessageCodec().encodeMessage(<String, dynamic>{
-        'method': 'TextInputClient.performAction',
-        'args': <dynamic>[
-          -1,
-          'TextInputAction.commitContent',
-          <String, dynamic>{
-            'mimeType': mimeType,
-            'data': <int>[0, 1, 0, 1, 0, 1],
-            'uri': uri,
-          },
-        ],
-      });
-      return tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-        SystemChannels.textInput.name,
-        message,
-        (ByteData? _) {},
-      );
-    }
 
     Future<void> openDetailsField(
       WidgetTester tester, {

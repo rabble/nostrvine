@@ -4384,6 +4384,14 @@ class AppLocalizationsKo extends AppLocalizations {
       'That wasn’t attached. Reports are text only, so describe it in words.';
 
   @override
+  String get bugReportImageInsertionRejected =>
+      'That image wasn’t added. Use Add images below to attach it.';
+
+  @override
+  String get featureRequestImageInsertionRejected =>
+      'That image wasn’t attached. Describe it in words instead.';
+
+  @override
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override
