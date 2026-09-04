@@ -850,6 +850,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'የNIP-05 አድራሻ ከማከልዎ በፊት መገለጫዎን ያዘጋጁ።';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'መገለጫ ይፍጠሩ';
+
+  @override
   String get profileSetupBackLabel => 'ተመለስ';
 
   @override

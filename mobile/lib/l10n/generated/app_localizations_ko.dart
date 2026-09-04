@@ -772,6 +772,9 @@ class AppLocalizationsKo extends AppLocalizations {
       'NIP-05 주소를 추가하기 전에 프로필을 설정하세요.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => '프로필 만들기';
+
+  @override
   String get profileSetupBackLabel => '뒤로';
 
   @override

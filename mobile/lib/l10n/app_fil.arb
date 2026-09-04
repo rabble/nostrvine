@@ -202,6 +202,7 @@
     "profileLinkCopied": "Nakopya na ang profile link",
     "profileSetupEditProfileTitle": "I-edit ang Profile",
     "nostrSettingsNip05ProfileRequired": "I-set up ang profile mo bago magdagdag ng NIP-05 address.",
+    "nostrSettingsNip05CreateProfileAction": "Gumawa ng profile",
     "profileSetupBackLabel": "Bumalik",
     "profileSetupAboutNostr": "Tungkol sa Nostr",
     "profileSetupProfilePublished": "Matagumpay na na-publish ang profile!",

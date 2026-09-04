@@ -1484,6 +1484,12 @@ abstract class AppLocalizations {
   /// **'Set up your profile before adding a NIP-05 address.'**
   String get nostrSettingsNip05ProfileRequired;
 
+  /// Button that opens first-profile setup from NIP-05 settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Create profile'**
+  String get nostrSettingsNip05CreateProfileAction;
+
   /// No description provided for @profileSetupBackLabel.
   ///
   /// In en, this message translates to:

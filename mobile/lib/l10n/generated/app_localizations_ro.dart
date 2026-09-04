@@ -907,6 +907,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurează-ți profilul înainte de a adăuga o adresă NIP-05.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Creează profil';
+
+  @override
   String get profileSetupBackLabel => 'Înapoi';
 
   @override

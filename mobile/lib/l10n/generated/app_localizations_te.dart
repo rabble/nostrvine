@@ -890,6 +890,9 @@ class AppLocalizationsTe extends AppLocalizations {
       'NIP-05 చిరునామాను జోడించే ముందు మీ ప్రొఫైల్‌ను సెటప్ చేయండి.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'ప్రొఫైల్‌ను సృష్టించండి';
+
+  @override
   String get profileSetupBackLabel => 'వెనుకకు';
 
   @override

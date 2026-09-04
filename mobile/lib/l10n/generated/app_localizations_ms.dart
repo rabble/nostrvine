@@ -840,6 +840,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sediakan profil anda sebelum menambah alamat NIP-05.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Cipta profil';
+
+  @override
   String get profileSetupBackLabel => 'Kembali';
 
   @override

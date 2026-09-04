@@ -582,6 +582,10 @@
   "@nostrSettingsNip05ProfileRequired": {
     "description": "Empty-state message on NIP-05 settings when the account has not published a profile yet."
   },
+  "nostrSettingsNip05CreateProfileAction": "Create profile",
+  "@nostrSettingsNip05CreateProfileAction": {
+    "description": "Button that opens first-profile setup from NIP-05 settings."
+  },
   "profileSetupBackLabel": "Back",
   "profileSetupAboutNostr": "About Nostr",
   "profileSetupProfilePublished": "Profile published successfully!",

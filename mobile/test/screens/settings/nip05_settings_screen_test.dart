@@ -324,14 +324,18 @@ void main() {
     );
 
     testWidgets(
-      'sends a profile-less user to Edit Profile instead of showing Retry',
+      'sends a profile-less user to Profile Setup and reloads on return',
       (tester) async {
         when(
           () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => null);
+        var fetchCount = 0;
         when(
           () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async {
+          fetchCount++;
+          return fetchCount == 1 ? null : createProfile();
+        });
         when(
           () => mockProfileRepository.isConfirmedMissing(testPubkey),
         ).thenReturn(true);
@@ -362,10 +366,10 @@ void main() {
               ),
             ),
             GoRoute(
-              path: ProfileSetupScreen.editPath,
+              path: ProfileSetupScreen.setupPath,
               builder: (context, state) => TextButton(
                 onPressed: context.pop,
-                child: const Text('edit-profile-route'),
+                child: const Text('create-profile-route'),
               ),
             ),
           ],
@@ -383,23 +387,25 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.text(l10n.nostrSettingsNip05ProfileRequired),
+          find.text(l10n.nostrSettingsNip05CreateProfileAction),
           findsOneWidget,
         );
-        expect(find.text(l10n.profileRetryButton), findsNothing);
+        expect(find.text(l10n.profileSetupEditProfileTitle), findsNothing);
 
-        await tester.tap(find.text(l10n.profileSetupEditProfileTitle));
+        await tester.tap(find.text(l10n.nostrSettingsNip05CreateProfileAction));
         await tester.pumpAndSettle();
 
-        expect(find.text('edit-profile-route'), findsOneWidget);
+        expect(find.text('create-profile-route'), findsOneWidget);
 
-        await tester.tap(find.text('edit-profile-route'));
+        await tester.tap(find.text('create-profile-route'));
         await tester.pumpAndSettle();
 
+        expect(find.text(l10n.profileSetupUsernameLabel), findsOneWidget);
         expect(
           find.text(l10n.nostrSettingsNip05ProfileRequired),
-          findsOneWidget,
+          findsNothing,
         );
+        expect(find.text(l10n.profileRetryButton), findsNothing);
         verify(
           () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).called(2);

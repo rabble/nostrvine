@@ -878,6 +878,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Настрой профила си, преди да добавиш NIP-05 адрес.';
 
   @override
+  String get nostrSettingsNip05CreateProfileAction => 'Създай профил';
+
+  @override
   String get profileSetupBackLabel => 'Назад';
 
   @override

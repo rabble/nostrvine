@@ -579,6 +579,7 @@
   "profileLinkCopied": "ప్రొఫైల్ లింక్ కాపీ చేయబడింది",
   "profileSetupEditProfileTitle": "ప్రొఫైల్‌ను సవరించండి",
   "nostrSettingsNip05ProfileRequired": "NIP-05 చిరునామాను జోడించే ముందు మీ ప్రొఫైల్‌ను సెటప్ చేయండి.",
+  "nostrSettingsNip05CreateProfileAction": "ప్రొఫైల్‌ను సృష్టించండి",
   "profileSetupBackLabel": "వెనుకకు",
   "profileSetupAboutNostr": "Nostr గురించి",
   "profileSetupProfilePublished": "ప్రొఫైల్ విజయవంతంగా ప్రచురించబడింది!",
