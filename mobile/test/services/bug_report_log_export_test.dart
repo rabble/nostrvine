@@ -167,6 +167,18 @@ void main() {
       expect(result.omittedCount, 1);
     });
 
+    test('exports retained records in their sanitized form', () {
+      final result = BugReportService.buildBoundedLogBody(
+        const ['keep nsec1secret'],
+        sanitize: (line) => line.replaceAll('nsec1secret', '[REDACTED]'),
+        maxBytes: 100,
+      );
+
+      expect(result.lines, ['keep [REDACTED]']);
+      expect(result.body, contains('[REDACTED]'));
+      expect(result.body, isNot(contains('nsec1secret')));
+    });
+
     test('sanitizes retained records plus at most one rejected probe', () {
       var calls = 0;
       final result = BugReportService.buildBoundedLogBody(
