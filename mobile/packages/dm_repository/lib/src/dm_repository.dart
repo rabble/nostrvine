@@ -84,6 +84,31 @@ const Set<int> _supportedDmKinds = {
   EventKind.fileMessage, // 15
 };
 
+/// Process-local key for support-only DM content correlation tokens.
+///
+/// Never persist or log this key: changing it on restart prevents tokens from
+/// linking message content across separately submitted support reports.
+final List<int> _dmContentCorrelationKey = _newDmContentCorrelationKey();
+
+List<int> _newDmContentCorrelationKey() {
+  final random = Random.secure();
+  return List<int>.unmodifiable(
+    List<int>.generate(32, (_) => random.nextInt(256)),
+  );
+}
+
+String _dmContentCorrelation({
+  required String conversationId,
+  required String senderPubkey,
+  required String content,
+}) {
+  final scopedContent = jsonEncode([conversationId, senderPubkey, content]);
+  return Hmac(
+    sha256,
+    _dmContentCorrelationKey,
+  ).convert(utf8.encode(scopedContent)).toString().substring(0, 16);
+}
+
 /// Tuning for the one-time full-history drain
 /// (`DmRepository.backfillHistoryIfNeeded`).
 ///
@@ -3024,11 +3049,19 @@ class DmRepository {
           createdAt: giftWrapEvent.createdAt,
         );
 
+        final contentCorrelation = _dmContentCorrelation(
+          conversationId: conversationId,
+          senderPubkey: rumor.pubkey,
+          content: rumor.content,
+        );
         Log.debug(
+          // Process-local HMAC correlates equal content without exposing it
+          // or its length in the support logs that carry this line. See #6522.
           'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in '
           'conversation '
           '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
-          'createdAt=$persistedCreatedAt',
+          'createdAt=$persistedCreatedAt '
+          'contentCorrelation=$contentCorrelation',
           category: LogCategory.system,
         );
       } on Object catch (e, stackTrace) {
