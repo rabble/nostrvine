@@ -96,14 +96,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Insert a decrypted DM, returning whether a row was actually written.
   ///
   /// Uses `INSERT OR IGNORE` so that violations on either the primary key
-  /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
-  /// without throwing. A `false` return means a local uniqueness constraint
-  /// skipped the row, and callers must avoid advancing receive-side state that
-  /// depends on a newly persisted message.
+  /// (`id`, `owner_pubkey`) **or** the UNIQUE index on `gift_wrap_id` are
+  /// handled gracefully without throwing. A `false` return means a local
+  /// uniqueness constraint skipped the row, and callers must avoid advancing
+  /// receive-side state that depends on a newly persisted message.
   ///
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
-  /// the same content. The current message uniqueness constraints are global,
-  /// so callers still need owner-scoped checks where account isolation matters.
+  /// the same content. Rumor uniqueness is owner-scoped, while gift-wrap IDs
+  /// remain globally unique because a wrap has exactly one recipient.
   ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
@@ -498,8 +498,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// use [claimCrossProtocolTwin] instead. Existence is the wrong question
   /// there: a twin is 1:1, and asking existence let one stored copy swallow
   /// every same-text arrival in the window (#8211). Same-protocol replays need
-  /// no help from either method — the primary key on `id` and the UNIQUE index
-  /// on `gift_wrap_id` already make [insertMessage] a no-op for them.
+  /// no help from either method — the primary key on (`id`, `owner_pubkey`)
+  /// and the UNIQUE index on `gift_wrap_id` already make [insertMessage] a
+  /// no-op for them.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
