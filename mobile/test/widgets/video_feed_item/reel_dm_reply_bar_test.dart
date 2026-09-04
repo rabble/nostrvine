@@ -2,13 +2,16 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
@@ -22,6 +25,9 @@ class _MockDmReactionsRepository extends Mock
     implements DmReactionsRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 const _owner =
     '1111111111111111111111111111111111111111111111111111111111111111';
@@ -41,19 +47,44 @@ DmReplyContext context({bool isOwn = false, String hintName = 'Alice'}) =>
       isOwnMessage: isOwn,
     );
 
+List<String> captureAnnouncements(WidgetTester tester) {
+  final announcements = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        final data = message['data'];
+        if (data is Map) announcements.add('${data['message']}');
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announcements;
+}
+
 void main() {
   late _MockDmRepository dmRepo;
   late _MockDmReactionsRepository reactionsRepo;
   late _MockAuthService auth;
+  late _MockContentBlocklistRepository blocklist;
   late StreamController<List<DmReaction>> reactionStream;
 
   setUp(() {
     dmRepo = _MockDmRepository();
     reactionsRepo = _MockDmReactionsRepository();
     auth = _MockAuthService();
+    blocklist = _MockContentBlocklistRepository();
     reactionStream = StreamController<List<DmReaction>>.broadcast();
 
     when(() => auth.currentPublicKeyHex).thenReturn(_owner);
+    when(() => blocklist.isBlocked(any())).thenReturn(false);
     when(
       () => reactionsRepo.watchForConversation(any()),
     ).thenAnswer((_) => reactionStream.stream);
@@ -76,6 +107,7 @@ void main() {
       dmRepositoryProvider.overrideWithValue(dmRepo),
       dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
       authServiceProvider.overrideWithValue(auth),
+      contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
     ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -105,6 +137,7 @@ void main() {
           dmRepositoryProvider.overrideWithValue(dmRepo),
           dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
           authServiceProvider.overrideWithValue(auth),
+          contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -126,6 +159,55 @@ void main() {
       );
 
   group('renders', () {
+    testWidgets('does not render for a retired moderation thread', (
+      tester,
+    ) async {
+      final retiredContext = DmReplyContext(
+        conversationId: 'retired-convo',
+        participantPubkeys: [kLegacyModerationPubkeys.first],
+        isGroup: false,
+        sharedReelMessageId: _reelId,
+        messageAuthorPubkey: kLegacyModerationPubkeys.first,
+        hintName: 'Divine Moderation',
+        isOwnMessage: false,
+      );
+
+      await tester.pumpWidget(wrap(retiredContext));
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('❤️'), findsNothing);
+    });
+
+    testWidgets('does not render for a blocked thread', (tester) async {
+      when(() => blocklist.isBlocked(_peer)).thenReturn(true);
+
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('❤️'), findsNothing);
+    });
+
+    testWidgets('returns when the peer is unblocked while the player is open', (
+      tester,
+    ) async {
+      when(() => blocklist.isBlocked(_peer)).thenReturn(true);
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+      expect(find.byType(TextField), findsNothing);
+
+      when(() => blocklist.isBlocked(_peer)).thenReturn(false);
+      final providerContainer = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold)),
+      );
+      providerContainer.read(blocklistVersionProvider.notifier).increment();
+      await tester.pump();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('❤️'), findsOneWidget);
+    });
+
     testWidgets('renders composer + the 6 quick emojis + picker button', (
       tester,
     ) async {
@@ -173,6 +255,93 @@ void main() {
   });
 
   group('interactions', () {
+    testWidgets('announces a reaction only after it persists', (tester) async {
+      final announcements = captureAnnouncements(tester);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
+
+      expect(
+        announcements,
+        isNot(contains(l10n.dmReelReactionSentAnnouncement('❤️'))),
+      );
+
+      reactionStream.add([
+        const DmReaction(
+          id: 'pending-reaction',
+          conversationId: 'convo-id',
+          targetMessageId: _reelId,
+          targetMessageAuthor: _peer,
+          reactorPubkey: _owner,
+          emoji: '❤️',
+          createdAt: 1700000000,
+          ownerPubkey: _owner,
+          publishStatus: DmReactionPublishStatus.pending,
+        ),
+      ]);
+      await tester.pump();
+
+      expect(
+        announcements,
+        isNot(contains(l10n.dmReelReactionSentAnnouncement('❤️'))),
+      );
+
+      reactionStream.add([
+        const DmReaction(
+          id: 'persisted-reaction',
+          conversationId: 'convo-id',
+          targetMessageId: _reelId,
+          targetMessageAuthor: _peer,
+          reactorPubkey: _owner,
+          emoji: '❤️',
+          createdAt: 1700000000,
+          ownerPubkey: _owner,
+          publishStatus: DmReactionPublishStatus.sent,
+        ),
+      ]);
+      await tester.pump();
+
+      expect(
+        announcements,
+        contains(l10n.dmReelReactionSentAnnouncement('❤️')),
+      );
+    });
+
+    testWidgets('announces a failed reaction without claiming success', (
+      tester,
+    ) async {
+      when(
+        () => reactionsRepo.publish(
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: any(named: 'targetMessageId'),
+          targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          emoji: any(named: 'emoji'),
+        ),
+      ).thenAnswer(
+        (_) async => const DmReactionPublishResult(
+          success: false,
+          rumorId: 'failed-rumor',
+        ),
+      );
+      final announcements = captureAnnouncements(tester);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(announcements, contains(l10n.dmReelReplyFailed));
+      expect(
+        announcements,
+        isNot(contains(l10n.dmReelReactionSentAnnouncement('❤️'))),
+      );
+    });
+
     testWidgets('tapping a quick emoji publishes a reaction on the reel', (
       tester,
     ) async {
@@ -204,6 +373,7 @@ void main() {
             dmRepositoryProvider.overrideWithValue(dmRepo),
             dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
             authServiceProvider.overrideWithValue(auth),
+            contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -417,6 +587,7 @@ void main() {
             dmRepositoryProvider.overrideWithValue(dmRepo),
             dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
             authServiceProvider.overrideWithValue(auth),
+            contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -454,6 +625,7 @@ void main() {
             dmRepositoryProvider.overrideWithValue(dmRepo),
             dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
             authServiceProvider.overrideWithValue(auth),
+            contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -915,6 +1087,7 @@ void main() {
             dmRepositoryProvider.overrideWithValue(dmRepo),
             dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
             authServiceProvider.overrideWithValue(auth),
+            contentBlocklistRepositoryProvider.overrideWithValue(blocklist),
           ],
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

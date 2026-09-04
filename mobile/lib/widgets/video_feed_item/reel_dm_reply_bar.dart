@@ -13,6 +13,8 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show DmReactionPublishStatus;
+import 'package:openvine/blocs/dm/dm_thread_writability.dart';
 import 'package:openvine/blocs/dm/inline_reel_reply/inline_reel_reply_cubit.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -48,6 +50,16 @@ class ReelDmReplyBarHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(blocklistVersionProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    final writability = resolveDmThreadWritability(
+      participantPubkeys: dmReplyContext.participantPubkeys,
+      isBlockedByUs: blocklistRepository.isBlocked,
+    );
+    if (writability != DmThreadWritability.writable) {
+      return const SizedBox.shrink();
+    }
+
     final dmRepository = ref.watch(dmRepositoryProvider);
     final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
     final ownerPubkey =
@@ -269,15 +281,18 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     );
     final localStatus = state.pending[key];
     final persisted = state.reactionsByMessageId[_ctx.sharedReelMessageId]
-        ?.firstWhereOrNull((r) => r.reactorPubkey == widget.ownerPubkey)
-        ?.emoji;
+        ?.firstWhereOrNull((r) => r.reactorPubkey == widget.ownerPubkey);
 
     if (localStatus == ReactionPublishLocalStatus.failed) {
+      _announce(context.l10n.dmReelReplyFailed);
       setState(() {
         _optimisticEmoji = null;
         _lastDispatchedEmoji = null;
       });
-    } else if (persisted != null) {
+    } else if (persisted?.emoji == emoji &&
+        (persisted?.publishStatus == DmReactionPublishStatus.sent ||
+            persisted?.publishStatus == DmReactionPublishStatus.received)) {
+      _announce(context.l10n.dmReelReactionSentAnnouncement(emoji));
       setState(() => _optimisticEmoji = null);
     }
   }
@@ -307,11 +322,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     if (!MediaQuery.of(context).disableAnimations) {
       widget.onReaction?.call(emoji);
     }
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      context.l10n.dmReelReactionSentAnnouncement(emoji),
-      Directionality.of(context),
-    );
     widget.screenAnalytics.trackInteraction(
       ReelReplyConstants.analyticsScreen,
       'dm_reel_emoji_sent',

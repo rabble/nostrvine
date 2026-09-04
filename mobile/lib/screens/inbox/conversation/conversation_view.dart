@@ -13,6 +13,7 @@ import 'package:follow_repository/follow_repository.dart'
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/blocs/dm/dm_thread_writability.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/blocs/dm/shared_video_save/shared_video_save_cubit.dart';
@@ -233,11 +234,15 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // would undo the block the viewer deliberately set. Rebuilds off the
     // `blocklistVersionProvider` watch above, so unblocking from the kebab
     // brings the composer straight back.
-    final isBlockedByUs = blocklistRepository.isBlocked(_otherPubkey);
-
     // Resolve other participant's profile for the app bar + empty state
     final otherPubkey = _otherPubkey;
-    final isRetiredModerationThread = isRetiredModerationAccount(otherPubkey);
+    final threadWritability = resolveDmThreadWritability(
+      participantPubkeys: widget.participantPubkeys,
+      isBlockedByUs: blocklistRepository.isBlocked,
+    );
+    final isBlockedByUs = threadWritability == DmThreadWritability.blockedByUs;
+    final isRetiredModerationThread =
+        threadWritability == DmThreadWritability.closedRetired;
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
     final isResolving = ref.watch(
