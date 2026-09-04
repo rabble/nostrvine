@@ -4262,6 +4262,141 @@ void main() {
         expect(pubkeys, [pk18Videos, pk4Videos, pk1Video]);
       });
 
+      test(
+        'searchUsersProgressive puts an exact name ahead of popularity',
+        () async {
+          stubRestResults([
+            ProfileSearchResult(
+              pubkey: pk18Videos,
+              displayName: 'Alice Archive',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 10000,
+              videoCount: 18,
+            ),
+            ProfileSearchResult(
+              pubkey: pk1Video,
+              name: 'alice',
+              displayName: 'Exact Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(query: 'alice', sortBy: 'followers')
+              .last;
+
+          expect(result.profiles.first.pubkey, pk1Video);
+        },
+      );
+
+      test(
+        'searchUsersProgressive keeps an exact match ahead of followed '
+        'partial matches',
+        () async {
+          ProfileSearchResult followed(String pubkey, String name) =>
+              ProfileSearchResult(
+                pubkey: pubkey,
+                name: name,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+                followerCount: 500,
+                videoCount: 5,
+              );
+          stubRestResults([
+            followed(pk18Videos, 'alice_b'),
+            followed(pk4Videos, 'alice_c'),
+            followed(pkCachedVine, 'alice_d'),
+            ProfileSearchResult(
+              pubkey: pk1Video,
+              name: 'alice',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: 'alice',
+                sortBy: 'followers',
+                boostPubkeys: {pk18Videos, pk4Videos, pkCachedVine},
+              )
+              .last;
+
+          expect(result.profiles.map((profile) => profile.pubkey), [
+            pk1Video,
+            pk18Videos,
+            pk4Videos,
+            pkCachedVine,
+          ]);
+        },
+      );
+
+      test(
+        'searchUsersProgressive puts the account whose npub was pasted first',
+        () async {
+          const pkPasted =
+              'b01b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b'
+              '2c3d4e5f6a1b2c3d4e5f6a1b';
+          stubRestResults([
+            ProfileSearchResult(
+              pubkey: pk18Videos,
+              displayName: 'Popular Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 10000,
+              videoCount: 18,
+            ),
+            ProfileSearchResult(
+              pubkey: pkPasted,
+              displayName: 'Pasted Account',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              followerCount: 1,
+              videoCount: 1,
+            ),
+          ]);
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: Nip19.encodePubKey(pkPasted).toUpperCase(),
+                sortBy: 'followers',
+              )
+              .last;
+
+          expect(result.profiles.first.pubkey, pkPasted);
+        },
+      );
+
+      test(
+        'reports REST pagination independently of merged profile count',
+        () async {
+          stubRestResults(resultsInServerOrder());
+          when(() => mockUserProfilesDao.getAllProfiles()).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: pkCachedVine,
+                displayName: 'Lauren Cached',
+                createdAt: DateTime(2026),
+                eventId: 'cached',
+                rawData: const {},
+              ),
+            ],
+          );
+
+          final result = await repoWithFunnelcake
+              .searchUsersProgressive(
+                query: 'lauren',
+                limit: 3,
+                offset: 10,
+                sortBy: 'followers',
+              )
+              .last;
+
+          expect(result.nextRestOffset, 13);
+          expect(result.restHasMore, isTrue);
+        },
+      );
+
       test('searchUsersProgressive breaks a real follower-count tie by '
           'video count', () async {
         stubRestResults(resultsInServerOrder(followerCount: 100));
@@ -4445,6 +4580,108 @@ void main() {
 
         expect(results, isEmpty);
       });
+
+      test(
+        'applies search and block filters once to bounded local candidates',
+        () async {
+          final included = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Included',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          );
+          final blocked = UserProfile(
+            pubkey: otherPubkey,
+            displayName: 'Blocked',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'e' * 64,
+          );
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              expect(query, 'test');
+              expect(limit, 200);
+              return [included, blocked];
+            },
+            profileSearchFilter: (_, profiles) => profiles,
+            blockFilter: (pubkey) => pubkey == otherPubkey,
+          );
+
+          final emissions = await repository
+              .searchUsersProgressive(query: 'test')
+              .toList();
+
+          expect(emissions.first.profiles, [included]);
+        },
+      );
+
+      test(
+        'decodes a full npub query to hex for the bounded local search',
+        () async {
+          final npub = Nip19.encodePubKey(testPubkey);
+          String? receivedTerm;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedTerm = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: npub).toList();
+
+          expect(receivedTerm, testPubkey);
+        },
+      );
+
+      test(
+        'leaves an undecodable npub-length query untouched for local search',
+        () async {
+          // 63 chars, starts with npub1, but 'o' is outside the bech32
+          // charset so it cannot decode.
+          final invalid = 'npub1${'o' * 58}';
+          String? receivedTerm;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedTerm = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: invalid).toList();
+
+          expect(receivedTerm, invalid);
+        },
+      );
+
+      test(
+        'passes a non-npub query to the local identity lookup unchanged',
+        () async {
+          String? receivedQuery;
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            localProfileSearch: (query, limit) async {
+              receivedQuery = query;
+              return [];
+            },
+          );
+
+          await repository.searchUsersProgressive(query: 'npub1short').toList();
+
+          expect(receivedQuery, 'npub1short');
+        },
+      );
 
       test('yields local results first then remote results', () async {
         // Arrange - local cache has a profile

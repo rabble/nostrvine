@@ -13,7 +13,7 @@ import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
+import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter, Nip19;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -66,6 +66,10 @@ typedef ProfileSearchFilter =
 
 bool _isSearchCancelled(SearchCancellationToken? token) =>
     token?.isCancelled ?? false;
+
+/// Bounded local identity lookup used by interactive people discovery.
+typedef LocalProfileSearch =
+    Future<List<UserProfile>> Function(String query, int limit);
 
 /// Default indexer relays for kind 0 profile lookups.
 ///
@@ -130,6 +134,7 @@ class ProfileRepository implements ProfileReader {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
+    LocalProfileSearch? localProfileSearch,
     BlockedProfileFilter? blockFilter,
     PendingProfileSavesDao? pendingProfileSavesDao,
     IdentityEventsDao? identityEventsDao,
@@ -145,6 +150,7 @@ class ProfileRepository implements ProfileReader {
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
+       _localProfileSearch = localProfileSearch,
        _blockFilter = blockFilter,
        _pendingProfileSavesDao = pendingProfileSavesDao,
        _identityEventsDao = identityEventsDao,
@@ -162,6 +168,7 @@ class ProfileRepository implements ProfileReader {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+  final LocalProfileSearch? _localProfileSearch;
   final BlockedProfileFilter? _blockFilter;
 
   /// Durable single-row-per-user slot for a save whose kind-0 publish is not
@@ -276,6 +283,28 @@ class ProfileRepository implements ProfileReader {
     final matches = await searchUsersLocally(query: query);
     return matches.length;
   }
+
+  Future<List<UserProfile>> _searchUsersForDiscovery({
+    required String query,
+    required int limit,
+  }) async {
+    final localSearch = _localProfileSearch;
+    if (localSearch == null) {
+      return searchUsersLocally(query: query, limit: limit);
+    }
+    final candidates = await localSearch(_localSearchTerm(query), limit);
+    return _profileSearchFilter?.call(query, candidates) ?? candidates;
+  }
+
+  /// Translates a full `npub` query into the hex form the bounded local
+  /// identity search matches on.
+  ///
+  /// The DAO search matches the stored `pubkey` column on hex only, so an
+  /// `npub` query would otherwise return no local candidates even when the
+  /// account is cached. A partial `npub` prefix cannot be decoded and is
+  /// left for the raw-query path.
+  static String _localSearchTerm(String query) =>
+      _npubQueryToHex(query) ?? query;
 
   /// Whether the given pubkey is known to have no Kind 0 profile.
   ///
@@ -2160,6 +2189,8 @@ class ProfileRepository implements ProfileReader {
         source: const SearchSourcePending(),
     };
     final useServerSort = sortBy != null;
+    int? nextRestOffset;
+    var restHasMore = false;
 
     ProgressiveSearchResult snapshot({
       required bool isComplete,
@@ -2178,6 +2209,8 @@ class ProfileRepository implements ProfileReader {
         profiles: profiles,
         sources: Map.unmodifiable(sources),
         isComplete: isComplete,
+        nextRestOffset: nextRestOffset,
+        restHasMore: restHasMore,
       );
     }
 
@@ -2186,7 +2219,10 @@ class ProfileRepository implements ProfileReader {
       final phase1Watch = Stopwatch()..start();
       final preCount = resultMap.length;
       try {
-        final local = await searchUsersLocally(query: trimmed);
+        final local = await _searchUsersForDiscovery(
+          query: trimmed,
+          limit: limit,
+        );
         if (_isSearchCancelled(cancellationToken)) return;
         for (final profile in local) {
           resultMap[profile.pubkey] = profile;
@@ -2228,6 +2264,8 @@ class ProfileRepository implements ProfileReader {
           hasVideos: hasVideos,
         );
         if (_isSearchCancelled(cancellationToken)) return;
+        nextRestOffset = offset + restResults.length;
+        restHasMore = restResults.length == limit;
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
         }
@@ -2377,7 +2415,7 @@ class ProfileRepository implements ProfileReader {
   }) {
     List<UserProfile> filtered;
     if (useServerSort) {
-      filtered = _rankServerSortedPage(profiles, sortBy);
+      filtered = _rankSearchResults(query, profiles, sortBy);
     } else if (_profileSearchFilter != null) {
       filtered = _profileSearchFilter(query, profiles);
     } else {
@@ -2392,8 +2430,124 @@ class ProfileRepository implements ProfileReader {
       filtered = filtered.where((p) => !blockFilter(p.pubkey)).toList();
     }
 
-    return _boostProfiles(filtered, boostPubkeys);
+    if (!useServerSort) return _boostProfiles(filtered, boostPubkeys);
+    return _boostBehindExactMatches(query, filtered, boostPubkeys);
   }
+
+  /// Applies the follow-graph boost without letting it bury an exact account
+  /// match. Exact matches stay first, followed ones ahead of unfollowed, and
+  /// the boost then orders everything else; otherwise three followed partial
+  /// matches would push the exact account out of the three-row preview.
+  List<UserProfile> _boostBehindExactMatches(
+    String query,
+    List<UserProfile> profiles,
+    Set<String>? boostPubkeys,
+  ) {
+    final normalizedQuery = query.trim().toLowerCase();
+    final queryHex = _npubQueryToHex(normalizedQuery);
+    final exact = <UserProfile>[];
+    final rest = <UserProfile>[];
+    for (final profile in profiles) {
+      final relevance = _searchRelevance(profile, normalizedQuery, queryHex);
+      (relevance == _exactMatchRelevance ? exact : rest).add(profile);
+    }
+    return [
+      ..._boostProfiles(exact, boostPubkeys),
+      ..._boostProfiles(rest, boostPubkeys),
+    ];
+  }
+
+  /// Orders people search by textual relevance before popularity.
+  ///
+  /// Funnelcake's follower sort remains a useful tie-breaker, but an exact
+  /// account match must never be buried beneath popular substring matches.
+  static List<UserProfile> _rankSearchResults(
+    String query,
+    List<UserProfile> profiles,
+    String? sortBy,
+  ) {
+    final popularityRanked = _rankServerSortedPage(profiles, sortBy);
+    final popularityIndex = {
+      for (final (index, profile) in popularityRanked.indexed)
+        profile.pubkey: index,
+    };
+    final normalizedQuery = query.trim().toLowerCase();
+    final queryHex = _npubQueryToHex(normalizedQuery);
+    final relevanceByPubkey = {
+      for (final profile in profiles)
+        profile.pubkey: _searchRelevance(profile, normalizedQuery, queryHex),
+    };
+    return [...profiles]..sort((a, b) {
+      final relevance = relevanceByPubkey[b.pubkey]!.compareTo(
+        relevanceByPubkey[a.pubkey]!,
+      );
+      if (relevance != 0) return relevance;
+      return popularityIndex[a.pubkey]!.compareTo(popularityIndex[b.pubkey]!);
+    });
+  }
+
+  /// Relevance tier of [profile] for an already lowercased, trimmed
+  /// [normalizedQuery]. [queryHex] is the decoded form when the query is an
+  /// npub, so an exact account match never depends on encoding every
+  /// candidate's pubkey.
+  static int _searchRelevance(
+    UserProfile profile,
+    String normalizedQuery,
+    String? queryHex,
+  ) {
+    final pubkey = profile.pubkey.toLowerCase();
+    final name = profile.name?.trim().toLowerCase() ?? '';
+    final displayName = profile.displayName?.trim().toLowerCase() ?? '';
+    final nip05 = profile.nip05?.trim().toLowerCase() ?? '';
+    final nip05Name = nip05.split('@').first;
+
+    if (pubkey == queryHex ||
+        {pubkey, name, displayName, nip05, nip05Name}.contains(
+          normalizedQuery,
+        )) {
+      return _exactMatchRelevance;
+    }
+    if (name.startsWith(normalizedQuery) ||
+        displayName.startsWith(normalizedQuery) ||
+        nip05Name.startsWith(normalizedQuery)) {
+      return 3;
+    }
+    if (_hasWordPrefix(name, normalizedQuery) ||
+        _hasWordPrefix(displayName, normalizedQuery)) {
+      return 2;
+    }
+    if (name.contains(normalizedQuery) ||
+        displayName.contains(normalizedQuery) ||
+        nip05.contains(normalizedQuery)) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /// Relevance tier returned by [_searchRelevance] for an exact identifier,
+  /// username, display name, or NIP-05 match.
+  static const _exactMatchRelevance = 4;
+
+  static bool _hasWordPrefix(String value, String query) =>
+      value.split(RegExp(r'\s+')).any((word) => word.startsWith(query));
+
+  /// Hex pubkey for a complete `npub1…` [query], `null` for anything else.
+  ///
+  /// The cache and the REST payload carry hex, so a pasted npub has to be
+  /// decoded before it can match an account. Partial npubs cannot decode and
+  /// are left to the textual tiers.
+  static String? _npubQueryToHex(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (!Nip19.isPubkey(normalized) || normalized.length != _npubLength) {
+      return null;
+    }
+    final hex = Nip19.decode(normalized);
+    return hex.isEmpty ? null : hex;
+  }
+
+  /// Length of a bech32 `npub1…` string: the prefix plus 52 data characters
+  /// and a 6-character checksum.
+  static const _npubLength = 63;
 
   /// Orders a server-sorted result page by the signals the REST payload
   /// actually carries.

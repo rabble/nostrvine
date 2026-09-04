@@ -147,6 +147,52 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_rowToUserProfile).toList();
   }
 
+  /// Finds a bounded set of cached profiles by identity fields only.
+  ///
+  /// Biography text is deliberately excluded: people discovery should not
+  /// turn a short query into an unbounded scan of incidental prose.
+  ///
+  /// Public keys match only when the whole key is given. A hex prefix or
+  /// substring is not something a person types, and a two-character hex
+  /// query would otherwise sweep a share of every cached pubkey into the
+  /// bounded candidate set ahead of real name matches.
+  Future<List<UserProfile>> searchProfilesByIdentity(
+    String query, {
+    required int limit,
+  }) async {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty || limit <= 0) return [];
+    final rows = await customSelect(
+      '''
+        SELECT * FROM user_profiles
+        WHERE instr(lower(coalesce(name, '')), ?) > 0
+           OR instr(lower(coalesce(display_name, '')), ?) > 0
+           OR instr(lower(coalesce(nip05, '')), ?) > 0
+           OR lower(pubkey) = ?
+        ORDER BY
+          CASE
+            WHEN lower(coalesce(name, '')) = ? THEN 0
+            WHEN lower(coalesce(display_name, '')) = ? THEN 0
+            WHEN lower(coalesce(nip05, '')) = ? THEN 0
+            WHEN lower(pubkey) = ? THEN 0
+            WHEN instr(lower(coalesce(name, '')), ?) = 1 THEN 1
+            WHEN instr(lower(coalesce(display_name, '')), ?) = 1 THEN 1
+            ELSE 2
+          END,
+          created_at DESC
+        LIMIT ?
+      ''',
+      variables: [
+        for (var i = 0; i < 10; i++) Variable.withString(normalized),
+        Variable.withInt(limit),
+      ],
+      readsFrom: {userProfiles},
+    ).get();
+    return rows
+        .map((row) => _rowToUserProfile(userProfiles.map(row.data)))
+        .toList();
+  }
+
   /// Delete a profile by pubkey.
   ///
   /// Returns the number of rows deleted (0 or 1).

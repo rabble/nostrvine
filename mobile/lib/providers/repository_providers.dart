@@ -432,6 +432,8 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     keycastNip05Url: ref.watch(oauthConfigProvider).nip05Url,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
+    localProfileSearch: (query, limit) =>
+        userProfilesDao.searchProfilesByIdentity(query, limit: limit),
     blockFilter: blockFilter,
   );
 

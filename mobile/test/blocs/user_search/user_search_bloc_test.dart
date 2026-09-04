@@ -91,12 +91,14 @@ void main() {
       List<UserProfile> profiles, {
       Map<SearchSource, SearchSourceStatus>? sources,
       bool isComplete = true,
+      bool restHasMore = false,
     }) {
       return Stream.value(
         ProgressiveSearchResult(
           profiles: profiles,
           sources: sources ?? const {},
           isComplete: isComplete,
+          restHasMore: restHasMore,
         ),
       );
     }
@@ -234,7 +236,9 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => progressive(createTestProfiles(50)));
+          ).thenAnswer(
+            (_) => progressive(createTestProfiles(50), restHasMore: true),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
@@ -752,7 +756,9 @@ void main() {
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) => progressive(createTestProfiles(50)));
+          ).thenAnswer(
+            (_) => progressive(createTestProfiles(50), restHasMore: true),
+          );
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -773,6 +779,49 @@ void main() {
               .having((s) => s.results.length, 'results.length', 100)
               .having((s) => s.offset, 'offset', 100)
               .having((s) => s.hasMore, 'hasMore', true),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'uses REST metadata instead of the merged result count',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              ProgressiveSearchResult(
+                profiles: createTestProfiles(10),
+                sources: const {},
+                isComplete: true,
+                nextRestOffset: 100,
+                restHasMore: true,
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (state) => state.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((state) => state.offset, 'offset', 100)
+              .having((state) => state.hasMore, 'hasMore', true),
         ],
       );
 

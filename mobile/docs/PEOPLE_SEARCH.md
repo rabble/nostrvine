@@ -25,11 +25,16 @@ UserSearchBloc                              mobile/lib/blocs/user_search/
     FeedPerformanceTracker.trackSearchSource
         ↓
 ProfileRepository.searchUsersProgressive    mobile/packages/profile_repository/
-  Phase 1 (offset==0): searchUsersLocally        SQLite cache, no timeout
+  Phase 1 (offset==0): UserProfilesDao.searchProfilesByIdentity
+                       bounded SQLite identity query (name, display name,
+                       nip05, whole pubkey; bio excluded), npub decoded to hex
   Phase 2:             funnelcake.searchProfiles REST, no explicit timeout
   Phase 3 (offset==0): nostrClient.queryUsers    NIP-50 WS, 4.5s relay budget + 5s guard
   Each phase records a SearchSourceStatus in the result envelope.
-  Final yield: _enrichFromCache + _applyFilter (block filter + boost)
+  Final yield: _enrichFromCache + _applyFilter (exact > prefix > word >
+               substring relevance, followers/videos as tie-breaker, block
+               filter, follow boost behind exact matches); envelope carries
+               nextRestOffset/restHasMore
         ↓
 NostrClient.queryUsers                      mobile/packages/nostr_client/
   • tempRelays = [relay.nostr.band, search.nos.today, nostr.wine]

@@ -445,6 +445,100 @@ void main() {
       });
     });
 
+    group('searchProfilesByIdentity', () {
+      test(
+        'ranks exact identity matches first and excludes biography text',
+        () async {
+          await dao.upsertProfiles([
+            createProfile(
+              name: 'alice',
+              displayName: 'Exact',
+              about: 'unrelated',
+            ),
+            createProfile(
+              pubkey: testPubkey2,
+              eventId: 'event2',
+              name: 'alice-fan',
+              displayName: 'Prefix',
+            ),
+            createProfile(
+              pubkey: 'a' * 64,
+              eventId: 'event3',
+              name: 'other',
+              about: 'alice appears only here',
+            ),
+          ]);
+
+          // A generous bound so the biography-only row is excluded by the
+          // WHERE clause, not merely truncated past the limit.
+          final results = await dao.searchProfilesByIdentity(
+            'ALICE',
+            limit: 10,
+          );
+
+          expect(results.map((profile) => profile.displayName), [
+            'Exact',
+            'Prefix',
+          ]);
+          expect(
+            results.any((profile) => profile.name == 'other'),
+            isFalse,
+            reason: 'a biography-only match must not be returned',
+          );
+        },
+      );
+
+      test('matches a public key only when the whole key is given', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'someone'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'other',
+          ),
+        ]);
+
+        final whole = await dao.searchProfilesByIdentity(
+          testPubkey2.toUpperCase(),
+          limit: 10,
+        );
+        final prefix = await dao.searchProfilesByIdentity('fedc', limit: 10);
+
+        expect(whole.map((profile) => profile.pubkey), [testPubkey2]);
+        expect(prefix, isEmpty);
+      });
+
+      test('does not match a hex substring inside a public key', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'someone'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'other',
+          ),
+        ]);
+
+        final results = await dao.searchProfilesByIdentity('3210', limit: 10);
+
+        expect(results, isEmpty);
+      });
+
+      test('honors the requested bound', () async {
+        await dao.upsertProfiles([
+          createProfile(name: 'match-one'),
+          createProfile(
+            pubkey: testPubkey2,
+            eventId: 'event2',
+            name: 'match-two',
+          ),
+        ]);
+
+        final results = await dao.searchProfilesByIdentity('match', limit: 1);
+
+        expect(results, hasLength(1));
+      });
+    });
+
     group('upsertProfiles', () {
       test('does nothing for empty list', () async {
         await dao.upsertProfiles([]);

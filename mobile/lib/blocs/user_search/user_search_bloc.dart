@@ -125,6 +125,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
     var latestUnfilteredCount = 0;
+    int? nextRestOffset;
+    var restHasMore = false;
     var latestSourceOutcomes = _pendingSourceOutcomes();
     // Snapshot of sources whose terminal status has already been
     // forwarded to feedTracker — prevents duplicate events when a
@@ -179,6 +181,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             : searchStream.timeout(searchTimeout!),
         onData: (result) {
           latestUnfilteredCount = result.profiles.length;
+          nextRestOffset = result.nextRestOffset;
+          restHasMore = result.restHasMore;
           final visibleProfiles = _visibleProfiles(result.profiles);
           if (!trackedFirst && visibleProfiles.isNotEmpty) {
             trackedFirst = true;
@@ -212,8 +216,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
-          offset: latestUnfilteredCount,
-          hasMore: latestUnfilteredCount == _pageSize,
+          offset: nextRestOffset ?? latestUnfilteredCount,
+          hasMore: restHasMore,
           isLoadingMore: false,
         ),
       );
@@ -309,8 +313,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       emit(
         state.copyWith(
           results: allResults,
-          offset: state.offset + unfilteredPageCount,
-          hasMore: unfilteredPageCount == _pageSize,
+          offset: result.nextRestOffset ?? state.offset + unfilteredPageCount,
+          hasMore: result.restHasMore,
           isLoadingMore: false,
         ),
       );
