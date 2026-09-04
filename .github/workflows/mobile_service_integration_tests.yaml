@@ -89,6 +89,7 @@ jobs:
             integration_test/e2e/dm_group_delete_for_everyone_test.dart \
             integration_test/e2e/dm_reaction_unreadable_inbox_test.dart \
             integration_test/e2e/dm_deletion_unreadable_inbox_test.dart \
+            integration_test/e2e/dm_group_send_unreadable_inbox_test.dart \
             integration_test/e2e/dm_oneway_latch_unlatch_test.dart \
             integration_test/e2e/dm_history_drain_idle_pool_test.dart; do
             echo "── $suite"
