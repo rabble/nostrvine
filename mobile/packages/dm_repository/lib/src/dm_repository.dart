@@ -4741,10 +4741,12 @@ class DmRepository {
         // Local persistence failure is a degraded state, not a send failure.
       }
     } else if (result.blocked && outgoingDao != null) {
-      // A policy block is terminal, not a transient failure: drop the queue
-      // row so the sweep stops re-driving a send the gate refuses every time
-      // (no doomed Resend bubble). Mirrors sendGroupMessage's per-recipient
-      // classification and the drain's blocked arm.
+      // A policy block is terminal, not a transient failure.
+      // _finalizeAfterRecipientBlocked discards or retains the row per the
+      // block's disposition, so the sweep stops re-driving a send the gate
+      // refuses every time (no doomed Resend bubble). Mirrors
+      // sendGroupMessage's per-recipient classification and the drain's
+      // blocked arm.
       await _finalizeAfterRecipientBlocked(
         outgoingDao: outgoingDao,
         rumorId: rumor.id,
@@ -5505,9 +5507,10 @@ class DmRepository {
         // arrives via the receive pipeline.
       }
     } else if (result.blocked) {
-      // A confirmed #176 policy block is terminal, not a transient error:
-      // drop the row so the retry sweep stops re-attempting a send the gate
-      // refuses every time. This attempt delivered nothing.
+      // A confirmed policy block is terminal, not a transient error.
+      // _finalizeAfterRecipientBlocked discards or retains the row per the
+      // block's disposition, so the retry sweep stops re-attempting a send the
+      // gate refuses every time. This attempt delivered nothing.
       await _finalizeAfterRecipientBlocked(
         outgoingDao: dao,
         rumorId: rumorId,
@@ -6469,14 +6472,17 @@ class DmRepository {
     // nothing to atomically tie a queue update to (no message row insert).
     // Classify each the same way the 1:1 path does — soft-unconfirmed stays
     // pending (plain optimistic bubble), a policy block is terminal (row
-    // dropped), and a hard failure marks both wraps failed.
+    // discarded or retained per disposition), and a hard failure marks both
+    // wraps failed.
     //
     // The two surviving-row branches also stamp their sibling's queued rumor
     // id onto the returned result, exactly as [sendMessage] does. Without it
     // a group caller has no handle on the rows this send parked and its only
     // way to "retry" is a fresh fan-out, which mints a whole second set of
     // rumors the receiver cannot collapse (#7316). Cancelled and blocked
-    // siblings are deliberately unstamped: none leaves a row behind.
+    // siblings are deliberately unstamped: a cancelled sibling leaves no row,
+    // and a blocked sibling is terminal (retained or discarded) and must never
+    // be handed back for retry.
     if (outgoingDao != null) {
       for (var i = 0; i < queueIds.length; i++) {
         // A sibling skipped for cancellation has no live row to transition; an
