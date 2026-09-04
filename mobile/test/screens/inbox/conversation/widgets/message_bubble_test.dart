@@ -107,7 +107,7 @@ TapGestureRecognizer? _findRecognizer(InlineSpan span, String linkText) {
 
 void main() {
   group('retraction status', () {
-    testWidgets('shows a muted warning affordance for a failed retraction', (
+    testWidgets('shows a warning affordance for a failed retraction', (
       tester,
     ) async {
       var tapped = false;
@@ -127,11 +127,15 @@ void main() {
         ),
       );
 
+      // The bubble is NOT dimmed: `Opacity` composites the text and its own
+      // fill toward the page together, taking white-on-primaryAccessible from
+      // 3.17:1 to 1.94:1 on the light message list. The warning icon carries
+      // the state instead.
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is Opacity && widget.opacity == 0.55,
+          (widget) => widget is Opacity && widget.opacity < 1,
         ),
-        findsOneWidget,
+        findsNothing,
       );
       final warning = _divineIcon(DivineIconName.warningCircle);
       expect(warning, findsOneWidget);
