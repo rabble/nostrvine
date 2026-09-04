@@ -497,6 +497,64 @@ void main() {
       await db.close();
     });
 
+    test(
+      'v12 drops ledger rows that never produced a message and keeps the rest',
+      () async {
+        // The stranded set: the inbound path recorded a wrap as terminally
+        // processed when its insert was ignored, and `_alreadyProcessed` reads
+        // that ledger before paying a decrypt — so the wrap was invisible to
+        // every later drain. Wraps that did produce a message keep being
+        // deduplicated by `hasGiftWrap`, so dropping their ledger row costs
+        // nothing. #6645.
+        await verifier.testWithDataIntegrity(
+          oldVersion: 11,
+          newVersion: 12,
+          createOld: v11.DatabaseAtV11.new,
+          createNew: v12.DatabaseAtV12.new,
+          openTestedDatabase: AppDatabase.new,
+          createItems: (batch, oldDb) {
+            batch.insert(
+              oldDb.directMessages,
+              v11.DirectMessagesCompanion.insert(
+                id: '1' * 64,
+                conversationId: '2' * 64,
+                senderPubkey: '3' * 64,
+                content: 'persisted',
+                createdAt: 1700000000,
+                giftWrapId: 'kept' * 16,
+              ),
+            );
+            batch.insert(
+              oldDb.processedGiftWraps,
+              v11.ProcessedGiftWrapsCompanion.insert(
+                giftWrapId: 'kept' * 16,
+                processedAt: 1700000000,
+                ownerPubkey: Value('a' * 64),
+              ),
+            );
+            batch.insert(
+              oldDb.processedGiftWraps,
+              v11.ProcessedGiftWrapsCompanion.insert(
+                giftWrapId: 'lost' * 16,
+                processedAt: 1700000000,
+                ownerPubkey: Value('b' * 64),
+              ),
+            );
+          },
+          validateItems: (newDb) async {
+            final rows = await newDb.select(newDb.processedGiftWraps).get();
+            final ledgered = rows.map((row) => row.giftWrapId).toSet();
+            expect(
+              ledgered,
+              isNot(contains('lost' * 16)),
+              reason:
+                  'a wrap that persisted nothing must become drainable again',
+            );
+          },
+        );
+      },
+    );
+
     test('v7 backfills the consolidated indexes onto a v6 database', () async {
       // The `List<Index>` getters these replace were never read by Drift, so
       // a v6 database has none of them. Folding the backfill into an earlier

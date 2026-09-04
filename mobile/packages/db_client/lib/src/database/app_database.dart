@@ -310,6 +310,11 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey '
       'ON conversations (owner_pubkey)',
     );
+
+    await customStatement(
+      'DELETE FROM processed_gift_wraps WHERE gift_wrap_id NOT IN '
+      '(SELECT gift_wrap_id FROM direct_messages)',
+    );
   }
 
   /// Adds the durable delete-for-everyone columns to `direct_messages`.
