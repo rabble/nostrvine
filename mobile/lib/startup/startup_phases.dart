@@ -21,6 +21,7 @@ import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_cleanup_service.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/startup/timed_startup_task.dart';
 import 'package:openvine/utils/open_vine_image_cache.dart';
@@ -138,10 +139,13 @@ Future<void> configurePlaybackAudioSession() async {
 
 Future<void> initializeHiveStorage() => HiveStorageService.initialize();
 
-Future<void> initializeVideoCacheManifest() async {
+Future<void> initializeVideoCacheManifest({
+  required StartupPerformanceService startupPerformance,
+}) async {
   if (kIsWeb) return;
 
   await runTimedStartupTask(
+    startupPerformance: startupPerformance,
     phaseName: 'video_cache',
     initializationStep: 'Initializing video cache manifest',
     task: () async {
@@ -170,8 +174,12 @@ Future<void> sweepC2paDebris() async {
   directories.forEach(C2paDebrisJanitor.deleteStaleDebris);
 }
 
-Future<void> initializeSeedDataPreload(ProviderContainer container) async {
+Future<void> initializeSeedDataPreload(
+  ProviderContainer container, {
+  required StartupPerformanceService startupPerformance,
+}) async {
   await runTimedStartupTask(
+    startupPerformance: startupPerformance,
     phaseName: 'seed_data_preload',
     initializationStep: 'Loading bundled seed data',
     task: () async {
@@ -194,8 +202,11 @@ Future<void> initializeSeedDataPreload(ProviderContainer container) async {
   );
 }
 
-Future<void> initializeSeedMediaMaintenance() async {
+Future<void> initializeSeedMediaMaintenance({
+  required StartupPerformanceService startupPerformance,
+}) async {
   await runTimedStartupTask(
+    startupPerformance: startupPerformance,
     phaseName: 'seed_media_maintenance',
     initializationStep: 'Cleaning up seed media',
     task: () async {
@@ -231,8 +242,11 @@ Future<void> initializeSeedMediaMaintenance() async {
   );
 }
 
-Future<void> initializeZendeskSupport() async {
+Future<void> initializeZendeskSupport({
+  required StartupPerformanceService startupPerformance,
+}) async {
   await runTimedStartupTask(
+    startupPerformance: startupPerformance,
     phaseName: 'zendesk',
     initializationStep: 'Initializing Zendesk Support SDK',
     task: () async {

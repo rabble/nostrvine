@@ -33,10 +33,7 @@ class StartupPhaseTimer {
 
 /// Service for monitoring and optimizing app startup performance
 class StartupPerformanceService {
-  StartupPerformanceService._();
-  static final StartupPerformanceService _instance =
-      StartupPerformanceService._();
-  static StartupPerformanceService get instance => _instance;
+  StartupPerformanceService();
 
   final Map<String, StartupPhaseTimer> _phases = {};
   final Map<String, DateTime> _checkpoints = {};

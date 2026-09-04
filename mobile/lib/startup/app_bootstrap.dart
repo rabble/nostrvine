@@ -141,6 +141,11 @@ Future<void> startOpenVineApp({
 }) async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
+
+  // Times the bootstrap itself, so it is constructed here rather than read
+  // from a container — the ProviderContainer does not exist for another ~420
+  // lines. Pinned device-scoped via DeviceScope.overrides below (#4743).
+  final startupPerformance = StartupPerformanceService();
   AppUptime.markStarted();
 
   // Ensure bindings are initialized first (required for everything)
@@ -182,8 +187,8 @@ Future<void> startOpenVineApp({
   }
 
   // Initialize startup performance monitoring FIRST
-  await StartupPerformanceService.instance.initialize();
-  StartupPerformanceService.instance.startPhase('bindings');
+  await startupPerformance.initialize();
+  startupPerformance.startPhase('bindings');
 
   // NOTE: Native video players (AVPlayer on iOS/macOS, ExoPlayer on Android)
   // do not require explicit player-wide initialization.
@@ -206,12 +211,12 @@ Future<void> startOpenVineApp({
     disposeAll: DivineVideoPlayerController.disposeAll,
   );
 
-  StartupPerformanceService.instance.completePhase('bindings');
+  startupPerformance.completePhase('bindings');
 
   // Initialize crash reporting ASAP so we can use it for logging
-  StartupPerformanceService.instance.startPhase('crash_reporting');
+  startupPerformance.startPhase('crash_reporting');
   await CrashReportingService.instance.initialize();
-  StartupPerformanceService.instance.completePhase('crash_reporting');
+  startupPerformance.completePhase('crash_reporting');
 
   // Now we can start logging
   Log.info(
@@ -220,7 +225,7 @@ Future<void> startOpenVineApp({
     category: LogCategory.system,
   );
   CrashReportingService.instance.logInitializationStep('Bindings initialized');
-  StartupPerformanceService.instance.checkpoint('crash_reporting_ready');
+  startupPerformance.checkpoint('crash_reporting_ready');
 
   // DEFER window manager initialization until after UI is ready to avoid blocking
   if (defaultTargetPlatform == TargetPlatform.macOS ||
@@ -228,7 +233,7 @@ Future<void> startOpenVineApp({
     // Defer window manager setup to not block main thread during critical startup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        StartupPerformanceService.instance.startPhase('window_manager');
+        startupPerformance.startPhase('window_manager');
         CrashReportingService.instance.logInitializationStep(
           'Initializing window manager',
         );
@@ -255,11 +260,11 @@ Future<void> startOpenVineApp({
           },
         );
 
-        StartupPerformanceService.instance.completePhase('window_manager');
+        startupPerformance.completePhase('window_manager');
       } catch (e) {
         // If window_manager fails, continue without it - app will still work
         Log.error('Window manager initialization failed: $e', name: 'main');
-        StartupPerformanceService.instance.completePhase('window_manager');
+        startupPerformance.completePhase('window_manager');
       }
     });
   }
@@ -426,9 +431,9 @@ Future<void> startOpenVineApp({
   };
 
   // Initialize SharedPreferences for feature flags
-  StartupPerformanceService.instance.startPhase('shared_preferences');
+  startupPerformance.startPhase('shared_preferences');
   final sharedPreferences = await SharedPreferences.getInstance();
-  StartupPerformanceService.instance.completePhase('shared_preferences');
+  startupPerformance.completePhase('shared_preferences');
 
   // Load package info for version checking (non-blocking, fast).
   final packageInfo = await PackageInfo.fromPlatform();
@@ -613,6 +618,7 @@ Future<void> startOpenVineApp({
     switchController: accountSwitchController,
     appVersion: packageInfo.version,
     documentsPath: documentsPath,
+    startupPerformance: startupPerformance,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,
@@ -648,7 +654,7 @@ Future<void> startOpenVineApp({
   CrashReportingService.instance.logInitializationStep(
     'Blocking startup complete',
   );
-  StartupPerformanceService.instance.checkpoint('pre_app_launch');
+  startupPerformance.checkpoint('pre_app_launch');
 
   await initializeDateFormatting();
 

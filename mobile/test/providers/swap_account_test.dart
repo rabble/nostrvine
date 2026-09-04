@@ -26,6 +26,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/push_notification_session_coordinator.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
@@ -95,6 +96,7 @@ void main() {
       sharedPreferences: prefs,
       switchController: controller,
       appVersion: 'test',
+      startupPerformance: StartupPerformanceService(),
       documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
@@ -111,6 +113,7 @@ void main() {
       sharedPreferences: deviceScope.sharedPreferences,
       switchController: controller,
       appVersion: 'test',
+      startupPerformance: StartupPerformanceService(),
       documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
@@ -618,6 +621,7 @@ void main() {
         sharedPreferences: deviceScope.sharedPreferences,
         switchController: controller,
         appVersion: 'test',
+        startupPerformance: StartupPerformanceService(),
         documentsPath: '/documents',
         accountOverrides: [
           secureKeyStorageProvider.overrideWithValue(keyStorage),
