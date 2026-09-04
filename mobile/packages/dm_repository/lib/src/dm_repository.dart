@@ -2124,10 +2124,7 @@ class DmRepository {
     try {
       for (final tag in deletionEvent.tags) {
         if (tag.length < 2 || tag[0] != 'e') continue;
-        await _applyMessageDeletion(
-          rumorId: tag[1],
-          deletion: deletionEvent,
-        );
+        await _applyMessageDeletion(rumorId: tag[1], deletion: deletionEvent);
       }
     } on Object catch (e, stackTrace) {
       Log.error(
@@ -2454,379 +2451,444 @@ class DmRepository {
         );
         return;
       }
-      // Decrypt succeeded — drop any prior failed-decrypt record so the
-      // retry queue stops reprocessing this wrap. See #5202.
-      await _pendingGiftWrapsDao?.deletePending(
-        giftWrapId: giftWrapEvent.id,
-        ownerPubkey: ownerPubkey,
-      );
+      // The pending row is dropped in the `finally` below, AFTER the
+      // writes commit — deliberately not here. Deleting it first is what
+      // made a persist failure unrecoverable: the transaction rolls back,
+      // no ledger row is written, and the queue row that would have
+      // replayed this wrap is already gone, so it survives in no table at
+      // all. It also erased the attempt count, so a wrap that kept failing
+      // re-inserted at 1 on every pass and [DmHistoryDrainConfig
+      // .maxDecryptRetries] could never be reached. See #5202 for the
+      // queue itself.
+      var persistFailed = false;
+      try {
+        // Bind to a final local so the non-null type promotes inside the
+        // runInTransaction closure below (a nullable parameter would not).
+        final rumor = rumorEvent;
 
-      // Bind to a final local so the non-null type promotes inside the
-      // runInTransaction closure below (a nullable parameter would not).
-      final rumor = rumorEvent;
-
-      // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by the
-      // sender. Keep the message, but clamp the timestamp used for local
-      // ordering/cursors so a bad clock cannot blackhole future subscriptions
-      // or pin the thread above honest messages forever.
-      final clock = DmClock.now();
-      final persistedCreatedAt = clock.atMostNow(rumor.createdAt);
-      if (rumor.createdAt >
-          clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
-        Log.warning(
-          'Clamped DM (kind ${rumor.kind}) from '
-          '${pubkeyForLogs(rumor.pubkey)}: rumor '
-          'created_at ${rumor.createdAt} is beyond the expected skew of '
-          '${DmSyncState.maxFutureSkewSeconds}s (now ${clock.nowSeconds})',
-          category: LogCategory.system,
-        );
-      }
-
-      // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
-      // the gift-wrap envelope. Reaction deletions are also wrapped by
-      // this feature so the remove path preserves DM privacy. Route both
-      // before the DM-only kinds gate below. #4633.
-      if (rumor.kind == EventKind.reaction) {
-        final outcome = await _reactionsRepository?.persistIncoming(
-          rumorEvent: rumor,
-          giftWrapId: giftWrapEvent.id,
-        );
-        // Record only terminal outcomes: a reaction whose target message has
-        // not synced is left out so it re-decrypts and lands later. #5452.
-        if (outcome == DmWrapOutcome.processed) {
-          await _recordProcessedWrap(
-            giftWrapEvent.id,
-            ownerPubkey: ownerPubkey,
+        // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by the
+        // sender. Keep the message, but clamp the timestamp used for local
+        // ordering/cursors so a bad clock cannot blackhole future subscriptions
+        // or pin the thread above honest messages forever.
+        final clock = DmClock.now();
+        final persistedCreatedAt = clock.atMostNow(rumor.createdAt);
+        if (rumor.createdAt >
+            clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
+          Log.warning(
+            'Clamped DM (kind ${rumor.kind}) from '
+            '${pubkeyForLogs(rumor.pubkey)}: rumor '
+            'created_at ${rumor.createdAt} is beyond the expected skew of '
+            '${DmSyncState.maxFutureSkewSeconds}s (now ${clock.nowSeconds})',
+            category: LogCategory.system,
           );
         }
-        return;
-      }
-      if (rumor.kind == EventKind.eventDeletion) {
-        final outcome = await _routeWrappedDeletion(
-          rumor: rumor,
-          giftWrapId: giftWrapEvent.id,
-        );
-        if (outcome == DmWrapOutcome.processed) {
-          await _recordProcessedWrap(
-            giftWrapEvent.id,
-            ownerPubkey: ownerPubkey,
+
+        // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
+        // the gift-wrap envelope. Reaction deletions are also wrapped by
+        // this feature so the remove path preserves DM privacy. Route both
+        // before the DM-only kinds gate below. #4633.
+        if (rumor.kind == EventKind.reaction) {
+          final outcome = await _reactionsRepository?.persistIncoming(
+            rumorEvent: rumor,
+            giftWrapId: giftWrapEvent.id,
           );
-        }
-        return;
-      }
-
-      // Cross-device DM read-state marker (#4977). Route only Divine's read
-      // marker d-tag to the reconciler before the DM-only kinds gate so it is
-      // never rendered as a message, then record it terminally so it is not
-      // re-decrypted every launch. Other app-specific self-wraps must remain
-      // unrecorded so future/foreign kind-30078 handlers can still process
-      // them instead of losing them to the processed-wrap ledger.
-      if (rumor.kind == EventKind.appSpecificData) {
-        if (_hasReadMarkerDTag(rumor)) {
-          await _reconcileReadMarker(rumor);
-          await _recordProcessedWrap(
-            giftWrapEvent.id,
-            ownerPubkey: ownerPubkey,
-          );
-        }
-        return;
-      }
-
-      // Accept kind 14 (text) and kind 15 (file). Any other kind is terminally
-      // unsupported — record it so it is not re-decrypted on every launch.
-      // Note: the ledger survives upgrades, so a future version that adds
-      // support for a new kind will not reprocess wraps already recorded here;
-      // such a kind would need a one-off backfill. Acceptable vs. re-decrypting
-      // every unknown wrap on every launch today. #5452.
-      if (!_supportedDmKinds.contains(rumor.kind)) {
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        return;
-      }
-
-      // Extract conversation participants from pubkey + p tags, then
-      // resolve against existing conversations to prevent duplicates
-      // from non-compliant clients that add extra p-tags.
-      final rawParticipants = _extractParticipants(rumor);
-      if (rawParticipants.length < 2) {
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        return;
-      }
-
-      final participants = await _resolveConversationParticipants(
-        rawParticipants,
-        rumor.pubkey,
-      );
-
-      // Reject self-conversations (all participants are the same pubkey).
-      // Defense-in-depth: should not happen after the self-wrap fix above,
-      // but guards against any future code path producing degenerate lists.
-      if (participants.toSet().length < 2) {
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        return;
-      }
-
-      final conversationId = computeConversationId(participants);
-
-      // Extract common tags
-      String? replyToId;
-      String? subject;
-      String? sendBatchId;
-      for (final tag in rumor.tags) {
-        if (tag.length >= 2) {
-          if (tag[0] == 'e') replyToId = tag[1];
-          if (tag[0] == 'subject') subject = tag[1];
-          // Stamp the batch id from the sender's OWN self-wrap echo so a
-          // group send's local persist / recovery dedups (both owner-scoped
-          // via hasMessageWithSendBatchId) against this pre-persisted row
-          // instead of inserting a duplicate bubble. Honour the tag only on
-          // a self-authored rumor: hasMessageWithSendBatchId is owner-scoped,
-          // so accepting a peer-authored 'batch' tag would let a sender
-          // suppress the local user's own in-flight group persist. The
-          // well-formed-hex check keeps this keyspace disjoint from the
-          // legacy (content, createdAt) dedup tuple.
-          if (tag[0] == _sendBatchTagKey &&
-              rumor.pubkey == ownerPubkey &&
-              _isValidSendBatchId(tag[1])) {
-            sendBatchId = tag[1];
-          }
-        }
-      }
-
-      // Extract file metadata for kind 15
-      final fileMetadata = rumor.kind == EventKind.fileMessage
-          ? _extractFileMetadata(rumor)
-          : null;
-
-      // Cross-protocol dedup: if a NIP-04 copy of this message was
-      // processed first (network reordering), skip the duplicate. Record the
-      // wrap so the skipped NIP-17 copy is not re-decrypted every launch.
-      // #5452.
-      //
-      // Only a NIP-04 copy may suppress a peer's rumor: a row that also
-      // arrived over NIP-17 is a genuine earlier message (#7324).
-      //
-      // Our own self-wrap echo is the exception. A group send persists one row
-      // but publishes one self-wrap per recipient for the shared rumor. Every
-      // echo dedups on the batch token, or the unfiltered window when the send
-      // predates it (#6046).
-      final isSentByMe = rumor.pubkey == ownerPubkey;
-      final isGroup = participants.length > 2;
-      final bool isDuplicate;
-      if (isSentByMe && sendBatchId != null) {
-        isDuplicate = await _directMessagesDao.hasMessageWithSendBatchId(
-          batchId: sendBatchId,
-          ownerPubkey: ownerPubkey,
-        );
-      } else if (isSentByMe && isGroup) {
-        isDuplicate = await _directMessagesDao.hasMatchingMessage(
-          conversationId: conversationId,
-          senderPubkey: rumor.pubkey,
-          content: rumor.content,
-          createdAt: persistedCreatedAt,
-          ownerPubkey: ownerPubkey,
-          counterpart: DmDedupCounterpart.unconstrained,
-        );
-      } else {
-        // A peer's rumor may only be collapsed onto the ONE NIP-04 twin of
-        // this same message, which the claim consumes so a second same-text
-        // rumor in the window cannot be collapsed onto it too (#8211).
-        isDuplicate = await _directMessagesDao.claimCrossProtocolTwin(
-          conversationId: conversationId,
-          senderPubkey: rumor.pubkey,
-          content: rumor.content,
-          createdAt: persistedCreatedAt,
-          ownerPubkey: ownerPubkey,
-          counterpart: DmDedupCounterpart.nip04Copy,
-        );
-      }
-      if (isDuplicate) {
-        // A twin from the PEER is proof they speak NIP-17, and it is the only
-        // place that proof ever appears: the rumor is about to be dropped as a
-        // duplicate, so without this the evidence is discarded and the thread
-        // stays latched to 'nip04' forever. That latch is what makes the
-        // legacy dual-send the steady state rather than an edge case — every
-        // later pair hits this same early return, so the decision the first
-        // arrival race made is never revisited (#8499).
-        //
-        // `!isSentByMe` is load-bearing on this duplicate branch. The `else`
-        // above is reached by a peer's rumor AND by a self-authored 1:1 rumor
-        // with no send batch token; clearing here on our own self-wrap would
-        // invert *this* path into "clear when *I* speak NIP-17". It does not
-        // cover a unique self-authored NIP-17, which is not a twin and still
-        // hits the persist upsert's `dmProtocol: 'nip17'` below.
-        // Ledger first, unlatch second, and the unlatch can never throw out of
-        // here. It is an opportunistic upgrade on evidence we happen to be
-        // holding; the dedup bookkeeping below it is what stops this wrap
-        // being decrypted again on every redelivery. Ordering them the other
-        // way round made a failed unlatch abort `_recordProcessedWrap`, so a
-        // transient DB error would have cost a signer round trip per replay,
-        // forever. A dropped unlatch costs nothing — the next message from the
-        // peer presents the same evidence again.
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        if (!isSentByMe) {
-          try {
-            final cleared = await _conversationsDao.clearNip04ProtocolLatch(
-              conversationId,
+          // Record only terminal outcomes: a reaction whose target message has
+          // not synced is left out so it re-decrypts and lands later. #5452.
+          if (outcome == DmWrapOutcome.processed) {
+            await _recordProcessedWrap(
+              giftWrapEvent.id,
               ownerPubkey: ownerPubkey,
             );
-            if (cleared) {
-              Log.info(
-                'Cleared the nip04 protocol latch on conversation '
-                '$conversationId: ${pubkeyForLogs(rumor.pubkey)} sent NIP-17, '
-                'so the legacy kind-4 copy is no longer published to them',
+          }
+          return;
+        }
+        if (rumor.kind == EventKind.eventDeletion) {
+          final outcome = await _routeWrappedDeletion(
+            rumor: rumor,
+            giftWrapId: giftWrapEvent.id,
+          );
+          if (outcome == DmWrapOutcome.processed) {
+            await _recordProcessedWrap(
+              giftWrapEvent.id,
+              ownerPubkey: ownerPubkey,
+            );
+          }
+          return;
+        }
+
+        // Cross-device DM read-state marker (#4977). Route only Divine's read
+        // marker d-tag to the reconciler before the DM-only kinds gate so it is
+        // never rendered as a message, then record it terminally so it is not
+        // re-decrypted every launch. Other app-specific self-wraps must remain
+        // unrecorded so future/foreign kind-30078 handlers can still process
+        // them instead of losing them to the processed-wrap ledger.
+        if (rumor.kind == EventKind.appSpecificData) {
+          if (_hasReadMarkerDTag(rumor)) {
+            await _reconcileReadMarker(rumor);
+            await _recordProcessedWrap(
+              giftWrapEvent.id,
+              ownerPubkey: ownerPubkey,
+            );
+          }
+          return;
+        }
+
+        // Accept kind 14 (text) and kind 15 (file). Any other kind is terminally
+        // unsupported — record it so it is not re-decrypted on every launch.
+        // Note: the ledger survives upgrades, so a future version that adds
+        // support for a new kind will not reprocess wraps already recorded here;
+        // such a kind would need a one-off backfill. Acceptable vs. re-decrypting
+        // every unknown wrap on every launch today. #5452.
+        if (!_supportedDmKinds.contains(rumor.kind)) {
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          return;
+        }
+
+        // Extract conversation participants from pubkey + p tags, then
+        // resolve against existing conversations to prevent duplicates
+        // from non-compliant clients that add extra p-tags.
+        final rawParticipants = _extractParticipants(rumor);
+        if (rawParticipants.length < 2) {
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          return;
+        }
+
+        final participants = await _resolveConversationParticipants(
+          rawParticipants,
+          rumor.pubkey,
+        );
+
+        // Reject self-conversations (all participants are the same pubkey).
+        // Defense-in-depth: should not happen after the self-wrap fix above,
+        // but guards against any future code path producing degenerate lists.
+        if (participants.toSet().length < 2) {
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          return;
+        }
+
+        final conversationId = computeConversationId(participants);
+
+        // Extract common tags
+        String? replyToId;
+        String? subject;
+        String? sendBatchId;
+        for (final tag in rumor.tags) {
+          if (tag.length >= 2) {
+            if (tag[0] == 'e') replyToId = tag[1];
+            if (tag[0] == 'subject') subject = tag[1];
+            // Stamp the batch id from the sender's OWN self-wrap echo so a
+            // group send's local persist / recovery dedups (both owner-scoped
+            // via hasMessageWithSendBatchId) against this pre-persisted row
+            // instead of inserting a duplicate bubble. Honour the tag only on
+            // a self-authored rumor: hasMessageWithSendBatchId is owner-scoped,
+            // so accepting a peer-authored 'batch' tag would let a sender
+            // suppress the local user's own in-flight group persist. The
+            // well-formed-hex check keeps this keyspace disjoint from the
+            // legacy (content, createdAt) dedup tuple.
+            if (tag[0] == _sendBatchTagKey &&
+                rumor.pubkey == ownerPubkey &&
+                _isValidSendBatchId(tag[1])) {
+              sendBatchId = tag[1];
+            }
+          }
+        }
+
+        // Extract file metadata for kind 15
+        final fileMetadata = rumor.kind == EventKind.fileMessage
+            ? _extractFileMetadata(rumor)
+            : null;
+
+        // Cross-protocol dedup: if a NIP-04 copy of this message was
+        // processed first (network reordering), skip the duplicate. Record the
+        // wrap so the skipped NIP-17 copy is not re-decrypted every launch.
+        // #5452.
+        //
+        // Only a NIP-04 copy may suppress a peer's rumor: a row that also
+        // arrived over NIP-17 is a genuine earlier message (#7324).
+        //
+        // Our own self-wrap echo is the exception. A group send persists one row
+        // but publishes one self-wrap per recipient for the shared rumor. Every
+        // echo dedups on the batch token, or the unfiltered window when the send
+        // predates it (#6046).
+        final isSentByMe = rumor.pubkey == ownerPubkey;
+        final isGroup = participants.length > 2;
+        final bool isDuplicate;
+        if (isSentByMe && sendBatchId != null) {
+          isDuplicate = await _directMessagesDao.hasMessageWithSendBatchId(
+            batchId: sendBatchId,
+            ownerPubkey: ownerPubkey,
+          );
+        } else if (isSentByMe && isGroup) {
+          isDuplicate = await _directMessagesDao.hasMatchingMessage(
+            conversationId: conversationId,
+            senderPubkey: rumor.pubkey,
+            content: rumor.content,
+            createdAt: persistedCreatedAt,
+            ownerPubkey: ownerPubkey,
+            counterpart: DmDedupCounterpart.unconstrained,
+          );
+        } else {
+          // A peer's rumor may only be collapsed onto the ONE NIP-04 twin of
+          // this same message, which the claim consumes so a second same-text
+          // rumor in the window cannot be collapsed onto it too (#8211).
+          isDuplicate = await _directMessagesDao.claimCrossProtocolTwin(
+            conversationId: conversationId,
+            senderPubkey: rumor.pubkey,
+            content: rumor.content,
+            createdAt: persistedCreatedAt,
+            ownerPubkey: ownerPubkey,
+            counterpart: DmDedupCounterpart.nip04Copy,
+          );
+        }
+        if (isDuplicate) {
+          // A twin from the PEER is proof they speak NIP-17, and it is the only
+          // place that proof ever appears: the rumor is about to be dropped as a
+          // duplicate, so without this the evidence is discarded and the thread
+          // stays latched to 'nip04' forever. That latch is what makes the
+          // legacy dual-send the steady state rather than an edge case — every
+          // later pair hits this same early return, so the decision the first
+          // arrival race made is never revisited (#8499).
+          //
+          // `!isSentByMe` is load-bearing on this duplicate branch. The `else`
+          // above is reached by a peer's rumor AND by a self-authored 1:1 rumor
+          // with no send batch token; clearing here on our own self-wrap would
+          // invert *this* path into "clear when *I* speak NIP-17". It does not
+          // cover a unique self-authored NIP-17, which is not a twin and still
+          // hits the persist upsert's `dmProtocol: 'nip17'` below.
+          // Ledger first, unlatch second, and the unlatch can never throw out of
+          // here. It is an opportunistic upgrade on evidence we happen to be
+          // holding; the dedup bookkeeping below it is what stops this wrap
+          // being decrypted again on every redelivery. Ordering them the other
+          // way round made a failed unlatch abort `_recordProcessedWrap`, so a
+          // transient DB error would have cost a signer round trip per replay,
+          // forever. A dropped unlatch costs nothing — the next message from the
+          // peer presents the same evidence again.
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          if (!isSentByMe) {
+            try {
+              final cleared = await _conversationsDao.clearNip04ProtocolLatch(
+                conversationId,
+                ownerPubkey: ownerPubkey,
+              );
+              if (cleared) {
+                Log.info(
+                  'Cleared the nip04 protocol latch on conversation '
+                  '$conversationId: ${pubkeyForLogs(rumor.pubkey)} sent NIP-17, '
+                  'so the legacy kind-4 copy is no longer published to them',
+                  category: LogCategory.system,
+                );
+              }
+            } on Object catch (e) {
+              Log.warning(
+                'Could not clear the nip04 protocol latch on conversation '
+                '$conversationId: $e — the thread keeps dual-sending until the '
+                'next NIP-17 message from the peer',
                 category: LogCategory.system,
               );
             }
-          } on Object catch (e) {
-            Log.warning(
-              'Could not clear the nip04 protocol latch on conversation '
-              '$conversationId: $e — the thread keeps dual-sending until the '
-              'next NIP-17 message from the peer',
-              category: LogCategory.system,
-            );
           }
-        }
-        Log.debug(
-          'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
-          '$conversationId from ${pubkeyForLogs(rumor.pubkey)}: matching '
-          'message already '
-          'stored',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Persist message + conversation atomically inside a transaction.
-      // The inner hasGiftWrap re-check guards against TOCTOU races where
-      // a poll and subscription event both pass the outer fast-path check.
-      final previewContent = rumor.kind == EventKind.fileMessage
-          ? _filePreviewText(fileMetadata?.fileType)
-          : rumor.content;
-
-      var inserted = false;
-      var skippedByTransactionalGiftWrapDedup = false;
-      var suppressedByRemovedConversation = false;
-      int? removedAt;
-      await _conversationsDao.runInTransaction(() async {
-        // Re-check dedup inside transaction (TOCTOU protection). The skip is
-        // logged after the transaction below; logging here too would emit one
-        // line per skip twice.
-        if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
-          skippedByTransactionalGiftWrapDedup = true;
+          Log.debug(
+            'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
+            '$conversationId from ${pubkeyForLogs(rumor.pubkey)}: matching '
+            'message already '
+            'stored',
+            category: LogCategory.system,
+          );
           return;
         }
 
-        removedAt = await _removedConversationsDao?.removedAtFor(
-          conversationId: conversationId,
-          ownerPubkey: ownerPubkey,
-        );
-        if (removedAt != null && persistedCreatedAt <= removedAt!) {
-          suppressedByRemovedConversation = true;
+        // Persist message + conversation atomically inside a transaction.
+        // The inner hasGiftWrap re-check guards against TOCTOU races where
+        // a poll and subscription event both pass the outer fast-path check.
+        final previewContent = rumor.kind == EventKind.fileMessage
+            ? _filePreviewText(fileMetadata?.fileType)
+            : rumor.content;
+
+        var inserted = false;
+        var skippedByTransactionalGiftWrapDedup = false;
+        var suppressedByRemovedConversation = false;
+        int? removedAt;
+        await _conversationsDao.runInTransaction(() async {
+          // Re-check dedup inside transaction (TOCTOU protection). The skip is
+          // logged after the transaction below; logging here too would emit one
+          // line per skip twice.
+          if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
+            skippedByTransactionalGiftWrapDedup = true;
+            return;
+          }
+
+          removedAt = await _removedConversationsDao?.removedAtFor(
+            conversationId: conversationId,
+            ownerPubkey: ownerPubkey,
+          );
+          if (removedAt != null && persistedCreatedAt <= removedAt!) {
+            suppressedByRemovedConversation = true;
+            return;
+          }
+
+          inserted = await _directMessagesDao.insertMessage(
+            id: rumor.id,
+            conversationId: conversationId,
+            senderPubkey: rumor.pubkey,
+            content: rumor.content,
+            createdAt: persistedCreatedAt,
+            giftWrapId: giftWrapEvent.id,
+            messageKind: rumor.kind,
+            replyToId: replyToId,
+            subject: subject,
+            tagsJson: jsonEncode(rumor.tags),
+            fileType: fileMetadata?.fileType,
+            encryptionAlgorithm: fileMetadata?.encryptionAlgorithm,
+            decryptionKey: fileMetadata?.decryptionKey,
+            decryptionNonce: fileMetadata?.decryptionNonce,
+            fileHash: fileMetadata?.fileHash,
+            originalFileHash: fileMetadata?.originalFileHash,
+            fileSize: fileMetadata?.fileSize,
+            dimensions: fileMetadata?.dimensions,
+            blurhash: fileMetadata?.blurhash,
+            thumbnailUrl: fileMetadata?.thumbnailUrl,
+            ownerPubkey: ownerPubkey,
+            sendBatchId: sendBatchId,
+          );
+          if (!inserted) return;
+
+          final existing = await _conversationsDao.getConversation(
+            conversationId,
+            ownerPubkey: ownerPubkey,
+          );
+
+          await _conversationsDao.upsertConversation(
+            id: conversationId,
+            participantPubkeys: jsonEncode(participants),
+            isGroup: isGroup,
+            createdAt: existing?.createdAt ?? persistedCreatedAt,
+            lastMessageContent: previewContent,
+            lastMessageTimestamp: persistedCreatedAt,
+            lastMessageSenderPubkey: rumor.pubkey,
+            subject: subject,
+            isRead: isSentByMe,
+            currentUserHasSent:
+                isSentByMe || (existing?.currentUserHasSent ?? false),
+            ownerPubkey: ownerPubkey,
+            dmProtocol: 'nip17',
+          );
+          // A newer message reopens a removed conversation: the row is
+          // recreated above, while the tombstone is deliberately kept so
+          // replayed history stamped at or before the removal stays
+          // suppressed. #7804.
+        });
+
+        if (skippedByTransactionalGiftWrapDedup) {
+          Log.debug(
+            'Skipping NIP-17 gift wrap ${giftWrapEvent.id}: already persisted '
+            'during transaction',
+            category: LogCategory.system,
+          );
+          return;
+        }
+        if (suppressedByRemovedConversation) {
+          // Terminal: record the wrap so replays skip it before decryption.
+          // The tombstone is authoritative for the account's lifetime, so the
+          // ledger is not racing a reopening that clears it.
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          Log.debug(
+            'Suppressed NIP-17 DM ${rumor.id} in removed conversation '
+            '$conversationId: createdAt $persistedCreatedAt is at or before '
+            'removal at $removedAt',
+            category: LogCategory.system,
+          );
+          return;
+        }
+        if (!inserted) {
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+          Log.debug(
+            'Skipped duplicate NIP-17 DM ${rumor.id} in conversation '
+            '$conversationId: insert was ignored by local dedup constraints',
+            category: LogCategory.system,
+          );
           return;
         }
 
-        inserted = await _directMessagesDao.insertMessage(
-          id: rumor.id,
-          conversationId: conversationId,
-          senderPubkey: rumor.pubkey,
-          content: rumor.content,
+        // Advance sync boundaries in BOTH clocks, because they answer two
+        // different questions. The rumor timestamp is the honest send time the
+        // UI orders by, and its randomized outer wrap must not be used for
+        // that. But the relay indexes and filters the outer stamp, so the live
+        // subscription's `since:` has to be derived from that one instead —
+        // recording only the rumor clock is what made a backdated wrap fall
+        // outside the window and never be requested again. See #8209.
+        await _syncState?.recordSeen(
+          ownerPubkey,
           createdAt: persistedCreatedAt,
+        );
+        await _syncState?.recordWireSeen(
+          ownerPubkey,
+          createdAt: giftWrapEvent.createdAt,
+        );
+
+        Log.debug(
+          'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
+          '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
+          'createdAt=$persistedCreatedAt',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        persistFailed = true;
+        // The wrap decrypted but did not persist, so it is in no table:
+        // the transaction rolled back and nothing was ledgered. Put it
+        // back on the retry queue rather than dropping it — this is the
+        // same durable path a failed decrypt takes, under the same attempt
+        // budget. Without this the wrap is lost the moment the live
+        // window moves past its outer stamp, with one log line to show
+        // for it.
+        //
+        // NIP-04 deliberately has no equivalent: `_handleNip04Event` has
+        // no queue to re-enter, because [PendingGiftWraps] stores raw
+        // kind-1059 JSON for `Event.fromJson` + `_decryptRumor` and a
+        // kind 4 needs a different replay path. Out of scope here.
+        Log.error(
+          'Persisting decrypted gift wrap ${giftWrapEvent.id} failed after '
+          'the decrypt succeeded; re-queued for retry: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        await _pendingGiftWrapsDao?.recordFailedDecrypt(
           giftWrapId: giftWrapEvent.id,
-          messageKind: rumor.kind,
-          replyToId: replyToId,
-          subject: subject,
-          tagsJson: jsonEncode(rumor.tags),
-          fileType: fileMetadata?.fileType,
-          encryptionAlgorithm: fileMetadata?.encryptionAlgorithm,
-          decryptionKey: fileMetadata?.decryptionKey,
-          decryptionNonce: fileMetadata?.decryptionNonce,
-          fileHash: fileMetadata?.fileHash,
-          originalFileHash: fileMetadata?.originalFileHash,
-          fileSize: fileMetadata?.fileSize,
-          dimensions: fileMetadata?.dimensions,
-          blurhash: fileMetadata?.blurhash,
-          thumbnailUrl: fileMetadata?.thumbnailUrl,
           ownerPubkey: ownerPubkey,
-          sendBatchId: sendBatchId,
+          rawJson: jsonEncode(giftWrapEvent.toJson()),
+          createdAt: giftWrapEvent.createdAt,
         );
-        if (!inserted) return;
-
-        final existing = await _conversationsDao.getConversation(
-          conversationId,
-          ownerPubkey: ownerPubkey,
-        );
-
-        await _conversationsDao.upsertConversation(
-          id: conversationId,
-          participantPubkeys: jsonEncode(participants),
-          isGroup: isGroup,
-          createdAt: existing?.createdAt ?? persistedCreatedAt,
-          lastMessageContent: previewContent,
-          lastMessageTimestamp: persistedCreatedAt,
-          lastMessageSenderPubkey: rumor.pubkey,
-          subject: subject,
-          isRead: isSentByMe,
-          currentUserHasSent:
-              isSentByMe || (existing?.currentUserHasSent ?? false),
-          ownerPubkey: ownerPubkey,
-          dmProtocol: 'nip17',
-        );
-        // A newer message reopens a removed conversation: the row is
-        // recreated above, while the tombstone is deliberately kept so
-        // replayed history stamped at or before the removal stays
-        // suppressed. #7804.
-      });
-
-      if (skippedByTransactionalGiftWrapDedup) {
-        Log.debug(
-          'Skipping NIP-17 gift wrap ${giftWrapEvent.id}: already persisted '
-          'during transaction',
-          category: LogCategory.system,
-        );
-        return;
+      } finally {
+        // Every exit that got here without throwing has handled the wrap
+        // terminally — persisted, deduped, or recorded in the ledger — so
+        // the queue row is stale and goes. A `return` inside the `try`
+        // runs this first, which is what keeps parity with the twelve
+        // early returns above that relied on the delete happening up top.
+        if (!persistFailed) {
+          await _pendingGiftWrapsDao?.deletePending(
+            giftWrapId: giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
+        }
       }
-      if (suppressedByRemovedConversation) {
-        // Terminal: record the wrap so replays skip it before decryption.
-        // The tombstone is authoritative for the account's lifetime, so the
-        // ledger is not racing a reopening that clears it.
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        Log.debug(
-          'Suppressed NIP-17 DM ${rumor.id} in removed conversation '
-          '$conversationId: createdAt $persistedCreatedAt is at or before '
-          'removal at $removedAt',
-          category: LogCategory.system,
-        );
-        return;
-      }
-      if (!inserted) {
-        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
-        Log.debug(
-          'Skipped duplicate NIP-17 DM ${rumor.id} in conversation '
-          '$conversationId: insert was ignored by local dedup constraints',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Advance sync boundaries in BOTH clocks, because they answer two
-      // different questions. The rumor timestamp is the honest send time the
-      // UI orders by, and its randomized outer wrap must not be used for
-      // that. But the relay indexes and filters the outer stamp, so the live
-      // subscription's `since:` has to be derived from that one instead —
-      // recording only the rumor clock is what made a backdated wrap fall
-      // outside the window and never be requested again. See #8209.
-      await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
-      await _syncState?.recordWireSeen(
-        ownerPubkey,
-        createdAt: giftWrapEvent.createdAt,
-      );
-
-      Log.debug(
-        'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
-        '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
-        'createdAt=$persistedCreatedAt',
-        category: LogCategory.system,
-      );
     } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to process gift wrap event: $e',

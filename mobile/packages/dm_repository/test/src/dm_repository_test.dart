@@ -3651,6 +3651,142 @@ void main() {
         },
       );
 
+      // A wrap that DECRYPTS and then fails to persist used to end up in no
+      // table at all: the transaction rolls back, no ledger row is written,
+      // and the pending row that would have replayed it had already been
+      // deleted on the way in. The tests above cover a failed DECRYPT, which
+      // has always been queued; this group covers the persist half.
+      group('a decrypted wrap that fails to persist', () {
+        late _MockPendingGiftWrapsDao pendingDao;
+
+        setUp(() {
+          pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+        });
+
+        Future<DmRepository> deliver() async {
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => createRumorEvent(),
+            pendingGiftWrapsDao: pendingDao,
+          );
+          await repository.startListening();
+          controller.add(createGiftWrapEvent());
+          await Future<void>.delayed(Duration.zero);
+          await controller.close();
+          return repository;
+        }
+
+        void throwOnConversationUpsert() {
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenThrow(Exception('drift busy'));
+        }
+
+        test('re-queues the wrap so a later pass can replay it', () async {
+          stubDaoInserts();
+          throwOnConversationUpsert();
+
+          final repository = await deliver();
+
+          verify(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+              rawJson: any(named: 'rawJson'),
+              createdAt: 1700000000,
+            ),
+          ).called(1);
+
+          await repository.stopListening();
+        });
+
+        test(
+          'keeps the pending row rather than clearing it on the way in',
+          () async {
+            stubDaoInserts();
+            throwOnConversationUpsert();
+
+            final repository = await deliver();
+
+            // Deleting up front is what made this unrecoverable, and it also
+            // erased the attempt count so the retry budget could never be
+            // reached. The row must survive a failed persist.
+            verifyNever(
+              () => pendingDao.deletePending(
+                giftWrapId: any(named: 'giftWrapId'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+              ),
+            );
+
+            await repository.stopListening();
+          },
+        );
+
+        test(
+          'still clears the pending row when the persist succeeds',
+          () async {
+            stubDaoInserts();
+
+            final repository = await deliver();
+
+            // Mutation guard for the `finally`: a successful persist must still
+            // drop the queue row, or every recovered wrap is replayed forever.
+            verify(
+              () => pendingDao.deletePending(
+                giftWrapId: _giftWrapEventId,
+                ownerPubkey: _validPubkeyA,
+              ),
+            ).called(1);
+            verifyNever(
+              () => pendingDao.recordFailedDecrypt(
+                giftWrapId: any(named: 'giftWrapId'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+                rawJson: any(named: 'rawJson'),
+                createdAt: any(named: 'createdAt'),
+              ),
+            );
+
+            await repository.stopListening();
+          },
+        );
+      });
+
       test('skips events with wrong kind', () async {
         final giftWrap = createGiftWrapEvent();
         // kind 1 instead of kind 14
