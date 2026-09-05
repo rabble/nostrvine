@@ -715,6 +715,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileShowLess => 'Daha az göster';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'Bu mesajın geri kalanı gösterilmiyor.';
+
+  @override
   String get profileCompleteYourProfile => 'Profilini Tamamla';
 
   @override

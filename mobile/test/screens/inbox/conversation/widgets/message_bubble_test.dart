@@ -19,6 +19,7 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -30,6 +31,15 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 Finder _divineIcon(DivineIconName icon) => find.byWidgetPredicate(
   (widget) => widget is DivineIcon && widget.icon == icon,
 );
+
+String _longestRenderedText(WidgetTester tester) {
+  final values = tester
+      .widgetList<RichText>(find.byType(RichText))
+      .map((widget) => widget.text.toPlainText())
+      .toList();
+  values.sort((first, second) => second.length.compareTo(first.length));
+  return values.first;
+}
 
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -287,6 +297,203 @@ void main() {
         );
 
         expect(find.text('Hello there'), findsOneWidget);
+      });
+
+      testWidgets('renders only the bounded prefix of an oversized message', (
+        tester,
+      ) async {
+        final prefix = 'a' * dmInitialDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${prefix}hidden suffix',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(_longestRenderedText(tester), prefix);
+        expect(find.textContaining('hidden suffix'), findsNothing);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
+        expect(find.text(strings.profileShowLess), findsNothing);
+      });
+
+      testWidgets('gives Show more a 48 px minimum tap target on both axes', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.ancestor(
+            of: find.text(strings.profileShowMore),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is ConstrainedBox &&
+                  widget.constraints.minWidth == 48 &&
+                  widget.constraints.minHeight == 48,
+            ),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('reveals one bounded increment and can collapse again', (
+        tester,
+      ) async {
+        final first = 'a' * dmInitialDisplayCodeUnits;
+        final second = 'b' * dmDisplayIncrementCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '$first${second}tail',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), '$first$second');
+        expect(find.textContaining('tail'), findsNothing);
+        expect(find.text(strings.profileShowMore), findsNothing);
+        expect(find.text(strings.profileShowLess), findsOneWidget);
+        expect(
+          find.text(strings.dmMessageDisplayLimitReached),
+          findsOneWidget,
+        );
+
+        await tester.ensureVisible(find.text(strings.profileShowLess));
+        await tester.tap(find.text(strings.profileShowLess));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), first);
+        expect(find.text(strings.profileShowLess), findsNothing);
+      });
+
+      testWidgets('stops expansion at the hard display ceiling', (
+        tester,
+      ) async {
+        final visible = 'a' * dmMaxDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${visible}hidden suffix',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
+        await tester.pump();
+
+        expect(_longestRenderedText(tester), visible);
+        expect(find.textContaining('hidden suffix'), findsNothing);
+        expect(
+          find.text(strings.dmMessageDisplayLimitReached),
+          findsOneWidget,
+        );
+        expect(find.text(strings.profileShowLess), findsOneWidget);
+      });
+
+      testWidgets('keeps the expansion controls white on a sent bubble', (
+        tester,
+      ) async {
+        // The sent bubble keeps the fixed primaryAccessible green fill, where
+        // the accent green would sit green-on-green (1.4:1 in dark mode).
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmMaxDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
+        await tester.pump();
+
+        final showLess = tester.widget<Text>(
+          find.text(strings.profileShowLess),
+        );
+        expect(showLess.style?.color, VineTheme.whiteText);
+        final limitReached = tester.widget<Text>(
+          find.text(strings.dmMessageDisplayLimitReached),
+        );
+        expect(
+          limitReached.style?.color,
+          VineTheme.whiteText.withValues(alpha: 0.7),
+        );
+      });
+
+      testWidgets('uses the accent color for expansion controls on a received '
+          'bubble', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: false,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final showMore = tester.widget<Text>(
+          find.text(strings.profileShowMore),
+        );
+        expect(showMore.style?.color, VineTheme.vineGreen);
+        expect(showMore.style?.color, isNot(VineTheme.whiteText));
       });
 
       testWidgets('bounds painted hearts across markdown leaves', (
@@ -1117,6 +1324,105 @@ void main() {
           ),
         ).called(greaterThanOrEqualTo(1));
       });
+
+      testWidgets(
+        'keeps a legacy URL beyond the initial display limit hidden until '
+        'Show more',
+        (tester) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
+          final note = 'a' * dmInitialDisplayCodeUnits;
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MessageBubble(
+                    message: '$note\nhttps://divine.video/video/abc123',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                  ),
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+          await tester.ensureVisible(find.text(strings.profileShowMore));
+          await tester.tap(find.text(strings.profileShowMore));
+          await tester.pumpAndSettle();
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        },
+      );
+
+      // `divineVideoUrlRegex` has no right anchor, so a display bound that
+      // lands inside the id would otherwise match a shortened id, resolve the
+      // wrong video, and keep that cubit after Show more.
+      testWidgets(
+        'does not resolve a legacy URL that the initial display limit cuts',
+        (tester) async {
+          final fetchedIds = <String>[];
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              any(),
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.positionalArguments.first as String;
+            fetchedIds.add(id);
+            return id == 'abc123' ? testVideo : null;
+          });
+          const urlPrefix = 'https://divine.video/video/';
+          // One character of the id sits inside the bound; the rest is cut.
+          final note = 'a' * (dmInitialDisplayCodeUnits - urlPrefix.length - 2);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MessageBubble(
+                    message: '$note\n${urlPrefix}abc123',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                  ),
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(fetchedIds, isEmpty);
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+          expect(
+            find.text(strings.notificationsVideoUnavailable),
+            findsNothing,
+          );
+
+          await tester.ensureVisible(find.text(strings.profileShowMore));
+          await tester.tap(find.text(strings.profileShowMore));
+          await tester.pumpAndSettle();
+
+          expect(fetchedIds, ['abc123']);
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        },
+      );
 
       // divine-web put the share only in tags and allowed an empty draft, so
       // before #6224 this bubble rendered with no card — and mid-group, with
@@ -2052,6 +2358,120 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('No double tap'), findsOneWidget);
+      });
+
+      testWidgets('suppresses double-tap-to-like on a truncated bubble', (
+        tester,
+      ) async {
+        // An ancestor onDoubleTap would hold the gesture arena for
+        // ~kDoubleTapTimeout, delaying the Show more link's first tap.
+        var doubleTapped = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                  onDoubleTap: () => doubleTapped = true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final target = tester.getCenter(find.text('2:30 PM'));
+        await tester.tapAt(target);
+        await tester.pump(kDoubleTapMinTime);
+        await tester.tapAt(target);
+        await tester.pumpAndSettle();
+
+        expect(doubleTapped, isFalse);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
+      });
+    });
+
+    group('message updates', () {
+      testWidgets('renders the new content when the message changes in '
+          'place', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'first body',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'second body',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('second body'), findsOneWidget);
+        expect(find.text('first body'), findsNothing);
+      });
+
+      testWidgets('collapses an expanded bubble when the message changes in '
+          'place', (tester) async {
+        final first = 'a' * dmMaxDisplayCodeUnits;
+        final second = 'b' * dmInitialDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${first}x',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
+        await tester.pump();
+        expect(find.text(strings.profileShowLess), findsOneWidget);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${second}y',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(_longestRenderedText(tester), second);
+        expect(find.text(strings.profileShowLess), findsNothing);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
       });
     });
 

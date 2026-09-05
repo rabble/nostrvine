@@ -322,6 +322,7 @@
     },
     "profileShowMore": "Daha fazla göster",
     "profileShowLess": "Daha az göster",
+    "dmMessageDisplayLimitReached": "Bu mesajın geri kalanı gösterilmiyor.",
     "profileCompleteYourProfile": "Profilini Tamamla",
     "profileCompleteSubtitle": "Başlamak için adını, biyografini ve resmini ekle",
     "profilePleaseTryAgain": "Lütfen tekrar dene",

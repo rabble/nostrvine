@@ -704,6 +704,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileShowLess => '收起';
 
   @override
+  String get dmMessageDisplayLimitReached => '此消息的其余部分不会显示。';
+
+  @override
   String get profileCompleteYourProfile => '完善你的资料';
 
   @override

@@ -50,11 +50,20 @@ class DmVideoTarget {
 /// Canonical Divine URLs remain the primary stable identity for compatibility
 /// with older messages. A valid NIP-18 `q` reference contributes author/kind
 /// routing metadata, or supplies the identity when no URL is present.
+///
+/// When [contentIsTruncated] is true, [content] is a bounded prefix of the
+/// full body and a URL match that runs to its end is ignored: the URL capture
+/// has no right anchor, so a cut inside the id would otherwise resolve a
+/// shortened, wrong identity. See [firstCompleteDivineVideoUrlMatch].
 DmVideoTarget? resolveDmVideoTarget({
   required String content,
   DmSharedVideoRef? sharedVideoRef,
+  bool contentIsTruncated = false,
 }) {
-  final urlStableId = divineVideoUrlRegex.firstMatch(content)?.group(1);
+  final urlStableId = firstCompleteDivineVideoUrlMatch(
+    content,
+    contentIsTruncated: contentIsTruncated,
+  )?.group(1);
   final structuredTarget = _targetFromRef(sharedVideoRef);
 
   if (urlStableId != null) {
@@ -66,6 +75,22 @@ DmVideoTarget? resolveDmVideoTarget({
   }
 
   return structuredTarget;
+}
+
+/// The first canonical Divine video URL in [content], or null when
+/// [contentIsTruncated] and the match reaches the end of [content].
+///
+/// A match that touches the cut may be an id the display bound sliced
+/// through, and `[\w-]+` cannot tell a complete id from a prefix of one, so
+/// the caller keeps rendering the text and re-resolves once more is shown.
+RegExpMatch? firstCompleteDivineVideoUrlMatch(
+  String content, {
+  required bool contentIsTruncated,
+}) {
+  final match = divineVideoUrlRegex.firstMatch(content);
+  if (match == null) return null;
+  if (contentIsTruncated && match.end == content.length) return null;
+  return match;
 }
 
 DmVideoTarget? _targetFromRef(DmSharedVideoRef? ref) {

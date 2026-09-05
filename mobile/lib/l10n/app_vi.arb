@@ -389,6 +389,7 @@
   },
   "profileShowMore": "Xem thêm",
   "profileShowLess": "Thu gọn",
+  "dmMessageDisplayLimitReached": "Phần còn lại của tin nhắn này không được hiển thị.",
   "profileCompleteYourProfile": "Hoàn thiện hồ sơ của bạn",
   "profileCompleteSubtitle": "Thêm tên, tiểu sử và ảnh để bắt đầu",
   "profilePleaseTryAgain": "Vui lòng thử lại",

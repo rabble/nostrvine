@@ -760,6 +760,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileShowLess => 'ያነሰ አሳይ';
 
   @override
+  String get dmMessageDisplayLimitReached => 'የቀረው መልዕክት አይታይም።';
+
+  @override
   String get profileCompleteYourProfile => 'መገለጫዎን ያጠናቅቁ';
 
   @override

@@ -322,6 +322,7 @@
     },
     "profileShowMore": "Tampilkan lebih banyak",
     "profileShowLess": "Tampilkan lebih sedikit",
+    "dmMessageDisplayLimitReached": "Sisa pesan ini tidak ditampilkan.",
     "profileCompleteYourProfile": "Lengkapi Profilmu",
     "profileCompleteSubtitle": "Tambahkan nama, bio, dan foto untuk memulai",
     "profilePleaseTryAgain": "Silakan coba lagi",

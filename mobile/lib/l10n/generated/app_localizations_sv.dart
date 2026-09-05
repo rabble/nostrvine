@@ -760,6 +760,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileShowLess => 'Visa mindre';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'Resten av meddelandet visas inte.';
+
+  @override
   String get profileCompleteYourProfile => 'Komplettera din profil';
 
   @override

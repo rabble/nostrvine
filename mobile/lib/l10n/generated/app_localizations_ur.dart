@@ -779,6 +779,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileShowLess => 'کم دکھائیں';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'اس پیغام کا باقی حصہ نہیں دکھایا گیا۔';
+
+  @override
   String get profileCompleteYourProfile => 'اپنا پروفائل مکمل کریں';
 
   @override

@@ -779,6 +779,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileShowLess => 'Minder weergeven';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'De rest van dit bericht wordt niet weergegeven.';
+
+  @override
   String get profileCompleteYourProfile => 'Maak je profiel af';
 
   @override

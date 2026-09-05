@@ -683,6 +683,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileShowLess => '접기';
 
   @override
+  String get dmMessageDisplayLimitReached => '이 메시지의 나머지 부분은 표시되지 않습니다.';
+
+  @override
   String get profileCompleteYourProfile => '프로필 완성하기';
 
   @override

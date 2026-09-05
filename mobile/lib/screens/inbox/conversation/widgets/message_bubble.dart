@@ -20,6 +20,7 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
@@ -43,6 +44,108 @@ final _nostrRefLineRegex = RegExp(
   r'^(?:nostr:)?(?:naddr|nevent|note|npub|nprofile)1[0-9a-z]+$',
   caseSensitive: false,
 );
+
+class _DmBubbleContent {
+  const _DmBubbleContent({
+    required this.videoTarget,
+    required this.personalMessage,
+    required this.textAfterUrl,
+    required this.quotedReplyText,
+  });
+
+  factory _DmBubbleContent.parse(
+    String boundedMessage, {
+    required DmSharedVideoRef? sharedVideoRef,
+    required DmSharedVideoRef? quotedVideoRef,
+    required bool isTruncated,
+  }) {
+    // The prefix is deliberately bounded before this full-copy sanitizer and
+    // every regex/split below. Sanitizing here also repairs malformed UTF-16
+    // from JSON escapes before the string reaches Flutter's paragraph builder.
+    final safeMessage = StringUtils.sanitizeUtf16(boundedMessage);
+    // A URL the bound cut through is text until Show more reveals the rest.
+    final videoMatch = firstCompleteDivineVideoUrlMatch(
+      safeMessage,
+      contentIsTruncated: isTruncated,
+    );
+    final videoTarget = resolveDmVideoTarget(
+      content: safeMessage,
+      sharedVideoRef: sharedVideoRef,
+      contentIsTruncated: isTruncated,
+    );
+
+    final String? personalMessage;
+    final String? textAfterUrl;
+    if (videoMatch != null) {
+      // The first-party share template is:
+      //   [optional personal note]
+      //   <blank line>
+      //   "<video title>"
+      //   <blank line>
+      //   <URL>
+      //   [optional trailing text]
+      //
+      // The quoted title duplicates the card footer, so it is stripped.
+      // Everything else around the URL remains the sender's message.
+      final afterLines = safeMessage
+          .substring(videoMatch.end)
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
+          .toList();
+      textAfterUrl = afterLines.isEmpty ? null : afterLines.join('\n');
+
+      final beforeLines = safeMessage
+          .substring(0, videoMatch.start)
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_quotedTitleRegex.hasMatch(line))
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
+          .toList();
+      personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
+    } else if (videoTarget != null) {
+      // Identity came from a structured citation rather than a body URL, so
+      // this is not the share template: the body is only what the sender
+      // typed. Strip the machine-readable citation, but keep quoted lines so
+      // a sender's quoted comment is never mistaken for a template title.
+      final lines = safeMessage
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
+          .toList();
+      personalMessage = lines.isEmpty ? null : lines.join('\n');
+      textAfterUrl = null;
+    } else {
+      personalMessage = null;
+      textAfterUrl = null;
+    }
+
+    final hasQuotedVideo =
+        quotedVideoRef != null && videoTarget?.stableId == null;
+    final quotedReplyText = hasQuotedVideo
+        ? safeMessage
+              .split('\n')
+              .where((line) => !_nostrRefLineRegex.hasMatch(line.trim()))
+              .join('\n')
+              .trim()
+        : safeMessage;
+
+    return _DmBubbleContent(
+      videoTarget: videoTarget,
+      personalMessage: personalMessage,
+      textAfterUrl: textAfterUrl,
+      quotedReplyText: quotedReplyText,
+    );
+  }
+
+  final DmVideoTarget? videoTarget;
+  final String? personalMessage;
+  final String? textAfterUrl;
+  final String quotedReplyText;
+}
 
 /// Width of the video share card thumbnail (also used to cap the
 /// surrounding bubble's max width so the bubble doesn't grow wider
@@ -74,7 +177,7 @@ const double _videoCardRadius = 16;
 ///
 /// URLs in message text are rendered as tappable links that open in an
 /// external browser. Long-pressing the bubble triggers [onLongPress].
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   const MessageBubble({
     required this.message,
     required this.timestamp,
@@ -112,9 +215,10 @@ class MessageBubble extends StatelessWidget {
   /// bubble (e.g. failed own sends). It is also suppressed internally on
   /// bubbles whose dominant content is itself a tap target (shared-video card,
   /// quoted-video reply) so the ancestor double-tap recognizer can't delay
-  /// tap-to-open — see the wiring below. Screen readers never reach this —
-  /// double-tap is the AT activation gesture — so the long-press picker stays
-  /// the a11y path.
+  /// tap-to-open, and on truncated bubbles so their Show more / Show less
+  /// links open on the first tap — see the wiring below. Screen readers
+  /// never reach this — double-tap is the AT activation gesture — so the
+  /// long-press picker stays the a11y path.
   final VoidCallback? onDoubleTap;
 
   /// Called when the user taps the bubble. Wired only for failed own sends
@@ -147,78 +251,83 @@ class MessageBubble extends StatelessWidget {
   final DmSharedVideoRef? quotedVideoRef;
 
   @override
-  Widget build(BuildContext context) {
-    // NIP-17 rumor bodies (and any sender-controlled text reaching the
-    // app via JSON `\uXXXX` escapes) can carry unpaired UTF-16
-    // surrogates that crash Flutter's text renderer. Sanitize once at
-    // the top so every downstream substring / split / Text widget sees
-    // well-formed input.
-    final safeMessage = StringUtils.sanitizeUtf16(message);
-    final videoMatch = divineVideoUrlRegex.firstMatch(safeMessage);
-    final videoTarget = resolveDmVideoTarget(
-      content: safeMessage,
-      sharedVideoRef: sharedVideoRef,
-    );
-    final videoStableId = videoTarget?.stableId;
-    final videoAuthorPubkey = videoTarget?.authorPubkey;
-    final videoKind = videoTarget?.videoKind;
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
 
-    // Slice the message body around the video URL.
-    //
-    // The share-message template emitted by VideoSharingService is
-    //   [optional personal note]
-    //   <blank line>
-    //   "<video title>"
-    //   <blank line>
-    //   <URL>
-    //   [optional trailing text]
-    //
-    // The quoted-title line duplicates what the video card's overlay
-    // footer already shows, so it's stripped. Everything else before
-    // the URL is treated as the user's personal note and rendered
-    // below the thumbnail. Text after the URL is preserved as-is.
-    final String? personalMessage;
-    final String? textAfterUrl;
-    if (videoMatch != null) {
-      // Drop the machine-readable `nostr:` citation line (kept on the wire for
-      // other clients) so it doesn't render as a redundant "View video" link
-      // beside the tappable card.
-      final afterLines = safeMessage
-          .substring(videoMatch.end)
-          .split('\n')
-          .map((line) => line.trim())
-          .where((line) => line.isNotEmpty)
-          .where((line) => !_nostrRefLineRegex.hasMatch(line))
-          .toList();
-      textAfterUrl = afterLines.isEmpty ? null : afterLines.join('\n');
+class _MessageBubbleState extends State<MessageBubble> {
+  late int _visibleCodeUnitLimit;
+  late DmDisplayTextSlice _displaySlice;
+  late _DmBubbleContent _content;
 
-      final beforeLines = safeMessage
-          .substring(0, videoMatch.start)
-          .split('\n')
-          .map((line) => line.trim())
-          .where((line) => line.isNotEmpty)
-          .where((line) => !_quotedTitleRegex.hasMatch(line))
-          .where((line) => !_nostrRefLineRegex.hasMatch(line))
-          .toList();
-      personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
-    } else if (videoTarget != null) {
-      // Identity came from the citation rather than a URL in the body, so the
-      // body is not the share template — it is only what the sender typed.
-      // Strip the machine-readable `nostr:` line we append on the wire, but
-      // NOT the quoted-title line: with no template to strip a title from,
-      // that filter would swallow a comment the sender wrapped in quotes.
-      final lines = safeMessage
-          .split('\n')
-          .map((line) => line.trim())
-          .where((line) => line.isNotEmpty)
-          .where((line) => !_nostrRefLineRegex.hasMatch(line))
-          .toList();
-      personalMessage = lines.isEmpty ? null : lines.join('\n');
-      textAfterUrl = null;
-    } else {
-      personalMessage = null;
-      textAfterUrl = null;
+  String get timestamp => widget.timestamp;
+  bool get isSent => widget.isSent;
+  bool get isFirstInGroup => widget.isFirstInGroup;
+  bool get isLastInGroup => widget.isLastInGroup;
+  VoidCallback? get onLongPress => widget.onLongPress;
+  VoidCallback? get onDoubleTap => widget.onDoubleTap;
+  VoidCallback? get onTap => widget.onTap;
+  DmDeliveryStatus get deliveryStatus => widget.deliveryStatus;
+  DmRetractionStatus get retractionStatus => widget.retractionStatus;
+  DmReplyContext? get dmReplyContext => widget.dmReplyContext;
+  DmSharedVideoRef? get sharedVideoRef => widget.sharedVideoRef;
+  DmSharedVideoRef? get quotedVideoRef => widget.quotedVideoRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleCodeUnitLimit = dmInitialDisplayCodeUnits;
+    _refreshContent();
+  }
+
+  @override
+  void didUpdateWidget(MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message ||
+        oldWidget.sharedVideoRef != widget.sharedVideoRef ||
+        oldWidget.quotedVideoRef != widget.quotedVideoRef) {
+      _visibleCodeUnitLimit = dmInitialDisplayCodeUnits;
+      _refreshContent();
     }
+  }
+
+  void _refreshContent() {
+    _displaySlice = sliceDmDisplayText(
+      widget.message,
+      _visibleCodeUnitLimit,
+    );
+    _content = _DmBubbleContent.parse(
+      _displaySlice.text,
+      sharedVideoRef: widget.sharedVideoRef,
+      quotedVideoRef: widget.quotedVideoRef,
+      isTruncated: _displaySlice.hasMore,
+    );
+  }
+
+  void _showMore() {
+    setState(() {
+      _visibleCodeUnitLimit =
+          (_visibleCodeUnitLimit + dmDisplayIncrementCodeUnits).clamp(
+            0,
+            dmMaxDisplayCodeUnits,
+          );
+      _refreshContent();
+    });
+  }
+
+  void _showLess() {
+    setState(() {
+      _visibleCodeUnitLimit = dmInitialDisplayCodeUnits;
+      _refreshContent();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final videoStableId = _content.videoTarget?.stableId;
+    final videoAuthorPubkey = _content.videoTarget?.authorPubkey;
+    final videoKind = _content.videoTarget?.videoKind;
+    final personalMessage = _content.personalMessage;
+    final textAfterUrl = _content.textAfterUrl;
 
     // Video shares are always rendered as standalone blocks: the
     // thumbnail is too prominent to share a tail with an adjacent text
@@ -234,13 +343,10 @@ class MessageBubble extends StatelessWidget {
     // machine-readable `nostr:` citation line the reply carries on the wire so
     // only the user's comment renders below the quote.
     final hasQuotedVideo = quotedVideoRef != null && !hasVideo;
-    final quotedReplyText = hasQuotedVideo
-        ? safeMessage
-              .split('\n')
-              .where((line) => !_nostrRefLineRegex.hasMatch(line.trim()))
-              .join('\n')
-              .trim()
-        : safeMessage;
+    final quotedReplyText = _content.quotedReplyText;
+    final hasExpansionControls =
+        _displaySlice.hasMore ||
+        _visibleCodeUnitLimit > dmInitialDisplayCodeUnits;
 
     // A hard-failed own send routes every tap to the outer resend/delete
     // affordance (long-press deliberately offers no resend — see
@@ -293,8 +399,12 @@ class MessageBubble extends StatelessWidget {
             // its DoubleTapGestureRecognizer hold the gesture arena for
             // ~kDoubleTapTimeout after the first tap, so the inner onTap only
             // fires once that window elapses (~300 ms delay to tap-to-open).
-            // Text bubbles keep double-tap-to-like.
-            onDoubleTap: hasVideo || hasQuotedVideo ? null : onDoubleTap,
+            // A truncated bubble gives it up for the same reason: its Show
+            // more / Show less links must open on the first tap. Plain text
+            // bubbles keep double-tap-to-like.
+            onDoubleTap: hasVideo || hasQuotedVideo || hasExpansionControls
+                ? null
+                : onDoubleTap,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -407,6 +517,25 @@ class MessageBubble extends StatelessWidget {
                               dmReplyContext: dmReplyContext,
                             ),
                         ],
+                        if (hasExpansionControls)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: _MessageExpansionControls(
+                              isSent: isSent,
+                              canShowMore:
+                                  _displaySlice.hasMore &&
+                                  _visibleCodeUnitLimit < dmMaxDisplayCodeUnits,
+                              canShowLess:
+                                  _visibleCodeUnitLimit >
+                                  dmInitialDisplayCodeUnits,
+                              reachedHardLimit:
+                                  _displaySlice.hasMore &&
+                                  _visibleCodeUnitLimit >=
+                                      dmMaxDisplayCodeUnits,
+                              onShowMore: _showMore,
+                              onShowLess: _showLess,
+                            ),
+                          ),
                         // Sends are optimistic: pending / delivered / self-wrap
                         // states show nothing — the message just looks sent. Only a
                         // hard failure surfaces, as an in-bubble "Not delivered" row
@@ -450,6 +579,101 @@ class MessageBubble extends StatelessWidget {
       topRight: const Radius.circular(16),
       bottomLeft: Radius.circular(isSent ? 16 : 4),
       bottomRight: Radius.circular(isSent ? 4 : 16),
+    );
+  }
+}
+
+class _MessageExpansionControls extends StatelessWidget {
+  const _MessageExpansionControls({
+    required this.isSent,
+    required this.canShowMore,
+    required this.canShowLess,
+    required this.reachedHardLimit,
+    required this.onShowMore,
+    required this.onShowLess,
+  });
+
+  final bool isSent;
+  final bool canShowMore;
+  final bool canShowLess;
+  final bool reachedHardLimit;
+  final VoidCallback onShowMore;
+  final VoidCallback onShowLess;
+
+  @override
+  Widget build(BuildContext context) {
+    // The sent bubble keeps the fixed primaryAccessible green, where the
+    // accent green measures 1.4:1 — invisible. Mirror [_MessageText]'s link
+    // rule: white on sent bubbles, the palette accent on received ones.
+    final actionStyle = VineTheme.bodySmallFont(
+      color: isSent ? VineTheme.whiteText : context.vineColors.accentPositive,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 12,
+          children: [
+            if (canShowMore)
+              _MessageExpansionAction(
+                label: context.l10n.profileShowMore,
+                style: actionStyle,
+                onTap: onShowMore,
+              ),
+            if (canShowLess)
+              _MessageExpansionAction(
+                label: context.l10n.profileShowLess,
+                style: actionStyle,
+                onTap: onShowLess,
+              ),
+          ],
+        ),
+        if (reachedHardLimit)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              context.l10n.dmMessageDisplayLimitReached,
+              style: VineTheme.bodySmallFont(
+                color: isSent
+                    ? VineTheme.whiteText.withValues(alpha: 0.7)
+                    : context.vineColors.onSurfaceMuted,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MessageExpansionAction extends StatelessWidget {
+  const _MessageExpansionAction({
+    required this.label,
+    required this.style,
+    required this.onTap,
+  });
+
+  final String label;
+  final TextStyle style;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(
+          // 48 dp on both axes: the label alone is about 24 px tall, and a
+          // two-character locale (ko, zh) draws it about 24 px wide.
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: 1,
+            child: Text(label, style: style),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -508,6 +732,7 @@ class _MessageText extends ConsumerStatefulWidget {
 }
 
 class _MessageTextState extends ConsumerState<_MessageText> {
+  final _markdownParser = MemoizedInlineMarkdownParser();
   List<InlineSpan> _currentSpans = const [];
 
   @override
@@ -536,7 +761,7 @@ class _MessageTextState extends ConsumerState<_MessageText> {
         : context.vineColors.onSurface.withValues(alpha: 0.10);
     final codeStyle = VineTheme.codeFont(color: defaultStyle.color);
 
-    final ast = const InlineMarkdownParser().parse(widget.message);
+    final ast = _markdownParser.parse(widget.message);
     // The heart budget spans the whole message: each markdown leaf below
     // builds its own linkifier, so a per-leaf cap would reset on every
     // emphasis boundary (`**x**<heart>` x N would paint N SVG widgets).

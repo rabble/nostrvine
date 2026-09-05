@@ -322,6 +322,7 @@
     },
     "profileShowMore": "Arată mai mult",
     "profileShowLess": "Arată mai puțin",
+    "dmMessageDisplayLimitReached": "Restul acestui mesaj nu este afișat.",
     "profileCompleteYourProfile": "Completează-ți profilul",
     "profileCompleteSubtitle": "Adaugă numele, bio și poza ca să începi",
     "profilePleaseTryAgain": "Încearcă din nou",

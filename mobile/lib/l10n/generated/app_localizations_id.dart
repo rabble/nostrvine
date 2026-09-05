@@ -718,6 +718,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileShowLess => 'Tampilkan lebih sedikit';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'Sisa pesan ini tidak ditampilkan.';
+
+  @override
   String get profileCompleteYourProfile => 'Lengkapi Profilmu';
 
   @override

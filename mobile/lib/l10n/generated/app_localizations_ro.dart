@@ -814,6 +814,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileShowLess => 'Arată mai puțin';
 
   @override
+  String get dmMessageDisplayLimitReached =>
+      'Restul acestui mesaj nu este afișat.';
+
+  @override
   String get profileCompleteYourProfile => 'Completează-ți profilul';
 
   @override

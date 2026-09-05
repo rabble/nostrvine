@@ -1,7 +1,62 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/markdown/markdown.dart';
 
+class _CountingInlineMarkdownParser extends InlineMarkdownParser {
+  int calls = 0;
+
+  @override
+  List<InlineMarkdownNode> parse(String text) {
+    calls++;
+    return super.parse(text);
+  }
+}
+
+class _ThrowOnceInlineMarkdownParser extends InlineMarkdownParser {
+  bool shouldThrow = true;
+
+  @override
+  List<InlineMarkdownNode> parse(String text) {
+    if (shouldThrow) {
+      shouldThrow = false;
+      throw StateError('synthetic parse failure');
+    }
+    return super.parse(text);
+  }
+}
+
 void main() {
+  group(MemoizedInlineMarkdownParser, () {
+    test('reuses the AST while the input is unchanged', () {
+      final delegate = _CountingInlineMarkdownParser();
+      final parser = MemoizedInlineMarkdownParser(parser: delegate);
+
+      final first = parser.parse('hello **there**');
+      final second = parser.parse('hello **there**');
+
+      expect(second, same(first));
+      expect(delegate.calls, 1);
+    });
+
+    test('replaces the AST when the input changes', () {
+      final parser = MemoizedInlineMarkdownParser();
+
+      final first = parser.parse('first');
+      final second = parser.parse('second');
+
+      expect(second, isNot(same(first)));
+      expect(second, equals([const PlainNode('second')]));
+    });
+
+    test('does not publish a partial cache entry when parsing throws', () {
+      final parser = MemoizedInlineMarkdownParser(
+        parser: _ThrowOnceInlineMarkdownParser(),
+      );
+
+      expect(() => parser.parse('hello'), throwsStateError);
+      expect(parser.parse('hello'), equals([const PlainNode('hello')]));
+    });
+  });
+
   group(InlineMarkdownParser, () {
     const parser = InlineMarkdownParser();
 

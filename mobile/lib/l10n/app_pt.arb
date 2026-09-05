@@ -322,6 +322,7 @@
     },
     "profileShowMore": "Mostrar mais",
     "profileShowLess": "Mostrar menos",
+    "dmMessageDisplayLimitReached": "O restante desta mensagem não é apresentado.",
     "profileCompleteYourProfile": "Complete seu perfil",
     "profileCompleteSubtitle": "Adicione seu nome, bio e foto para começar",
     "profilePleaseTryAgain": "Por favor, tente novamente",

@@ -120,6 +120,49 @@ void main() {
   // divine-web never wrote the share URL into the rumor content and allowed
   // sending a share with an empty draft, so the citation is the only identity
   // these messages carry. See #6224.
+  group('resolveDmVideoTarget — truncated content', () {
+    const url = 'https://divine.video/video/abc123';
+
+    test('ignores a URL that runs to the end of a truncated prefix', () {
+      final target = resolveDmVideoTarget(
+        content: 'note\n$url',
+        contentIsTruncated: true,
+      );
+
+      expect(target, isNull);
+    });
+
+    test('keeps a URL followed by more text inside a truncated prefix', () {
+      final target = resolveDmVideoTarget(
+        content: 'note\n$url\nmore',
+        contentIsTruncated: true,
+      );
+
+      expect(target?.stableId, 'abc123');
+    });
+
+    test('keeps a trailing URL when the content is complete', () {
+      final target = resolveDmVideoTarget(content: 'note\n$url');
+
+      expect(target?.stableId, 'abc123');
+    });
+
+    test('falls back to the citation when the URL is cut', () {
+      final target = resolveDmVideoTarget(
+        content: 'note\nhttps://divine.video/video/ab',
+        sharedVideoRef: const DmSharedVideoRef(
+          coordinateOrId: 'abc123',
+          videoKind: DmSharedVideoKind.shortVideo,
+          relayHint: 'wss://relay.example',
+          authorPubkey: author,
+        ),
+        contentIsTruncated: true,
+      );
+
+      expect(target?.stableId, 'abc123');
+    });
+  });
+
   group('resolveDmVideoTarget — legacy divine-web share', () {
     const dTag = 'my-reel-123';
 

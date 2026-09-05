@@ -34,6 +34,7 @@ import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/screens/inbox/dm_display_text.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
@@ -194,6 +195,7 @@ void main() {
       Future<UserProfile?>? otherProfileFuture,
       Future<bool>? otherProfileVanishedFuture,
       bool isIdentityResolving = false,
+      Stream<ConversationState>? stateStream,
     }) {
       final effectiveState = state ?? const ConversationState();
       if (restoreStatus != null) {
@@ -209,7 +211,7 @@ void main() {
       // initial and stream value never reaches it.
       whenListen(
         mockBloc,
-        Stream<ConversationState>.value(effectiveState),
+        stateStream ?? Stream<ConversationState>.value(effectiveState),
         initialState: previousState ?? effectiveState,
       );
 
@@ -1478,6 +1480,97 @@ void main() {
 
         expect(find.byType(MessageBubble), findsOneWidget);
         expect(find.text('Hello there!'), findsOneWidget);
+      });
+
+      testWidgets('maps message keys to their new indices', (tester) async {
+        DmMessage message(String id, String content) => DmMessage(
+          id: id,
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: otherPubkey,
+          content: content,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+        final older = message(
+          '1111111111111111111111111111111111111111111111111111111111111111',
+          'Older',
+        );
+        final newer = message(
+          '2222222222222222222222222222222222222222222222222222222222222222',
+          'Newer',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [newer, older],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final list = tester.widget<ListView>(find.byType(ListView));
+        final delegate = list.childrenDelegate as SliverChildBuilderDelegate;
+        expect(delegate.findChildIndexCallback, isNotNull);
+        expect(
+          delegate.findChildIndexCallback!(ValueKey(older.id)),
+          equals(1),
+        );
+        expect(
+          delegate.findChildIndexCallback!(ValueKey(newer.id)),
+          equals(0),
+        );
+      });
+
+      testWidgets('keeps an expanded message open when a newer message arrives', (
+        tester,
+      ) async {
+        final states = StreamController<ConversationState>();
+        addTearDown(states.close);
+        final olderMessage = DmMessage(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: otherPubkey,
+          content: 'a' * (dmInitialDisplayCodeUnits + 1),
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+        final initialState = ConversationState(
+          status: ConversationStatus.loaded,
+          messages: [olderMessage],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(state: initialState, stateStream: states.stream),
+        );
+        await tester.tap(find.text(l10n.profileShowMore));
+        await tester.pump();
+        expect(find.text(l10n.profileShowLess), findsOneWidget);
+
+        final newerMessage = DmMessage(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          conversationId: olderMessage.conversationId,
+          senderPubkey: currentPubkey,
+          content: 'new reply',
+          createdAt: olderMessage.createdAt + 1,
+          giftWrapId:
+              'bbbbbbbbccccccccddddddddeeeeeeeebbbbbbbbccccccccddddddddeeeeeeee',
+        );
+        states.add(
+          ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [newerMessage, olderMessage],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.profileShowLess), findsOneWidget);
+        expect(find.byKey(ValueKey(newerMessage.id)), findsOneWidget);
       });
 
       // The whole retry affordance lived only in the view: the bloc test
