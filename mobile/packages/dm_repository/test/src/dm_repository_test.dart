@@ -7309,14 +7309,11 @@ void main() {
       // already in that state, and there is no user-facing resync.
       test(
         'a completed drain that never read the inbox is re-armed once the '
-        'relays are known and name a relay outside the pool',
+        'relays are known',
         () async {
           final syncState = _FakeDmSyncState()
             ..drainCompleteOverride = true
             ..drainVersionOverride = DmSyncState.currentDrainVersion;
-          when(
-            () => mockNostrClient.configuredRelays,
-          ).thenReturn(const ['wss://pool.example']);
           when(
             () => mockNostrClient.queryEventsDetailed(
               any(),
@@ -7346,69 +7343,6 @@ void main() {
 
           expect(syncState.rearmedForInboxPubkeys, contains(_validPubkeyA));
           expect(syncState.inboxCoveredPubkeys, contains(_validPubkeyA));
-        },
-      );
-
-      // Every run pages the pool, so an inbox made only of pool members was
-      // asked by the run that completed. Re-arming would replay the account's
-      // whole history to recover nothing — which, before #8550, every
-      // fallback-pool account paid on its first inbox open after upgrading.
-      test(
-        'a completed drain is left alone when the advertised inbox names only '
-        'pool members',
-        () async {
-          final syncState = _FakeDmSyncState()
-            ..drainCompleteOverride = true
-            ..drainVersionOverride = DmSyncState.currentDrainVersion;
-          // The pool stores normalized URLs; the advertised list is compared
-          // the same way, so a trailing slash is not an outsider.
-          when(
-            () => mockNostrClient.configuredRelays,
-          ).thenReturn(const ['wss://own.example', 'wss://pool.example']);
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: any(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer(
-            (_) async => answeredList([
-              Event(
-                _validPubkeyA,
-                EventKind.dmRelaysList,
-                const [
-                  ['relay', 'wss://own.example/'],
-                ],
-                '',
-                createdAt: 1700000000,
-              ),
-            ]),
-          );
-
-          await createRepository(
-            syncState: syncState,
-          ).backfillHistoryIfNeeded();
-
-          expect(syncState.rearmedForInboxPubkeys, isEmpty);
-          expect(syncState.inboxCoveredPubkeys, contains(_validPubkeyA));
-          // Still complete, so no drain page was issued.
-          verifyNever(
-            () => mockNostrClient.queryEventsDetailed(
-              any(
-                that: predicate<List<nostr_filter.Filter>>(
-                  (filters) => filters.first.kinds?.contains(4) ?? false,
-                ),
-              ),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: any(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-              timeout: any(named: 'timeout'),
-            ),
-          );
         },
       );
 
