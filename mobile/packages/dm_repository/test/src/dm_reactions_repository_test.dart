@@ -1560,7 +1560,8 @@ void main() {
     );
 
     test(
-      'applyDeletion settles a refused own removal delivered by another device',
+      'applyDeletion keeps a refused removal retryable when its own '
+      'self-wrap arrives',
       () async {
         when(
           () => mockDao.getById(
@@ -1574,12 +1575,6 @@ void main() {
             rumorEventJson: '{}',
           ),
         );
-        when(
-          () => mockDao.markDeletionSent(
-            id: _reactionRumorId,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenAnswer((_) async {});
 
         final outcome = await createRepository().applyDeletion(
           rumorId: _reactionRumorId,
@@ -1588,86 +1583,16 @@ void main() {
         );
 
         expect(outcome, DmWrapOutcome.processed);
-        verify(
+        verifyNever(
           () => mockDao.markDeletionSent(
-            id: _reactionRumorId,
-            ownerPubkey: _ownerPubkey,
+            id: any(named: 'id'),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).called(1);
+        );
         verifyNever(
           () => mockDao.softDelete(
             id: any(named: 'id'),
             ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'applyDeletion does not settle a refused removal for another author',
-      () async {
-        when(
-          () => mockDao.getById(
-            id: _reactionRumorId,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenAnswer(
-          (_) async => makeRow(
-            reactorPubkey: _otherPubkey,
-            isDeleted: true,
-            publishStatus: DmReactionsDao.deletionRefused,
-          ),
-        );
-
-        final outcome = await createRepository().applyDeletion(
-          rumorId: _reactionRumorId,
-          deleterPubkey: _ownerPubkey,
-          giftWrapId: _giftWrapId,
-        );
-
-        expect(outcome, DmWrapOutcome.processed);
-        verifyNever(
-          () => mockDao.markDeletionSent(
-            id: any(named: 'id'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'applyDeletion defers when settling a refused own removal fails',
-      () async {
-        when(
-          () => mockDao.getById(
-            id: _reactionRumorId,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenAnswer(
-          (_) async => makeRow(
-            isDeleted: true,
-            publishStatus: DmReactionsDao.deletionRefused,
-          ),
-        );
-        when(
-          () => mockDao.markDeletionSent(
-            id: _reactionRumorId,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenThrow(StateError('boom'));
-
-        final outcome = await createRepository().applyDeletion(
-          rumorId: _reactionRumorId,
-          deleterPubkey: _ownerPubkey,
-          giftWrapId: _giftWrapId,
-        );
-
-        expect(outcome, DmWrapOutcome.deferred);
-        expect(
-          reporterSites,
-          contains(
-            DmReactionsRepositoryReportableSites
-                .handleIncomingDeletionSoftDelete,
           ),
         );
       },

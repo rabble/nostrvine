@@ -1010,11 +1010,9 @@ class DmReactionsRepository {
   /// ledger so it re-decrypts on a later launch — when the signer is not
   /// ready or on a transient soft-delete failure. Otherwise returns
   /// [DmWrapOutcome.processed] (terminal): the deletion applied, the target
-  /// was already deleted, or the deletion is invalid (author mismatch). An
-  /// own deletion arriving after this device recorded `deletion_refused`
-  /// settles that row as sent, clearing its stale warning state. The
-  /// soft-delete is idempotent, so re-applying on a benign re-decrypt is safe.
-  /// #5452.
+  /// was already deleted, or the deletion is invalid (author mismatch). The
+  /// soft-delete is idempotent, so re-applying on a benign re-decrypt is
+  /// safe. #5452.
   Future<DmWrapOutcome?> applyDeletion({
     required String rumorId,
     required String deleterPubkey,
@@ -1034,6 +1032,8 @@ class DmReactionsRepository {
     // insert live afterwards and never be soft-deleted. Symmetric with
     // persistIncoming's unsynced-target handling. #5452.
     if (row == null) return null;
+    if (row.isDeleted) return DmWrapOutcome.processed;
+
     // NIP-09: only the original reaction author may delete their reaction.
     if (row.reactorPubkey != deleterPubkey) {
       Log.debug(
@@ -1043,26 +1043,6 @@ class DmReactionsRepository {
         'giftWrap=$giftWrapId)',
         category: LogCategory.system,
       );
-      return DmWrapOutcome.processed;
-    }
-
-    if (row.isDeleted) {
-      if (row.publishStatus == DmReactionsDao.deletionRefused) {
-        try {
-          await _reactionsDao.markDeletionSent(
-            id: rumorId,
-            ownerPubkey: _userPubkey,
-          );
-        } on Object catch (e, st) {
-          _errorReporter?.call(
-            e,
-            st,
-            site: DmReactionsRepositoryReportableSites
-                .handleIncomingDeletionSoftDelete,
-          );
-          return DmWrapOutcome.deferred;
-        }
-      }
       return DmWrapOutcome.processed;
     }
 
