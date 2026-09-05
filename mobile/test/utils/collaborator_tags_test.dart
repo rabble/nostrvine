@@ -48,6 +48,21 @@ void main() {
 
       expect(result, <String>{pubkeyB, pubkeyC});
     });
+
+    test('keeps the first occurrence of each pubkey in input order', () {
+      // Set equality ignores order, so assert over an ordered list with input
+      // order deliberately unsorted — otherwise a sorting implementation would
+      // satisfy the documented guarantee's tests without honouring it.
+      final result = canonicalCollaboratorPubkeys(
+        identifiers: [
+          pubkeyC,
+          pubkeyB,
+          NostrKeyUtils.encodePubKey(pubkeyC),
+        ],
+      );
+
+      expect(result.toList(), <String>[pubkeyC, pubkeyB]);
+    });
   });
 
   group('buildCollaboratorPTags', () {
