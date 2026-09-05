@@ -3,6 +3,7 @@
 // ABOUTME: Answers REQ with a chosen EVENT, OK-confirms inbound EVENTs, and
 // ABOUTME: records what it was sent.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -28,6 +29,7 @@ class FakeRelay {
     this.broadcast,
     this.stallReqForKinds,
     this.stallReqForAuthors,
+    this.okDelayForRecipients,
   );
 
   /// Starts a relay on a loopback port — ephemeral unless [port] is given.
@@ -51,6 +53,12 @@ class FakeRelay {
   /// read as `found` while another's is `unreadable` in the same send — the
   /// partially-unreadable fan-out #8434 is about. A kind-keyed stall cannot
   /// express that: it stalls every recipient at once.
+  /// [okDelayForRecipients] delays the `OK` for an inbound `EVENT` whose `p`
+  /// tag names one of those pubkeys — a relay that accepts the frame promptly
+  /// but confirms it slowly. That holds ONE sibling of a group fan-out in
+  /// flight, still inside the OK-confirm window, for long enough that the
+  /// retry sweep can overlap the batch — the interleaving #8619 is about.
+  /// Events addressed to anyone else confirm immediately.
   /// Pass a stopped relay's [FakeRelay.port] as [port] to bring "the same
   /// relay" back, which is what a client that remembers the URL sees when a
   /// relay recovers.
@@ -61,6 +69,7 @@ class FakeRelay {
     bool broadcast = false,
     Set<int> stallReqForKinds = const <int>{},
     Set<String> stallReqForAuthors = const <String>{},
+    Map<String, Duration> okDelayForRecipients = const <String, Duration>{},
     int port = 0,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
@@ -72,6 +81,7 @@ class FakeRelay {
       broadcast,
       stallReqForKinds,
       stallReqForAuthors,
+      okDelayForRecipients,
     );
     server.listen(relay._handle, onError: (_) {});
     return relay;
@@ -106,6 +116,14 @@ class FakeRelay {
   /// read times out instead of settling empty — but selective per pubkey, so a
   /// fan-out can have a readable recipient and an unreadable one at once.
   final Set<String> stallReqForAuthors;
+
+  /// Recipients (an inbound `EVENT`'s `p` tag) whose `OK` is deferred by the
+  /// mapped duration instead of sent at once; see [start].
+  final Map<String, Duration> okDelayForRecipients;
+
+  /// Deferred `OK`s not yet sent, cancelled by [stop] so a confirmation never
+  /// fires into a socket the test already closed.
+  final List<Timer> _deferredOks = [];
 
   /// Whether a published `EVENT` is forwarded to other open subscriptions.
   ///
@@ -201,7 +219,13 @@ class FakeRelay {
         } else if (frame[0] == 'EVENT' && frame.length >= 2) {
           final event = frame[1] as Map<String, dynamic>;
           if (okConfirms) {
-            send(<dynamic>['OK', event['id'], true, '']);
+            final ok = <dynamic>['OK', event['id'], true, ''];
+            final delay = _okDelayFor(event);
+            if (delay == null) {
+              send(ok);
+            } else {
+              _deferredOks.add(Timer(delay, () => send(ok)));
+            }
           }
           if (broadcast) _fanOut(from: socket, event: event);
         }
@@ -231,6 +255,20 @@ class FakeRelay {
       }
     }
     return false;
+  }
+
+  /// The configured `OK` delay for the recipient [event] is addressed to, or
+  /// null when it confirms immediately; see [okDelayForRecipients].
+  Duration? _okDelayFor(Map<String, dynamic> event) {
+    if (okDelayForRecipients.isEmpty) return null;
+    final tags = event['tags'];
+    if (tags is! List) return null;
+    for (final tag in tags) {
+      if (tag is! List || tag.length < 2 || tag[0] != 'p') continue;
+      final delay = okDelayForRecipients[tag[1]];
+      if (delay != null) return delay;
+    }
+    return null;
   }
 
   bool _namesAnyAuthor(List<dynamic> frame, Set<String> wanted) {
@@ -265,6 +303,10 @@ class FakeRelay {
   }
 
   Future<void> stop() async {
+    for (final timer in _deferredOks) {
+      timer.cancel();
+    }
+    _deferredOks.clear();
     _subscriptions.clear();
     for (final socket in _sockets) {
       await socket.close().catchError((_) => null);
