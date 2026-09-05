@@ -2158,8 +2158,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Connect using a NIP-07 browser extension (Alby, nos2x, Nostore, etc.)
   ///
-  /// Only valid on the web platform. On non-web targets this returns an
-  /// [AuthResult.failure] immediately without touching auth state.
+  /// When the injected bridge is missing or no browser extension is available,
+  /// returns an [AuthResult.failure] without touching auth state. This covers
+  /// non-web targets and web sessions without a NIP-07 extension.
   Future<AuthResult> connectWithNip07() async {
     Log.info(
       'Connecting with NIP-07 browser extension...',

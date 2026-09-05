@@ -147,16 +147,9 @@ class NotificationService {
   /// `PushNotificationSessionCoordinator`, which is the only place the app is
   /// allowed to interrupt the user for it.
   ///
-  /// Call this from main.dart after runApp() to set up notifications:
-  /// ```dart
-  /// void main() async {
-  ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   runApp(MyApp());
-  ///
-  ///   // Initialize notifications (optional - will auto-init on first use)
-  ///   await NotificationService().initialize();
-  /// }
-  /// ```
+  /// `notificationServiceProvider` calls this when it creates the app-owned
+  /// service. Callers should read that provider instead of constructing a
+  /// second instance.
   Future<void> initialize() async {
     Log.debug(
       '🔧 Initializing NotificationService',
