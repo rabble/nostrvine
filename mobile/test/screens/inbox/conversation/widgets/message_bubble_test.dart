@@ -2237,6 +2237,86 @@ void main() {
       });
     });
 
+    group('message updates', () {
+      testWidgets('renders the new content when the message changes in '
+          'place', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'first body',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'second body',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('second body'), findsOneWidget);
+        expect(find.text('first body'), findsNothing);
+      });
+
+      testWidgets('collapses an expanded bubble when the message changes in '
+          'place', (tester) async {
+        final first = 'a' * dmMaxDisplayCodeUnits;
+        final second = 'b' * dmInitialDisplayCodeUnits;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${first}x',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
+        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.pump();
+        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: '${second}y',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(_longestRenderedText(tester), second);
+        expect(find.text(strings.dmMessageShowLess), findsNothing);
+        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
+      });
+    });
+
     group('markdown rendering', () {
       /// Walks the rendered span tree and collects every TextSpan that
       /// satisfies [predicate]. Used to assert on the inline-style
