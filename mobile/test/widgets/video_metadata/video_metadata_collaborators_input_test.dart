@@ -1,3 +1,4 @@
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -17,11 +19,15 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../builders/user_profile_builder.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 /// Mock notifier for testing
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
@@ -60,6 +66,9 @@ _MockFollowRepository _createMockFollowRepository({
   );
   when(() => mock.isInitialized).thenReturn(true);
   when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  when(
+    mock.streamMyFollowers,
+  ).thenAnswer((_) => Stream.value(followingPubkeys));
   return mock;
 }
 
@@ -412,5 +421,66 @@ void main() {
         expect(tile.value, anyOf(equals('Alice, Bob'), equals('Bob, Alice')));
       },
     );
+
+    testWidgets('passes the viewer pubkey to the collaborator picker', (
+      tester,
+    ) async {
+      const viewerPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const mutualPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final viewer = UserProfileBuilder(
+        pubkey: viewerPubkey,
+        displayName: 'Viewer',
+      ).build();
+      final mutual = UserProfileBuilder(
+        pubkey: mutualPubkey,
+        displayName: 'Mutual',
+      ).build();
+      final profileRepository = createMockProfileRepository();
+      when(
+        () => profileRepository.getCachedProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => [viewer, mutual]);
+      final contentBlocklistRepository = _MockContentBlocklistRepository();
+      when(
+        () => contentBlocklistRepository.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authServiceProvider.overrideWithValue(
+              createMockAuthService(currentPublicKeyHex: viewerPubkey),
+            ),
+            followRepositoryProvider.overrideWithValue(
+              _createMockFollowRepository(
+                followingPubkeys: [viewerPubkey, mutualPubkey],
+              ),
+            ),
+            profileRepositoryProvider.overrideWithValue(profileRepository),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              contentBlocklistRepository,
+            ),
+            vanishedProfilePubkeysProvider.overrideWith(
+              (ref) => const Stream<Set<String>>.empty(),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataCollaboratorsInput()),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(VideoMetadataSelectionTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Viewer'), findsNothing);
+      expect(find.text('Mutual'), findsOneWidget);
+    });
   });
 }
