@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+import '../../helpers/test_provider_overrides.dart';
+
 void main() {
   group(ProfileBanner, () {
     testWidgets('bounds banner decode to its physical layout size', (
@@ -22,7 +24,7 @@ void main() {
       });
 
       await tester.pumpWidget(
-        MaterialApp(
+        testMaterialApp(
           theme: VineTheme.theme,
           home: const Align(
             alignment: Alignment.topCenter,
@@ -52,7 +54,7 @@ void main() {
       const profileColor = Color(0xFF33CCBF);
 
       await tester.pumpWidget(
-        MaterialApp(
+        testMaterialApp(
           theme: VineTheme.theme,
           home: const Scaffold(
             body: ProfileBanner(
@@ -75,7 +77,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        testMaterialApp(
           theme: VineTheme.theme,
           home: Scaffold(body: fallback),
         ),

@@ -52,7 +52,6 @@ test/widgets/library/pinch_zoom_grid_test.dart	1
 test/widgets/notification_badge_test.dart	2
 test/widgets/notification_type_icon_test.dart	1
 test/widgets/profile/profile_banner_layer_test.dart	1
-test/widgets/profile/profile_banner_test.dart	2
 test/widgets/profile/profile_cache_load_indicator_test.dart	1
 test/widgets/profile/profile_tab_thumbnail_test.dart	1
 test/widgets/profile/profile_videos_grid_skeleton_test.dart	1
