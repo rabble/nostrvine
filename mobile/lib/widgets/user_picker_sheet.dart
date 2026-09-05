@@ -172,12 +172,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   @override
   void initState() {
     super.initState();
+    final initialSelectedProfiles = widget.initialSelectedProfiles
+        .where((profile) => !_isExcludedViewer(profile.pubkey))
+        .toList();
     _selectedPubkeys = {
       ...widget.excludePubkeys,
-      for (final profile in widget.initialSelectedProfiles) profile.pubkey,
+      for (final profile in initialSelectedProfiles) profile.pubkey,
     };
-    if (widget.initialSelectedProfiles.isNotEmpty) {
-      _selectedProfiles.addAll(widget.initialSelectedProfiles);
+    if (initialSelectedProfiles.isNotEmpty) {
+      _selectedProfiles.addAll(initialSelectedProfiles);
     }
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {

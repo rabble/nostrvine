@@ -408,9 +408,7 @@ void main() {
             overrides: [
               _noVanishedProfiles,
               profileRepositoryProvider.overrideWithValue(
-                _createMockProfileRepository(
-                  cachedProfiles: [viewer, mutual],
-                ),
+                _createMockProfileRepository(cachedProfiles: [viewer, mutual]),
               ),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
               contentBlocklistRepositoryProvider.overrideWithValue(
@@ -478,6 +476,67 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Viewer'), findsNothing);
+      });
+
+      testWidgets('excluded initial viewer does not consume a selection slot', (
+        tester,
+      ) async {
+        const viewerPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final viewer = UserProfile(
+          pubkey: viewerPubkey,
+          name: 'Viewer',
+          rawData: const {'name': 'Viewer'},
+          createdAt: DateTime.now(),
+          eventId: 'viewer-event',
+        );
+        final mutual = UserProfile(
+          pubkey:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          name: 'Mutual',
+          rawData: const {'name': 'Mutual'},
+          createdAt: DateTime.now(),
+          eventId: 'mutual-event',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _noVanishedProfiles,
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [viewer, mutual]),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(
+                  followingPubkeys: [viewer.pubkey, mutual.pubkey],
+                ),
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  maxCount: 1,
+                  excludeViewerPubkey: viewerPubkey,
+                  initialSelectedProfiles: [viewer],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('0/1 Title'), findsOneWidget);
+        await tester.tap(find.text('Mutual'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('1/1 Title'), findsOneWidget);
       });
 
       testWidgets('shows loading indicator until the first follower source '
@@ -1897,9 +1956,7 @@ void main() {
           .widgetList<Text>(find.byType(Text))
           .map((t) => t.data)
           .whereType<String>()
-          .where(
-            (t) => t == 'Aaron' || t == l10n.profileDeletedAccountName,
-          )
+          .where((t) => t == 'Aaron' || t == l10n.profileDeletedAccountName)
           .toList();
       expect(rendered, ['Aaron', l10n.profileDeletedAccountName]);
     });
