@@ -5954,6 +5954,22 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Sinusubukan ulit ang reaction';
 
   @override
+  String dmReactionRemovalRefusedA11yLabel(String emoji) {
+    return 'Couldn\'t remove your $emoji reaction. Double tap to try again';
+  }
+
+  @override
+  String get dmReactionRemovalRefusedTitle => 'Couldn\'t remove your reaction.';
+
+  @override
+  String get dmReactionAddBlockedByRemoval =>
+      'Tapusin munang alisin ang dati mong reaksyon bago magdagdag ng bago.';
+
+  @override
+  String get dmReactionRemovalRefusedDetails =>
+      'Some people may still be able to see this reaction.';
+
+  @override
   String get dmReactionsSheetTitle => 'Mga reaksyon';
 
   @override

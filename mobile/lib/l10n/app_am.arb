@@ -4820,5 +4820,6 @@
     "analyticsWindowAll": "ሁሉም",
     "followUserIndexedSemanticLabel": "ተጠቃሚን ተከታተል {index}",
     "unfollowUserIndexedSemanticLabel": "ተጠቃሚን መከታተል አቁም {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / በወር"
+    "supporterTierMonthlyLabel": "{title} — {price} / በወር",
+    "dmReactionAddBlockedByRemoval": "ሌላ ምላሽ ከማከልዎ በፊት የቀድሞውን ምላሽዎን ማስወገድ ያጠናቅቁ።"
 }

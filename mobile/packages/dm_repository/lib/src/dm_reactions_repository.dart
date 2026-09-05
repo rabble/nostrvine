@@ -54,6 +54,22 @@ class DmReactionPublishResult {
   final bool optimisticInsertSucceeded;
 }
 
+/// Outcome of one own-reaction deletion delivery attempt.
+enum DmReactionDeletionOutcome {
+  /// Every recipient confirmed the kind-5 wrap.
+  sent,
+
+  /// Every failed recipient was refused by send policy. Automatic retries
+  /// stop, while the retained rumor remains available for a user retry.
+  refused,
+
+  /// Delivery was not confirmed. The pending row remains sweep-retryable.
+  unconfirmed,
+
+  /// No initialized repository or stored deletion was available to drive.
+  unavailable,
+}
+
 /// Outcome of ingesting an incoming wrapped rumor — a reaction, or a kind-5
 /// deletion targeting either a reaction or a message — used by `DmRepository`
 /// to decide whether to record the gift wrap in the processed-wrap dedup
@@ -165,6 +181,9 @@ class DmReactionsRepository {
   /// the conversation (1:1 **or** group) for an incoming reaction. Null in
   /// legacy/test wiring → 1:1 inference only.
   final DirectMessagesDao? _directMessagesDao;
+
+  final Map<String, Future<DmReactionDeletionOutcome>>
+  _deletionRecoveriesInFlight = <String, Future<DmReactionDeletionOutcome>>{};
 
   /// Maximum permitted reaction content length. NIP-25 has no hard cap,
   /// but anything over ~128 chars is almost certainly malformed.
@@ -299,6 +318,19 @@ class DmReactionsRepository {
           ownerPubkey: _userPubkey,
         )
         .map((rows) => _collapsePerReactor(rows.map(_rowToModel).toList()));
+  }
+
+  /// Whether the current account has a pending or refused removal for the
+  /// target message. This reads the durable queue because pending removals are
+  /// deliberately absent from [watchForConversation].
+  Future<bool> hasOutstandingOwnDeletion({
+    required String targetMessageId,
+  }) {
+    if (_userPubkey.isEmpty) return Future<bool>.value(false);
+    return _reactionsDao.hasOutstandingOwnDeletion(
+      targetMessageId: targetMessageId,
+      ownerPubkey: _userPubkey,
+    );
   }
 
   /// Enforce the cap-at-one invariant at the read boundary: keep at most one
@@ -690,12 +722,10 @@ class DmReactionsRepository {
   /// — recipients treat repeats as idempotent. The `deletion_pending` row is
   /// awaited (durability boundary) so a crash before it lands can't lose the
   /// removal; the wire publish itself is `unawaited` and re-driven by the sweep
-  /// via [retryDeletion] on any failed/offline attempt. That unawaited first
-  /// attempt can race a concurrent sweep's [retryDeletion] on the same
-  /// kind-5; both replay the identical stored event, so the worst case is a
-  /// redundant (idempotent) publish, not a divergent delete. On a DAO write
-  /// failure the deletion is reported to [reportSite] and skipped (no wire
-  /// attempt).
+  /// via [retryDeletion] on any failed/offline attempt. The first attempt and
+  /// every retry are coalesced by rumor id, so only one fan-out can drive the
+  /// stored kind-5 at a time. On a DAO write failure the deletion is reported
+  /// to [reportSite] and skipped (no wire attempt).
   Future<void> _durablyDeleteReaction({
     required String rumorId,
     required List<String> recipients,
@@ -726,12 +756,15 @@ class DmReactionsRepository {
     }
 
     unawaited(
-      _driveDeletion(
-        rumorId: rumorId,
-        deletion: deletion,
-        recipients: recipients,
-        messageService: messageService,
-        inboxes: inboxes,
+      _coalesceDeletionAttempt(
+        rumorId,
+        () => _driveDeletion(
+          rumorId: rumorId,
+          deletion: deletion,
+          recipients: recipients,
+          messageService: messageService,
+          inboxes: inboxes,
+        ),
       ),
     );
   }
@@ -757,19 +790,30 @@ class DmReactionsRepository {
   }
 
   /// Retry a previously-failed/interrupted own reaction removal by replaying
-  /// the stored kind-5 rumor. Clears the pending-deletion marker on a
-  /// confirmed publish; leaves it pending otherwise so the sweep tries again.
-  Future<DmReactionPublishResult> retryDeletion({
+  /// the stored kind-5 rumor. Marks the row `deletion_sent` on a confirmed
+  /// publish and `deletion_refused` when send policy blocks it — off the
+  /// sweep's worklist, rumor retained for a user-driven retry; leaves it
+  /// pending otherwise so the sweep tries again.
+  Future<DmReactionDeletionOutcome> retryDeletion({
+    required String rumorId,
+    required String targetMessageAuthor,
+  }) {
+    return _coalesceDeletionAttempt(
+      rumorId,
+      () => _retryDeletion(
+        rumorId: rumorId,
+        targetMessageAuthor: targetMessageAuthor,
+      ),
+    );
+  }
+
+  Future<DmReactionDeletionOutcome> _retryDeletion({
     required String rumorId,
     required String targetMessageAuthor,
   }) async {
     final messageService = _messageService;
     if (messageService == null || _userPubkey.isEmpty) {
-      return DmReactionPublishResult(
-        success: false,
-        rumorId: rumorId,
-        errorMessage: 'Repository not initialized',
-      );
+      return DmReactionDeletionOutcome.unavailable;
     }
     final row = await _reactionsDao.getById(
       id: rumorId,
@@ -777,11 +821,7 @@ class DmReactionsRepository {
     );
     final deletionJson = row?.rumorEventJson;
     if (row == null || deletionJson == null) {
-      return DmReactionPublishResult(
-        success: false,
-        rumorId: rumorId,
-        errorMessage: 'No stored deletion to retry',
-      );
+      return DmReactionDeletionOutcome.unavailable;
     }
     final deletion = Event.fromJson(
       jsonDecode(deletionJson) as Map<String, dynamic>,
@@ -803,57 +843,32 @@ class DmReactionsRepository {
             id: rumorId,
             ownerPubkey: _userPubkey,
           );
-          return DmReactionPublishResult(
-            success: true,
-            rumorId: rumorId,
-            optimisticInsertSucceeded: true,
-          );
+          return DmReactionDeletionOutcome.sent;
         case NIP17SendFailure(:final error, :final blocked):
-          // A policy-blocked recipient can never receive the kind-5 — and
-          // never received the reaction it removes — so the removal is moot.
-          // Terminalize it (mirroring the blocked handling on the add path) so
-          // the sweep stops re-driving a send the policy will always refuse.
           if (blocked) {
-            await _reactionsDao.markDeletionSent(
+            await _reactionsDao.markDeletionRefused(
               id: rumorId,
               ownerPubkey: _userPubkey,
             );
-            return DmReactionPublishResult(
-              success: true,
-              rumorId: rumorId,
-              optimisticInsertSucceeded: true,
-            );
+            return DmReactionDeletionOutcome.refused;
           }
-          return DmReactionPublishResult(
-            success: false,
-            rumorId: rumorId,
-            errorMessage: error,
-            optimisticInsertSucceeded: true,
+          Log.warning(
+            'DM reaction deletion retry was unconfirmed: $error',
+            category: LogCategory.system,
           );
+          return DmReactionDeletionOutcome.unconfirmed;
       }
     } on Object catch (e) {
       Log.warning(
         'DM reaction deletion retry threw: $e',
         category: LogCategory.system,
       );
-      return DmReactionPublishResult(
-        success: false,
-        rumorId: rumorId,
-        errorMessage: e.toString(),
-        optimisticInsertSucceeded: true,
-      );
+      return DmReactionDeletionOutcome.unconfirmed;
     }
   }
 
-  /// Publish [deletion] (OK-confirmed) and clear the pending-deletion marker
-  /// on a confirmed send OR a policy block; on any other non-success the
-  /// `'deletion_pending'` row is left for the retry sweep to re-drive.
-  ///
-  /// A blocked recipient can never receive the kind-5 — and never received the
-  /// reaction it removes — so the removal is moot and terminalizing it stops
-  /// the sweep re-driving a send the policy will always refuse (symmetric with
-  /// the blocked handling on the add path).
-  Future<void> _driveDeletion({
+  /// Publish [deletion], preserving an honest durable state for every result.
+  Future<DmReactionDeletionOutcome> _driveDeletion({
     required String rumorId,
     required Event deletion,
     required List<String> recipients,
@@ -869,21 +884,43 @@ class DmReactionsRepository {
         inboxByRecipient: inboxByRecipient,
         awaitRecipientOk: true,
       );
-      final terminal =
-          result is NIP17SendSuccess ||
-          (result is NIP17SendFailure && result.blocked);
-      if (terminal) {
-        await _reactionsDao.markDeletionSent(
-          id: rumorId,
-          ownerPubkey: _userPubkey,
-        );
+      switch (result) {
+        case NIP17SendSuccess():
+          await _reactionsDao.markDeletionSent(
+            id: rumorId,
+            ownerPubkey: _userPubkey,
+          );
+          return DmReactionDeletionOutcome.sent;
+        case NIP17SendFailure(:final blocked):
+          if (blocked) {
+            await _reactionsDao.markDeletionRefused(
+              id: rumorId,
+              ownerPubkey: _userPubkey,
+            );
+            return DmReactionDeletionOutcome.refused;
+          }
+          return DmReactionDeletionOutcome.unconfirmed;
       }
     } on Object catch (e) {
       Log.warning(
         'DM reaction deletion publish threw: $e',
         category: LogCategory.system,
       );
+      return DmReactionDeletionOutcome.unconfirmed;
     }
+  }
+
+  Future<DmReactionDeletionOutcome> _coalesceDeletionAttempt(
+    String rumorId,
+    Future<DmReactionDeletionOutcome> Function() attempt,
+  ) {
+    final existing = _deletionRecoveriesInFlight[rumorId];
+    if (existing != null) return existing;
+    final future = attempt();
+    _deletionRecoveriesInFlight[rumorId] = future;
+    return future.whenComplete(
+      () => _deletionRecoveriesInFlight.remove(rumorId),
+    );
   }
 
   /// Persist an incoming kind-7 reaction rumor. Called from
@@ -1299,6 +1336,7 @@ class DmReactionsRepository {
       'failed' => DmReactionPublishStatus.failed,
       'sent' => DmReactionPublishStatus.sent,
       'blocked' => DmReactionPublishStatus.blocked,
+      DmReactionsDao.deletionRefused => DmReactionPublishStatus.removalRefused,
       _ => DmReactionPublishStatus.received,
     };
     return DmReaction(

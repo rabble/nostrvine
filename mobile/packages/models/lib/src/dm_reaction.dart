@@ -13,9 +13,18 @@ import 'package:equatable/equatable.dart';
 ///   recipient. Terminal and NOT retryable — retrying only re-hits the same
 ///   policy — so the retry sweep and a chip re-tap must leave it alone. Renders
 ///   as a settled own chip, never a red retry chip.
+/// - [removalRefused]: a kind-5 removal was refused. The local reaction stays
+///   soft-deleted, but its warning chip offers an explicit retry.
 /// - [received]: row originated from an incoming relay event (peer's
 ///   reaction or self-wrap copy of our own).
-enum DmReactionPublishStatus { sent, pending, failed, blocked, received }
+enum DmReactionPublishStatus {
+  sent,
+  pending,
+  failed,
+  blocked,
+  removalRefused,
+  received,
+}
 
 /// A NIP-25 (kind 7) emoji reaction on a NIP-17 direct message.
 ///

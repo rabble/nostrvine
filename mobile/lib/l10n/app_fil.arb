@@ -3644,5 +3644,6 @@
     "analyticsWindowAll": "Lahat",
     "followUserIndexedSemanticLabel": "Sundan ang user {index}",
     "unfollowUserIndexedSemanticLabel": "I-unfollow ang user {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / buwan"
+    "supporterTierMonthlyLabel": "{title} — {price} / buwan",
+    "dmReactionAddBlockedByRemoval": "Tapusin munang alisin ang dati mong reaksyon bago magdagdag ng bago."
 }

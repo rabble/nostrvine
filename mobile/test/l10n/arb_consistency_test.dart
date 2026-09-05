@@ -442,6 +442,11 @@ const _knownUntranslatedDebt = <String>{
   'verifyErrorDiscordBotNoAccess',
   'verifyErrorDiscordAuthorMismatch',
   'verifyErrorDiscordContentUnavailable',
+  // Refused reaction-removal recovery (#8563). These mirror the existing
+  // message-removal wording and need the same per-locale human verb choice.
+  'dmReactionRemovalRefusedA11yLabel',
+  'dmReactionRemovalRefusedTitle',
+  'dmReactionRemovalRefusedDetails',
   // Retraction-in-flight screen-reader label (#8201). Deferred to the next
   // human translation pass rather than machine-translated: its translated
   // siblings dmDeleteRefusedMessage / dmDeleteRefusedDetails each chose a

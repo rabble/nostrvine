@@ -42,6 +42,10 @@ class ConversationReactionsCubit
       _onRetryRequested,
       transformer: sequential(),
     );
+    on<ConversationReactionRemovalRetryRequested>(
+      _onRemovalRetryRequested,
+      transformer: sequential(),
+    );
     on<_ConversationReactionsSubscriptionTicked>(_onSubscriptionTicked);
   }
 
@@ -108,6 +112,15 @@ class ConversationReactionsCubit
         );
         return;
       }
+      if (existing.publishStatus == DmReactionPublishStatus.removalRefused) {
+        add(
+          ConversationReactionRemovalRetryRequested(
+            rumorId: existing.id,
+            messageAuthorPubkey: event.messageAuthorPubkey,
+          ),
+        );
+        return;
+      }
       final key = ReactionPublishKey(
         messageId: event.messageId,
         emoji: event.emoji,
@@ -138,6 +151,8 @@ class ConversationReactionsCubit
       return;
     }
 
+    if (await _blockWhileRemovalOutstanding(event.messageId, emit)) return;
+
     await _publishReaction(
       conversationId: event.conversationId,
       messageId: event.messageId,
@@ -151,6 +166,8 @@ class ConversationReactionsCubit
     ConversationReactionSet event,
     Emitter<ConversationReactionsState> emit,
   ) async {
+    if (await _blockWhileRemovalOutstanding(event.messageId, emit)) return;
+
     // Set-not-toggle: re-selecting the active emoji is a no-op (keep it);
     // a different emoji supersedes the prior one in the repository. The
     // optimistic-inclusive check also covers the pre-persist window, so a
@@ -172,6 +189,33 @@ class ConversationReactionsCubit
       emoji: event.emoji,
       emit: emit,
     );
+  }
+
+  /// Blocks new reactions while a pending or refused removal must remain
+  /// reachable for delivery or manual retry.
+  Future<bool> _blockWhileRemovalOutstanding(
+    String messageId,
+    Emitter<ConversationReactionsState> emit,
+  ) async {
+    final hasRefusedRemoval = state
+        .reactionsFor(messageId)
+        .any(
+          (reaction) =>
+              reaction.isOwn &&
+              reaction.publishStatus == DmReactionPublishStatus.removalRefused,
+        );
+    final hasOutstandingRemoval =
+        hasRefusedRemoval ||
+        await _reactionsRepository.hasOutstandingOwnDeletion(
+          targetMessageId: messageId,
+        );
+    if (!hasOutstandingRemoval) return false;
+    emit(
+      state.copyWith(
+        blockedReactionAttempts: state.blockedReactionAttempts + 1,
+      ),
+    );
+    return true;
   }
 
   /// The current account's live reaction with [emoji] on [messageId], or null.
@@ -364,6 +408,50 @@ class ConversationReactionsCubit
     }
   }
 
+  Future<void> _onRemovalRetryRequested(
+    ConversationReactionRemovalRetryRequested event,
+    Emitter<ConversationReactionsState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        removalRetries: {
+          event.rumorId: ReactionRemovalRetryLocalStatus.retrying,
+        },
+      ),
+    );
+    try {
+      final outcome = await _reactionsRepository.retryDeletion(
+        rumorId: event.rumorId,
+        targetMessageAuthor: event.messageAuthorPubkey,
+      );
+      emit(
+        state.copyWith(
+          removalRetries: {
+            event.rumorId: switch (outcome) {
+              DmReactionDeletionOutcome.sent =>
+                ReactionRemovalRetryLocalStatus.sent,
+              DmReactionDeletionOutcome.refused =>
+                ReactionRemovalRetryLocalStatus.refused,
+              DmReactionDeletionOutcome.unconfirmed =>
+                ReactionRemovalRetryLocalStatus.unconfirmed,
+              DmReactionDeletionOutcome.unavailable =>
+                ReactionRemovalRetryLocalStatus.unavailable,
+            },
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          removalRetries: {
+            event.rumorId: ReactionRemovalRetryLocalStatus.unavailable,
+          },
+        ),
+      );
+    }
+  }
+
   void _onSubscriptionTicked(
     _ConversationReactionsSubscriptionTicked event,
     Emitter<ConversationReactionsState> emit,
@@ -398,7 +486,15 @@ class ConversationReactionsCubit
       final ownHasEmoji = rows.any((r) => r.isOwn && r.emoji == key.emoji);
       return switch (intent) {
         OptimisticReactionAdded() => ownHasEmoji,
-        OptimisticReactionRemoved() => !ownHasEmoji,
+        OptimisticReactionRemoved() =>
+          !ownHasEmoji ||
+              rows.any(
+                (reaction) =>
+                    reaction.isOwn &&
+                    reaction.emoji == key.emoji &&
+                    reaction.publishStatus ==
+                        DmReactionPublishStatus.removalRefused,
+              ),
       };
     });
     return next;

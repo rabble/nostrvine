@@ -31,6 +31,11 @@ void main() {
       when(
         () => repo.watchForConversation(any()),
       ).thenAnswer((_) => streamController.stream);
+      when(
+        () => repo.hasOutstandingOwnDeletion(
+          targetMessageId: any(named: 'targetMessageId'),
+        ),
+      ).thenAnswer((_) async => false);
     });
 
     tearDown(() async {
@@ -616,6 +621,313 @@ void main() {
           },
         );
       }
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        're-tapping a refused removal retries its stored deletion',
+        build: () {
+          when(
+            () => repo.retryDeletion(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) async {
+          cubit.add(
+            const ConversationReactionsStarted(conversationId: _convo),
+          );
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '❤️',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (_) {
+          verify(
+            () => repo.retryDeletion(
+              rumorId: 'own-❤️',
+              targetMessageAuthor: _peer,
+            ),
+          ).called(1);
+          verifyNever(
+            () => repo.removeOwn(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'a removal retry replays the stored deletion, not the reaction',
+        build: () {
+          when(
+            () => repo.retryDeletion(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) => cubit.add(
+          const ConversationReactionRemovalRetryRequested(
+            rumorId: 'own-❤️',
+            messageAuthorPubkey: _peer,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => repo.retryDeletion(
+              rumorId: 'own-❤️',
+              targetMessageAuthor: _peer,
+            ),
+          ).called(1);
+          verifyNever(
+            () => repo.retry(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'a different emoji cannot orphan a refused removal',
+        build: () => ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        ),
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '❤️',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '🔥',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          verifyNever(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          );
+          expect(
+            cubit.state.reactionsFor(_msgId).single.publishStatus,
+            DmReactionPublishStatus.removalRefused,
+          );
+          expect(cubit.state.blockedReactionAttempts, 1);
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'set cannot orphan a refused removal',
+        build: () => ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        ),
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '🔥',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionSet(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          verifyNever(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          );
+          expect(cubit.state.blockedReactionAttempts, 1);
+        },
+      );
+
+      for (final useSet in [false, true]) {
+        blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+          '${useSet ? 'set' : 'toggle'} cannot overtake a pending removal',
+          setUp: () {
+            when(
+              () => repo.hasOutstandingOwnDeletion(
+                targetMessageId: _msgId,
+              ),
+            ).thenAnswer((_) async => true);
+          },
+          build: () => ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          ),
+          act: (cubit) {
+            if (useSet) {
+              cubit.add(
+                const ConversationReactionSet(
+                  conversationId: _convo,
+                  messageId: _msgId,
+                  messageAuthorPubkey: _peer,
+                  emoji: '🔥',
+                ),
+              );
+            } else {
+              cubit.add(
+                const ConversationReactionToggled(
+                  conversationId: _convo,
+                  messageId: _msgId,
+                  messageAuthorPubkey: _peer,
+                  emoji: '🔥',
+                ),
+              );
+            }
+          },
+          expect: () => [
+            isA<ConversationReactionsState>().having(
+              (state) => state.blockedReactionAttempts,
+              'blocked attempts',
+              1,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => repo.publish(
+                conversationId: any(named: 'conversationId'),
+                targetMessageId: any(named: 'targetMessageId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+                emoji: any(named: 'emoji'),
+              ),
+            );
+          },
+        );
+      }
+
+      for (final outcome in DmReactionDeletionOutcome.values) {
+        blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+          'surfaces the $outcome removal retry outcome',
+          build: () {
+            when(
+              () => repo.retryDeletion(
+                rumorId: any(named: 'rumorId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              ),
+            ).thenAnswer((_) async => outcome);
+            return ConversationReactionsCubit(
+              reactionsRepository: repo,
+              ownerPubkey: _owner,
+            );
+          },
+          act: (cubit) => cubit.add(
+            const ConversationReactionRemovalRetryRequested(
+              rumorId: 'own-❤️',
+              messageAuthorPubkey: _peer,
+            ),
+          ),
+          verify: (cubit) {
+            expect(
+              cubit.state.removalRetries['own-❤️'],
+              switch (outcome) {
+                DmReactionDeletionOutcome.sent =>
+                  ReactionRemovalRetryLocalStatus.sent,
+                DmReactionDeletionOutcome.refused =>
+                  ReactionRemovalRetryLocalStatus.refused,
+                DmReactionDeletionOutcome.unconfirmed =>
+                  ReactionRemovalRetryLocalStatus.unconfirmed,
+                DmReactionDeletionOutcome.unavailable =>
+                  ReactionRemovalRetryLocalStatus.unavailable,
+              },
+            );
+          },
+        );
+      }
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'a refused deletion row clears the optimistic removal overlay',
+        build: () => ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        ),
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([ownReaction('❤️')]);
+          await Future<void>.delayed(Duration.zero);
+          when(
+            () => repo.removeOwn(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async {});
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '❤️',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+        },
+        verify: (cubit) {
+          expect(cubit.state.optimistic, isEmpty);
+          expect(
+            cubit.state.reactionsFor(_msgId).single.publishStatus,
+            DmReactionPublishStatus.removalRefused,
+          );
+        },
+      );
 
       blocTest<ConversationReactionsCubit, ConversationReactionsState>(
         'keeps the optimistic chip on a durable-row publish failure '

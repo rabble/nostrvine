@@ -89,6 +89,11 @@ void main() {
       () => reactionsRepo.watchForConversation(any()),
     ).thenAnswer((_) => reactionStream.stream);
     when(
+      () => reactionsRepo.hasOutstandingOwnDeletion(
+        targetMessageId: any(named: 'targetMessageId'),
+      ),
+    ).thenAnswer((_) async => false);
+    when(
       () => reactionsRepo.publish(
         conversationId: any(named: 'conversationId'),
         targetMessageId: any(named: 'targetMessageId'),

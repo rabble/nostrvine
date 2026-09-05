@@ -6473,5 +6473,6 @@
   "analyticsWindowAll": "全部",
   "followUserIndexedSemanticLabel": "关注用户 {index}",
   "unfollowUserIndexedSemanticLabel": "取消关注用户 {index}",
-  "supporterTierMonthlyLabel": "{title} — {price} / 月"
+  "supporterTierMonthlyLabel": "{title} — {price} / 月",
+  "dmReactionAddBlockedByRemoval": "请先完成移除之前的回应，再添加其他回应。"
 }

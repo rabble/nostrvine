@@ -6473,5 +6473,6 @@
   "analyticsWindowAll": "سب",
   "followUserIndexedSemanticLabel": "صارف کو فالو کریں {index}",
   "unfollowUserIndexedSemanticLabel": "صارف کو ان فالو کریں {index}",
-  "supporterTierMonthlyLabel": "{title} — {price} / ماہ"
+  "supporterTierMonthlyLabel": "{title} — {price} / ماہ",
+  "dmReactionAddBlockedByRemoval": "کوئی دوسرا ردعمل شامل کرنے سے پہلے پچھلا ردعمل ہٹانے کا عمل مکمل کریں۔"
 }

@@ -4688,5 +4688,6 @@
     "analyticsWindowAll": "Alles",
     "followUserIndexedSemanticLabel": "Gebruiker volgen {index}",
     "unfollowUserIndexedSemanticLabel": "Gebruiker ontvolgen {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / maand"
+    "supporterTierMonthlyLabel": "{title} — {price} / maand",
+    "dmReactionAddBlockedByRemoval": "Voltooi eerst het verwijderen van je vorige reactie voordat je een andere toevoegt."
 }

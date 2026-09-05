@@ -64,7 +64,7 @@ void main() {
         rumorId: any(named: 'rumorId'),
         targetMessageAuthor: any(named: 'targetMessageAuthor'),
       ),
-    ).thenAnswer((_) async => _ok('r'));
+    ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
   });
 
   tearDown(() async {
@@ -431,7 +431,7 @@ void main() {
           rumorId: 'd1',
           targetMessageAuthor: _authorPubkey,
         ),
-      ).thenAnswer((_) async => _ok('d1'));
+      ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
 
       await buildService().sweep();
 
@@ -441,6 +441,33 @@ void main() {
           targetMessageAuthor: _authorPubkey,
         ),
       ).called(1);
+    });
+
+    test('a refused removal does not consume the retry budget', () async {
+      when(repository.retryableDeletions).thenAnswer(
+        (_) async => [
+          _target(rumorId: 'd1', publishStatus: 'deletion_pending'),
+        ],
+      );
+      when(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).thenAnswer((_) async => DmReactionDeletionOutcome.refused);
+
+      final service = buildService(
+        retryConfig: const DmReactionRetryConfig(maxRetries: 1),
+      );
+      await service.sweep();
+      await service.sweep();
+
+      verify(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).called(2);
     });
 
     test(
@@ -464,7 +491,7 @@ void main() {
             rumorId: 'd1',
             targetMessageAuthor: _authorPubkey,
           ),
-        ).thenAnswer((_) async => _ok('d1'));
+        ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
 
         await buildService(now: () => now).sweep();
 
@@ -536,7 +563,7 @@ void main() {
             rumorId: 'x1',
             targetMessageAuthor: _authorPubkey,
           ),
-        ).thenAnswer((_) async => _ok('x1'));
+        ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
 
         clock = clock.add(const Duration(seconds: 10));
         await service.sweep();

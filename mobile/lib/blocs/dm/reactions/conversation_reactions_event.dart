@@ -119,12 +119,26 @@ class ConversationReactionRetryRequested extends ConversationReactionsEvent {
   final String emoji;
 
   @override
-  List<Object?> get props => [
-    rumorId,
-    messageId,
-    messageAuthorPubkey,
-    emoji,
-  ];
+  List<Object?> get props => [rumorId, messageId, messageAuthorPubkey, emoji];
+}
+
+/// Retry the retained kind-5 for a refused own-reaction removal.
+class ConversationReactionRemovalRetryRequested
+    extends ConversationReactionsEvent {
+  /// Construct a removal retry event.
+  const ConversationReactionRemovalRetryRequested({
+    required this.rumorId,
+    required this.messageAuthorPubkey,
+  });
+
+  /// Reaction rumor id targeted by the stored kind-5.
+  final String rumorId;
+
+  /// Target message author used to resolve the wrap recipients.
+  final String messageAuthorPubkey;
+
+  @override
+  List<Object?> get props => [rumorId, messageAuthorPubkey];
 }
 
 /// Internal — projected from the DAO stream subscription.

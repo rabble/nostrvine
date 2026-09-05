@@ -4688,5 +4688,6 @@
     "analyticsWindowAll": "الكل",
     "followUserIndexedSemanticLabel": "متابعة المستخدم {index}",
     "unfollowUserIndexedSemanticLabel": "إلغاء متابعة المستخدم {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / شهريًا"
+    "supporterTierMonthlyLabel": "{title} — {price} / شهريًا",
+    "dmReactionAddBlockedByRemoval": "أكمل إزالة تفاعلك السابق قبل إضافة تفاعل آخر."
 }

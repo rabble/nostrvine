@@ -4226,5 +4226,6 @@
     "analyticsWindowAll": "전체",
     "followUserIndexedSemanticLabel": "사용자 팔로우 {index}",
     "unfollowUserIndexedSemanticLabel": "사용자 팔로우 취소 {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / 월"
+    "supporterTierMonthlyLabel": "{title} — {price} / 월",
+    "dmReactionAddBlockedByRemoval": "다른 반응을 추가하기 전에 이전 반응 삭제를 완료하세요."
 }

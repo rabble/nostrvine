@@ -11,6 +11,15 @@ enum ConversationReactionsStatus { initial, loading, loaded, failure }
 /// Distinct from [DmReactionPublishStatus] which is the on-disk shape.
 enum ReactionPublishLocalStatus { sending, failed }
 
+/// Result of explicitly retrying a refused reaction removal.
+enum ReactionRemovalRetryLocalStatus {
+  retrying,
+  sent,
+  refused,
+  unconfirmed,
+  unavailable,
+}
+
 /// Identity for an outgoing publish, used as the key in [pending] and
 /// [ConversationReactionsState.optimistic].
 @immutable
@@ -73,6 +82,8 @@ class ConversationReactionsState extends Equatable {
     this.reactionsByMessageId = const <String, List<DmReaction>>{},
     this.pending = const <ReactionPublishKey, ReactionPublishLocalStatus>{},
     this.optimistic = const <ReactionPublishKey, OptimisticReactionIntent>{},
+    this.removalRetries = const <String, ReactionRemovalRetryLocalStatus>{},
+    this.blockedReactionAttempts = 0,
   });
 
   /// Lifecycle status of the cubit.
@@ -94,6 +105,13 @@ class ConversationReactionsState extends Equatable {
   /// between a tap and the persisted row arriving on the DAO stream (#5389).
   /// Reconciled away by the cubit once the persisted set reflects the intent.
   final Map<ReactionPublishKey, OptimisticReactionIntent> optimistic;
+
+  /// Latest explicit removal-retry status by reaction rumor id.
+  final Map<String, ReactionRemovalRetryLocalStatus> removalRetries;
+
+  /// Monotonic signal emitted whenever an outstanding refused removal blocks
+  /// a new reaction. The view listens for increments to explain the no-op.
+  final int blockedReactionAttempts;
 
   /// Live reactions for [messageId] as the chips should render them: the
   /// persisted rows with [optimistic] applied. Returns `const []` if none.
@@ -165,12 +183,17 @@ class ConversationReactionsState extends Equatable {
     Map<String, List<DmReaction>>? reactionsByMessageId,
     Map<ReactionPublishKey, ReactionPublishLocalStatus>? pending,
     Map<ReactionPublishKey, OptimisticReactionIntent>? optimistic,
+    Map<String, ReactionRemovalRetryLocalStatus>? removalRetries,
+    int? blockedReactionAttempts,
   }) {
     return ConversationReactionsState(
       status: status ?? this.status,
       reactionsByMessageId: reactionsByMessageId ?? this.reactionsByMessageId,
       pending: pending ?? this.pending,
       optimistic: optimistic ?? this.optimistic,
+      removalRetries: removalRetries ?? this.removalRetries,
+      blockedReactionAttempts:
+          blockedReactionAttempts ?? this.blockedReactionAttempts,
     );
   }
 
@@ -180,5 +203,7 @@ class ConversationReactionsState extends Equatable {
     reactionsByMessageId,
     pending,
     optimistic,
+    removalRetries,
+    blockedReactionAttempts,
   ];
 }

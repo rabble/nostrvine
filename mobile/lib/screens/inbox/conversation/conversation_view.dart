@@ -364,6 +364,36 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 },
                 listener: _onRetractionRefused,
               ),
+              BlocListener<
+                ConversationReactionsCubit,
+                ConversationReactionsState
+              >(
+                listenWhen: (previous, current) {
+                  return previous.removalRetries != current.removalRetries &&
+                      current.removalRetries.values.any(
+                        (status) =>
+                            status !=
+                                ReactionRemovalRetryLocalStatus.retrying &&
+                            status != ReactionRemovalRetryLocalStatus.sent,
+                      );
+                },
+                listener: (_, _) => _showSnackbar(
+                  context.l10n.dmReactionRemovalRefusedTitle,
+                  error: true,
+                ),
+              ),
+              BlocListener<
+                ConversationReactionsCubit,
+                ConversationReactionsState
+              >(
+                listenWhen: (previous, current) =>
+                    previous.blockedReactionAttempts !=
+                    current.blockedReactionAttempts,
+                listener: (_, _) => _showSnackbar(
+                  context.l10n.dmReactionAddBlockedByRemoval,
+                  error: true,
+                ),
+              ),
             ],
             child: Column(
               children: [

@@ -36,6 +36,10 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
   /// Terminal `publish_status` for a deletion whose kind-5 reached a relay.
   static const String _deletionSentStatus = 'deletion_sent';
 
+  /// Terminal-for-the-sweep `publish_status` for a deletion that send policy
+  /// refused. The stored rumor remains available for an explicit user retry.
+  static const String deletionRefused = 'deletion_refused';
+
   /// Terminal `publish_status` for an outgoing reaction the send policy (#176
   /// protected-minor DM restriction) refused. Not retryable — excluded from
   /// [getRetryableOwnReactions] — since retrying only re-hits the same policy.
@@ -325,8 +329,9 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  /// Reactive stream of every live reaction in [conversationId] for the
-  /// account [ownerPubkey].
+  /// Reactive stream of every visible reaction in [conversationId] for the
+  /// account [ownerPubkey]. Refused own removals remain visible as warnings
+  /// even though their local reaction is already soft-deleted.
   Stream<List<DmReactionRow>> watchForConversation({
     required String conversationId,
     required String ownerPubkey,
@@ -336,7 +341,10 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
         (t) =>
             t.conversationId.equals(conversationId) &
             t.ownerPubkey.equals(ownerPubkey) &
-            t.isDeleted.equals(false),
+            (t.isDeleted.equals(false) |
+                (t.isDeleted.equals(true) &
+                    t.reactorPubkey.equals(ownerPubkey) &
+                    t.publishStatus.equals(deletionRefused))),
       )
       ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
     return query.watch();
@@ -411,6 +419,21 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Record that send policy refused a pending own-reaction deletion.
+  ///
+  /// The row stays soft-deleted and leaves the automatic retry worklist, but
+  /// retains the exact kind-5 rumor so a user-driven retry can replay it.
+  Future<void> markDeletionRefused({
+    required String id,
+    required String ownerPubkey,
+  }) async {
+    await (update(
+      dmMessageReactions,
+    )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).write(
+      const DmMessageReactionsCompanion(publishStatus: Value(deletionRefused)),
+    );
+  }
+
   /// Fetch this user's own soft-deleted reactions whose kind-5 deletion still
   /// needs durable delivery (`publish_status = 'deletion_pending'` with a
   /// stored deletion rumor). Ordered oldest-first so removals drain in order.
@@ -429,6 +452,34 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
           )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();
+  }
+
+  /// Whether [ownerPubkey] has an own reaction removal for
+  /// [targetMessageId] that has not reached a relay.
+  ///
+  /// Pending removals are intentionally hidden from the conversation stream,
+  /// while refused removals remain available for manual retry. Querying the
+  /// durable queue prevents a newer reaction from making either row
+  /// unreachable in the UI.
+  Future<bool> hasOutstandingOwnDeletion({
+    required String targetMessageId,
+    required String ownerPubkey,
+  }) async {
+    final query = selectOnly(dmMessageReactions)
+      ..addColumns([dmMessageReactions.id])
+      ..where(
+        dmMessageReactions.targetMessageId.equals(targetMessageId) &
+            dmMessageReactions.ownerPubkey.equals(ownerPubkey) &
+            dmMessageReactions.reactorPubkey.equals(ownerPubkey) &
+            dmMessageReactions.isDeleted.equals(true) &
+            dmMessageReactions.rumorEventJson.isNotNull() &
+            dmMessageReactions.publishStatus.isIn(const [
+              _deletionPendingStatus,
+              deletionRefused,
+            ]),
+      )
+      ..limit(1);
+    return (await query.get()).isNotEmpty;
   }
 
   /// Return the stored rumor JSON for a pending/failed outgoing row, or
@@ -577,7 +628,7 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Non-destructive account switches preserve retryable own rows because their
   /// stored `rumor_event_json` is the only durable payload for unpublished
-  /// reactions and pending kind-5 removals.
+  /// reactions and for pending or refused kind-5 removals.
   Future<int> deleteNonRetryableForOwner(String ownerPubkey) async {
     return (delete(dmMessageReactions)..where((t) {
           final retryableOwnReaction =
@@ -589,7 +640,10 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
               t.reactorPubkey.equals(ownerPubkey) &
               t.isDeleted.equals(true) &
               t.rumorEventJson.isNotNull() &
-              t.publishStatus.equals(_deletionPendingStatus);
+              t.publishStatus.isIn(const [
+                _deletionPendingStatus,
+                deletionRefused,
+              ]);
           return t.ownerPubkey.equals(ownerPubkey) &
               (retryableOwnReaction | retryableOwnDeletion).not();
         }))

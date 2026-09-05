@@ -4688,5 +4688,6 @@
     "analyticsWindowAll": "Tot",
     "followUserIndexedSemanticLabel": "Urmărește utilizatorul {index}",
     "unfollowUserIndexedSemanticLabel": "Nu mai urmări utilizatorul {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / lună"
+    "supporterTierMonthlyLabel": "{title} — {price} / lună",
+    "dmReactionAddBlockedByRemoval": "Finalizează eliminarea reacției anterioare înainte de a adăuga alta."
 }

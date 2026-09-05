@@ -10183,6 +10183,30 @@ abstract class AppLocalizations {
   /// **'Retrying reaction'**
   String get dmReactionChipRetryAnnouncement;
 
+  /// Screen-reader label for an own reaction whose removal was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove your {emoji} reaction. Double tap to try again'**
+  String dmReactionRemovalRefusedA11yLabel(String emoji);
+
+  /// Title of the retry prompt for a refused DM reaction removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove your reaction.'**
+  String get dmReactionRemovalRefusedTitle;
+
+  /// Snackbar shown when adding a DM reaction is blocked until an earlier removal finishes.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish removing your previous reaction before adding another.'**
+  String get dmReactionAddBlockedByRemoval;
+
+  /// Detail text explaining that a refused DM reaction removal may remain visible to recipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Some people may still be able to see this reaction.'**
+  String get dmReactionRemovalRefusedDetails;
+
   /// Title of the bottom sheet listing everyone who reacted to a DM message.
   ///
   /// In en, this message translates to:

@@ -126,6 +126,7 @@ class _ReactionsRowState extends State<ReactionsRow> {
               child: _ReactionPill(
                 reactions: reactions,
                 ownerPubkey: widget.ownerPubkey,
+                removalEnabled: widget.removalEnabled,
                 baselineEmojis: _baselineEmojis!,
                 onTap: () => ReactionsDetailSheet.show(
                   context: context,
@@ -151,6 +152,7 @@ class _ReactionPill extends StatelessWidget {
   const _ReactionPill({
     required this.reactions,
     required this.ownerPubkey,
+    required this.removalEnabled,
     required this.baselineEmojis,
     required this.onTap,
   });
@@ -158,6 +160,7 @@ class _ReactionPill extends StatelessWidget {
   /// Live reactions for the message (blocklist-filtered, ascending createdAt).
   final List<DmReaction> reactions;
   final String ownerPubkey;
+  final bool removalEnabled;
 
   /// Emojis already present when the enclosing row first built. A shown glyph
   /// whose emoji is absent here is a post-mount addition and grows in; emojis
@@ -195,13 +198,16 @@ class _ReactionPill extends StatelessWidget {
         ownReaction?.publishStatus == DmReactionPublishStatus.pending;
     final isOwnFailed =
         ownReaction?.publishStatus == DmReactionPublishStatus.failed;
+    final isOwnRemovalRefused =
+        removalEnabled &&
+        ownReaction?.publishStatus == DmReactionPublishStatus.removalRefused;
 
-    final background = isOwnFailed
+    final background = isOwnFailed || isOwnRemovalRefused
         ? context.vineColors.errorContainer
         : hasOwn
         ? context.vineColors.primaryContainer
         : context.vineColors.containerLow;
-    final borderColor = isOwnFailed
+    final borderColor = isOwnFailed || isOwnRemovalRefused
         ? VineTheme.error
         : hasOwn
         ? context.vineColors.accentPositive

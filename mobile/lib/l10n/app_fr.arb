@@ -4688,5 +4688,6 @@
     "analyticsWindowAll": "Tout",
     "followUserIndexedSemanticLabel": "Suivre l'utilisateur {index}",
     "unfollowUserIndexedSemanticLabel": "Ne plus suivre l'utilisateur {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / mois"
+    "supporterTierMonthlyLabel": "{title} — {price} / mois",
+    "dmReactionAddBlockedByRemoval": "Terminez de supprimer votre réaction précédente avant d’en ajouter une autre."
 }

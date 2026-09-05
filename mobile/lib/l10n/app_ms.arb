@@ -6473,5 +6473,6 @@
   "analyticsWindowAll": "Semua",
   "followUserIndexedSemanticLabel": "Ikut pengguna {index}",
   "unfollowUserIndexedSemanticLabel": "Nyahikut pengguna {index}",
-  "supporterTierMonthlyLabel": "{title} — {price} / bulan"
+  "supporterTierMonthlyLabel": "{title} — {price} / bulan",
+  "dmReactionAddBlockedByRemoval": "Selesaikan pengalihan keluar reaksi terdahulu sebelum menambah reaksi lain."
 }
