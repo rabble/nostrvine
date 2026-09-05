@@ -184,9 +184,11 @@ void main() {
       );
       writeManifest('# generated below\n');
 
-      final res = run(update: true);
+      final regen = run(update: true);
+      final check = run();
 
-      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
       expect(
         manifest.readAsStringSync(),
         contains('hashtagTitle\te2e/maestro/asserts/hashtag.yaml'),

@@ -125,6 +125,29 @@ def unquote(v):
         return v[1:-1]
     return v
 
+def searchable_flow_text(lines):
+    """Flow text with YAML comments removed but block content preserved."""
+    searchable = []
+    block_parent_indent = None
+    for raw_line in lines:
+        raw = raw_line.rstrip("\n")
+        stripped = raw.strip()
+        indent = len(raw) - len(raw.lstrip())
+        if block_parent_indent is not None:
+            if not stripped or indent > block_parent_indent:
+                searchable.append(raw)
+                continue
+            block_parent_indent = None
+
+        line = strip_comment(raw)
+        searchable.append(line)
+        for pat in (COMMAND_SCALAR, TEXT_PROP):
+            match = pat.match(line)
+            if match and unquote(match.group("v")) in BLOCK_SCALAR_MARKERS:
+                block_parent_indent = indent
+                break
+    return norm("\n".join(searchable))
+
 def flow_literals(path):
     """Literal copy strings a flow asserts or taps. Skips ${...}
     interpolations (environment values, not copy), inline maps, and
@@ -294,8 +317,7 @@ def _flow_text(rel, _cache={}):
             _cache[rel] = None
         else:
             with open(fpath, encoding="utf-8", errors="replace") as fh:
-                _cache[rel] = norm("\n".join(
-                    strip_comment(l.rstrip("\n")) for l in fh))
+                _cache[rel] = searchable_flow_text(fh.readlines())
     return _cache[rel]
 
 def _current_value(key):
@@ -341,6 +363,8 @@ HEADER = """# Binding baseline: each English literal the Maestro suite asserts o
 # and the guard verifies the ARB template still produces the rendered literal.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
+# Duplicate values retain the manifest's reviewed key choice. To correct a
+# wrong choice, edit that row to another valid key before regenerating.
 # Known v1 limits are tracked in #7213: already-drifted flow literals do not
 # bind, and substring checking can miss copy shortening until the inverse
 # exact-literal check lands.
