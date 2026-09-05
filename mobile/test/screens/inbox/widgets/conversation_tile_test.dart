@@ -388,6 +388,47 @@ void main() {
       );
 
       testWidgets(
+        'recognizes a legacy collab invite beyond the preview limit',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation(
+            lastMessageContent:
+                '${'a' * dmPreviewDisplayCodeUnits} '
+                'Open Divine to review and accept.',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.text(l10n.inboxConversationCollabInvitePreview),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining('Open Divine to review and accept'),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
         'strips divine.video URL and prefixes a camera icon for shared-video DMs',
         (tester) async {
           // VideoSharingService composes a share DM as

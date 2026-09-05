@@ -274,6 +274,17 @@ class _PreviewPayload {
 }
 
 _PreviewPayload _previewPayload(BuildContext context, String rawContent) {
+  // This is an endsWith check against fixed short suffixes, so it can safely
+  // inspect the original string without doing work proportional to its length.
+  // Run it before slicing so a long legacy invite still gets the localized
+  // preview instead of exposing its plaintext fallback.
+  if (CollaboratorInviteService.hasInvitePlaintextSuffix(rawContent)) {
+    return _PreviewPayload(
+      text: context.l10n.inboxConversationCollabInvitePreview,
+      isDivineVideoShare: false,
+    );
+  }
+
   // Sender-controlled text straight from a rumor body, so it can carry
   // unpaired UTF-16 surrogates that crash the paragraph builder during
   // layout. This preview renders through plain `Text`/`Text.rich` rather than
@@ -285,17 +296,6 @@ _PreviewPayload _previewPayload(BuildContext context, String rawContent) {
   ).text;
   final content = StringUtils.sanitizeUtf16(boundedContent);
 
-  // The structured collaborator-invite card carries a deterministic
-  // plaintext fallback ("...Open Divine to review and accept.", and its
-  // pre-#7915 "diVine" spelling) so old clients can still see something.
-  // Inside Divine that copy is misleading — show a localized label
-  // instead (#3662, follows up on #3559 Phase 2).
-  if (CollaboratorInviteService.hasInvitePlaintextSuffix(content)) {
-    return _PreviewPayload(
-      text: context.l10n.inboxConversationCollabInvitePreview,
-      isDivineVideoShare: false,
-    );
-  }
   // Drop blank lines and trim each remaining line. Shared-video DMs and
   // similar payloads arrive with a blank line between title and URL —
   // without this, `Text(maxLines: 2)` reserves height for the empty line
