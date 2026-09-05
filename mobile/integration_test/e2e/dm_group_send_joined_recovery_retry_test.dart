@@ -67,6 +67,7 @@ void main() {
   /// while the group loop is still parked on the deliverable sibling's OK;
   /// well inside the OK-confirm window, so that sibling is still delivered.
   const deliverableOkDelay = Duration(seconds: 3);
+  const recoveryOkDelay = Duration(seconds: 4);
 
   /// Builds the real stack the way `repository_providers.dart` does, with
   /// the durable queue wired — the retry budget under test lives on its rows.
@@ -218,7 +219,11 @@ void main() {
   }
 
   setUp(() {
-    DmRepository.inboxResolutionBudget = DmSendBudget.inboxResolution;
+    // This suite exercises retry-attempt ownership, not the production inbox
+    // timeout. Keep the deliberately stalled lookup shorter than the delayed
+    // deliverable OK so the intended owner/joiner ordering is deterministic
+    // even when recipient reads require full relay settlement (#8630).
+    DmRepository.inboxResolutionBudget = const Duration(seconds: 1);
   });
   tearDown(() {
     DmRepository.inboxResolutionBudget = DmSendBudget.inboxResolution;
@@ -236,7 +241,10 @@ void main() {
         // about.
         final relay = await FakeRelay.start(
           stallReqForAuthors: {unreadablePubkey},
-          okDelayForRecipients: {deliverablePubkey: deliverableOkDelay},
+          okDelayForRecipients: {
+            deliverablePubkey: deliverableOkDelay,
+            unreadablePubkey: recoveryOkDelay,
+          },
         );
         addTearDown(relay.stop);
         final stack = await buildStack(relay);
@@ -316,7 +324,10 @@ void main() {
         // batch has outlived it.
         final relay = await FakeRelay.start(
           stallReqForAuthors: {unreadablePubkey},
-          okDelayForRecipients: {deliverablePubkey: deliverableOkDelay},
+          okDelayForRecipients: {
+            deliverablePubkey: deliverableOkDelay,
+            unreadablePubkey: recoveryOkDelay,
+          },
         );
         addTearDown(relay.stop);
         final stack = await buildStack(relay);
