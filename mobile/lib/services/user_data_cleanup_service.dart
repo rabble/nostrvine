@@ -150,11 +150,15 @@ class UserDataCleanupService {
 
   /// Deletes only data whose ownership can be attributed to [userPubkey].
   ///
+  /// [preserveActiveSession] is false when no other account session needs
+  /// device-wide state preserved.
+  ///
   /// Throws [StateError] when a preference cannot be removed and propagates
   /// database cleanup failures so callers can retry the incomplete deletion.
   Future<int> deleteAccountData(
     String userPubkey, {
     required String userNpub,
+    required bool preserveActiveSession,
   }) async {
     var clearedCount = 0;
 
@@ -186,7 +190,7 @@ class UserDataCleanupService {
     await onDatabaseCleanup?.call(
       userPubkey: userPubkey,
       deleteUserData: true,
-      preserveActiveSession: true,
+      preserveActiveSession: preserveActiveSession,
     );
     return clearedCount;
   }

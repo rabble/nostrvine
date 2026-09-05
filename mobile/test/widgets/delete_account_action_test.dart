@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
@@ -26,6 +27,8 @@ class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockRecoveryCubit extends Mock implements AccountDeletionRecoveryCubit {}
 
 class _MockDeletionRepository extends Mock
     implements AccountDeletionRecoveryRepository {}
@@ -155,6 +158,7 @@ void main() {
         expect(receipt?.pubkeyHex, _pubkeyHex);
         expect(receipt?.attempt, same(_processing));
         expect(receipt?.vanishEventId, 'event-id');
+        expect(receipt?.submissionOwnedLocally, isFalse);
         // The signer is gone the moment the coordinator accepts: the gate must
         // be fed by the record, never by a lookup. Read under real time so a
         // provider that reached the lookup fails here instead of hanging on
@@ -176,6 +180,15 @@ void main() {
     testWidgets('a pending receipt blocks deletion for another account', (
       tester,
     ) async {
+      final recoveryCubit = _MockRecoveryCubit();
+      when(() => recoveryCubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.processing,
+          attempt: _processing,
+          pollingPaused: true,
+        ),
+      );
+      when(() => recoveryCubit.resume(_processing)).thenAnswer((_) async {});
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final sharedPreferences = await SharedPreferences.getInstance();
       final container = ProviderContainer(
@@ -189,6 +202,9 @@ void main() {
           accountDeletionServiceProvider.overrideWithValue(deletionService),
           accountDeletionRecoveryRepositoryProvider.overrideWithValue(
             repository,
+          ),
+          submittedAccountDeletionMonitorProvider.overrideWithValue(
+            recoveryCubit,
           ),
         ],
       );
@@ -232,6 +248,8 @@ void main() {
         find.text(l10n.accountDeletionOtherAccountPending),
         findsOneWidget,
       );
+      expect(find.text(l10n.supportContactSupport), findsOneWidget);
+      verify(() => recoveryCubit.resume(_processing)).called(1);
       verifyNever(repository.prepare);
       verifyNever(
         () => deletionService.deleteAccount(

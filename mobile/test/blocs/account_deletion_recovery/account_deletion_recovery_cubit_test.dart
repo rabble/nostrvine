@@ -632,23 +632,54 @@ void main() {
       await cubit.close();
     });
 
-    test('different active account keeps durable polling alive', () async {
+    test(
+      'different active account pauses polling at the session bound',
+      () async {
+        when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
+        when(
+          () => repository.fetchStatus(
+            attemptId: _processing.id,
+            pubkeyHex: 'a' * 64,
+          ),
+        ).thenAnswer((_) async => _processing);
+        final cubit = buildCubit(withReceipt: true);
+        await cubit.resume(_processing);
+
+        while (timers.timers.any((timer) => timer.isActive)) {
+          await timers.fireNext();
+        }
+
+        expect(cubit.state.pollingPaused, isTrue);
+        expect(timers.timers.any((timer) => timer.isActive), isFalse);
+        await cubit.close();
+      },
+    );
+
+    test('unknown public status stays gated and pauses at the bound', () async {
       when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
       when(
         () => repository.fetchStatus(
           attemptId: _processing.id,
           pubkeyHex: 'a' * 64,
         ),
-      ).thenAnswer((_) async => _processing);
+      ).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Attempt not found',
+          code: 'attempt_not_found',
+          statusCode: 404,
+        ),
+      );
       final cubit = buildCubit(withReceipt: true);
       await cubit.resume(_processing);
 
-      for (var poll = 0; poll < 40; poll++) {
+      while (timers.timers.any((timer) => timer.isActive)) {
         await timers.fireNext();
       }
 
-      expect(cubit.state.pollingPaused, isFalse);
-      expect(timers.timers.any((timer) => timer.isActive), isTrue);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      expect(cubit.state.attempt, _processing);
+      expect(cubit.state.pollingPaused, isTrue);
+      expect(resolvedCalls, 0);
       await cubit.close();
     });
 
@@ -673,10 +704,18 @@ void main() {
 
       await cubit.resume(_completed);
       expect(
+        cubit.state.failure,
+        AccountDeletionRecoveryFailure.keychainCleanup,
+      );
+      expect(
         timers.timers.firstWhere((timer) => timer.isActive).delay,
         const Duration(seconds: 2),
       );
       await timers.fireNext();
+      expect(
+        cubit.state.failure,
+        AccountDeletionRecoveryFailure.keychainCleanup,
+      );
       expect(
         timers.timers.firstWhere((timer) => timer.isActive).delay,
         const Duration(seconds: 3),
@@ -690,11 +729,9 @@ void main() {
     });
 
     test('durable receipt clear failure retries through polling', () async {
-      String? activePubkey;
       var clearCalls = 0;
-      when(
-        () => authService.currentPublicKeyHex,
-      ).thenAnswer((_) => activePubkey);
+      var updateCalls = 0;
+      when(() => authService.currentPublicKeyHex).thenReturn(null);
       when(
         () => repository.fetchStatus(
           attemptId: _completed.id,
@@ -703,6 +740,7 @@ void main() {
       ).thenAnswer((_) async => _completed);
       final cubit = buildCubit(
         withReceipt: true,
+        onAttemptUpdated: (_) async => updateCalls++,
         onAttemptResolved: () async {
           clearCalls++;
           if (clearCalls == 1) throw StateError('receipt clear failed');
@@ -711,10 +749,16 @@ void main() {
       await cubit.resume(_completed);
 
       await cubit.acknowledgeCompletion();
-      activePubkey = 'c' * 64;
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.cleanupFailed);
+      expect(
+        cubit.state.failure,
+        AccountDeletionRecoveryFailure.receiptClear,
+      );
       await timers.fireNext();
 
       expect(clearCalls, 2);
+      expect(updateCalls, 1);
+      verify(() => authService.deleteLocalAccount('a' * 64)).called(1);
       expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
       await cubit.close();
     });
@@ -791,8 +835,8 @@ void main() {
         await cubit.load();
 
         await expectLater(cubit.acknowledgeCompletion(), completes);
-        expect(cubit.state.status, AccountDeletionRecoveryStatus.completed);
-        await cubit.acknowledgeCompletion();
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.cleanupFailed);
+        await cubit.completeLocalCleanup();
 
         expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
         expect(attempts, 2);

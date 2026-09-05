@@ -164,7 +164,7 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
       return;
     }
     final generation = _beginOperation();
-    emit(
+    emitIfOpen(
       AccountDeletionRecoveryState(
         status: AccountDeletionRecoveryStatus.cancelInFlight,
         attempt: attempt,
@@ -212,11 +212,15 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
   }) async {
     final attempt = state.attempt;
     if (attempt?.status != AccountDeletionAttemptStatus.completed) return;
+    if (state.failure == AccountDeletionRecoveryFailure.receiptClear) {
+      await _retryReceiptClear(attempt!);
+      return;
+    }
     final generation = _beginOperation(
       resetPollingProgress: !preservePollingProgress,
     );
     final pollTickIndex = state.pollTickIndex;
-    emit(
+    emitIfOpen(
       AccountDeletionRecoveryState(
         status: AccountDeletionRecoveryStatus.completingLocally,
         attempt: attempt,
@@ -297,11 +301,33 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
 
   Future<void> acknowledgeCompletion() async {
     if (state.status != AccountDeletionRecoveryStatus.completed) return;
+    await _retryReceiptClear(state.attempt!);
+  }
+
+  Future<void> _retryReceiptClear(AccountDeletionAttempt attempt) async {
+    final generation = _beginOperation(resetPollingProgress: false);
+    final pollTickIndex = state.pollTickIndex;
+    emitIfOpen(
+      AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.completingLocally,
+        attempt: attempt,
+        pollTickIndex: pollTickIndex,
+      ),
+    );
     try {
       await _resolve();
     } on Object catch (error, stackTrace) {
       addError(error, stackTrace);
-      if (_receiptPubkeyHex != null) _schedulePoll(_generation);
+      if (!_isCurrent(generation)) return;
+      emitIfOpen(
+        AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.cleanupFailed,
+          attempt: attempt,
+          failure: AccountDeletionRecoveryFailure.receiptClear,
+          pollTickIndex: pollTickIndex,
+        ),
+      );
+      if (_receiptPubkeyHex != null) _schedulePoll(generation);
     }
   }
 
@@ -475,6 +501,10 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
           generation,
         );
       case AccountDeletionAttemptStatus.completed:
+        if (state.failure == AccountDeletionRecoveryFailure.receiptClear) {
+          await _retryReceiptClear(attempt);
+          return;
+        }
         if (!await _updateAttemptOrRetry(attempt, generation)) return;
         emitIfOpen(
           AccountDeletionRecoveryState(
@@ -525,6 +555,7 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
       AccountDeletionRecoveryState(
         status: status,
         attempt: attempt,
+        failure: state.failure,
         pollTickIndex: state.pollTickIndex,
       ),
     );
@@ -536,22 +567,16 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     final tickIndex = state.pollTickIndex;
     final delay = AccountDeletionRecoveryPolling.delayForTick(tickIndex);
     if (_pollingElapsed + delay > AccountDeletionRecoveryPolling.sessionBound) {
-      final activePubkeyHex = _authService.currentPublicKeyHex;
-      if (_receiptPubkeyHex != null &&
-          activePubkeyHex != null &&
-          activePubkeyHex != _receiptPubkeyHex) {
-        _pollingElapsed = Duration.zero;
-      } else {
-        emitIfOpen(
-          AccountDeletionRecoveryState(
-            status: state.status,
-            attempt: state.attempt,
-            pollTickIndex: tickIndex,
-            pollingPaused: true,
-          ),
-        );
-        return;
-      }
+      emitIfOpen(
+        AccountDeletionRecoveryState(
+          status: state.status,
+          attempt: state.attempt,
+          failure: state.failure,
+          pollTickIndex: tickIndex,
+          pollingPaused: true,
+        ),
+      );
+      return;
     }
     _pollingElapsed += delay;
     _pollTimer = _timerFactory(delay, () => _poll(generation));
@@ -592,6 +617,7 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
         AccountDeletionRecoveryState(
           status: state.status,
           attempt: current,
+          failure: state.failure,
           pollTickIndex: tickIndex,
         ),
       );
@@ -603,6 +629,7 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
         AccountDeletionRecoveryState(
           status: state.status,
           attempt: state.attempt,
+          failure: state.failure,
           pollTickIndex: tickIndex,
         ),
       );

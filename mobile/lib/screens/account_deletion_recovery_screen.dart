@@ -196,6 +196,8 @@ class _RecoveryStateContent extends StatelessWidget {
       AccountDeletionRecoveryStatus.cleanupFailed => _RecoveryContent(
         body: state.failure == AccountDeletionRecoveryFailure.keychainCleanup
             ? context.l10n.deleteAccountKeyDeletionWarning
+            : state.failure == AccountDeletionRecoveryFailure.receiptClear
+            ? context.l10n.authUnexpectedError
             : context.l10n.deleteAccountLocalDataDeletionFailed,
         actionLabel: context.l10n.commonRetry,
         onPressed: cubit.completeLocalCleanup,

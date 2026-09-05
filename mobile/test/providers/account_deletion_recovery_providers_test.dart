@@ -330,6 +330,64 @@ void main() {
       },
     );
 
+    test(
+      'submitted monitor waits for the deletion flow to release its receipt',
+      () async {
+        const recoverable = AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.recoverable,
+        );
+        when(
+          () => repository.submit(
+            attemptId: recoverable.id,
+            vanishEventId: _vanishEventId,
+          ),
+        ).thenAnswer((_) async => processing);
+        when(() => authService.signOut()).thenAnswer((_) async {});
+        final subscription = container.listen(
+          submittedAccountDeletionMonitorProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: pubkey,
+              attempt: recoverable,
+              vanishEventId: _vanishEventId,
+              submissionOwnedLocally: true,
+            );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(subscription.read(), isNull);
+        verifyNever(
+          () => repository.submit(
+            attemptId: any(named: 'attemptId'),
+            vanishEventId: any(named: 'vanishEventId'),
+          ),
+        );
+
+        container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .releaseSubmissionOwnership();
+        await untilCalled(
+          () => repository.submit(
+            attemptId: recoverable.id,
+            vanishEventId: _vanishEventId,
+          ),
+        );
+
+        verify(
+          () => repository.submit(
+            attemptId: recoverable.id,
+            vanishEventId: _vanishEventId,
+          ),
+        ).called(1);
+      },
+    );
+
     for (final cleanupFailsBeforeSignIn in [false, true]) {
       test(
         'submitted monitor ${cleanupFailsBeforeSignIn ? 'retries' : 'resolves'} '

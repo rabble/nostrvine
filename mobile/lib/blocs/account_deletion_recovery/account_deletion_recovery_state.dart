@@ -23,6 +23,7 @@ enum AccountDeletionRecoveryFailure {
   usernameRestore,
   keychainCleanup,
   localDataCleanup,
+  receiptClear,
   signOut,
 }
 

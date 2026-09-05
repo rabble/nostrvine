@@ -1472,6 +1472,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await _userDataCleanupService.deleteAccountData(
         pubkeyHex,
         userNpub: npub,
+        preserveActiveSession: _currentKeyContainer != null,
       );
     } catch (error) {
       userDataCleanupError = error;

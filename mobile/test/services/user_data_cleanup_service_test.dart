@@ -634,6 +634,7 @@ void main() {
           await service.deleteAccountData(
             deletedPubkey,
             userNpub: deletedNpub,
+            preserveActiveSession: true,
           );
 
           expect(prefs.getStringList('global_bookmarks'), ['other-bookmark']);
@@ -670,7 +671,11 @@ void main() {
             };
 
         await expectLater(
-          service.deleteAccountData(deletedPubkey, userNpub: deletedNpub),
+          service.deleteAccountData(
+            deletedPubkey,
+            userNpub: deletedNpub,
+            preserveActiveSession: true,
+          ),
           throwsA(isA<StateError>()),
         );
         expect(preservedActiveSession, isTrue);

@@ -2503,6 +2503,7 @@ void main() {
         () => mockCleanupService.deleteAccountData(
           deletedAccount.publicKeyHex,
           userNpub: deletedAccount.npub,
+          preserveActiveSession: false,
         ),
       ).thenAnswer((_) async => 0);
 
@@ -2516,6 +2517,7 @@ void main() {
         () => mockCleanupService.deleteAccountData(
           deletedAccount.publicKeyHex,
           userNpub: deletedAccount.npub,
+          preserveActiveSession: false,
         ),
       ).called(1);
       final prefs = await SharedPreferences.getInstance();
@@ -2539,6 +2541,7 @@ void main() {
           () => mockCleanupService.deleteAccountData(
             deletedAccount.publicKeyHex,
             userNpub: deletedAccount.npub,
+            preserveActiveSession: false,
           ),
         ).thenAnswer((_) async => 0);
 

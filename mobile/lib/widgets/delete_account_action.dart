@@ -1,13 +1,17 @@
 // ABOUTME: Shared entry point that opens the account deletion flow
 // ABOUTME: Called by every screen that offers deletion so the gates cannot drift
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/owned_divine_username_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/modal_progress_overlay.dart';
@@ -40,8 +44,18 @@ Future<void> startAccountDeletionFlow({
   if (pubkey == null || pubkey.isEmpty) return;
   final pendingDeletion = ref.read(submittedAccountDeletionAttemptProvider);
   if (pendingDeletion != null && pendingDeletion.pubkeyHex != pubkey) {
+    final monitor = ref.read(submittedAccountDeletionMonitorProvider);
+    if (monitor?.state.pollingPaused ?? false) {
+      unawaited(monitor!.resume(pendingDeletion.attempt));
+    }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.accountDeletionOtherAccountPending)),
+      SnackBar(
+        content: Text(context.l10n.accountDeletionOtherAccountPending),
+        action: SnackBarAction(
+          label: context.l10n.supportContactSupport,
+          onPressed: () => context.push(RoutePaths.supportCenter),
+        ),
+      ),
     );
     return;
   }
@@ -100,7 +114,11 @@ Future<void> startAccountDeletionFlow({
               pubkeyHex: pubkey,
               attempt: attempt,
               vanishEventId: vanishEventId,
+              submissionOwnedLocally: true,
             ),
+        onDeletionFlowFinished: ref
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .releaseSubmissionOwnership,
       );
       ref.invalidate(currentAccountDeletionAttemptProvider);
     },

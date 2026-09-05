@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/pending_upload.dart' as hive_model;
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
@@ -251,10 +252,49 @@ void main() {
       await subscription.read().deleteAccountData(
         _pubkeyA,
         userNpub: _npubA,
+        preserveActiveSession: true,
       );
 
       verifyNever(() => dmRepository.stopListening());
     });
+
+    test(
+      'signed-out account deletion clears device-wide media state',
+      () async {
+        var imageCacheClears = 0;
+        final cleanupContainer = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            dmRepositoryProvider.overrideWithValue(dmRepository),
+            openVineImageCacheClearProvider.overrideWithValue(() async {
+              imageCacheClears++;
+            }),
+            uploadManagerProvider.overrideWithValue(uploadManager),
+          ],
+        );
+        addTearDown(cleanupContainer.dispose);
+        final subscription = cleanupContainer.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        cleanupContainer.read(dmRepositoryProvider);
+
+        await subscription.read().deleteAccountData(
+          _pubkeyA,
+          userNpub: _npubA,
+          preserveActiveSession: false,
+        );
+
+        expect(imageCacheClears, 1);
+        expect(
+          cleanupContainer.read(adultMediaAccessRevocationVersionProvider),
+          1,
+        );
+        verify(() => dmRepository.stopListening()).called(1);
+      },
+    );
 
     test('named account deletion propagates database failures', () async {
       final failureContainer = ProviderContainer(
@@ -280,6 +320,7 @@ void main() {
         service.deleteAccountData(
           _pubkeyA,
           userNpub: _npubA,
+          preserveActiveSession: true,
         ),
         throwsA(isA<StateError>()),
       );
@@ -662,7 +703,7 @@ void main() {
       });
 
       test(
-        'named deletion leaves other and unattributed DM rows intact',
+        'named deletion preserves other owners and clears unattributed DM rows',
         () async {
           await seedDm(
             messageId: _dmTargetMessageId,
@@ -685,14 +726,15 @@ void main() {
           await readService().deleteAccountData(
             _pubkeyA,
             userNpub: _npubA,
+            preserveActiveSession: true,
           );
 
           expect(await dmCountFor(_pubkeyA), 0);
           expect(await dmCountFor(_pubkeyB), 1);
-          expect(await dmCountFor(''), 1);
+          expect(await dmCountFor(''), 0);
           expect(await conversationCountFor(_pubkeyA), 0);
           expect(await conversationCountFor(_pubkeyB), 1);
-          expect(await conversationCountFor(''), 1);
+          expect(await conversationCountFor(''), 0);
         },
       );
 

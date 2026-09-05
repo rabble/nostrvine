@@ -797,10 +797,8 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             );
           }
         }
-        // A switch must leave no DM data attributable to the departing account
-        // and must never expose ambiguous legacy data to the incoming account.
-        // Known-owner rows for every other saved account remain intact. When
-        // the departing account is unknown, delete only NULL/empty-owner rows.
+        // Never expose ambiguous legacy DM data across an account boundary.
+        // Exact-owner rows for every other saved account remain intact.
         // See #7325.
         await requiredCleanup('DM tables', () async {
           await db.transaction(() async {
@@ -808,6 +806,8 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               if (preserveActiveSession) {
                 await db.directMessagesDao.deleteAllForOwner(userPubkey);
                 await db.conversationsDao.deleteAllForOwner(userPubkey);
+                await db.directMessagesDao.clearUnowned();
+                await db.conversationsDao.clearUnowned();
               } else {
                 await db.directMessagesDao.clearForAccountSwitch(userPubkey);
                 await db.conversationsDao.clearForAccountSwitch(userPubkey);
@@ -817,6 +817,8 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               if (preserveActiveSession) {
                 await db.pendingGiftWrapsDao.deleteAllForOwner(userPubkey);
                 await db.processedGiftWrapsDao.deleteAllForOwner(userPubkey);
+                await db.pendingGiftWrapsDao.clearUnowned();
+                await db.processedGiftWrapsDao.clearUnowned();
               } else {
                 await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
                 await db.processedGiftWrapsDao.clearForAccountSwitch(

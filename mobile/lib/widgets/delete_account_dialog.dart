@@ -391,6 +391,8 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 ///   irreversible submit request, then updates it with the coordinator answer.
 ///   A lost response is ambiguous, so the caller must keep the user gated from
 ///   the receipt rather than returning to normal account use (#8583).
+/// [onDeletionFlowFinished] - Releases the in-process ownership of that receipt
+///   after this flow has finished submitting and cleaning up.
 Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
@@ -401,6 +403,7 @@ Future<void> executeAccountDeletion({
   String screenName = 'AccountDeletion',
   Future<void> Function(AccountDeletionAttempt attempt, String vanishEventId)?
   onDeletionSubmitted,
+  void Function()? onDeletionFlowFinished,
 }) async {
   if (!context.mounted) return;
 
@@ -914,6 +917,7 @@ Future<void> executeAccountDeletion({
       }
     }
   } finally {
+    onDeletionFlowFinished?.call();
     await cubit.close();
 
     // Ensure the progress sheet is dismissed even if an exception occurred.

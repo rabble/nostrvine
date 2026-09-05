@@ -36,6 +36,7 @@ final class SubmittedAccountDeletionAttempt {
     required this.pubkeyHex,
     required this.attempt,
     required this.vanishEventId,
+    this.submissionOwnedLocally = false,
   });
 
   factory SubmittedAccountDeletionAttempt.fromJson(Map<String, dynamic> json) =>
@@ -51,18 +52,26 @@ final class SubmittedAccountDeletionAttempt {
   final AccountDeletionAttempt attempt;
   final String vanishEventId;
 
+  /// True only while this process's deletion dialog owns submission and cleanup.
+  /// It is deliberately not persisted, so an app restart adopts the receipt.
+  final bool submissionOwnedLocally;
+
   Map<String, dynamic> toJson() => {
     'pubkey_hex': pubkeyHex,
     'vanish_event_id': vanishEventId,
     'attempt': attempt.toJson(),
   };
 
-  SubmittedAccountDeletionAttempt copyWith({AccountDeletionAttempt? attempt}) =>
-      SubmittedAccountDeletionAttempt(
-        pubkeyHex: pubkeyHex,
-        attempt: attempt ?? this.attempt,
-        vanishEventId: vanishEventId,
-      );
+  SubmittedAccountDeletionAttempt copyWith({
+    AccountDeletionAttempt? attempt,
+    bool? submissionOwnedLocally,
+  }) => SubmittedAccountDeletionAttempt(
+    pubkeyHex: pubkeyHex,
+    attempt: attempt ?? this.attempt,
+    vanishEventId: vanishEventId,
+    submissionOwnedLocally:
+        submissionOwnedLocally ?? this.submissionOwnedLocally,
+  );
 }
 
 /// The attempt this installation submitted for irreversible processing.
@@ -99,6 +108,7 @@ class SubmittedAccountDeletionAttemptNotifier
     required String pubkeyHex,
     required AccountDeletionAttempt attempt,
     required String vanishEventId,
+    bool submissionOwnedLocally = false,
   }) async {
     final existing = state;
     if (existing != null && existing.pubkeyHex != pubkeyHex) {
@@ -110,6 +120,7 @@ class SubmittedAccountDeletionAttemptNotifier
       pubkeyHex: pubkeyHex,
       attempt: attempt,
       vanishEventId: vanishEventId,
+      submissionOwnedLocally: submissionOwnedLocally,
     );
     final saved = await ref
         .read(sharedPreferencesProvider)
@@ -126,6 +137,12 @@ class SubmittedAccountDeletionAttemptNotifier
       attempt: attempt,
       vanishEventId: receipt.vanishEventId,
     );
+  }
+
+  void releaseSubmissionOwnership() {
+    final receipt = state;
+    if (receipt == null || !receipt.submissionOwnedLocally) return;
+    state = receipt.copyWith(submissionOwnedLocally: false);
   }
 
   Future<void> clear() async {
@@ -164,24 +181,28 @@ submittedAccountDeletionMonitorProvider =
                   pubkeyHex: receipt.pubkeyHex,
                   attemptId: receipt.attempt.id,
                   vanishEventId: receipt.vanishEventId,
+                  submissionOwnedLocally: receipt.submissionOwnedLocally,
                 ),
         ),
       );
-      if (receiptIdentity == null) return null;
+      if (receiptIdentity == null || receiptIdentity.submissionOwnedLocally) {
+        return null;
+      }
 
       final receipt = ref.read(submittedAccountDeletionAttemptProvider)!;
+      final receiptNotifier = ref.read(
+        submittedAccountDeletionAttemptProvider.notifier,
+      );
+      var disposed = false;
       final cubit = AccountDeletionRecoveryCubit(
         repository: ref.watch(accountDeletionRecoveryRepositoryProvider),
         authService: ref.watch(authServiceProvider),
         onAttemptResolved: () async {
-          await ref
-              .read(submittedAccountDeletionAttemptProvider.notifier)
-              .clear();
+          await receiptNotifier.clear();
+          if (disposed) return;
           ref.invalidate(currentAccountDeletionAttemptProvider);
         },
-        onAttemptUpdated: (attempt) => ref
-            .read(submittedAccountDeletionAttemptProvider.notifier)
-            .updateAttempt(attempt),
+        onAttemptUpdated: receiptNotifier.updateAttempt,
         receiptPubkeyHex: receipt.pubkeyHex,
         receiptVanishEventId: receipt.vanishEventId,
       );
@@ -199,7 +220,10 @@ submittedAccountDeletionMonitorProvider =
             }
         }
       });
-      ref.onDispose(() => unawaited(cubit.close()));
+      ref.onDispose(() {
+        disposed = true;
+        unawaited(cubit.close());
+      });
       unawaited(cubit.resume(receipt.attempt));
       return cubit;
     });
