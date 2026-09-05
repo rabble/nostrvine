@@ -12,6 +12,7 @@ import 'package:db_client/db_client.dart' hide ProfileStats;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -771,6 +772,37 @@ void main() {
             extra: const [kModerationPubkeyHex],
           ),
         ).called(1);
+      });
+
+      // The composer is gone here, so this button is the ONLY control on the
+      // screen and the only route back to a moderation account that reads.
+      // `DivineButton` wires `Semantics(button: true)` only when it is given a
+      // `semanticLabel`; without one it inherits the InkWell's tap action but
+      // no button flag, so VoiceOver reads it as a third line of prose after
+      // the title and body and never announces that it can be activated.
+      testWidgets('announces the escape route as a button', (tester) async {
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(buildSubject(counterparty: retired));
+        await tester.pump();
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel(l10n.dmRetiredThreadOpenSupport),
+        );
+
+        expect(
+          node.getSemanticsData().flagsCollection.isButton,
+          isTrue,
+          reason:
+              "the closed thread's only escape route must announce itself "
+              'as a button, not as static text',
+        );
+        expect(
+          node.getSemanticsData().hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+
+        handle.dispose();
       });
 
       testWidgets('a live thread keeps its composer', (tester) async {
