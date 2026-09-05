@@ -45,6 +45,16 @@ void main() {
       expect(tappedUrls, equals(['violetblue.com', 'hi@example.com']));
     });
 
+    test('does not retry URL tokens from inside dotted plain text', () {
+      final spans = LinkifiedTextSpanBuilder(
+        text: '${'a.' * 4096} tail...example.com',
+        defaultStyle: defaultStyle,
+        linkStyle: linkStyle,
+      ).build();
+
+      expect(spans.tappableSpans, isEmpty);
+    });
+
     test('keeps trailing punctuation outside URL spans', () {
       final spans = const LinkifiedTextSpanBuilder(
         text: 'Visit violetblue.com.! More: https://example.com/path?:;',
