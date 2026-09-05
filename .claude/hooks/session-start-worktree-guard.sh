@@ -63,8 +63,11 @@ for _ in 1 2 3 4 5 6 7 8; do
   p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
 done
 
+# Claude records procStart in UTC and in the C locale, but `ps -o lstart=`
+# renders month and weekday names through LC_TIME, so an unpinned locale makes
+# every record mismatch and silently empties the registry path.
 process_start_utc() {
-  TZ=UTC ps -o lstart= -p "$1" 2>/dev/null \
+  TZ=UTC LC_ALL=C ps -o lstart= -p "$1" 2>/dev/null \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
 }
 

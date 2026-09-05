@@ -383,7 +383,17 @@ if [ "$1" = "-o" ] && [ "$2" = "comm=" ] && [ "$3" = "-p" ]; then
 fi
 
 if [ "$1" = "-o" ] && [ "$2" = "lstart=" ] && [ "$3" = "-p" ]; then
-  printf ' Sat Sep  5 21:24:30 2026 \n'
+  # Real `ps -o lstart=` renders through LC_TIME and TZ, while Claude records
+  # procStart with LC_ALL=C and TZ=UTC. Match that rendering only when the guard
+  # pinned both, so an unpinned locale or timezone fails the suite instead of
+  # silently emptying the registry path.
+  if [ "${LC_ALL:-}" != "C" ]; then
+    printf ' Sa.  5 Sep. 21:24:30 2026 \n'
+  elif [ "${TZ:-}" != "UTC" ]; then
+    printf ' Sun Sep  6 02:24:30 2026 \n'
+  else
+    printf ' Sat Sep  5 21:24:30 2026 \n'
+  fi
   exit 0
 fi
 
@@ -445,7 +455,7 @@ EOF
 printf '{not valid json\n' > "$GUARD_SESSIONS_DIR/888.json"
 
 REGISTRY_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
-  env PATH="$GUARD_BIN_DIR:$PATH" \
+  env -u LC_ALL -u TZ PATH="$GUARD_BIN_DIR:$PATH" \
     TEST_REPO="$TEST_REPO" \
     OTHER_REPO="$OTHER_REPO" \
     CLAUDE_PROJECT_DIR="$TEST_REPO" \
