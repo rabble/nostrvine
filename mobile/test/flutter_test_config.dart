@@ -66,9 +66,9 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // every test so avatar failure caching stays test-local.
   tearDown(AvatarFailureCache.instance.clear);
 
-  // Web / `flutter test --platform chrome`: skip golden font loading and
-  // Alchemist. Those paths can stall headless Chrome with almost no CPU while
-  // `loading ...` is shown.
+  // Web / `flutter test --platform chrome`: skip Alchemist. Alchemist and the
+  // font loading guarded above can both stall headless Chrome with almost no
+  // CPU while `loading ...` is shown.
   if (kIsWeb || !_runGoldenSetup) {
     return testMain();
   }
