@@ -164,6 +164,7 @@ These issues stay report-only regardless of assignee; see `<context-dir>/AGENT_T
 
 ## Verification And Generated Code
 
+- Undocumented empty catch bodies are frozen at zero across `mobile/lib` and `mobile/packages/*/lib` by `mobile/scripts/check_empty_catch_ceiling.sh`. Its Dart AST detector (`mobile/scripts/lib/empty_catch_detector.dart`, pinned by `mobile/test/tools/empty_catch_detector_test.dart`) counts single-line, multiline, typed `on Foo`, and stack-trace forms while treating a comment-only body as a documented intentional no-op. Inspect sites with `cd mobile && dart run scripts/lib/empty_catch_detector.dart lib packages --path-prefix . --detail`. Fix any site by handling/classifying the error or documenting the no-op; do not add a baseline entry. The numeric baseline may only shrink and can be regenerated after a genuine reduction with `UPDATE_BASELINE=1 bash mobile/scripts/check_empty_catch_ceiling.sh`.
 - Run work from `mobile/` for Flutter commands.
 - If dependencies or the workspace change, run `flutter pub get`.
 - If you touch `@riverpod`, `@freezed`, `@JsonSerializable`, `@GenerateMocks`, Drift schema, or other generated code inputs, run `dart run build_runner build --delete-conflicting-outputs` and commit the generated outputs.

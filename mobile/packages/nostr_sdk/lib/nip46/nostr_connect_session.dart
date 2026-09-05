@@ -510,7 +510,9 @@ class NostrConnectSession {
       relay.onMessage = null;
       try {
         await relay.disconnect().timeout(_relayFailedConnectCleanupTimeout);
-      } catch (_) {}
+      } catch (_) {
+        // Best-effort cleanup; preserve and rethrow the connection failure.
+      }
       rethrow;
     }
   }

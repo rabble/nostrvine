@@ -43,10 +43,7 @@ class ImageMetadataStripper {
   static Future<File> stripMetadataInPlace(File imageFile) async {
     final tempPath = '${imageFile.path}.stripped';
     try {
-      await stripMetadata(
-        inputPath: imageFile.path,
-        outputPath: tempPath,
-      );
+      await stripMetadata(inputPath: imageFile.path, outputPath: tempPath);
       final tempFile = File(tempPath);
 
       // The native strippers output JPEG for every format except PNG.
@@ -54,9 +51,7 @@ class ImageMetadataStripper {
       final isPng = imageFile.path.toLowerCase().endsWith('.png');
       final targetFile = isPng
           ? await tempFile.rename(imageFile.path)
-          : await tempFile.rename(
-              '${withoutExtension(imageFile.path)}.jpg',
-            );
+          : await tempFile.rename('${withoutExtension(imageFile.path)}.jpg');
 
       // Remove the original if it had a different path.
       if (targetFile.path != imageFile.path && imageFile.existsSync()) {
@@ -76,7 +71,9 @@ class ImageMetadataStripper {
       try {
         final tempFile = File(tempPath);
         if (tempFile.existsSync()) await tempFile.delete();
-      } on Exception catch (_) {}
+      } on Exception catch (_) {
+        // Best-effort cleanup; returning the original image remains safe.
+      }
     }
     return imageFile;
   }
