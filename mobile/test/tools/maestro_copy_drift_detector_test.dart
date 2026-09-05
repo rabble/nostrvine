@@ -1,5 +1,5 @@
 // ABOUTME: Tests for the Maestro copy-drift guard.
-// ABOUTME: Verifies drift, regen refusal, base erosion, comments, and rendered bindings.
+// ABOUTME: Verifies extraction, drift, regen refusal, base erosion, and rendered bindings.
 
 import 'dart:convert';
 import 'dart:io';
@@ -101,22 +101,78 @@ void main() {
       );
     });
 
-    test('does not count YAML block scalar markers as copy', () {
-      writeArb({'settingsTitle': 'Settings'});
+    test('extracts each copy line from a literal block scalar', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
       writeFlow(
         'asserts/menu.yaml',
         '- assertVisible: |-\n'
-            '    Settings\n',
+            '    Settings\n'
+            '    Choose your preferences\n',
       );
-      writeManifest('# no extractable literal binding yet\n');
+      writeManifest('# generated below\n');
 
-      final res = run();
+      final res = run(update: true);
 
       expect(res.exitCode, 0, reason: res.stderr.toString());
       expect(
-        res.stdout,
-        contains('0 bindings verified (of 0 asserted literals extracted)'),
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
       );
+    });
+
+    test('extracts each copy line from a folded block scalar', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
+      writeFlow(
+        'asserts/menu.yaml',
+        '- tapOn: >-\n'
+            '    Settings\n'
+            '    Choose your preferences\n',
+      );
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
+      );
+    });
+
+    test('does not bind regex or interpolated block-scalar lines', () {
+      writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: |-\n'
+            '    Settings\n'
+            r'    ${ACCOUNT_NAME}'
+            '\n'
+            '    Privacy.*\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+      final check = run();
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
+      expect(
+        check.stdout,
+        contains('1 bindings verified (of 2 asserted literals extracted)'),
+      );
+      expect(manifest.readAsStringSync(), isNot(contains('privacyTitle')));
     });
 
     test('fails when ARB-backed flow copy is unregistered', () {

@@ -128,23 +128,46 @@ def unquote(v):
 def flow_literals(path):
     """Literal copy strings a flow asserts or taps. Skips ${...}
     interpolations (environment values, not copy), inline maps, and
-    selector properties other than text (ids are not copy)."""
+    selector properties other than text (ids are not copy). Block-scalar
+    accessibility labels are emitted per non-blank line so each ARB-backed
+    title or subtitle receives its own binding."""
     lits = []
+
+    def add_literal(value):
+        v = unquote(value)
+        if (not v or "${" in v or v.startswith("{") or
+                ":" in v and " " not in v):
+            return
+        lits.append(norm(v))
+
     with open(path, encoding="utf-8", errors="replace") as fh:
-        for raw in fh:
-            line = strip_comment(raw.rstrip("\n"))
-            if not line.strip():
+        lines = fh.readlines()
+
+    index = 0
+    while index < len(lines):
+        raw = lines[index].rstrip("\n")
+        line = strip_comment(raw)
+        index += 1
+        if not line.strip():
+            continue
+        for pat in (COMMAND_SCALAR, TEXT_PROP):
+            m = pat.match(line)
+            if not m:
                 continue
-            for pat in (COMMAND_SCALAR, TEXT_PROP):
-                m = pat.match(line)
-                if not m:
-                    continue
-                v = unquote(m.group("v"))
-                if (not v or v in BLOCK_SCALAR_MARKERS or "${" in v or
-                        v.startswith("{") or ":" in v and " " not in v):
-                    continue
-                lits.append(norm(v))
-                break
+            v = unquote(m.group("v"))
+            if v in BLOCK_SCALAR_MARKERS:
+                parent_indent = len(raw) - len(raw.lstrip())
+                while index < len(lines):
+                    block_raw = lines[index].rstrip("\n")
+                    if block_raw.strip():
+                        indent = len(block_raw) - len(block_raw.lstrip())
+                        if indent <= parent_indent:
+                            break
+                        add_literal(strip_comment(block_raw).strip())
+                    index += 1
+            else:
+                add_literal(v)
+            break
     return lits
 
 mobile_dir = os.path.abspath(os.path.join(e2e_dir, "..", ".."))
