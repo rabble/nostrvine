@@ -27,7 +27,7 @@ The iOS and macOS Xcode projects have been modified to automatically run `pod in
 
 - **`ios/Scripts/check_pods.sh`** - Auto-installed iOS CocoaPods check (runs automatically)
 - **`macos/Scripts/check_pods.sh`** - Auto-installed macOS CocoaPods check (runs automatically)
-- **`pre_build_ios.sh`** - Optional pre-build script for custom Xcode iOS builds
+- **`pre_build_ios.sh`** - Runs as a pre-action of the shared `Runner` scheme on every Xcode iOS build; repairs Flutter's generated Swift package deployment target and syncs CocoaPods. The repair takes effect on the *next* build, because Xcode resolves the package graph before pre-actions run. It must never run a Flutter command because plugin injection resets that generated target to iOS 13 (see `.claude/rules/ios_build_troubleshooting.md`, Cause 3)
 - **`pre_build_macos.sh`** - Optional pre-build script for custom Xcode macOS builds
 
 ## Usage
