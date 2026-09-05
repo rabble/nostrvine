@@ -26,7 +26,7 @@ List<RouteBase> shellRoutes() {
     //
     // Each branch screen reads the *globally-active* route via
     // pageContextProvider and renders a placeholder when it doesn't match.
-    // Because all branches stay mounted, [_branchPage] scopes
+    // Because all branches stay mounted, [branchPage] scopes
     // pageContextProvider per branch so each tab sees *its own* route context
     // (not the active tab's) and keeps rendering real content while inactive.
     StatefulShellRoute(
@@ -75,7 +75,7 @@ List<RouteBase> shellRoutes() {
             GoRoute(
               path: VideoFeedPage.pathWithIndex,
               name: VideoFeedPage.routeName,
-              pageBuilder: (ctx, st) => _branchPage(
+              pageBuilder: (ctx, st) => branchPage(
                 st,
                 VideoFeedPage(
                   initialIndex: homeInitialIndexFromPathParameters(
@@ -95,14 +95,14 @@ List<RouteBase> shellRoutes() {
             GoRoute(
               path: ExploreScreen.path,
               name: ExploreScreen.routeName,
-              pageBuilder: (ctx, st) => _branchPage(st, const ExploreScreen()),
+              pageBuilder: (ctx, st) => branchPage(st, const ExploreScreen()),
             ),
             GoRoute(
               path: ExploreScreen.pathTabSubpath,
               pageBuilder: (_, st) {
                 final slug = st.pathParameters['name'];
                 final tabName = ExploreScreen.tabNameFromPathParameter(slug);
-                return _branchPage(
+                return branchPage(
                   st,
                   ExploreScreen(initialTabName: tabName, initialTabSlug: slug),
                 );
@@ -110,7 +110,7 @@ List<RouteBase> shellRoutes() {
             ),
             GoRoute(
               path: ExploreScreen.pathWithIndex,
-              pageBuilder: (ctx, st) => _branchPage(st, const ExploreScreen()),
+              pageBuilder: (ctx, st) => branchPage(st, const ExploreScreen()),
             ),
           ],
         ),
@@ -124,12 +124,12 @@ List<RouteBase> shellRoutes() {
               path: NotificationsPage.pathWithIndex,
               name: NotificationsPage.routeName,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const NotificationsPage()),
+                  branchPage(st, const NotificationsPage()),
             ),
             GoRoute(
               path: InboxPage.path,
               name: InboxPage.routeName,
-              pageBuilder: (ctx, st) => _branchPage(st, const InboxPage()),
+              pageBuilder: (ctx, st) => branchPage(st, const InboxPage()),
             ),
           ],
         ),
@@ -143,28 +143,28 @@ List<RouteBase> shellRoutes() {
               path: ProfileScreenRouter.path,
               name: ProfileScreenRouter.routeName,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const ProfileScreenRouter()),
+                  branchPage(st, const ProfileScreenRouter()),
             ),
             GoRoute(
               path: ProfileScreenRouter.pathWithNpub,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const ProfileScreenRouter()),
+                  branchPage(st, const ProfileScreenRouter()),
             ),
             GoRoute(
               path: ProfileScreenRouter.pathWithIndex,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const ProfileScreenRouter()),
+                  branchPage(st, const ProfileScreenRouter()),
             ),
             GoRoute(
               path: LikedVideosScreenRouter.path,
               name: LikedVideosScreenRouter.routeName,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const LikedVideosScreenRouter()),
+                  branchPage(st, const LikedVideosScreenRouter()),
             ),
             GoRoute(
               path: LikedVideosScreenRouter.pathWithIndex,
               pageBuilder: (ctx, st) =>
-                  _branchPage(st, const LikedVideosScreenRouter()),
+                  branchPage(st, const LikedVideosScreenRouter()),
             ),
           ],
         ),
@@ -194,7 +194,8 @@ List<RouteBase> shellRoutes() {
 /// gating must follow the genuinely-active tab. Any new provider that reads
 /// [pageContextProvider] inherits this global behaviour even when consumed
 /// inside a branch; reach for the scoped value only via a direct widget read.
-Page<void> _branchPage(GoRouterState state, Widget child) {
+@visibleForTesting
+Page<void> branchPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(
     key: state.pageKey,
     name: goRouterPageName(state),
@@ -203,7 +204,26 @@ Page<void> _branchPage(GoRouterState state, Widget child) {
       ...state.uri.queryParameters,
     },
     restorationId: state.pageKey.value,
+    // Keyed on the route's SUBJECT, not on `state.pageKey`. go_router keys a
+    // page on the route *pattern* — `newMatchedPath` is built from
+    // `route.path`, so `/profile/<a>` and `/profile/<b>` both come back as
+    // `ValueKey('/profile/:npub')`. Without a key of its own this scope is
+    // never re-created when only a path parameter changes, and the
+    // single-value override below keeps replaying the first subject the
+    // branch ever rendered: the shell's app bar follows the live route while
+    // the branch body stays on the previous account.
+    //
+    // Not the whole path, because two feeds rewrite their own URL on every
+    // swipe (`ExploreFeedContent` and `ProfileVideoFeedView` both call
+    // `context.go` from `onPageChanged`); a path key would dispose their
+    // players and scroll position mid-swipe. `subjectKey` excludes the video
+    // index for exactly that reason.
+    //
+    // Neither key weakens the freeze this scope exists for: an inactive
+    // branch is not rebuilt at all, so its key cannot change and it goes on
+    // rendering its own content.
     child: ProviderScope(
+      key: ValueKey(parseRoute(state.uri.path).subjectKey),
       overrides: [
         pageContextProvider.overrideWith(
           (ref) => Stream<RouteContext>.value(parseRoute(state.uri.path)),

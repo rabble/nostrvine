@@ -101,6 +101,31 @@ class RouteContext {
   final String? videoId;
   final String? draftId;
   final String? conversationId;
+
+  /// What this route is *about*, with [videoIndex] deliberately left out.
+  ///
+  /// A shell branch re-creates its provider scope when this changes and
+  /// reuses it when it does not. That split matters because two feeds
+  /// rewrite their own URL on every swipe — `ExploreFeedContent`'s and
+  /// `ProfileVideoFeedView`'s `onPageChanged` both call `context.go` with a
+  /// new index — so keying on the whole path would tear down the players and
+  /// scroll position mid-swipe. Opening a different account or list is a
+  /// different subject and does rebuild.
+  ///
+  /// Add any new subject-bearing field here. [videoIndex] is the only one
+  /// that must stay out.
+  Object get subjectKey => (
+    type,
+    appSlug,
+    npub,
+    hashtag,
+    categoryName,
+    listId,
+    soundId,
+    videoId,
+    draftId,
+    conversationId,
+  );
 }
 
 /// Decodes a URL path segment, returning the raw input on malformed
