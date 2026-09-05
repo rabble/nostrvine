@@ -57,15 +57,21 @@ class _DmBubbleContent {
     String boundedMessage, {
     required DmSharedVideoRef? sharedVideoRef,
     required DmSharedVideoRef? quotedVideoRef,
+    required bool isTruncated,
   }) {
     // The prefix is deliberately bounded before this full-copy sanitizer and
     // every regex/split below. Sanitizing here also repairs malformed UTF-16
     // from JSON escapes before the string reaches Flutter's paragraph builder.
     final safeMessage = StringUtils.sanitizeUtf16(boundedMessage);
-    final videoMatch = divineVideoUrlRegex.firstMatch(safeMessage);
+    // A URL the bound cut through is text until Show more reveals the rest.
+    final videoMatch = firstCompleteDivineVideoUrlMatch(
+      safeMessage,
+      contentIsTruncated: isTruncated,
+    );
     final videoTarget = resolveDmVideoTarget(
       content: safeMessage,
       sharedVideoRef: sharedVideoRef,
+      contentIsTruncated: isTruncated,
     );
 
     final String? personalMessage;
@@ -293,6 +299,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       _displaySlice.text,
       sharedVideoRef: widget.sharedVideoRef,
       quotedVideoRef: widget.quotedVideoRef,
+      isTruncated: _displaySlice.hasMore,
     );
   }
 

@@ -1340,6 +1340,64 @@ void main() {
         },
       );
 
+      // `divineVideoUrlRegex` has no right anchor, so a display bound that
+      // lands inside the id would otherwise match a shortened id, resolve the
+      // wrong video, and keep that cubit after Show more.
+      testWidgets(
+        'does not resolve a legacy URL that the initial display limit cuts',
+        (tester) async {
+          final fetchedIds = <String>[];
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              any(),
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.positionalArguments.first as String;
+            fetchedIds.add(id);
+            return id == 'abc123' ? testVideo : null;
+          });
+          const urlPrefix = 'https://divine.video/video/';
+          // One character of the id sits inside the bound; the rest is cut.
+          final note = 'a' * (dmInitialDisplayCodeUnits - urlPrefix.length - 2);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MessageBubble(
+                    message: '$note\n${urlPrefix}abc123',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                  ),
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(fetchedIds, isEmpty);
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+          expect(
+            find.text(strings.notificationsVideoUnavailable),
+            findsNothing,
+          );
+
+          await tester.ensureVisible(find.text(strings.profileShowMore));
+          await tester.tap(find.text(strings.profileShowMore));
+          await tester.pumpAndSettle();
+
+          expect(fetchedIds, ['abc123']);
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        },
+      );
+
       // divine-web put the share only in tags and allowed an empty draft, so
       // before #6224 this bubble rendered with no card — and mid-group, with
       // no text and no timestamp either, i.e. completely blank.
