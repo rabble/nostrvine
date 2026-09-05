@@ -20,7 +20,6 @@ The original app suffered from:
 A comprehensive monitoring service that:
 - **Tracks timing metrics** for all startup phases
 - **Identifies performance bottlenecks** automatically
-- **Provides lazy loading utilities** (`deferUntilUIReady`)
 - **Monitors for slow startup** and logs warnings
 - **Generates detailed performance reports** in debug mode
 
@@ -29,11 +28,6 @@ A comprehensive monitoring service that:
 // Track phases with automatic timing
 StartupPerformanceService.instance.startPhase('service_init');
 StartupPerformanceService.instance.completePhase('service_init');
-
-// Defer heavy work until UI is ready
-StartupPerformanceService.instance.deferUntilUIReady(() async {
-  // Heavy initialization work
-});
 
 // Measure work with automatic performance tracking
 await StartupPerformanceService.instance.measureWork('task_name', () async {
@@ -89,18 +83,7 @@ await StartupPerformanceService.instance.measureWork(
 );
 ```
 
-### 5. Social Provider Deferred Loading
-
-Social connections load in the background after UI is ready:
-
-```dart
-// DEFER social provider initialization to not block UI
-StartupPerformanceService.instance.deferUntilUIReady(() async {
-  await ref.read(socialNotifierProvider.notifier).initialize();
-}, taskName: 'social_provider_init');
-```
-
-### 6. LazyVideoLoadingService
+### 5. LazyVideoLoadingService
 
 **File:** `lib/services/lazy_video_loading_service.dart`
 
@@ -125,7 +108,7 @@ final request = VideoLoadingRequest(
 final controller = await LazyVideoLoadingService.instance.requestVideo(request);
 ```
 
-### 7. Performance Monitoring Integration
+### 6. Performance Monitoring Integration
 
 Throughout the app, performance checkpoints track timing:
 
@@ -195,16 +178,9 @@ The optimizations can be tested by:
    });
    ```
 
-2. **Defer non-critical work** until UI is ready:
-   ```dart
-   StartupPerformanceService.instance.deferUntilUIReady(() async {
-     // Non-critical initialization
-   });
-   ```
+2. **Check performance reports** in debug builds for bottlenecks
 
-3. **Check performance reports** in debug builds for bottlenecks
-
-4. **Use lazy video loading** for better memory management:
+3. **Use lazy video loading** for better memory management:
    ```dart
    final controller = await LazyVideoLoadingService.instance.requestVideo(request);
    ```
