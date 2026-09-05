@@ -341,6 +341,10 @@ class VideoPublishService {
         return const PublishError(PublishErrorKind.notSignedIn);
       }
       final pubkey = authService.currentPublicKeyHex!;
+      final collaboratorPubkeys = withoutPublicIdentifier(
+        draft.collaboratorPubkeys,
+        pubkey,
+      );
 
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await timeline.measure(
@@ -389,7 +393,11 @@ class VideoPublishService {
 
       final mentionedPubkeys = await timeline.measure(
         PublishPhases.mentions,
-        () => _resolveMentionedPubkeys(draft, currentUserPubkey: pubkey),
+        () => _resolveMentionedPubkeys(
+          draft,
+          currentUserPubkey: pubkey,
+          collaboratorPubkeys: collaboratorPubkeys,
+        ),
       );
 
       final captionTrack = _captionTrackForPublish(draft);
@@ -415,7 +423,7 @@ class VideoPublishService {
                     draft.expireTime!.inSeconds
               : null,
           allowAudioReuse: draft.allowAudioReuse,
-          collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
+          collaboratorPubkeys: collaboratorPubkeys.toList(),
           mentionedPubkeys: mentionedPubkeys,
           inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
           inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
@@ -459,6 +467,7 @@ class VideoPublishService {
           draft: draft,
           upload: pendingUpload,
           creatorPubkey: pubkey,
+          collaboratorPubkeys: collaboratorPubkeys,
         ),
       );
 
@@ -584,6 +593,7 @@ class VideoPublishService {
   Future<List<String>> _resolveMentionedPubkeys(
     DivineVideoDraft draft, {
     required String currentUserPubkey,
+    required Set<String> collaboratorPubkeys,
   }) async {
     final resolver = mentionResolutionService;
     if (resolver == null) return const [];
@@ -598,7 +608,7 @@ class VideoPublishService {
       );
       return _excludeCollaboratorPubkeys(
         result.resolvedPubkeys,
-        draft.collaboratorPubkeys,
+        collaboratorPubkeys,
       );
     } catch (error) {
       Log.warning(
@@ -613,11 +623,12 @@ class VideoPublishService {
     required DivineVideoDraft draft,
     required PendingUpload upload,
     required String creatorPubkey,
+    required Set<String> collaboratorPubkeys,
   }) async {
     final inviteService = collaboratorInviteService;
     final videoId = upload.videoId;
     if (inviteService == null ||
-        draft.collaboratorPubkeys.isEmpty ||
+        collaboratorPubkeys.isEmpty ||
         videoId == null ||
         videoId.isEmpty) {
       return const [];
@@ -630,7 +641,7 @@ class VideoPublishService {
 
     try {
       final result = await inviteService.sendInvites(
-        collaboratorPubkeys: draft.collaboratorPubkeys,
+        collaboratorPubkeys: collaboratorPubkeys,
         creatorPubkey: creatorPubkey,
         videoAddress: videoAddress,
         title: draft.title,
@@ -672,7 +683,7 @@ class VideoPublishService {
         '(creator=${pubkeyForLogs(creatorPubkey)}): $e\n$stackTrace',
         category: .video,
       );
-      return draft.collaboratorPubkeys
+      return collaboratorPubkeys
           .map(
             (pubkey) => CollaboratorInviteWarning(
               collaboratorPubkey: pubkey,

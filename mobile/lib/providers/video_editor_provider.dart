@@ -25,6 +25,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -40,6 +41,7 @@ import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -1083,7 +1085,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       editorEditingParameters: completeParametersFromDraftMap(
         draft.editorEditingParameters,
       ),
-      collaboratorPubkeys: draft.collaboratorPubkeys,
+      collaboratorPubkeys: withoutPublicIdentifier(
+        draft.collaboratorPubkeys,
+        ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+      ),
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
       selectedSound: draft.selectedSound,
