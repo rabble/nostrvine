@@ -111,6 +111,29 @@ cd mobile && dart run scripts/lib/orphaned_arb_key_detector.dart --detail
 UPDATE_BASELINE=1 bash mobile/scripts/check_orphaned_arb_key_floor.sh
 ```
 
+## Localized semantic labels for `divine_ui`
+
+`divine_ui` stays independent of app localizations, so its public controls keep
+English semantic-label fallbacks. App callers must pass localized labels when
+the corresponding control can render.
+
+Omissions under `mobile/lib` are frozen at zero by
+`mobile/scripts/check_divine_ui_semantic_label_defaults.sh` (#7901), with
+baseline `mobile/scripts/baseline/divine_ui_semantic_labels.txt`. The AST
+detector follows conditional controls; do not pass meaningless labels when a
+control is proven absent.
+
+List omissions and run the guard from `mobile/`:
+
+```bash
+dart run scripts/lib/divine_ui_semantic_label_detector.dart lib --detail
+bash scripts/check_divine_ui_semantic_label_defaults.sh
+```
+
+The baseline is empty and the ratchet rejects a baseline that adds a key, so
+pass the app's localized label at the call site rather than regenerating the
+baseline.
+
 ## Rules
 
 - **Strings stay in the UI layer** — BLoCs emit status enums, the UI maps them to `context.l10n.xxx`

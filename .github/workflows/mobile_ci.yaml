@@ -392,6 +392,14 @@ jobs:
           # widget under test happens to reach it. Prefer testMaterialApp(...)
           # from test/helpers/test_provider_overrides.dart.
           bash scripts/check_l10n_delegates_ceiling.sh
+      - name: 🏷️ Verify Divine UI semantic labels stay localized (a11y ratchet)
+        run: |
+          # Issue #7901. Freezes app call sites that can render a public
+          # divine_ui control while relying on its English semantic-label
+          # fallback. The AST detector understands conditional controls and
+          # constructor/static-helper forms, so non-password fields and sheets
+          # without completion actions do not create noise.
+          bash scripts/check_divine_ui_semantic_label_defaults.sh
       - name: 🔢 Verify countable ARB keys carry ICU plurals (l10n ratchet)
         run: |
           # Issue #3633. Freezes the set of app_en.arb keys that interpolate a
