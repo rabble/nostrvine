@@ -381,7 +381,7 @@ void main() {
       },
     );
 
-    testWidgets('other-profile row names the icon-only following button', (
+    testWidgets('other-profile row names the icon-only unfollow action', (
       tester,
     ) async {
       when(
@@ -402,7 +402,10 @@ void main() {
       // exactly [Message] [Following] [Share].
       await pumpRow(tester, newPostNotifications: false);
 
-      expect(find.bySemanticsLabel(l10n.profileFollowingLabel), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.unfollowUserSemanticLabel),
+        findsOneWidget,
+      );
       await expectMeetsAccessibilityGuidelines(
         tester,
         guidelines: divineSemanticsGuidelines,
