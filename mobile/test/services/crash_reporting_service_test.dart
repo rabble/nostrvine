@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,14 +33,30 @@ void main() {
     });
 
     group('before initialize', () {
-      // Every reporting method opens with `if (!_initialized) return;`. That
-      // makes them inert until initialize() succeeds — and permanently inert if
-      // Firebase initialisation throws, because the flag is only set on the
-      // success path. These tests pin that as the *documented* contract rather
-      // than an accident, and they are what a fix would have to change.
-      //
-      // Whether that silently loses a report in production is tracked
-      // separately; it needs Crashlytics telemetry, not a unit test.
+      // The runZonedGuarded handler is armed before initialize() runs, so
+      // whatever it catches in that window arrives here first. Nothing may
+      // vanish: an error is written to the unified log immediately, and every
+      // call is held for Crashlytics until initialize() decides whether
+      // Crashlytics exists (#8616).
+
+      test('recordError writes the error to the unified log', () async {
+        final marker = 'pre-init-${DateTime.now().microsecondsSinceEpoch}';
+
+        await service.recordError(
+          StateError(marker),
+          StackTrace.current,
+          reason: 'pre-init test',
+        );
+
+        final logged = LogCaptureService()
+            .getRecentLogs(minLevel: LogLevel.error)
+            .where(
+              (entry) =>
+                  entry.name == 'CrashReporting' &&
+                  (entry.error?.contains(marker) ?? false),
+            );
+        expect(logged, hasLength(1));
+      });
 
       test('recordError completes instead of throwing', () async {
         await expectLater(

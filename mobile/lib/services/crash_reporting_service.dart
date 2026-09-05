@@ -111,7 +111,16 @@ class CrashReportingService implements CrashReporter {
     StackTrace? stack, {
     String? reason,
   }) async {
-    if (!_initialized) return;
+    if (!_initialized) {
+      Log.error(
+        'Non-fatal error not forwarded to Crashlytics (not initialized): '
+        '$reason',
+        name: 'CrashReporting',
+        error: exception,
+        stackTrace: stack,
+      );
+      return;
+    }
 
     try {
       await FirebaseCrashlytics.instance.recordError(
