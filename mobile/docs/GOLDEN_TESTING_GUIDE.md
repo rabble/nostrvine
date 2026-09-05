@@ -24,15 +24,16 @@ through `scripts/golden.sh` and the `Goldens` CI job.
   (`tester.getTopLeft`), **not** an image comparison. It lives here because
   the `Goldens` job owns the directory, not because it diffs pixels. Note
   that moving the directory to that job also moved this file from Ahem to
-  real fonts (the job sets `DIVINE_GOLDEN_TESTS`); its assertions are
-  relative, so the change is behaviour-neutral, but it is why the file no
-  longer runs in the sharded suite.
+  real fonts; its assertions are relative, so the change is
+  behaviour-neutral, but it is why the file no longer runs in the sharded
+  suite.
 
 Mechanics:
 
-- Golden setup (real fonts + `AlchemistConfig`) runs only under
+- Golden setup (`AlchemistConfig`) runs only under
   `-D DIVINE_GOLDEN_TESTS=true` (see `test/flutter_test_config.dart`); a
-  plain `flutter test` skips it so the default suite stays fast.
+  plain `flutter test` skips it. Real fonts are **not** part of that
+  opt-in — the harness loads them before every non-web test (#8649).
   `scripts/golden.sh` sets that dart-define for you.
 - CI runs `scripts/golden.sh verify` in a dedicated **`Goldens`** job.
   `scripts/ci/select_test_shard.sh` removes `test/goldens/` from every shard
@@ -161,8 +162,9 @@ rendering drift without an Ubuntu machine.
 
 ```
 test/
-├── flutter_test_config.dart        # Golden font + Alchemist setup, opt-in
-│                                    # via -D DIVINE_GOLDEN_TESTS=true
+├── flutter_test_config.dart        # app fonts for every non-web test;
+│                                    # Alchemist setup is opt-in via
+│                                    # -D DIVINE_GOLDEN_TESTS=true
 └── goldens/                        # owned by the `Goldens` CI job; excluded
     └── widgets/                    # from every shard of the `Tests` job
         ├── design_system_gallery_golden_test.dart
@@ -193,10 +195,6 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 
 void main() {
   group('MyWidget Golden Tests', () {
-    setUpAll(() async {
-      await loadAppFonts();
-    });
-
     testGoldens('MyWidget renders correctly', (tester) async {
       await tester.pumpWidgetBuilder(
         const MyWidget(),
@@ -260,8 +258,9 @@ testGoldens('Widget states', (tester) async {
 **Text renders as solid blocks instead of glyphs**
 - The google_fonts drain is missing or ran too early. See
   [The font-determinism rule](#the-font-determinism-rule). Note that
-  `loadAppFonts()` alone does **not** fix this, and it only runs under
-  `-D DIVINE_GOLDEN_TESTS=true` at all.
+  `loadAppFonts()` alone does **not** fix this: the root harness runs it
+  before every non-web test (#8649), and it still leaves the `google_fonts`
+  variants that `VineTheme` resolves lazily undrained.
 
 **A golden is transparent / the background is white**
 - The surface is outside the `RepaintBoundary` being matched. Move it in.

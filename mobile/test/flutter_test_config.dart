@@ -1,5 +1,5 @@
 // ABOUTME: Test configuration file that sets up app-wide plugin mocks.
-// ABOUTME: Golden-only font and Alchemist setup is opt-in to keep unit tests fast.
+// ABOUTME: Loads deterministic fonts and opts golden tests into Alchemist setup.
 
 import 'dart:async';
 
@@ -44,6 +44,11 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     VineTheme.titleLargeFont();
     VineTheme.codeFont();
     await GoogleFonts.pendingFonts();
+
+    // loadAppFonts permanently registers bundled faces, including Roboto under
+    // its bare family name. Do this once before the merged test isolate starts
+    // so font metrics cannot depend on which suite runs first (#8649).
+    await loadAppFonts();
   }
 
   // Under `very_good test --optimization` the whole unit suite runs in one
@@ -61,17 +66,15 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // every test so avatar failure caching stays test-local.
   tearDown(AvatarFailureCache.instance.clear);
 
-  // Web / `flutter test --platform chrome`: skip golden font loading and
-  // Alchemist. Those paths can stall headless Chrome with almost no CPU while
-  // `loading ...` is shown.
+  // Web / `flutter test --platform chrome`: skip Alchemist. Alchemist and the
+  // font loading guarded above can both stall headless Chrome with almost no
+  // CPU while `loading ...` is shown.
   if (kIsWeb || !_runGoldenSetup) {
     return testMain();
   }
 
-  // Golden runs opt in with:
+  // Golden runs opt in to Alchemist with:
   //   flutter test -D DIVINE_GOLDEN_TESTS=true test/goldens/
-  await loadAppFonts();
-
   // Configure Alchemist for better golden test output
   return AlchemistConfig.runWithConfig(
     config: const AlchemistConfig(

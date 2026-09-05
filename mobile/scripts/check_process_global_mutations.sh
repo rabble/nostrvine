@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 # Fails CI if a test the very_good optimizer MERGES into the shared isolate
-# mutates a process-global WITHOUT restoring it. An unrestored mutation persists
-# into every later merged test in the shared isolate, surfacing as an
-# order-dependent failure cross-attributed to an unrelated test. This generalizes
-# the single-global precedent check_http_overrides_isolation.sh (PR #5163) to the
-# classes of test seams behind the #5159 / #5180 cascades (parent #3137) and the
-# Tier-3/Tier-4 residual (#5185).
+# mutates a restorable process-global without restoring it, or if any ordinary
+# suite calls an irreversible initializer owned by the root harness. An
+# unrestored mutation persists into every later merged test in the shared
+# isolate, surfacing as an order-dependent failure cross-attributed to an
+# unrelated test. This generalizes the single-global precedent
+# check_http_overrides_isolation.sh (PR #5163) to the classes of test seams
+# behind the #5159 / #5180 cascades (parent #3137) and the Tier-3/Tier-4 residual
+# (#5185).
 #
-# A file is in the merge UNLESS it is tagged @Tags(['skip_very_good_optimization']).
-# Being under test/manual/ does NOT exclude it — only the tag does (the very_good
-# --optimization globber does not honor dart_test.yaml's exclude: test/manual/**).
-# Tag matching is whitespace-normalized so dart-format-wrapped @Tags([...])
-# annotations are honored. A commented-out @Tags line remains ignored by this
-# stricter gate; do not rely on commented annotations as an optimizer escape hatch.
+# For classes 1 and 2, a file is in the merge UNLESS it is tagged
+# @Tags(['skip_very_good_optimization']). Being under test/manual/ does NOT
+# exclude it — only the tag does (the very_good --optimization globber does not
+# honor dart_test.yaml's exclude: test/manual/**). Tag matching is
+# whitespace-normalized so dart-format-wrapped @Tags([...]) annotations are
+# honored. A commented-out @Tags line remains ignored by this stricter gate; do
+# not rely on commented annotations as an optimizer escape hatch. Class 3 is
+# hard-zero regardless of tag because the root harness already performs the
+# initialization for every non-web test.
 #
-# Two detection classes, each HARD-ZERO (no baseline, no tolerated debt):
+# Three detection classes, each HARD-ZERO (no baseline, no tolerated debt):
 #
 #   1. CAPTURE-RESTORE (GLOBALS) — `<Singleton>.instance` and static hooks whose
 #      documented resting value is the *prior runtime value*. Every untagged
@@ -39,17 +44,24 @@
 #      whose only assignment IS the default (e.g. a lone `= null`) is harmless
 #      and passes.
 #
-# Detection is a grep proxy for BOTH classes: it cannot prove the restore is
-# reachable or lives in a tearDown (an inline end-of-body reset satisfies the
-# grep but not a mid-test throw). The snapshot+restore / reset-to-default pair is
-# the canonical fix; the tag is the escape hatch for tests that legitimately
-# cannot restore (real plugin / integration tests).
+#   3. IRREVERSIBLE INITIALIZERS — calls such as `loadAppFonts()` that mutate
+#      process-global state and have no inverse. They belong in the root test
+#      harness, before `testMain`, or in the isolated golden tree. Calling one
+#      from an ordinary merged suite makes every later test order-dependent.
 #
-# Scope: assignments only (a read, a comment mention, `==`, `=>` do not match).
-# lib/ is out of scope. Only `*_test.dart` under mobile/test is scanned, so
-# non-test helpers — e.g. test/test_setup.dart, which installs the suite-wide
-# PathProviderPlatform mock by design — are not flagged, and packages/*/test
-# (each its own separate merged isolate — issue #5838) is out of scope here.
+# Detection is textual for all three classes. For the first two, it cannot prove
+# the restore is reachable or lives in a tearDown (an inline end-of-body reset
+# satisfies the check but not a mid-test throw). The snapshot+restore /
+# reset-to-default pair is the canonical fix; the tag is the escape hatch for
+# tests that legitimately cannot restore (real plugin / integration tests).
+# Class 3 scans code only, with comments and string-literal bodies removed.
+#
+# Scope: assignment classes inspect only `*_test.dart`; irreversible initializer
+# detection inspects every Dart file under mobile/test. lib/ and packages/*/test
+# (each package has its own merged isolate — issue #5838) remain out of scope.
+# Non-test helpers such as test/test_setup.dart are ignored by assignment
+# detection, while the root flutter_test_config.dart and test/goldens/ are the
+# only allowed homes for loadAppFonts().
 # HttpOverrides.global keeps its own dedicated STRICT gate (check_http_overrides_isolation.sh)
 # and is intentionally not handled here.
 #
@@ -223,14 +235,37 @@ run_scan() {
     done
   done
 
+  # --- Class 3: irreversible process-global initializers ---
+  # Match the bare identifier, not `loadAppFonts(`. `setUpAll(loadAppFonts);` is
+  # the same irreversible load, and very_good_analysis enables
+  # unnecessary_lambdas, which reports "Closure should be a tearoff" on
+  # `setUpAll(() => loadAppFonts())` — so requiring the paren would gate the
+  # spelling the linter discourages and wave through the one it recommends.
+  # Widening is safe here because dart_code_only.awk has already removed comments
+  # and string-literal bodies, which is what made the paren load-bearing before.
+  irreversible='(^|[^[:alnum:]_])loadAppFonts([^[:alnum:]_]|$)'
+  files=$(grep -rlE --include='*.dart' "$irreversible" "$SCAN_DIR" || true)
+  for f in $files; do
+    body=$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null || true)
+    if ! grep -qE "$irreversible" <<<"$body"; then
+      continue
+    fi
+    rel="${f#"$MOBILE_DIR"/}"
+    case "$f" in
+      "$SCAN_DIR/flutter_test_config.dart"|"$SCAN_DIR/goldens/"*) continue ;;
+    esac
+    violations="$violations  $rel  (loadAppFonts) [irreversible initializer]"$'\n'
+  done
+
   if [[ -n "$violations" ]]; then
-    echo "FAIL [process_global_mutations]: untagged merged test mutates a"
-    echo "process-global without a within-file restore:"
+    echo "FAIL [process_global_mutations]: test mutates a process-global"
+    echo "outside its required restoration or isolation boundary:"
     printf '%s' "$violations" | sed '/^$/d'
     echo ""
-    echo "Mutating one of these globals in a MERGED (untagged) test without"
-    echo "restoring it leaks the value into every later test in the shared"
-    echo "very_good --optimization isolate, causing order-dependent flakes"
+    echo "An unrestored class 1/2 mutation in a MERGED (untagged) test leaks"
+    echo "into every later test in the shared very_good --optimization isolate."
+    echo "An irreversible initializer is banned outside the root harness and"
+    echo "isolated golden tree, where its process-wide lifetime is intentional."
     echo "(generalizes PR #5163; cascades #5159 / #5180; parent #3137; residual #5185)."
     echo ""
     echo "Remediation — pick one:"
@@ -244,14 +279,17 @@ run_scan() {
     echo "      like debugDefaultTargetPlatformOverride needs an INLINE reset instead"
     echo "      under testWidgets (see the header note), so use a plain override here:"
     echo "        addTearDown(() => InfiniteVideoFeed.debugIsSupportedOverride = null);"
-    echo "  (c) Real-plugin / integration test that cannot restore: tag it so it"
-    echo "      stays out of the merge (annotation BEFORE the first import):"
+    echo "  (c) [capture-restore / reset-to-default] Real-plugin / integration"
+    echo "      test that cannot restore: tag it so it stays out of the merge"
+    echo "      (annotation BEFORE the first import):"
     echo "        @Tags(['skip_very_good_optimization', 'integration'])"
     echo "      then bump mobile/test/vgv_tag_baseline.txt if the tag count rises."
+    echo "  (d) [irreversible initializer] Move it to flutter_test_config.dart"
+    echo "      before testMain, or keep it under the isolated test/goldens tree."
     return 1
   fi
 
-  echo "OK: no untagged test leaks a process-global (capture-restore + reset-to-default)."
+  echo "OK: no test leaks a process-global (capture-restore + reset-to-default + irreversible initializer)."
   return 0
 }
 
@@ -399,6 +437,51 @@ void main() {
 'import "x";
 void main() { setUp(() { debugDefaultTargetPlatformOverride = null; }); }
 '
+  _case "suite-local irreversible font load → FAIL" 1 \
+'import "x";
+void main() { setUpAll(() async { await loadAppFonts(); }); }
+'
+  _case "suite-local irreversible font load, tear-off → FAIL" 1 \
+'import "x";
+void main() { setUpAll(loadAppFonts); }
+'
+  _case "identifier that merely contains the name → PASS" 0 \
+'import "x";
+void main() { final loadAppFontsHelper = 1; print(loadAppFontsHelper); }
+'
+  _case "irreversible initializer named in a string → PASS" 0 \
+'import "x";
+void main() {
+  test("no suite calls loadAppFonts() from setUpAll", () {});
+}
+'
+  _case "irreversible initializer inside a block comment → PASS" 0 \
+'import "x";
+void main() {
+  /* await loadAppFonts(); */
+}
+'
+  tmp="$(mktemp -d)"
+  printf '%s' 'void main() { loadAppFonts(); }' > "$tmp/flutter_test_config.dart"
+  if SCAN_DIR="$tmp" bash "$0" >/dev/null 2>&1; then got=0; else got=$?; fi
+  rm -rf "$tmp"
+  if [[ "$got" -eq 0 ]]; then
+    echo "  ok   (0) root-harness irreversible font load → PASS"
+  else
+    echo "  FAIL (got $got, want 0) root-harness irreversible font load → PASS"
+    rc=1
+  fi
+  tmp="$(mktemp -d)"
+  mkdir -p "$tmp/goldens"
+  printf '%s' 'void main() { loadAppFonts(); }' > "$tmp/goldens/fixture_test.dart"
+  if SCAN_DIR="$tmp" bash "$0" >/dev/null 2>&1; then got=0; else got=$?; fi
+  rm -rf "$tmp"
+  if [[ "$got" -eq 0 ]]; then
+    echo "  ok   (0) golden-local irreversible font load → PASS"
+  else
+    echo "  FAIL (got $got, want 0) golden-local irreversible font load → PASS"
+    rc=1
+  fi
   return $rc
 }
 

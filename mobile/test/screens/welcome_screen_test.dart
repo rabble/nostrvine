@@ -11,7 +11,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -79,7 +78,6 @@ void main() {
   late SharedPreferences sharedPreferences;
 
   setUpAll(() async {
-    await loadAppFonts();
     registerFallbackValue(AuthenticationSource.none);
   });
 
@@ -744,39 +742,36 @@ void main() {
         ).called(1);
       });
 
-      testWidgets(
-        'continuing a pending deletion account opens recovery',
-        (tester) async {
-          final seedContainer = ProviderContainer(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            ],
-          );
-          await seedContainer
-              .read(submittedAccountDeletionAttemptProvider.notifier)
-              .record(
-                pubkeyHex: _testPubkeyHex,
-                attempt: const AccountDeletionAttempt(
-                  id: 'attempt-id',
-                  status: AccountDeletionAttemptStatus.processing,
-                ),
-                vanishEventId: 'vanish-event-id',
-              );
-          seedContainer.dispose();
+      testWidgets('continuing a pending deletion account opens recovery', (
+        tester,
+      ) async {
+        final seedContainer = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          ],
+        );
+        await seedContainer
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: _testPubkeyHex,
+              attempt: const AccountDeletionAttempt(
+                id: 'attempt-id',
+                status: AccountDeletionAttemptStatus.processing,
+              ),
+              vanishEventId: 'vanish-event-id',
+            );
+        seedContainer.dispose();
 
-          await tester.binding.setSurfaceSize(const Size(800, 1200));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpWidget(createTestWidget());
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Continue as Test User'));
-          await tester.pumpAndSettle();
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue as Test User'));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Deletion Recovery'), findsOneWidget);
-          verifyNever(
-            () => mockAuthService.signInForAccount(any(), any()),
-          );
-        },
-      );
+        expect(find.text('Deletion Recovery'), findsOneWidget);
+        verifyNever(() => mockAuthService.signInForAccount(any(), any()));
+      });
 
       testWidgets('navigates to login options when session is expired', (
         tester,
