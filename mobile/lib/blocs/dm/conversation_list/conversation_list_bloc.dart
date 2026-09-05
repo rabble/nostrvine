@@ -678,14 +678,25 @@ class ConversationListBloc
       createdAt: _pinnedSupportEpoch,
     );
 
-    final allowed =
-        _blocklistRepository?.filterBlockedConversations([
+    // Deliberately NOT blocklist-filtered, unlike every other row.
+    //
+    // The pinned row is Divine's support channel, not a peer thread. Blocking
+    // the moderation account used to remove it outright — the adopted pin
+    // never survives the list filter, and this synthetic fallback was filtered
+    // too — leaving the enforcement notice reachable only through a Blocked
+    // chip that itself renders conditionally. One tap on Block silently took
+    // away the route to the only document saying why the account was actioned
+    // (#7850). Blocking a peer means "stop delivering me their messages"; it
+    // must not mean "you can never reach support again".
+    //
+    // The minor gate below still applies: that is a safety rule, not a user
+    // preference, and it is the one filter the pin has never been allowed to
+    // bypass (#176).
+    final visible =
+        _protectedMinorInboxGate?.filter([
           synthetic,
         ], userPubkey: userPubkey) ??
         [synthetic];
-    final visible =
-        _protectedMinorInboxGate?.filter(allowed, userPubkey: userPubkey) ??
-        allowed;
 
     return (
       pinned: visible.isEmpty
