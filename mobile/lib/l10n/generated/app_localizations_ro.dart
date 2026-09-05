@@ -3272,6 +3272,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authCreateAccountTitle => 'Creează cont';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Înapoi la codul de invitație';
 
   @override

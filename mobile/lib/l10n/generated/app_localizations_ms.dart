@@ -3158,6 +3158,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get authCreateAccountTitle => 'Cipta akaun';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Kembali ke kod jemputan';
 
   @override

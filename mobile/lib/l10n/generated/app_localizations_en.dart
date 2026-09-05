@@ -3237,6 +3237,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authCreateAccountTitle => 'Create account';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Back to invite code';
 
   @override

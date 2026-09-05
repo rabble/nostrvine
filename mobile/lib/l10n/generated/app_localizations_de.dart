@@ -3208,6 +3208,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authCreateAccountTitle => 'Konto erstellen';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Zurück zum Einladungscode';
 
   @override

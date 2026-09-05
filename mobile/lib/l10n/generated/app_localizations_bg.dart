@@ -3216,6 +3216,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authCreateAccountTitle => 'Създаване на акаунт';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Назад към кода на поканата';
 
   @override

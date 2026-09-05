@@ -94,6 +94,7 @@ void main() {
   Widget createTestWidget({
     InviteAccessGrant? inviteAccessGrant,
     AnalyticsService? analyticsService,
+    TextScaler? textScaler,
   }) {
     return ProviderScope(
       overrides: [
@@ -124,6 +125,14 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
+            builder: textScaler == null
+                ? null
+                : (context, child) => MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(textScaler: textScaler),
+                    child: child!,
+                  ),
             home: const CreateAccountScreen(),
           ),
         ),
@@ -802,6 +811,48 @@ void main() {
           'test-verifier',
         ));
         await tester.pumpAndSettle();
+      });
+    });
+
+    group('marketing opt-in', () {
+      DivineCheckbox optInCheckbox(WidgetTester tester) =>
+          tester.widget<DivineCheckbox>(find.byType(DivineCheckbox));
+
+      testWidgets('renders unchecked by default', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.authCreateAccountMarketingOptIn),
+          findsOneWidget,
+        );
+        expect(optInCheckbox(tester).state, DivineCheckboxState.unselected);
+      });
+
+      testWidgets('checks when the user taps it', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.authCreateAccountMarketingOptIn));
+        await tester.pumpAndSettle();
+
+        expect(optInCheckbox(tester).state, DivineCheckboxState.selected);
+      });
+
+      testWidgets('renders without overflow at 2x text scale', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(textScaler: const TextScaler.linear(2)),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.authCreateAccountMarketingOptIn),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
       });
     });
   });

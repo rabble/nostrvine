@@ -3142,6 +3142,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get authCreateAccountTitle => 'Tạo tài khoản';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Quay lại mã mời';
 
   @override
