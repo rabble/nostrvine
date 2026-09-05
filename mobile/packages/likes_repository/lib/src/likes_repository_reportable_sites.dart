@@ -75,7 +75,7 @@ abstract class LikesRepositoryReportableSites {
       'executeLikeAction.saveAdopted';
 
   /// `_retractLikeUnlikedMidPublish`: dropping a retracted reaction that the
-  /// live subscription had re-indexed (#7001) threw.
+  /// live subscription or the startup snapshot had re-indexed (#7001) threw.
   static const String retractLikeDeleteEchoedRecord =
       'retractLike.deleteEchoedRecord';
 }

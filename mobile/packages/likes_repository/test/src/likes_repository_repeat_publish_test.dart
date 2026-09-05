@@ -825,6 +825,49 @@ void main() {
           expect(await repository.getLikeCount(target), equals(10));
         },
       );
+
+      test(
+        'drops every record naming a startup-indexed reaction retracted '
+        'during the join',
+        () async {
+          // The user takes the like back while the tap is still waiting on
+          // startup, which then files the reaction under its own `e` target
+          // and the coordinate. The Kind 5 lands against a reaction both of
+          // those records still name.
+          final gate = gateRelaySnapshot();
+          when(
+            () => nostrClient.deleteEvent(landedReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+
+          final initialization = repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+          final like = repository.likeEvent(
+            eventId: target,
+            authorPubkey: author,
+            addressableId: coordinate,
+          );
+          await Future<void>.delayed(Duration.zero);
+          await repository.unlikeEvent(target, addressableId: coordinate);
+          gate.land(
+            reactions: [
+              reaction(
+                id: landedReactionId,
+                tags: [
+                  ['e', editedTarget],
+                  ['a', coordinate],
+                ],
+              ),
+            ],
+          );
+          await initialization;
+
+          expect(await like, equals(landedReactionId));
+          verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
+          expectNoPublish();
+          expect(await repository.isLiked(editedTarget), isFalse);
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+        },
+      );
     });
 
     group('live subscription', () {

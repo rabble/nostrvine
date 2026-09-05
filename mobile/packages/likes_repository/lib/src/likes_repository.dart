@@ -968,17 +968,25 @@ class LikesRepository {
     }
 
     // The relay echoes a stored reaction on this account's own subscription
-    // within milliseconds, so the echo can re-index the reaction between the
-    // unlike and this retraction. It is retracted now; a record naming it
-    // would read as liked for a like the user already took back.
-    final echoed = _likeRecords[confirmed.targetEventId];
-    if (echoed?.reactionEventId != confirmed.reactionEventId) return;
-    _deindexLikeRecord(confirmed.targetEventId);
-    await _bestEffortLocalStorage(
-      () async => _localStorage?.deleteLikeRecord(confirmed.targetEventId),
-      description: 'dropping a retracted reaction the subscription re-indexed',
-      site: LikesRepositoryReportableSites.retractLikeDeleteEchoedRecord,
-    );
+    // within milliseconds, and the startup snapshot can land in the same
+    // window, so the reaction may have been re-indexed between the unlike
+    // and this retraction — under the tapped target, or under the superseded
+    // revision its own `e` tag names. It is retracted now; any record naming
+    // it would read as liked for a like the user already took back.
+    final staleTargetIds = [
+      for (final record in _likeRecords.values)
+        if (record.reactionEventId == confirmed.reactionEventId)
+          record.targetEventId,
+    ];
+    if (staleTargetIds.isEmpty) return;
+    for (final targetId in staleTargetIds) {
+      _deindexLikeRecord(targetId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteLikeRecord(targetId),
+        description: 'dropping a retracted reaction that was re-indexed',
+        site: LikesRepositoryReportableSites.retractLikeDeleteEchoedRecord,
+      );
+    }
     _emitLikedIds();
   }
 
