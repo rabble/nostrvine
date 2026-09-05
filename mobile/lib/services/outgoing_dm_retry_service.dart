@@ -8,7 +8,7 @@ import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/outgoing_dm_retry_service_reportable_sites.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -91,7 +91,7 @@ class OutgoingDmRetryService {
     required OutgoingDmsDao outgoingDmsDao,
     required String userPubkey,
     required Stream<bool> appForegroundStream,
-    CrashReportingService? crashReporting,
+    CrashReporter? crashReporting,
     Stream<void>? retryTriggerStream,
     OfflineProbe? isOffline,
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
@@ -104,7 +104,7 @@ class OutgoingDmRetryService {
        _isOffline = isOffline,
        _retryConfig = retryConfig,
        _now = now,
-       _crashReporting = crashReporting ?? CrashReportingService();
+       _crashReporting = crashReporting ?? const SilentCrashReporter();
 
   final DmRepository _dmRepository;
   final OutgoingDmsDao _dao;
@@ -130,7 +130,7 @@ class OutgoingDmRetryService {
 
   final OutgoingDmRetryConfig _retryConfig;
   final DateTime Function() _now;
-  final CrashReportingService _crashReporting;
+  final CrashReporter _crashReporting;
 
   /// What a send can cost OUTSIDE [DmBatchSendBudget.messagePublishTimeout].
   ///
