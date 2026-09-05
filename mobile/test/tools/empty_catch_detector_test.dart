@@ -53,6 +53,18 @@ void run() {
       expect(sites, isEmpty);
     });
 
+    test('does not count a comment that touches a brace', () {
+      final sites = scan('''
+void run() {
+  try {} catch (_) {/* documented */}
+  try {} catch (_) {// documented
+  }
+}
+''');
+
+      expect(sites, isEmpty);
+    });
+
     test(
       'counts an empty body even when the clause has an outside comment',
       () {

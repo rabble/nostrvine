@@ -28,7 +28,6 @@ import 'package:analyzer/dart/analysis/features.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
 
@@ -106,17 +105,11 @@ class _EmptyCatchVisitor extends RecursiveAstVisitor<void> {
     );
   }
 
-  bool _hasBodyComment(Block body) {
-    Token? comment = body.rightBracket.precedingComments;
-    while (comment != null) {
-      if (comment.offset > body.leftBracket.end &&
-          comment.end <= body.rightBracket.offset) {
-        return true;
-      }
-      comment = comment.next;
-    }
-    return false;
-  }
+  /// A statement-free block holds only its two braces, so every comment inside
+  /// it precedes `}`, and a comment before `{` belongs to the clause instead.
+  /// This is the exemption the SDK's `empty_catches` lint applies too.
+  bool _hasBodyComment(Block body) =>
+      body.rightBracket.precedingComments != null;
 }
 
 void main(List<String> args) {
