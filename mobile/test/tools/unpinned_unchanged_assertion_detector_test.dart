@@ -153,6 +153,53 @@ void main() {
     });
 
     group('treats as pinned', () {
+      test('a documented exemption on the unchanged assertion', () {
+        final sites = scan('''
+void main() {
+  test('framework verified', () {
+    final before = ErrorWidget.builder;
+    installBuilder();
+    restoreBuilder();
+    // unpinned-unchanged-ok: flutter_test verifies this at end-of-body.
+    expect(ErrorWidget.builder, same(before));
+  });
+}
+''');
+
+        expect(sites, isEmpty);
+      });
+
+      test('a documented exemption for an assertion helper', () {
+        final sites = scan('''
+void main() {
+  test('helper pinned', () {
+    final before = service.value;
+    pinBaseline(before);
+    act();
+    // unpinned-unchanged-ok: pinBaseline asserts this helper-owned value.
+    expect(service.value, before);
+  });
+}
+''');
+
+        expect(sites, isEmpty);
+      });
+
+      test('an exemption without a reason does not clear the site', () {
+        final sites = scan('''
+void main() {
+  test('missing reason', () {
+    final before = service.value;
+    act();
+    // unpinned-unchanged-ok:
+    expect(service.value, before);
+  });
+}
+''');
+
+        expect(sites, hasLength(1));
+      });
+
       test('an expect on the local before the act', () {
         final sites = scan('''
 void main() {

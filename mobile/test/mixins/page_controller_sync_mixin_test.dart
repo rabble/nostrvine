@@ -291,7 +291,6 @@ void main() {
   });
 }
 
-/// Test helper class that mixes in PageControllerSyncMixin
 /// Counts jumps, because a jump to the page already shown is invisible in
 /// [PageController.page].
 class _SpyPageController extends PageController {
@@ -306,6 +305,7 @@ class _SpyPageController extends PageController {
   }
 }
 
+/// Test helper class that mixes in [PageControllerSyncMixin].
 class TestPageControllerSyncMixin with PageControllerSyncMixin {
   @override
   bool get mounted => true; // Always mounted for testing

@@ -80,7 +80,9 @@ emit_current() {
   (
     cd "$MOBILE_DIR"
     # shellcheck disable=SC2086
-    "$DART_BIN" run scripts/lib/unpinned_unchanged_assertion_detector.dart \
+    # Invoke the script directly. `dart run` starts unnecessary package build
+    # hooks before this source-only scan and spends the CI timing budget on them.
+    "$DART_BIN" scripts/lib/unpinned_unchanged_assertion_detector.dart \
       $SCAN_DIRS --path-prefix "$MOBILE_DIR"
   ) | LC_ALL=C sort -t "$TAB" -k1,1
 }

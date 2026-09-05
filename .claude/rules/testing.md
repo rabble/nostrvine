@@ -89,10 +89,17 @@ member of either side (`expect(cubit.state.status, ready)` before
 `firstTime!` that would throw on null all count. A pin *after* the re-read is
 fine too; the test fails either way.
 
-Two of the swept tests needed more than a pin, and they are the shape to watch
+Three of the swept tests needed more than a pin, and they are the shape to watch
 for: when acting wrongly would leave the observable unchanged anyway — a second
 `setRate(1.0)` on a player already at 1.0, a `jumpToPage(3)` while page 3 is
-showing — no pin on the value helps, and the test has to count calls instead.
+showing, or geometry measured on a parent-constrained row — no pin on the value
+helps, and the test has to observe calls or unconstrained child geometry instead.
+
+Assertions can also arrive through routes this single-file detector cannot
+follow, such as framework end-of-test verification or an assertion helper. Put
+`// unpinned-unchanged-ok: <reason>` immediately above the unchanged assertion
+when one of those routes proves the baseline. The reason is mandatory; the
+exemption is not a generic ignore for a baseline that could be pinned directly.
 
 `check_unpinned_unchanged_assertions.sh` (#8617) freezes at **zero** every
 pair that is the test's ONLY assertion, in

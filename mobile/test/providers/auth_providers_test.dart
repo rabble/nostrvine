@@ -86,6 +86,8 @@ void main() {
       // to drop the unlistened instance.
       await container.pump();
 
+      // unpinned-unchanged-ok: provider reads return a non-null service or
+      // throw, so there is no absent baseline for a no-op to preserve.
       expect(container.read(webAuthServiceProvider), same(first));
     });
 

@@ -46,6 +46,11 @@
 // unchanged-assertion on the same pair is not a pin; two of them are as
 // vacuous as one.
 //
+// Assertions supplied by the framework or an assertion helper are outside this
+// single-file scan. Put `// unpinned-unchanged-ok: <reason>` immediately above
+// the unchanged assertion when one of those routes proves the baseline. The
+// reason is mandatory so an exemption cannot silently become a generic ignore.
+//
 // What does NOT count
 // -------------------
 // A local the test chose itself — a literal, a constructor call, a `copyWith`
@@ -434,6 +439,7 @@ class _BodyScan extends RecursiveAstVisitor<void> {
       }
       if (baseline == null || read == null) continue;
       if (_isPinned(baseline, read)) continue;
+      if (_hasDocumentedExemption(assertion.node)) continue;
       flagged.add((assertion, baseline, read));
     }
     final sole = _otherAssertionCount == 0 && flagged.length == _found.length;
@@ -484,6 +490,28 @@ class _BodyScan extends RecursiveAstVisitor<void> {
     }
     return false;
   }
+}
+
+const _exemptionMarker = 'unpinned-unchanged-ok:';
+
+/// Whether the assertion has an immediately preceding exemption with a reason.
+bool _hasDocumentedExemption(MethodInvocation assertion) {
+  for (
+    Token? comment = assertion.beginToken.precedingComments;
+    comment is CommentToken;
+    comment = comment.next
+  ) {
+    final text = comment.lexeme
+        .replaceFirst(RegExp('^//+'), '')
+        .replaceFirst(RegExp(r'^/\*+'), '')
+        .replaceFirst(RegExp(r'\*/$'), '')
+        .trim();
+    if (text.startsWith(_exemptionMarker) &&
+        text.substring(_exemptionMarker.length).trim().isNotEmpty) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /// Whether [source] is [target] itself or a member/index/null-check of it.
