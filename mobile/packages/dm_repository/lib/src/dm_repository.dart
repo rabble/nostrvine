@@ -187,6 +187,11 @@ const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 /// about which relays answer.
 const Duration _dmInboxQueryTimeout = Duration(seconds: 5);
 
+/// A discovery-only relay is optional coverage, not the primary read path.
+/// Keep its cold handshake below the pool lookup budget so one unreachable
+/// indexer cannot hold the whole recipient resolution open (#7317).
+const Duration _dmInboxDiscoveryQueryTimeout = Duration(seconds: 2);
+
 /// Budget for the authoritative own-inbox read that gates the RC3 publish.
 ///
 /// Deliberately shorter than [_dmInboxQueryTimeout]. `requireAllRelaysSettled`
@@ -442,6 +447,7 @@ class DmRepository {
     DmConversationRemovalPolicy? removalPolicy,
     String? dmInboxRelayUrl,
     List<String> dmInboxDiscoveryRelays = const <String>[],
+    List<String> dmInboxLookupRelays = const <String>[],
     List<String> dmInboxTaggedRelays = const <String>[],
     Duration readMarkerDebounceDelay = _defaultReadMarkerDebounceDelay,
     String Function()? sendBatchIdGenerator,
@@ -466,6 +472,7 @@ class DmRepository {
        _removalPolicy = removalPolicy ?? allowAllConversationRemoval,
        _dmInboxRelayUrl = dmInboxRelayUrl,
        _dmInboxDiscoveryRelays = dmInboxDiscoveryRelays,
+       _dmInboxLookupRelays = dmInboxLookupRelays,
        _dmInboxTaggedRelays = dmInboxTaggedRelays,
        _newSendBatchId = sendBatchIdGenerator ?? _defaultSendBatchId;
 
@@ -554,6 +561,12 @@ class DmRepository {
   /// logged once and otherwise ignored: it neither fails the publish nor
   /// blocks the idempotence flag, so it can never cause a republish loop.
   final List<String> _dmInboxDiscoveryRelays;
+
+  /// Read-only indexers used to locate somebody else's kind-10050.
+  /// Kept separate from [_dmInboxDiscoveryRelays], whose members are selected
+  /// because they accept publication of Divine's own list. Read coverage and
+  /// write acceptance are different relay capabilities (#7317).
+  final List<String> _dmInboxLookupRelays;
   final List<String> _dmInboxTaggedRelays;
 
   /// Mints the durable, collision-proof identity for one send invocation.
@@ -3979,23 +3992,50 @@ class DmRepository {
     _DmRelayListSource source = _DmRelayListSource.remote,
   }) async {
     try {
-      final result = await _nostrClient
-          .queryEventsDetailed(
-            [
-              nostr_filter.Filter(
-                authors: [pubkey],
-                kinds: [EventKind.dmRelaysList],
-                limit: 1,
-              ),
-            ],
-            useCache: !requireAuthoritative,
-            requireAllRelaysSettled: requireAuthoritative,
-            timeout: requireAuthoritative
-                ? _ownDmInboxAuthoritativeTimeout
-                : _dmInboxQueryTimeout,
-          )
-          .timeout(inboxResolutionBudget);
-      final events = result.events;
+      final filter = [
+        nostr_filter.Filter(
+          authors: [pubkey],
+          kinds: [EventKind.dmRelaysList],
+          limit: 1,
+        ),
+      ];
+
+      // A recipient lookup has two independent legs. The pool leg retains the
+      // reconnect preflight that a temp relay used to suppress (#8550), while
+      // the lookup-only leg dials the small indexer set in parallel. A cold or
+      // dead indexer is capped independently, so it cannot consume the pool's
+      // five-second budget. Both must settle before an empty answer means
+      // `absent`; if either is incomplete the send stays pending and retries.
+      //
+      // Own-inbox reads deliberately keep the existing single pool-only leg.
+      // The fast read is in front of the receiving subscription, while the
+      // authoritative read protects publication (#8212); widening receipt is
+      // a separate asynchronous concern and must not add a cold connection to
+      // either synchronous path.
+      final queryFutures = [
+        _nostrClient.queryEventsDetailed(
+          filter,
+          useCache: !requireAuthoritative,
+          requireAllRelaysSettled:
+              requireAuthoritative || source == _DmRelayListSource.remote,
+          timeout: requireAuthoritative
+              ? _ownDmInboxAuthoritativeTimeout
+              : _dmInboxQueryTimeout,
+        ),
+        if (source == _DmRelayListSource.remote &&
+            _dmInboxLookupRelays.isNotEmpty)
+          _nostrClient.queryEventsDetailed(
+            filter,
+            useCache: false,
+            tempRelays: _dmInboxLookupRelays,
+            requireAllRelaysSettled: true,
+            timeout: _dmInboxDiscoveryQueryTimeout,
+          ),
+      ];
+      final results = await Future.wait(queryFutures).timeout(
+        inboxResolutionBudget,
+      );
+      final events = [for (final result in results) ...result.events];
       // Computed here but applied ONLY at the two exits below where nothing
       // matching came back. A read that DID return the list stays `found` even
       // when some relay never settled: the list is in hand, and RC3's job is
@@ -4021,11 +4061,13 @@ class DmRepository {
       // that as `failed`. Callers that merely route to the default pool can
       // live with the guess; callers that latch something permanent must make
       // their own strict read — see [_drainOwnInboxRelays].
-      if (result.noRelays || result.timedOut) {
+      final noRelayAnswered = results.any((result) => result.noRelays);
+      final didNotSettle = results.any((result) => result.timedOut);
+      if (noRelayAnswered || didNotSettle) {
         absentOrFailed = _OwnDmInboxState.failed;
         // `noRelays` first: an offline device sets both flags, and reporting
         // that as a timeout misreads it.
-        inconclusiveReason = result.noRelays
+        inconclusiveReason = noRelayAnswered
             ? 'no relay took the REQ'
             : 'not every relay settled';
       } else {
