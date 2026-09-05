@@ -179,7 +179,7 @@ void main() {
 
     test('binds a multi-line ARB value within a block scalar', () {
       writeArb({
-        'keyExplanation': 'First paragraph.\n\nSecond paragraph.\nThird line.',
+        'keyExplanation': 'First paragraph.\n\nSecond paragraph. Third line.',
       });
       writeFlow(
         'asserts/keys.yaml',
@@ -201,6 +201,21 @@ void main() {
         manifest.readAsStringSync(),
         contains('keyExplanation\te2e/maestro/asserts/keys.yaml'),
       );
+    });
+
+    test('does not bind multi-line copy embedded within a block line', () {
+      writeArb({'findPeople': 'Find\npeople'});
+      writeFlow(
+        'asserts/people.yaml',
+        '- assertVisible: |-\n'
+            '    Find people to follow now\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(manifest.readAsStringSync(), isNot(contains('findPeople')));
     });
 
     test('does not bind regex or interpolated block-scalar lines', () {

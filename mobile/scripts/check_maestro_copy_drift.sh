@@ -204,9 +204,11 @@ def flow_literals(path):
                         block_lines.append(block_line)
                         add_literal(block_line)
                     index += 1
-                block_text = norm("\n".join(block_lines))
+                normalized_lines = [norm(line) for line in block_lines]
                 for multiline_value in multiline_values:
-                    if multiline_value in block_text:
+                    if any(" ".join(normalized_lines[start:end]) == multiline_value
+                           for start in range(len(normalized_lines))
+                           for end in range(start + 1, len(normalized_lines) + 1)):
                         add_literal(multiline_value)
             else:
                 add_literal(v)
