@@ -624,7 +624,11 @@ class LikesRepository {
   /// ID if the action was queued for offline sync.
   ///
   /// Throws `LikeFailedException` if the operation fails.
-  /// Throws `AlreadyLikedException` if the event is already liked.
+  /// Throws `AlreadyLikedException` if the event is already liked — by a
+  /// local record, or by a live reaction this account already holds on the
+  /// relay that this device did not know about (#7001). In the latter case
+  /// the relay's reaction is adopted into the local record first, so the
+  /// caller's state settles on "liked" without a second publish.
   Future<String> likeEvent({
     required String eventId,
     required String authorPubkey,
@@ -696,6 +700,46 @@ class LikesRepository {
         return placeholderId;
       }
 
+      // Ask the relay first whether this account already holds a live `+` on
+      // the target that this device cannot see: a fresh install or wiped
+      // cache, a like made from another client, or an earlier publish that
+      // landed without its OK. Kind 7 is a regular event with no per-pubkey
+      // uniqueness (NIP-01, NIP-25), so nothing downstream collapses a
+      // second one (#7001). The placeholder is already indexed, so a second
+      // tap inside this round-trip still trips the check above.
+      _inFlightLikePublishPlaceholders.add(placeholderId);
+      final remoteRecord = await _resolveRemoteLikeRecordOrNull(
+        eventId,
+        addressableId: addressableId,
+      );
+      if (remoteRecord != null) {
+        _inFlightLikePublishPlaceholders.remove(placeholderId);
+        if (_unlikeRequestedWhilePending.remove(placeholderId)) {
+          // The like the user just took back is the relay's existing one.
+          await _retractLikeUnlikedMidPublish(
+            confirmed: remoteRecord,
+            restoredCount: previousCount,
+            countEventId: eventId,
+            countAddressableId: addressableId,
+          );
+          return remoteRecord.reactionEventId;
+        }
+        await _adoptRemoteLikeRecord(
+          remoteRecord,
+          site: LikesRepositoryReportableSites.likeEventSaveAdopted,
+        );
+        // The relay's reaction is already inside the count the UI shows.
+        if (previousCount != null) {
+          _writeCachedLikeCount(
+            eventId,
+            previousCount,
+            addressableId: addressableId,
+          );
+        }
+        _emitLikedIds();
+        throw AlreadyLikedException(eventId);
+      }
+
       // 3. Online → publish kind 7; on success swap placeholder for real id.
       // On failure, prefer queuing via [_queueOfflineAction] when wired so the
       // optimistic state survives transient relay-pool problems (e.g. all
@@ -704,7 +748,6 @@ class LikesRepository {
       // relay is technically connected). Without a wired callback, fall back
       // to rollback + rethrow to preserve the original contract for tests
       // and non-app embedders.
-      _inFlightLikePublishPlaceholders.add(placeholderId);
       try {
         final reactionEvent = await _nostrClient.sendLike(
           eventId,
@@ -881,7 +924,22 @@ class LikesRepository {
           addressableId: confirmed.addressableId,
         );
       }
+      return;
     }
+
+    // The relay echoes a stored reaction on this account's own subscription
+    // within milliseconds, so the echo can re-index the reaction between the
+    // unlike and this retraction. It is retracted now; a record naming it
+    // would read as liked for a like the user already took back.
+    final echoed = _likeRecords[confirmed.targetEventId];
+    if (echoed?.reactionEventId != confirmed.reactionEventId) return;
+    _deindexLikeRecord(confirmed.targetEventId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteLikeRecord(confirmed.targetEventId),
+      description: 'dropping a retracted reaction the subscription re-indexed',
+      site: LikesRepositoryReportableSites.retractLikeDeleteEchoedRecord,
+    );
+    _emitLikedIds();
   }
 
   /// Execute a like action directly (for use by sync service).
@@ -889,14 +947,23 @@ class LikesRepository {
   /// This method bypasses offline queuing and directly publishes to relays.
   /// Used by PendingActionService to execute queued actions.
   ///
-  /// If [addressableId] is already liked by a *different* reaction than the
-  /// one queued for [eventId] — e.g. cross-device sync delivered a like for
-  /// this coordinate (under a different event id) while this action sat in
-  /// the offline queue — reconciles to that reaction instead of publishing
-  /// a duplicate. The app-layer queue's own dedup only cancels opposite
-  /// actions on the same event id; it has no visibility into reactions
-  /// arriving from other devices, so this is the only guard against a
-  /// duplicate live reaction on replay (#6020).
+  /// A queued row can outlive the reaction it was queued for, and every
+  /// replay that still publishes mints a second live `+` (#7001), so three
+  /// guards run before the publish:
+  ///
+  /// * The record under [eventId] already holds a real reaction id — a
+  ///   confirmed swap, the live subscription, or a sync filled it in while
+  ///   the row sat in the queue.
+  /// * [addressableId] is already liked by a *different* reaction than the
+  ///   one queued for [eventId] — e.g. cross-device sync delivered a like for
+  ///   this coordinate (under a different event id) while this action sat in
+  ///   the offline queue. Reconciles to that reaction instead. The app-layer
+  ///   queue's own dedup only cancels opposite actions on the same event id;
+  ///   it has no visibility into reactions arriving from other devices
+  ///   (#6020).
+  /// * The relay already holds this account's live `+` on the target — the
+  ///   original publish landed without its OK reaching this client, so the
+  ///   queue knows only its own placeholder. Adopts that reaction instead.
   Future<String> executeLikeAction({
     required String eventId,
     required String authorPubkey,
@@ -904,9 +971,15 @@ class LikesRepository {
     int? targetKind,
   }) async {
     // Replay can race initialize(): both are fired unawaited at provider
-    // build, and the coordinate guard below is memory-only, so an empty
-    // cache would make it blind to a persisted cross-device reaction.
+    // build, and the guards below are memory-only, so an empty cache would
+    // make them blind to a persisted reaction.
     await _ensureInitialized();
+
+    final indexedRecord = _likeRecords[eventId];
+    if (indexedRecord != null &&
+        !_isPlaceholderId(indexedRecord.reactionEventId)) {
+      return indexedRecord.reactionEventId;
+    }
 
     if (addressableId != null && addressableId.isNotEmpty) {
       final byCoordinate = _likeRecordsByAddressableId[addressableId];
@@ -927,6 +1000,19 @@ class LikesRepository {
         }
         return byCoordinate.reactionEventId;
       }
+    }
+
+    final remoteRecord = await _resolveRemoteLikeRecordOrNull(
+      eventId,
+      addressableId: addressableId,
+    );
+    if (remoteRecord != null) {
+      await _adoptRemoteLikeRecord(
+        remoteRecord,
+        site: LikesRepositoryReportableSites.executeLikeActionSaveAdopted,
+      );
+      _emitLikedIds();
+      return remoteRecord.reactionEventId;
     }
 
     // Publish Kind 7 reaction event via NostrClient
@@ -2550,9 +2636,17 @@ class LikesRepository {
     );
 
     if (event.content == _likeContent) {
-      // Deduplicate upvotes
+      // Deduplicate upvotes. A placeholder is the absence of a real record,
+      // not one to defend: the relay's echo of the reaction it stands for is
+      // what upgrades it, and that echo's created_at (whole seconds) never
+      // reads as newer than a placeholder stamped milliseconds earlier in
+      // the same second (#7001).
       final existing = _likeRecords[targetId];
-      if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+      if (existing != null &&
+          !_isPlaceholderId(existing.reactionEventId) &&
+          !createdAt.isAfter(existing.createdAt)) {
+        return;
+      }
 
       final record = LikeRecord(
         targetEventId: targetId,
@@ -2806,6 +2900,75 @@ class LikesRepository {
     return null;
   }
 
+  /// Whether [reactionEventId] is an optimistic placeholder rather than the
+  /// id of a reaction that reached a relay.
+  static bool _isPlaceholderId(String reactionEventId) =>
+      reactionEventId.startsWith('pending_');
+
+  /// NIP-25: a reaction whose `content` is `+` or empty MUST be read as a
+  /// like. Divine writes `+`; another client on the same key may write the
+  /// empty form.
+  static bool _isLikeReaction(Event event) =>
+      event.content == _likeContent || event.content.isEmpty;
+
+  /// Indexes and persists a reaction the relay already holds for this
+  /// account, so local state reflects it instead of minting a second one.
+  Future<void> _adoptRemoteLikeRecord(
+    LikeRecord record, {
+    required String site,
+  }) async {
+    _indexLikeRecord(record);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveLikeRecord(record),
+      description: 'saving a reaction adopted from the relay',
+      site: site,
+    );
+  }
+
+  /// [_resolveRemoteLikeRecord] that fails open.
+  ///
+  /// An unreachable relay must not turn a like into a silent no-op; the
+  /// publish that follows fails the same way and takes the existing retry
+  /// path, which runs this check again before it publishes.
+  Future<LikeRecord?> _resolveRemoteLikeRecordOrNull(
+    String eventId, {
+    String? addressableId,
+  }) async {
+    try {
+      return await _resolveRemoteLikeRecord(
+        eventId,
+        addressableId: addressableId,
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'Could not check the relay for an existing like on $eventId; '
+        'publishing without that check: $e',
+        name: 'LikesRepository',
+        category: LogCategory.relay,
+      );
+      return null;
+    }
+  }
+
+  /// Resolves the current user's still-live `+` on [eventId] from relays.
+  ///
+  /// Returns the newest non-deleted kind-7 like this account has published
+  /// against [eventId] or its coordinate, or `null` when there is none. Backs
+  /// the pre-publish check in [likeEvent] and the replay guard in
+  /// [executeLikeAction] (#7001).
+  Future<LikeRecord?> _resolveRemoteLikeRecord(
+    String eventId, {
+    String? addressableId,
+  }) => _resolveRemoteReactionRecord(
+    eventId,
+    addressableId: addressableId,
+    // The REQ carries `authors`, but a relay that ignores it, or a merged
+    // cache hit, must not hand this account someone else's reaction to
+    // adopt as its own.
+    isMatch: (event, pubkey) =>
+        event.pubkey == pubkey && _isLikeReaction(event),
+  );
+
   /// Resolves the current user's still-live downvote on [eventId] from relays.
   ///
   /// Returns the newest non-deleted kind-7 `-` reaction the user has published
@@ -2815,6 +2978,19 @@ class LikesRepository {
   Future<LikeRecord?> _resolveRemoteDownvoteRecord(
     String eventId, {
     String? addressableId,
+  }) => _resolveRemoteReactionRecord(
+    eventId,
+    addressableId: addressableId,
+    isMatch: (event, _) => event.content == _downvoteContent,
+  );
+
+  /// Resolves the newest still-live kind-7 reaction the current user has
+  /// published against [eventId] or its coordinate that satisfies [isMatch],
+  /// or `null` when there is none.
+  Future<LikeRecord?> _resolveRemoteReactionRecord(
+    String eventId, {
+    required String? addressableId,
+    required bool Function(Event event, String currentUserPubkey) isMatch,
   }) async {
     final pubkey = await _currentUserPubkey();
     if (pubkey == null) return null;
@@ -2830,7 +3006,7 @@ class LikesRepository {
 
     final candidatesById = <String, Event>{};
     for (final event in reactions) {
-      if (event.content != _downvoteContent) continue;
+      if (!isMatch(event, pubkey)) continue;
       final matches =
           _extractTargetEventId(event) == eventId ||
           (hasCoordinate && _extractAddressableId(event) == addressableId);
