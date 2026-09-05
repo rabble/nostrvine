@@ -3979,6 +3979,26 @@ class DmRepository {
     _DmRelayListSource source = _DmRelayListSource.remote,
   }) async {
     try {
+      // #7317: widen a COUNTERPARTY lookup to the indexer relays that carry
+      // kind-10050. Without this the recipient's inbox is resolved only from
+      // the relays this device already dials, so a recipient whose inbox lives
+      // elsewhere — the exact "our pool does not carry it" case — reads as an
+      // empty answer and collapses to `absent`, indistinguishable from a
+      // recipient who advertises no inbox. The wrap is then published to the
+      // default pool the recipient never reads and scored delivered. Reaching
+      // the same indexers that store a user's list (`purplepag.es`, the
+      // DM-tagged relays) turns that case into `found`, so the wrap routes to
+      // the advertised inbox. `tempRelays` is additive, so the pool is still
+      // queried; a slow or down indexer only fails to help this send, it never
+      // removes a relay the lookup already had.
+      //
+      // The own-inbox reads (`selfAuthored`) are deliberately left pool-only:
+      // that path resolves the local user's own list (#8212), not a
+      // counterparty's, and an indexer round trip does not belong in front of
+      // the publish path.
+      final discoveryRelays = source == _DmRelayListSource.remote
+          ? _dmInboxDiscoveryRelays
+          : const <String>[];
       final result = await _nostrClient
           .queryEventsDetailed(
             [
@@ -3989,6 +4009,7 @@ class DmRepository {
               ),
             ],
             useCache: !requireAuthoritative,
+            tempRelays: discoveryRelays.isEmpty ? null : discoveryRelays,
             requireAllRelaysSettled: requireAuthoritative,
             timeout: requireAuthoritative
                 ? _ownDmInboxAuthoritativeTimeout

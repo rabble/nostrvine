@@ -4977,6 +4977,47 @@ void main() {
       });
 
       test(
+        'resolves a recipient whose kind-10050 is only on a discovery relay: '
+        'the lookup is widened to the indexer relays, so "our pool does not '
+        'carry it" stops masquerading as absent (#7317)',
+        () async {
+          // Model the real relay behaviour: the connected pool holds nothing
+          // for this author, and only the discovery/indexer relay serves the
+          // recipient's kind-10050. The answer therefore depends on WHETHER the
+          // lookup reached the discovery relay — which is exactly the widening
+          // this test pins.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((invocation) async {
+            final temp =
+                invocation.namedArguments[#tempRelays] as List<String>?;
+            final reachedDiscovery =
+                temp != null && temp.contains('wss://purplepag.es');
+            return reachedDiscovery
+                ? answeredList([
+                    kind10050Event(['wss://inbox.example']),
+                  ])
+                : answeredList(const <Event>[]);
+          });
+          final repository = createRepository(
+            dmInboxDiscoveryRelays: const ['wss://purplepag.es'],
+          );
+          final resolved = await repository.resolveDmInboxRelaysDetailed(
+            _validPubkeyB,
+          );
+          expect(resolved.state, DmInboxResolution.found);
+          expect(resolved.relays, ['wss://inbox.example']);
+        },
+      );
+
+      test(
         'reports absent when the relays answered and there is no inbox',
         () async {
           stubQueryDetailed(answeredList(const <Event>[]));
