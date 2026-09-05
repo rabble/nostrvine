@@ -32,8 +32,6 @@ authUseDivineNoBackup	e2e/maestro/tests/loginFreshInstall.yaml	bound:Use Divine 
 authUseThisDeviceOnly	e2e/maestro/tests/loginFreshInstall.yaml	bound:Use this device only
 blossomSaveTooltip	e2e/maestro/asserts/assertEditProfileModal.yaml	bound:Save
 blossomSaveTooltip	e2e/maestro/asserts/assertEditYourProfile.yaml	bound:Save
-categoryGallerySortForYou	e2e/maestro/asserts/assertExplore.yaml	bound:For You
-categoryGallerySortNew	e2e/maestro/asserts/assertExplore.yaml	bound:New
 commentOptionsTitle	e2e/maestro/asserts/assertCommentsOptions.yaml	bound:Options
 commonBack	e2e/maestro/asserts/assertEditYourProfile.yaml	bound:Back
 commonBack	e2e/maestro/asserts/assertLibraryScreen.yaml	bound:Back
@@ -58,13 +56,13 @@ emojiPickerSearchHint	e2e/maestro/tests/searchTags.yaml	bound:Search
 emojiPickerSearchHint	e2e/maestro/tests/searchVideos.yaml	bound:Search
 emojiPickerSearchHint	e2e/maestro/utils/searchWorkaround.yaml	bound:Search
 exploreTabClassics	e2e/maestro/asserts/assertExplore.yaml	bound:Classics
+exploreTabForYou	e2e/maestro/asserts/assertExplore.yaml	bound:For You
 exploreTabLists	e2e/maestro/asserts/assertExplore.yaml	bound:Lists
+exploreTabNew	e2e/maestro/asserts/assertExplore.yaml	bound:New
 exploreTabPopular	e2e/maestro/asserts/assertExplore.yaml	bound:Popular
 exploreTabPopular	e2e/maestro/utils/searchWorkaround.yaml	bound:Popular
 feedExploreVideos	e2e/maestro/asserts/assertFreshHome.yaml	bound:Explore Videos
-feedModeFollowing	e2e/maestro/asserts/assertUsersFollowing.yaml	bound:Following
-feedModeFollowing	e2e/maestro/tests/follow.yaml	bound:Following
-feedModeFollowing	e2e/maestro/tests/unfollow.yaml	bound:Following
+followingTitle	e2e/maestro/asserts/assertUsersFollowing.yaml	bound:Following
 keyManagementBackupSubtitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Save your private key (nsec) to use your account in other Nostr apps.
 keyManagementBackupTitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Backup Your Key
 keyManagementCopyNsec	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Copy My Private Key (nsec)
@@ -99,6 +97,8 @@ profileCopyPublicKey	e2e/maestro/tests/profileNavigation.yaml	bound:Copy public 
 profileFollowLabel	e2e/maestro/asserts/assertSpecificUserProfile.yaml	bound:Follow
 profileFollowLabel	e2e/maestro/tests/follow.yaml	bound:Follow
 profileFollowLabel	e2e/maestro/tests/unfollow.yaml	bound:Follow
+profileFollowingStatLabel	e2e/maestro/tests/follow.yaml	bound:Following
+profileFollowingStatLabel	e2e/maestro/tests/unfollow.yaml	bound:Following
 profileMoreTooltip	e2e/maestro/tests/profileNavigation.yaml	bound:More
 profilePublicKeyCopied	e2e/maestro/tests/profileNavigation.yaml	bound:Public key copied to clipboard
 profileSecureSubtitle	e2e/maestro/asserts/assertProfileFresh.yaml	bound:Add email & password to recover your account on any device

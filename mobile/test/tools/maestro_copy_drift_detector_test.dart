@@ -216,6 +216,34 @@ void main() {
       );
     });
 
+    test('regen preserves a reviewed duplicate-value binding', () {
+      writeArb({
+        'categoryGallerySortNew': 'New',
+        'exploreTabNew': 'New',
+      });
+      writeDart(
+        'screens/category_gallery.dart',
+        'final label = context.l10n.categoryGallerySortNew;\n',
+      );
+      writeDart(
+        'screens/explore.dart',
+        'final label = context.l10n.exploreTabNew;\n',
+      );
+      writeFlow('asserts/explore.yaml', '- assertVisible: New\n');
+      writeManifest(
+        'exploreTabNew\te2e/maestro/asserts/explore.yaml\tbound:New\n',
+      );
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('exploreTabNew\te2e/maestro/asserts/explore.yaml'),
+      );
+      expect(manifest.readAsStringSync(), isNot(contains('categoryGallery')));
+    });
+
     test('fails when ARB copy changes under a bound flow', () {
       writeArb({'settingsTitle': 'Preferences'});
       writeFlow('asserts/menu.yaml', '- assertVisible: Settings\n');

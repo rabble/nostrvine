@@ -197,9 +197,11 @@ for source_root in source_roots:
                 tokens = set(re.findall(r"\b[A-Za-z_]\w*\b", fh.read()))
             referenced_keys.update(tokens & all_keys)
 
-def binding_keys(keys):
+def binding_keys(keys, rel, previous):
     live = sorted(set(keys) & referenced_keys)
-    return [live[0] if live else sorted(keys)[0]]
+    candidates = live or sorted(keys)
+    preserved = [key for key in candidates if (key, rel) in previous]
+    return [preserved[0] if preserved else candidates[0]]
 
 flows = []
 for root, _dirs, names in os.walk(e2e_dir):
@@ -360,7 +362,10 @@ if mode == "regen":
     old = load_manifest(manifest_path)
     new = {}
     for (lit, rel), keys in found.items():
-        for key in binding_keys(keys):
+        # Duplicate English values cannot be tied to a call site mechanically.
+        # Preserve a reviewed manifest choice instead of reverting it to the
+        # alphabetical fallback on every regeneration.
+        for key in binding_keys(keys, rel, old):
             new[(key, rel)] = (None, lit)  # record the literal the flow asserts
     # hand-maintained rendered bindings cannot be auto-derived: carry them
     carried = 0
