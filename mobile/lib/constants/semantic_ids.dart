@@ -147,6 +147,11 @@ abstract class SemanticIds {
   /// point to Settings in the app, so it gates every E2E flow that ends in
   /// key removal.
   static const String profileSettingsButton = 'settings_button';
+
+  /// Opens the profile editor from the own-profile action row. The pencil is
+  /// the only entry point to Edit Profile in the app, so it anchors the
+  /// edit-profile E2E journey (#6950).
+  static const String profileEditButton = 'edit_profile_button';
   static const String profileBackButton = 'profile_back_button';
   static const String profileMoreButton = 'profile_more_button';
 

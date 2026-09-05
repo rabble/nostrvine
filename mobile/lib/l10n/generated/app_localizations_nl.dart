@@ -830,6 +830,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileMessageLabel => 'Bericht';
 
   @override
+  String get profileShareLabel => 'Profiel delen';
+
+  @override
   String get profileDeletedAccountName => 'Verwijderd account';
 
   @override

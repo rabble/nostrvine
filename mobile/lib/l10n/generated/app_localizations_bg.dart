@@ -837,6 +837,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileMessageLabel => 'Съобщение';
 
   @override
+  String get profileShareLabel => 'Сподели профила';
+
+  @override
   String get profileDeletedAccountName => 'Изтрит акаунт';
 
   @override

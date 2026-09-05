@@ -2506,6 +2506,7 @@
     "profileLikesLabel": "좋아요",
     "profileMyLibraryLabel": "내 라이브러리",
     "profileMessageLabel": "메시지",
+    "profileShareLabel": "프로필 공유",
     "profileDeletedAccountName": "삭제된 계정",
     "inboxActionReportVanishedAccount": "이 계정 신고",
     "inboxActionBlockVanishedAccount": "이 계정 차단",

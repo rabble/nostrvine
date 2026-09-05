@@ -224,7 +224,8 @@ class FollowFromProfileButtonView extends StatelessWidget {
   }
 }
 
-/// Button showing "Following" state — icon only, no label.
+/// Button showing "Following" state — icon only; the name reaches screen
+/// readers through [DivineButton.semanticLabel].
 class _FollowingButton extends StatelessWidget {
   const _FollowingButton({required this.onPressed});
 
@@ -237,6 +238,7 @@ class _FollowingButton extends StatelessWidget {
       size: .small,
       onPressed: onPressed,
       label: '',
+      semanticLabel: context.l10n.profileFollowingLabel,
       leadingIcon: .userCheck,
     );
   }

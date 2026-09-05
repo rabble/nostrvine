@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notify_bell/notify_bell_cubit.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -147,12 +148,15 @@ class ProfileActionButtons extends ConsumerWidget {
         icon: .pencilSimpleLine,
         type: .secondary,
         size: .small,
+        semanticLabel: context.l10n.profileSetupEditProfileTitle,
+        semanticIdentifier: SemanticIds.profileEditButton,
         onPressed: onEditProfile,
       ),
       DivineIconButton(
         icon: .shareFat,
         type: .secondary,
         size: .small,
+        semanticLabel: context.l10n.profileShareLabel,
         onPressed: onShareProfile == null
             ? null
             : () => onShareProfile!(context),
@@ -247,6 +251,7 @@ class _OtherProfileButtons extends StatelessWidget {
           icon: .shareFat,
           type: .secondary,
           size: .small,
+          semanticLabel: l10n.profileShareLabel,
           onPressed: onShareProfile == null
               ? null
               : () => onShareProfile!(context),
@@ -286,6 +291,7 @@ class _OtherProfileButtons extends StatelessWidget {
                   type: .secondary,
                   size: .small,
                   label: '',
+                  semanticLabel: l10n.profileMessageLabel,
                   onPressed: onMessageUser,
                 ),
             ] else

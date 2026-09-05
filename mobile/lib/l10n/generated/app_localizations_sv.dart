@@ -811,6 +811,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileMessageLabel => 'Meddelande';
 
   @override
+  String get profileShareLabel => 'Dela profil';
+
+  @override
   String get profileDeletedAccountName => 'Raderat konto';
 
   @override

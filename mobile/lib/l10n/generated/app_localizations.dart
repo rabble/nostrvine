@@ -1406,6 +1406,12 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get profileMessageLabel;
 
+  /// Accessible name of the icon-only share button on the profile action row, on both the viewer's own profile and other people's. Announced by screen readers only; the button shows a share icon and no text.
+  ///
+  /// In en, this message translates to:
+  /// **'Share profile'**
+  String get profileShareLabel;
+
   /// Stands in for the display name of an account that requested deletion. A noun phrase used wherever a person's name would normally appear, in DM and non-DM surfaces alike — the inbox row, the conversation header, the following bar, the profile screen and header, the people picker, and the shared people row.
   ///
   /// In en, this message translates to:

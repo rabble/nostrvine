@@ -830,6 +830,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileMessageLabel => 'پیغام';
 
   @override
+  String get profileShareLabel => 'پروفائل شیئر کریں';
+
+  @override
   String get profileDeletedAccountName => 'حذف شدہ اکاؤنٹ';
 
   @override

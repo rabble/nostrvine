@@ -769,6 +769,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileMessageLabel => 'Pesan';
 
   @override
+  String get profileShareLabel => 'Bagikan profil';
+
+  @override
   String get profileDeletedAccountName => 'Akun dihapus';
 
   @override

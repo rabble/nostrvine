@@ -405,6 +405,7 @@
   "profileLikesLabel": "点赞",
   "profileMyLibraryLabel": "我的作品库",
   "profileMessageLabel": "私信",
+  "profileShareLabel": "分享主页",
   "profileDeletedAccountName": "已注销账号",
   "inboxActionReportVanishedAccount": "举报此账号",
   "inboxActionBlockVanishedAccount": "屏蔽此账号",

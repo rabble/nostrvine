@@ -810,6 +810,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileMessageLabel => 'رسالة';
 
   @override
+  String get profileShareLabel => 'مشاركة الملف الشخصي';
+
+  @override
   String get profileDeletedAccountName => 'حساب محذوف';
 
   @override

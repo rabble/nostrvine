@@ -798,6 +798,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileMessageLabel => 'Mesej';
 
   @override
+  String get profileShareLabel => 'Kongsi profil';
+
+  @override
   String get profileDeletedAccountName => 'Akaun dipadam';
 
   @override

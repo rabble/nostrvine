@@ -731,6 +731,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileMessageLabel => '메시지';
 
   @override
+  String get profileShareLabel => '프로필 공유';
+
+  @override
   String get profileDeletedAccountName => '삭제된 계정';
 
   @override

@@ -851,6 +851,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileMessageLabel => 'Wiadomość';
 
   @override
+  String get profileShareLabel => 'Udostępnij profil';
+
+  @override
   String get profileDeletedAccountName => 'Usunięte konto';
 
   @override

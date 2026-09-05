@@ -10,13 +10,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_notify_bell_button.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockContentBlocklistRepository extends Mock
@@ -94,19 +97,29 @@ void main() {
   });
 
   Widget buildWidget({
+    bool isOwnProfile = false,
     bool isMessageRestricted = false,
     bool newPostNotifications = true,
+    bool constrainWidth = false,
   }) {
+    final row = ProfileActionButtons(
+      userIdHex: isOwnProfile ? viewerPubkey : targetPubkey,
+      isOwnProfile: isOwnProfile,
+      displayName: 'Target User',
+      onEditProfile: () {},
+      onOpenClips: () {},
+      onMessageUser: () {},
+      isMessageRestricted: isMessageRestricted,
+      onShareProfile: (_) {},
+    );
     return testMaterialApp(
       home: Scaffold(
-        body: ProfileActionButtons(
-          userIdHex: targetPubkey,
-          isOwnProfile: false,
-          displayName: 'Target User',
-          onMessageUser: () {},
-          isMessageRestricted: isMessageRestricted,
-          onShareProfile: (_) {},
-        ),
+        // The tap-target guidelines skip nodes that touch the viewport edge,
+        // so the accessibility tests inset the row to keep every button
+        // evaluable.
+        body: constrainWidth
+            ? Center(child: SizedBox(width: 360, child: row))
+            : row,
       ),
       additionalOverrides: [
         contentBlocklistRepositoryProvider.overrideWithValue(
@@ -313,6 +326,87 @@ void main() {
           creatorPubkey: targetPubkey,
         ),
       ).called(1);
+    });
+  });
+
+  group('accessibility', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    Future<void> pumpRow(
+      WidgetTester tester, {
+      bool isOwnProfile = false,
+      bool newPostNotifications = true,
+    }) async {
+      await tester.pumpWidget(
+        buildWidget(
+          isOwnProfile: isOwnProfile,
+          newPostNotifications: newPostNotifications,
+          constrainWidth: true,
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('own-profile row names its edit and share buttons', (
+      tester,
+    ) async {
+      await pumpRow(tester, isOwnProfile: true);
+
+      expect(
+        find.bySemanticsLabel(l10n.profileSetupEditProfileTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsIdentifier(SemanticIds.profileEditButton),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(l10n.profileShareLabel), findsOneWidget);
+      await expectMeetsAccessibilityGuidelines(
+        tester,
+        guidelines: divineSemanticsGuidelines,
+      );
+    });
+
+    testWidgets(
+      'other-profile row names the icon-only message and share buttons',
+      (tester) async {
+        await pumpRow(tester);
+
+        expect(find.bySemanticsLabel(l10n.profileMessageLabel), findsOneWidget);
+        expect(find.bySemanticsLabel(l10n.profileShareLabel), findsOneWidget);
+        await expectMeetsAccessibilityGuidelines(
+          tester,
+          guidelines: divineSemanticsGuidelines,
+        );
+      },
+    );
+
+    testWidgets('other-profile row names the icon-only following button', (
+      tester,
+    ) async {
+      when(
+        () => followRepository.followingPubkeys,
+      ).thenReturn(const [targetPubkey]);
+      when(
+        () => followRepository.followingStream,
+      ).thenAnswer((_) => Stream<List<String>>.value(const [targetPubkey]));
+      when(() => followRepository.watchMyFollowingCached()).thenAnswer(
+        (_) => Stream.value(
+          const CacheResult.live(
+            FollowingSnapshot(pubkeys: [targetPubkey], count: 1),
+          ),
+        ),
+      );
+
+      // The bell has its own coverage; keep it out so the row under test is
+      // exactly [Message] [Following] [Share].
+      await pumpRow(tester, newPostNotifications: false);
+
+      expect(find.bySemanticsLabel(l10n.profileFollowingLabel), findsOneWidget);
+      await expectMeetsAccessibilityGuidelines(
+        tester,
+        guidelines: divineSemanticsGuidelines,
+      );
     });
   });
 }
