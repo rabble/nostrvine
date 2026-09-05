@@ -571,6 +571,24 @@ if ! printf '%s\n' "$NO_JQ_GUARD_OUTPUT" \
   exit 1
 fi
 
+# The header promises the hook always exits 0. `set -u` plus a bare $HOME broke
+# that wherever HOME is not exported, taking the socket fallback down with it.
+NO_HOME_STATUS=0
+NO_HOME_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env -u HOME -u CLAUDE_SESSIONS_DIR PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK") || NO_HOME_STATUS=$?
+if [ "$NO_HOME_STATUS" -ne 0 ] || ! printf '%s\n' "$NO_HOME_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback")' >/dev/null; then
+  echo "Session worktree guard did not survive an unset HOME." >&2
+  echo "Exit status was: $NO_HOME_STATUS" >&2
+  echo "Output was: $NO_HOME_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
 CLAUDE_ANALYZE_PAYLOAD=$(jq -n --arg path "$TEST_REPO/mobile/lib/clean.dart" \
   '{tool_input: {file_path: $path}}')
 : > "$CALL_LOG"

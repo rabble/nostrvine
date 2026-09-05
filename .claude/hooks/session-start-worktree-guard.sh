@@ -102,7 +102,7 @@ append_registry_match() {
 count=0
 others=""
 registry_supported=false
-sessions_dir="${CLAUDE_SESSIONS_DIR:-$HOME/.claude/sessions}"
+sessions_dir="${CLAUDE_SESSIONS_DIR:-${HOME:-}/.claude/sessions}"
 
 if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ] && [ -r "$sessions_dir" ]; then
   shopt -s nullglob
