@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Production Future.delayed-ceiling ratchet (epic #4339): executable call sites
 # under mobile/lib are frozen as per-file numeric ceilings in
-# scripts/baseline/future_delayed_production.txt and may only ever SHRINK.
+# scripts/baseline/future_delayed_production_counts.txt and may only ever SHRINK.
 # `Future.delayed` in app code encodes wall-clock timing and is a frequent source
 # of races and flaky behavior; the project rule (.claude/CLAUDE.md) is to avoid it
 # in app code in favor of explicit async coordination (AnimatedSwitcher /
@@ -40,12 +40,11 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TAB="$(printf '\t')"
 
 RATCHET_LABEL="future_delayed_production_ceiling"
-BASELINE_FILE="$SCRIPT_DIR/baseline/future_delayed_production.txt"
-BASELINE_REPO_PATH="mobile/scripts/baseline/future_delayed_production.txt"
+BASELINE_FILE="$SCRIPT_DIR/baseline/future_delayed_production_counts.txt"
+BASELINE_REPO_PATH="mobile/scripts/baseline/future_delayed_production_counts.txt"
 BASE_REF="${FUTURE_DELAYED_PROD_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE"
-LEGACY_LIST_BASELINE_MIGRATION=1
 REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to app code — use explicit async coordination (AnimatedSwitcher / animation controllers / stream listeners / completers), not a wall-clock wait. See .claude/CLAUDE.md and epic #4339."
 STALE_HINT="A production Future.delayed call was removed."
@@ -67,7 +66,7 @@ emit_current() {
       # report 141 — silently dropping every file whose match lands before awk
       # finishes writing. Undercounting is the dangerous direction here.
       count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
-        | grep -oE "Future\.delayed" | grep -c . || true)"
+        | grep -oE "Future(<[^()]*>)?\.delayed" | grep -c . || true)"
       count="${count//[[:space:]]/}"
       if [[ "${count:-0}" -gt 0 ]]; then
         printf '%s\t%s\n' "${f#"$MOBILE_DIR"/}" "$count"

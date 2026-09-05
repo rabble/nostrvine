@@ -9,7 +9,7 @@ void main() {
   group('production guard', () {
     defineFutureDelayedCeilingTests(
       scriptName: 'check_future_delayed_production_ceiling.sh',
-      baselineName: 'future_delayed_production.txt',
+      baselineName: 'future_delayed_production_counts.txt',
       sourceDirectoryName: 'lib',
       allowNoBaseVariable: 'FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE',
     );

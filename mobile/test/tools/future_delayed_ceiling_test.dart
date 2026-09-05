@@ -9,7 +9,7 @@ void main() {
   group('test-scoped guard', () {
     defineFutureDelayedCeilingTests(
       scriptName: 'check_future_delayed_ceiling.sh',
-      baselineName: 'future_delayed_tests.txt',
+      baselineName: 'future_delayed_test_counts.txt',
       sourceDirectoryName: 'test',
       allowNoBaseVariable: 'FUTURE_DELAYED_CEILING_ALLOW_NO_BASE',
     );

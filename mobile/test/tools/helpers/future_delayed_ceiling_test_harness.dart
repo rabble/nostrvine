@@ -68,6 +68,30 @@ Future<void> wait() async {
       expect(output(result), contains('$sourceDirectoryName/real.dart\t1'));
     });
 
+    test('counts a typed Future.delayed call', () {
+      sourceFile('typed.dart').writeAsStringSync('''
+Future<void> wait() async {
+  await Future<void>.delayed(Duration.zero);
+}
+''');
+
+      final result = runRatchet();
+
+      expect(result.exitCode, 1);
+      expect(output(result), contains('$sourceDirectoryName/typed.dart\t1'));
+    });
+
+    test('counts a typed Future.delayed tear-off', () {
+      sourceFile('tear_off.dart').writeAsStringSync('''
+final delay = Future<void>.delayed;
+''');
+
+      final result = runRatchet();
+
+      expect(result.exitCode, 1);
+      expect(output(result), contains('$sourceDirectoryName/tear_off.dart\t1'));
+    });
+
     test('counts multiple calls on the same line', () {
       sourceFile('two.dart').writeAsStringSync('''
 final waits = [Future.delayed(Duration.zero), Future.delayed(Duration.zero)];

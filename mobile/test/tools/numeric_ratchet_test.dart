@@ -20,10 +20,7 @@ void main() {
 
     ProcessResult run({
       bool update = false,
-      bool migrateLegacyListBaseline = false,
       bool requireBaselineUpdateOnDecrease = false,
-      String? baseRef,
-      String? baselineRepoPath,
     }) {
       return Process.runSync(
         'bash',
@@ -33,12 +30,8 @@ void main() {
           'PROBE_BASELINE': baseline.path,
           'PROBE_CURRENT': current.path,
           'PROBE_LIB': libPath,
-          if (migrateLegacyListBaseline)
-            'PROBE_LEGACY_LIST_BASELINE_MIGRATION': '1',
           if (requireBaselineUpdateOnDecrease)
             'PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE': '1',
-          'PROBE_BASE_REF': ?baseRef,
-          'PROBE_BASELINE_REPO_PATH': ?baselineRepoPath,
           if (update) 'UPDATE_BASELINE': '1',
         },
       );
@@ -61,7 +54,6 @@ BASELINE_REPO_PATH="${PROBE_BASELINE_REPO_PATH:-mobile/scripts/baseline/__probe_
 BASE_REF="${PROBE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE=1
 ALLOW_NO_BASE_VAR="PROBE_ALLOW_NO_BASE"
-LEGACY_LIST_BASELINE_MIGRATION="${PROBE_LEGACY_LIST_BASELINE_MIGRATION:-0}"
 REQUIRE_BASELINE_UPDATE_ON_DECREASE="${PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE:-0}"
 NEW_HINT="new-hint"
 STALE_HINT="stale-hint"
@@ -94,76 +86,6 @@ run_numeric_ratchet
       final res = run();
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [probe]'));
-    });
-
-    group('legacy list baseline migration', () {
-      void commitBaseBaseline(String body) {
-        final baseBaseline = File('${tmp.path}/legacy-baseline.txt')
-          ..writeAsStringSync(body);
-        for (final arguments in [
-          ['init'],
-          ['config', 'user.email', 'ratchet-test@example.invalid'],
-          ['config', 'user.name', 'Ratchet Test'],
-          ['add', baseBaseline.path],
-          ['commit', '-m', 'legacy baseline'],
-        ]) {
-          final result = Process.runSync(
-            'git',
-            arguments,
-            workingDirectory: tmp.path,
-          );
-          expect(
-            result.exitCode,
-            0,
-            reason: '${result.stdout}${result.stderr}',
-          );
-        }
-      }
-
-      test('accepts first counts for keys present in a path-only base', () {
-        commitBaseBaseline('# legacy list\na\nb\n');
-        writeCurrent('a\t5\nb\t3\n');
-        baseline.writeAsStringSync('# numeric baseline\na\t5\nb\t3\n');
-
-        final result = run(
-          migrateLegacyListBaseline: true,
-          baseRef: 'HEAD',
-          baselineRepoPath: 'legacy-baseline.txt',
-        );
-
-        expect(result.exitCode, 0, reason: result.stdout.toString());
-        expect(result.stdout, contains('legacy path-only baseline'));
-      });
-
-      test('still rejects a key added during format migration', () {
-        commitBaseBaseline('# legacy list\na\n');
-        writeCurrent('a\t5\nb\t1\n');
-        baseline.writeAsStringSync('# numeric baseline\na\t5\nb\t1\n');
-
-        final result = run(
-          migrateLegacyListBaseline: true,
-          baseRef: 'HEAD',
-          baselineRepoPath: 'legacy-baseline.txt',
-        );
-
-        expect(result.exitCode, 1);
-        expect(result.stdout, contains('+added b\t1'));
-      });
-
-      test('enforces counts once the base baseline is numeric', () {
-        commitBaseBaseline('# numeric baseline\na\t4\n');
-        writeCurrent('a\t5\n');
-        baseline.writeAsStringSync('# numeric baseline\na\t5\n');
-
-        final result = run(
-          migrateLegacyListBaseline: true,
-          baseRef: 'HEAD',
-          baselineRepoPath: 'legacy-baseline.txt',
-        );
-
-        expect(result.exitCode, 1);
-        expect(result.stdout, contains('^raised a\t4 -> 5'));
-      });
     });
 
     test('fails when a key count grows', () {

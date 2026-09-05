@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Future.delayed-ceiling ratchet (epic #4337, WS-2): executable call sites are
 # frozen as per-file numeric ceilings in
-# scripts/baseline/future_delayed_tests.txt and may only ever SHRINK.
+# scripts/baseline/future_delayed_test_counts.txt and may only ever SHRINK.
 # `Future.delayed` in tests encodes wall-clock timing that
 # makes suites slow and flaky; the migration target is `fakeAsync` (timer/timeout
 # cases) or `pumpEventQueue` (stream-settling). See lib/numeric_ratchet.sh.
@@ -24,12 +24,11 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TAB="$(printf '\t')"
 
 RATCHET_LABEL="future_delayed_ceiling"
-BASELINE_FILE="$SCRIPT_DIR/baseline/future_delayed_tests.txt"
-BASELINE_REPO_PATH="mobile/scripts/baseline/future_delayed_tests.txt"
+BASELINE_FILE="$SCRIPT_DIR/baseline/future_delayed_test_counts.txt"
+BASELINE_REPO_PATH="mobile/scripts/baseline/future_delayed_test_counts.txt"
 BASE_REF="${FUTURE_DELAYED_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${FUTURE_DELAYED_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="FUTURE_DELAYED_CEILING_ALLOW_NO_BASE"
-LEGACY_LIST_BASELINE_MIGRATION=1
 REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to a test — use fakeAsync (timers/timeouts) or pumpEventQueue (stream-settling). See tasks/plan_4337.md (WS-2)."
 STALE_HINT="A Future.delayed call was removed."
@@ -50,7 +49,7 @@ emit_current() {
       # match lands before awk finishes writing. Undercounting is the dangerous
       # direction here.
       count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
-        | grep -oE "Future\.delayed" | grep -c . || true)"
+        | grep -oE "Future(<[^()]*>)?\.delayed" | grep -c . || true)"
       count="${count//[[:space:]]/}"
       if [[ "${count:-0}" -gt 0 ]]; then
         printf '%s\t%s\n' "${f#"$MOBILE_DIR"/}" "$count"

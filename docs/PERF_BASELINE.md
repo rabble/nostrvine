@@ -167,8 +167,9 @@ setting has nothing to schedule.
 The repo already freezes several of the things a perf audit would normally
 flag, so these are *not* available wins:
 
-- `scripts/baseline/future_delayed_tests.txt` — 35 files use `Future.delayed`
-  under `test/`, shrink-only (epic #4337).
+- `scripts/baseline/future_delayed_test_counts.txt` — 1,119 executable
+  `Future.delayed` call sites across 178 files under `test/`, frozen as
+  shrink-only per-file numeric ceilings (epic #4337).
 - `scripts/baseline/skip_tests.txt` — skipped-test count, shrink-only.
 - `test/vgv_tag_baseline.txt` — 18 `skip_very_good_optimization` files,
   count may not increase.

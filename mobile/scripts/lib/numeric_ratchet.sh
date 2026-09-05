@@ -30,12 +30,6 @@
 #   NEW_HINT             guidance printed under a NEW/GROWTH/BYPASS failure
 #   STALE_HINT           guidance printed under a STALE failure
 #   FOOTER               closing guidance printed on any failure
-#   LEGACY_LIST_BASELINE_MIGRATION
-#                         optional "1" while converting a path-only list
-#                         baseline to numeric counts. Existing keys are allowed
-#                         to acquire their first count, but new keys still fail.
-#                         This is fail-safe only when paired with
-#                         REQUIRE_BASELINE_UPDATE_ON_DECREASE=1.
 #   REQUIRE_BASELINE_UPDATE_ON_DECREASE
 #                         optional "1" when every decrease must be committed to
 #                         the baseline immediately instead of remaining slack.
@@ -176,25 +170,15 @@ run_numeric_ratchet() {
   fi
   case "$base_status" in
     0)
-      local added raised legacy_list_base
+      local added raised
       added="$(join -t "$TAB" -v1 "$BASE_F" "$MAIN_F" || true)"
-      legacy_list_base=0
-      if [[ "${LEGACY_LIST_BASELINE_MIGRATION:-0}" == "1" ]] \
-        && [[ -s "$MAIN_F" ]] \
-        && ! grep -q "$TAB" "$MAIN_F"; then
-        legacy_list_base=1
-        raised=""
-      else
-        raised="$(join -t "$TAB" "$BASE_F" "$MAIN_F" | awk -F "$TAB" '$2 > $3 { printf "%s\t%s -> %s\n", $1, $3, $2 }' || true)"
-      fi
+      raised="$(join -t "$TAB" "$BASE_F" "$MAIN_F" | awk -F "$TAB" '$2 > $3 { printf "%s\t%s -> %s\n", $1, $3, $2 }' || true)"
       if [[ -n "$added" || -n "$raised" ]]; then
         echo "FAIL [$RATCHET_LABEL]: baseline ADDED a key or RAISED a ceiling vs ${BASE_REF} (may only shrink):"
         [[ -n "$added" ]] && echo "$added" | sed 's/^/  +added /'
         [[ -n "$raised" ]] && echo "$raised" | sed 's/^/  ^raised /'
         echo "  -> $NEW_HINT"
         fail=1
-      elif [[ "$legacy_list_base" == "1" ]]; then
-        echo "NOTE [$RATCHET_LABEL]: ${BASE_REF} uses the legacy path-only baseline; verified that no keys were added."
       fi
       ;;
     2)
