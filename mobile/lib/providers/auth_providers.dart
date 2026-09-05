@@ -126,6 +126,7 @@ AuthService authService(Ref ref) {
   final authService = AuthService(
     backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
     crashReporter: ref.read(crashReportingServiceProvider),
+    nip07Service: ref.watch(nip07ServiceProvider),
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
     oauthClient: oauthClient,
