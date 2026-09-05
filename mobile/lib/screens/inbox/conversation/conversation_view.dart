@@ -1179,6 +1179,10 @@ class _MessageList extends StatelessWidget {
     // Index built once per render pass so a reply bubble can resolve its
     // parent shared-reel message (and thus the quoted video) in O(1).
     final messagesById = {for (final m in messages) m.id: m};
+    final messageIndexById = {
+      for (var index = 0; index < messages.length; index++)
+        messages[index].id: index,
+    };
     return ListView.builder(
       reverse: true,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -1186,15 +1190,21 @@ class _MessageList extends StatelessWidget {
       // for a 16 px gap to the scroll-view edge.
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       itemCount: messages.length,
+      findChildIndexCallback: (key) =>
+          key is ValueKey<String> ? messageIndexById[key.value] : null,
       itemBuilder: (context, index) {
         final message = messages[index];
+        final messageKey = ValueKey(message.id);
         final isSent = message.senderPubkey == currentPubkey;
         final invite = CollaboratorInviteParser.parse(message);
         if (invite != null) {
-          return CollaboratorInviteCard(
-            invite: invite,
-            isSent: isSent,
-            senderDisplayName: isSent ? null : senderDisplayName,
+          return KeyedSubtree(
+            key: messageKey,
+            child: CollaboratorInviteCard(
+              invite: invite,
+              isSent: isSent,
+              senderDisplayName: isSent ? null : senderDisplayName,
+            ),
           );
         }
 
@@ -1208,7 +1218,10 @@ class _MessageList extends StatelessWidget {
         if (CollaboratorInviteService.hasInvitePlaintextSuffix(
           message.content,
         )) {
-          return const SizedBox.shrink();
+          return KeyedSubtree(
+            key: messageKey,
+            child: const SizedBox.shrink(),
+          );
         }
 
         // Grouping: in a reversed list, index 0 is newest (bottom of screen).
@@ -1245,7 +1258,6 @@ class _MessageList extends StatelessWidget {
 
         Widget buildBubbleWithReactions(DmDeliveryStatus status) {
           final bubble = MessageBubble(
-            key: ValueKey(message.id),
             message: message.content,
             timestamp: LocalizedTimeFormatter.formatMessageTime(
               context.l10n,
@@ -1324,15 +1336,22 @@ class _MessageList extends StatelessWidget {
         // outgoing queue, so they bypass the selector and short-circuit
         // to `delivered`.
         if (!isSent) {
-          return buildBubbleWithReactions(DmDeliveryStatus.delivered);
+          return KeyedSubtree(
+            key: messageKey,
+            child: buildBubbleWithReactions(DmDeliveryStatus.delivered),
+          );
         }
-        return BlocSelector<
-          ConversationBloc,
-          ConversationState,
-          DmDeliveryStatus
-        >(
-          selector: (state) => state.statusFor(message.id),
-          builder: (_, status) => buildBubbleWithReactions(status),
+        return KeyedSubtree(
+          key: messageKey,
+          child:
+              BlocSelector<
+                ConversationBloc,
+                ConversationState,
+                DmDeliveryStatus
+              >(
+                selector: (state) => state.statusFor(message.id),
+                builder: (_, status) => buildBubbleWithReactions(status),
+              ),
         );
       },
     );

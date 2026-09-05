@@ -11,6 +11,19 @@ class _CountingInlineMarkdownParser extends InlineMarkdownParser {
   }
 }
 
+class _ThrowOnceInlineMarkdownParser extends InlineMarkdownParser {
+  bool shouldThrow = true;
+
+  @override
+  List<InlineMarkdownNode> parse(String text) {
+    if (shouldThrow) {
+      shouldThrow = false;
+      throw StateError('synthetic parse failure');
+    }
+    return super.parse(text);
+  }
+}
+
 void main() {
   group(MemoizedInlineMarkdownParser, () {
     test('reuses the AST while the input is unchanged', () {
@@ -32,6 +45,15 @@ void main() {
 
       expect(second, isNot(same(first)));
       expect(second, equals([const PlainNode('second')]));
+    });
+
+    test('does not publish a partial cache entry when parsing throws', () {
+      final parser = MemoizedInlineMarkdownParser(
+        parser: _ThrowOnceInlineMarkdownParser(),
+      );
+
+      expect(() => parser.parse('hello'), throwsStateError);
+      expect(parser.parse('hello'), equals([const PlainNode('hello')]));
     });
   });
 

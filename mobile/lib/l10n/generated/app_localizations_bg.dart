@@ -786,12 +786,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileShowLess => 'Покажи по-малко';
 
   @override
-  String get dmMessageShowMore => 'Покажи повече';
-
-  @override
-  String get dmMessageShowLess => 'Покажи по-малко';
-
-  @override
   String get dmMessageDisplayLimitReached =>
       'Останалата част от съобщението не се показва.';
 

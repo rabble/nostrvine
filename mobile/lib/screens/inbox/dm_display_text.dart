@@ -17,7 +17,12 @@ const int dmMaxDisplayCodeUnits =
     dmInitialDisplayCodeUnits + dmDisplayIncrementCodeUnits;
 
 /// Work budget for the two-line inbox preview.
-const int dmPreviewDisplayCodeUnits = dmInitialDisplayCodeUnits;
+///
+/// Kept independent from the bubble reveal budget so tuning an explicitly
+/// expanded conversation bubble cannot silently increase work in every inbox
+/// row. This remains long enough to include the complete legacy collaborator
+/// invite fallback recognized by the preview path.
+const int dmPreviewDisplayCodeUnits = 4096;
 
 /// A bounded prefix of sender-controlled text.
 class DmDisplayTextSlice {

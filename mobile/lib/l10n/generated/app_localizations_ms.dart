@@ -747,12 +747,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileShowLess => 'Tunjuk kurang';
 
   @override
-  String get dmMessageShowMore => 'Tunjuk lagi';
-
-  @override
-  String get dmMessageShowLess => 'Tunjuk kurang';
-
-  @override
   String get dmMessageDisplayLimitReached => 'Baki mesej ini tidak dipaparkan.';
 
   @override

@@ -1416,6 +1416,49 @@ void main() {
         expect(find.text('Hello there!'), findsOneWidget);
       });
 
+      testWidgets('maps message keys to their new indices', (tester) async {
+        DmMessage message(String id, String content) => DmMessage(
+          id: id,
+          conversationId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          senderPubkey: otherPubkey,
+          content: content,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          giftWrapId:
+              'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+        );
+        final older = message(
+          '1111111111111111111111111111111111111111111111111111111111111111',
+          'Older',
+        );
+        final newer = message(
+          '2222222222222222222222222222222222222222222222222222222222222222',
+          'Newer',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [newer, older],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final list = tester.widget<ListView>(find.byType(ListView));
+        final delegate = list.childrenDelegate as SliverChildBuilderDelegate;
+        expect(delegate.findChildIndexCallback, isNotNull);
+        expect(
+          delegate.findChildIndexCallback!(ValueKey(older.id)),
+          equals(1),
+        );
+        expect(
+          delegate.findChildIndexCallback!(ValueKey(newer.id)),
+          equals(0),
+        );
+      });
+
       // The whole retry affordance lived only in the view: the bloc test
       // covers the event's effects and the bubble test covers the icon, but
       // nothing proved a tap ever produces the event. That gap is how a

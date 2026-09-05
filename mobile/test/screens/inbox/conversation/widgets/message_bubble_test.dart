@@ -321,8 +321,38 @@ void main() {
 
         expect(_longestRenderedText(tester), prefix);
         expect(find.textContaining('hidden suffix'), findsNothing);
-        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
-        expect(find.text(strings.dmMessageShowLess), findsNothing);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
+        expect(find.text(strings.profileShowLess), findsNothing);
+      });
+
+      testWidgets('gives Show more a 48 px minimum tap target', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.ancestor(
+            of: find.text(strings.profileShowMore),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is ConstrainedBox &&
+                  widget.constraints.minHeight == 48,
+            ),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('reveals one bounded increment and can collapse again', (
@@ -346,25 +376,25 @@ void main() {
           ),
         );
 
-        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
-        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
         await tester.pump();
 
         expect(_longestRenderedText(tester), '$first$second');
         expect(find.textContaining('tail'), findsNothing);
-        expect(find.text(strings.dmMessageShowMore), findsNothing);
-        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
+        expect(find.text(strings.profileShowMore), findsNothing);
+        expect(find.text(strings.profileShowLess), findsOneWidget);
         expect(
           find.text(strings.dmMessageDisplayLimitReached),
           findsOneWidget,
         );
 
-        await tester.ensureVisible(find.text(strings.dmMessageShowLess));
-        await tester.tap(find.text(strings.dmMessageShowLess));
+        await tester.ensureVisible(find.text(strings.profileShowLess));
+        await tester.tap(find.text(strings.profileShowLess));
         await tester.pump();
 
         expect(_longestRenderedText(tester), first);
-        expect(find.text(strings.dmMessageShowLess), findsNothing);
+        expect(find.text(strings.profileShowLess), findsNothing);
       });
 
       testWidgets('stops expansion at the hard display ceiling', (
@@ -387,8 +417,8 @@ void main() {
           ),
         );
 
-        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
-        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
         await tester.pump();
 
         expect(_longestRenderedText(tester), visible);
@@ -397,7 +427,7 @@ void main() {
           find.text(strings.dmMessageDisplayLimitReached),
           findsOneWidget,
         );
-        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
+        expect(find.text(strings.profileShowLess), findsOneWidget);
       });
 
       testWidgets('keeps the expansion controls white on a sent bubble', (
@@ -421,12 +451,12 @@ void main() {
           ),
         );
 
-        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
-        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
         await tester.pump();
 
         final showLess = tester.widget<Text>(
-          find.text(strings.dmMessageShowLess),
+          find.text(strings.profileShowLess),
         );
         expect(showLess.style?.color, VineTheme.whiteText);
         final limitReached = tester.widget<Text>(
@@ -457,7 +487,7 @@ void main() {
         );
 
         final showMore = tester.widget<Text>(
-          find.text(strings.dmMessageShowMore),
+          find.text(strings.profileShowMore),
         );
         expect(showMore.style?.color, VineTheme.vineGreen);
         expect(showMore.style?.color, isNot(VineTheme.whiteText));
@@ -1265,6 +1295,47 @@ void main() {
           ),
         ).called(greaterThanOrEqualTo(1));
       });
+
+      testWidgets(
+        'keeps a legacy URL beyond the initial display limit hidden until '
+        'Show more',
+        (tester) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'abc123',
+              fallbackRouteIds: any(named: 'fallbackRouteIds'),
+            ),
+          ).thenAnswer((_) async => testVideo);
+          final note = 'a' * dmInitialDisplayCodeUnits;
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: MessageBubble(
+                    message: '$note\nhttps://divine.video/video/abc123',
+                    timestamp: '2:30 PM',
+                    isSent: true,
+                  ),
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+          await tester.ensureVisible(find.text(strings.profileShowMore));
+          await tester.tap(find.text(strings.profileShowMore));
+          await tester.pumpAndSettle();
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        },
+      );
 
       // divine-web put the share only in tags and allowed an empty draft, so
       // before #6224 this bubble rendered with no card — and mid-group, with
@@ -2233,7 +2304,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(doubleTapped, isFalse);
-        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
       });
     });
 
@@ -2290,10 +2361,10 @@ void main() {
             ),
           ),
         );
-        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
-        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.ensureVisible(find.text(strings.profileShowMore));
+        await tester.tap(find.text(strings.profileShowMore));
         await tester.pump();
-        expect(find.text(strings.dmMessageShowLess), findsOneWidget);
+        expect(find.text(strings.profileShowLess), findsOneWidget);
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2312,8 +2383,8 @@ void main() {
         );
 
         expect(_longestRenderedText(tester), second);
-        expect(find.text(strings.dmMessageShowLess), findsNothing);
-        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
+        expect(find.text(strings.profileShowLess), findsNothing);
+        expect(find.text(strings.profileShowMore), findsOneWidget);
       });
     });
 

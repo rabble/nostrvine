@@ -39,13 +39,14 @@ class MemoizedInlineMarkdownParser {
   }) : _parser = parser;
 
   final InlineMarkdownParser _parser;
-  String? _cachedText;
-  late List<InlineMarkdownNode> _cachedNodes;
+  (String, List<InlineMarkdownNode>)? _cache;
 
   List<InlineMarkdownNode> parse(String text) {
-    if (text == _cachedText) return _cachedNodes;
-    _cachedText = text;
-    return _cachedNodes = _parser.parse(text);
+    final cache = _cache;
+    if (cache != null && text == cache.$1) return cache.$2;
+    final nodes = _parser.parse(text);
+    _cache = (text, nodes);
+    return nodes;
   }
 }
 

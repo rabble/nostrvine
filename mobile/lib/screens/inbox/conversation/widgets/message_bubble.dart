@@ -71,6 +71,16 @@ class _DmBubbleContent {
     final String? personalMessage;
     final String? textAfterUrl;
     if (videoMatch != null) {
+      // The first-party share template is:
+      //   [optional personal note]
+      //   <blank line>
+      //   "<video title>"
+      //   <blank line>
+      //   <URL>
+      //   [optional trailing text]
+      //
+      // The quoted title duplicates the card footer, so it is stripped.
+      // Everything else around the URL remains the sender's message.
       final afterLines = safeMessage
           .substring(videoMatch.end)
           .split('\n')
@@ -90,6 +100,10 @@ class _DmBubbleContent {
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
     } else if (videoTarget != null) {
+      // Identity came from a structured citation rather than a body URL, so
+      // this is not the share template: the body is only what the sender
+      // typed. Strip the machine-readable citation, but keep quoted lines so
+      // a sender's quoted comment is never mistaken for a template title.
       final lines = safeMessage
           .split('\n')
           .map((line) => line.trim())
@@ -590,13 +604,13 @@ class _MessageExpansionControls extends StatelessWidget {
           children: [
             if (canShowMore)
               _MessageExpansionAction(
-                label: context.l10n.dmMessageShowMore,
+                label: context.l10n.profileShowMore,
                 style: actionStyle,
                 onTap: onShowMore,
               ),
             if (canShowLess)
               _MessageExpansionAction(
-                label: context.l10n.dmMessageShowLess,
+                label: context.l10n.profileShowLess,
                 style: actionStyle,
                 onTap: onShowLess,
               ),
@@ -637,9 +651,13 @@ class _MessageExpansionAction extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(label, style: style),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: 1,
+            child: Text(label, style: style),
+          ),
         ),
       ),
     );

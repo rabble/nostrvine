@@ -784,12 +784,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileShowLess => 'Weniger anzeigen';
 
   @override
-  String get dmMessageShowMore => 'Mehr anzeigen';
-
-  @override
-  String get dmMessageShowLess => 'Weniger anzeigen';
-
-  @override
   String get dmMessageDisplayLimitReached =>
       'Der Rest dieser Nachricht wird nicht angezeigt.';
 
