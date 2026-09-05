@@ -275,6 +275,3 @@ class _AvatarSvgCacheEntry {
   final Uint8List? bytes;
   final DateTime expiresAt;
 }
-
-final AvatarSvgRepository defaultAvatarSvgRepository =
-    HttpAvatarSvgRepository();
