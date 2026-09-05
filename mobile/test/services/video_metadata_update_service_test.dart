@@ -1215,10 +1215,16 @@ void main() {
           );
 
           expect(result, isA<VideoUpdateSuccess>());
+          // The stale tag carries the npub, so a filter keyed on the hex
+          // cannot see it and a preserved 'mention' tag would go unnoticed.
+          // Match either representation so the count catches a double-listing.
+          final promotedNpub = NostrKeyUtils.encodePubKey(promoted);
           final pTagsForPromoted = capturedTags
               .where(
                 (tag) =>
-                    tag.length >= 2 && tag.first == 'p' && tag[1] == promoted,
+                    tag.length >= 2 &&
+                    tag.first == 'p' &&
+                    (tag[1] == promoted || tag[1] == promotedNpub),
               )
               .toList();
           expect(pTagsForPromoted, hasLength(1));
