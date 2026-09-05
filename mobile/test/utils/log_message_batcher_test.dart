@@ -12,10 +12,9 @@ void main() {
     late LogCaptureService logCapture;
 
     setUp(() async {
-      batcher = LogMessageBatcher.instance;
+      batcher = LogMessageBatcher();
       logCapture = LogCaptureService();
 
-      batcher.dispose();
       await logCapture.clearAllLogs();
       UnifiedLogger.enableCategories({LogCategory.relay});
       UnifiedLogger.setLogLevel(LogLevel.debug);
@@ -37,6 +36,24 @@ void main() {
       );
 
       batcher.dispose();
+
+      expect(logCapture.getRecentLogs(), isEmpty);
+    });
+
+    test('disposing a second batcher does not flush the first one', () {
+      final other = LogMessageBatcher();
+      addTearDown(other.dispose);
+
+      expect(
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event abc matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        ),
+        isTrue,
+      );
+
+      other.dispose();
 
       expect(logCapture.getRecentLogs(), isEmpty);
     });

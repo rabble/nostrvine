@@ -11,9 +11,11 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/log_message_batcher_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,12 +23,14 @@ void main() {
 
   late AppDatabase database;
   late SharedPreferences prefs;
+  late LogMessageBatcher logMessageBatcher;
   late DeviceScope deviceScope;
 
   setUp(() async {
     database = AppDatabase.test(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
+    logMessageBatcher = LogMessageBatcher();
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
@@ -37,6 +41,7 @@ void main() {
         crashReporting: CrashReportingService(),
       ),
       documentsPath: '/documents',
+      logMessageBatcher: logMessageBatcher,
       installSource: InstallSource.playStore,
     );
   });
@@ -84,6 +89,16 @@ void main() {
 
       expect(a.read(documentsPathProvider), '/documents');
       expect(b.read(documentsPathProvider), '/documents');
+    });
+
+    test('every container reads the same log message batcher', () {
+      final a = buildAccountContainer(deviceScope);
+      addTearDown(a.dispose);
+      final b = buildAccountContainer(deviceScope);
+      addTearDown(b.dispose);
+
+      expect(a.read(logMessageBatcherProvider), same(logMessageBatcher));
+      expect(b.read(logMessageBatcherProvider), same(logMessageBatcher));
     });
 
     test('every container reads the same app version override', () {

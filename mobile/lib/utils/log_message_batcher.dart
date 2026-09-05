@@ -6,12 +6,13 @@ import 'dart:collection';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Batches similar log messages and outputs summaries instead of individual messages
+///
+/// The app owns one instance, constructed in `app_bootstrap` where the
+/// `debugPrint` override that feeds it is installed, and pinned device-scoped
+/// through `DeviceScope` so the startup coordinator and the lifecycle handler
+/// arm and flush the same batcher (#8618).
 class LogMessageBatcher {
-  static final LogMessageBatcher _instance = LogMessageBatcher._internal();
-  factory LogMessageBatcher() => _instance;
-  LogMessageBatcher._internal();
-
-  static LogMessageBatcher get instance => _instance;
+  LogMessageBatcher();
 
   /// Map of message patterns to their batch info
   final Map<String, _BatchInfo> _batchedMessages = {};

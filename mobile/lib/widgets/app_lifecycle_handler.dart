@@ -14,6 +14,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/background_activity_provider.dart';
+import 'package:openvine/providers/log_message_batcher_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -37,12 +38,15 @@ class AppLifecycleHandler extends ConsumerStatefulWidget {
 class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     with WidgetsBindingObserver {
   late final BackgroundActivityManager _backgroundManager;
+  // Read here rather than in dispose(), where ref is no longer usable.
+  late final LogMessageBatcher _logMessageBatcher;
   bool _tickersEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _backgroundManager = ref.read(backgroundActivityManagerProvider);
+    _logMessageBatcher = ref.read(logMessageBatcherProvider);
     WidgetsBinding.instance.addObserver(this);
 
     // Resume any pending publish drafts after first frame,
@@ -91,7 +95,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     // Dispose log message batcher and flush any remaining messages
-    LogMessageBatcher.instance.dispose();
+    _logMessageBatcher.dispose();
     super.dispose();
   }
 
