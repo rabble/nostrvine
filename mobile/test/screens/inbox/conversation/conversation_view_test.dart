@@ -999,6 +999,119 @@ void main() {
         handle.dispose();
       });
 
+      // #8622 introduced `removalRefused` after the `failed` case above was
+      // written. Both statuses reach the trailing through the same
+      // `canRetract` gate, and the action this one offers publishes a kind-5
+      // the send policy refuses for a retired recipient — so it needs its own
+      // case rather than inheriting the `failed` one's coverage.
+      testWidgets('a refused removal offers no retry on a closed thread', (
+        tester,
+      ) async {
+        const emoji = '\u{2764}\u{FE0F}';
+        const ownReaction = DmReaction(
+          id: 'r-own-retired-removal-refused',
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: emoji,
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: DmReactionPublishStatus.removalRefused,
+        );
+        const reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [ownReaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: retired,
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(emoji));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The sheet rendered the own reaction row, so the absences below are
+        // not trivially satisfied by a missing row.
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+        expect(find.text(l10n.dmReactionRetryAction), findsNothing);
+        expect(
+          find.bySemanticsLabel(
+            RegExp(
+              RegExp.escape(l10n.dmReactionRemovalRefusedA11yLabel(emoji)),
+            ),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsLabel(
+            RegExp(RegExp.escape(l10n.dmReactionChipOwnA11yLabel(emoji))),
+          ),
+          findsWidgets,
+        );
+        handle.dispose();
+      });
+
+      testWidgets('a live thread still offers to retry a refused removal', (
+        tester,
+      ) async {
+        const emoji = '\u{2764}\u{FE0F}';
+        const ownReaction = DmReaction(
+          id: 'r-own-live-removal-refused',
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: emoji,
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: DmReactionPublishStatus.removalRefused,
+        );
+        const reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [ownReaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(emoji));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(l10n.dmReactionRetryAction), findsOneWidget);
+      });
+
       testWidgets('a refused reaction removal retry shows failure feedback', (
         tester,
       ) async {
