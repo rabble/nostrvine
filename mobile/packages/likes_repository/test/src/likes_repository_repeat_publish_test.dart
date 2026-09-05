@@ -15,6 +15,27 @@ class _MockLikesLocalStorage extends Mock implements LikesLocalStorage {}
 
 class _MockEvent extends Mock implements Event {}
 
+typedef _RelaySnapshot = ({List<Event> events, bool timedOut, bool noRelays});
+
+/// Holds the startup relay snapshot open so a tap can race it.
+class _GatedRelaySnapshot {
+  final reactions = Completer<_RelaySnapshot>();
+  final deletions = Completer<_RelaySnapshot>();
+
+  /// Lets reconciliation land as a complete, uncapped snapshot.
+  void land({
+    List<Event> reactions = const [],
+    List<Event> deletions = const [],
+  }) {
+    this.reactions.complete(
+      (events: reactions, timedOut: false, noRelays: false),
+    );
+    this.deletions.complete(
+      (events: deletions, timedOut: false, noRelays: false),
+    );
+  }
+}
+
 void main() {
   group('LikesRepository repeat-publish guards (#7001)', () {
     late _MockNostrClient nostrClient;
@@ -104,6 +125,25 @@ void main() {
           noRelays: false,
         );
       });
+    }
+
+    /// Like [stubCompleteRelaySnapshot], but the answer waits for
+    /// [_GatedRelaySnapshot.land] so a tap can be interleaved with startup.
+    _GatedRelaySnapshot gateRelaySnapshot() {
+      final gate = _GatedRelaySnapshot();
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer((invocation) {
+        final filters = invocation.positionalArguments.first as List<Filter>;
+        final kinds = filters.first.kinds ?? const <int>[];
+        return kinds.contains(EventKind.reaction)
+            ? gate.reactions.future
+            : gate.deletions.future;
+      });
+      return gate;
     }
 
     void stubSendLike(Future<Event?> Function() answer) {
@@ -554,23 +594,7 @@ void main() {
       test(
         'joins startup reconciliation and adopts its reaction during a tap',
         () async {
-          final reactionsGate =
-              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
-          final deletionsGate =
-              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
-          when(
-            () => nostrClient.queryEventsDetailed(
-              any(),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            ),
-          ).thenAnswer((invocation) {
-            final filters =
-                invocation.positionalArguments.first as List<Filter>;
-            final kinds = filters.first.kinds ?? const <int>[];
-            return kinds.contains(EventKind.reaction)
-                ? reactionsGate.future
-                : deletionsGate.future;
-          });
+          final gate = gateRelaySnapshot();
 
           final initialization = repository.initialize();
           await Future<void>.delayed(Duration.zero);
@@ -579,17 +603,7 @@ void main() {
             authorPubkey: author,
           );
           await Future<void>.delayed(Duration.zero);
-
-          reactionsGate.complete((
-            events: [reaction(id: landedReactionId)],
-            timedOut: false,
-            noRelays: false,
-          ));
-          deletionsGate.complete((
-            events: <Event>[],
-            timedOut: false,
-            noRelays: false,
-          ));
+          gate.land(reactions: [reaction(id: landedReactionId)]);
           await initialization;
 
           await expectLater(like, throwsA(isA<AlreadyLikedException>()));
@@ -694,6 +708,86 @@ void main() {
           expectNoPublish();
           expect(await repository.isLiked(target), isFalse);
           expect(await repository.getLikeCount(target), equals(9));
+        },
+      );
+
+      test(
+        'joins startup reconciliation and adopts the reaction it filed under '
+        'a superseded revision of the tapped coordinate',
+        () async {
+          // The snapshot files the like under its own `e` target — the
+          // revision that was current when it was cast — and under the
+          // coordinate. The tapped event id holds only this tap's
+          // placeholder, so the coordinate is the one place the like shows.
+          final gate = gateRelaySnapshot();
+          stubSendLike(() async => reaction(id: freshReactionId));
+          when(
+            () => nostrClient.deleteEvent(landedReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+
+          final initialization = repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+          final like = repository.likeEvent(
+            eventId: target,
+            authorPubkey: author,
+            addressableId: coordinate,
+          );
+          await Future<void>.delayed(Duration.zero);
+          gate.land(
+            reactions: [
+              reaction(
+                id: landedReactionId,
+                tags: [
+                  ['e', editedTarget],
+                  ['a', coordinate],
+                ],
+              ),
+            ],
+          );
+          await initialization;
+
+          await expectLater(like, throwsA(isA<AlreadyLikedException>()));
+          expectNoPublish();
+
+          // The adopted reaction answers the tapped target, so unliking it
+          // publishes the Kind 5 instead of discarding a placeholder.
+          await repository.unlikeEvent(target, addressableId: coordinate);
+          verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+        },
+      );
+
+      test(
+        'joins startup reconciliation and keeps its coordinate-less reaction '
+        'resolvable by the tapped coordinate',
+        () async {
+          // An older reaction carries only an `e` tag. Adopted as-is it
+          // would leave this tap's placeholder in the coordinate index, so
+          // the heart stays filled after the unlike that retracts it.
+          final gate = gateRelaySnapshot();
+          stubSendLike(() async => reaction(id: freshReactionId));
+          when(
+            () => nostrClient.deleteEvent(landedReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+
+          final initialization = repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+          final like = repository.likeEvent(
+            eventId: target,
+            authorPubkey: author,
+            addressableId: coordinate,
+          );
+          await Future<void>.delayed(Duration.zero);
+          gate.land(reactions: [reaction(id: landedReactionId)]);
+          await initialization;
+
+          await expectLater(like, throwsA(isA<AlreadyLikedException>()));
+          expectNoPublish();
+
+          await repository.unlikeEvent(target, addressableId: coordinate);
+          verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
+          expect(await repository.isLiked(target), isFalse);
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
         },
       );
     });

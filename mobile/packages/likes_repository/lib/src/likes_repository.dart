@@ -714,44 +714,39 @@ class LikesRepository {
         return placeholderId;
       }
 
-      // Ask the relay first whether this account already holds a live `+` on
-      // the target only while the startup snapshot is still resolving or was
-      // incomplete. A complete snapshot keeps ordinary likes off this relay
-      // read path; replay retains its own check below because a publish may
-      // have landed after the snapshot without its OK reaching the client.
-      // The placeholder is already indexed, so a second tap inside either
-      // round-trip still trips the check above.
+      // Join the startup snapshot, then adopt any live `+` it or the live
+      // subscription already indexed for the target or its coordinate. Only
+      // an incomplete snapshot — timed out, capped, relay-less, failed, or
+      // never run — still sends this tap to the relay for the target itself;
+      // a complete one keeps ordinary likes off that read path. Replay keeps
+      // its own relay check because a publish may have landed after the
+      // snapshot without its OK reaching the client. The placeholder is
+      // already indexed, so a second tap inside either wait still trips the
+      // check above.
       _inFlightLikePublishPlaceholders.add(placeholderId);
       await _startupReconciliationFuture;
-      final reconciledRecord =
-          _likeRecords[eventId] ??
-          (addressableId == null
+      final liveRecord =
+          _reconciledLikeRecord(eventId, addressableId: addressableId) ??
+          (_hasCompleteRelayReactionSnapshot
               ? null
-              : _likeRecordsByAddressableId[addressableId]);
-      final remoteRecord =
-          reconciledRecord != null &&
-              !_isPlaceholderId(reconciledRecord.reactionEventId)
-          ? reconciledRecord
-          : !_hasCompleteRelayReactionSnapshot
-          ? await _resolveRemoteLikeRecordOrNull(
-              eventId,
-              addressableId: addressableId,
-            )
-          : null;
-      if (remoteRecord != null) {
+              : await _resolveRemoteLikeRecordOrNull(
+                  eventId,
+                  addressableId: addressableId,
+                ));
+      if (liveRecord != null) {
         _inFlightLikePublishPlaceholders.remove(placeholderId);
         if (_unlikeRequestedWhilePending.remove(placeholderId)) {
           // The like the user just took back is the relay's existing one.
           await _retractLikeUnlikedMidPublish(
-            confirmed: remoteRecord,
+            confirmed: liveRecord,
             restoredCount: previousCount,
             countEventId: eventId,
             countAddressableId: addressableId,
           );
-          return remoteRecord.reactionEventId;
+          return liveRecord.reactionEventId;
         }
         await _adoptRemoteLikeRecord(
-          remoteRecord,
+          liveRecord,
           site: LikesRepositoryReportableSites.likeEventSaveAdopted,
         );
         // The relay's reaction is already inside the count the UI shows.
@@ -2990,6 +2985,43 @@ class LikesRepository {
   /// empty form.
   static bool _isLikeReaction(Event event) =>
       event.content == _likeContent || event.content.isEmpty;
+
+  /// The live reaction that startup reconciliation or the live subscription
+  /// has already indexed for [eventId] or its coordinate, shaped exactly as
+  /// [_resolveRemoteLikeRecord] would return it: keyed under [eventId], so
+  /// the caller's later unlike resolves it, and carrying [addressableId] when
+  /// the reaction itself has no `a` tag, so adopting it evicts this tap's
+  /// placeholder from the coordinate index too.
+  ///
+  /// The event-id slot holds this tap's own placeholder and so cannot answer
+  /// alone: a like cast on a superseded revision is filed under that
+  /// revision's id, and only the coordinate reveals it. Returns `null` when
+  /// neither slot names a reaction that reached a relay.
+  LikeRecord? _reconciledLikeRecord(
+    String eventId, {
+    required String? addressableId,
+  }) {
+    final hasCoordinate = addressableId != null && addressableId.isNotEmpty;
+    final byEventId = _likeRecords[eventId];
+    final indexed =
+        byEventId != null && !_isPlaceholderId(byEventId.reactionEventId)
+        ? byEventId
+        : hasCoordinate
+        ? _likeRecordsByAddressableId[addressableId]
+        : null;
+    if (indexed == null || _isPlaceholderId(indexed.reactionEventId)) {
+      return null;
+    }
+    final indexedCoordinate = indexed.addressableId;
+    return LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: indexed.reactionEventId,
+      createdAt: indexed.createdAt,
+      addressableId: indexedCoordinate != null && indexedCoordinate.isNotEmpty
+          ? indexedCoordinate
+          : addressableId,
+    );
+  }
 
   /// Indexes and persists a reaction the relay already holds for this
   /// account, so local state reflects it instead of minting a second one.
