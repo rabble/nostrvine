@@ -260,8 +260,9 @@ testGoldens('Widget states', (tester) async {
 **Text renders as solid blocks instead of glyphs**
 - The google_fonts drain is missing or ran too early. See
   [The font-determinism rule](#the-font-determinism-rule). Note that
-  `loadAppFonts()` alone does **not** fix this, and it only runs under
-  `-D DIVINE_GOLDEN_TESTS=true` at all.
+  `loadAppFonts()` alone does **not** fix this: the root harness runs it
+  before every non-web test (#8649), and it still leaves the `google_fonts`
+  variants that `VineTheme` resolves lazily undrained.
 
 **A golden is transparent / the background is white**
 - The surface is outside the `RepaintBoundary` being matched. Move it in.
