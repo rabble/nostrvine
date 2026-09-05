@@ -2530,6 +2530,58 @@ void main() {
       );
     });
 
+    test('named local deletion preserves an active account session', () async {
+      final deletedAccount = SecureKeyContainer.fromPublicKey('b' * 64);
+      final activeAccount = SecureKeyContainer.fromNsec(_otherNsec);
+      authService.debugSetCurrentKeyContainer(activeAccount);
+      when(
+        () => mockKeyStorage.getKeyContainer(),
+      ).thenAnswer((_) async => activeAccount);
+      when(
+        () => mockCleanupService.deleteAccountData(
+          deletedAccount.publicKeyHex,
+          userNpub: deletedAccount.npub,
+          preserveActiveSession: true,
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await authService.deleteLocalAccount(deletedAccount.publicKeyHex);
+
+      verify(
+        () => mockCleanupService.deleteAccountData(
+          deletedAccount.publicKeyHex,
+          userNpub: deletedAccount.npub,
+          preserveActiveSession: true,
+        ),
+      ).called(1);
+      verifyNever(() => mockKeyStorage.deleteKeys());
+      expect(authService.currentPublicKeyHex, activeAccount.publicKeyHex);
+    });
+
+    test('named local deletion removes login material when signer cleanup '
+        'fails', () async {
+      final deletedAccount = SecureKeyContainer.fromPublicKey('b' * 64);
+      when(
+        () => mockCleanupService.deleteAccountData(
+          deletedAccount.publicKeyHex,
+          userNpub: deletedAccount.npub,
+          preserveActiveSession: false,
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockSecureStorage.delete(key: any(named: 'key')),
+      ).thenThrow(StateError('signer cleanup failed'));
+
+      await expectLater(
+        authService.deleteLocalAccount(deletedAccount.publicKeyHex),
+        throwsA(isA<SecureKeyStorageException>()),
+      );
+
+      verify(
+        () => mockKeyStorage.deleteIdentityKeyContainer(deletedAccount.npub),
+      ).called(1);
+    });
+
     test(
       'named local deletion preserves a malformed account registry',
       () async {

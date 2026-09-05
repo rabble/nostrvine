@@ -11,6 +11,12 @@ import 'package:analyzer/error/error.dart';
 import 'package:http/http.dart' as http;
 
 const coordinatorCurrentPath = '/api/account-deletion/attempts/current';
+const coordinatorStatusProbePath =
+    '/api/account-deletion/attempts/route-probe/status';
+const List<String> coordinatorProbePaths = [
+  coordinatorCurrentPath,
+  coordinatorStatusProbePath,
+];
 const defaultProbeTimeout = Duration(seconds: 10);
 const defaultRetryDelay = Duration(seconds: 2);
 
@@ -23,12 +29,20 @@ final class CoordinatorTarget {
   const CoordinatorTarget({
     required this.environment,
     required this.apiBaseUrl,
+    this.routePath = coordinatorCurrentPath,
   });
 
   final String environment;
   final String apiBaseUrl;
+  final String routePath;
 
-  Uri get probeUri => Uri.parse('$apiBaseUrl$coordinatorCurrentPath');
+  Uri get probeUri => Uri.parse('$apiBaseUrl$routePath');
+
+  CoordinatorTarget forRoute(String routePath) => CoordinatorTarget(
+    environment: environment,
+    apiBaseUrl: apiBaseUrl,
+    routePath: routePath,
+  );
 }
 
 enum ProbeState { serving, missing, unavailable, unexpected, unreachable }
@@ -338,13 +352,15 @@ Future<int> runCoordinatorRouteProbe(
 
     var failed = false;
     for (final target in targets) {
-      final result = await probeCoordinatorRoute(
-        target,
-        fetchStatus: fetchStatus,
-        waitBeforeRetry: waitBeforeRetry,
-      );
-      (result.passed ? writeStdout : writeStderr)(result.message);
-      failed |= !result.passed;
+      for (final routePath in coordinatorProbePaths) {
+        final result = await probeCoordinatorRoute(
+          target.forRoute(routePath),
+          fetchStatus: fetchStatus,
+          waitBeforeRetry: waitBeforeRetry,
+        );
+        (result.passed ? writeStdout : writeStderr)(result.message);
+        failed |= !result.passed;
+      }
     }
     return failed ? 1 : 0;
   } on Object catch (error) {

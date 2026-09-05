@@ -1495,9 +1495,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
     try {
       await _signerStore.clearAccount(pubkeyHex);
-      await _deleteStoredLoginForAccount(npub);
     } catch (error) {
       keyDeletionError = error;
+    }
+    try {
+      await _deleteStoredLoginForAccount(npub);
+    } catch (error) {
+      keyDeletionError ??= error;
     }
 
     if (keyDeletionError != null) {

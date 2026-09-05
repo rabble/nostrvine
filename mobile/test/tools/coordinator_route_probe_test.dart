@@ -366,9 +366,32 @@ void main() {
       );
 
       expect(result, 0);
-      expect(requested, hasLength(1));
-      expect(requested.single.host, 'relay.staging.divine.video');
-      expect(stdout.single, contains('STAGING'));
+      expect(requested, hasLength(2));
+      expect(
+        requested.map((uri) => uri.host),
+        everyElement('relay.staging.divine.video'),
+      );
+      expect(requested.map((uri) => uri.path), coordinatorProbePaths);
+      expect(stdout, hasLength(2));
+      expect(stdout, everyElement(contains('STAGING')));
+    });
+
+    test('fails when the status route is missing', () async {
+      final stderr = <String>[];
+
+      final result = await runCoordinatorRouteProbe(
+        ['--environment=staging'],
+        readEnvironmentConfig: () => currentConfigFixture,
+        fetchStatus: (uri, _) async => uri.path == coordinatorStatusProbePath
+            ? HttpStatus.notFound
+            : HttpStatus.unauthorized,
+        waitBeforeRetry: noWait,
+        writeStdout: (_) {},
+        writeStderr: stderr.add,
+      );
+
+      expect(result, 1);
+      expect(stderr.single, contains(coordinatorStatusProbePath));
     });
 
     test(

@@ -622,6 +622,14 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
       }
       if (current.status == AccountDeletionAttemptStatus.recoverable &&
           _receiptVanishEventId != null) {
+        emitIfOpen(
+          AccountDeletionRecoveryState(
+            status: state.status,
+            attempt: current,
+            failure: state.failure,
+            pollTickIndex: tickIndex,
+          ),
+        );
         await _confirmSubmission(current, generation: generation);
         return;
       }

@@ -821,6 +821,14 @@ void main() {
         final cubit = buildCubit(withReceipt: true);
 
         await cubit.resume(_recoverable);
+        final firstDelay = timers.timers.single.delay;
+        await timers.fireNext();
+        final secondDelay = timers.timers
+            .singleWhere(
+              (timer) => timer.isActive,
+            )
+            .delay;
+        expect(secondDelay, greaterThan(firstDelay));
         while (timers.timers.any((timer) => timer.isActive)) {
           await timers.fireNext();
         }

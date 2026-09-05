@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/signer_readiness.dart';
@@ -14,6 +15,7 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final accountDeletionRecoveryRepositoryProvider =
     Provider<AccountDeletionRecoveryRepository>((ref) {
@@ -95,13 +97,37 @@ class SubmittedAccountDeletionAttemptNotifier
   SubmittedAccountDeletionAttempt? build() {
     final encoded = ref.watch(sharedPreferencesProvider).getString(_storageKey);
     if (encoded == null) return null;
+    Map<String, dynamic>? decoded;
     try {
+      decoded = jsonDecode(encoded) as Map<String, dynamic>;
       return SubmittedAccountDeletionAttempt.fromJson(
-        jsonDecode(encoded) as Map<String, dynamic>,
+        decoded,
       );
-    } on Object {
-      unawaited(ref.read(sharedPreferencesProvider).remove(_storageKey));
+    } on Object catch (error) {
+      final encodedPubkey = decoded?['pubkey_hex'];
+      Log.error(
+        'Discarding corrupt account deletion receipt for '
+        '${pubkeyForLogs(encodedPubkey is String ? encodedPubkey : null, whenNull: "unknown account")}: '
+        '$error',
+        name: 'AccountDeletionRecovery',
+        category: LogCategory.auth,
+      );
+      unawaited(_removeCorruptReceipt());
       return null;
+    }
+  }
+
+  Future<void> _removeCorruptReceipt() async {
+    try {
+      if (!await ref.read(sharedPreferencesProvider).remove(_storageKey)) {
+        throw StateError('Could not clear corrupt account deletion receipt');
+      }
+    } on Object catch (error) {
+      Log.error(
+        'Failed to clear corrupt account deletion receipt: $error',
+        name: 'AccountDeletionRecovery',
+        category: LogCategory.auth,
+      );
     }
   }
 

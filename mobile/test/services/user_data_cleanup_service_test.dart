@@ -656,6 +656,24 @@ void main() {
         },
       );
 
+      test('deletes device-wide user data when no session is active', () async {
+        final deletedPubkey = 'a' * 64;
+        final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+        await prefs.setStringList('global_bookmarks', ['bookmark']);
+        await prefs.setString('content_reports_history', '[]');
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+
+        await service.deleteAccountData(
+          deletedPubkey,
+          userNpub: deletedNpub,
+          preserveActiveSession: false,
+        );
+
+        expect(prefs.containsKey('global_bookmarks'), isFalse);
+        expect(prefs.containsKey('content_reports_history'), isFalse);
+        expect(prefs.containsKey('vine_drafts'), isFalse);
+      });
+
       test('propagates database cleanup failures', () async {
         final deletedPubkey = 'a' * 64;
         final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);

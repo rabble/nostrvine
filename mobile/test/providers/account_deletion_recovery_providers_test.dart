@@ -697,5 +697,23 @@ void main() {
         isNotNull,
       );
     });
+
+    test('a corrupt durable receipt is discarded explicitly', () async {
+      await preferences.setString(
+        'account_deletion_receipt_v1',
+        '{"pubkey_hex":"$pubkey","attempt":"invalid"}',
+      );
+
+      expect(
+        container.read(submittedAccountDeletionAttemptProvider),
+        isNull,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        preferences.containsKey('account_deletion_receipt_v1'),
+        isFalse,
+      );
+    });
   });
 }

@@ -170,6 +170,16 @@ class UserDataCleanupService {
       clearedCount++;
     }
 
+    if (!preserveActiveSession) {
+      for (final key in userSpecificKeys) {
+        await remove(key);
+      }
+      for (final key in ownerScopedLegacyKeys) {
+        await remove(key);
+      }
+      await remove(legacyDraftOwnerKey);
+    }
+
     if (_prefs.getString(legacyDraftOwnerKey) == userPubkey) {
       for (final key in ownerScopedLegacyKeys) {
         await remove(key);

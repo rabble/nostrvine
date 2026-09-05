@@ -122,6 +122,30 @@ void main() {
       );
     });
 
+    test('ignores another account receipt recreated by polling', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(
+            AccountDeletionAttempt(
+              id: 'first-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+          ),
+          submittedAttempt: const SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: AccountDeletionAttempt(
+              id: 'first-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isFalse,
+      );
+    });
+
     test('uses a different account fresh recovery result', () {
       expect(
         accountDeletionRecoveryGateActive(

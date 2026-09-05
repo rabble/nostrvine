@@ -18,7 +18,7 @@ bool accountDeletionRecoveryGateActive(
   if (authState == AuthState.authenticated &&
       submittedAttempt != null &&
       submittedAttempt.pubkeyHex != currentPubkeyHex &&
-      identical(attempt.value, submittedAttempt.attempt)) {
+      attempt.value?.id == submittedAttempt.attempt.id) {
     return false;
   }
   return attempt.value?.requiresRecoveryScreen ?? false;

@@ -235,6 +235,85 @@ void main() {
       },
     );
 
+    testWidgets('cold-start recovery resumes the attempt shown by the router', (
+      tester,
+    ) async {
+      when(
+        deletionRepository.fetchCurrent,
+      ).thenAnswer((_) async => _recoverable);
+      final container = buildContainer();
+      await container.read(currentAccountDeletionAttemptProvider.future);
+      final router = GoRouter(
+        initialLocation: AccountDeletionRecoveryScreen.path,
+        routes: [
+          GoRoute(
+            path: AccountDeletionRecoveryScreen.path,
+            builder: (_, _) => const AccountDeletionRecoveryScreen(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionRestoreUsername), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+    });
+
+    testWidgets('unavailable signer reaches the real recovery screen', (
+      tester,
+    ) async {
+      when(
+        () => authService.signerReadiness,
+      ).thenReturn(SignerReadiness.unavailable);
+      final container = buildContainer();
+      final router = GoRouter(
+        initialLocation: AccountDeletionRecoveryScreen.path,
+        routes: [
+          GoRoute(
+            path: AccountDeletionRecoveryScreen.path,
+            builder: (_, _) => const AccountDeletionRecoveryScreen(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.authSessionExpired), findsOneWidget);
+      expect(
+        find.text(l10n.minorAccountReviewCheckingStatusTitle),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+    });
+
     testWidgets(
       'a processing answer moves the user off Nostr settings onto the '
       'recovery screen and keeps settings unreachable',
