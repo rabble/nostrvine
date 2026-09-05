@@ -11,7 +11,7 @@ import '../../helpers/test_provider_overrides.dart';
 
 void main() {
   group(ProfileBanner, () {
-    testWidgets('bounds banner decode to its physical layout size', (
+    testWidgets('bounds a 3:1 banner decode at cover resolution', (
       tester,
     ) async {
       tester.view
@@ -43,7 +43,7 @@ void main() {
       final image = tester.widget<VineCachedImage>(
         find.byType(VineCachedImage),
       );
-      expect(image.memCacheWidth, 800);
+      expect(image.memCacheWidth, 2004);
       expect(image.memCacheHeight, 668);
       expect(image.resizePolicy, ResizeImagePolicy.fit);
     });

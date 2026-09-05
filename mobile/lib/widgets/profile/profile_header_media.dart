@@ -19,6 +19,9 @@ const double _lightboxAvatarCornerRadius = 112;
 const double _avatarHeroCornerRatio =
     _lightboxAvatarCornerRadius / _lightboxAvatarSize;
 
+/// Matches the profile editor's locked banner crop and upload shape.
+const double _profileBannerAspectRatio = 3;
+
 class _AboutText extends StatefulWidget {
   const _AboutText({required this.about});
 
@@ -203,14 +206,30 @@ class _BannerImage extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+          final hasBoundedSize =
+              constraints.hasBoundedWidth &&
+              constraints.maxWidth > 0 &&
+              constraints.hasBoundedHeight &&
+              constraints.maxHeight > 0;
+          final logicalDecodeHeight = hasBoundedSize
+              ? constraints.maxHeight >
+                        constraints.maxWidth / _profileBannerAspectRatio
+                    ? constraints.maxHeight
+                    : constraints.maxWidth / _profileBannerAspectRatio
+              : null;
           return VineCachedImage(
             imageUrl: bannerUrl,
-            memCacheWidth:
-                constraints.hasBoundedWidth && constraints.maxWidth > 0
+            // Decode the app's 3:1 banner shape large enough for BoxFit.cover.
+            // A contain-sized decode would be upscaled along the covering axis.
+            memCacheWidth: logicalDecodeHeight != null
+                ? (logicalDecodeHeight * _profileBannerAspectRatio * pixelRatio)
+                      .ceil()
+                : constraints.hasBoundedWidth && constraints.maxWidth > 0
                 ? (constraints.maxWidth * pixelRatio).ceil()
                 : null,
-            memCacheHeight:
-                constraints.hasBoundedHeight && constraints.maxHeight > 0
+            memCacheHeight: logicalDecodeHeight != null
+                ? (logicalDecodeHeight * pixelRatio).ceil()
+                : constraints.hasBoundedHeight && constraints.maxHeight > 0
                 ? (constraints.maxHeight * pixelRatio).ceil()
                 : null,
             resizePolicy: ResizeImagePolicy.fit,
