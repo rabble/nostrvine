@@ -836,6 +836,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileMessageLabel => 'Mensagem';
 
   @override
+  String get profileShareLabel => 'Compartilhar perfil';
+
+  @override
   String get profileDeletedAccountName => 'Conta excluída';
 
   @override

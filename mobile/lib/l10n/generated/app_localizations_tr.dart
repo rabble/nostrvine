@@ -766,6 +766,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileMessageLabel => 'Mesaj';
 
   @override
+  String get profileShareLabel => 'Profili paylaş';
+
+  @override
   String get profileDeletedAccountName => 'Silinmiş hesap';
 
   @override

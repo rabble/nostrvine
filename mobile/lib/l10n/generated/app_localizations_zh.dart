@@ -752,6 +752,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileMessageLabel => '私信';
 
   @override
+  String get profileShareLabel => '分享主页';
+
+  @override
   String get profileDeletedAccountName => '已注销账号';
 
   @override

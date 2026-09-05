@@ -809,6 +809,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileMessageLabel => 'መልእክት';
 
   @override
+  String get profileShareLabel => 'መገለጫ ማጋራት';
+
+  @override
   String get profileDeletedAccountName => 'የተሰረዘ መለያ';
 
   @override

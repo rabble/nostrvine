@@ -729,6 +729,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileMessageLabel => 'メッセージ';
 
   @override
+  String get profileShareLabel => 'プロフィールを共有';
+
+  @override
   String get profileDeletedAccountName => '削除されたアカウント';
 
   @override

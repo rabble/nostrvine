@@ -798,6 +798,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileMessageLabel => 'Tin nhắn';
 
   @override
+  String get profileShareLabel => 'Chia sẻ hồ sơ';
+
+  @override
   String get profileDeletedAccountName => 'Tài khoản đã xóa';
 
   @override

@@ -142,6 +142,27 @@ void main() {
         // Verify it has the userCheck icon
         expect(find.byType(DivineIcon), findsOneWidget);
       });
+
+      testWidgets('announces the icon-only following button as unfollow', (
+        tester,
+      ) async {
+        final otherPubkey = validPubkey('other');
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: [otherPubkey],
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.unfollowUserSemanticLabel),
+          findsOneWidget,
+        );
+      });
     });
 
     group('interactions', () {

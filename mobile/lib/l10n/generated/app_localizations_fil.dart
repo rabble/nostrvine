@@ -805,6 +805,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileMessageLabel => 'Mensahe';
 
   @override
+  String get profileShareLabel => 'I-share ang profile';
+
+  @override
   String get profileDeletedAccountName => 'Tinanggal na account';
 
   @override

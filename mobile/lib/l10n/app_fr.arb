@@ -2975,6 +2975,7 @@
     "profileLikesLabel": "J'aime",
     "profileMyLibraryLabel": "Ma bibliothèque",
     "profileMessageLabel": "Message",
+    "profileShareLabel": "Partager le profil",
     "profileDeletedAccountName": "Compte supprimé",
     "inboxActionReportVanishedAccount": "Signaler ce compte",
     "inboxActionBlockVanishedAccount": "Bloquer ce compte",

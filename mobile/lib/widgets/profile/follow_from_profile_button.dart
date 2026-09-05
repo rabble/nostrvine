@@ -224,7 +224,8 @@ class FollowFromProfileButtonView extends StatelessWidget {
   }
 }
 
-/// Button showing "Following" state — icon only, no label.
+/// Button showing "Following" state — icon only; its accessible name describes
+/// the unfollow action.
 class _FollowingButton extends StatelessWidget {
   const _FollowingButton({required this.onPressed});
 
@@ -237,6 +238,7 @@ class _FollowingButton extends StatelessWidget {
       size: .small,
       onPressed: onPressed,
       label: '',
+      semanticLabel: context.l10n.unfollowUserSemanticLabel,
       leadingIcon: .userCheck,
     );
   }

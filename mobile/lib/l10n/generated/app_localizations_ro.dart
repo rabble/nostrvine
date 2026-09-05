@@ -865,6 +865,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileMessageLabel => 'Mesaj';
 
   @override
+  String get profileShareLabel => 'Partajează profilul';
+
+  @override
   String get profileDeletedAccountName => 'Cont șters';
 
   @override

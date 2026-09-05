@@ -849,6 +849,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get profileMessageLabel => 'సందేశం';
 
   @override
+  String get profileShareLabel => 'ప్రొఫైల్‌ను భాగస్వామ్యం చేయండి';
+
+  @override
   String get profileDeletedAccountName => 'ఖాతా తొలగించబడింది';
 
   @override

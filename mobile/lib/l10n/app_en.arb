@@ -536,6 +536,10 @@
   "profileLikesLabel": "Likes",
   "profileMyLibraryLabel": "My Library",
   "profileMessageLabel": "Message",
+  "profileShareLabel": "Share profile",
+  "@profileShareLabel": {
+    "description": "Accessible name of the icon-only share button on the profile action row, on both the viewer's own profile and other people's. Announced by screen readers only; the button shows a share icon and no text."
+  },
   "profileDeletedAccountName": "Deleted account",
   "inboxActionReportVanishedAccount": "Report this account",
   "@inboxActionReportVanishedAccount": {

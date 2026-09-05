@@ -2968,6 +2968,7 @@
     "profileLikesLabel": "いいね",
     "profileMyLibraryLabel": "マイライブラリ",
     "profileMessageLabel": "メッセージ",
+    "profileShareLabel": "プロフィールを共有",
     "profileDeletedAccountName": "削除されたアカウント",
     "inboxActionReportVanishedAccount": "このアカウントを報告",
     "inboxActionBlockVanishedAccount": "このアカウントをブロック",
