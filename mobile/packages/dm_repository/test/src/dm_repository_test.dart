@@ -8122,6 +8122,43 @@ void main() {
         },
       );
 
+      // A relay that took the REQ and never answered still counts as connected
+      // when the drain gives up; the SDK's silent-relay repair then cycles its
+      // socket. Only that reconnection can say the relay is answering again,
+      // and keyed on the deferral snapshot alone it was ignored — against a
+      // paused relay the banner stayed up until a manual retry (#8643).
+      test(
+        'resumes when a relay connected at deferral drops and reconnects',
+        () async {
+          final relayStatus = stubRelayStatus(
+            connectedNow: connected(['wss://a.example']),
+          );
+          stubUnansweredThenExhausted();
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add({
+            'wss://a.example': RelayConnectionStatus.disconnected(
+              'wss://a.example',
+            ),
+          });
+          await pumpEventQueue();
+          expect(
+            syncState.markedCompletePubkeys,
+            isEmpty,
+            reason: 'a drop is not capacity',
+          );
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add(connected(['wss://a.example']));
+          await untilMarkedComplete(syncState);
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+        },
+      );
+
       test(
         'stops waiting for a relay once the repository is torn down',
         () async {

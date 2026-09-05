@@ -2106,8 +2106,8 @@ class DmRepository {
     }
   }
 
-  /// Resumes a deferred history drain once a relay that was not connected
-  /// when the drain gave up connects.
+  /// Resumes a deferred history drain once a relay connects that was not
+  /// connected the last time the pool was observed.
   ///
   /// Every relay-availability deferral leaves `historyDrainComplete` unset
   /// and waits for "the next inbox open". But the inbox is already open,
@@ -2115,33 +2115,48 @@ class DmRepository {
   /// against whatever the pool looks like at that instant — against an
   /// idle-disconnected pool that is the same failure again. Like the labeler
   /// and feed services, this holds a one-shot relay-status listener, but uses
-  /// a finer trigger: it re-runs the drain when any relay the deferral did not
-  /// have becomes connected. A relay that repeatedly reconnects without
-  /// answering can therefore re-drive the bounded drain. At most one listener
-  /// is armed at a time, a new run supersedes it, and teardown cancels it. A
-  /// page-cap pause deliberately does not arm one: that budget resumes on the
-  /// next inbox open by design. See #8550.
+  /// a finer trigger: a rising edge. It re-runs the drain when a relay becomes
+  /// connected that was not connected at the previous observation — one the
+  /// deferral did not have, or one it had whose socket has since dropped and
+  /// come back. The second case is how a relay that took the REQ and never
+  /// answered gets a second chance: it still counts as connected when the
+  /// drain gives up, the SDK's silent-relay repair then cycles that socket,
+  /// and only the reconnection can say the relay is answering again. Keyed on
+  /// the deferral-time snapshot alone, that reconnection was ignored and the
+  /// banner stayed up until a manual retry (verified against a paused relay,
+  /// #8643). A relay merely reporting again while still connected is not an
+  /// edge. A relay that repeatedly reconnects without answering can therefore
+  /// re-drive the bounded drain. At most one listener is armed at a time, a
+  /// new run supersedes it, and teardown cancels it. A page-cap pause
+  /// deliberately does not arm one: that budget resumes on the next inbox
+  /// open by design. See #8550.
   void _resumeDrainWhenRelayConnects(String pubkey, int generation) {
     unawaited(_drainRelayReadySubscription?.cancel());
     _drainRelayReadySubscription = null;
     if (_ingestSessionEnded(pubkey, generation)) return;
-    final connectedAtDeferral = <String>{
+    final lastConnected = <String>{
       for (final entry in _nostrClient.relayStatuses.entries)
         if (entry.value.isConnected) entry.key,
     };
     Log.info(
       'DM history drain for ${pubkeyForLogs(pubkey)} will resume when a relay '
-      'connects (connected now: ${connectedAtDeferral.length}/'
+      'connects (connected now: ${lastConnected.length}/'
       '${_nostrClient.configuredRelayCount})',
       category: LogCategory.system,
     );
     _drainRelayReadySubscription = _nostrClient.relayStatusStream.listen((
       statuses,
     ) {
-      final newlyConnected = statuses.entries.any(
-        (entry) =>
-            entry.value.isConnected && !connectedAtDeferral.contains(entry.key),
+      final nowConnected = <String>{
+        for (final entry in statuses.entries)
+          if (entry.value.isConnected) entry.key,
+      };
+      final newlyConnected = nowConnected.any(
+        (url) => !lastConnected.contains(url),
       );
+      lastConnected
+        ..clear()
+        ..addAll(nowConnected);
       if (!newlyConnected) return;
       unawaited(_drainRelayReadySubscription?.cancel());
       _drainRelayReadySubscription = null;
