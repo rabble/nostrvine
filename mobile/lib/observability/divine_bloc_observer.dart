@@ -126,8 +126,8 @@ class DivineBlocObserver extends BlocObserver {
     // report it emits. Both are fire-and-forget, but invoked synchronously and
     // in order, so the platform-channel messages stay ordered without blocking
     // the bloc error path. recordError and setCustomKey each swallow their own
-    // failures and return early when uninitialized (see
-    // crash_reporting_service.dart).
+    // failures, and while Crashlytics is still initializing they are held in
+    // that same order for replay (see crash_reporting_service.dart).
     _attachDiagnosticKeys(_diagnostics[bloc]);
     final reason = sanitizeForCrashReport('Bloc.addError $runtimeType');
     unawaited(
