@@ -273,6 +273,75 @@ void main() {
           },
         );
 
+        test(
+          'refresh does not reintroduce an edit older than the API page',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getRecentVideosPage(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => _recentPage([
+                _createVideoStats(
+                  id: 'newer-api-video',
+                  pubkey: 'newer-api-pubkey',
+                  dTag: 'newer-api-dtag',
+                  videoUrl: 'https://example.com/newer-api.mp4',
+                  createdAt: 2200,
+                  publishedAt: 2200,
+                ),
+                _createVideoStats(
+                  id: 'api-video',
+                  pubkey: 'api-pubkey',
+                  dTag: 'api-dtag',
+                  videoUrl: 'https://example.com/api.mp4',
+                  createdAt: 2000,
+                  publishedAt: 2000,
+                ),
+              ]),
+            );
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [
+                _createVideoEvent(
+                  id: 'edited-old-video',
+                  pubkey: 'old-pubkey',
+                  videoUrl: 'https://example.com/edited-old.mp4',
+                  createdAt: 3000,
+                  extraTags: const [
+                    ['published_at', '500'],
+                  ],
+                ),
+                _createVideoEvent(
+                  id: 'new-relay-video',
+                  pubkey: 'new-pubkey',
+                  videoUrl: 'https://example.com/new.mp4',
+                  createdAt: 2500,
+                ),
+              ],
+            );
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = (await repositoryWithApi.getNewVideos(
+              skipCache: true,
+              limit: 3,
+            )).videos;
+
+            expect(
+              result.map((video) => video.id),
+              equals([
+                'new-relay-video',
+                'newer-api-video',
+                'api-video',
+              ]),
+            );
+          },
+        );
+
         test('passes limit and before to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
@@ -304,6 +373,56 @@ void main() {
               before: 1704067200,
             ),
           ).called(1);
+        });
+
+        test('paginates API pages by original publication time', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          final requestedBefore = <int?>[];
+          when(
+            () => mockFunnelcakeClient.getRecentVideosPage(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final before = invocation.namedArguments[#before] as int?;
+            requestedBefore.add(before);
+            if (before != null) return _recentPage(<VideoStats>[]);
+
+            return _recentPage([
+              _createVideoStats(
+                id: 'edited-old-reply',
+                pubkey: 'test-pubkey',
+                dTag: 'edited-old-reply',
+                videoUrl: 'https://example.com/edited.mp4',
+                createdAt: 2000,
+                publishedAt: 1000,
+                rawTags: const {
+                  'E': 'root-event-id',
+                  'K': '34236',
+                  'P': 'root-author',
+                  'e': 'root-event-id',
+                  'k': '34236',
+                  'p': 'root-author',
+                },
+              ),
+              _createVideoStats(
+                id: 'visible-video',
+                pubkey: 'test-pubkey',
+                dTag: 'visible-video',
+                videoUrl: 'https://example.com/visible.mp4',
+                createdAt: 1900,
+                publishedAt: 1800,
+              ),
+            ]);
+          });
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getNewVideos(limit: 2);
+
+          expect(requestedBefore, equals([null, 999]));
         });
 
         test('falls back to Nostr when Funnelcake throws', () async {
@@ -1599,6 +1718,62 @@ void main() {
           );
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
+
+        test(
+          'preserves the Funnelcake page order for the Following feed',
+          () async {
+            // The Following feed stays revision-ordered server-side and
+            // pages on a revision-time `next_cursor`. Re-sorting the page on
+            // publication time would order rows against the clock the cursor
+            // walks, so rows on a later page can be newer by publication than
+            // rows already rendered above them.
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => HomeFeedResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'revised-recently',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-1',
+                    videoUrl: 'https://example.com/1.mp4',
+                    createdAt: 2000,
+                    publishedAt: 1000,
+                  ),
+                  _createVideoStats(
+                    id: 'published-later',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-2',
+                    videoUrl: 'https://example.com/2.mp4',
+                    createdAt: 1900,
+                    publishedAt: 1800,
+                  ),
+                ],
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+              limit: 10,
+            );
+
+            expect(
+              result.videos.map((video) => video.id),
+              equals(['revised-recently', 'published-later']),
+            );
+          },
+        );
 
         test('hydrates sparse API results with bulk loop stats', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -13455,6 +13630,7 @@ VideoStats _createVideoStats({
   required String dTag,
   required String videoUrl,
   int createdAt = 1704067200,
+  int? publishedAt,
   String title = 'Test Video',
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
@@ -13471,6 +13647,7 @@ VideoStats _createVideoStats({
     pubkey: pubkey,
     createdAt: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
     kind: EventKind.videoVertical,
+    publishedAt: publishedAt,
     dTag: dTag,
     title: title,
     thumbnail: thumbnail,
