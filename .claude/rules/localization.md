@@ -130,11 +130,9 @@ dart run scripts/lib/divine_ui_semantic_label_detector.dart lib --detail
 bash scripts/check_divine_ui_semantic_label_defaults.sh
 ```
 
-After fixing a baselined omission, lock the lower ceiling:
-
-```bash
-UPDATE_BASELINE=1 bash scripts/check_divine_ui_semantic_label_defaults.sh
-```
+The baseline is empty and the ratchet rejects a baseline that adds a key, so
+pass the app's localized label at the call site rather than regenerating the
+baseline.
 
 ## Rules
 
