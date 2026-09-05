@@ -1291,6 +1291,22 @@ class DmRepository {
     };
   }
 
+  /// Whether [relays] names at least one relay the configured pool does not.
+  ///
+  /// The history drain pages the pool on every run, so an advertised inbox
+  /// made up entirely of pool members was asked by any run that completed;
+  /// re-arming for it would replay the whole history to recover nothing.
+  /// Compared on normalized URLs, since the pool stores them that way and a
+  /// trailing slash must not make a pool member look like an outsider.
+  bool _namesRelayOutsidePool(List<String> relays) {
+    final pooled = _nostrClient.configuredRelays
+        .map((url) => normalizeRelayUrl(url) ?? url)
+        .toSet();
+    return relays.any(
+      (url) => !pooled.contains(normalizeRelayUrl(url) ?? url),
+    );
+  }
+
   /// Where the sender's own gift-wrap copy of an outgoing DM should land: the
   /// configured pool UNION the user's advertised kind-10050 DM inbox.
   ///
@@ -1776,17 +1792,27 @@ class DmRepository {
       final recovery = await _drainOwnInboxRelays(pubkey, gen);
       if (_ingestSessionEnded(pubkey, gen)) return;
       if (recovery.conclusive) {
-        // Either answer settles it. A list means the earlier run may have
-        // missed whole relays, so re-arm once. No list means the pool was
-        // always the whole story and the completion was honest. Recording it
-        // either way is what stops this costing a read on every inbox open.
+        // Either answer settles it. A list naming a relay outside the pool
+        // means the earlier run may have missed whole relays, so re-arm once.
+        // A list of pool members only, or no list, means the pool was always
+        // the whole story and the completion was honest — every run pages
+        // the pool, so those relays were asked. Recording it either way is
+        // what stops this costing a read on every inbox open.
         await syncState.setDrainCoveredOwnInbox(pubkey);
-        if (recovery.relays != null) {
+        final advertised = recovery.relays;
+        if (advertised != null && _namesRelayOutsidePool(advertised)) {
           await syncState.rearmDrainForOwnInbox(pubkey);
           Log.info(
             'DM history drain re-armed for ${pubkeyForLogs(pubkey)}: the '
             "completed run never read the account's own DM inbox relays, "
-            'which are now known',
+            'which are now known and name a relay outside the pool',
+            category: LogCategory.system,
+          );
+        } else if (advertised != null) {
+          Log.info(
+            'DM history drain coverage settled for ${pubkeyForLogs(pubkey)}: '
+            "the account's own DM inbox relays are all pool members the "
+            'completed run already paged',
             category: LogCategory.system,
           );
         }
