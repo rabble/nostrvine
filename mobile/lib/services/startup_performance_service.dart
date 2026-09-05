@@ -225,42 +225,6 @@ class StartupPerformanceService {
     }
   }
 
-  /// Defer heavy work until after UI is ready
-  Future<T> deferUntilUIReady<T>(
-    Future<T> Function() work, {
-    String? taskName,
-  }) async {
-    // If UI is already ready, execute immediately
-    if (_uiReadyTime != null) {
-      return work();
-    }
-
-    final completer = Completer<T>();
-
-    // Wait for UI to be ready
-    void checkUIReady() {
-      if (_uiReadyTime != null) {
-        // Execute the deferred work
-        work().then(completer.complete).catchError(completer.completeError);
-      } else {
-        // Check again on next frame
-        WidgetsBinding.instance.addPostFrameCallback((_) => checkUIReady());
-      }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => checkUIReady());
-
-    if (taskName != null) {
-      Log.debug(
-        '⏳ Deferring task: $taskName until UI ready',
-        name: 'StartupPerformance',
-        category: LogCategory.system,
-      );
-    }
-
-    return completer.future;
-  }
-
   /// Execute work with performance monitoring
   Future<T> measureWork<T>(String taskName, Future<T> Function() work) async {
     startPhase(taskName);

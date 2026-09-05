@@ -158,6 +158,11 @@ Future<void> startOpenVineApp({
   final startupPerformance = StartupPerformanceService(
     crashReporting: crashReporting,
   );
+  // Fed by the debugPrint override installed below, which is process-wide, so
+  // the batcher is constructed here and pinned device-scoped via
+  // DeviceScope.overrides — the startup coordinator arms its flush timer and
+  // the lifecycle handler flushes it, and both must reach this instance.
+  final logMessageBatcher = LogMessageBatcher();
   AppUptime.markStarted();
 
   // Ensure bindings are initialized first (required for everything)
@@ -327,14 +332,14 @@ Future<void> startOpenVineApp({
       if (message.contains('[EXTERNAL-EVENT]') &&
           message.contains('already exists in database or was rejected')) {
         // Use our batcher for these specific messages
-        LogMessageBatcher.instance.tryBatchMessage(
+        logMessageBatcher.tryBatchMessage(
           message,
           category: LogCategory.relay,
         );
         return; // Don't print the individual message
       } else if (message.contains('[EXTERNAL-EVENT]') &&
           message.contains('matches subscription')) {
-        LogMessageBatcher.instance.tryBatchMessage(
+        logMessageBatcher.tryBatchMessage(
           message,
           level: LogLevel.debug,
           category: LogCategory.relay,
@@ -343,7 +348,7 @@ Future<void> startOpenVineApp({
       } else if (message.contains('[EXTERNAL-EVENT]') &&
           message.contains('Received event') &&
           message.contains('from')) {
-        LogMessageBatcher.instance.tryBatchMessage(
+        logMessageBatcher.tryBatchMessage(
           message,
           level: LogLevel.debug,
           category: LogCategory.relay,
@@ -646,6 +651,7 @@ Future<void> startOpenVineApp({
     documentsPath: documentsPath,
     startupPerformance: startupPerformance,
     crashReporting: crashReporting,
+    logMessageBatcher: logMessageBatcher,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,

@@ -13,6 +13,7 @@ import 'package:openvine/notifications/notification_tap_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/log_message_batcher_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/startup_performance_provider.dart';
@@ -23,7 +24,6 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/startup/app_bootstrap.dart';
 import 'package:openvine/startup/startup_phases.dart';
 import 'package:openvine/startup/timed_startup_task.dart';
-import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -172,7 +172,7 @@ StartupCoordinator createStartupCoordinator(ProviderContainer container) {
         initializationStep: 'Initializing logging configuration',
         task: () async {
           await container.read(loggingConfigServiceProvider).initialize();
-          LogMessageBatcher.instance.initialize();
+          container.read(logMessageBatcherProvider).initialize();
         },
       );
     },

@@ -28,6 +28,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
@@ -102,6 +103,7 @@ void main() {
         crashReporting: CrashReportingService(),
       ),
       documentsPath: '/documents',
+      logMessageBatcher: LogMessageBatcher(),
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
         pushNotificationSyncProvider.overrideWithValue(null),
@@ -122,6 +124,7 @@ void main() {
         crashReporting: CrashReportingService(),
       ),
       documentsPath: '/documents',
+      logMessageBatcher: LogMessageBatcher(),
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
         pushNotificationSyncProvider.overrideWithValue(coordinator),
@@ -633,6 +636,7 @@ void main() {
           crashReporting: CrashReportingService(),
         ),
         documentsPath: '/documents',
+        logMessageBatcher: LogMessageBatcher(),
         accountOverrides: [
           secureKeyStorageProvider.overrideWithValue(keyStorage),
           authServiceProvider.overrideWithValue(targetAuthService),

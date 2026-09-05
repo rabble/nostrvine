@@ -10,9 +10,18 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nip07_service.dart';
+import 'package:openvine/services/nip07_types.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeExtension extends NostrExtension {
+  @override
+  Future<String> getPublicKey() async =>
+      'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+}
 
 class _RecordingAnalytics implements AnalyticsEventSink {
   final userIds = <String?>[];
@@ -51,6 +60,50 @@ void main() {
 
       expect(androidOptions['encryptedSharedPreferences'], 'true');
       expect(androidOptions['resetOnError'], 'false');
+    });
+  });
+
+  group('webAuthServiceProvider', () {
+    test('hands WebAuthService the shared NIP-07 bridge', () {
+      final container = ProviderContainer(
+        overrides: [
+          nip07ServiceProvider.overrideWithValue(
+            Nip07Service.withExtension(_FakeExtension()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(webAuthServiceProvider).isNip07Available, isTrue);
+    });
+
+    test('keeps one WebAuthService alive between readers', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final first = container.read(webAuthServiceProvider);
+      // Gives an autoDispose provider — which this must not be — the chance
+      // to drop the unlistened instance.
+      await container.pump();
+
+      expect(container.read(webAuthServiceProvider), same(first));
+    });
+
+    test('disposes WebAuthService with its container', () async {
+      final container = ProviderContainer(
+        overrides: [
+          nip07ServiceProvider.overrideWithValue(
+            Nip07Service.withExtension(_FakeExtension()),
+          ),
+        ],
+      );
+      final service = container.read(webAuthServiceProvider);
+      await service.authenticateWithNip07();
+      expect(service.isAuthenticated, isTrue);
+
+      container.dispose();
+
+      expect(service.isAuthenticated, isFalse);
     });
   });
 

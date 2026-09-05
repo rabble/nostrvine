@@ -1295,12 +1295,6 @@ class UploadManager implements BackgroundAwareService {
     unawaited(_recoverStuckUploads());
   }
 
-  @override
-  void onPeriodicCleanup() {
-    // No-op: recovery is driven by resume/startup events, not the periodic
-    // timer.
-  }
-
   /// Cancel an upload (stops the upload but keeps it for retry)
   Future<void> cancelUpload(String uploadId) async {
     final upload = getUpload(uploadId);

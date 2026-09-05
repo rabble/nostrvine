@@ -6,12 +6,13 @@ import 'dart:collection';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Batches similar log messages and outputs summaries instead of individual messages
+///
+/// The app owns one instance, constructed in `app_bootstrap` where the
+/// `debugPrint` override that feeds it is installed, and pinned device-scoped
+/// through `DeviceScope` so the startup coordinator and the lifecycle handler
+/// arm and flush the same batcher (#8618).
 class LogMessageBatcher {
-  static final LogMessageBatcher _instance = LogMessageBatcher._internal();
-  factory LogMessageBatcher() => _instance;
-  LogMessageBatcher._internal();
-
-  static LogMessageBatcher get instance => _instance;
+  LogMessageBatcher();
 
   /// Map of message patterns to their batch info
   final Map<String, _BatchInfo> _batchedMessages = {};
@@ -31,10 +32,16 @@ class LogMessageBatcher {
     _flushTimer = Timer.periodic(_flushInterval, (_) => _flushBatches());
   }
 
+  /// Flush pending summaries without stopping periodic batching.
+  ///
+  /// Account-scoped lifecycle handlers use this when they unmount. The timer
+  /// belongs to the device-scoped batcher and must survive account swaps.
+  void flush() => _flushBatches();
+
   /// Dispose the batcher and clean up resources
   void dispose() {
     _flushTimer?.cancel();
-    _flushBatches(); // Flush any remaining messages
+    flush();
     _batchedMessages.clear();
   }
 

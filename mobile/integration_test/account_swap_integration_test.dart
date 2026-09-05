@@ -18,6 +18,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_setup.dart';
@@ -81,6 +82,7 @@ void main() {
         appVersion: 'test',
         crashReporting: CrashReportingService(),
         documentsPath: '/documents',
+        logMessageBatcher: LogMessageBatcher(),
       );
 
       // Create two real local-key identities in a setup container. Guarded

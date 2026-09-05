@@ -123,12 +123,22 @@ void main() {
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
       flutterSecureStorage: mockSecureStorage,
-      nip07ServiceForTest: mockNip07Service,
+      nip07Service: mockNip07Service,
     );
   });
 
   tearDown(() async {
     await authService.dispose();
+  });
+
+  group('isNip07Available', () {
+    test('mirrors the injected extension bridge', () {
+      when(() => mockNip07Service.isAvailable).thenReturn(true);
+      expect(authService.isNip07Available, isTrue);
+
+      when(() => mockNip07Service.isAvailable).thenReturn(false);
+      expect(authService.isNip07Available, isFalse);
+    });
   });
 
   group('connectWithNip07', () {

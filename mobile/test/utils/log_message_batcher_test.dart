@@ -12,10 +12,9 @@ void main() {
     late LogCaptureService logCapture;
 
     setUp(() async {
-      batcher = LogMessageBatcher.instance;
+      batcher = LogMessageBatcher();
       logCapture = LogCaptureService();
 
-      batcher.dispose();
       await logCapture.clearAllLogs();
       UnifiedLogger.enableCategories({LogCategory.relay});
       UnifiedLogger.setLogLevel(LogLevel.debug);
@@ -37,6 +36,24 @@ void main() {
       );
 
       batcher.dispose();
+
+      expect(logCapture.getRecentLogs(), isEmpty);
+    });
+
+    test('disposing a second batcher does not flush the first one', () {
+      final other = LogMessageBatcher();
+      addTearDown(other.dispose);
+
+      expect(
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event abc matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        ),
+        isTrue,
+      );
+
+      other.dispose();
 
       expect(logCapture.getRecentLogs(), isEmpty);
     });
@@ -75,6 +92,30 @@ void main() {
         );
 
         batcher.dispose();
+      });
+    });
+
+    test('flushing pending messages keeps the interval armed', () {
+      fakeAsync((async) {
+        batcher.initialize();
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event abc matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        );
+
+        batcher.flush();
+
+        expect(logCapture.getRecentLogs(), hasLength(1));
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event def matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        );
+
+        async.elapse(const Duration(seconds: 10));
+
+        expect(logCapture.getRecentLogs(), hasLength(2));
       });
     });
 

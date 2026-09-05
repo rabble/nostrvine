@@ -125,7 +125,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     List<String>? indexerRelays,
     String? primaryRelayUrl,
     RelayDiscoveryService? relayDiscoveryService,
-    Nip07Service? nip07ServiceForTest,
+    Nip07Service? nip07Service,
     RemoteSignerFactory? remoteSignerFactory,
     Duration oauthRefreshTimeout = defaultOAuthRefreshTimeout,
     Duration expiredSessionRefreshTimeout = defaultExpiredSessionRefreshTimeout,
@@ -146,7 +146,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: ''),
-       _injectedNip07ServiceForTest = nip07ServiceForTest,
+       _nip07Extension = nip07Service,
        _remoteSignerFactory = remoteSignerFactory ?? NostrRemoteSigner.new,
        _oauthRefreshTimeout = oauthRefreshTimeout,
        _expiredSessionRefreshTimeout = expiredSessionRefreshTimeout,
@@ -231,10 +231,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// [OAuthSessionCoordinator]. Injectable so tests can use a short bound.
   final Duration _expiredSessionRefreshTimeout;
 
-  /// Test seam: when supplied, bypasses the [Nip07Service] singleton and the
-  /// [kIsWeb] guard so unit tests can exercise the full NIP-07 flow on the VM
-  /// target.
-  final Nip07Service? _injectedNip07ServiceForTest;
+  /// Bridge to a NIP-07 browser extension, or null when none was injected
+  /// (tests off-web). Production injects the shared `nip07ServiceProvider`
+  /// instance, whose [Nip07Service.isAvailable] is false off-web, so the
+  /// NIP-07 paths need no [kIsWeb] guard of their own (#8618).
+  final Nip07Service? _nip07Extension;
 
   /// Relay URL used when self-publishing the bootstrap kind:10002 event for
   /// accounts whose indexer discovery returned empty. Injected from
@@ -413,10 +414,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// True only on web targets where `window.nostr` (a NIP-07 extension) is
   /// reachable. Used by the welcome screen to decide whether to surface the
   /// browser-extension sign-in button.
-  bool get isNip07Available {
-    if (!kIsWeb && _injectedNip07ServiceForTest == null) return false;
-    return (_injectedNip07ServiceForTest ?? Nip07Service()).isAvailable;
-  }
+  bool get isNip07Available => _nip07Extension?.isAvailable ?? false;
 
   /// Current RPC capability state.
   AuthRpcCapability get authRpcCapability => _authRpcCapability;
@@ -2160,8 +2158,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Connect using a NIP-07 browser extension (Alby, nos2x, Nostore, etc.)
   ///
-  /// Only valid on the web platform. On non-web targets this returns an
-  /// [AuthResult.failure] immediately without touching auth state.
+  /// When the injected bridge is missing or no browser extension is available,
+  /// returns an [AuthResult.failure] without touching auth state. This covers
+  /// non-web targets and web sessions without a NIP-07 extension.
   Future<AuthResult> connectWithNip07() async {
     Log.info(
       'Connecting with NIP-07 browser extension...',
@@ -2169,9 +2168,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
 
-    if (!kIsWeb && _injectedNip07ServiceForTest == null) {
+    final service = _nip07Extension;
+    if (service == null || !service.isAvailable) {
       return AuthResult.failure(
-        'NIP-07 browser extensions are only available on the web platform.',
+        'No NIP-07 extension found. '
+        'Please install Alby, nos2x, or another compatible extension.',
       );
     }
 
@@ -2179,15 +2180,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _lastError = null;
 
     try {
-      final service = _injectedNip07ServiceForTest ?? Nip07Service();
-
-      if (!service.isAvailable) {
-        throw Exception(
-          'No NIP-07 extension found. '
-          'Please install Alby, nos2x, or another compatible extension.',
-        );
-      }
-
       final result = await service.connect();
       if (!result.success || result.publicKey == null) {
         throw Exception(result.errorMessage ?? 'NIP-07 authentication failed.');
@@ -2247,12 +2239,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// session by calling getPublicKey() again. If the extension is no
   /// longer present or refuses, fall back to unauthenticated.
   Future<void> _reconnectNip07() async {
-    if (!kIsWeb && _injectedNip07ServiceForTest == null) {
-      _setAuthState(AuthState.unauthenticated);
-      return;
-    }
-    final service = _injectedNip07ServiceForTest ?? Nip07Service();
-    if (!service.isAvailable) {
+    final service = _nip07Extension;
+    if (service == null || !service.isAvailable) {
       Log.info(
         'NIP-07 extension no longer available — falling back to '
         'unauthenticated',
@@ -4510,11 +4498,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       name: 'AuthService',
       category: LogCategory.auth,
     );
-  }
-
-  @override
-  void onPeriodicCleanup() {
-    // No cleanup needed for auth service during periodic cleanup
   }
 
   Future<void> dispose() async {

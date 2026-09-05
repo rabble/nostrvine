@@ -6,8 +6,10 @@ import 'dart:math' as math;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/avatar_svg/avatar_svg_cubit.dart';
+import 'package:openvine/providers/avatar_svg_repository_provider.dart';
 import 'package:openvine/repositories/avatar_svg_repository.dart';
 import 'package:openvine/utils/dead_image_hosts.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
@@ -75,6 +77,8 @@ class UserAvatar extends StatelessWidget {
   static double cornerRadiusForSize(double size) =>
       size <= 24 ? size / 3 : math.min(size * 0.4, 56);
 
+  /// Overrides the repository read from [avatarSvgRepositoryProvider], so a
+  /// test can render an SVG avatar without a `ProviderScope`.
   @visibleForTesting
   final AvatarSvgRepository? avatarSvgRepository;
 
@@ -186,9 +190,16 @@ class UserAvatar extends StatelessWidget {
         return _buildPlaceholder();
       }
 
-      return _AvatarSvgContent(
+      final repository = avatarSvgRepository;
+      if (repository != null) {
+        return _AvatarSvgContent(
+          imageUrl: imageUrl!,
+          repository: repository,
+          placeholderBuilder: _buildPlaceholder,
+        );
+      }
+      return _ProvidedAvatarSvgContent(
         imageUrl: imageUrl!,
-        repository: avatarSvgRepository ?? defaultAvatarSvgRepository,
         placeholderBuilder: _buildPlaceholder,
       );
     }
@@ -225,6 +236,29 @@ class UserAvatar extends StatelessWidget {
     }
 
     return _buildPlaceholder();
+  }
+}
+
+/// Resolves the shared [AvatarSvgRepository] from the container.
+///
+/// Separate from [_AvatarSvgContent] so a caller that injects its own
+/// repository needs no `ProviderScope` above it.
+class _ProvidedAvatarSvgContent extends ConsumerWidget {
+  const _ProvidedAvatarSvgContent({
+    required this.imageUrl,
+    required this.placeholderBuilder,
+  });
+
+  final String imageUrl;
+  final Widget Function() placeholderBuilder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _AvatarSvgContent(
+      imageUrl: imageUrl,
+      repository: ref.watch(avatarSvgRepositoryProvider),
+      placeholderBuilder: placeholderBuilder,
+    );
   }
 }
 

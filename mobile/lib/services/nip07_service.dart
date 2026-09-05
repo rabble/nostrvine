@@ -49,16 +49,19 @@ class Nip07SignResult {
 
 /// Service for managing NIP-07 browser extension interactions
 class Nip07Service {
-  factory Nip07Service() => _instance;
-  Nip07Service._internal() : _extensionOverride = null;
+  /// Talks to the extension the page exposes as `window.nostr`.
+  ///
+  /// The app owns one instance, shared by `AuthService` and `WebAuthService`
+  /// through `nip07ServiceProvider` so both observe the same extension
+  /// session (#8618). Off-web, [isAvailable] is false and nothing here
+  /// touches the browser.
+  Nip07Service() : _extensionOverride = null;
 
   /// Test seam: binds the service to [extension] instead of `window.nostr`,
   /// so the extension-facing paths can be exercised off-web.
   @visibleForTesting
   Nip07Service.withExtension(nip07.NostrExtension extension)
     : _extensionOverride = extension;
-
-  static final Nip07Service _instance = Nip07Service._internal();
 
   final nip07.NostrExtension? _extensionOverride;
 

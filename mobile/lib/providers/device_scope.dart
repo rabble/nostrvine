@@ -12,11 +12,13 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/log_message_batcher_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/startup_performance_provider.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/log_message_batcher.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
@@ -55,6 +57,7 @@ class DeviceScope {
     required this.documentsPath,
     required this.startupPerformance,
     required this.crashReporting,
+    required this.logMessageBatcher,
     this.dbCipherKey,
     this.databaseCorruptionService,
     this.installSource = InstallSource.sideload,
@@ -94,6 +97,13 @@ class DeviceScope {
   /// `FlutterError.onError` on every account swap (#4743).
   final CrashReportingService crashReporting;
 
+  /// Collapses repetitive relay log lines into periodic summaries. Device-scoped
+  /// because the `debugPrint` override that feeds it is installed once per
+  /// process in `app_bootstrap`, before any container exists; a per-container
+  /// instance would leave the startup coordinator arming, and the lifecycle
+  /// handler flushing, a batcher nothing writes to (#8618).
+  final LogMessageBatcher logMessageBatcher;
+
   /// The app-lifetime handle the UI calls to switch accounts. Device-scoped so
   /// it outlives — and drives — every container swap.
   final AccountSwitchController switchController;
@@ -132,6 +142,7 @@ class DeviceScope {
     installSourceProvider.overrideWithValue(installSource),
     startupPerformanceServiceProvider.overrideWithValue(startupPerformance),
     crashReportingServiceProvider.overrideWithValue(crashReporting),
+    logMessageBatcherProvider.overrideWithValue(logMessageBatcher),
     deviceScopeProvider.overrideWithValue(this),
     ...accountOverrides,
   ];

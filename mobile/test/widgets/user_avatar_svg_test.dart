@@ -4,10 +4,12 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/avatar_svg_repository_provider.dart';
 import 'package:openvine/repositories/avatar_svg_repository.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -235,6 +237,27 @@ void main() {
 
       expect(AvatarFailureCache.instance.isFailed(failedUrl), isTrue);
     });
+
+    testWidgets(
+      'resolves the SVG repository from the container when none is injected',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              avatarSvgRepositoryProvider.overrideWithValue(
+                _FakeAvatarSvgRepository(validSvgBytes),
+              ),
+            ],
+            child: buildAvatar(
+              imageUrl: 'https://divine.video/divine-logo.svg',
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(SvgPicture), findsOneWidget);
+      },
+    );
 
     testWidgets('SVG render failures are cached briefly', (tester) async {
       const failedUrl = 'https://divine.video/divine-logo.svg';

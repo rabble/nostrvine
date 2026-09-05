@@ -90,23 +90,11 @@ class AppNotification {
 
 /// Service for managing app notifications
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+///
+/// The app owns one instance through `notificationServiceProvider`, which
+/// constructs it and disposes it with the container (#8618).
 class NotificationService {
-  /// Factory constructor that returns the singleton instance
-  factory NotificationService() => instance;
-
-  NotificationService._();
-  static NotificationService? _instance;
-
-  /// Singleton instance
-  // A constructor cannot be a getter, and `factory NotificationService()`
-  // would hide both the sharing and the revive-after-dispose below.
-  // ignore: prefer_constructors_over_static_methods
-  static NotificationService get instance {
-    if (_instance == null || _instance!._disposed) {
-      _instance = NotificationService._();
-    }
-    return _instance!;
-  }
+  NotificationService();
 
   final List<AppNotification> _notifications = [];
   _NotificationPermissionState _permissionState =
@@ -159,16 +147,9 @@ class NotificationService {
   /// `PushNotificationSessionCoordinator`, which is the only place the app is
   /// allowed to interrupt the user for it.
   ///
-  /// Call this from main.dart after runApp() to set up notifications:
-  /// ```dart
-  /// void main() async {
-  ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   runApp(MyApp());
-  ///
-  ///   // Initialize notifications (optional - will auto-init on first use)
-  ///   await NotificationService().initialize();
-  /// }
-  /// ```
+  /// `notificationServiceProvider` calls this when it creates the app-owned
+  /// service. Callers should read that provider instead of constructing a
+  /// second instance.
   Future<void> initialize() async {
     Log.debug(
       '🔧 Initializing NotificationService',

@@ -7,6 +7,7 @@ import 'package:openvine/observability/network/firebase_http_metric_recorder.dar
 import 'package:openvine/observability/network/http_metric_recorder.dart';
 import 'package:openvine/observability/network/performance_http_client.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/nip07_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
@@ -28,6 +29,16 @@ final loggingConfigServiceProvider = Provider<LoggingConfigService>(
 final topHashtagsServiceProvider = Provider<TopHashtagsService>(
   (ref) => TopHashtagsService(),
 );
+
+/// Provides the app's shared [Nip07Service], the bridge to a NIP-07 browser
+/// extension such as Alby or nos2x.
+///
+/// Replaces the former `Nip07Service()` factory singleton (#8618). A single
+/// shared instance is kept alive so `AuthService` and `WebAuthService`
+/// observe the same extension session: a connection made through one is
+/// visible to the other. Constructing it off-web is harmless — `isAvailable`
+/// is false there and nothing touches `window.nostr` until it is true.
+final nip07ServiceProvider = Provider<Nip07Service>((ref) => Nip07Service());
 
 /// Provides the app's [PerformanceMonitoringService].
 ///

@@ -11,7 +11,6 @@ class BackgroundActivityManager {
   BackgroundActivityManager();
 
   bool _isAppInForeground = true;
-  bool _isInitialized = false;
   final List<BackgroundAwareService> _registeredServices = [];
 
   // Defensive bound on how long the manager will await a single service's
@@ -23,33 +22,12 @@ class BackgroundActivityManager {
   // `FutureOr<void>` (or an impl starts blocking the microtask chain).
   static const Duration _suspendGracePeriod = Duration(seconds: 1);
 
-  // Timers for delayed actions
+  // Timer for delayed actions
   Timer? _backgroundSuspensionTimer;
-  Timer? _periodicCleanupTimer;
 
   /// Current app foreground state
   bool get isAppInForeground => _isAppInForeground;
   bool get isAppInBackground => !_isAppInForeground;
-
-  /// Initialize the background activity manager
-  Future<void> initialize() async {
-    if (_isInitialized) return;
-
-    _isInitialized = true;
-
-    // Start periodic cleanup timer (runs every 5 minutes)
-    _periodicCleanupTimer = Timer.periodic(const Duration(minutes: 5), (_) {
-      if (_isAppInForeground) {
-        _performPeriodicCleanup();
-      }
-    });
-
-    Log.info(
-      'Background activity manager initialized',
-      name: 'BackgroundActivityManager',
-      category: LogCategory.system,
-    );
-  }
 
   /// Register a service for background state management
   void registerService(BackgroundAwareService service) {
@@ -152,7 +130,6 @@ class BackgroundActivityManager {
     );
 
     _backgroundSuspensionTimer?.cancel();
-    _periodicCleanupTimer?.cancel();
 
     // Force suspend all services
     _suspendAllServices();
@@ -249,36 +226,10 @@ class BackgroundActivityManager {
     }
   }
 
-  /// Periodic cleanup when app is in foreground
-  void _performPeriodicCleanup() {
-    Log.debug(
-      '🧹 Performing periodic cleanup',
-      name: 'BackgroundActivityManager',
-      category: LogCategory.system,
-    );
-
-    for (final service in _registeredServices) {
-      try {
-        service.onPeriodicCleanup();
-      } catch (e) {
-        Log.error(
-          'Error in periodic cleanup for ${service.serviceName}: $e',
-          name: 'BackgroundActivityManager',
-          category: LogCategory.system,
-        );
-      }
-    }
-  }
-
   /// Get status information for debugging
   Map<String, dynamic> getStatus() {
     return {
       'isAppInForeground': _isAppInForeground,
-      // Reported because it gates [initialize] and owns the periodic cleanup
-      // timer: an instance left initialized keeps a 5-minute Timer.periodic
-      // alive, which in the merged test isolate outlives the test that armed
-      // it (#8398).
-      'isInitialized': _isInitialized,
       'registeredServices': _registeredServices.length,
       'serviceNames': _registeredServices.map((s) => s.serviceName).toList(),
     };
@@ -286,26 +237,21 @@ class BackgroundActivityManager {
 
   void dispose() {
     _backgroundSuspensionTimer?.cancel();
-    _periodicCleanupTimer?.cancel();
     _registeredServices.clear();
   }
 
   /// Restores this manager to its construction state.
   ///
-  /// [dispose] is not a substitute: it leaves [_isInitialized] set, so a later
-  /// [initialize] silently no-ops and never re-arms the periodic cleanup, and
-  /// it leaves [_isAppInForeground] wherever the last lifecycle event put it.
-  /// A stale `false` there is what turns a later `resumed` into a fan-out over
-  /// whatever is still registered (#6880).
+  /// [dispose] is not a substitute: it leaves [_isAppInForeground] wherever
+  /// the last lifecycle event put it, and a stale `false` there is what turns
+  /// a later `resumed` into a fan-out over whatever is still registered
+  /// (#6880).
   @visibleForTesting
   void resetForTesting() {
     _backgroundSuspensionTimer?.cancel();
     _backgroundSuspensionTimer = null;
-    _periodicCleanupTimer?.cancel();
-    _periodicCleanupTimer = null;
     _registeredServices.clear();
     _isAppInForeground = true;
-    _isInitialized = false;
   }
 }
 
@@ -322,7 +268,4 @@ abstract class BackgroundAwareService {
 
   /// Called when app returns to foreground
   void onAppResumed();
-
-  /// Called periodically for cleanup (every 5 minutes while in foreground)
-  void onPeriodicCleanup();
 }
