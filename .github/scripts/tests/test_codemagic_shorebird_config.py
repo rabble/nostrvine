@@ -74,6 +74,48 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_ios_e2e_uses_one_simulator_for_boot_install_and_maestro(
+        self,
+    ) -> None:
+        boot = self._definition_block("boot_ios_simulator")
+        install = self._definition_block("install_app_ios_simulator")
+        maestro = self._definition_block("run_maestro_smoke_tests")
+
+        self.assertIn(
+            'echo "MAESTRO_DEVICE_UDID=$DEVICE_UDID" >> "$CM_ENV"',
+            boot,
+        )
+        self.assertIn(
+            (
+                ': "${MAESTRO_DEVICE_UDID:?The boot step did not export a '
+                'simulator UDID}"'
+            ),
+            install,
+        )
+        self.assertNotIn("simctl list devices booted", install)
+        self.assertIn(
+            'simctl install "$MAESTRO_DEVICE_UDID" "$APP_PATH"',
+            install,
+        )
+        self.assertIn(
+            'simctl get_app_container "$MAESTRO_DEVICE_UDID" "$BUNDLE_ID"',
+            install,
+        )
+        self.assertIn('set -- --device "$MAESTRO_DEVICE_UDID"', maestro)
+        self.assertIn('maestro "$@" test', maestro)
+
+    def test_android_e2e_excludes_unbounded_maestro_artifacts(self) -> None:
+        workflow = self._workflow_block("e2e-smoke-android")
+
+        self.assertNotIn("- ~/.maestro/tests/**\n", workflow)
+        for artifact in (
+            "screenshots/**",
+            "screen-hierarchy/**",
+            "logs/maestro.log",
+            "commands.json",
+        ):
+            self.assertIn(f"- ~/.maestro/tests/**/{artifact}", workflow)
+
     def test_android_aab_build_uses_google_play_floor(self) -> None:
         self.assertIn(
             'google-play get-latest-build-number --package-name "co.openvine.app"',
