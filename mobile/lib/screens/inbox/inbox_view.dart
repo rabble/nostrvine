@@ -1186,6 +1186,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             // the sheet drops it for a protected peer (#8391).
             final refusedText =
                 context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+            // Captured before the await for the same reason as the two above:
+            // this context can retire while the removal is in flight.
+            final errorText = context.l10n.commonSomethingWentWrong;
             final outcome = await actionsCubit.removeConversation(
               conversation.id,
             );
@@ -1199,7 +1202,14 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
                   SnackBar(content: Text(refusedText)),
                 );
               case RemoveConversationOutcome.failed:
-                break;
+                // Silence here reads as a mistap: the dialog closes and the
+                // row is still there. Both sibling surfaces already say so
+                // (`request_preview_view`, `message_requests_view`), and a
+                // failure must not be mistaken for the refusal above — that
+                // one is the guard working, this one is Drift throwing.
+                messenger.showSnackBar(
+                  DivineSnackbarContainer.snackBar(errorText, error: true),
+                );
             }
           }
       }
