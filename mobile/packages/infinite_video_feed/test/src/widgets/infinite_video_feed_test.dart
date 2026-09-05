@@ -3030,6 +3030,9 @@ void main() {
 
           await driveToError(harness);
           final setClipsAfterError = harness.countCalls('setClips');
+          // Pin the attempt, so the unchanged count below counts retries and
+          // not a load that never happened (#8617).
+          expect(setClipsAfterError, greaterThan(0));
 
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump();
@@ -3068,7 +3071,11 @@ void main() {
           await tester.pump();
 
           await driveToError(harness);
+          expect(find.text('VIDEO_ERROR'), findsOneWidget);
           final setClipsAfterError = harness.countCalls('setClips');
+          // An inactive feed still initialises the current controller; pin
+          // the attempt so a feed that never loaded cannot pass (#8617).
+          expect(setClipsAfterError, greaterThan(0));
 
           await tester.pump(const Duration(milliseconds: 400));
           await tester.pump();
@@ -3204,6 +3211,7 @@ void main() {
                 findsOneWidget,
               );
               final setClipsAfterError = harness.countCalls('setClips');
+              expect(setClipsAfterError, greaterThan(0));
 
               await tester.pump(const Duration(milliseconds: 400));
               await tester.pump();
@@ -3263,6 +3271,7 @@ void main() {
 
             expect(find.text('VIDEO_ERROR:ageRestricted'), findsOneWidget);
             final setClipsAfterError = harness.countCalls('setClips');
+            expect(setClipsAfterError, greaterThan(0));
 
             await tester.pump(const Duration(milliseconds: 400));
             await tester.pump();
@@ -3529,6 +3538,7 @@ void main() {
 
           await driveToError(harness);
           final setClipsAfterError = harness.countCalls('setClips');
+          expect(setClipsAfterError, greaterThan(0));
 
           await tester.pumpWidget(
             _wrapFeed(

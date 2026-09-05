@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
 import 'package:openvine/screens/badges/widgets/badge_status_pill.dart';
+import 'package:openvine/widgets/user_profile_tile.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -126,7 +127,10 @@ void main() {
         showRevokeAction: true,
         onRevoke: () {},
       );
-      final idle = tester.getSize(find.byType(BadgeRecipientRow));
+      // The tile shares the row with the trailing control, so its rect is
+      // what a wider or narrower spinner would move; the row's own size is
+      // parent-constrained and could never fail (#8617).
+      final idleTile = tester.getRect(find.byType(UserProfileTile));
 
       await pumpRow(
         tester,
@@ -135,7 +139,10 @@ void main() {
         isRevoking: true,
       );
 
-      expect(tester.getSize(find.byType(BadgeRecipientRow)), idle);
+      // Unchanged geometry only means something once the spinner has
+      // actually replaced the button.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(tester.getRect(find.byType(UserProfileTile)), idleTile);
     });
 
     testWidgets('greys the revoke action out instead of removing it', (

@@ -98,6 +98,9 @@ void main() {
       );
       await pumpEventQueue();
       final previous = manager['a'].value;
+      // With extraction dead both reads are null and same(null) passes, so
+      // the baseline has to be pinned before the re-sync (#8617).
+      expect(previous, isNotNull);
 
       manager.sync(
         clips: [_clip(id: 'a', path: '/tmp/a_reversed.mp4')],

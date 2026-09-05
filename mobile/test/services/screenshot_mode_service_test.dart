@@ -145,6 +145,7 @@ void main() {
 
         final notifier = container.read(discoveredListsProvider.notifier);
         final initial = container.read(discoveredListsProvider);
+        expect(initial.lists, isNotEmpty);
 
         notifier.clear();
         notifier.setLoading(true);

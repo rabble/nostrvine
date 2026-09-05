@@ -327,6 +327,15 @@ void main() {
           flipToReady(tester);
           await tester.pump();
 
+          // The premise: the flip rebuilt the provider and it handed out the
+          // same repository, so this is an unrelated rebuild (#8617).
+          expect(
+            ProviderScope.containerOf(
+              tester.element(find.byType(InboxPage)),
+              listen: false,
+            ).read(dmRepositoryProvider),
+            same(mockDmRepository),
+          );
           expect(
             readBloc(tester),
             same(blocA),

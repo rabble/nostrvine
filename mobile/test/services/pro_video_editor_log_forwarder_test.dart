@@ -104,9 +104,26 @@ void main() {
     });
 
     test('ignores an entry with an empty message', () {
-      final before = LogCaptureService().bufferSize;
-      ProVideoEditorLogForwarder.forwardEntry(entry(NativeLogLevel.error, ''));
-      expect(LogCaptureService().bufferSize, before);
+      const tag = 'pve-fwd-empty-message-unique';
+      // Positive control first: a dead forwarder would also leave the buffer
+      // untouched, and the buffer is a ring that stops growing once full, so
+      // the guard is asserted on content rather than on bufferSize (#8617).
+      const control = 'pve-fwd-empty-message-control-unique';
+      ProVideoEditorLogForwarder.forwardEntry(
+        entry(NativeLogLevel.error, control, tag: tag),
+      );
+      expect(latestWithMessage(control)?.name, tag);
+
+      ProVideoEditorLogForwarder.forwardEntry(
+        entry(NativeLogLevel.error, '', tag: tag),
+      );
+
+      expect(
+        LogCaptureService().getRecentLogs().where(
+          (logged) => logged.name == tag && logged.message.isEmpty,
+        ),
+        isEmpty,
+      );
     });
   });
 

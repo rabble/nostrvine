@@ -38,6 +38,7 @@ void main() {
 
         // Simulate what app.main() does: install a custom error widget builder.
         ErrorWidget.builder = (details) => const SizedBox.shrink();
+        expect(ErrorWidget.builder, isNot(same(originalBuilder)));
         await tester.pumpWidget(const SizedBox());
 
         // Belt: the INLINE restore is what keeps the framework's end-of-body
