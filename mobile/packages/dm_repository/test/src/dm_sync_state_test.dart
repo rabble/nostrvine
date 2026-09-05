@@ -165,6 +165,106 @@ void main() {
       });
     });
 
+    // The inbox's recovery gate reads this rather than historyDrainComplete:
+    // a forced recovery pass clears the latch on an install whose own replies
+    // are already local, and gating on the latch alone hid every request and
+    // raised the "haven't finished restoring" banner on each deferral (#8550).
+    group('historyDrainCompletedBefore', () {
+      test('is false until a drain completes', () async {
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+
+        await state.migrateHistoryDrainCompletion(pkA);
+        await state.setHistoryDrainCursor(pkA, 1234);
+        await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion);
+
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+      });
+
+      test('is true once a drain completes', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        expect(state.historyDrainCompletedBefore(pkB), isFalse);
+      });
+
+      test(
+        'survives a drain-version bump clearing the completion latch',
+        () async {
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion - 1);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        },
+      );
+
+      test('survives the own-inbox coverage re-arm', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        await state.rearmDrainForOwnInbox(pkA);
+
+        expect(state.historyDrainComplete(pkA), isFalse);
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+      });
+
+      test(
+        'is inferred from drain generation 5 before migration',
+        () async {
+          await state.setDrainVersion(pkA, 5);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        },
+      );
+
+      test('migrates generation 5 to the durable completion record', () async {
+        await state.setDrainVersion(pkA, 5);
+
+        await state.migrateHistoryDrainCompletion(pkA);
+
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion + 1);
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+      });
+
+      test('keeps a fresh install gated when stamping its version', () async {
+        await state.migrateHistoryDrainCompletion(pkA);
+        await state.upgradeDrainVersionIfNeeded(pkA);
+
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+      });
+
+      test(
+        'is not implied by a boundary repair on an install that never '
+        'completed a drain',
+        () async {
+          // recordSeen clamps to now, so the poisoned value has to be written
+          // the way an older build left it.
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          await prefs.setInt('dm.newestSyncedAt.$pkA', nowSec + 7 * 86400);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.historyDrainCursor(pkA), isNotNull);
+          expect(state.historyDrainCompletedBefore(pkA), isFalse);
+        },
+      );
+
+      test('clear and clearAll reset it', () async {
+        await state.markHistoryDrainComplete(pkA);
+        await state.markHistoryDrainComplete(pkB);
+
+        await state.clear(pkA);
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+        expect(state.historyDrainCompletedBefore(pkB), isTrue);
+
+        await state.clearAll();
+        expect(state.historyDrainCompletedBefore(pkB), isFalse);
+      });
+    });
+
     group('historyDrainCursor', () {
       test('defaults to null when nothing persisted', () {
         expect(state.historyDrainCursor(pkA), isNull);
@@ -489,6 +589,7 @@ void main() {
           expect(state.newestSyncedAt(pkA), closeTo(nowSec(), 5));
           expect(state.historyDrainComplete(pkA), isFalse);
           expect(state.historyDrainCursor(pkA), closeTo(nowSec(), 5));
+          expect(state.historyDrainCompletedBefore(pkA), isTrue);
         },
       );
 

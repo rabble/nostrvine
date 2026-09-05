@@ -23,12 +23,13 @@ class DmRestoreStatusState extends Equatable {
   /// History recovery has run, completed, or is running for this user.
   final bool hasAttempted;
 
-  /// The one-time history drain has completed cleanly for this user.
+  /// The history drain has completed cleanly for this user at least once, so
+  /// a later forced recovery pass never re-qualifies an empty view (#8550).
   ///
   /// Defaults to `true` so a screen never claims history is missing before the
   /// repository has answered — the same fail-open stance as
-  /// [DmRepository.isHistoryRecoveryComplete], which returns `true` when it has
-  /// no sync state or pubkey to consult.
+  /// [DmRepository.hasCompletedHistoryRecoveryBefore], which returns `true`
+  /// when it has no sync state or pubkey to consult.
   final bool isComplete;
 
   /// Whether an empty view might simply not have its messages yet.
@@ -53,20 +54,20 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState>
         DmRestoreStatusState(
           isRestoring: dmRepository.isRecoveringHistory,
           hasAttempted: dmRepository.hasAttemptedHistoryRecovery,
-          isComplete: dmRepository.isHistoryRecoveryComplete,
+          isComplete: dmRepository.hasCompletedHistoryRecoveryBefore,
         ),
       ) {
     // `historyRecoveryStream` does not replay, hence the constructor seed above.
     _subscription = _dmRepository.historyRecoveryStream.listen((isRestoring) {
-      // Re-read the persisted flag on every tick: it is what actually gates the
-      // request split, and it only flips on a clean drain exhaustion. A pass
-      // that stops at the page cap, throws, or finds no connected relay ends
-      // with isRestoring false while this stays false too.
+      // Re-read the persisted completion record on every tick: it is what
+      // actually gates the request split. A deferred first-ever drain leaves
+      // it false, while a later forced recovery pass keeps it true once an
+      // earlier drain has completed cleanly.
       emitIfOpen(
         DmRestoreStatusState(
           isRestoring: isRestoring,
           hasAttempted: _dmRepository.hasAttemptedHistoryRecovery,
-          isComplete: _dmRepository.isHistoryRecoveryComplete,
+          isComplete: _dmRepository.hasCompletedHistoryRecoveryBefore,
         ),
       );
     });

@@ -169,7 +169,7 @@ void main() {
         await stack.repository.backfillHistoryIfNeeded();
 
         expect(
-          stack.repository.isHistoryRecoveryComplete,
+          stack.repository.hasCompletedHistoryRecoveryBefore,
           isTrue,
           reason:
               'the page must bring the pool back before fanning out, not '
@@ -193,7 +193,7 @@ void main() {
 
         await stack.repository.backfillHistoryIfNeeded();
         expect(
-          stack.repository.isHistoryRecoveryComplete,
+          stack.repository.hasCompletedHistoryRecoveryBefore,
           isFalse,
           reason: 'nothing could answer while the relay was down',
         );
@@ -205,7 +205,7 @@ void main() {
         await stack.client.retryDisconnectedRelays();
 
         await waitUntil(
-          () => stack.repository.isHistoryRecoveryComplete,
+          () => stack.repository.hasCompletedHistoryRecoveryBefore,
           reason: 'the deferred drain never resumed after the relay connected',
         );
       },

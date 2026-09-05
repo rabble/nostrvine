@@ -20,7 +20,9 @@ void main() {
       dmRepository = _MockDmRepository();
       when(() => dmRepository.isRecoveringHistory).thenReturn(false);
       when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(false);
-      when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(true);
+      when(
+        () => dmRepository.hasCompletedHistoryRecoveryBefore,
+      ).thenReturn(true);
       when(
         () => dmRepository.historyRecoveryStream,
       ).thenAnswer((_) => const Stream<bool>.empty());
@@ -29,7 +31,9 @@ void main() {
     test('seeds from the repository because the stream does not replay', () {
       when(() => dmRepository.isRecoveringHistory).thenReturn(true);
       when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
-      when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
+      when(
+        () => dmRepository.hasCompletedHistoryRecoveryBefore,
+      ).thenReturn(false);
 
       final cubit = DmRestoreStatusCubit(dmRepository: dmRepository);
       addTearDown(cubit.close);
@@ -42,7 +46,9 @@ void main() {
     test(
       'a fresh repository reports nothing outstanding before a drain runs',
       () {
-        when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
+        when(
+          () => dmRepository.hasCompletedHistoryRecoveryBefore,
+        ).thenReturn(false);
 
         final cubit = DmRestoreStatusCubit(dmRepository: dmRepository);
         addTearDown(cubit.close);
@@ -68,7 +74,9 @@ void main() {
         // the running flag while leaving the persisted flag false.
         when(() => dmRepository.isRecoveringHistory).thenReturn(true);
         when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
-        when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
+        when(
+          () => dmRepository.hasCompletedHistoryRecoveryBefore,
+        ).thenReturn(false);
         when(
           () => dmRepository.historyRecoveryStream,
         ).thenAnswer((_) => Stream<bool>.value(false));
@@ -88,13 +96,17 @@ void main() {
       setUp: () {
         when(() => dmRepository.isRecoveringHistory).thenReturn(true);
         when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
-        when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
+        when(
+          () => dmRepository.hasCompletedHistoryRecoveryBefore,
+        ).thenReturn(false);
         final controller = StreamController<bool>();
         when(
           () => dmRepository.historyRecoveryStream,
         ).thenAnswer((_) => controller.stream);
         Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
-          when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(true);
+          when(
+            () => dmRepository.hasCompletedHistoryRecoveryBefore,
+          ).thenReturn(true);
           when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
           controller.add(false);
         });

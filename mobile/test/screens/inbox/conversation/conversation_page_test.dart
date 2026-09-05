@@ -65,7 +65,7 @@ void main() {
       when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
       when(() => mockDmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
       when(
-        () => mockDmRepository.isHistoryRecoveryComplete,
+        () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
       ).thenReturn(true);
       when(
         () => mockDmRepository.historyRecoveryStream,

@@ -217,7 +217,9 @@ void main() {
           () => repo.historyRecoveryStream,
         ).thenAnswer((_) => const Stream<bool>.empty());
         when(() => repo.isRecoveringHistory).thenReturn(false);
-        when(() => repo.isHistoryRecoveryComplete).thenReturn(true);
+        when(
+          () => repo.hasCompletedHistoryRecoveryBefore,
+        ).thenReturn(true);
         when(() => repo.backfillHistoryIfNeeded()).thenAnswer((_) async {});
         when(() => repo.retryPendingDecryptions()).thenAnswer((_) async {});
         when(() => repo.startListening()).thenAnswer((_) async {});

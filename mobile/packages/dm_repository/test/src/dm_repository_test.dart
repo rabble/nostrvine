@@ -457,8 +457,10 @@ class _FakeDmSyncState implements DmSyncState {
   final List<({String pubkey, int createdAt})> recordedWire =
       <({String pubkey, int createdAt})>[];
   bool drainCoveredOwnInboxOverride = false;
+  bool completedBeforeOverride = false;
   final List<String> inboxCoveredPubkeys = <String>[];
   final List<String> rearmedForInboxPubkeys = <String>[];
+  final List<String> drainPreambleOperations = <String>[];
 
   @override
   int? newestSyncedAt(String pubkey) => newestOverride;
@@ -476,7 +478,16 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> markHistoryDrainComplete(String pubkey) async {
     markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
+    completedBeforeOverride = true;
     drainCursorOverride = null;
+  }
+
+  @override
+  bool historyDrainCompletedBefore(String pubkey) => completedBeforeOverride;
+
+  @override
+  Future<void> migrateHistoryDrainCompletion(String pubkey) async {
+    drainPreambleOperations.add('migrate-completion');
   }
 
   @override
@@ -491,6 +502,7 @@ class _FakeDmSyncState implements DmSyncState {
   @override
   Future<void> rearmDrainForOwnInbox(String pubkey) async {
     rearmedForInboxPubkeys.add(pubkey);
+    if (drainCompleteOverride) completedBeforeOverride = true;
     drainCompleteOverride = false;
     drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   }
@@ -513,6 +525,7 @@ class _FakeDmSyncState implements DmSyncState {
 
   @override
   Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
+    drainPreambleOperations.add('upgrade-version');
     if (drainVersionOverride >= DmSyncState.currentDrainVersion) return;
     upgradedPubkeys.add(pubkey);
     if (drainCompleteOverride) {
@@ -6818,27 +6831,53 @@ void main() {
       );
 
       test(
-        'isHistoryRecoveryComplete reflects the persisted drain-complete flag '
-        '(#5304)',
+        'hasCompletedHistoryRecoveryBefore reflects prior completion (#5304)',
         () {
           final incomplete = _FakeDmSyncState()..drainCompleteOverride = false;
           expect(
-            createRepository(syncState: incomplete).isHistoryRecoveryComplete,
+            createRepository(
+              syncState: incomplete,
+            ).hasCompletedHistoryRecoveryBefore,
             isFalse,
           );
 
-          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          final complete = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..completedBeforeOverride = true;
           expect(
-            createRepository(syncState: complete).isHistoryRecoveryComplete,
+            createRepository(
+              syncState: complete,
+            ).hasCompletedHistoryRecoveryBefore,
+            isTrue,
+          );
+        },
+      );
+
+      // A forced recovery pass on an established install clears the
+      // completion latch, but the install's own replies are already in its
+      // database, so the request split has nothing to protect against. A
+      // closed gate here hid every existing request and raised the "haven't
+      // finished restoring" banner on each deferral. #8550.
+      test(
+        'hasCompletedHistoryRecoveryBefore stays true while recovery re-runs',
+        () {
+          final rearmed = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..completedBeforeOverride = true;
+
+          expect(
+            createRepository(
+              syncState: rearmed,
+            ).hasCompletedHistoryRecoveryBefore,
             isTrue,
           );
         },
       );
 
       test(
-        'isHistoryRecoveryComplete is true when no sync state is wired (#5304)',
+        'hasCompletedHistoryRecoveryBefore is true without sync state (#5304)',
         () {
-          expect(createRepository().isHistoryRecoveryComplete, isTrue);
+          expect(createRepository().hasCompletedHistoryRecoveryBefore, isTrue);
         },
       );
 
@@ -7200,6 +7239,10 @@ void main() {
 
           await repository.backfillHistoryIfNeeded();
 
+          expect(syncState.drainPreambleOperations.take(2), [
+            'migrate-completion',
+            'upgrade-version',
+          ]);
           expect(syncState.upgradedPubkeys, isNotEmpty);
           expect(
             capturedUntil.any((until) => (until ?? 0) >= strandedOuter),
@@ -7365,6 +7408,7 @@ void main() {
           // are the ones most likely to hold the missing history.
           expect(syncState.markedCompletePubkeys, isEmpty);
           expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.inboxCoveredPubkeys, isEmpty);
         });
 
         test(
@@ -8216,6 +8260,43 @@ void main() {
           expect(relayStatus.hasListener, isTrue);
 
           relayStatus.add(connected(['wss://a.example', 'wss://b.example']));
+          await untilMarkedComplete(syncState);
+          expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
+        },
+      );
+
+      // A relay that took the REQ and never answered still counts as connected
+      // when the drain gives up; the SDK's silent-relay repair then cycles its
+      // socket. Only that reconnection can say the relay is answering again,
+      // and keyed on the deferral snapshot alone it was ignored — against a
+      // paused relay the banner stayed up until a manual retry (#8643).
+      test(
+        'resumes when a relay connected at deferral drops and reconnects',
+        () async {
+          final relayStatus = stubRelayStatus(
+            connectedNow: connected(['wss://a.example']),
+          );
+          stubUnansweredThenExhausted();
+          final syncState = armedSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add({
+            'wss://a.example': RelayConnectionStatus.disconnected(
+              'wss://a.example',
+            ),
+          });
+          await pumpEventQueue();
+          expect(
+            syncState.markedCompletePubkeys,
+            isEmpty,
+            reason: 'a drop is not capacity',
+          );
+          expect(relayStatus.hasListener, isTrue);
+
+          relayStatus.add(connected(['wss://a.example']));
           await untilMarkedComplete(syncState);
           expect(syncState.markedCompletePubkeys, [_validPubkeyA]);
         },
