@@ -76,13 +76,19 @@ every cited path, line range, identifier, and quoted snippet against that
 commit, not the current checkout or a reconstructed version of the code:
 
 ```bash
+gh pr view <number> --json mergedAt,headRefOid
 git fetch origin pull/<number>/head
-gh pr view <number> --json state,mergedAt,headRefOid
+git cat-file -e '<commit>^{commit}'
 git cat-file -e '<commit>:<path>'
 git show '<commit>:<path>' | sed -n '<start>,<end>p'
 git grep -n -F -- '<snippet>' '<commit>' -- '<path>'
 git log --all -S'<snippet>' -- '<path>'
 ```
+
+The commit-object check must succeed before any path or snippet check. Treat a
+`fatal:` result or exit status 128 as a broken lookup and stop; it is not
+evidence that the cited content is absent. For `git grep`, exit status 1 means
+the lookup succeeded and the snippet was not found.
 
 The last command is supporting history only; the reviewed commit is the
 authority. A nearby comment that describes a rejected pattern is not evidence
