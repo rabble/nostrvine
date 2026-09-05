@@ -33,10 +33,10 @@ class StartupPhaseTimer {
 
 /// Service for monitoring and optimizing app startup performance
 class StartupPerformanceService {
-  StartupPerformanceService._();
-  static final StartupPerformanceService _instance =
-      StartupPerformanceService._();
-  static StartupPerformanceService get instance => _instance;
+  StartupPerformanceService({required CrashReportingService crashReporting})
+    : _crashReporting = crashReporting;
+
+  final CrashReportingService _crashReporting;
 
   final Map<String, StartupPhaseTimer> _phases = {};
   final Map<String, DateTime> _checkpoints = {};
@@ -81,7 +81,7 @@ class StartupPerformanceService {
       category: LogCategory.system,
     );
 
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporting.logInitializationStep(
       'Phase started: $phaseName',
     );
   }
@@ -99,7 +99,7 @@ class StartupPerformanceService {
         category: LogCategory.system,
       );
 
-      CrashReportingService.instance.logInitializationStep(
+      _crashReporting.logInitializationStep(
         'Phase completed: $phaseName (${duration}ms)',
       );
 
@@ -139,10 +139,10 @@ class StartupPerformanceService {
       category: LogCategory.system,
     );
 
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporting.logInitializationStep(
       'First frame: ${elapsed}ms',
     );
-    CrashReportingService.instance.setCustomKey('first_frame_ms', elapsed);
+    _crashReporting.setCustomKey('first_frame_ms', elapsed);
   }
 
   DateTime? _authShellReadyTime;
@@ -173,10 +173,10 @@ class StartupPerformanceService {
       category: LogCategory.system,
     );
 
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporting.logInitializationStep(
       'Auth shell ready: ${elapsed}ms',
     );
-    CrashReportingService.instance.setCustomKey('auth_shell_ready_ms', elapsed);
+    _crashReporting.setCustomKey('auth_shell_ready_ms', elapsed);
   }
 
   /// Mark when UI is ready for interaction
@@ -192,10 +192,10 @@ class StartupPerformanceService {
       category: LogCategory.system,
     );
 
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporting.logInitializationStep(
       'UI ready: ${elapsed}ms',
     );
-    CrashReportingService.instance.setCustomKey('ui_ready_ms', elapsed);
+    _crashReporting.setCustomKey('ui_ready_ms', elapsed);
   }
 
   /// Mark when video system is ready
@@ -211,10 +211,10 @@ class StartupPerformanceService {
       category: LogCategory.system,
     );
 
-    CrashReportingService.instance.logInitializationStep(
+    _crashReporting.logInitializationStep(
       'Video ready: ${elapsed}ms',
     );
-    CrashReportingService.instance.setCustomKey('video_ready_ms', elapsed);
+    _crashReporting.setCustomKey('video_ready_ms', elapsed);
 
     // Complete the total startup phase
     completePhase('total');
@@ -288,7 +288,7 @@ class StartupPerformanceService {
         name: 'StartupPerformance',
         category: LogCategory.system,
       );
-      CrashReportingService.instance.log(
+      _crashReporting.log(
         'Slow startup detected: ${elapsed}ms without first frame',
       );
     }
@@ -299,7 +299,7 @@ class StartupPerformanceService {
         name: 'StartupPerformance',
         category: LogCategory.system,
       );
-      CrashReportingService.instance.log(
+      _crashReporting.log(
         'Very slow startup: ${elapsed}ms without UI ready',
       );
     }

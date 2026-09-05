@@ -18,6 +18,7 @@
 library;
 
 import 'dart:async';
+
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -29,11 +30,11 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/author_video_buckets.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
@@ -145,12 +146,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
+    required CrashReporter crashReporter,
     ProfileRepository? profileRepository,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
     PerformanceTraceMonitor? performanceMonitor,
     ConnectionStatusService? connectionService,
   }) : _subscriptionManager = subscriptionManager,
+       _crashReporter = crashReporter,
        _profileRepository = profileRepository,
        _eventRouter = eventRouter,
        _videoFilterBuilder = videoFilterBuilder,
@@ -289,6 +292,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   BrokenVideoTracker? _brokenVideoTracker;
   late String? Function() _currentUserPubkey = () => _nostrService.publicKey;
   final SubscriptionManager _subscriptionManager;
+
+  final CrashReporter _crashReporter;
 
   /// Supplies the authenticated pubkey independently of signer readiness.
   void setCurrentUserPubkeyProvider(String? Function() provider) {
@@ -5586,19 +5591,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
 
       // Set custom keys for filtering if needed later
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_empty_feed_type',
         subscriptionType.name,
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_empty_feed_relay_connected',
         relayConnected.toString(),
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_empty_feed_online',
         isOnline.toString(),
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_empty_feed_duration_ms',
         eoseDuration.inMilliseconds.toString(),
       );
@@ -5717,19 +5722,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
 
       // Set custom keys for filtering if needed later
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_timeout_feed_type',
         subscriptionType.name,
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_timeout_relay_connected',
         relayConnected.toString(),
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_timeout_online',
         isOnline.toString(),
       );
-      CrashReportingService.instance.setCustomKey(
+      _crashReporter.setCustomKey(
         'last_timeout_duration_ms',
         duration.inMilliseconds.toString(),
       );

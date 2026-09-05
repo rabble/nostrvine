@@ -42,6 +42,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/community_content_label_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -124,6 +125,9 @@ class _MockCommunityContentLabelRepository extends Mock
 class _MockContentFilterService extends Mock implements ContentFilterService {}
 
 class _NoopAnalyticsService extends AnalyticsService {
+  _NoopAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   @override
   Future<void> trackDetailedVideoViewWithUser(
     VideoEvent video, {

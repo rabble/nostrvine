@@ -3,13 +3,14 @@
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -31,8 +32,9 @@ class ZendeskSupportService {
   static const Duration _jwtRefreshReuseWindow = Duration(minutes: 4);
   static const Duration _initializationTimeout = Duration(seconds: 10);
 
-  static final CrashReportingService _crashlytics =
-      CrashReportingService.instance;
+  /// Crash reporting for this static utility. See [VideoThumbnailService.crashReporter]
+  /// for why a static seam remains here (#4743).
+  static CrashReporter crashlytics = const SilentCrashReporter();
 
   static bool _initialized = false;
   static Completer<void> _initializationCompleter = Completer<void>();
@@ -676,11 +678,11 @@ class ZendeskSupportService {
           'Failed to create Zendesk ticket: $sanitizedSubject',
           category: LogCategory.system,
         );
-        _crashlytics.log(
+        crashlytics.log(
           'Zendesk SDK returned false for ticket: $sanitizedSubject',
         );
         unawaited(
-          _crashlytics.recordError(
+          crashlytics.recordError(
             Exception('Zendesk SDK returned false'),
             StackTrace.current,
             reason: 'zendesk_sdk_returned_false',
@@ -774,9 +776,9 @@ class ZendeskSupportService {
         'Unexpected error creating Zendesk ticket: $e',
         category: LogCategory.system,
       );
-      _crashlytics.log('Zendesk createTicket failed: $sanitizedSubject');
+      crashlytics.log('Zendesk createTicket failed: $sanitizedSubject');
       unawaited(
-        _crashlytics.recordError(
+        crashlytics.recordError(
           e,
           stackTrace,
           reason: 'zendesk_ticket_unexpected_error',
@@ -880,11 +882,11 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
-        _crashlytics.log(
+        crashlytics.log(
           'Zendesk REST API error ${response.statusCode}: $sanitizedSubject',
         );
         unawaited(
-          _crashlytics.recordError(
+          crashlytics.recordError(
             Exception('Zendesk REST API HTTP error'),
             StackTrace.current,
             reason: 'zendesk_rest_api_http_error',
@@ -899,11 +901,11 @@ class ZendeskSupportService {
         error: e,
         stackTrace: stackTrace,
       );
-      _crashlytics.log(
+      crashlytics.log(
         'Zendesk REST API exception for ticket: $sanitizedSubject',
       );
       unawaited(
-        _crashlytics.recordError(
+        crashlytics.recordError(
           e,
           stackTrace,
           reason: 'zendesk_rest_api_exception',
@@ -1140,11 +1142,11 @@ class ZendeskSupportService {
           'Zendesk API error: ${response.statusCode} - ${response.body}',
           category: LogCategory.system,
         );
-        _crashlytics.log(
+        crashlytics.log(
           'Zendesk form API error ${response.statusCode}: $label',
         );
         unawaited(
-          _crashlytics.recordError(
+          crashlytics.recordError(
             Exception('Zendesk form API HTTP error'),
             StackTrace.current,
             reason: 'zendesk_form_api_http_error',
@@ -1159,9 +1161,9 @@ class ZendeskSupportService {
         error: e,
         stackTrace: stackTrace,
       );
-      _crashlytics.log('Zendesk form API exception for: $label');
+      crashlytics.log('Zendesk form API exception for: $label');
       unawaited(
-        _crashlytics.recordError(
+        crashlytics.recordError(
           e,
           stackTrace,
           reason: 'zendesk_form_api_exception',

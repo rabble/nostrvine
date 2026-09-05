@@ -11,7 +11,6 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 
-import 'helpers/background_activity_reset.dart';
 import 'helpers/shared_channel_override.dart';
 import 'test_setup.dart';
 
@@ -23,12 +22,6 @@ const _runGoldenSetup = bool.fromEnvironment('DIVINE_GOLDEN_TESTS');
 /// clean under it, which was the condition for turning it on (#5738). It stays
 /// off for a bare `flutter test` so a single-file run still heals silently.
 const _strictChannels = bool.fromEnvironment('DIVINE_STRICT_CHANNELS');
-
-/// When set (via `--dart-define=DIVINE_STRICT_GLOBALS=true`), the
-/// heal-and-blame tearDown for process-global singletons also `fail()`s the
-/// test that dirtied one. Mobile CI and `mise run test` both set it; a bare
-/// `flutter test` leaves it off so a single-file run still heals silently.
-const _strictGlobals = bool.fromEnvironment('DIVINE_STRICT_GLOBALS');
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Set up test environment with plugin mocks (secure_storage, path_provider, etc.)
@@ -61,15 +54,6 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // from its canonical handler, and — under DIVINE_STRICT_CHANNELS — blames
   // the perpetrating test. Compliant tests never trip it.
   tearDown(() => healAndBlameSharedChannels(strict: _strictChannels));
-
-  // BackgroundActivityManager is a process-global singleton whose registry
-  // only ever grows: services join it in initialize() and leave in dispose(),
-  // and nothing else clears it. A registration that outlives its test keeps
-  // receiving lifecycle callbacks for the rest of the isolate, so a later
-  // suite driving `resumed` fans out over strangers and is blamed for what
-  // they do (#6880). Its foreground flag leaks the same way, and a stale
-  // `false` is what arms that fan-out.
-  tearDown(() => healAndBlameBackgroundActivity(strict: _strictGlobals));
 
   // UserAvatar records broken image URLs in a process-global negative cache.
   // In the merged optimizer isolate that state would otherwise leak a failed

@@ -210,6 +210,13 @@ jobs:
           bash scripts/check_future_delayed_production_ceiling.sh
       - name: 🧱 Verify untested-services count does not increase (floor ratchet)
         run: bash scripts/check_untested_services_floor.sh
+      - name: 🧱 Verify singleton services do not regrow (DI ratchet)
+        run: |
+          # #4743: lazy-static singletons cannot be replaced in a test without
+          # reaching into static state. The set drifts when nothing watches it —
+          # #3623 counted 13, #4743 counted 14, and only 5 were left by the time
+          # either was re-read. Epic: #4338.
+          bash scripts/check_singleton_services.sh
       - name: 🧱 Verify service god-files do not grow (architecture ratchet)
         run: |
           # Hard architecture guard for #4338: the broad 800-line file-size
@@ -555,11 +562,6 @@ jobs:
         # was proven clean under it, which the harness comment set as the
         # condition.
         #
-        # DIVINE_STRICT_GLOBALS does the same for BackgroundActivityManager,
-        # whose registry only grows: a service that outlives its test keeps
-        # receiving lifecycle callbacks, so a later suite driving `resumed`
-        # fans out over strangers and wears the result (#6880).
-        #
         # The seed is drawn here rather than left as `random`. very_good
         # resolves `random` once and forwards the result to every sub-process,
         # so a shard already has exactly one seed — but it only ever reaches
@@ -571,7 +573,7 @@ jobs:
         # instead of a copy that can drift from them.
         run: |
           SEED=$(( (RANDOM << 15) | RANDOM ))
-          FLAGS="--optimization --concurrency=4 --exclude-tags integration --dart-define=DIVINE_STRICT_CHANNELS=true --dart-define=DIVINE_STRICT_GLOBALS=true"
+          FLAGS="--optimization --concurrency=4 --exclude-tags integration --dart-define=DIVINE_STRICT_CHANNELS=true"
           {
             echo "TEST_SEED=$SEED"
             echo "TEST_FLAGS=$FLAGS"

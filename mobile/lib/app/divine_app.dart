@@ -18,6 +18,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/notifications/notification_tap_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
@@ -30,7 +31,6 @@ import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/memory_pressure_handler.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
@@ -330,7 +330,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
       name: 'MemoryTelemetry',
       category: LogCategory.system,
     );
-    final crashReporting = CrashReportingService.instance;
+    final crashReporting = ref.read(crashReportingServiceProvider);
     unawaited(crashReporting.setCustomKey('mem_rss_mb', rssMb));
     unawaited(crashReporting.setCustomKey('mem_peak_mb', peakMb));
     unawaited(
@@ -429,11 +429,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
       },
       navigator: _AppQuickActionsNavigator(container),
       reportError: (error, stackTrace, reason) {
-        return CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: reason,
-        );
+        return ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: reason,
+            );
       },
       waitForAuthRedirectToSettle: () async {
         await WidgetsBinding.instance.endOfFrame;
@@ -458,11 +460,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
           name: 'Main',
           category: LogCategory.system,
         );
-        await CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'Deferred startup initialization failed',
-        );
+        await ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'Deferred startup initialization failed',
+            );
       }),
     );
   }
@@ -576,12 +580,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 }
 
-class _CrashProbeHotspot extends StatefulWidget {
+class _CrashProbeHotspot extends ConsumerStatefulWidget {
   @override
-  State<_CrashProbeHotspot> createState() => _CrashProbeHotspotState();
+  ConsumerState<_CrashProbeHotspot> createState() => _CrashProbeHotspotState();
 }
 
-class _CrashProbeHotspotState extends State<_CrashProbeHotspot> {
+class _CrashProbeHotspotState extends ConsumerState<_CrashProbeHotspot> {
   int _taps = 0;
   DateTime? _windowStart;
 
@@ -595,7 +599,9 @@ class _CrashProbeHotspotState extends State<_CrashProbeHotspot> {
     _taps++;
     if (_taps >= 7) {
       // Record a breadcrumb, then crash the app (TestFlight validation)
-      CrashReportingService.instance.log('CrashProbe: triggering test crash');
+      ref
+          .read(crashReportingServiceProvider)
+          .log('CrashProbe: triggering test crash');
       // Force a native crash to ensure reporting in TF
       FirebaseCrashlytics.instance.crash();
     }

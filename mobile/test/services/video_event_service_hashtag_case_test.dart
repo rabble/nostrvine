@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -44,6 +45,7 @@ void main() {
       service = VideoEventService(
         nostrClient,
         subscriptionManager: subscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
     });
 

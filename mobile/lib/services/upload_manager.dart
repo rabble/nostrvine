@@ -14,6 +14,7 @@ import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -43,18 +44,19 @@ export 'package:openvine/services/upload/upload_session_errors.dart'
 /// they can move into a pure-Dart package; the manager injects this adapter
 /// by default.
 class CrashReportingUploadReporter implements UploadCrashReporter {
-  const CrashReportingUploadReporter();
+  const CrashReportingUploadReporter(this._reporter);
+  final CrashReporter _reporter;
 
   @override
   Future<void> setCustomKey(String key, Object value) =>
-      CrashReportingService.instance.setCustomKey(key, value);
+      _reporter.setCustomKey(key, value);
 
   @override
-  void log(String message) => CrashReportingService.instance.log(message);
+  void log(String message) => _reporter.log(message);
 
   @override
   Future<void> recordError(Object error, StackTrace? stack, {String? reason}) =>
-      CrashReportingService.instance.recordError(error, stack, reason: reason);
+      _reporter.recordError(error, stack, reason: reason);
 }
 
 /// What the thumbnail leg produces: the CDN URL of the uploaded frame, and the
@@ -93,17 +95,19 @@ class StopMotionTransientRenderCleaner implements TransientRenderCleaner {
 class UploadManager implements BackgroundAwareService {
   UploadManager({
     required BlossomUploadService blossomService,
+    required BackgroundActivityManager backgroundActivityManager,
     String? defaultBlossomUrl,
     String? currentNostrPubkey,
     bool scopeUploadsToCurrentUser = false,
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
     UploadCrashReporter? crashReporter,
+    CrashReporter crashReporting = const SilentCrashReporter(),
     this.useBackgroundUpload = false,
-    BackgroundActivityManager? backgroundActivityManager,
     ThumbnailExtractor? thumbnailExtractor,
     TransientRenderCleaner? transientRenderCleaner,
   }) : _blossomService = blossomService,
+       _crashReporting = crashReporting,
        _extractThumbnail = thumbnailExtractor ?? _defaultThumbnailExtractor,
        _transientRenderCleaner =
            transientRenderCleaner ?? const StopMotionTransientRenderCleaner(),
@@ -115,17 +119,14 @@ class UploadManager implements BackgroundAwareService {
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
        ),
-       // Defaults to the process-global singleton; injectable so lifecycle
-       // tests can verify register/unregister with a fake (mirrors AuthService
-       // per #4743 B3).
-       _backgroundActivityManager =
-           backgroundActivityManager ?? BackgroundActivityManager() {
+       _backgroundActivityManager = backgroundActivityManager {
     _retryPolicy = UploadRetryPolicy(store: _store, retryConfig: _retryConfig);
     _reporter = UploadProgressReporter(
       store: _store,
       circuitBreaker: _circuitBreaker,
       retryConfig: _retryConfig,
-      crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
+      crashReporter:
+          crashReporter ?? CrashReportingUploadReporter(crashReporting),
     );
   }
 
@@ -138,14 +139,13 @@ class UploadManager implements BackgroundAwareService {
   /// in-process path. Requires the blossom service to have been built with a
   /// background transport.
   final bool useBackgroundUpload;
-
-  // Core services
   final PendingUploadStore _store;
   final BlossomUploadService _blossomService;
+  final CrashReporter _crashReporting;
+  @visibleForTesting
+  CrashReporter get crashReporterForTesting => _crashReporting;
 
-  /// Pulls the thumbnail frame out of the local video. Injectable so the
-  /// thumbnail leg can be exercised without a decodable video and the native
-  /// plugin behind [VideoThumbnailService].
+  /// Injectable so tests do not need a decodable video or native plugin.
   final ThumbnailExtractor _extractThumbnail;
 
   static Future<ThumbnailFileResult?> _defaultThumbnailExtractor({

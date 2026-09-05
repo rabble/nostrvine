@@ -124,7 +124,7 @@ void main() {
       isOffline: isOffline,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
-      crashReporting: crashReporting,
+      crashReporting: crashReporting ?? CrashReportingService(),
     );
   }
 
@@ -1515,6 +1515,7 @@ void main() {
           // scoped to them. The DAO filter is the account-isolation
           // boundary — pin it here so a future refactor can't drop it.
           final service = OutgoingDmRetryService(
+            crashReporting: CrashReportingService(),
             dmRepository: dmRepository,
             outgoingDmsDao: dao,
             userPubkey: _otherOwner,

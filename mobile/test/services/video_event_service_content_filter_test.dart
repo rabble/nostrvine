@@ -4,6 +4,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -122,6 +123,7 @@ void main() {
     videoEventService = VideoEventService(
       mockNostrClient,
       subscriptionManager: mockSubscriptionManager,
+      crashReporter: const SilentCrashReporter(),
     );
     videoEventService.setContentFilterService(contentFilterService);
     videoEventService.setModerationLabelService(moderationLabelService);

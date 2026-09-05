@@ -2,6 +2,7 @@
 // ABOUTME: VideoEventService keystone + filters, publishers, repositories, sharing
 
 import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:likes_repository/likes_repository.dart';
@@ -11,6 +12,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/view_event_drop_reason.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -31,7 +33,6 @@ import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/event_router.dart';
@@ -177,6 +178,7 @@ VideoEventService videoEventService(Ref ref) {
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
+    crashReporter: ref.read(crashReportingServiceProvider),
     profileRepository: profileRepository,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
@@ -323,14 +325,17 @@ ViewEventPublisher viewEventPublisher(Ref ref) {
     authService: authService,
     onDrop: (reason, {required String videoId, required String method}) {
       if (!reason.isStructural) return;
-      CrashReportingService.instance.recordError(
-        Reportable(
-          ViewEventInvariantException(reason),
-          context: 'ViewEventPublisher.$method',
-        ),
-        StackTrace.current,
-        reason: 'ViewEventPublisher.$method.${reason.name}.videoId=$videoId',
-      );
+      ref
+          .read(crashReportingServiceProvider)
+          .recordError(
+            Reportable(
+              ViewEventInvariantException(reason),
+              context: 'ViewEventPublisher.$method',
+            ),
+            StackTrace.current,
+            reason:
+                'ViewEventPublisher.$method.${reason.name}.videoId=$videoId',
+          );
     },
   );
 }
@@ -668,11 +673,13 @@ LikesRepository likesRepository(Ref ref) {
     funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'LikesRepository.$site',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'LikesRepository.$site',
+            ),
       );
     },
     isOnline: () =>
@@ -773,11 +780,13 @@ RepostsRepository repostsRepository(Ref ref) {
     blockFilter: createBlockedAuthorFilter(ref),
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
-        CrashReportingService.instance.recordError(
-          error,
-          stackTrace,
-          reason: 'RepostsRepository.$site',
-        ),
+        ref
+            .read(crashReportingServiceProvider)
+            .recordError(
+              error,
+              stackTrace,
+              reason: 'RepostsRepository.$site',
+            ),
       );
     },
     isOnline: () =>

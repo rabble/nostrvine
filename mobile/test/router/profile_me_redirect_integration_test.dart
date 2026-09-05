@@ -8,6 +8,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -16,6 +17,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/ui/overlay_policy.dart';
@@ -244,6 +246,7 @@ class _FakeVideoEventService extends VideoEventService {
       super(
         _FakeNostrService(),
         subscriptionManager: _FakeSubscriptionManager(),
+        crashReporter: const SilentCrashReporter(),
       );
 
   final Map<String, List<VideoEvent>> _authorVideos;
@@ -277,6 +280,9 @@ class _FakeSubscriptionManager extends SubscriptionManager {
 
 /// NoOp AnalyticsService that prevents network calls and timer leaks
 class NoopAnalyticsService extends AnalyticsService {
+  NoopAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   @override
   Future<void> trackVideoView(
     VideoEvent video, {

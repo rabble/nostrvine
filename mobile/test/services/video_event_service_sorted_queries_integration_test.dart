@@ -9,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -74,6 +75,7 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
         profileRepository: mockProfileRepository,
         eventRouter: mockEventRouter,
         videoFilterBuilder: filterBuilder,
@@ -334,6 +336,7 @@ void main() {
           final serviceWithoutBuilder = VideoEventService(
             mockNostrService,
             subscriptionManager: mockSubscriptionManager,
+            crashReporter: const SilentCrashReporter(),
             profileRepository: mockProfileRepository,
             eventRouter: mockEventRouter,
             // No videoFilterBuilder parameter

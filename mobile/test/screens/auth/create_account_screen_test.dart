@@ -25,6 +25,7 @@ import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
@@ -43,6 +44,9 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
 
 class _RecordingRegistrationAnalyticsService extends AnalyticsService {
+  _RecordingRegistrationAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   final entryPoints = <ProductAnalyticsV2RegistrationEntryPoint>[];
 
   @override
@@ -97,7 +101,10 @@ void main() {
           mockAuthService: mockAuthService,
           analyticsService:
               analyticsService ??
-              AnalyticsService(disableNostrPublishing: true),
+              AnalyticsService(
+                backgroundActivityManager: BackgroundActivityManager(),
+                disableNostrPublishing: true,
+              ),
         ),
         oauthClientProvider.overrideWithValue(mockOAuth),
         pendingVerificationServiceProvider.overrideWithValue(
@@ -372,6 +379,7 @@ void main() {
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
                       analyticsService: AnalyticsService(
+                        backgroundActivityManager: BackgroundActivityManager(),
                         disableNostrPublishing: true,
                       ),
                     ),
@@ -469,6 +477,7 @@ void main() {
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
                       analyticsService: AnalyticsService(
+                        backgroundActivityManager: BackgroundActivityManager(),
                         disableNostrPublishing: true,
                       ),
                     ),

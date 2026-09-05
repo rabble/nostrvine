@@ -10,12 +10,14 @@ Future<void> runTimedStartupTask({
   required String phaseName,
   required String initializationStep,
   required Future<void> Function() task,
+  required StartupPerformanceService startupPerformance,
+  required CrashReportingService crashReporting,
 }) async {
-  StartupPerformanceService.instance.startPhase(phaseName);
-  CrashReportingService.instance.logInitializationStep(initializationStep);
+  startupPerformance.startPhase(phaseName);
+  crashReporting.logInitializationStep(initializationStep);
   try {
     await task();
   } finally {
-    StartupPerformanceService.instance.completePhase(phaseName);
+    startupPerformance.completePhase(phaseName);
   }
 }

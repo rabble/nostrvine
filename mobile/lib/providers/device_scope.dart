@@ -6,13 +6,17 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/startup_performance_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/database_corruption_service.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
 import 'package:riverpod/misc.dart' show Override;
@@ -49,6 +53,8 @@ class DeviceScope {
     required this.switchController,
     required this.appVersion,
     required this.documentsPath,
+    required this.startupPerformance,
+    required this.crashReporting,
     this.dbCipherKey,
     this.databaseCorruptionService,
     this.installSource = InstallSource.sideload,
@@ -76,6 +82,17 @@ class DeviceScope {
   /// than behind an async lookup because synchronous readers — saved sounds
   /// load straight out of SharedPreferences — cannot await one. Empty on web.
   final String documentsPath;
+
+  /// Times app startup. Device-scoped rather than account-scoped: the phase
+  /// timings describe the process, so an account swap must not reset them.
+  /// Constructed in `app_bootstrap` before any container exists, because it
+  /// times the bootstrap itself (#4743).
+  final StartupPerformanceService startupPerformance;
+
+  /// Reports crashes and non-fatals. Device-scoped because Crashlytics owns
+  /// one process-wide handler chain; a per-container instance would reinstall
+  /// `FlutterError.onError` on every account swap (#4743).
+  final CrashReportingService crashReporting;
 
   /// The app-lifetime handle the UI calls to switch accounts. Device-scoped so
   /// it outlives — and drives — every container swap.
@@ -113,6 +130,8 @@ class DeviceScope {
       databaseCorruptionService,
     ),
     installSourceProvider.overrideWithValue(installSource),
+    startupPerformanceServiceProvider.overrideWithValue(startupPerformance),
+    crashReportingServiceProvider.overrideWithValue(crashReporting),
     deviceScopeProvider.overrideWithValue(this),
     ...accountOverrides,
   ];

@@ -8,6 +8,7 @@ import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/profile_save_retry_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -33,6 +34,7 @@ void main() {
 
   ProfileSaveRetryService buildService() {
     final service = ProfileSaveRetryService(
+      crashReporting: CrashReportingService(),
       profileRepository: repository,
       pendingProfileSavesDao: dao,
       userPubkey: pubkey,
@@ -393,6 +395,7 @@ void main() {
         // timer would arm and fire within the test rather than 2s later, so the
         // final assertion can actually catch the regression.
         final service = ProfileSaveRetryService(
+          crashReporting: CrashReportingService(),
           profileRepository: repository,
           pendingProfileSavesDao: dao,
           userPubkey: pubkey,
@@ -487,6 +490,7 @@ void main() {
         // shared buildService injects a frozen clock, which would desync from
         // the DAO's real-time attempt stamps and defeat the backoff gate.)
         final service = ProfileSaveRetryService(
+          crashReporting: CrashReportingService(),
           profileRepository: repository,
           pendingProfileSavesDao: dao,
           userPubkey: pubkey,
@@ -597,6 +601,7 @@ void main() {
         // Real clock + tiny backstop delay so the enqueue-armed sweep fires
         // quickly.
         final service = ProfileSaveRetryService(
+          crashReporting: CrashReportingService(),
           profileRepository: repository,
           pendingProfileSavesDao: dao,
           userPubkey: pubkey,

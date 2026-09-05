@@ -13,6 +13,7 @@ import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/background_activity_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -41,7 +42,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   @override
   void initState() {
     super.initState();
-    _backgroundManager = BackgroundActivityManager();
+    _backgroundManager = ref.read(backgroundActivityManagerProvider);
     WidgetsBinding.instance.addObserver(this);
 
     // Resume any pending publish drafts after first frame,

@@ -3,6 +3,7 @@
 
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -21,6 +22,7 @@ VideoEventService createTestVideoEventService({
   return VideoEventService(
     mockNostrService,
     subscriptionManager: mockSubscriptionManager,
+    crashReporter: const SilentCrashReporter(),
   );
 }
 

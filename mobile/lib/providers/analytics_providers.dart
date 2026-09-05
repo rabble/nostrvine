@@ -5,7 +5,7 @@ import 'package:analytics/analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 typedef CrashUserIdSetter = Future<void> Function(String? userId);
@@ -110,7 +110,7 @@ final analyticsIdentityCoordinatorProvider =
     Provider<AnalyticsIdentityCoordinator>(
       (ref) => AnalyticsIdentityCoordinator(
         analytics: ref.watch(analyticsEventSinkProvider),
-        setCrashUserId: CrashReportingService.instance.setUserId,
+        setCrashUserId: ref.read(crashReportingServiceProvider).setUserId,
       ),
     );
 

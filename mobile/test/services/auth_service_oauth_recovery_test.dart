@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -196,6 +197,7 @@ void main() {
 
   AuthService createAuthService() {
     return AuthService(
+      backgroundActivityManager: BackgroundActivityManager(),
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
       flutterSecureStorage: fakeSecureStorage,

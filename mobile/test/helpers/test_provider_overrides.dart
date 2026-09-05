@@ -26,6 +26,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -71,7 +72,11 @@ class MockVideoEventService extends Mock implements VideoEventService {
 /// Prevents unrelated widget tests from starting timers or sending analytics.
 class TestAnalyticsService extends AnalyticsService {
   TestAnalyticsService()
-    : super(disableNostrPublishing: true, productAnalyticsEnabled: false);
+    : super(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+        productAnalyticsEnabled: false,
+      );
 
   @override
   Future<void> initialize() async {}

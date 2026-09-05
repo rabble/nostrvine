@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
@@ -57,6 +58,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
 
       container = ProviderContainer(

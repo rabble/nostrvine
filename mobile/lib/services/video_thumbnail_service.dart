@@ -8,13 +8,22 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for extracting thumbnail images from video files
 class VideoThumbnailService {
+  /// Crash reporting for this static utility.
+  ///
+  /// [VideoThumbnailService] has no instances, so there is no constructor to inject through.
+  /// Bootstrap assigns this once from `crashReportingServiceProvider`; tests
+  /// assign a recording fake. This is a deliberately-confined residual of the
+  /// #4743 conversion — every instantiable service takes a [CrashReporter]
+  /// through its constructor instead.
+  static CrashReporter crashReporter = const SilentCrashReporter();
+
   static const int _thumbnailQuality = 75;
   static const Size _thumbnailSize = Size.square(640);
 
@@ -291,7 +300,7 @@ class VideoThumbnailService {
           category: LogCategory.video,
         );
         if (logToCrashlytics) {
-          await CrashReportingService.instance.recordError(
+          await crashReporter.recordError(
             Exception('Thumbnail extraction failed - thumbnails list is empty'),
             StackTrace.current,
             reason:
@@ -318,7 +327,7 @@ class VideoThumbnailService {
         category: LogCategory.video,
       );
       if (logToCrashlytics) {
-        await CrashReportingService.instance.recordError(
+        await crashReporter.recordError(
           e,
           stackTrace,
           reason:
@@ -480,7 +489,7 @@ class VideoThumbnailService {
         name: 'VideoThumbnailService',
         category: LogCategory.video,
       );
-      await CrashReportingService.instance.recordError(
+      await crashReporter.recordError(
         e,
         stackTrace,
         reason:

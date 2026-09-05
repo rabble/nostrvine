@@ -6,10 +6,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 
 final creatorDeleteEnforcementRepositoryProvider =
     Provider<CreatorDeleteEnforcementRepository>((ref) {
@@ -28,11 +28,16 @@ final creatorDeleteEnforcementRepositoryProvider =
                 ?.signsRemotelyNonInteractive ??
             false,
         reportError: (error, stackTrace) => unawaited(
-          CrashReportingService.instance.recordError(
-            Reportable(error, context: 'CreatorDeleteEnforcementRepository'),
-            stackTrace,
-            reason: 'Creator-delete enforcement contract failure',
-          ),
+          ref
+              .read(crashReportingServiceProvider)
+              .recordError(
+                Reportable(
+                  error,
+                  context: 'CreatorDeleteEnforcementRepository',
+                ),
+                stackTrace,
+                reason: 'Creator-delete enforcement contract failure',
+              ),
         ),
       );
     });

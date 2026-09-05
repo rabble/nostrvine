@@ -3,7 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/features/app/startup/startup_profiler.dart';
+import 'package:openvine/features/app/startup/startup_phase_mapper.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -20,13 +20,14 @@ void main() {
     test('CrashReportingService can be initialized early', () async {
       // This mimics what happens in startOpenVineApp
       final startTime = DateTime.now();
+      final crashReporting = CrashReportingService();
 
       // Initialize crash reporting first
-      await CrashReportingService.instance.initialize();
+      await crashReporting.initialize();
 
       // Should not throw
-      CrashReportingService.instance.logInitializationStep('Test step');
-      CrashReportingService.instance.log('Test message');
+      crashReporting.logInitializationStep('Test step');
+      crashReporting.log('Test message');
 
       // Initialize logging config
       await LoggingConfigService().initialize();
@@ -37,7 +38,8 @@ void main() {
 
     test('Startup breadcrumbs can be logged safely', () async {
       // Initialize the service
-      await CrashReportingService.instance.initialize();
+      final crashReporting = CrashReportingService();
+      await crashReporting.initialize();
 
       // Test various breadcrumb formats used in the app
       final testBreadcrumbs = [
@@ -49,12 +51,10 @@ void main() {
       ];
 
       // None of these should throw
-      testBreadcrumbs.forEach(
-        CrashReportingService.instance.logInitializationStep,
-      );
+      testBreadcrumbs.forEach(crashReporting.logInitializationStep);
 
       // Also test regular logging
-      CrashReportingService.instance.log('Startup timeout detected');
+      crashReporting.log('Startup timeout detected');
     });
 
     test('Logging can handle early startup phase', () {

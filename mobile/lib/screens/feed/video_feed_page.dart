@@ -22,6 +22,7 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
+import 'package:openvine/providers/startup_performance_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -31,7 +32,6 @@ import 'package:openvine/screens/feed/feed_tuning_snackbar.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_empty_widget.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_error_widget.dart';
-import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
@@ -399,7 +399,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 listener: (_, _) {
                   if (!_hasMarkedUIReady) {
                     _hasMarkedUIReady = true;
-                    StartupPerformanceService.instance.markUIReady();
+                    ref.read(startupPerformanceServiceProvider).markUIReady();
                   }
                 },
               ),
@@ -530,7 +530,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                                   );
                               if (!_hasMarkedVideoReady && index == 0) {
                                 _hasMarkedVideoReady = true;
-                                StartupPerformanceService.instance
+                                ref
+                                    .read(startupPerformanceServiceProvider)
                                     .markVideoReady();
                               }
                             },

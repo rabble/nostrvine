@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/startup/app_bootstrap.dart' as app;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -20,6 +21,7 @@ void main() {
       // The zone guard is where this lands: nothing catches the failed
       // handshake, so it escapes as an uncaught async error (#7290).
       await app.handleUncaughtZoneError(
+        crashReporting: CrashReportingService(),
         WebSocketChannelException.from(
           const SocketException("Failed host lookup: 'relay.divine.video'"),
         ),
@@ -32,6 +34,7 @@ void main() {
 
     test('does not report a bare socket failure', () async {
       await app.handleUncaughtZoneError(
+        crashReporting: CrashReportingService(),
         const SocketException("Failed host lookup: 'media.divine.video'"),
         StackTrace.current,
         recordError: recorder(),
@@ -49,6 +52,7 @@ void main() {
       );
 
       await app.handleUncaughtZoneError(
+        crashReporting: CrashReportingService(),
         error,
         StackTrace.current,
         recordError: recorder(),
@@ -63,6 +67,7 @@ void main() {
       final error = StateError('No public key available');
 
       await app.handleUncaughtZoneError(
+        crashReporting: CrashReportingService(),
         error,
         StackTrace.current,
         recordError: recorder(),

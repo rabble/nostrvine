@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -20,7 +21,10 @@ void main() {
     });
 
     test('should track view_end with traffic source', () async {
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
+      analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+      );
       await analyticsService.initialize();
 
       final video = VideoEvent(
@@ -51,7 +55,10 @@ void main() {
     });
 
     test('should not publish Nostr event for short watch durations', () async {
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
+      analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+      );
       await analyticsService.initialize();
 
       final video = VideoEvent(
@@ -76,7 +83,10 @@ void main() {
     });
 
     test('should not send requests when analytics is disabled', () async {
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
+      analyticsService = AnalyticsService(
+        backgroundActivityManager: BackgroundActivityManager(),
+        disableNostrPublishing: true,
+      );
       await analyticsService.initialize();
       await analyticsService.setAnalyticsEnabled(false);
 
@@ -100,7 +110,9 @@ void main() {
       'should handle view_end without ViewEventPublisher gracefully',
       () async {
         // No ViewEventPublisher injected
-        analyticsService = AnalyticsService();
+        analyticsService = AnalyticsService(
+          backgroundActivityManager: BackgroundActivityManager(),
+        );
         await analyticsService.initialize();
 
         final video = VideoEvent(

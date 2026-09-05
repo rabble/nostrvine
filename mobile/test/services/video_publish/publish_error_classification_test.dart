@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/exceptions/video_exceptions.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -142,6 +143,7 @@ void main() {
 
     setUp(() {
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: _MockBlossomUploadService(),
       );
     });

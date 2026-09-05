@@ -4,13 +4,21 @@
 import 'dart:async';
 
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/video_editor/video_render_failures.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Owns the liveness bound and failure reporting for final video exports.
 class VideoRenderWatchdog {
   VideoRenderWatchdog._();
+
+  /// Crash reporting for this static utility (#4743).
+  ///
+  /// No instances exist, so there is no constructor to inject through.
+  /// `app_bootstrap` assigns the real reporter at startup; tests assign a
+  /// recording fake. Defaults to a silent reporter only so an unwired test
+  /// cannot NPE — production must assign, or reports are lost.
+  static CrashReporter crashReporter = const SilentCrashReporter();
 
   static void Function(Object error, StackTrace stackTrace)?
   crashReporterOverride;
@@ -53,7 +61,7 @@ class VideoRenderWatchdog {
       override(error, stackTrace);
       return;
     }
-    CrashReportingService.instance.recordError(
+    crashReporter.recordError(
       error,
       stackTrace,
       reason: 'renderVideo failed',

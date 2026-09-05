@@ -17,10 +17,10 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/startup_performance_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -130,7 +130,7 @@ class WelcomeScreen extends ConsumerWidget {
 }
 
 /// Welcome screen — View that consumes [WelcomeBloc] state.
-class _WelcomeView extends StatelessWidget {
+class _WelcomeView extends ConsumerWidget {
   const _WelcomeView({required this.isAuthLoading, required this.lastError});
 
   /// Whether the global auth state is in a loading state.
@@ -140,7 +140,7 @@ class _WelcomeView extends StatelessWidget {
   final String? lastError;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocConsumer<WelcomeBloc, WelcomeState>(
       listenWhen: (prev, current) =>
           current.status == WelcomeStatus.navigatingToLoginOptions ||
@@ -188,7 +188,7 @@ class _WelcomeView extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.status == WelcomeStatus.loaded) {
-          StartupPerformanceService.instance.markAuthShellReady();
+          ref.read(startupPerformanceServiceProvider).markAuthShellReady();
         }
 
         final isLoading = isAuthLoading || state.isAccepting;

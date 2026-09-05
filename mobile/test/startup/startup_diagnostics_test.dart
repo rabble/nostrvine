@@ -8,35 +8,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/features/app/startup/startup_profiler.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-class _MockCrashReportingService extends Mock
-    implements CrashReportingService {}
+class _MockCrashReporter extends Mock implements CrashReporter {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Startup Diagnostics', () {
     late StartupCoordinator coordinator;
-    late _MockCrashReportingService mockCrashReporting;
+    late _MockCrashReporter mockCrashReporting;
     late List<String> breadcrumbs;
 
     setUp(() {
-      coordinator = StartupCoordinator();
-      mockCrashReporting = _MockCrashReportingService();
+      mockCrashReporting = _MockCrashReporter();
       breadcrumbs = [];
+      when(() => mockCrashReporting.log(any())).thenAnswer((invocation) {
+        breadcrumbs.add(invocation.positionalArguments[0] as String);
+      });
+      when(
+        () => mockCrashReporting.recordError(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async {});
+      coordinator = StartupCoordinator(crashReporter: mockCrashReporting);
 
       // Set up log capture
       Log.setLogLevel(LogLevel.debug);
-
-      // Mock the CrashReportingService singleton
-      when(() => mockCrashReporting.logInitializationStep(any())).thenAnswer((
-        invocation,
-      ) {
-        breadcrumbs.add(invocation.positionalArguments[0] as String);
-      });
     });
 
     tearDown(() {
@@ -99,20 +100,11 @@ void main() {
 
     test('should log breadcrumbs for each initialization step', () async {
       // Arrange
-      final profiler = StartupProfiler.instance;
-      profiler.markAppStart();
-
       coordinator.registerService(
         name: 'AuthService',
         phase: StartupPhase.critical,
         initialize: () async {
-          CrashReportingService.instance.logInitializationStep(
-            'Initializing service: AuthService',
-          );
           await Future.delayed(const Duration(milliseconds: 10));
-          CrashReportingService.instance.logInitializationStep(
-            '✓ AuthService initialized successfully',
-          );
         },
       );
 
@@ -120,22 +112,17 @@ void main() {
         name: 'NostrService',
         phase: StartupPhase.essential,
         initialize: () async {
-          CrashReportingService.instance.logInitializationStep(
-            'Initializing service: NostrService',
-          );
           await Future.delayed(const Duration(milliseconds: 10));
-          CrashReportingService.instance.logInitializationStep(
-            '✓ NostrService initialized successfully',
-          );
         },
       );
 
       // Act
       await coordinator.initialize();
-      profiler.markAppReady();
 
-      // Assert - breadcrumbs should be logged (would be captured by mock)
-      // In production, these would be sent to Crashlytics
+      expect(breadcrumbs, contains('Initializing service: AuthService'));
+      expect(breadcrumbs, contains('✓ AuthService initialized successfully'));
+      expect(breadcrumbs, contains('Initializing service: NostrService'));
+      expect(breadcrumbs, contains('✓ NostrService initialized successfully'));
       expect(coordinator.metrics.serviceTimings['AuthService'], isNotNull);
       expect(coordinator.metrics.serviceTimings['NostrService'], isNotNull);
     });
@@ -216,7 +203,7 @@ void main() {
               warnings.add(
                 'WARNING: SlowService initialization taking > 2 seconds',
               );
-              CrashReportingService.instance.log(
+              mockCrashReporting.log(
                 'Startup timeout detected for SlowService',
               );
             });

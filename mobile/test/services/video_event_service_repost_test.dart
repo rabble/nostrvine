@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -45,6 +46,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
       );
     });
 

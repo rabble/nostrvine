@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/dm_reaction_retry_service.dart';
 
 class _MockDmReactionsRepository extends Mock
@@ -77,6 +78,7 @@ void main() {
     OfflineProbe? isOffline,
   }) {
     return DmReactionRetryService(
+      crashReporting: CrashReportingService(),
       reactionsRepository: repository,
       appForegroundStream: foregroundController.stream,
       retryTriggerStream: retryTriggerStream,

@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -103,6 +104,7 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        crashReporter: const SilentCrashReporter(),
         performanceMonitor: mockPerformanceMonitor,
         connectionService: connectionService,
       );

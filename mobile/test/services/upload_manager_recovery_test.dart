@@ -85,6 +85,7 @@ void main() {
       _mockConnectivity('wifi');
 
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         retryConfig: const UploadRetryConfig(
           initialDelay: Duration(milliseconds: 10),
@@ -158,6 +159,7 @@ void main() {
     test('onAppResumed wakes a live upload parked in retry backoff', () async {
       uploadManager.dispose();
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         retryConfig: const UploadRetryConfig(
           initialDelay: Duration(hours: 1),

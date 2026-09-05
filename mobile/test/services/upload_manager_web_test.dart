@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
@@ -54,7 +55,10 @@ void main() {
     test(
       'initializes successfully on web without filesystem access',
       () async {
-        final uploadManager = UploadManager(blossomService: mockBlossomService);
+        final uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
+          blossomService: mockBlossomService,
+        );
 
         // Should not throw MissingPluginException for path_provider
         await expectLater(uploadManager.initialize(), completes);
@@ -67,7 +71,10 @@ void main() {
     );
 
     test('pending uploads list works on web', () async {
-      final uploadManager = UploadManager(blossomService: mockBlossomService);
+      final uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
 
       await uploadManager.initialize();
       expect(uploadManager.isInitialized, isTrue);
@@ -80,7 +87,10 @@ void main() {
     }, skip: !kIsWeb ? 'Web-only test' : null);
 
     test('upload stats work on web', () async {
-      final uploadManager = UploadManager(blossomService: mockBlossomService);
+      final uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
 
       await uploadManager.initialize();
 
@@ -96,7 +106,10 @@ void main() {
     test(
       'getUpload returns null for non-existent upload on web',
       () async {
-        final uploadManager = UploadManager(blossomService: mockBlossomService);
+        final uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
+          blossomService: mockBlossomService,
+        );
 
         await uploadManager.initialize();
 
@@ -111,7 +124,10 @@ void main() {
     test(
       'cleanupCompletedUploads does not crash on web',
       () async {
-        final uploadManager = UploadManager(blossomService: mockBlossomService);
+        final uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
+          blossomService: mockBlossomService,
+        );
 
         await uploadManager.initialize();
 
@@ -124,7 +140,10 @@ void main() {
     );
 
     test('performance metrics work on web', () async {
-      final uploadManager = UploadManager(blossomService: mockBlossomService);
+      final uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
 
       await uploadManager.initialize();
 
@@ -139,7 +158,10 @@ void main() {
     test(
       'multiple initializations are safe on web',
       () async {
-        final uploadManager = UploadManager(blossomService: mockBlossomService);
+        final uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
+          blossomService: mockBlossomService,
+        );
 
         // First init
         await uploadManager.initialize();
@@ -155,7 +177,10 @@ void main() {
     );
 
     test('dispose is safe on web', () async {
-      final uploadManager = UploadManager(blossomService: mockBlossomService);
+      final uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
 
       await uploadManager.initialize();
 
@@ -166,7 +191,10 @@ void main() {
     test(
       'crash reporting does not throw on web',
       () async {
-        final uploadManager = UploadManager(blossomService: mockBlossomService);
+        final uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
+          blossomService: mockBlossomService,
+        );
 
         await uploadManager.initialize();
 

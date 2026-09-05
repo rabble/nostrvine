@@ -13,6 +13,7 @@ import 'package:nostr_sdk/nostr_sdk.dart' show NostrSigner, generatePrivateKey;
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -143,6 +144,7 @@ void main() {
         securityConfig: const SecurityConfig(requireHardwareBacked: false),
       );
       final authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,

@@ -10,10 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/local_content_owner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +33,7 @@ void main() {
   group('local content owner', () {
     late AppDatabase db;
     late _MockAuthService authService;
+    late CrashReportingService crashReporting;
     late ProviderContainer container;
 
     /// Builds a container whose auth service reports [currentPubkeyHex] as the
@@ -70,6 +73,7 @@ void main() {
       return ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          crashReportingServiceProvider.overrideWithValue(crashReporting),
           sharedPreferencesProvider.overrideWithValue(prefs),
           authServiceProvider.overrideWithValue(authService),
         ],
@@ -79,6 +83,7 @@ void main() {
     setUp(() {
       db = AppDatabase.test(NativeDatabase.memory());
       authService = _MockAuthService();
+      crashReporting = CrashReportingService();
       when(() => authService.authState).thenReturn(AuthState.authenticated);
       when(
         () => authService.authStateStream,
@@ -98,6 +103,10 @@ void main() {
 
       expect(container.read(clipLibraryServiceProvider).ownerPubkey, _pubkeyA);
       expect(container.read(draftStorageServiceProvider).ownerPubkey, _pubkeyA);
+      expect(
+        container.read(draftStorageServiceProvider).crashReporterForTesting,
+        same(crashReporting),
+      );
     });
 
     test(

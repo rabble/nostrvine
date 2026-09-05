@@ -8,6 +8,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,6 +78,7 @@ void main() {
       _mockConnectivity('wifi');
 
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         retryConfig: const UploadRetryConfig(
           initialDelay: Duration.zero,
@@ -758,6 +760,7 @@ void main() {
         uploadManager.dispose();
 
         uploadManager = UploadManager(
+          backgroundActivityManager: BackgroundActivityManager(),
           blossomService: mockBlossomService,
           retryConfig: const UploadRetryConfig(
             initialDelay: Duration.zero,
@@ -804,7 +807,10 @@ void main() {
         () => mockBlossomService.isBlossomEnabled(),
       ).thenAnswer((_) async => false);
 
-      uploadManager = UploadManager(blossomService: mockBlossomService);
+      uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
+        blossomService: mockBlossomService,
+      );
       await uploadManager.initialize();
       await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
     });

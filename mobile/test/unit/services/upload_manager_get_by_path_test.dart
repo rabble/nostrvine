@@ -13,8 +13,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+
 import '../../helpers/real_integration_test_helper.dart';
 import '../../helpers/test_helpers.dart';
 import '../../mocks/mock_path_provider_platform.dart';
@@ -85,12 +87,18 @@ void main() {
     // so clearing after initialize leaves stale uploads visible through
     // pendingUploads. Open and clear with a throwaway manager first, then read
     // the empty box with the one under test so memory matches disk.
-    final boxOpener = UploadManager(blossomService: mockUploadService);
+    final boxOpener = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
+      blossomService: mockUploadService,
+    );
     await boxOpener.initialize();
     await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
     boxOpener.dispose();
 
-    uploadManager = UploadManager(blossomService: mockUploadService);
+    uploadManager = UploadManager(
+      backgroundActivityManager: BackgroundActivityManager(),
+      blossomService: mockUploadService,
+    );
     await uploadManager.initialize();
     expect(
       uploadManager.pendingUploads,

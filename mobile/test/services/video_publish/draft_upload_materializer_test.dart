@@ -11,6 +11,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
@@ -111,6 +112,7 @@ void main() {
         ),
       );
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossomService,
         // The default config sleeps 2+4+8+16+32s of real time before giving
         // up, so each failure-path test below burned ~62s. Only the retry

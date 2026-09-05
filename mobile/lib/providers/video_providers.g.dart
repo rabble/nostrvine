@@ -281,7 +281,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'e250f65348b3afe605ee69241e85658b5f32b237';
+String _$videoEventServiceHash() => r'f3c98dbdc9e213f20a7abc20ea7fd10df6f77d43';
 
 /// Video event publisher for publishing video events to Nostr relays
 
@@ -396,7 +396,7 @@ final class ViewEventPublisherProvider
 }
 
 String _$viewEventPublisherHash() =>
-    r'506c5f1f86589ad3aa99e9f3673c31952e31f3c3';
+    r'00aaa657c3238bb3718bd1839f48febb15d82841';
 
 /// Subscribed list video cache for merging subscribed list videos into home feed
 /// Depends on CuratedListService which is async, so watch the state provider
@@ -1027,4 +1027,4 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'19f00b27d5baa76a2990616ebdc1251a48bfcdb9';
+String _$likesRepositoryHash() => r'8fde317eb74b77ef2ab6e5f985753b53c666c622';

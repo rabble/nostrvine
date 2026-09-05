@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -62,6 +63,7 @@ void main() {
       // thumbnail leg proceeds to the upload step.
       final thumbnailPath = '${testDir.path}/thumb.jpg';
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: mockBlossom,
         // Zero delays so the retry test does not sleep the default 2s backoff.
         retryConfig: const UploadRetryConfig(

@@ -6,8 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/router/product_analytics_navigation_observer.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 
 class _RecordingAnalyticsService extends AnalyticsService {
+  _RecordingAnalyticsService()
+    : super(backgroundActivityManager: BackgroundActivityManager());
+
   final records =
       <
         ({

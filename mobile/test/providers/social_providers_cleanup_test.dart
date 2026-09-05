@@ -19,6 +19,7 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -89,6 +90,7 @@ void main() {
       await TestHelpers.initHiveHome();
 
       uploadManager = UploadManager(
+        backgroundActivityManager: BackgroundActivityManager(),
         blossomService: blossomUploadService,
         currentNostrPubkey: _pubkeyB,
         scopeUploadsToCurrentUser: true,

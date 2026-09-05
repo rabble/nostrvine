@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
+import 'package:openvine/providers/startup_performance_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/startup/app_bootstrap.dart' as bootstrap;
 import 'package:openvine/startup/startup_coordinator_factory.dart' as app;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -129,11 +133,15 @@ void main() {
 
   group('createStartupCoordinatorForTesting', () {
     test('initializes disk-backed startup services before runApp', () {
-      final container = ProviderContainer();
+      final container = _containerWithStartupPerformance();
       addTearDown(container.dispose);
 
       final coordinator = app.createStartupCoordinatorForTesting(container);
 
+      expect(
+        coordinator.crashReporterForTesting,
+        same(container.read(crashReportingServiceProvider)),
+      );
       expect(
         coordinator.serviceRegistrationForTesting('HiveStorage')?.phase,
         StartupPhase.critical,
@@ -145,7 +153,7 @@ void main() {
     });
 
     test('opens the uploads box only after Hive has a home path', () {
-      final container = ProviderContainer();
+      final container = _containerWithStartupPerformance();
       addTearDown(container.dispose);
 
       final coordinator = app.createStartupCoordinatorForTesting(container);
@@ -162,7 +170,7 @@ void main() {
     });
 
     test('initializes performance monitoring before runApp', () {
-      final container = ProviderContainer();
+      final container = _containerWithStartupPerformance();
       addTearDown(container.dispose);
 
       final coordinator = app.createStartupCoordinatorForTesting(container);
@@ -179,7 +187,7 @@ void main() {
     });
 
     test('performance monitoring does not extend the critical phase', () {
-      final container = ProviderContainer();
+      final container = _containerWithStartupPerformance();
       addTearDown(container.dispose);
 
       final coordinator = app.createStartupCoordinatorForTesting(container);
@@ -197,7 +205,7 @@ void main() {
     });
 
     test('runs C2PA debris cleanup as optional deferred startup work', () {
-      final container = ProviderContainer();
+      final container = _containerWithStartupPerformance();
       addTearDown(container.dispose);
 
       final coordinator = app.createStartupCoordinatorForTesting(container);
@@ -209,4 +217,19 @@ void main() {
       expect(registration?.optional, isTrue);
     });
   });
+}
+
+/// A container carrying the device-scoped overrides `DeviceScope` supplies in
+/// production (#4743). Both providers are override-only, so a bare
+/// `ProviderContainer` cannot build the coordinator.
+ProviderContainer _containerWithStartupPerformance() {
+  final crashReporting = CrashReportingService();
+  return ProviderContainer(
+    overrides: [
+      crashReportingServiceProvider.overrideWithValue(crashReporting),
+      startupPerformanceServiceProvider.overrideWithValue(
+        StartupPerformanceService(crashReporting: crashReporting),
+      ),
+    ],
+  );
 }

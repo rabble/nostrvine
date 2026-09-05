@@ -11,6 +11,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,6 +86,7 @@ void main() {
       String? primaryRelayUrl,
     }) {
       final authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         relayDiscoveryService: discovery,
         primaryRelayUrl: primaryRelayUrl,
@@ -310,6 +312,7 @@ void main() {
           throw Exception('publish broke');
 
       final authService = AuthService(
+        backgroundActivityManager: BackgroundActivityManager(),
         userDataCleanupService: mockCleanupService,
         relayDiscoveryService: discovery,
       );

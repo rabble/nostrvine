@@ -13,6 +13,8 @@ import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/background_activity_provider.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
@@ -335,6 +337,7 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   );
 
   final service = OutgoingDmRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     dmRepository: dmRepository,
     outgoingDmsDao: db.outgoingDmsDao,
     userPubkey: userPubkey,
@@ -401,6 +404,7 @@ final profileSaveRetryServiceProvider = Provider<ProfileSaveRetryService?>((
   ref.onDispose(foregroundController.close);
 
   final service = ProfileSaveRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     profileRepository: profileRepository,
     pendingProfileSavesDao: db.pendingProfileSavesDao,
     userPubkey: userPubkey,
@@ -478,6 +482,7 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
   final retryTriggerStream = _dmRetryConnectivityTriggerStream();
 
   final service = DmReactionRetryService(
+    crashReporting: ref.read(crashReportingServiceProvider),
     reactionsRepository: reactionsRepository,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,
@@ -614,6 +619,7 @@ AnalyticsService analyticsService(Ref ref) {
     stagingOverride: const String.fromEnvironment('PRODUCT_ANALYTICS_RELEASE'),
   );
   final service = AnalyticsService(
+    backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,
@@ -685,6 +691,7 @@ DraftStorageService draftStorageService(Ref ref) {
     preferences: ref.watch(sharedPreferencesProvider),
   );
   return DraftStorageService(
+    crashReporter: ref.read(crashReportingServiceProvider),
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
     ownerPubkey: ownerPubkey,

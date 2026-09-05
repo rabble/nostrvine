@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 
 import '../../test_setup.dart';
@@ -142,6 +143,7 @@ AuthService buildTestAuthService({
   KeycastOAuth? oauthClient,
 }) {
   return AuthService(
+    backgroundActivityManager: BackgroundActivityManager(),
     userDataCleanupService: cleanupService,
     keyStorage: SecureKeyStorage(
       securityConfig: const SecurityConfig(requireHardwareBacked: false),

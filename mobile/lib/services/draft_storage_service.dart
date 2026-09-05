@@ -2,13 +2,15 @@
 // ABOUTME: Handles save, load, delete, clear, and migration from SharedPreferences
 
 import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/draft_local_audio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -22,11 +24,19 @@ class DraftStorageService {
     required ClipsDao clipsDao,
     this.ownerPubkey,
     SharedPreferences? preferences,
-  }) : _draftsDao = draftsDao,
+    CrashReporter? crashReporter,
+  }) : _crashReporter = crashReporter ?? const SilentCrashReporter(),
+       _draftsDao = draftsDao,
        _clipsDao = clipsDao,
        _preferences = preferences;
 
   final DraftsDao _draftsDao;
+
+  final CrashReporter _crashReporter;
+
+  @visibleForTesting
+  CrashReporter get crashReporterForTesting => _crashReporter;
+
   final ClipsDao _clipsDao;
 
   /// Where saved sounds live, consulted before deleting a draft's audio files.
@@ -579,7 +589,7 @@ class DraftStorageService {
         name: 'DraftStorageService',
         category: LogCategory.video,
       );
-      await CrashReportingService.instance.recordError(
+      await _crashReporter.recordError(
         e,
         stackTrace,
         reason: 'Failed to load drafts from database',

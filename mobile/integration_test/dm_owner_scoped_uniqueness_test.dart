@@ -17,6 +17,8 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/swap_account.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_setup.dart';
@@ -83,7 +85,11 @@ void main() {
           database: database,
           sharedPreferences: prefs,
           switchController: controller,
+          startupPerformance: StartupPerformanceService(
+            crashReporting: CrashReportingService(),
+          ),
           appVersion: 'test',
+          crashReporting: CrashReportingService(),
           documentsPath: '/documents',
         );
 
@@ -186,7 +192,11 @@ void main() {
           database: database,
           sharedPreferences: prefs,
           switchController: controller,
+          startupPerformance: StartupPerformanceService(
+            crashReporting: CrashReportingService(),
+          ),
           appVersion: 'test',
+          crashReporting: CrashReportingService(),
           documentsPath: '/documents',
         );
 
