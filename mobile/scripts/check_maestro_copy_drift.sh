@@ -89,13 +89,17 @@ with open(arb_path, encoding="utf-8") as fh:
 
 exact_values = {}      # value -> [keys] for non-parameterized strings
 param_values = {}      # key -> template (contains ICU {placeholder})
+multiline_values = set()
 for key, val in arb_raw.items():
     if key.startswith("@") or not isinstance(val, str):
         continue
     if "{" in val:
         param_values[key] = val
     else:
-        exact_values.setdefault(norm(val), []).append(key)
+        normalized = norm(val)
+        exact_values.setdefault(normalized, []).append(key)
+        if "\n" in val:
+            multiline_values.add(normalized)
 
 all_keys = {k for ks in exact_values.values() for k in ks} | set(param_values)
 
@@ -159,8 +163,8 @@ def flow_literals(path):
     """Literal copy strings a flow asserts or taps. Skips ${...}
     interpolations (environment values, not copy), inline maps, and
     selector properties other than text (ids are not copy). Block-scalar
-    accessibility labels are emitted per non-blank line so each ARB-backed
-    title or subtitle receives its own binding."""
+    accessibility labels emit each non-blank line plus any contained multi-line
+    ARB value so titles, subtitles, and paragraph copy receive bindings."""
     lits = []
 
     def add_literal(value):
@@ -187,6 +191,7 @@ def flow_literals(path):
             v = unquote(m.group("v"))
             if is_block_scalar_header(v):
                 parent_indent = len(raw) - len(raw.lstrip())
+                block_lines = []
                 while index < len(lines):
                     block_raw = lines[index].rstrip("\n")
                     if block_raw.strip():
@@ -195,8 +200,14 @@ def flow_literals(path):
                             break
                         # Inside a block scalar, `#` is content rather than a
                         # YAML comment marker.
-                        add_literal(block_raw.strip())
+                        block_line = block_raw.strip()
+                        block_lines.append(block_line)
+                        add_literal(block_line)
                     index += 1
+                block_text = norm("\n".join(block_lines))
+                for multiline_value in multiline_values:
+                    if multiline_value in block_text:
+                        add_literal(multiline_value)
             else:
                 add_literal(v)
             break

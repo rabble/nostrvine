@@ -177,6 +177,32 @@ void main() {
       );
     });
 
+    test('binds a multi-line ARB value within a block scalar', () {
+      writeArb({
+        'keyExplanation': 'First paragraph.\n\nSecond paragraph.\nThird line.',
+      });
+      writeFlow(
+        'asserts/keys.yaml',
+        '- assertVisible: |-\n'
+            '    Heading\n'
+            '    First paragraph.\n'
+            '\n'
+            '    Second paragraph.\n'
+            '    Third line.\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+      final check = run();
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('keyExplanation\te2e/maestro/asserts/keys.yaml'),
+      );
+    });
+
     test('does not bind regex or interpolated block-scalar lines', () {
       writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
       writeFlow(

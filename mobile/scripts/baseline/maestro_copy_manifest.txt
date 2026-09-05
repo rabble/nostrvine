@@ -69,6 +69,7 @@ keyManagementBackupSubtitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Save 
 keyManagementBackupTitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Backup Your Key
 keyManagementCopyNsec	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Copy My Private Key (nsec)
 keyManagementCopyNsec	e2e/maestro/tests/backupYourKey.yaml	bound:Copy My Private Key (nsec)
+keyManagementExplanation	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Your Nostr identity is a cryptographic key pair: • Your public key (npub) is like your username - share it freely • Your private key (nsec) is like your password - keep it secret! Your nsec lets you access your account on any Nostr app.
 keyManagementImportButton	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Import Key
 keyManagementImportSubtitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Already have a Nostr account? Paste your private key (nsec) to access it here.
 keyManagementImportTitle	e2e/maestro/asserts/assertNostrKeys.yaml	bound:Import Existing Key
