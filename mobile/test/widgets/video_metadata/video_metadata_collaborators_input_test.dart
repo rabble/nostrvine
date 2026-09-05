@@ -422,7 +422,7 @@ void main() {
       },
     );
 
-    testWidgets('passes the viewer pubkey to the collaborator picker', (
+    testWidgets('passes the viewer pubkey and removes a stale self-selection', (
       tester,
     ) async {
       const viewerPubkey =
@@ -447,6 +447,11 @@ void main() {
       when(
         () => contentBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
+      final editorNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(
+          collaboratorPubkeys: {viewerPubkey},
+        ),
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -461,6 +466,7 @@ void main() {
               ),
             ),
             profileRepositoryProvider.overrideWithValue(profileRepository),
+            videoEditorProvider.overrideWith(() => editorNotifier),
             contentBlocklistRepositoryProvider.overrideWithValue(
               contentBlocklistRepository,
             ),
@@ -481,6 +487,13 @@ void main() {
 
       expect(find.text('Viewer'), findsNothing);
       expect(find.text('Mutual'), findsOneWidget);
+
+      await tester.tap(
+        find.bySemanticsLabel(_l10n.userPickerConfirmSemanticLabel),
+      );
+      await tester.pumpAndSettle();
+
+      expect(editorNotifier.state.collaboratorPubkeys, isEmpty);
     });
   });
 }
