@@ -10,6 +10,8 @@
 # and the guard verifies the ARB template still produces the rendered literal.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
+# Duplicate values retain the manifest's reviewed key choice. To correct a
+# wrong choice, edit that row to another valid key before regenerating.
 # Known v1 limits are tracked in #7213: already-drifted flow literals do not
 # bind, and substring checking can miss copy shortening until the inverse
 # exact-literal check lands.
