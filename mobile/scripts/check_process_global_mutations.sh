@@ -236,10 +236,18 @@ run_scan() {
   done
 
   # --- Class 3: irreversible process-global initializers ---
-  files=$(grep -rlE --include='*.dart' 'loadAppFonts[[:space:]]*\(' "$SCAN_DIR" || true)
+  # Match the bare identifier, not `loadAppFonts(`. `setUpAll(loadAppFonts);` is
+  # the same irreversible load, and very_good_analysis enables
+  # unnecessary_lambdas, which reports "Closure should be a tearoff" on
+  # `setUpAll(() => loadAppFonts())` — so requiring the paren would gate the
+  # spelling the linter discourages and wave through the one it recommends.
+  # Widening is safe here because dart_code_only.awk has already removed comments
+  # and string-literal bodies, which is what made the paren load-bearing before.
+  irreversible='(^|[^[:alnum:]_])loadAppFonts([^[:alnum:]_]|$)'
+  files=$(grep -rlE --include='*.dart' "$irreversible" "$SCAN_DIR" || true)
   for f in $files; do
     body=$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null || true)
-    if ! grep -qE 'loadAppFonts[[:space:]]*\(' <<<"$body"; then
+    if ! grep -qE "$irreversible" <<<"$body"; then
       continue
     fi
     rel="${f#"$MOBILE_DIR"/}"
@@ -432,6 +440,14 @@ void main() { setUp(() { debugDefaultTargetPlatformOverride = null; }); }
   _case "suite-local irreversible font load → FAIL" 1 \
 'import "x";
 void main() { setUpAll(() async { await loadAppFonts(); }); }
+'
+  _case "suite-local irreversible font load, tear-off → FAIL" 1 \
+'import "x";
+void main() { setUpAll(loadAppFonts); }
+'
+  _case "identifier that merely contains the name → PASS" 0 \
+'import "x";
+void main() { final loadAppFontsHelper = 1; print(loadAppFontsHelper); }
 '
   _case "irreversible initializer named in a string → PASS" 0 \
 'import "x";
