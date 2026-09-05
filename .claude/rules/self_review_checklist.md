@@ -222,6 +222,13 @@ Testing:
   `expect(() => Foo(), returnsNormally)`, a lifecycle pump asserts
   `expect(tester.takeException(), isNull)`. See
   [`testing.md`](testing.md#a-test-must-be-able-to-fail).
+- [ ] Every "unchanged" assertion — `final before = read(); act();
+  expect(read(), before)` — pins its baseline (`expect(before, isNotNull)`,
+  `greaterThan(0)`, `hasLength(n)`) or sits beside an in-test positive control.
+  Both operands come from the state under test, so with the method inert the
+  test compares null with null and passes. Frozen at zero when the pair is the
+  test's only assertion by `check_unpinned_unchanged_assertions.sh` (#8617). See
+  [`testing.md`](testing.md#an-unchanged-assertion-needs-a-pinned-baseline).
 - [ ] No new `skip:` / `@Skip`. A failing test on your branch is caused by
   your branch — fix it, delete it, or quarantine it behind a tag, never
   silence it. Frozen per file by `check_skip_ceiling.sh`; a baselined file
