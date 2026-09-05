@@ -2,6 +2,7 @@
 // ABOUTME: Tests data gathering, sensitive data removal, and report packaging
 
 import 'dart:io' show Platform;
+import 'dart:ui' show Locale;
 
 import 'package:analytics/analytics.dart';
 import 'package:flutter/services.dart';
@@ -451,6 +452,84 @@ void main() {
           ? 'Only runs on iOS/Android'
           : null,
     );
+
+    group('locale diagnostics', () {
+      // For most of the 21+ supported locales there is no native reviewer, so
+      // a copy report is the only signal - and it can only be routed if it says
+      // which language the app was rendering. The resolved UI locale is that
+      // language; the device locale is recorded only when it differs, because
+      // a device set to Amharic that is showing the English fallback is a
+      // different bug from a bad Amharic string (#7939).
+      test('records the resolved UI locale in deviceInfo', () async {
+        final service = BugReportService(
+          resolvedUiLocaleLoader: () => const Locale('am'),
+          deviceLocaleLoader: () => const Locale('am'),
+        );
+
+        final data = await service.collectDiagnostics(
+          userDescription: 'This screen is showing bad copy',
+        );
+
+        expect(data.deviceInfo['locale'], 'am');
+        // Same language shown as requested, so no device-locale line to add.
+        expect(data.deviceInfo.containsKey('deviceLocale'), isFalse);
+      });
+
+      test(
+        'records the device locale when it differs from the resolved locale',
+        () async {
+          final service = BugReportService(
+            resolvedUiLocaleLoader: () => const Locale('en'),
+            deviceLocaleLoader: () => const Locale('am', 'ET'),
+          );
+
+          final data = await service.collectDiagnostics(
+            userDescription: 'App is in English but my phone is Amharic',
+          );
+
+          expect(data.deviceInfo['locale'], 'en');
+          expect(data.deviceInfo['deviceLocale'], 'am-ET');
+        },
+      );
+
+      test(
+        'omits the device locale when only the region differs',
+        () async {
+          // Every supported locale is language-only, so the resolved locale
+          // never carries a region. An en-US device reading `en` is reading the
+          // exact language it asked for - there is no fallback to flag, so the
+          // region-only difference must not emit a deviceLocale (#7939).
+          final service = BugReportService(
+            resolvedUiLocaleLoader: () => const Locale('en'),
+            deviceLocaleLoader: () => const Locale('en', 'US'),
+          );
+
+          final data = await service.collectDiagnostics(
+            userDescription: 'This screen is showing bad copy',
+          );
+
+          expect(data.deviceInfo['locale'], 'en');
+          expect(data.deviceInfo.containsKey('deviceLocale'), isFalse);
+        },
+      );
+
+      test('a locale probe failure does not block the report', () async {
+        final service = BugReportService(
+          resolvedUiLocaleLoader: () => throw StateError('locale unavailable'),
+          deviceLocaleLoader: () => const Locale('en'),
+        );
+
+        final data = await service.collectDiagnostics(
+          userDescription: 'This screen is showing bad copy',
+        );
+
+        // Best-effort contract: the report still succeeds, just without the
+        // locale fields.
+        expect(data.userDescription, 'This screen is showing bad copy');
+        expect(data.deviceInfo.containsKey('locale'), isFalse);
+        expect(data.deviceInfo.containsKey('deviceLocale'), isFalse);
+      });
+    });
 
     group('clearCapturedLogs', () {
       test('empties the in-memory capture buffer', () async {
