@@ -93,6 +93,31 @@ class DivineApp extends ConsumerStatefulWidget {
   ConsumerState<DivineApp> createState() => _DivineAppState();
 }
 
+/// Builds the app's sampler with Flutter's decoded-image cache gauges.
+///
+/// Kept as a test seam so a widget test can dispatch a real framework memory
+/// pressure message and verify the production cache wiring survives Flutter's
+/// automatic keep-alive cache clear.
+@visibleForTesting
+MemoryTelemetryService createAppMemoryTelemetryService({
+  required int Function() readRssBytes,
+  required int Function() readPeakRssBytes,
+  required int Function() nativeControllerCount,
+  required int Function() queueDepth,
+  required void Function(MemorySnapshot) emit,
+}) {
+  return MemoryTelemetryService(
+    readRssBytes: readRssBytes,
+    readPeakRssBytes: readPeakRssBytes,
+    nativeControllerCount: nativeControllerCount,
+    queueDepth: queueDepth,
+    imageCacheBytes: () => PaintingBinding.instance.imageCache.currentSizeBytes,
+    imageCacheLiveCount: () =>
+        PaintingBinding.instance.imageCache.liveImageCount,
+    emit: emit,
+  );
+}
+
 /// Whether a launch that observes [state] as its first lifecycle reading must
 /// start with media downloads suspended.
 ///
@@ -125,6 +150,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
   late final StartupSplashReleaseController _splashReleaseController;
   late final MemoryPressureHandler _memoryPressureHandler;
   late final MemoryTelemetryService _memoryTelemetry;
+  int _memoryPressureEvents = 0;
 
   @override
   void initState() {
@@ -139,6 +165,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
       openVineImageCache.cancelInFlightDownloads();
     }
     _memoryPressureHandler = MemoryPressureHandler(
+      onPressureObserved: (eventCount) {
+        _memoryPressureEvents = eventCount;
+        // Flutter has already cleared keep-alive images before notifying its
+        // observers. Sampling here preserves the process high-water mark,
+        // captures the still-live image count, and updates the event count
+        // before our handler clears live images and sheds ingestion below.
+        _memoryTelemetry.sampleOnce();
+      },
       clearImageCache: () {
         PaintingBinding.instance.imageCache
           ..clear()
@@ -148,7 +182,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
         ref.read(videoEventServiceProvider).eventRouter?.shedLowPriority();
       },
     );
-    _memoryTelemetry = MemoryTelemetryService(
+    _memoryTelemetry = createAppMemoryTelemetryService(
       readRssBytes: _currentRssBytes,
       readPeakRssBytes: _peakRssBytes,
       nativeControllerCount: () =>
@@ -199,7 +233,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
         _initializeDeepLinkServices();
         _initializeQuickActions();
         _initializeBackgroundServices();
-        _memoryTelemetry.start();
+        _memoryTelemetry
+          ..sampleOnce()
+          ..start();
       }
     });
   }
@@ -281,10 +317,16 @@ class _DivineAppState extends ConsumerState<DivineApp>
   void _emitMemorySnapshot(MemorySnapshot snapshot) {
     final rssMb = _rssMb(snapshot.rssBytes);
     final peakMb = _rssMb(snapshot.peakRssBytes);
+    final imageCacheMb = _memoryGaugeMb(snapshot.imageCacheBytes);
+    final peakImageCacheMb = _memoryGaugeMb(snapshot.peakImageCacheBytes);
     Log.info(
       'Memory: rss $rssMb MB (peak $peakMb MB), '
       'vc_native=${snapshot.nativeControllers}, '
-      'ingest_queue_depth=${snapshot.queueDepth}',
+      'ingest_queue_depth=${snapshot.queueDepth}, '
+      'img_cache_mb=$imageCacheMb, '
+      'img_cache_peak_mb=$peakImageCacheMb, '
+      'img_cache_live=${snapshot.imageCacheLiveCount}, '
+      'mem_pressure_events=$_memoryPressureEvents',
       name: 'MemoryTelemetry',
       category: LogCategory.system,
     );
@@ -292,12 +334,30 @@ class _DivineAppState extends ConsumerState<DivineApp>
     unawaited(crashReporting.setCustomKey('mem_rss_mb', rssMb));
     unawaited(crashReporting.setCustomKey('mem_peak_mb', peakMb));
     unawaited(
+      crashReporting.setCustomKey('img_cache_peak_mb', peakImageCacheMb),
+    );
+    unawaited(
+      crashReporting.setCustomKey(
+        'img_cache_live',
+        snapshot.imageCacheLiveCount,
+      ),
+    );
+    unawaited(
+      crashReporting.setCustomKey(
+        'mem_pressure_events',
+        _memoryPressureEvents,
+      ),
+    );
+    unawaited(
       crashReporting.setCustomKey('vc_native', snapshot.nativeControllers),
     );
     unawaited(
       crashReporting.setCustomKey('ingest_queue_depth', snapshot.queueDepth),
     );
   }
+
+  static String _memoryGaugeMb(int bytes) =>
+      bytes == MemorySnapshot.unavailableGauge ? 'unavailable' : _rssMb(bytes);
 
   void _initializeDeepLinkServices() {
     Log.info(

@@ -1,8 +1,13 @@
 // ABOUTME: Tests MemoryTelemetryService RSS/peak sampling and snapshot assembly
 // ABOUTME: Drives sampleOnce() with injected gauges and asserts the emitted data
 
+import 'dart:ui' as ui;
+
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/app/divine_app.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
 
 void main() {
@@ -18,6 +23,8 @@ void main() {
       int Function() readPeakRssBytes = _zero,
       int Function() nativeControllerCount = _zero,
       int Function() queueDepth = _zero,
+      int Function() imageCacheBytes = _zero,
+      int Function() imageCacheLiveCount = _zero,
       Duration interval = const Duration(seconds: 30),
     }) {
       return MemoryTelemetryService(
@@ -25,6 +32,8 @@ void main() {
         readPeakRssBytes: readPeakRssBytes,
         nativeControllerCount: nativeControllerCount,
         queueDepth: queueDepth,
+        imageCacheBytes: imageCacheBytes,
+        imageCacheLiveCount: imageCacheLiveCount,
         emit: emitted.add,
         interval: interval,
       );
@@ -101,11 +110,13 @@ void main() {
       expect(emitted.map((s) => s.peakRssBytes), equals([100, 900, 900]));
     });
 
-    test('snapshot carries the injected controller and queue gauges', () {
+    test('snapshot carries every injected memory gauge', () {
       final service = build(
         readRssBytes: () => 4242,
         nativeControllerCount: () => 3,
         queueDepth: () => 7,
+        imageCacheBytes: () => 8,
+        imageCacheLiveCount: () => 9,
       );
 
       service.sampleOnce();
@@ -116,6 +127,79 @@ void main() {
       expect(snapshot.peakRssBytes, equals(4242));
       expect(snapshot.nativeControllers, equals(3));
       expect(snapshot.queueDepth, equals(7));
+      expect(snapshot.imageCacheBytes, equals(8));
+      expect(snapshot.imageCacheLiveCount, equals(9));
+    });
+
+    test('failed cache gauges stay distinguishable from an empty cache', () {
+      final service = build(
+        readRssBytes: () => throw StateError('rss unavailable'),
+        readPeakRssBytes: () => -1,
+        nativeControllerCount: () => -2,
+        queueDepth: () => throw StateError('queue unavailable'),
+        imageCacheBytes: () => throw StateError('cache unavailable'),
+        imageCacheLiveCount: () => -3,
+      );
+
+      service
+        ..sampleOnce()
+        ..sampleOnce();
+
+      expect(emitted, hasLength(2));
+      final snapshot = emitted.last;
+      expect(snapshot.rssBytes, isZero);
+      expect(snapshot.peakRssBytes, isZero);
+      expect(snapshot.nativeControllers, isZero);
+      expect(snapshot.queueDepth, isZero);
+      expect(snapshot.imageCacheBytes, MemorySnapshot.unavailableGauge);
+      expect(snapshot.peakImageCacheBytes, MemorySnapshot.unavailableGauge);
+      expect(snapshot.imageCacheLiveCount, MemorySnapshot.unavailableGauge);
+    });
+
+    testWidgets('image cache peak survives Flutter memory-pressure clearing', (
+      tester,
+    ) async {
+      final cache = PaintingBinding.instance.imageCache;
+      addTearDown(() {
+        cache
+          ..clear()
+          ..clearLiveImages();
+      });
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawPaint(ui.Paint()..color = const ui.Color(0xFFFFFFFF));
+      final image = await recorder.endRecording().toImage(4, 4);
+      cache.putIfAbsent(
+        'memory-telemetry-test',
+        () => OneFrameImageStreamCompleter(
+          Future<ImageInfo>.value(ImageInfo(image: image)),
+        ),
+      );
+      await tester.idle();
+      final populatedBytes = cache.currentSizeBytes;
+      expect(populatedBytes, greaterThan(0));
+
+      final service = createAppMemoryTelemetryService(
+        readRssBytes: _zero,
+        readPeakRssBytes: _zero,
+        nativeControllerCount: _zero,
+        queueDepth: _zero,
+        emit: emitted.add,
+      )..sampleOnce();
+      final message = const JSONMessageCodec().encodeMessage(
+        <String, dynamic>{'type': 'memoryPressure'},
+      );
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.system.name,
+        message,
+        (_) {},
+      );
+      expect(cache.currentSizeBytes, isZero);
+
+      service.sampleOnce();
+
+      expect(emitted.last.imageCacheBytes, isZero);
+      expect(emitted.last.peakImageCacheBytes, populatedBytes);
     });
 
     test('start samples periodically on the interval', () {
