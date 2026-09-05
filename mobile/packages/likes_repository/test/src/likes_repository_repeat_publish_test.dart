@@ -1100,6 +1100,42 @@ void main() {
       );
     });
 
+    test(
+      'a like that joined a failing initialization still publishes',
+      () async {
+        // Startup reconciliation is best-effort, and a tap that joined the
+        // attempt must not surface its failure as a failed like: the
+        // optimistic heart is already filled and the queue never sees the
+        // action. The snapshot stays incomplete, so the target-specific
+        // safety check still guards the publish.
+        stubStorageWrites();
+        final signerGate = Completer<String?>();
+        when(
+          () => nostrClient.resolvePublicKey(),
+        ).thenAnswer((_) => signerGate.future);
+        stubRelay();
+        stubSendLike(() async => reaction(id: freshReactionId));
+
+        final initialization = repository.initialize();
+        await Future<void>.delayed(Duration.zero);
+        final like = repository.likeEvent(
+          eventId: target,
+          authorPubkey: author,
+        );
+        final published = expectLater(
+          like,
+          completion(equals(freshReactionId)),
+        );
+        final failed = expectLater(initialization, throwsA(isA<StateError>()));
+        await Future<void>.delayed(Duration.zero);
+        signerGate.completeError(StateError('signer failed'));
+
+        await failed;
+        await published;
+        expectPublishedOnce();
+      },
+    );
+
     test('a failed initialization can be retried', () async {
       var attempts = 0;
       when(() => nostrClient.resolvePublicKey()).thenAnswer((_) async {

@@ -724,7 +724,7 @@ class LikesRepository {
       // already indexed, so a second tap inside either wait still trips the
       // check above.
       _inFlightLikePublishPlaceholders.add(placeholderId);
-      await _startupReconciliationFuture;
+      await _joinStartupReconciliation();
       final liveRecord =
           _reconciledLikeRecord(eventId, addressableId: addressableId) ??
           (_hasCompleteRelayReactionSnapshot
@@ -3087,6 +3087,28 @@ class LikesRepository {
       description: 'saving a reaction adopted from the relay',
       site: site,
     );
+  }
+
+  /// Awaits the startup reconciliation attempt without adopting its failure.
+  ///
+  /// Reconciliation is best-effort. [initialize] reports a failure to its own
+  /// caller, but a like that merely joined the attempt must not fail with it:
+  /// the optimistic heart is already filled and this path has published
+  /// nothing to roll back or queue. The snapshot stays marked incomplete, so
+  /// the target-specific relay check still guards the publish that follows.
+  Future<void> _joinStartupReconciliation() async {
+    final inFlight = _startupReconciliationFuture;
+    if (inFlight == null) return;
+    try {
+      await inFlight;
+    } on Object catch (e) {
+      Log.warning(
+        'Startup reaction reconciliation failed; this like falls back to its '
+        'target-specific relay check: $e',
+        name: 'LikesRepository',
+        category: LogCategory.relay,
+      );
+    }
   }
 
   /// [_resolveRemoteLikeRecord] that fails open.
