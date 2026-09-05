@@ -497,6 +497,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: _MessageExpansionControls(
+                              isSent: isSent,
                               canShowMore:
                                   _displaySlice.hasMore &&
                                   _visibleCodeUnitLimit < dmMaxDisplayCodeUnits,
@@ -555,6 +556,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
 class _MessageExpansionControls extends StatelessWidget {
   const _MessageExpansionControls({
+    required this.isSent,
     required this.canShowMore,
     required this.canShowLess,
     required this.reachedHardLimit,
@@ -562,6 +564,7 @@ class _MessageExpansionControls extends StatelessWidget {
     required this.onShowLess,
   });
 
+  final bool isSent;
   final bool canShowMore;
   final bool canShowLess;
   final bool reachedHardLimit;
@@ -570,8 +573,11 @@ class _MessageExpansionControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The sent bubble keeps the fixed primaryAccessible green, where the
+    // accent green measures 1.4:1 — invisible. Mirror [_MessageText]'s link
+    // rule: white on sent bubbles, the palette accent on received ones.
     final actionStyle = VineTheme.bodySmallFont(
-      color: context.vineColors.accentPositive,
+      color: isSent ? VineTheme.whiteText : context.vineColors.accentPositive,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,7 +605,9 @@ class _MessageExpansionControls extends StatelessWidget {
             child: Text(
               context.l10n.dmMessageDisplayLimitReached,
               style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceMuted,
+                color: isSent
+                    ? VineTheme.whiteText.withValues(alpha: 0.7)
+                    : context.vineColors.onSurfaceMuted,
               ),
             ),
           ),

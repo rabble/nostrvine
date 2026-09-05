@@ -400,6 +400,69 @@ void main() {
         expect(find.text(strings.dmMessageShowLess), findsOneWidget);
       });
 
+      testWidgets('keeps the expansion controls white on a sent bubble', (
+        tester,
+      ) async {
+        // The sent bubble keeps the fixed primaryAccessible green fill, where
+        // the accent green would sit green-on-green (1.4:1 in dark mode).
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmMaxDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.ensureVisible(find.text(strings.dmMessageShowMore));
+        await tester.tap(find.text(strings.dmMessageShowMore));
+        await tester.pump();
+
+        final showLess = tester.widget<Text>(
+          find.text(strings.dmMessageShowLess),
+        );
+        expect(showLess.style?.color, VineTheme.whiteText);
+        final limitReached = tester.widget<Text>(
+          find.text(strings.dmMessageDisplayLimitReached),
+        );
+        expect(
+          limitReached.style?.color,
+          VineTheme.whiteText.withValues(alpha: 0.7),
+        );
+      });
+
+      testWidgets('uses the accent color for expansion controls on a received '
+          'bubble', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: false,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final showMore = tester.widget<Text>(
+          find.text(strings.dmMessageShowMore),
+        );
+        expect(showMore.style?.color, VineTheme.vineGreen);
+        expect(showMore.style?.color, isNot(VineTheme.whiteText));
+      });
+
       testWidgets('bounds painted hearts across markdown leaves', (
         tester,
       ) async {
