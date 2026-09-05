@@ -255,6 +255,51 @@ void main() {
         );
       });
 
+      testWidgets('header offers nothing to clear when the only initial '
+          'selection is the excluded viewer', (tester) async {
+        const viewerPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final viewer = UserProfile(
+          pubkey: viewerPubkey,
+          name: 'Viewer',
+          rawData: const {'name': 'Viewer'},
+          createdAt: DateTime(2026),
+          eventId: 'viewer-event',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _noVanishedProfiles,
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  excludeViewerPubkey: viewerPubkey,
+                  initialSelectedProfiles: [viewer],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.bySemanticsLabel(l10n.userPickerClearSelectionSemanticLabel),
+          findsNothing,
+        );
+      });
+
       testWidgets('search text field', (tester) async {
         await tester.pumpWidget(
           ProviderScope(

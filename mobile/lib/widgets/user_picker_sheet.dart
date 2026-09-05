@@ -158,6 +158,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   /// Whether the profile repository was unavailable at init time.
   bool _profileRepoMissing = false;
 
+  /// [widget.initialSelectedProfiles] without the excluded viewer.
+  ///
+  /// Both the initial selection and the header's clear affordance read this
+  /// list, so a sheet whose only initial selection was the viewer has nothing
+  /// selected and nothing to clear.
+  late final List<UserProfile> _initialSelectedProfiles;
+
   /// Tracks selected pubkeys locally so toggling is reflected immediately.
   /// Initialised from [widget.excludePubkeys] and the viewer-filtered
   /// [widget.initialSelectedProfiles] so pre-selected users show as checked
@@ -180,15 +187,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   @override
   void initState() {
     super.initState();
-    final initialSelectedProfiles = widget.initialSelectedProfiles
+    _initialSelectedProfiles = widget.initialSelectedProfiles
         .where((profile) => !_isExcludedViewer(profile.pubkey))
         .toList();
     _selectedPubkeys = {
       ...widget.excludePubkeys,
-      for (final profile in initialSelectedProfiles) profile.pubkey,
+      for (final profile in _initialSelectedProfiles) profile.pubkey,
     };
-    if (initialSelectedProfiles.isNotEmpty) {
-      _selectedProfiles.addAll(initialSelectedProfiles);
+    if (_initialSelectedProfiles.isNotEmpty) {
+      _selectedProfiles.addAll(_initialSelectedProfiles);
     }
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {
@@ -508,7 +515,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   semanticLabel: context.l10n.userPickerConfirmSemanticLabel,
                   onPressed: _handleDone,
                 )
-              : widget.initialSelectedProfiles.isNotEmpty
+              : _initialSelectedProfiles.isNotEmpty
               ? DivineIconButton(
                   icon: .trash,
                   size: .small,
