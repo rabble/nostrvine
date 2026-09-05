@@ -1179,6 +1179,11 @@ class _MessageList extends StatelessWidget {
     // Index built once per render pass so a reply bubble can resolve its
     // parent shared-reel message (and thus the quoted video) in O(1).
     final messagesById = {for (final m in messages) m.id: m};
+    // Rows are keyed by message id and located through
+    // findChildIndexCallback so a bubble's State (its Show more expansion)
+    // survives the index shift every newer message causes in this reversed
+    // list. Without the callback the keyed rows are index-matched, every
+    // shifted row is inflated afresh, and an expanded bubble collapses.
     final messageIndexById = {
       for (var index = 0; index < messages.length; index++)
         messages[index].id: index,
