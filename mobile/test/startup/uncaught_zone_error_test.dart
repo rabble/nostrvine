@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/startup/app_bootstrap.dart' as app;
+import 'package:unified_logger/unified_logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
@@ -77,5 +78,32 @@ void main() {
       expect(filed.single.error, same(error));
       expect(filed.single.reason, 'runZonedGuarded');
     });
+
+    test(
+      'writes an unexpected error to the unified log before filing it',
+      () async {
+        // The zone guard is installed before Crashlytics initializes, so for
+        // the whole pre-init window recordError is its only sink and that sink
+        // is inert. The unified log is what a bug report carries, so the
+        // handler has to write there itself, as DivineBlocObserver does (#8616).
+        final marker = 'zone-error-${DateTime.now().microsecondsSinceEpoch}';
+        final error = StateError(marker);
+
+        await app.handleUncaughtZoneError(
+          error,
+          StackTrace.current,
+          crashReporting: CrashReportingService(),
+        );
+
+        final logged = LogCaptureService()
+            .getRecentLogs(minLevel: LogLevel.error)
+            .where(
+              (entry) =>
+                  entry.name == 'Main' &&
+                  (entry.error?.contains(marker) ?? false),
+            );
+        expect(logged, hasLength(1));
+      },
+    );
   });
 }

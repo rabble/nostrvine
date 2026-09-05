@@ -861,8 +861,8 @@ String _startupPlatformName() {
 typedef ZoneErrorRecorder =
     Future<void> Function(Object error, StackTrace stack, {String? reason});
 
-/// Files a report for an error that escaped every `try`/`catch` in the app
-/// zone.
+/// Logs, then files a report for, an error that escaped every `try`/`catch`
+/// in the app zone.
 ///
 /// Expected network/IO failures are dropped instead of reported, for the
 /// reason spelled out on [isExpectedNetworkFailure]: a relay handshake that
@@ -886,11 +886,17 @@ Future<void> handleUncaughtZoneError(
     return;
   }
 
-  // NOTE: recordError returns early when the service is not initialized, and
-  // that early return happens BEFORE its internal Log.error, which sits in the
-  // catch around the Crashlytics call. So on the pre-init path this sink is
-  // silent — there is no local log to fall back on. Tracked in #8616; do not
-  // read the guard as "it logs anyway".
+  // The unified log first, unconditionally, as every other handler does: it
+  // is what a bug report carries, and this guard is armed before Crashlytics
+  // initializes, so for that window the sink below may hold or drop the
+  // report (#8616).
+  Log.error(
+    'Uncaught error in the app zone: $error',
+    name: 'Main',
+    category: LogCategory.system,
+    error: error,
+    stackTrace: stack,
+  );
   final record = recordError ?? crashReporting.recordError;
   await record(error, stack, reason: 'runZonedGuarded');
 }
