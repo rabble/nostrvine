@@ -1506,10 +1506,19 @@ class DmRepository {
   /// [_endRecovery]) when the drain reaches relay exhaustion. Falls back to
   /// `true` when uninitialized so the inbox never hides the split forever.
   /// See #5304.
+  ///
+  /// It stays `true` through a later forced recovery pass — a drain-version
+  /// bump, or the own-inbox coverage re-arm — on an install that already
+  /// completed a drain once. That install's own replies are already in its
+  /// database, so the misclassification this guards against cannot happen,
+  /// while a closed gate would hide every request the user could see
+  /// yesterday and raise the "haven't finished restoring" banner each time
+  /// the pass deferred. Those passes recover history the user never saw;
+  /// they must not read as history the user lost. See #8550.
   bool get isHistoryRecoveryComplete {
     final syncState = _syncState;
     if (syncState == null || _userPubkey.isEmpty) return true;
-    return syncState.historyDrainComplete(_userPubkey);
+    return syncState.historyDrainCompletedBefore(_userPubkey);
   }
 
   /// Whether history recovery has run, completed, or is currently running for

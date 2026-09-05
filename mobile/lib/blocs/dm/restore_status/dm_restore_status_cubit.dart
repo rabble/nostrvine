@@ -23,7 +23,8 @@ class DmRestoreStatusState extends Equatable {
   /// History recovery has run, completed, or is running for this user.
   final bool hasAttempted;
 
-  /// The one-time history drain has completed cleanly for this user.
+  /// The history drain has completed cleanly for this user at least once, so
+  /// a later forced recovery pass never re-qualifies an empty view (#8550).
   ///
   /// Defaults to `true` so a screen never claims history is missing before the
   /// repository has answered — the same fail-open stance as

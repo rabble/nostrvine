@@ -167,12 +167,17 @@ class ConversationListState extends Equatable {
   ///
   /// Distinct from [isRestoringHistory] on purpose. That flag tracks whether a
   /// drain is *actively running* (`_activeRecoveryOps > 0`), but the gate reads
-  /// the *persisted* `historyDrainComplete`, which only ever flips on a clean
+  /// the *persisted* completion record, which only ever flips on a clean
   /// exhaustion. A drain that stops at the page cap, hits an exception, or
   /// finds no connected relay clears the running flag while leaving the gate
   /// shut — so the progress bar vanished while requests stayed hidden, with no
   /// banner, no badge and no spinner to show anything was missing. Drives the
   /// restore-paused banner, which offers the retry that reopens the gate.
+  ///
+  /// Only a first-ever drain can shut the gate. A forced recovery pass on an
+  /// install that completed one before keeps it open: that install already
+  /// holds its own replies, so nothing would be misclassified, and the banner
+  /// read as lost chats to users who had lost nothing (#8550).
   final bool requestsWithheld;
 
   /// Size of the render window over [conversations] — grows as the user pages.

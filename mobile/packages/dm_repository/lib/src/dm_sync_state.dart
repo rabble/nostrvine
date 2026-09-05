@@ -7,6 +7,8 @@
 //     is the stamp relays actually filter `since:` against
 //   - oldestSyncedAt: lowest rumor `created_at` successfully processed
 //   - historyDrainComplete: whether the one-time full-history drain is done
+//   - historyDrainCompletedBefore: whether it has ever been done, which a
+//     forced recovery pass leaves intact
 //   - historyDrainCursor: the drain's resumable pagination boundary
 //
 // Timestamps are unix seconds matching Nostr event timestamps. Used by
@@ -31,6 +33,7 @@ class DmSyncState {
   static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
   static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
   static const _drainInboxCoveredPrefix = 'dm.drainCoveredOwnInbox.';
+  static const _drainCompletedBeforePrefix = 'dm.historyDrainCompletedBefore.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -252,8 +255,36 @@ class DmSyncState {
   /// in-progress drain.
   Future<void> markHistoryDrainComplete(String pubkey) async {
     await _prefs.setBool('$_drainCompletePrefix$pubkey', true);
+    await _prefs.setBool('$_drainCompletedBeforePrefix$pubkey', true);
     await _prefs.remove('$_drainCursorPrefix$pubkey');
   }
+
+  /// Whether a full-history drain has completed for [pubkey] at least once
+  /// on this install, even if a later forced recovery pass has since cleared
+  /// [historyDrainComplete].
+  ///
+  /// [historyDrainComplete] answers "is the drain done right now", which is
+  /// the right question for deciding whether to run it. It is the wrong
+  /// question for the inbox's recovery gate: that gate hides would-be message
+  /// requests and shows a "haven't finished restoring" banner because, on a
+  /// fresh install, the user's own replies have not been re-ingested yet and
+  /// an accepted chat would transiently classify as a request. An install
+  /// that already completed a drain has those replies in its database, so a
+  /// forced re-drain — a [currentDrainVersion] bump, or the own-inbox coverage
+  /// re-arm — changes nothing the gate protects against, and the banner it
+  /// produced on every deferral read as lost chats to users who had lost
+  /// nothing (#8550).
+  ///
+  /// A re-arm records this before clearing the completion latch, so the
+  /// answer survives the pass it triggers. Installs whose completion or re-arm
+  /// was written by a build that predates this key are recovered through
+  /// [drainCoveredOwnInbox]: that bit is only ever written by a run that
+  /// observed a completion — at completion itself, or in the re-arm branch,
+  /// which requires one — so it is proof of the same fact.
+  bool historyDrainCompletedBefore(String pubkey) =>
+      historyDrainComplete(pubkey) ||
+      (_prefs.getBool('$_drainCompletedBeforePrefix$pubkey') ?? false) ||
+      drainCoveredOwnInbox(pubkey);
 
   /// The history-drain logic version last completed for [pubkey], or `0`
   /// if none has been recorded (pre-#5202 installs, fresh installs).
@@ -302,6 +333,12 @@ class DmSyncState {
   }
 
   Future<void> _armRedrainFromNow(String pubkey, int nowSec) async {
+    // Clearing a completion must not erase the fact that one happened; see
+    // [historyDrainCompletedBefore]. A boundary repair on an install that
+    // never completed records nothing.
+    if (historyDrainComplete(pubkey)) {
+      await _prefs.setBool('$_drainCompletedBeforePrefix$pubkey', true);
+    }
     await _prefs.remove('$_drainCompletePrefix$pubkey');
     await _prefs.setInt('$_drainCursorPrefix$pubkey', nowSec);
   }
@@ -402,6 +439,7 @@ class DmSyncState {
     await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
     await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
     await _prefs.remove('$_drainInboxCoveredPrefix$pubkey');
+    await _prefs.remove('$_drainCompletedBeforePrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -421,7 +459,8 @@ class DmSyncState {
               key.startsWith(_drainVersionPrefix) ||
               key.startsWith(_dmRelayListPublishedPrefix) ||
               key.startsWith(_groupRecoveryVersionPrefix) ||
-              key.startsWith(_drainInboxCoveredPrefix),
+              key.startsWith(_drainInboxCoveredPrefix) ||
+              key.startsWith(_drainCompletedBeforePrefix),
         )
         .toList();
     for (final key in keysToRemove) {

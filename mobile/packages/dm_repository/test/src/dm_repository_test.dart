@@ -457,6 +457,7 @@ class _FakeDmSyncState implements DmSyncState {
   final List<({String pubkey, int createdAt})> recordedWire =
       <({String pubkey, int createdAt})>[];
   bool drainCoveredOwnInboxOverride = false;
+  bool completedBeforeOverride = false;
   final List<String> inboxCoveredPubkeys = <String>[];
   final List<String> rearmedForInboxPubkeys = <String>[];
 
@@ -476,8 +477,15 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> markHistoryDrainComplete(String pubkey) async {
     markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
+    completedBeforeOverride = true;
     drainCursorOverride = null;
   }
+
+  @override
+  bool historyDrainCompletedBefore(String pubkey) =>
+      drainCompleteOverride ||
+      completedBeforeOverride ||
+      drainCoveredOwnInboxOverride;
 
   @override
   bool drainCoveredOwnInbox(String pubkey) => drainCoveredOwnInboxOverride;
@@ -491,6 +499,7 @@ class _FakeDmSyncState implements DmSyncState {
   @override
   Future<void> rearmDrainForOwnInbox(String pubkey) async {
     rearmedForInboxPubkeys.add(pubkey);
+    if (drainCompleteOverride) completedBeforeOverride = true;
     drainCompleteOverride = false;
     drainCursorOverride = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   }
@@ -6702,6 +6711,26 @@ void main() {
           final complete = _FakeDmSyncState()..drainCompleteOverride = true;
           expect(
             createRepository(syncState: complete).isHistoryRecoveryComplete,
+            isTrue,
+          );
+        },
+      );
+
+      // A forced recovery pass on an established install clears the
+      // completion latch, but the install's own replies are already in its
+      // database, so the request split has nothing to protect against. A
+      // closed gate here hid every existing request and raised the "haven't
+      // finished restoring" banner on each deferral. #8550.
+      test(
+        'isHistoryRecoveryComplete stays true while a recovery pass re-runs '
+        'on an install that completed a drain before',
+        () {
+          final rearmed = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..completedBeforeOverride = true;
+
+          expect(
+            createRepository(syncState: rearmed).isHistoryRecoveryComplete,
             isTrue,
           );
         },

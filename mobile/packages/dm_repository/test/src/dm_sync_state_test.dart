@@ -165,6 +165,93 @@ void main() {
       });
     });
 
+    // The inbox's recovery gate reads this rather than historyDrainComplete:
+    // a forced recovery pass clears the latch on an install whose own replies
+    // are already local, and gating on the latch alone hid every request and
+    // raised the "haven't finished restoring" banner on each deferral (#8550).
+    group('historyDrainCompletedBefore', () {
+      test('is false until a drain completes', () async {
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+
+        await state.setHistoryDrainCursor(pkA, 1234);
+        await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion);
+
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+      });
+
+      test('is true once a drain completes', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        expect(state.historyDrainCompletedBefore(pkB), isFalse);
+      });
+
+      test(
+        'survives a drain-version bump clearing the completion latch',
+        () async {
+          await state.markHistoryDrainComplete(pkA);
+          await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion - 1);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        },
+      );
+
+      test('survives the own-inbox coverage re-arm', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        await state.rearmDrainForOwnInbox(pkA);
+
+        expect(state.historyDrainComplete(pkA), isFalse);
+        expect(state.historyDrainCompletedBefore(pkA), isTrue);
+      });
+
+      // Installs re-armed by a build that predates the flag carry only the
+      // coverage bit, which that build wrote solely off an observed
+      // completion. Without this inference every such install would stay
+      // gated until its pass completed — the population #8550 was filed on.
+      test(
+        'is inferred from the coverage bit for installs written before the '
+        'flag existed',
+        () async {
+          await state.setDrainCoveredOwnInbox(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCompletedBefore(pkA), isTrue);
+        },
+      );
+
+      test(
+        'is not implied by a boundary repair on an install that never '
+        'completed a drain',
+        () async {
+          // recordSeen clamps to now, so the poisoned value has to be written
+          // the way an older build left it.
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          await prefs.setInt('dm.newestSyncedAt.$pkA', nowSec + 7 * 86400);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.historyDrainCursor(pkA), isNotNull);
+          expect(state.historyDrainCompletedBefore(pkA), isFalse);
+        },
+      );
+
+      test('clear and clearAll reset it', () async {
+        await state.markHistoryDrainComplete(pkA);
+        await state.markHistoryDrainComplete(pkB);
+
+        await state.clear(pkA);
+        expect(state.historyDrainCompletedBefore(pkA), isFalse);
+        expect(state.historyDrainCompletedBefore(pkB), isTrue);
+
+        await state.clearAll();
+        expect(state.historyDrainCompletedBefore(pkB), isFalse);
+      });
+    });
+
     group('historyDrainCursor', () {
       test('defaults to null when nothing persisted', () {
         expect(state.historyDrainCursor(pkA), isNull);
