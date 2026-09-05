@@ -38,7 +38,8 @@ class DetectorParseException implements Exception {
   String toString() => 'DetectorParseException: $message';
 }
 
-/// One semantic-label argument required whenever [triggerArgument] can render.
+/// The semantic-label arguments one public divine_ui API must receive
+/// whenever the control they describe can render.
 class SemanticLabelRule {
   const SemanticLabelRule({
     required this.api,
@@ -46,13 +47,30 @@ class SemanticLabelRule {
     required this.labelArguments,
     this.visibilityArgument,
     this.hiddenWhenTrueArguments = const [],
+    this.slotArguments = const {},
   });
 
+  /// Constructor name, or `Class.helper` for a static helper.
   final String api;
+
+  /// The argument that lets the control render. Omitted, `null` or `false`
+  /// proves the control absent; anything else may render it.
   final String triggerArgument;
+
+  /// Labels required once [triggerArgument] can render.
   final List<String> labelArguments;
+
+  /// A `bool` argument that must also hold for the control to render.
+  /// Defaults to `true` when omitted.
   final String? visibilityArgument;
+
+  /// `bool` arguments that, when literally `true`, take precedence over the
+  /// control and hide it.
   final List<String> hiddenWhenTrueArguments;
+
+  /// Per label, the arguments whose inline widget takes over that control's
+  /// slot, so the label can never be announced.
+  final Map<String, List<String>> slotArguments;
 }
 
 const semanticLabelRules = <SemanticLabelRule>[
@@ -61,17 +79,28 @@ const semanticLabelRules = <SemanticLabelRule>[
     triggerArgument: 'obscureText',
     labelArguments: ['showPasswordSemanticLabel', 'hidePasswordSemanticLabel'],
   ),
+  // VineBottomSheetHeader resolves `leadingAction ?? leading` and
+  // `trailingAction ?? trailing`, so a header action replaces the close or
+  // completion button in its slot.
   SemanticLabelRule(
     api: 'VineBottomSheet',
     triggerArgument: 'onComplete',
     labelArguments: ['closeSemanticLabel', 'completeSemanticLabel'],
     visibilityArgument: 'showHeader',
+    slotArguments: {
+      'closeSemanticLabel': ['headerLeadingAction'],
+      'completeSemanticLabel': ['headerTrailingAction'],
+    },
   ),
   SemanticLabelRule(
     api: 'VineBottomSheet.show',
     triggerArgument: 'onComplete',
     labelArguments: ['closeSemanticLabel', 'completeSemanticLabel'],
     visibilityArgument: 'showHeader',
+    slotArguments: {
+      'closeSemanticLabel': ['headerLeadingAction'],
+      'completeSemanticLabel': ['headerTrailingAction'],
+    },
   ),
   SemanticLabelRule(
     api: 'DiVineAppBar',
@@ -170,6 +199,10 @@ class _Visitor extends RecursiveAstVisitor<void> {
       }
       for (final label in rule.labelArguments) {
         if (named.containsKey(label)) continue;
+        final slotArguments = rule.slotArguments[label] ?? const <String>[];
+        if (slotArguments.any((argument) => _isInlineWidget(named[argument]))) {
+          continue;
+        }
         omissions.add(
           SemanticLabelOmission(
             path: _path,
@@ -191,6 +224,21 @@ bool _canRender(Expression? trigger, {required bool defaultValue}) {
 
 bool _isDefinitelyTrue(Expression? expression) =>
     expression is BooleanLiteral && expression.value;
+
+/// Whether [expression] constructs a widget inline, and so cannot be null.
+///
+/// An unresolved parse reads `DivineIconButton(...)` as a target-less
+/// MethodInvocation on a capitalised name; only `const`/`new` forms become an
+/// InstanceCreationExpression. A variable or a conditional may still be null
+/// at runtime, so it does not count and the label stays required.
+bool _isInlineWidget(Expression? expression) {
+  if (expression is InstanceCreationExpression) return true;
+  if (expression is! MethodInvocation || expression.target != null) {
+    return false;
+  }
+  final name = expression.methodName.name;
+  return name.isNotEmpty && name[0] == name[0].toUpperCase();
+}
 
 String? _lastIdentifierName(Expression? expression) {
   return switch (expression) {
@@ -260,7 +308,8 @@ List<SemanticLabelOmission> findSemanticLabelOmissions(
 void main(List<String> arguments) {
   if (arguments.isEmpty) {
     stderr.writeln(
-      'usage: divine_ui_semantic_label_detector.dart <dir> [--detail]',
+      'usage: divine_ui_semantic_label_detector.dart <dir> '
+      '[--path-prefix <dir>] [--detail]',
     );
     exit(64);
   }

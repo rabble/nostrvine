@@ -144,6 +144,41 @@ void build() {
       expect(omissions, isEmpty);
     });
 
+    test('ignores a close or done control replaced by a header action', () {
+      // VineBottomSheetHeader renders `leadingAction ?? leading` and
+      // `trailingAction ?? trailing`: an inline header action takes the slot,
+      // a conditional one may still be null at runtime.
+      final omissions = scan('''
+void build() {
+  VineBottomSheet(
+    onComplete: save,
+    headerLeadingAction: DivineIconButton(icon: icon),
+    body: body,
+  );
+  VineBottomSheet.show<void>(
+    context: context,
+    onComplete: save,
+    headerTrailingAction: const DivineIconButton(icon: icon),
+    body: body,
+  );
+  VineBottomSheet.show<void>(
+    context: context,
+    onComplete: save,
+    headerLeadingAction: canDelete ? DivineIconButton(icon: icon) : null,
+    body: body,
+  );
+}
+''');
+
+      expect(omissions.map((omission) => omission.argument), [
+        'completeSemanticLabel',
+        'closeSemanticLabel',
+        'closeSemanticLabel',
+        'completeSemanticLabel',
+      ]);
+      expect(omissions.map((omission) => omission.line), [2, 7, 13, 13]);
+    });
+
     test('counts custom-leading app bars only', () {
       final omissions = scan('''
 void build() {
