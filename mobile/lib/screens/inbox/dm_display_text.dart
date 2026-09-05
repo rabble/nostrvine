@@ -20,8 +20,7 @@ const int dmMaxDisplayCodeUnits =
 ///
 /// Kept independent from the bubble reveal budget so tuning an explicitly
 /// expanded conversation bubble cannot silently increase work in every inbox
-/// row. This remains long enough to include the complete legacy collaborator
-/// invite fallback recognized by the preview path.
+/// row.
 const int dmPreviewDisplayCodeUnits = 4096;
 
 /// A bounded prefix of sender-controlled text.
