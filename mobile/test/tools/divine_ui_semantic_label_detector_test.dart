@@ -144,6 +144,18 @@ void build() {
       expect(omissions, isEmpty);
     });
 
+    test('treats a dynamic showHeader as potentially visible', () {
+      // pause_aware_modals.dart forwards `showHeader` as an identifier, so
+      // the header must stay "possibly visible" for anything but `false`.
+      final omissions = scan('''
+void build(bool compact) {
+  VineBottomSheet(showHeader: compact, onComplete: save, body: body);
+}
+''');
+
+      expect(omissions, hasLength(2));
+    });
+
     test('ignores a close or done control replaced by a header action', () {
       // VineBottomSheetHeader renders `leadingAction ?? leading` and
       // `trailingAction ?? trailing`: an inline header action takes the slot,
@@ -230,6 +242,26 @@ void build() {
       expect(omissions, isEmpty);
     });
 
+    test('treats dynamic back and menu flags as not hiding the icon', () {
+      // Only a literal `true` proves the leading icon shadowed; a runtime
+      // flag may be false, so the custom icon can still render.
+      final omissions = scan('''
+void build(bool canGoBack) {
+  DiVineAppBarLeading(
+    showBackButton: canGoBack,
+    onBackPressed: back,
+    showMenuButton: false,
+    onMenuPressed: null,
+    leadingIcon: icon,
+    onLeadingPressed: callback,
+    style: style,
+  );
+}
+''');
+
+      expect(omissions, hasLength(1));
+    });
+
     test('counts dismissible snackbar constructor and static helper', () {
       final omissions = scan('''
 void build() {
@@ -269,6 +301,21 @@ void build() {
       expect(omissions.single.path, 'subject.dart');
       expect(omissions.single.line, 2);
       expect(omissions.single.argument, 'dismissSemanticLabel');
+    });
+
+    test('skips generated files', () {
+      File(
+        '${temporaryDirectory.path}/subject.g.dart',
+      ).writeAsStringSync(
+        'void build() { DivineAuthTextField(obscureText: true); }',
+      );
+
+      final omissions = findSemanticLabelOmissions(
+        temporaryDirectory,
+        pathPrefix: temporaryDirectory.path,
+      );
+
+      expect(omissions, isEmpty);
     });
   });
 }
