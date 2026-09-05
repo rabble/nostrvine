@@ -36,12 +36,15 @@ Xcode reports, for `FlutterGeneratedPluginSwiftPackage`, that `firebase-*` requi
 
 Flutter (3.44) writes that manifest at its default `.iOS("13.0")` every time it injects plugins — `flutter pub get`, `flutter analyze`, `flutter test`, and the implicit pub step of most other commands. `flutter build ios` and `flutter run` normally raise it to the project's deployment target afterwards, but that step silently does nothing when `xcodebuild -showBuildSettings` exceeds Flutter's 60-second timeout (a cold machine or a fresh worktree).
 
-The shared Runner scheme's pre-action repairs the generated manifest directly before every Xcode build. To verify the repair, build once from Xcode and then run this from `mobile/`:
+The shared Runner scheme's pre-action repairs the generated manifest in place, without invoking Flutter. **That repair cannot rescue the build it runs in.** Xcode emits `Resolve Package Graph` at the very start of a build, before it runs scheme pre-actions, so a build that starts on a 13.0 floor still fails with all seven errors; the repair then lands, and the *next* build succeeds. Measured 2026-09-06 on a device Profile build: sabotaged floor → `** BUILD FAILED **` with the repair line present in the same log → unchanged rebuild → `** BUILD SUCCEEDED **`.
+
+So the failure is self-limiting rather than prevented: if Xcode fails this way, just build again. To skip the wasted first build after any `flutter pub get`, `flutter analyze` or `flutter test`, run this from `mobile/` before returning to Xcode:
 
 ```bash
+flutter build ios --config-only
 grep -A1 "platforms:" ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
 ```
 
-The output must show `16.0`. Terminal Flutter commands may reset the generated file to 13.0, but the next Xcode build repairs it again without invoking Flutter.
+The grep must show `16.0`. If it still shows `13.0`, run the build command again — Flutter skips its own bump when `xcodebuild -showBuildSettings` exceeds its 60-second timeout on a cold machine.
 
 Do not add a Flutter command to `mobile/pre_build_ios.sh`: it runs as a pre-action of the shared Runner scheme on every Xcode build, so a `flutter pub get` there re-lowered the floor mid-build and made every Xcode build and Profile run fail this way. The script now repairs the manifest directly and syncs CocoaPods. CI performs the same repair separately in `codemagic.yaml` before archiving.

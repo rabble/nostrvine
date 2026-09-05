@@ -1,6 +1,6 @@
 #!/bin/bash
-# ABOUTME: Pre-action of the shared Runner scheme: syncs CocoaPods before every Xcode iOS build.
-# ABOUTME: Runs no Flutter command; plugin injection would reset the generated Swift package floor to iOS 13.
+# ABOUTME: Pre-action of the shared Runner scheme: repairs the generated Swift package floor, syncs CocoaPods.
+# ABOUTME: Runs no Flutter command; plugin injection would reset that floor to iOS 13.
 
 set -e
 
@@ -12,8 +12,14 @@ cd "$SCRIPT_DIR"
 
 # Never run a Flutter command here. Plugin injection rewrites
 # ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
-# at Flutter's default .iOS("13.0"). Patch that generated input directly before
-# Xcode resolves it, without invoking Flutter and causing another regeneration.
+# at Flutter's default .iOS("13.0"), which every plugin needing 15/16 then
+# fails against. Repair it in place, without invoking Flutter.
+#
+# This cannot rescue the build it runs in. Xcode emits "Resolve Package Graph"
+# before it runs scheme pre-actions, so a build that starts at 13.0 still fails;
+# measured 2026-09-06. What this buys is that the failure stops repeating: the
+# next build reads 16.0 and succeeds. Run `flutter build ios --config-only`
+# after a terminal Flutter command to skip the wasted first build.
 # See .claude/rules/ios_build_troubleshooting.md, Cause 3.
 SWIFT_PACKAGE_MANIFEST="ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
 if [ -f "$SWIFT_PACKAGE_MANIFEST" ]; then
