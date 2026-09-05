@@ -1,12 +1,5 @@
 // ABOUTME: Tests BackgroundActivityManager's lifecycle fan-out and reset.
-// ABOUTME: Drives the process-global singleton directly through every state.
-// Isolated because this suite walks the singleton through background, resumed
-// and terminating states and asserts on the shared instance between steps. It
-// no longer needs isolation for lack of a reset — resetForTesting() exists as
-// of #8398, and setUp/tearDown use it — so untagging is a live candidate, but
-// that belongs to its own change with its own merged-isolate verification.
-@Tags(['skip_very_good_optimization'])
-library;
+// ABOUTME: Gives each test a fresh manager and resets it to cancel its timers.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,18 +68,10 @@ void main() {
       manager = BackgroundActivityManager();
       testService = TestBackgroundService();
 
-      // BackgroundActivityManager is a process-wide singleton. Tests in this
-      // file share the same instance and run in random order, so restore it to
-      // its construction state and drain pending lifecycle notifications
-      // before each test. Otherwise a prior test can leak services or stale
-      // background state into the next case.
-      manager.resetForTesting();
       await pumpEventQueue();
     });
 
-    // Several cases below deliberately end in the background state. Restore
-    // the singleton so it is not left that way for the rest of the process —
-    // a stale `false` turns the next `resumed` anywhere into a fan-out (#6880).
+    // Several cases arm timers or deliberately end in the background state.
     tearDown(() => manager.resetForTesting());
 
     group('resetForTesting', () {

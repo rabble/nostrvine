@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/draft_local_audio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -32,6 +33,10 @@ class DraftStorageService {
   final DraftsDao _draftsDao;
 
   final CrashReporter _crashReporter;
+
+  @visibleForTesting
+  CrashReporter get crashReporterForTesting => _crashReporter;
+
   final ClipsDao _clipsDao;
 
   /// Where saved sounds live, consulted before deleting a draft's audio files.

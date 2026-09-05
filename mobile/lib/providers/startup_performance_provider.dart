@@ -15,8 +15,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 ///
 /// The service is created in `app_bootstrap` before any `ProviderContainer`
 /// exists — it times the bootstrap itself, starting ~420 lines before the
-/// container is built — so this provider is override-only and throws if read
-/// from a container that was not built through `DeviceScope`.
+/// container is built.
 /// The fallback instance is a fresh timer that no bootstrap ever started, so
 /// its phase methods are inert — the same thing a test got from the old
 /// singleton. Production always receives the bootstrap-owned instance through

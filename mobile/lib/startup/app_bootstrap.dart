@@ -155,9 +155,6 @@ Future<void> startOpenVineApp({
   // lines. Pinned device-scoped via DeviceScope.overrides below (#4743).
   // [crashReporting] is built by main() so the runZonedGuarded handler, which
   // is installed before this function runs, reports through the same instance.
-  // Timing is constructed here for the same reason it cannot come from a
-  // container: none exists for another ~420 lines. Both are pinned
-  // device-scoped via DeviceScope.overrides below (#4743).
   final startupPerformance = StartupPerformanceService(
     crashReporting: crashReporting,
   );

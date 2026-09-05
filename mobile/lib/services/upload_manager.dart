@@ -107,6 +107,7 @@ class UploadManager implements BackgroundAwareService {
     ThumbnailExtractor? thumbnailExtractor,
     TransientRenderCleaner? transientRenderCleaner,
   }) : _blossomService = blossomService,
+       _crashReporting = crashReporting,
        _extractThumbnail = thumbnailExtractor ?? _defaultThumbnailExtractor,
        _transientRenderCleaner =
            transientRenderCleaner ?? const StopMotionTransientRenderCleaner(),
@@ -142,6 +143,10 @@ class UploadManager implements BackgroundAwareService {
   // Core services
   final PendingUploadStore _store;
   final BlossomUploadService _blossomService;
+  final CrashReporter _crashReporting;
+
+  @visibleForTesting
+  CrashReporter get crashReporterForTesting => _crashReporting;
 
   /// Pulls the thumbnail frame out of the local video. Injectable so the
   /// thumbnail leg can be exercised without a decodable video and the native

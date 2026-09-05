@@ -4,7 +4,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +35,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final mockKeyStorage = _MockSecureKeyStorage();
       final secureStorage = MockSecureStorage();
+      final crashReporting = CrashReportingService();
 
       when(mockKeyStorage.initialize).thenAnswer((_) async {});
       when(mockKeyStorage.hasKeys).thenAnswer((_) async => false);
@@ -58,6 +61,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          crashReportingServiceProvider.overrideWithValue(crashReporting),
           sharedPreferencesProvider.overrideWithValue(prefs),
           secureKeyStorageProvider.overrideWith((ref) => mockKeyStorage),
           flutterSecureStorageProvider.overrideWith((ref) => secureStorage),
@@ -67,6 +71,10 @@ void main() {
 
       expect(() => container.read(mediaCacheProvider), returnsNormally);
       expect(() => container.read(authServiceProvider), returnsNormally);
+      expect(
+        container.read(authServiceProvider).crashReporterForTesting,
+        same(crashReporting),
+      );
       expect(() => container.read(blossomAuthServiceProvider), returnsNormally);
       expect(() => container.read(featureFlagServiceProvider), returnsNormally);
     });

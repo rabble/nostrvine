@@ -290,7 +290,7 @@ class BackgroundActivityManager {
     _registeredServices.clear();
   }
 
-  /// Restores this process-global singleton to its construction state.
+  /// Restores this manager to its construction state.
   ///
   /// [dispose] is not a substitute: it leaves [_isInitialized] set, so a later
   /// [initialize] silently no-ops and never re-arms the periodic cleanup, and

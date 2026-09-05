@@ -1,4 +1,4 @@
-// ABOUTME: Device-scoped provider for BackgroundActivityManager
+// ABOUTME: Account-scoped provider for BackgroundActivityManager
 // ABOUTME: Replaces the factory singleton so tests get their own registry (#4743)
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
