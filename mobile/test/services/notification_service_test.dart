@@ -445,6 +445,28 @@ void main() {
     });
 
     test(
+      'a tap handled by another service does not reach this stream',
+      () async {
+        final other = NotificationService();
+        addTearDown(other.dispose);
+        final events = <NotificationTapEvent>[];
+        final sub = service.notificationTapStream.listen(events.add);
+        addTearDown(sub.cancel);
+
+        other.handleNotificationTapPayload(
+          jsonEncode({
+            'referencedEventId': 'abc123',
+            'notificationType': 'reply',
+          }),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(events, isEmpty);
+      },
+    );
+
+    test(
       'emits the authoritative referencedAddress from JSON payload',
       () async {
         final events = <NotificationTapEvent>[];

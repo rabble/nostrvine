@@ -90,23 +90,11 @@ class AppNotification {
 
 /// Service for managing app notifications
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+///
+/// The app owns one instance through `notificationServiceProvider`, which
+/// constructs it and disposes it with the container (#8618).
 class NotificationService {
-  /// Factory constructor that returns the singleton instance
-  factory NotificationService() => instance;
-
-  NotificationService._();
-  static NotificationService? _instance;
-
-  /// Singleton instance
-  // A constructor cannot be a getter, and `factory NotificationService()`
-  // would hide both the sharing and the revive-after-dispose below.
-  // ignore: prefer_constructors_over_static_methods
-  static NotificationService get instance {
-    if (_instance == null || _instance!._disposed) {
-      _instance = NotificationService._();
-    }
-    return _instance!;
-  }
+  NotificationService();
 
   final List<AppNotification> _notifications = [];
   _NotificationPermissionState _permissionState =
