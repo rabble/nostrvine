@@ -34,6 +34,8 @@
 #                         optional "1" while converting a path-only list
 #                         baseline to numeric counts. Existing keys are allowed
 #                         to acquire their first count, but new keys still fail.
+#                         This is fail-safe only when paired with
+#                         REQUIRE_BASELINE_UPDATE_ON_DECREASE=1.
 #   REQUIRE_BASELINE_UPDATE_ON_DECREASE
 #                         optional "1" when every decrease must be committed to
 #                         the baseline immediately instead of remaining slack.
