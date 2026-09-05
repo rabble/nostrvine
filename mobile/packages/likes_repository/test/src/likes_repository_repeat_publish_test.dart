@@ -790,6 +790,41 @@ void main() {
           expect(await repository.isLikedByCoordinate(coordinate), isFalse);
         },
       );
+
+      test(
+        'settles the count where it started when the reaction this tap '
+        'published is retracted mid-publish',
+        () async {
+          // Unlike the adopted-reaction case above, the retracted reaction
+          // was never inside the count the UI showed before the tap.
+          when(
+            () => nostrClient.countEvents(any()),
+          ).thenAnswer((_) async => const CountResult(count: 10));
+          expect(await repository.getLikeCount(target), equals(10));
+          stubRelay();
+          final publishGate = Completer<Event?>();
+          stubSendLike(() => publishGate.future);
+          when(
+            () => nostrClient.deleteEvent(freshReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+
+          final inFlight = repository.likeEvent(
+            eventId: target,
+            authorPubkey: author,
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(await repository.getLikeCount(target), equals(11));
+          await repository.unlikeEvent(target);
+          expect(await repository.getLikeCount(target), equals(10));
+
+          publishGate.complete(reaction(id: freshReactionId));
+          expect(await inFlight, equals(freshReactionId));
+
+          verify(() => nostrClient.deleteEvent(freshReactionId)).called(1);
+          expect(await repository.isLiked(target), isFalse);
+          expect(await repository.getLikeCount(target), equals(10));
+        },
+      );
     });
 
     group('live subscription', () {

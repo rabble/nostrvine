@@ -742,6 +742,7 @@ class LikesRepository {
             restoredCount: previousCount,
             countEventId: eventId,
             countAddressableId: addressableId,
+            alreadyCounted: true,
           );
           return liveRecord.reactionEventId;
         }
@@ -796,6 +797,7 @@ class LikesRepository {
             restoredCount: previousCount == null ? null : previousCount + 1,
             countEventId: eventId,
             countAddressableId: addressableId,
+            alreadyCounted: false,
           );
           return reactionEvent.id;
         }
@@ -898,6 +900,11 @@ class LikesRepository {
   /// Publishes the Kind 5 for a reaction the user unliked while its own
   /// publish was still in flight (#7001).
   ///
+  /// [alreadyCounted] says [confirmed] was inside the like count the UI
+  /// showed before this tap — a reaction adopted from the relay — so its
+  /// successful Kind 5 also removes it from the cached total. A reaction this
+  /// tap published never entered that count.
+  ///
   /// On failure the [confirmed] record is indexed after all, so a later
   /// unlike can still reference the real reaction id — dropping it would
   /// leave the reaction live and unreachable by the normal unlike flow.
@@ -906,6 +913,7 @@ class LikesRepository {
     required int? restoredCount,
     required String countEventId,
     required String? countAddressableId,
+    required bool alreadyCounted,
   }) async {
     try {
       final deletion = await _nostrClient.deleteEvent(
@@ -948,10 +956,16 @@ class LikesRepository {
       return;
     }
 
-    // [restoredCount] already included this pre-existing relay reaction.
-    // unlikeEvent removed only the optimistic +1, so the successful Kind 5
-    // must remove the original reaction from the cached total as well.
-    _adjustCachedLikeCount(countEventId, -1, addressableId: countAddressableId);
+    // unlikeEvent already removed this tap's optimistic +1. A pre-existing
+    // relay reaction was inside that count too, so its Kind 5 removes it
+    // from the cached total; one this tap published was never counted.
+    if (alreadyCounted) {
+      _adjustCachedLikeCount(
+        countEventId,
+        -1,
+        addressableId: countAddressableId,
+      );
+    }
 
     // The relay echoes a stored reaction on this account's own subscription
     // within milliseconds, so the echo can re-index the reaction between the
