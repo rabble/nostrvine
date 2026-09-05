@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -30,7 +31,8 @@ enum UserPickerFilterMode {
 
 /// Shows a [UserPickerSheet] as a modal bottom sheet.
 ///
-/// Returns the selected [UserProfile] or null if dismissed.
+/// Returns the selected profiles (one entry for a single-select sheet, an
+/// empty list when the selection was cleared) or null if dismissed.
 Future<List<UserProfile>?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
@@ -41,6 +43,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
   ValueChanged<UserProfile>? onUserToggled,
   int? maxCount,
   Set<String> excludePubkeys = const {},
+  String? excludeViewerPubkey,
   List<UserProfile> initialSelectedProfiles = const [],
 }) {
   return VineBottomSheet.show<List<UserProfile>?>(
@@ -58,6 +61,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
       searchText: searchText,
       maxCount: maxCount,
       excludePubkeys: excludePubkeys,
+      excludeViewerPubkey: excludeViewerPubkey,
       searchHint: searchHint,
       onUserToggled: onUserToggled,
       initialSelectedProfiles: initialSelectedProfiles,
@@ -76,6 +80,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     this.searchText,
     this.maxCount,
     this.excludePubkeys = const {},
+    this.excludeViewerPubkey,
     this.searchHint,
     this.onUserToggled,
     this.initialSelectedProfiles = const [],
@@ -100,8 +105,17 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   final bool autoFocus;
 
-  /// Pubkeys to exclude from search results (already selected users).
+  /// Pubkeys the caller already tracks as selected. Their rows render in
+  /// the checked state rather than being hidden.
   final Set<String> excludePubkeys;
+
+  /// Hex pubkey of the signed-in viewer, compared case-insensitively.
+  ///
+  /// A matching row is hidden, a tap on one is ignored, and a matching entry
+  /// in [initialSelectedProfiles] is dropped before it can occupy a slot. A
+  /// contact list written by another client can follow itself, which would
+  /// otherwise make the viewer their own mutual.
+  final String? excludeViewerPubkey;
 
   /// Optional override for the search field hint text.
   final String? searchHint;
@@ -144,9 +158,17 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   /// Whether the profile repository was unavailable at init time.
   bool _profileRepoMissing = false;
 
+  /// [widget.initialSelectedProfiles] without the excluded viewer.
+  ///
+  /// Both the initial selection and the header's clear affordance read this
+  /// list, so a sheet whose only initial selection was the viewer has nothing
+  /// selected and nothing to clear.
+  late final List<UserProfile> _initialSelectedProfiles;
+
   /// Tracks selected pubkeys locally so toggling is reflected immediately.
-  /// Initialised from [widget.excludePubkeys] so pre-selected users show
-  /// as checked from the start.
+  /// Initialised from [widget.excludePubkeys] and the viewer-filtered
+  /// [widget.initialSelectedProfiles] so pre-selected users show as checked
+  /// from the start.
   late Set<String> _selectedPubkeys;
 
   bool get _useLocalSearch =>
@@ -165,12 +187,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   @override
   void initState() {
     super.initState();
+    _initialSelectedProfiles = widget.initialSelectedProfiles
+        .where((profile) => !_isExcludedViewer(profile.pubkey))
+        .toList();
     _selectedPubkeys = {
       ...widget.excludePubkeys,
-      for (final profile in widget.initialSelectedProfiles) profile.pubkey,
+      for (final profile in _initialSelectedProfiles) profile.pubkey,
     };
-    if (widget.initialSelectedProfiles.isNotEmpty) {
-      _selectedProfiles.addAll(widget.initialSelectedProfiles);
+    if (_initialSelectedProfiles.isNotEmpty) {
+      _selectedProfiles.addAll(_initialSelectedProfiles);
     }
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {
@@ -180,6 +205,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
       followRepository: ref.read(followRepositoryProvider),
+      excludedPubkey: widget.excludeViewerPubkey,
     );
 
     if (_useLocalSearch) {
@@ -227,7 +253,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         cached
             .where(
               (profile) =>
-                  !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
+                  !blocklistRepository.shouldFilterFromFeeds(profile.pubkey) &&
+                  !_isExcludedViewer(profile.pubkey),
             )
             .toList(),
       );
@@ -393,6 +420,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   }
 
   void _onUserSelected(UserProfile profile) {
+    if (_isExcludedViewer(profile.pubkey)) return;
+
     if (widget.onUserToggled != null) {
       setState(() {
         if (_selectedPubkeys.remove(profile.pubkey)) {
@@ -416,6 +445,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     } else {
       Navigator.of(context).pop([profile]);
     }
+  }
+
+  bool _isExcludedViewer(String pubkey) {
+    final viewerPubkey = widget.excludeViewerPubkey;
+    return viewerPubkey != null && pubkeysEqual(pubkey, viewerPubkey);
   }
 
   void _handleDone() {
@@ -481,7 +515,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   semanticLabel: context.l10n.userPickerConfirmSemanticLabel,
                   onPressed: _handleDone,
                 )
-              : widget.initialSelectedProfiles.isNotEmpty
+              : _initialSelectedProfiles.isNotEmpty
               ? DivineIconButton(
                   icon: .trash,
                   size: .small,
