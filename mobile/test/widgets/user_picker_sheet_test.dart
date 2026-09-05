@@ -1330,6 +1330,63 @@ void main() {
     });
 
     group('allUsers mode', () {
+      testWidgets('excludes the viewer from network search results', (
+        tester,
+      ) async {
+        const viewerPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final viewer = UserProfile(
+          pubkey: viewerPubkey,
+          name: 'Viewer',
+          rawData: const {'name': 'Viewer'},
+          createdAt: DateTime.now(),
+          eventId: 'viewer-event',
+        );
+        final other = UserProfile(
+          pubkey:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          name: 'Other',
+          rawData: const {'name': 'Other'},
+          createdAt: DateTime.now(),
+          eventId: 'other-event',
+        );
+        final mockProfileRepo = _createMockProfileRepository(
+          searchResults: [viewer, other],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _noVanishedProfiles,
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.allUsers,
+                  excludeViewerPubkey: viewerPubkey,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'vie');
+        // Past the 300ms search debounce.
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Other'), findsOneWidget);
+        expect(find.text('Viewer'), findsNothing);
+      });
+
       testWidgets('shows hint text initially', (tester) async {
         await tester.pumpWidget(
           ProviderScope(
