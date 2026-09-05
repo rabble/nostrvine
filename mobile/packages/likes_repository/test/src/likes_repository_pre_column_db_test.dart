@@ -112,9 +112,18 @@ void main() {
         // the same-id backfill exemption can re-derive the coordinate.
         final client = createClient();
         var queryCall = 0;
-        when(() => client.queryEvents(any())).thenAnswer((_) async {
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((_) async {
           queryCall++;
-          return queryCall == 1 ? [createReaction()] : <Event>[];
+          return (
+            events: queryCall == 1 ? [createReaction()] : <Event>[],
+            timedOut: false,
+            noRelays: false,
+          );
         });
         final repository = LikesRepository(
           nostrClient: client,
@@ -143,12 +152,15 @@ void main() {
         expect(persisted, isNotNull);
         expect(persisted!.targetEventId, equals(oldEditEventId));
 
-        // 4. Offline restart over the same database: every row now has a
-        // coordinate, so initialize() skips the backfill sync entirely and
-        // the edited video still resolves as liked with no relay access.
+        // 4. Offline restart over the same database: startup reconciliation
+        // fails open, and the persisted coordinate still resolves without
+        // making ordinary local state depend on relay availability.
         final offlineClient = createClient();
         when(
-          () => offlineClient.queryEvents(any()),
+          () => offlineClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
         ).thenThrow(Exception('offline'));
         final restarted = LikesRepository(
           nostrClient: offlineClient,
@@ -166,7 +178,12 @@ void main() {
           ),
           isTrue,
         );
-        verifyNever(() => offlineClient.queryEvents(any()));
+        verify(
+          () => offlineClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).called(1);
         restarted.dispose();
       },
     );

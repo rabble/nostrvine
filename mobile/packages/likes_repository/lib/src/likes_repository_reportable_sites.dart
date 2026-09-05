@@ -64,4 +64,23 @@ abstract class LikesRepositoryReportableSites {
   /// live cross-device subscription threw.
   static const String processIncomingReactionSaveRecord =
       'processIncomingReaction.saveRecord';
+
+  /// `likeEvent`: persisting a reaction adopted from the relay — this account
+  /// already had a live `+` on the target (#7001) — threw.
+  static const String likeEventSaveAdopted = 'likeEvent.saveAdopted';
+
+  /// `executeLikeAction`: persisting a reaction adopted from the relay on
+  /// replay (#7001) threw.
+  static const String executeLikeActionSaveAdopted =
+      'executeLikeAction.saveAdopted';
+
+  /// `_adoptRemoteLikeRecord`: deleting a second local row that names the
+  /// same adopted relay reaction under a superseded target id threw.
+  static const String adoptRemoteLikeDeleteAlias =
+      'adoptRemoteLike.deleteAlias';
+
+  /// `_retractLikeUnlikedMidPublish`: dropping a retracted reaction that the
+  /// live subscription or the startup snapshot had re-indexed (#7001) threw.
+  static const String retractLikeDeleteEchoedRecord =
+      'retractLike.deleteEchoedRecord';
 }
