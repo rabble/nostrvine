@@ -27,6 +27,7 @@ import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1206,6 +1207,7 @@ void main() {
           final draft = _createTestDraft(
             collaboratorPubkeys: {
               creatorPubkey.toUpperCase(),
+              NostrKeyUtils.encodePubKey(creatorPubkey),
               collaboratorPubkey,
             },
           );

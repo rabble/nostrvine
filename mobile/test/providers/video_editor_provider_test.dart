@@ -30,6 +30,7 @@ import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -38,6 +39,7 @@ import 'package:pro_image_editor/pro_image_editor.dart'
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/test_provider_overrides.dart';
 import '../mocks/mock_path_provider_platform.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
@@ -2065,6 +2067,7 @@ void main() {
       late Directory tempDir;
       late String clipVideoPath;
       late String clipThumbnailPath;
+      late MockAuthService mockAuthService;
 
       setUpAll(() {
         registerFallbackValue(
@@ -2083,10 +2086,12 @@ void main() {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         mockDraftStorage = _MockDraftStorageService();
+        mockAuthService = createMockAuthService();
         container = ProviderContainer(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            authServiceProvider.overrideWithValue(mockAuthService),
           ],
         );
         // A restorable clip must point at media that actually exists on disk;
@@ -2144,6 +2149,55 @@ void main() {
           () => mockDraftStorage.getDraftById(VideoEditorConstants.autoSaveId),
         ).called(1);
       });
+
+      test(
+        'removes the signed-in creator from restored collaborator state',
+        () async {
+          const creatorPubkey =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+          const collaboratorPubkey =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(creatorPubkey);
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'present',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            collaboratorPubkeys: {
+              creatorPubkey.toUpperCase(),
+              NostrKeyUtils.encodePubKey(creatorPubkey),
+              collaboratorPubkey,
+            },
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(result, isTrue);
+          expect(
+            container.read(videoEditorProvider).collaboratorPubkeys,
+            {collaboratorPubkey},
+          );
+        },
+      );
 
       test(
         'drops clips whose source video file is missing on restore',

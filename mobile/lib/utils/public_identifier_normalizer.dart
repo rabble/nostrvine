@@ -83,6 +83,22 @@ String? normalizeToHex(String identifier, {String? currentUserHex}) {
   )?.hexPubkey;
 }
 
+/// Returns [identifiers] without values that resolve to [excludedIdentifier].
+///
+/// Surviving values retain their original representation. Invalid values are
+/// preserved so callers can apply their own boundary-validation policy.
+Set<String> withoutPublicIdentifier(
+  Iterable<String> identifiers,
+  String excludedIdentifier,
+) {
+  final excludedHex = normalizeToHex(excludedIdentifier);
+  if (excludedHex == null) return identifiers.toSet();
+
+  return identifiers
+      .where((identifier) => normalizeToHex(identifier) != excludedHex)
+      .toSet();
+}
+
 /// Normalize to npub format
 ///
 /// Returns null if invalid

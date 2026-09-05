@@ -10,7 +10,6 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
-import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/exceptions/video_exceptions.dart';
@@ -342,7 +341,7 @@ class VideoPublishService {
         return const PublishError(PublishErrorKind.notSignedIn);
       }
       final pubkey = authService.currentPublicKeyHex!;
-      final collaboratorPubkeys = _withoutSelfCollaborator(
+      final collaboratorPubkeys = withoutPublicIdentifier(
         draft.collaboratorPubkeys,
         pubkey,
       );
@@ -1281,18 +1280,4 @@ List<String> _excludeCollaboratorPubkeys(
   }
 
   return result;
-}
-
-Set<String> _withoutSelfCollaborator(
-  Set<String> collaboratorPubkeys,
-  String creatorPubkey,
-) {
-  if (!collaboratorPubkeys.any(
-    (pubkey) => pubkeysEqual(pubkey, creatorPubkey),
-  )) {
-    return collaboratorPubkeys;
-  }
-  return collaboratorPubkeys
-      .where((pubkey) => !pubkeysEqual(pubkey, creatorPubkey))
-      .toSet();
 }
