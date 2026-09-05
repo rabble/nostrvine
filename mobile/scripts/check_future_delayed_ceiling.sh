@@ -30,6 +30,7 @@ BASE_REF="${FUTURE_DELAYED_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${FUTURE_DELAYED_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="FUTURE_DELAYED_CEILING_ALLOW_NO_BASE"
 LEGACY_LIST_BASELINE_MIGRATION=1
+REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to a test — use fakeAsync (timers/timeouts) or pumpEventQueue (stream-settling). See tasks/plan_4337.md (WS-2)."
 STALE_HINT="A file was migrated off Future.delayed."
 FOOTER="Future.delayed in tests is frozen and may only decrease. Replace it with

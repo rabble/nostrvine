@@ -176,7 +176,7 @@ Future<void> wait() async {
       expect(output(result), contains('\t1 -> 2'));
     });
 
-    test('a decrease can be regenerated and cannot grow back', () {
+    test('a decrease requires regeneration and cannot grow back', () {
       sourceFile('decrease.dart').writeAsStringSync('''
 Future<void> wait() async {
   await Future.delayed(Duration.zero);
@@ -185,7 +185,8 @@ Future<void> wait() async {
       writeBaseline('$sourceDirectoryName/decrease.dart\t2\n');
 
       final decreased = runRatchet();
-      expect(decreased.exitCode, 0, reason: output(decreased));
+      expect(decreased.exitCode, 1);
+      expect(output(decreased), contains('DECREASED'));
 
       final update = runRatchet(update: true);
       expect(update.exitCode, 0, reason: output(update));

@@ -21,6 +21,7 @@ void main() {
     ProcessResult run({
       bool update = false,
       bool migrateLegacyListBaseline = false,
+      bool requireBaselineUpdateOnDecrease = false,
       String? baseRef,
       String? baselineRepoPath,
     }) {
@@ -34,6 +35,8 @@ void main() {
           'PROBE_LIB': libPath,
           if (migrateLegacyListBaseline)
             'PROBE_LEGACY_LIST_BASELINE_MIGRATION': '1',
+          if (requireBaselineUpdateOnDecrease)
+            'PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE': '1',
           'PROBE_BASE_REF': ?baseRef,
           'PROBE_BASELINE_REPO_PATH': ?baselineRepoPath,
           if (update) 'UPDATE_BASELINE': '1',
@@ -59,6 +62,7 @@ BASE_REF="${PROBE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE=1
 ALLOW_NO_BASE_VAR="PROBE_ALLOW_NO_BASE"
 LEGACY_LIST_BASELINE_MIGRATION="${PROBE_LEGACY_LIST_BASELINE_MIGRATION:-0}"
+REQUIRE_BASELINE_UPDATE_ON_DECREASE="${PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE:-0}"
 NEW_HINT="new-hint"
 STALE_HINT="stale-hint"
 FOOTER="footer"
@@ -196,6 +200,18 @@ run_numeric_ratchet
       final res = run();
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [probe]'));
+    });
+
+    test('can require a baseline update when a count decreases', () {
+      writeCurrent('a\t5\n');
+      run(update: true);
+      writeCurrent('a\t4\n');
+
+      final res = run(requireBaselineUpdateOnDecrease: true);
+
+      expect(res.exitCode, 1);
+      expect(res.stdout, contains('DECREASED'));
+      expect(res.stdout, contains('a\t5 -> 4'));
     });
 
     group('trailing "# reason" comments', () {

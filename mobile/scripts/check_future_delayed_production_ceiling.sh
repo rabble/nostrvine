@@ -46,6 +46,7 @@ BASE_REF="${FUTURE_DELAYED_PROD_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE"
 LEGACY_LIST_BASELINE_MIGRATION=1
+REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to app code — use explicit async coordination (AnimatedSwitcher / animation controllers / stream listeners / completers), not a wall-clock wait. See .claude/CLAUDE.md and epic #4339."
 STALE_HINT="A production file was migrated off Future.delayed."
 FOOTER="Future.delayed in mobile/lib is frozen and may only decrease. Replace it
