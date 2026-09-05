@@ -91,7 +91,7 @@ class OutgoingDmRetryService {
     required OutgoingDmsDao outgoingDmsDao,
     required String userPubkey,
     required Stream<bool> appForegroundStream,
-    required CrashReportingService crashReporting,
+    CrashReportingService? crashReporting,
     Stream<void>? retryTriggerStream,
     OfflineProbe? isOffline,
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
@@ -104,7 +104,7 @@ class OutgoingDmRetryService {
        _isOffline = isOffline,
        _retryConfig = retryConfig,
        _now = now,
-       _crashReporting = crashReporting;
+       _crashReporting = crashReporting ?? CrashReportingService();
 
   final DmRepository _dmRepository;
   final OutgoingDmsDao _dao;
