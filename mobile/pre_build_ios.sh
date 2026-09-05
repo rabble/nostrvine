@@ -12,10 +12,28 @@ cd "$SCRIPT_DIR"
 
 # Never run a Flutter command here. Plugin injection rewrites
 # ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
-# at Flutter's default .iOS("13.0"), and only `flutter build ios` / `flutter run`
-# raise it back to 16.0 -- an Xcode build never does, so every Xcode build would
-# fail on "requires minimum platform version 16.0 ... but this target supports 13".
+# at Flutter's default .iOS("13.0"). Patch that generated input directly before
+# Xcode resolves it, without invoking Flutter and causing another regeneration.
 # See .claude/rules/ios_build_troubleshooting.md, Cause 3.
+SWIFT_PACKAGE_MANIFEST="ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
+if [ -f "$SWIFT_PACKAGE_MANIFEST" ]; then
+    if grep -Eq '\.iOS\(("13\.0"|\.v13)\)' "$SWIFT_PACKAGE_MANIFEST"; then
+        SWIFT_PACKAGE_TMP="$(mktemp "${SWIFT_PACKAGE_MANIFEST}.XXXXXX")"
+        trap 'rm -f "$SWIFT_PACKAGE_TMP"' EXIT
+        sed \
+            -e 's/\.iOS("13\.0")/.iOS("16.0")/g' \
+            -e 's/\.iOS(\.v13)/.iOS("16.0")/g' \
+            "$SWIFT_PACKAGE_MANIFEST" > "$SWIFT_PACKAGE_TMP"
+        mv "$SWIFT_PACKAGE_TMP" "$SWIFT_PACKAGE_MANIFEST"
+        trap - EXIT
+        echo "✅ Raised generated Swift package deployment target to iOS 16.0"
+    fi
+
+    if ! grep -Eq '\.iOS\(("16\.0"|\.v16)\)' "$SWIFT_PACKAGE_MANIFEST"; then
+        echo "❌ ERROR: Generated Swift package does not target iOS 16.0"
+        exit 1
+    fi
+fi
 
 # Navigate to iOS directory
 cd ios
@@ -23,6 +41,13 @@ cd ios
 # Set environment for CocoaPods to avoid Ruby issues
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
+
+# Make rbenv-managed executables discoverable before resolving CocoaPods. The
+# shims work from PATH directly; shell initialization is unnecessary here and
+# must not be allowed to fail every Xcode build.
+if [ -d "$HOME/.rbenv" ]; then
+    export PATH="$HOME/.rbenv/shims:$HOME/.rbenv/bin:$PATH"
+fi
 
 # Find CocoaPods command
 POD_CMD=""
@@ -36,12 +61,6 @@ else
     echo "❌ ERROR: CocoaPods not found!"
     echo "   Please install: sudo gem install cocoapods"
     exit 1
-fi
-
-# Ensure we use the correct Ruby environment (rbenv if available)
-if [ -d "$HOME/.rbenv" ]; then
-    export PATH="$HOME/.rbenv/shims:$HOME/.rbenv/bin:$PATH"
-    eval "$(rbenv init -)"
 fi
 
 # Check if CocoaPods needs to be installed or updated

@@ -25,6 +25,14 @@ void main() {
 
     File stubLog(String tool) => File(p.join(stubLogs.path, '$tool.log'));
 
+    File swiftPackageManifest() => File(
+      p.join(
+        sandbox.path,
+        'ios/Flutter/ephemeral/Packages/'
+        'FlutterGeneratedPluginSwiftPackage/Package.swift',
+      ),
+    );
+
     /// Installs a `tool` shim on the sandboxed PATH that records its argv.
     void installStub(String tool) {
       final stub = File(p.join(stubBin.path, tool))
@@ -63,6 +71,15 @@ void main() {
         0,
         reason: 'stdout:\n${result.stdout}\nstderr:\n${result.stderr}',
       );
+      final flutterLog = stubLog('flutter');
+      final invocations = flutterLog.existsSync()
+          ? flutterLog.readAsStringSync()
+          : '';
+      expect(
+        flutterLog.existsSync(),
+        isFalse,
+        reason: 'flutter was invoked with: $invocations',
+      );
     }
 
     setUp(() {
@@ -76,7 +93,12 @@ void main() {
         reason: 'mobile/pre_build_ios.sh must exist',
       );
       scriptPath = p.join(sandbox.path, 'pre_build_ios.sh');
-      File(scriptPath).writeAsStringSync(realScript.readAsStringSync());
+      File(scriptPath).writeAsStringSync(
+        realScript
+            .readAsStringSync()
+            .replaceAll('/opt/homebrew/bin/pod', '/nonexistent/homebrew/pod')
+            .replaceAll('/usr/local/bin/pod', '/nonexistent/local/pod'),
+      );
       stubBin = Directory(p.join(sandbox.path, 'bin'))..createSync();
       stubLogs = Directory(p.join(sandbox.path, 'logs'))..createSync();
       Directory(p.join(sandbox.path, 'home')).createSync();
@@ -96,21 +118,13 @@ void main() {
 
       expectSuccess(runScript());
 
-      final flutterLog = stubLog('flutter');
-      final invocations = flutterLog.existsSync()
-          ? flutterLog.readAsStringSync()
-          : '';
-      expect(
-        flutterLog.existsSync(),
-        isFalse,
-        reason: 'flutter was invoked with: $invocations',
-      );
+      expect(stubLog('flutter').existsSync(), isFalse);
     });
 
     test('skips pod install when Pods/Manifest.lock is as new as '
         'Podfile.lock', () {
       final now = DateTime.now();
-      writeFile('ios/Podfile.lock', now.subtract(const Duration(hours: 1)));
+      writeFile('ios/Podfile.lock', now);
       writeFile('ios/Pods/Manifest.lock', now);
 
       final result = runScript();
@@ -140,6 +154,73 @@ void main() {
       expectSuccess(runScript());
 
       expect(stubLog('pod').readAsStringSync(), contains('install'));
+    });
+
+    test('raises the generated Swift package floor without Flutter', () {
+      final now = DateTime.now();
+      writeFile('ios/Podfile.lock', now);
+      writeFile('ios/Pods/Manifest.lock', now);
+      swiftPackageManifest()
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(
+          'let package = Package(\n'
+          '    name: "FlutterGeneratedPluginSwiftPackage",\n'
+          '    platforms: [\n'
+          '        .iOS("13.0")\n'
+          '    ]\n'
+          ')\n',
+        );
+
+      expectSuccess(runScript());
+      expectSuccess(runScript());
+
+      expect(
+        swiftPackageManifest().readAsStringSync(),
+        contains('.iOS("16.0")'),
+      );
+      expect(
+        swiftPackageManifest().readAsStringSync(),
+        isNot(contains('.iOS("13.0")')),
+      );
+    });
+
+    test('finds CocoaPods installed only through rbenv', () {
+      stubLog('pod').parent.createSync(recursive: true);
+      File(p.join(stubBin.path, 'pod')).deleteSync();
+      final rbenvBin = Directory(p.join(sandbox.path, 'home/.rbenv/bin'))
+        ..createSync(recursive: true);
+      final rbenvShims = Directory(p.join(sandbox.path, 'home/.rbenv/shims'))
+        ..createSync(recursive: true);
+      final rbenv = File(p.join(rbenvBin.path, 'rbenv'))
+        ..writeAsStringSync('#!/bin/sh\n');
+      final rbenvChmod = Process.runSync('chmod', ['+x', rbenv.path]);
+      expect(rbenvChmod.exitCode, 0, reason: rbenvChmod.stderr.toString());
+      final pod = File(p.join(rbenvShims.path, 'pod'))
+        ..writeAsStringSync(
+          '#!/bin/sh\n'
+          'printf \'%s\\n\' "\$*" >> "\$STUB_LOG_DIR/pod.log"\n',
+        );
+      final podChmod = Process.runSync('chmod', ['+x', pod.path]);
+      expect(podChmod.exitCode, 0, reason: podChmod.stderr.toString());
+      writeFile('ios/Podfile.lock', DateTime.now());
+
+      expectSuccess(runScript());
+
+      expect(stubLog('pod').readAsStringSync(), contains('install'));
+    });
+
+    test('fails clearly when CocoaPods is unavailable', () {
+      File(p.join(stubBin.path, 'pod')).deleteSync();
+      Directory(p.join(sandbox.path, 'ios')).createSync();
+
+      final result = runScript();
+
+      expect(result.exitCode, 1);
+      expect(
+        '${result.stdout}${result.stderr}',
+        contains('CocoaPods not found'),
+      );
+      expect(stubLog('flutter').existsSync(), isFalse);
     });
   });
 }
