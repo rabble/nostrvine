@@ -317,7 +317,8 @@ class ConversationListBloc
             ? InboxFilter.all
             : state.filter;
 
-        final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
+        final recoveryComplete =
+            _dmRepository.hasCompletedHistoryRecoveryBefore;
         final requestConversations = recoveryComplete
             ? pin.requests
             : const <DmConversation>[];

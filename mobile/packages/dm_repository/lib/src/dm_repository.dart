@@ -1492,8 +1492,7 @@ class DmRepository {
   /// `historyRecoveryStream.startWith(repo.isRecoveringHistory)`). See #5202.
   Stream<bool> get historyRecoveryStream => _recoveryStateController.stream;
 
-  /// Whether the one-time history-recovery drain has fully completed for the
-  /// current user.
+  /// Whether history recovery has completed at least once for the current user.
   ///
   /// Until this is `true` — notably the post-reinstall window while the drain
   /// pages back through history — the inbox MUST NOT segregate conversations
@@ -1515,7 +1514,7 @@ class DmRepository {
   /// yesterday and raise the "haven't finished restoring" banner each time
   /// the pass deferred. Those passes recover history the user never saw;
   /// they must not read as history the user lost. See #8550.
-  bool get isHistoryRecoveryComplete {
+  bool get hasCompletedHistoryRecoveryBefore {
     final syncState = _syncState;
     if (syncState == null || _userPubkey.isEmpty) return true;
     return syncState.historyDrainCompletedBefore(_userPubkey);
@@ -1760,6 +1759,10 @@ class DmRepository {
     // this run defers too it arms a fresh one against the pool it saw.
     unawaited(_drainRelayReadySubscription?.cancel());
     _drainRelayReadySubscription = null;
+    // Run this before the ordinary version stamp: that ordering distinguishes
+    // a pre-fix generation-5 install from a fresh install starting its first
+    // drain on this build. See #8550 and #8646.
+    await syncState.migrateHistoryDrainCompletion(pubkey);
     // One-time forced re-drain: installs that completed under an older,
     // buggy drain (pre-#5202) are stuck with historyDrainComplete=true while
     // the relay still holds unrecovered history. A drain-version bump clears

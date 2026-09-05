@@ -66,7 +66,7 @@ void main() {
       // Recovery-aware request gate (#5304): recovery complete so the normal
       // accepted/request split applies.
       when(
-        () => mockDmRepository.isHistoryRecoveryComplete,
+        () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
       ).thenReturn(true);
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
       // Identity stream (#5374): ConversationListBloc subscribes to it via
@@ -201,7 +201,9 @@ void main() {
         when(
           () => notReadyRepo.historyRecoveryStream,
         ).thenAnswer((_) => const Stream<bool>.empty());
-        when(() => notReadyRepo.isHistoryRecoveryComplete).thenReturn(true);
+        when(
+          () => notReadyRepo.hasCompletedHistoryRecoveryBefore,
+        ).thenReturn(true);
         when(() => notReadyRepo.userPubkey).thenReturn('');
         when(
           () => notReadyRepo.userPubkeyStream,

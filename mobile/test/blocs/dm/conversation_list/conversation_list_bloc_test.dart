@@ -147,7 +147,9 @@ void _stubStreams(
   when(() => repo.isRecoveringHistory).thenReturn(isRecovering);
   // Recovery-aware request gate (#5304): defaults to "complete" so the normal
   // follow-based split applies; gate tests pass `recoveryComplete: false`.
-  when(() => repo.isHistoryRecoveryComplete).thenReturn(recoveryComplete);
+  when(
+    () => repo.hasCompletedHistoryRecoveryBefore,
+  ).thenReturn(recoveryComplete);
   when(
     () => repo.historyRecoveryStream,
   ).thenAnswer((_) => recoveryStream ?? const Stream<bool>.empty());
@@ -181,7 +183,7 @@ void main() {
       // Recovery-aware request gate (#5304): default to "recovery complete"
       // so existing split assertions hold; gate tests override to false.
       when(
-        () => mockDmRepository.isHistoryRecoveryComplete,
+        () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
       ).thenReturn(true);
 
       // Stub subscription lifecycle methods (#2766).
@@ -1463,7 +1465,7 @@ void main() {
             // stream so the combined stream re-fires and re-classifies.
             Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
               when(
-                () => mockDmRepository.isHistoryRecoveryComplete,
+                () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
               ).thenReturn(true);
               recoveryController.add(false);
             });
@@ -1556,7 +1558,7 @@ void main() {
             await Future<void>.delayed(const Duration(milliseconds: 250));
             // The drain succeeded this time.
             when(
-              () => mockDmRepository.isHistoryRecoveryComplete,
+              () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
             ).thenReturn(true);
             bloc.add(const ConversationListRestoreRetryRequested());
           },
@@ -3423,7 +3425,7 @@ void main() {
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
       when(
-        () => mockDmRepository.isHistoryRecoveryComplete,
+        () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
       ).thenReturn(true);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
@@ -3484,7 +3486,9 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
-      when(() => mockDmRepository.isHistoryRecoveryComplete).thenReturn(true);
+      when(
+        () => mockDmRepository.hasCompletedHistoryRecoveryBefore,
+      ).thenReturn(true);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
       when(

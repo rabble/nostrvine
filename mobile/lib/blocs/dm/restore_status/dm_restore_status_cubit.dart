@@ -28,8 +28,8 @@ class DmRestoreStatusState extends Equatable {
   ///
   /// Defaults to `true` so a screen never claims history is missing before the
   /// repository has answered — the same fail-open stance as
-  /// [DmRepository.isHistoryRecoveryComplete], which returns `true` when it has
-  /// no sync state or pubkey to consult.
+  /// [DmRepository.hasCompletedHistoryRecoveryBefore], which returns `true`
+  /// when it has no sync state or pubkey to consult.
   final bool isComplete;
 
   /// Whether an empty view might simply not have its messages yet.
@@ -54,7 +54,7 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState>
         DmRestoreStatusState(
           isRestoring: dmRepository.isRecoveringHistory,
           hasAttempted: dmRepository.hasAttemptedHistoryRecovery,
-          isComplete: dmRepository.isHistoryRecoveryComplete,
+          isComplete: dmRepository.hasCompletedHistoryRecoveryBefore,
         ),
       ) {
     // `historyRecoveryStream` does not replay, hence the constructor seed above.
@@ -67,7 +67,7 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState>
         DmRestoreStatusState(
           isRestoring: isRestoring,
           hasAttempted: _dmRepository.hasAttemptedHistoryRecovery,
-          isComplete: _dmRepository.isHistoryRecoveryComplete,
+          isComplete: _dmRepository.hasCompletedHistoryRecoveryBefore,
         ),
       );
     });

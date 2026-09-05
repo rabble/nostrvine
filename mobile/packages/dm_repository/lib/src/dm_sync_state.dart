@@ -34,6 +34,10 @@ class DmSyncState {
   static const _groupRecoveryVersionPrefix = 'dm.groupRecoveryVersion.';
   static const _drainInboxCoveredPrefix = 'dm.drainCoveredOwnInbox.';
   static const _drainCompletedBeforePrefix = 'dm.historyDrainCompletedBefore.';
+  static const _drainCompletionMigrationPrefix =
+      'dm.historyDrainCompletionMigration.';
+
+  static const int _currentDrainCompletionMigration = 1;
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -277,14 +281,41 @@ class DmSyncState {
   ///
   /// A re-arm records this before clearing the completion latch, so the
   /// answer survives the pass it triggers. Installs whose completion or re-arm
-  /// was written by a build that predates this key are recovered through
-  /// [drainCoveredOwnInbox]: that bit is only ever written by a run that
-  /// observed a completion — at completion itself, or in the re-arm branch,
-  /// which requires one — so it is proof of the same fact.
+  /// was written by a build that predates this key are recovered by
+  /// [migrateHistoryDrainCompletion]. Until that migration runs, drain version
+  /// 5 identifies the pre-fix population directly.
   bool historyDrainCompletedBefore(String pubkey) =>
       historyDrainComplete(pubkey) ||
       (_prefs.getBool('$_drainCompletedBeforePrefix$pubkey') ?? false) ||
-      drainCoveredOwnInbox(pubkey);
+      (_drainCompletionMigration(pubkey) == 0 && drainVersion(pubkey) == 5);
+
+  int _drainCompletionMigration(String pubkey) =>
+      _prefs.getInt('$_drainCompletionMigrationPrefix$pubkey') ?? 0;
+
+  /// Migrates the completion record for installs that ran drain generation 5
+  /// before [historyDrainCompletedBefore] existed.
+  ///
+  /// Generation 5 overwrote the only completion latch while forcing a repeat
+  /// recovery pass, so its persisted state cannot distinguish an established
+  /// install whose repeat pass deferred from a first-ever drain that deferred.
+  /// The product decision for #8550 is to keep that shipped population's inbox
+  /// open. Recording the migration before [upgradeDrainVersionIfNeeded] stamps
+  /// a fresh install means newly installed builds remain gated.
+  ///
+  // TODO(realmeylisdev): Remove the generation-5 migration after builds
+  // through +856 are outside the supported upgrade window. See #8646.
+  Future<void> migrateHistoryDrainCompletion(String pubkey) async {
+    if (_drainCompletionMigration(pubkey) >= _currentDrainCompletionMigration) {
+      return;
+    }
+    if (drainVersion(pubkey) == 5) {
+      await _prefs.setBool('$_drainCompletedBeforePrefix$pubkey', true);
+    }
+    await _prefs.setInt(
+      '$_drainCompletionMigrationPrefix$pubkey',
+      _currentDrainCompletionMigration,
+    );
+  }
 
   /// The history-drain logic version last completed for [pubkey], or `0`
   /// if none has been recorded (pre-#5202 installs, fresh installs).
@@ -440,6 +471,7 @@ class DmSyncState {
     await _prefs.remove('$_groupRecoveryVersionPrefix$pubkey');
     await _prefs.remove('$_drainInboxCoveredPrefix$pubkey');
     await _prefs.remove('$_drainCompletedBeforePrefix$pubkey');
+    await _prefs.remove('$_drainCompletionMigrationPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -460,7 +492,8 @@ class DmSyncState {
               key.startsWith(_dmRelayListPublishedPrefix) ||
               key.startsWith(_groupRecoveryVersionPrefix) ||
               key.startsWith(_drainInboxCoveredPrefix) ||
-              key.startsWith(_drainCompletedBeforePrefix),
+              key.startsWith(_drainCompletedBeforePrefix) ||
+              key.startsWith(_drainCompletionMigrationPrefix),
         )
         .toList();
     for (final key in keysToRemove) {
