@@ -830,6 +830,39 @@ void main() {
             'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
       );
 
+      const ownReactionEmoji = '\u{2764}\u{FE0F}';
+
+      /// Stubs the reactions cubit with one own reaction on [ownMessageId].
+      /// Every case below differs only in the publish status under test, so
+      /// the fixture is shared and the status is the argument.
+      void primeOwnReaction({
+        required String id,
+        required DmReactionPublishStatus publishStatus,
+      }) {
+        final reaction = DmReaction(
+          id: id,
+          conversationId: ownConversationId,
+          targetMessageId: ownMessageId,
+          targetMessageAuthor: currentPubkey,
+          reactorPubkey: currentPubkey,
+          emoji: ownReactionEmoji,
+          createdAt: 1700000000,
+          ownerPubkey: currentPubkey,
+          publishStatus: publishStatus,
+        );
+        final reactionsState = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {
+            ownMessageId: [reaction],
+          },
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(reactionsState),
+          initialState: reactionsState,
+        );
+      }
+
       testWidgets('an own bubble offers no delete-for-everyone', (
         tester,
       ) async {
@@ -882,27 +915,9 @@ void main() {
 
       testWidgets('an own reaction cannot be retracted from the '
           'who-reacted sheet', (tester) async {
-        const ownReaction = DmReaction(
+        primeOwnReaction(
           id: 'r-own-retired',
-          conversationId: ownConversationId,
-          targetMessageId: ownMessageId,
-          targetMessageAuthor: currentPubkey,
-          reactorPubkey: currentPubkey,
-          emoji: '\u{2764}\u{FE0F}',
-          createdAt: 1700000000,
-          ownerPubkey: currentPubkey,
           publishStatus: DmReactionPublishStatus.received,
-        );
-        const reactionsState = ConversationReactionsState(
-          status: ConversationReactionsStatus.loaded,
-          reactionsByMessageId: {
-            ownMessageId: [ownReaction],
-          },
-        );
-        whenListen(
-          mockReactionsCubit,
-          Stream<ConversationReactionsState>.value(reactionsState),
-          initialState: reactionsState,
         );
 
         await tester.pumpWidget(
@@ -940,28 +955,9 @@ void main() {
 
       testWidgets('a failed own reaction announces no retry action on a '
           'closed thread', (tester) async {
-        const emoji = '\u{2764}\u{FE0F}';
-        const ownReaction = DmReaction(
+        primeOwnReaction(
           id: 'r-own-retired-failed',
-          conversationId: ownConversationId,
-          targetMessageId: ownMessageId,
-          targetMessageAuthor: currentPubkey,
-          reactorPubkey: currentPubkey,
-          emoji: emoji,
-          createdAt: 1700000000,
-          ownerPubkey: currentPubkey,
           publishStatus: DmReactionPublishStatus.failed,
-        );
-        const reactionsState = ConversationReactionsState(
-          status: ConversationReactionsStatus.loaded,
-          reactionsByMessageId: {
-            ownMessageId: [ownReaction],
-          },
-        );
-        whenListen(
-          mockReactionsCubit,
-          Stream<ConversationReactionsState>.value(reactionsState),
-          initialState: reactionsState,
         );
 
         final handle = tester.ensureSemantics();
@@ -976,7 +972,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text(emoji));
+        await tester.tap(find.text(ownReactionEmoji));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -1007,28 +1003,9 @@ void main() {
       testWidgets('a refused removal offers no retry on a closed thread', (
         tester,
       ) async {
-        const emoji = '\u{2764}\u{FE0F}';
-        const ownReaction = DmReaction(
+        primeOwnReaction(
           id: 'r-own-retired-removal-refused',
-          conversationId: ownConversationId,
-          targetMessageId: ownMessageId,
-          targetMessageAuthor: currentPubkey,
-          reactorPubkey: currentPubkey,
-          emoji: emoji,
-          createdAt: 1700000000,
-          ownerPubkey: currentPubkey,
           publishStatus: DmReactionPublishStatus.removalRefused,
-        );
-        const reactionsState = ConversationReactionsState(
-          status: ConversationReactionsStatus.loaded,
-          reactionsByMessageId: {
-            ownMessageId: [ownReaction],
-          },
-        );
-        whenListen(
-          mockReactionsCubit,
-          Stream<ConversationReactionsState>.value(reactionsState),
-          initialState: reactionsState,
         );
 
         final handle = tester.ensureSemantics();
@@ -1043,7 +1020,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text(emoji));
+        await tester.tap(find.text(ownReactionEmoji));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -1054,14 +1031,18 @@ void main() {
         expect(
           find.bySemanticsLabel(
             RegExp(
-              RegExp.escape(l10n.dmReactionRemovalRefusedA11yLabel(emoji)),
+              RegExp.escape(
+                l10n.dmReactionRemovalRefusedA11yLabel(ownReactionEmoji),
+              ),
             ),
           ),
           findsNothing,
         );
         expect(
           find.bySemanticsLabel(
-            RegExp(RegExp.escape(l10n.dmReactionChipOwnA11yLabel(emoji))),
+            RegExp(
+              RegExp.escape(l10n.dmReactionChipOwnA11yLabel(ownReactionEmoji)),
+            ),
           ),
           findsWidgets,
         );
@@ -1071,28 +1052,9 @@ void main() {
       testWidgets('a live thread still offers to retry a refused removal', (
         tester,
       ) async {
-        const emoji = '\u{2764}\u{FE0F}';
-        const ownReaction = DmReaction(
+        primeOwnReaction(
           id: 'r-own-live-removal-refused',
-          conversationId: ownConversationId,
-          targetMessageId: ownMessageId,
-          targetMessageAuthor: currentPubkey,
-          reactorPubkey: currentPubkey,
-          emoji: emoji,
-          createdAt: 1700000000,
-          ownerPubkey: currentPubkey,
           publishStatus: DmReactionPublishStatus.removalRefused,
-        );
-        const reactionsState = ConversationReactionsState(
-          status: ConversationReactionsStatus.loaded,
-          reactionsByMessageId: {
-            ownMessageId: [ownReaction],
-          },
-        );
-        whenListen(
-          mockReactionsCubit,
-          Stream<ConversationReactionsState>.value(reactionsState),
-          initialState: reactionsState,
         );
 
         final handle = tester.ensureSemantics();
@@ -1106,7 +1068,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text(emoji));
+        await tester.tap(find.text(ownReactionEmoji));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -1114,7 +1076,9 @@ void main() {
         expect(
           find.bySemanticsLabel(
             RegExp(
-              RegExp.escape(l10n.dmReactionRemovalRefusedA11yLabel(emoji)),
+              RegExp.escape(
+                l10n.dmReactionRemovalRefusedA11yLabel(ownReactionEmoji),
+              ),
             ),
           ),
           findsWidgets,
@@ -1242,28 +1206,9 @@ void main() {
       testWidgets('a live thread still offers to remove an own reaction', (
         tester,
       ) async {
-        const emoji = '\u{2764}\u{FE0F}';
-        const ownReaction = DmReaction(
+        primeOwnReaction(
           id: 'r-own-live',
-          conversationId: ownConversationId,
-          targetMessageId: ownMessageId,
-          targetMessageAuthor: currentPubkey,
-          reactorPubkey: currentPubkey,
-          emoji: emoji,
-          createdAt: 1700000000,
-          ownerPubkey: currentPubkey,
           publishStatus: DmReactionPublishStatus.received,
-        );
-        const reactionsState = ConversationReactionsState(
-          status: ConversationReactionsStatus.loaded,
-          reactionsByMessageId: {
-            ownMessageId: [ownReaction],
-          },
-        );
-        whenListen(
-          mockReactionsCubit,
-          Stream<ConversationReactionsState>.value(reactionsState),
-          initialState: reactionsState,
         );
 
         await tester.pumpWidget(
@@ -1276,7 +1221,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text(emoji));
+        await tester.tap(find.text(ownReactionEmoji));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
