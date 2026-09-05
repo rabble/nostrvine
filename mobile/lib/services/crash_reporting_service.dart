@@ -6,7 +6,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/observability/crash_reporter.dart';
 import 'package:openvine/services/firebase_initialization.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -268,30 +267,6 @@ class CrashReportingService implements CrashReporter {
     (crashlytics) => crashlytics.setCustomKey(key, value as Object),
     what: 'set custom key',
   );
-
-  /// Update Crashlytics custom keys with current cache hit rate.
-  ///
-  /// Call periodically (e.g., on app background) to keep crash reports
-  /// annotated with recent cache performance data.
-  Future<void> updateCacheMetricsKeys() async {
-    if (_readiness != _Readiness.ready || kIsWeb) return;
-
-    try {
-      final metrics = openVineMediaCache.metrics;
-      final totalLookups = metrics.hits + metrics.misses;
-      final crashlytics = _crashlytics();
-      await crashlytics.setCustomKey(
-        'cache_hit_rate',
-        metrics.hitRate.toStringAsFixed(3),
-      );
-      await crashlytics.setCustomKey('cache_total_lookups', totalLookups);
-    } catch (e) {
-      Log.error(
-        'Failed to set cache metrics keys in Crashlytics: $e',
-        name: 'CrashReporting',
-      );
-    }
-  }
 
   /// Log initialization step for debugging startup crashes
   void logInitializationStep(String step) {
