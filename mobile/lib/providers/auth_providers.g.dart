@@ -345,7 +345,7 @@ final class WebAuthServiceProvider
   }
 }
 
-String _$webAuthServiceHash() => r'f366777957760610f4ecdb1bd8ffe115f0910066';
+String _$webAuthServiceHash() => r'13e5f97f515b68acad668d522d80adef878f25fc';
 
 /// Authentication service
 

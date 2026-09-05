@@ -17,7 +17,11 @@ import 'package:openvine/services/nip07_types.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _FakeExtension extends NostrExtension {}
+class _FakeExtension extends NostrExtension {
+  @override
+  Future<String> getPublicKey() async =>
+      'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+}
 
 class _RecordingAnalytics implements AnalyticsEventSink {
   final userIds = <String?>[];
@@ -83,6 +87,23 @@ void main() {
       await container.pump();
 
       expect(container.read(webAuthServiceProvider), same(first));
+    });
+
+    test('disposes WebAuthService with its container', () async {
+      final container = ProviderContainer(
+        overrides: [
+          nip07ServiceProvider.overrideWithValue(
+            Nip07Service.withExtension(_FakeExtension()),
+          ),
+        ],
+      );
+      final service = container.read(webAuthServiceProvider);
+      await service.authenticateWithNip07();
+      expect(service.isAuthenticated, isTrue);
+
+      container.dispose();
+
+      expect(service.isAuthenticated, isFalse);
     });
   });
 

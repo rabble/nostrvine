@@ -32,10 +32,16 @@ class LogMessageBatcher {
     _flushTimer = Timer.periodic(_flushInterval, (_) => _flushBatches());
   }
 
+  /// Flush pending summaries without stopping periodic batching.
+  ///
+  /// Account-scoped lifecycle handlers use this when they unmount. The timer
+  /// belongs to the device-scoped batcher and must survive account swaps.
+  void flush() => _flushBatches();
+
   /// Dispose the batcher and clean up resources
   void dispose() {
     _flushTimer?.cancel();
-    _flushBatches(); // Flush any remaining messages
+    flush();
     _batchedMessages.clear();
   }
 

@@ -94,8 +94,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Dispose log message batcher and flush any remaining messages
-    _logMessageBatcher.dispose();
+    // This widget is account-scoped while the batcher is device-scoped. Flush
+    // pending summaries without cancelling the timer on account swaps.
+    _logMessageBatcher.flush();
     super.dispose();
   }
 

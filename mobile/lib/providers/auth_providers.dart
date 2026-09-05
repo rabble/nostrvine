@@ -112,7 +112,11 @@ KeycastOAuth oauthClient(Ref ref) {
 /// process singleton, which hid that this provider was autoDispose.
 @Riverpod(keepAlive: true)
 WebAuthService webAuthService(Ref ref) {
-  return WebAuthService(nip07Service: ref.watch(nip07ServiceProvider));
+  final service = WebAuthService(
+    nip07Service: ref.watch(nip07ServiceProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Authentication service

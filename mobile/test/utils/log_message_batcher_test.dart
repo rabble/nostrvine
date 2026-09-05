@@ -95,6 +95,30 @@ void main() {
       });
     });
 
+    test('flushing pending messages keeps the interval armed', () {
+      fakeAsync((async) {
+        batcher.initialize();
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event abc matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        );
+
+        batcher.flush();
+
+        expect(logCapture.getRecentLogs(), hasLength(1));
+        batcher.tryBatchMessage(
+          '[EXTERNAL-EVENT] Event def matches subscription feed',
+          level: LogLevel.debug,
+          category: LogCategory.relay,
+        );
+
+        async.elapse(const Duration(seconds: 10));
+
+        expect(logCapture.getRecentLogs(), hasLength(2));
+      });
+    });
+
     test('flushes immediately when a pattern reaches the max batch size', () {
       for (var i = 0; i < 50; i++) {
         expect(
