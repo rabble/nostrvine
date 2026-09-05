@@ -109,7 +109,28 @@ void main() {
       final resized = image.image as ResizeImage;
       expect(resized.width, 256);
       expect(resized.height, 512);
+      expect(resized.policy, ResizeImagePolicy.exact);
       expect(resized.imageProvider, isA<MediaCacheImageProvider>());
+    });
+
+    testWidgets('passes the requested resize policy to ResizeImage', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            memCacheWidth: 256,
+            memCacheHeight: 512,
+            resizePolicy: ResizeImagePolicy.fit,
+          ),
+        ),
+      );
+
+      final image = tester.widget<Image>(find.byType(Image));
+      final resized = image.image as ResizeImage;
+      expect(resized.policy, ResizeImagePolicy.fit);
     });
 
     testWidgets('defaults fit to BoxFit.cover', (tester) async {

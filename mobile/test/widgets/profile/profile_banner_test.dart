@@ -7,15 +7,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+import '../../helpers/test_provider_overrides.dart';
+
 void main() {
   group(ProfileBanner, () {
+    testWidgets('bounds a 3:1 banner decode at cover resolution', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 2;
+      addTearDown(() {
+        tester.view
+          ..resetPhysicalSize()
+          ..resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          theme: VineTheme.theme,
+          home: const Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 400,
+              height: 334,
+              child: ProfileBanner(
+                bannerUrl: 'https://cdn.example.com/banner.jpg',
+                height: 334,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+      expect(image.memCacheWidth, 2004);
+      expect(image.memCacheHeight, 668);
+      expect(image.resizePolicy, ResizeImagePolicy.fit);
+    });
+
     testWidgets('image load error renders the profile color fallback', (
       tester,
     ) async {
       const profileColor = Color(0xFF33CCBF);
 
       await tester.pumpWidget(
-        MaterialApp(
+        testMaterialApp(
           theme: VineTheme.theme,
           home: const Scaffold(
             body: ProfileBanner(
@@ -38,7 +77,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        testMaterialApp(
           theme: VineTheme.theme,
           home: Scaffold(body: fallback),
         ),

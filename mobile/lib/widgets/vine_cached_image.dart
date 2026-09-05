@@ -46,6 +46,7 @@ class VineCachedImage extends StatefulWidget {
     this.errorWidget,
     this.memCacheWidth,
     this.memCacheHeight,
+    this.resizePolicy = ResizeImagePolicy.exact,
     this.fadeInDuration = const Duration(milliseconds: 500),
     this.fadeOutDuration = const Duration(milliseconds: 1000),
     this.onImageDimensionsResolved,
@@ -60,6 +61,13 @@ class VineCachedImage extends StatefulWidget {
   final LoadingErrorWidgetBuilder? errorWidget;
   final int? memCacheWidth;
   final int? memCacheHeight;
+
+  /// How two supplied cache dimensions constrain the decoded image.
+  ///
+  /// Existing callers retain the exact-size behavior. Callers bounding an
+  /// arbitrary source inside a layout box can use [ResizeImagePolicy.fit] to
+  /// preserve its aspect ratio while limiting both dimensions.
+  final ResizeImagePolicy resizePolicy;
   final Duration fadeInDuration;
   final Duration fadeOutDuration;
   final ImageDimensionsResolved? onImageDimensionsResolved;
@@ -74,11 +82,21 @@ class _VineCachedImageState extends State<VineCachedImage> {
   Object? _error;
   bool _hasImage = false;
 
-  ImageProvider<Object> get _imageProvider => ResizeImage.resizeIfNeeded(
-    widget.memCacheWidth,
-    widget.memCacheHeight,
-    MediaCacheImageProvider(widget.imageUrl, cacheManager: _activeImageCache),
-  );
+  ImageProvider<Object> get _imageProvider {
+    final provider = MediaCacheImageProvider(
+      widget.imageUrl,
+      cacheManager: _activeImageCache,
+    );
+    if (widget.memCacheWidth == null && widget.memCacheHeight == null) {
+      return provider;
+    }
+    return ResizeImage(
+      provider,
+      width: widget.memCacheWidth,
+      height: widget.memCacheHeight,
+      policy: widget.resizePolicy,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -91,7 +109,8 @@ class _VineCachedImageState extends State<VineCachedImage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl ||
         oldWidget.memCacheWidth != widget.memCacheWidth ||
-        oldWidget.memCacheHeight != widget.memCacheHeight) {
+        oldWidget.memCacheHeight != widget.memCacheHeight ||
+        oldWidget.resizePolicy != widget.resizePolicy) {
       _resolveImageStream();
     }
   }

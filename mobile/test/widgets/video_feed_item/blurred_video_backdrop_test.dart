@@ -128,13 +128,26 @@ void main() {
       },
     );
 
-    testWidgets('passes url to $VineCachedImage', (tester) async {
+    testWidgets('bounds the network poster decode to physical layout size', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(800, 1600)
+        ..devicePixelRatio = 2;
+      addTearDown(() {
+        tester.view
+          ..resetPhysicalSize()
+          ..resetDevicePixelRatio();
+      });
       await tester.pumpWidget(buildWidget());
 
       final image = tester.widget<VineCachedImage>(
         find.byType(VineCachedImage),
       );
       expect(image.imageUrl, equals(testUrl));
+      expect(image.memCacheWidth, 800);
+      expect(image.memCacheHeight, 1600);
+      expect(image.resizePolicy, ResizeImagePolicy.fit);
     });
 
     testWidgets('uses $BoxFit cover with half opacity', (tester) async {
