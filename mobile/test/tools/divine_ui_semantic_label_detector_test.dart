@@ -191,6 +191,29 @@ void build() {
       expect(omissions.map((omission) => omission.line), [2, 7, 13, 13]);
     });
 
+    test('recognizes prefixed and named inline header actions', () {
+      final omissions = scan('''
+void build() {
+  VineBottomSheet(
+    onComplete: save,
+    headerLeadingAction: ui.DivineIconButton(icon: icon),
+    body: body,
+  );
+  VineBottomSheet.show<void>(
+    context: context,
+    onComplete: save,
+    headerTrailingAction: DivineIconButton.fromSource(iconSource: icon),
+    body: body,
+  );
+}
+''');
+
+      expect(omissions.map((omission) => omission.argument), [
+        'completeSemanticLabel',
+        'closeSemanticLabel',
+      ]);
+    });
+
     test('counts custom-leading app bars only', () {
       final omissions = scan('''
 void build() {

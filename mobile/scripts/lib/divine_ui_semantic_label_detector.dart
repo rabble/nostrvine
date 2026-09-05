@@ -227,17 +227,18 @@ bool _isDefinitelyTrue(Expression? expression) =>
 
 /// Whether [expression] constructs a widget inline, and so cannot be null.
 ///
-/// An unresolved parse reads `DivineIconButton(...)` as a target-less
-/// MethodInvocation on a capitalised name; only `const`/`new` forms become an
-/// InstanceCreationExpression. A variable or a conditional may still be null
-/// at runtime, so it does not count and the label stays required.
+/// An unresolved parse reads `DivineIconButton(...)` as a MethodInvocation on
+/// a capitalised name, including when it has an import prefix. Its named
+/// constructor is likewise a MethodInvocation targeted at `DivineIconButton`;
+/// only `const`/`new` forms become an InstanceCreationExpression. A variable or
+/// a conditional may still be null at runtime, so it does not count and the
+/// label stays required.
 bool _isInlineWidget(Expression? expression) {
   if (expression is InstanceCreationExpression) return true;
-  if (expression is! MethodInvocation || expression.target != null) {
-    return false;
-  }
+  if (expression is! MethodInvocation) return false;
   final name = expression.methodName.name;
-  return name.isNotEmpty && name[0] == name[0].toUpperCase();
+  return (name.isNotEmpty && name[0] == name[0].toUpperCase()) ||
+      _lastIdentifierName(expression.target) == 'DivineIconButton';
 }
 
 String? _lastIdentifierName(Expression? expression) {
