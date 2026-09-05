@@ -1095,6 +1095,7 @@ void main() {
           initialState: reactionsState,
         );
 
+        final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           buildSubject(
             state: ConversationState(
@@ -1110,6 +1111,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text(l10n.dmReactionRetryAction), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            RegExp(
+              RegExp.escape(l10n.dmReactionRemovalRefusedA11yLabel(emoji)),
+            ),
+          ),
+          findsWidgets,
+        );
+        handle.dispose();
       });
 
       testWidgets('a refused reaction removal retry shows failure feedback', (
