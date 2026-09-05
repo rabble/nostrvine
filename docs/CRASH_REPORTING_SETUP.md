@@ -79,12 +79,10 @@ Without this, iOS crash stacks arrive in Crashlytics unsymbolicated.
 
 ## Custom keys on every report
 
-Set by `CrashReportingService.initialize()` and follow-up helpers:
+Set by `CrashReportingService.initialize()`:
 
 - `environment` — `ENVIRONMENT` build define (default `production`)
 - `build_mode` — `debug` / `release`
-- `cache_hit_rate`, `cache_total_lookups` — set by
-  `updateCacheMetricsKeys()` when the app backgrounds
 
 Bloc/Cubit errors are additionally annotated by `DivineBlocObserver`, which
 forwards to Crashlytics **only** when the error implements `ReportableError`
