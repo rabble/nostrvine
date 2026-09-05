@@ -745,6 +745,46 @@ void main() {
             cubit.state.reactionsFor(_msgId).single.publishStatus,
             DmReactionPublishStatus.removalRefused,
           );
+          expect(cubit.state.blockedReactionAttempts, 1);
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'set cannot orphan a refused removal',
+        build: () => ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        ),
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '🔥',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionSet(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          verifyNever(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          );
+          expect(cubit.state.blockedReactionAttempts, 1);
         },
       );
 

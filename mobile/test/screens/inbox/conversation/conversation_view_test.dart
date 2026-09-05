@@ -1040,6 +1040,36 @@ void main() {
         expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
       });
 
+      testWidgets('a blocked reaction attempt shows refusal feedback', (
+        tester,
+      ) async {
+        final controller =
+            StreamController<ConversationReactionsState>.broadcast();
+        addTearDown(controller.close);
+        const initial = ConversationReactionsState();
+        whenListen(
+          mockReactionsCubit,
+          controller.stream,
+          initialState: initial,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        controller.add(initial.copyWith(blockedReactionAttempts: 1));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
+      });
+
       for (final status in [
         ReactionRemovalRetryLocalStatus.retrying,
         ReactionRemovalRetryLocalStatus.sent,

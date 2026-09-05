@@ -368,13 +368,20 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 ConversationReactionsCubit,
                 ConversationReactionsState
               >(
-                listenWhen: (previous, current) =>
-                    previous.removalRetries != current.removalRetries &&
-                    current.removalRetries.values.any(
-                      (status) =>
-                          status != ReactionRemovalRetryLocalStatus.retrying &&
-                          status != ReactionRemovalRetryLocalStatus.sent,
-                    ),
+                listenWhen: (previous, current) {
+                  final retryFailed =
+                      previous.removalRetries != current.removalRetries &&
+                      current.removalRetries.values.any(
+                        (status) =>
+                            status !=
+                                ReactionRemovalRetryLocalStatus.retrying &&
+                            status != ReactionRemovalRetryLocalStatus.sent,
+                      );
+                  final reactionBlocked =
+                      previous.blockedReactionAttempts !=
+                      current.blockedReactionAttempts;
+                  return retryFailed || reactionBlocked;
+                },
                 listener: (_, _) => _showSnackbar(
                   context.l10n.dmReactionRemovalRefusedTitle,
                   error: true,

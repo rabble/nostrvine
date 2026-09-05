@@ -151,16 +151,7 @@ class ConversationReactionsCubit
       return;
     }
 
-    // Preserve the refused row's only retry path; a newer emoji would hide it
-    // in the repository's cap-at-one collapse.
-    final hasRefusedRemoval = state
-        .reactionsFor(event.messageId)
-        .any(
-          (reaction) =>
-              reaction.isOwn &&
-              reaction.publishStatus == DmReactionPublishStatus.removalRefused,
-        );
-    if (hasRefusedRemoval) return;
+    if (_blockWhileRemovalRefused(event.messageId, emit)) return;
 
     await _publishReaction(
       conversationId: event.conversationId,
@@ -175,6 +166,8 @@ class ConversationReactionsCubit
     ConversationReactionSet event,
     Emitter<ConversationReactionsState> emit,
   ) async {
+    if (_blockWhileRemovalRefused(event.messageId, emit)) return;
+
     // Set-not-toggle: re-selecting the active emoji is a no-op (keep it);
     // a different emoji supersedes the prior one in the repository. The
     // optimistic-inclusive check also covers the pre-persist window, so a
@@ -196,6 +189,27 @@ class ConversationReactionsCubit
       emoji: event.emoji,
       emit: emit,
     );
+  }
+
+  /// Blocks new reactions while a refused removal must remain visible.
+  bool _blockWhileRemovalRefused(
+    String messageId,
+    Emitter<ConversationReactionsState> emit,
+  ) {
+    final hasRefusedRemoval = state
+        .reactionsFor(messageId)
+        .any(
+          (reaction) =>
+              reaction.isOwn &&
+              reaction.publishStatus == DmReactionPublishStatus.removalRefused,
+        );
+    if (!hasRefusedRemoval) return false;
+    emit(
+      state.copyWith(
+        blockedReactionAttempts: state.blockedReactionAttempts + 1,
+      ),
+    );
+    return true;
   }
 
   /// The current account's live reaction with [emoji] on [messageId], or null.

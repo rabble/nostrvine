@@ -83,6 +83,7 @@ class ConversationReactionsState extends Equatable {
     this.pending = const <ReactionPublishKey, ReactionPublishLocalStatus>{},
     this.optimistic = const <ReactionPublishKey, OptimisticReactionIntent>{},
     this.removalRetries = const <String, ReactionRemovalRetryLocalStatus>{},
+    this.blockedReactionAttempts = 0,
   });
 
   /// Lifecycle status of the cubit.
@@ -107,6 +108,10 @@ class ConversationReactionsState extends Equatable {
 
   /// Latest explicit removal-retry status by reaction rumor id.
   final Map<String, ReactionRemovalRetryLocalStatus> removalRetries;
+
+  /// Monotonic signal emitted whenever an outstanding refused removal blocks
+  /// a new reaction. The view listens for increments to explain the no-op.
+  final int blockedReactionAttempts;
 
   /// Live reactions for [messageId] as the chips should render them: the
   /// persisted rows with [optimistic] applied. Returns `const []` if none.
@@ -179,6 +184,7 @@ class ConversationReactionsState extends Equatable {
     Map<ReactionPublishKey, ReactionPublishLocalStatus>? pending,
     Map<ReactionPublishKey, OptimisticReactionIntent>? optimistic,
     Map<String, ReactionRemovalRetryLocalStatus>? removalRetries,
+    int? blockedReactionAttempts,
   }) {
     return ConversationReactionsState(
       status: status ?? this.status,
@@ -186,6 +192,8 @@ class ConversationReactionsState extends Equatable {
       pending: pending ?? this.pending,
       optimistic: optimistic ?? this.optimistic,
       removalRetries: removalRetries ?? this.removalRetries,
+      blockedReactionAttempts:
+          blockedReactionAttempts ?? this.blockedReactionAttempts,
     );
   }
 
@@ -196,5 +204,6 @@ class ConversationReactionsState extends Equatable {
     pending,
     optimistic,
     removalRetries,
+    blockedReactionAttempts,
   ];
 }
