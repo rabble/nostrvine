@@ -325,7 +325,9 @@ void main() {
         expect(find.text(strings.profileShowLess), findsNothing);
       });
 
-      testWidgets('gives Show more a 48 px minimum tap target', (tester) async {
+      testWidgets('gives Show more a 48 px minimum tap target on both axes', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -348,6 +350,7 @@ void main() {
             matching: find.byWidgetPredicate(
               (widget) =>
                   widget is ConstrainedBox &&
+                  widget.constraints.minWidth == 48 &&
                   widget.constraints.minHeight == 48,
             ),
           ),

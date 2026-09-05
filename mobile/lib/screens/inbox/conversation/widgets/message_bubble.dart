@@ -652,7 +652,9 @@ class _MessageExpansionAction extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          // 48 dp on both axes: the label alone is about 24 px tall, and a
+          // two-character locale (ko, zh) draws it about 24 px wide.
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: Align(
             alignment: AlignmentDirectional.centerStart,
             widthFactor: 1,
