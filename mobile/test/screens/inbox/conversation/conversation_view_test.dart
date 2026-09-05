@@ -1100,6 +1100,9 @@ void main() {
             initial.copyWith(removalRetries: {'reaction-id': status}),
           );
           await tester.pump();
+          // A SnackBar needs an animation frame to reach the tree, so a single
+          // pump asserts before it would have appeared and passes either way.
+          await tester.pump(const Duration(milliseconds: 500));
 
           expect(
             find.text(l10n.dmReactionRemovalRefusedTitle),
