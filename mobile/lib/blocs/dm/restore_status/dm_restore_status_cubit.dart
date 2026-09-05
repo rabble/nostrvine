@@ -59,10 +59,10 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState>
       ) {
     // `historyRecoveryStream` does not replay, hence the constructor seed above.
     _subscription = _dmRepository.historyRecoveryStream.listen((isRestoring) {
-      // Re-read the persisted flag on every tick: it is what actually gates the
-      // request split, and it only flips on a clean drain exhaustion. A pass
-      // that stops at the page cap, throws, or finds no connected relay ends
-      // with isRestoring false while this stays false too.
+      // Re-read the persisted completion record on every tick: it is what
+      // actually gates the request split. A deferred first-ever drain leaves
+      // it false, while a later forced recovery pass keeps it true once an
+      // earlier drain has completed cleanly.
       emitIfOpen(
         DmRestoreStatusState(
           isRestoring: isRestoring,
