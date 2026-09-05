@@ -25,10 +25,10 @@ void main() {
       () => officials.isApprovedMinorDmRecipient(any()),
     ).thenAnswer((_) async => true);
     when(
-      () => officials.isApprovedMinorDmRecipientSync(approved),
+      () => officials.isReadableByProtectedMinor(approved),
     ).thenReturn(true);
     when(
-      () => officials.isApprovedMinorDmRecipientSync(blocked),
+      () => officials.isReadableByProtectedMinor(blocked),
     ).thenReturn(false);
     when(
       () => officials.onVerdictChanged,
