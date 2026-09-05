@@ -146,12 +146,17 @@ class CrashReportingService implements CrashReporter {
         name: 'CrashReporting',
       );
     } catch (e) {
+      final becameReady = _readiness == _Readiness.ready;
       Log.error(
-        'Failed to initialize crash reporting: $e',
+        becameReady
+            ? 'Crash reporting initialized, but completion logging failed: $e'
+            : 'Failed to initialize crash reporting: $e',
         name: 'CrashReporting',
       );
       // Don't throw - app should continue even if crash reporting fails
-      _giveUp('Crashlytics failed to initialize');
+      if (!becameReady) {
+        _giveUp('Crashlytics failed to initialize');
+      }
     }
   }
 
@@ -197,7 +202,8 @@ class CrashReportingService implements CrashReporter {
       case _Readiness.pending:
         _hold(call);
       case _Readiness.unavailable:
-        // Nothing to forward to; recordError has already logged its error.
+        // Crashlytics is unavailable; recordError has already used its local
+        // fallback, while calls that only annotate Crashlytics can be dropped.
         break;
     }
   }

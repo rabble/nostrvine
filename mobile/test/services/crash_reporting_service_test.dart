@@ -216,15 +216,34 @@ void main() {
           expect(firebaseStarts, 1);
         },
       );
+
+      test('a completion-log failure does not revoke readiness', () async {
+        when(
+          () => crashlytics.isCrashlyticsCollectionEnabled,
+        ).thenReturn(true);
+        when(
+          () => crashlytics.log(any()),
+        ).thenThrow(StateError('completion log failed'));
+
+        await service.initialize();
+        await service.setCustomKey('still', 'ready');
+
+        verify(() => crashlytics.setCustomKey('still', 'ready')).called(1);
+      });
     });
 
     group('initialize fails', () {
       late _MockFirebaseCrashlytics crashlytics;
+      var firebaseStarts = 0;
 
       setUp(() {
         crashlytics = _MockFirebaseCrashlytics();
+        firebaseStarts = 0;
         service = CrashReportingService(
-          initializeFirebase: () async => throw StateError('no Firebase here'),
+          initializeFirebase: () async {
+            firebaseStarts++;
+            throw StateError('no Firebase here');
+          },
           crashlytics: () => crashlytics,
         );
       });
@@ -237,6 +256,17 @@ void main() {
 
         verifyZeroInteractions(crashlytics);
         expect(_warningsMatching(RegExp(r'\b2 Crashlytics call')), isNotEmpty);
+      });
+
+      test('the discarded count includes calls beyond capacity', () async {
+        const capacity = CrashReportingService.pendingReportCapacity;
+        for (var i = 0; i < capacity + 8; i++) {
+          service.log('call $i');
+        }
+
+        await service.initialize();
+
+        expect(_warningsMatching(RegExp(r'\b40 Crashlytics call')), isNotEmpty);
       });
 
       test(
@@ -259,6 +289,17 @@ void main() {
 
         verifyZeroInteractions(crashlytics);
       });
+
+      test(
+        'a second initialize does not retry failed Firebase setup',
+        () async {
+          await service.initialize();
+          await service.initialize();
+
+          expect(firebaseStarts, 1);
+          verifyZeroInteractions(crashlytics);
+        },
+      );
     });
 
     group('unsupported platform', () {
