@@ -81,21 +81,28 @@ void build() {
     });
 
     test('supports const and import-prefixed constructors', () {
+      // `const ui.X(...)` parses as an InstanceCreationExpression whose type
+      // carries an import prefix; `ui.X(...)` without const is a
+      // MethodInvocation. Both must resolve to the same API name.
       final omissions = scan('''
 void build() {
   const DivineAuthTextField(obscureText: true);
   ui.DivineAuthTextField(obscureText: true);
+  const ui.DivineAuthTextField(obscureText: true);
 }
 ''');
 
-      expect(omissions, hasLength(4));
+      expect(omissions, hasLength(6));
     });
 
     test('counts constructor and static VineBottomSheet APIs', () {
+      // Nearly every app call site passes a type argument
+      // (`VineBottomSheet.show<bool>(...)`); the rule must match on the
+      // method name regardless.
       final omissions = scan('''
 void build() {
   VineBottomSheet(onComplete: save, body: body);
-  VineBottomSheet.show(context: context, onComplete: save, body: body);
+  VineBottomSheet.show<bool>(context: context, onComplete: save, body: body);
   ui.VineBottomSheet.show(context: context, onComplete: save, body: body);
 }
 ''');
