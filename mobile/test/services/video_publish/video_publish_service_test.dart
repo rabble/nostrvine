@@ -1175,6 +1175,95 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'excludes a restored self-collaborator from publishing and invites',
+        () async {
+          const creatorPubkey =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+          const collaboratorPubkey =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(creatorPubkey);
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(results: {}),
+          );
+          final draft = _createTestDraft(
+            collaboratorPubkeys: {
+              creatorPubkey.toUpperCase(),
+              collaboratorPubkey,
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          final publishedCollaborators =
+              verify(
+                    () => mockVideoEventPublisher.publishVideoEvent(
+                      upload: any(named: 'upload'),
+                      title: any(named: 'title'),
+                      description: any(named: 'description'),
+                      hashtags: any(named: 'hashtags'),
+                      expirationTimestamp: any(named: 'expirationTimestamp'),
+                      allowAudioReuse: any(named: 'allowAudioReuse'),
+                      collaboratorPubkeys: captureAny(
+                        named: 'collaboratorPubkeys',
+                      ),
+                      mentionedPubkeys: any(named: 'mentionedPubkeys'),
+                      inspiredByAddressableId: any(
+                        named: 'inspiredByAddressableId',
+                      ),
+                      inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+                      inspiredByNpub: any(named: 'inspiredByNpub'),
+                      clipSourceCredits: any(named: 'clipSourceCredits'),
+                      selectedAudio: any(named: 'selectedAudio'),
+                      selectedAudioEventId: any(named: 'selectedAudioEventId'),
+                      selectedAudioRelay: any(named: 'selectedAudioRelay'),
+                      language: any(named: 'language'),
+                      contentWarning: any(named: 'contentWarning'),
+                      thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+                      replyContext: any(named: 'replyContext'),
+                      addReplyToFeed: any(named: 'addReplyToFeed'),
+                      onEventSigned: any(named: 'onEventSigned'),
+                      onAudioReuseDegraded: any(named: 'onAudioReuseDegraded'),
+                    ),
+                  ).captured.single
+                  as List<String>;
+          final invitedCollaborators =
+              verify(
+                    () => mockCollaboratorInviteService.sendInvites(
+                      collaboratorPubkeys: captureAny(
+                        named: 'collaboratorPubkeys',
+                      ),
+                      creatorPubkey: creatorPubkey,
+                      videoAddress: any(named: 'videoAddress'),
+                      title: any(named: 'title'),
+                      thumbnailUrl: any(named: 'thumbnailUrl'),
+                      relayHint: any(named: 'relayHint'),
+                    ),
+                  ).captured.single
+                  as Iterable<String>;
+          expect(publishedCollaborators, [collaboratorPubkey]);
+          expect(invitedCollaborators, [collaboratorPubkey]);
+        },
+      );
+
       test('collaborator invites include the uploaded thumbnail URL', () async {
         const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
         final readyUpload = _createPendingUpload(
