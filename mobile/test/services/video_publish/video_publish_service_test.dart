@@ -1208,7 +1208,9 @@ void main() {
             collaboratorPubkeys: {
               creatorPubkey.toUpperCase(),
               NostrKeyUtils.encodePubKey(creatorPubkey),
-              collaboratorPubkey,
+              collaboratorPubkey.toUpperCase(),
+              NostrKeyUtils.encodePubKey(collaboratorPubkey),
+              'not-a-pubkey',
             },
           );
 

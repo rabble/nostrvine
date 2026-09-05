@@ -29,6 +29,7 @@ import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
+import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -341,9 +342,9 @@ class VideoPublishService {
         return const PublishError(PublishErrorKind.notSignedIn);
       }
       final pubkey = authService.currentPublicKeyHex!;
-      final collaboratorPubkeys = withoutPublicIdentifier(
-        draft.collaboratorPubkeys,
-        pubkey,
+      final collaboratorPubkeys = canonicalCollaboratorPubkeys(
+        identifiers: draft.collaboratorPubkeys,
+        creatorIdentifier: pubkey,
       );
 
       // Use existing upload if available, otherwise start new upload

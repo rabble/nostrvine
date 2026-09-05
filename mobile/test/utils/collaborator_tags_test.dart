@@ -2,6 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 void main() {
   final pubkeyA = 'a' * 64;
@@ -18,6 +19,35 @@ void main() {
         );
       },
     );
+
+    test('canonicalizes supported identifiers and rejects invalid input', () {
+      expect(buildCollaboratorPTag(pubkeyA.toUpperCase())[1], pubkeyA);
+      expect(
+        buildCollaboratorPTag(NostrKeyUtils.encodePubKey(pubkeyA))[1],
+        pubkeyA,
+      );
+      expect(
+        () => buildCollaboratorPTag('not-a-pubkey'),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('canonicalCollaboratorPubkeys', () {
+    test('normalizes, filters, excludes, and deduplicates in input order', () {
+      final result = canonicalCollaboratorPubkeys(
+        identifiers: [
+          '  ${pubkeyB.toUpperCase()}  ',
+          NostrKeyUtils.encodePubKey(pubkeyB),
+          'not-a-pubkey',
+          NostrKeyUtils.encodePubKey(pubkeyA),
+          pubkeyC,
+        ],
+        creatorIdentifier: pubkeyA.toUpperCase(),
+      );
+
+      expect(result, <String>{pubkeyB, pubkeyC});
+    });
   });
 
   group('buildCollaboratorPTags', () {
@@ -49,6 +79,20 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('emits only canonical valid pubkeys', () {
+      final result = buildCollaboratorPTags([
+        pubkeyA.toUpperCase(),
+        NostrKeyUtils.encodePubKey(pubkeyA),
+        'not-a-pubkey',
+        pubkeyB,
+      ]);
+
+      expect(result, [
+        buildCollaboratorPTag(pubkeyA),
+        buildCollaboratorPTag(pubkeyB),
+      ]);
     });
   });
 }
