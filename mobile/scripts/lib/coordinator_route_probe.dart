@@ -232,7 +232,9 @@ Future<ProbeResult> probeCoordinatorRoute(
     try {
       final statusCode = await fetchStatus(target.probeUri, timeout);
       final attempts = attempt + 1;
-      if (statusCode == HttpStatus.unauthorized) {
+      if (statusCode == HttpStatus.unauthorized ||
+          (target.routePath == coordinatorStatusProbePath &&
+              statusCode == HttpStatus.badRequest)) {
         return ProbeResult(
           target: target,
           state: ProbeState.serving,

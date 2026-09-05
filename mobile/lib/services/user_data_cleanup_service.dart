@@ -174,10 +174,13 @@ class UserDataCleanupService {
       for (final key in userSpecificKeys) {
         await remove(key);
       }
-      for (final key in ownerScopedLegacyKeys) {
-        await remove(key);
+      final draftOwner = _prefs.getString(legacyDraftOwnerKey);
+      if (draftOwner == null || draftOwner == userPubkey) {
+        for (final key in ownerScopedLegacyKeys) {
+          await remove(key);
+        }
+        await remove(legacyDraftOwnerKey);
       }
-      await remove(legacyDraftOwnerKey);
     }
 
     if (_prefs.getString(legacyDraftOwnerKey) == userPubkey) {

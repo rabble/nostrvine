@@ -674,6 +674,26 @@ void main() {
         expect(prefs.containsKey('vine_drafts'), isFalse);
       });
 
+      test('preserves legacy drafts owned by another account', () async {
+        final deletedPubkey = 'a' * 64;
+        final otherPubkey = 'b' * 64;
+        final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+        await service.markOwnerScopedLegacyDataForUser(otherPubkey);
+
+        await service.deleteAccountData(
+          deletedPubkey,
+          userNpub: deletedNpub,
+          preserveActiveSession: false,
+        );
+
+        expect(prefs.containsKey('vine_drafts'), isTrue);
+        expect(
+          prefs.getString(UserDataCleanupService.legacyDraftOwnerKey),
+          otherPubkey,
+        );
+      });
+
       test('propagates database cleanup failures', () async {
         final deletedPubkey = 'a' * 64;
         final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
