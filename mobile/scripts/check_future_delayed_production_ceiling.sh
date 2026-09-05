@@ -48,7 +48,7 @@ ALLOW_NO_BASE_VAR="FUTURE_DELAYED_PROD_CEILING_ALLOW_NO_BASE"
 LEGACY_LIST_BASELINE_MIGRATION=1
 REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to app code — use explicit async coordination (AnimatedSwitcher / animation controllers / stream listeners / completers), not a wall-clock wait. See .claude/CLAUDE.md and epic #4339."
-STALE_HINT="A production file was migrated off Future.delayed."
+STALE_HINT="A production Future.delayed call was removed."
 FOOTER="Future.delayed in mobile/lib is frozen and may only decrease. Replace it
 with explicit async coordination rather than a longer wall-clock wait. See
 .claude/CLAUDE.md and epic #4339."
@@ -62,12 +62,10 @@ emit_current() {
     ! -name "*.config.dart" ! -name "*.mocks.dart" \
     -print0 2>/dev/null \
   | while IFS= read -r -d '' f; do
-      # grep -cE (not -qE) consumes the whole stream. `-q` exits on the first
-      # match, which SIGPIPEs awk, and under `set -o pipefail` that makes the
-      # pipeline status 141 — silently dropping every file whose match lands
-      # before awk finishes writing. Undercounting is the dangerous direction
-      # for a ceiling. The sibling ratchets use `grep -oE | grep -c .` for the
-      # same reason.
+      # The final grep -c consumes the whole stream. `-q` would exit on the first
+      # match, so awk would die of SIGPIPE; under pipefail the pipeline would
+      # report 141 — silently dropping every file whose match lands before awk
+      # finishes writing. Undercounting is the dangerous direction here.
       count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
         | grep -oE "Future\.delayed" | grep -c . || true)"
       count="${count//[[:space:]]/}"

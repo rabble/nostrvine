@@ -32,7 +32,7 @@ ALLOW_NO_BASE_VAR="FUTURE_DELAYED_CEILING_ALLOW_NO_BASE"
 LEGACY_LIST_BASELINE_MIGRATION=1
 REQUIRE_BASELINE_UPDATE_ON_DECREASE=1
 NEW_HINT="Don't add Future.delayed to a test — use fakeAsync (timers/timeouts) or pumpEventQueue (stream-settling). See tasks/plan_4337.md (WS-2)."
-STALE_HINT="A file was migrated off Future.delayed."
+STALE_HINT="A Future.delayed call was removed."
 FOOTER="Future.delayed in tests is frozen and may only decrease. Replace it with
 fakeAsync (timer/timeout-driven) or pumpEventQueue (stream-settling), not a
 longer wall-clock wait. See tasks/plan_4337.md (WS-2)."
@@ -47,8 +47,8 @@ emit_current() {
       # Code only, and the final grep -c consumes the whole stream. `-q` would
       # exit on the first match, so awk would die of SIGPIPE; under pipefail
       # the pipeline would report 141 — silently dropping every file whose
-      # match lands before awk
-      # finishes writing. Undercounting is the dangerous direction here.
+      # match lands before awk finishes writing. Undercounting is the dangerous
+      # direction here.
       count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
         | grep -oE "Future\.delayed" | grep -c . || true)"
       count="${count//[[:space:]]/}"
