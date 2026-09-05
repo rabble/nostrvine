@@ -40,8 +40,10 @@ jobs:
           set -o pipefail
           # POC remains release-gated but does not serve the status route yet.
           {
-            DEFAULT_ENV=STAGING ./scripts/check_coordinator_route_serving.sh
-            DEFAULT_ENV=PRODUCTION ./scripts/check_coordinator_route_serving.sh
+            failed=0
+            DEFAULT_ENV=STAGING ./scripts/check_coordinator_route_serving.sh || failed=1
+            DEFAULT_ENV=PRODUCTION ./scripts/check_coordinator_route_serving.sh || failed=1
+            exit "$failed"
           } 2>&1 \
             | tee "$RUNNER_TEMP/coordinator-route-probe.txt"
       - name: Open or update the coordinator-route incident

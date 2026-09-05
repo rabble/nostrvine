@@ -1467,7 +1467,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     final prefs = await SharedPreferences.getInstance();
     Object? keyDeletionError;
     Object? cleanupError;
-
     try {
       await _userDataCleanupService.deleteAccountData(
         pubkeyHex,
@@ -1481,13 +1480,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await CacheSync.invalidatePrefix(pubkeyHex);
     } catch (error, stackTrace) {
       cleanupError ??= error;
-      _reportStorageError(
-        error,
-        stackTrace,
-        'deleteLocalAccount cache invalidation',
-      );
+      _reportStorageError(error, stackTrace, 'deleteLocalAccount invalidation');
     }
-
     try {
       await _knownAccounts.removeStrict(pubkeyHex);
     } catch (error) {
@@ -1503,7 +1497,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     } catch (error) {
       keyDeletionError ??= error;
     }
-
     if (keyDeletionError != null) {
       throw SecureKeyStorageException(
         'Local account deletion failed: $keyDeletionError',
@@ -1515,7 +1508,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         cleanupError,
       );
     }
-
     if (_currentKeyContainer == null) {
       try {
         if (prefs.getString(_kSessionRecoveryAnchorKey) == npub &&
@@ -3119,7 +3111,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Signs out the current user.
   ///
-  /// [abortOnKeyDeletionFailure] keeps the session active on deletion failure.
+  /// [abortOnKeyDeletionFailure] keeps the session active if key deletion
+  /// fails. Otherwise destructive cleanup finishes before throwing
+  /// [SecureKeyStorageException] or [UserDataCleanupException].
   Future<void> signOut({
     bool deleteKeys = false,
     bool abortOnKeyDeletionFailure = false,
@@ -3350,6 +3344,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       await _clearOAuthSessionForSignOut();
 
+      // Reset recovery prefs AFTER all signer cleanup so removed accounts
+      // cannot silently recover. Any remaining restorable accounts stay in the
+      // known-account picker instead of being auto-restored.
       if (deleteKeys &&
           (!deleteLocalUserData || userDataCleanupError == null)) {
         try {
