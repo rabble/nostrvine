@@ -123,19 +123,19 @@ void main() {
     });
 
     test('ignores another account receipt recreated by polling', () {
+      const lookup = AccountDeletionAttempt(
+        id: 'first-account-attempt',
+        status: AccountDeletionAttemptStatus.processing,
+      );
       expect(
         accountDeletionRecoveryGateActive(
-          const AsyncData<AccountDeletionAttempt?>(
-            AccountDeletionAttempt(
-              id: 'first-account-attempt',
-              status: AccountDeletionAttemptStatus.processing,
-            ),
-          ),
+          const AsyncData<AccountDeletionAttempt?>(lookup),
           submittedAttempt: const SubmittedAccountDeletionAttempt(
             pubkeyHex: 'first-account',
             attempt: AccountDeletionAttempt(
               id: 'first-account-attempt',
               status: AccountDeletionAttemptStatus.processing,
+              failureCode: 'x',
             ),
             vanishEventId: 'vanish-event-id',
           ),
