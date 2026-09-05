@@ -139,6 +139,10 @@ void main() {
       final coordinator = app.createStartupCoordinatorForTesting(container);
 
       expect(
+        coordinator.crashReporterForTesting,
+        same(container.read(crashReportingServiceProvider)),
+      );
+      expect(
         coordinator.serviceRegistrationForTesting('HiveStorage')?.phase,
         StartupPhase.critical,
       );

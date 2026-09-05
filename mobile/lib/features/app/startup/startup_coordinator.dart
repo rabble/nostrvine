@@ -53,6 +53,9 @@ class StartupCoordinator {
     return _services[name];
   }
 
+  @visibleForTesting
+  CrashReporter get crashReporterForTesting => _crashReporter;
+
   /// Register a service for initialization
   void registerService({
     required String name,
@@ -146,9 +149,7 @@ class StartupCoordinator {
     }
 
     Log.debug('Initializing ${service.name}', name: 'StartupCoordinator');
-    _crashReporter.log(
-      'Initializing service: ${service.name}',
-    );
+    _crashReporter.log('Initializing service: ${service.name}');
     _metricsCollector.startService(service.name);
 
     try {
@@ -161,9 +162,7 @@ class StartupCoordinator {
         '✓ ${service.name} initialized in ${_metricsCollector.generateMetrics().serviceTimings[service.name]?.inMilliseconds ?? 0}ms',
         name: 'StartupCoordinator',
       );
-      _crashReporter.log(
-        '✓ ${service.name} initialized successfully',
-      );
+      _crashReporter.log('✓ ${service.name} initialized successfully');
     } catch (error, stackTrace) {
       _metricsCollector.completeService(
         service.name,
@@ -177,9 +176,7 @@ class StartupCoordinator {
         stackTrace,
         reason: 'Service initialization failed: ${service.name}',
       );
-      _crashReporter.log(
-        '✗ ${service.name} failed: $error',
-      );
+      _crashReporter.log('✗ ${service.name} failed: $error');
 
       if (!service.optional) {
         Log.error(

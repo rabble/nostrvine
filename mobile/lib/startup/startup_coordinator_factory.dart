@@ -30,7 +30,7 @@ import 'package:unified_logger/unified_logger.dart';
 StartupCoordinator createStartupCoordinator(ProviderContainer container) {
   final startupPerformance = container.read(startupPerformanceServiceProvider);
   final crashReporting = container.read(crashReportingServiceProvider);
-  final coordinator = StartupCoordinator();
+  final coordinator = StartupCoordinator(crashReporter: crashReporting);
 
   coordinator.registerService(
     name: 'EnvironmentService',

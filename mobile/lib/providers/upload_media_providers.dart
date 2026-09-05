@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/background_activity_provider.dart';
+import 'package:openvine/providers/crash_reporting_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -299,6 +300,7 @@ UploadManager uploadManager(Ref ref) {
   final env = ref.read(currentEnvironmentProvider);
   final manager = UploadManager(
     backgroundActivityManager: ref.read(backgroundActivityManagerProvider),
+    crashReporting: ref.read(crashReportingServiceProvider),
     blossomService: blossomService,
     defaultBlossomUrl: env.blossomUrl,
     currentNostrPubkey: currentPubkey,

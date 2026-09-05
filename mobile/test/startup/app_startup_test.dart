@@ -20,13 +20,14 @@ void main() {
     test('CrashReportingService can be initialized early', () async {
       // This mimics what happens in startOpenVineApp
       final startTime = DateTime.now();
+      final crashReporting = CrashReportingService();
 
       // Initialize crash reporting first
-      await CrashReportingService().initialize();
+      await crashReporting.initialize();
 
       // Should not throw
-      CrashReportingService().logInitializationStep('Test step');
-      CrashReportingService().log('Test message');
+      crashReporting.logInitializationStep('Test step');
+      crashReporting.log('Test message');
 
       // Initialize logging config
       await LoggingConfigService().initialize();
@@ -37,7 +38,8 @@ void main() {
 
     test('Startup breadcrumbs can be logged safely', () async {
       // Initialize the service
-      await CrashReportingService().initialize();
+      final crashReporting = CrashReportingService();
+      await crashReporting.initialize();
 
       // Test various breadcrumb formats used in the app
       final testBreadcrumbs = [
@@ -49,12 +51,10 @@ void main() {
       ];
 
       // None of these should throw
-      testBreadcrumbs.forEach(
-        CrashReportingService().logInitializationStep,
-      );
+      testBreadcrumbs.forEach(crashReporting.logInitializationStep);
 
       // Also test regular logging
-      CrashReportingService().log('Startup timeout detected');
+      crashReporting.log('Startup timeout detected');
     });
 
     test('Logging can handle early startup phase', () {

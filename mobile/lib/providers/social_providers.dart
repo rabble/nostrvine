@@ -691,6 +691,7 @@ DraftStorageService draftStorageService(Ref ref) {
     preferences: ref.watch(sharedPreferencesProvider),
   );
   return DraftStorageService(
+    crashReporter: ref.read(crashReportingServiceProvider),
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
     ownerPubkey: ownerPubkey,
