@@ -820,6 +820,13 @@ class DmRepository {
   /// attempt already running under the same key. Exceptions propagate to
   /// every joiner (both callers handle the documented [StateError] /
   /// [ArgumentError] contract).
+  ///
+  /// The queue row's finalization belongs to whichever caller RAN the
+  /// attempt. A joiner receives an outcome the owner has already recorded
+  /// against the row — [_recoverFullSendLocked] finalizes every branch
+  /// inside its body — so a joiner that finalized again would charge one
+  /// underlying attempt twice (#8619). [sendGroupMessage] learns which side
+  /// it was on from a flag the closure sets when it actually runs.
   Future<NIP17SendResult> _joinOrStartRecovery(
     String key,
     Future<NIP17SendResult> Function() attempt,
@@ -6305,6 +6312,14 @@ class DmRepository {
     // them. Recorded so the finalize below skips them too — a cancelled
     // index must never resurrect a queue transition or a thread.
     final cancelledBeforePublish = <int>{};
+    // Siblings whose outcome came from a recovery another caller already
+    // owned — the sweep's recoverFullSend registered `full:<queueId>` before
+    // this loop reached the row. That owner finalized the row inside its
+    // locked body, so the non-success pass below must not run the same
+    // transition again: a second _finalizeAfterRecipientUnconfirmed charged
+    // one underlying attempt twice, and a five-retry budget then covered four
+    // attempts (#8619). Only the durable handle is stamped for these.
+    final joinedRecovery = <int>{};
     for (var i = 0; i < recipientPubkeys.length; i++) {
       final pubkey = recipientPubkeys[i];
       // Cancel interlock, mirroring _recoverFullSendLocked's pre-publish row
@@ -6332,14 +6347,22 @@ class DmRepository {
       // makes the sweep JOIN the live attempt instead of dispatching a
       // concurrent duplicate. The reverse interleaving (sweep registered
       // first) hands back the recovery's real outcome, and the persistence
-      // transaction below dedups on it. A joined recovery can throw
-      // (ArgumentError after a mid-flight cancel); convert it to a plain
-      // failure so one bad join cannot abort the rest of the batch —
-      // _sendRumorWithTimeout itself classifies instead of throwing.
+      // transaction below dedups on it. That reverse interleaving is the
+      // common one once a sweep overlaps a batch at all: after both sides
+      // resume from a joined sibling, this loop still has to re-read the next
+      // row before it can register, while the sweep registers synchronously.
+      // A joined recovery can throw (ArgumentError after a mid-flight cancel);
+      // convert it to a plain failure so one bad join cannot abort the rest of
+      // the batch — _sendRumorWithTimeout itself classifies instead of
+      // throwing.
       NIP17SendResult result;
       final inbox = inboxByRecipient[pubkey];
+      // Set only when this call runs the attempt; a join never invokes the
+      // closure, so the flag is exact.
+      var attemptRanHere = false;
       try {
         result = await _joinOrStartRecovery('full:${queueIds[i]}', () async {
+          attemptRanHere = true;
           final published = await _sendRumorWithTimeout(
             rumor: groupRumor,
             recipientPubkey: pubkey,
@@ -6374,6 +6397,7 @@ class DmRepository {
           'joined in-flight recovery failed: $e',
         );
       }
+      if (!attemptRanHere) joinedRecovery.add(i);
       results.add(result);
     }
 
@@ -6512,6 +6536,16 @@ class DmRepository {
         }
         final result = results[i];
         if (result.success) continue;
+        // A joined outcome was finalized by the recovery that owns it
+        // (#8619): charging, failure marks and the blocked disposition are
+        // all that owner's. Stamp the handle exactly as the surviving-row
+        // branches below do, so the caller can still re-drive the row.
+        if (joinedRecovery.contains(i)) {
+          if (!result.blocked) {
+            results[i] = _stampQueuedRow(result, queueIds[i]);
+          }
+          continue;
+        }
         if (result.blocked) {
           await _finalizeAfterRecipientBlocked(
             outgoingDao: outgoingDao,
