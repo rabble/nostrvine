@@ -379,6 +379,107 @@ void main() {
     });
 
     group('mutualFollowsOnly mode', () {
+      testWidgets('excludes the viewer from self-following mutuals', (
+        tester,
+      ) async {
+        const viewerPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final viewer = UserProfile(
+          pubkey: viewerPubkey,
+          name: 'Viewer',
+          rawData: const {'name': 'Viewer'},
+          createdAt: DateTime.now(),
+          eventId: 'viewer-event',
+        );
+        final mutual = UserProfile(
+          pubkey:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          name: 'Mutual',
+          rawData: const {'name': 'Mutual'},
+          createdAt: DateTime.now(),
+          eventId: 'mutual-event',
+        );
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: [viewer.pubkey, mutual.pubkey],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _noVanishedProfiles,
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(
+                  cachedProfiles: [viewer, mutual],
+                ),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  excludeViewerPubkey: viewerPubkey,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Viewer'), findsNothing);
+        expect(find.text('Mutual'), findsOneWidget);
+      });
+
+      testWidgets('excludes the viewer case-insensitively', (tester) async {
+        const viewerPubkey =
+            'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+        final viewer = UserProfile(
+          pubkey: viewerPubkey,
+          name: 'Viewer',
+          rawData: const {'name': 'Viewer'},
+          createdAt: DateTime.now(),
+          eventId: 'viewer-event',
+        );
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: [viewer.pubkey],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              _noVanishedProfiles,
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(cachedProfiles: [viewer]),
+              ),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  excludeViewerPubkey: viewerPubkey.toUpperCase(),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Viewer'), findsNothing);
+      });
+
       testWidgets('shows loading indicator until the first follower source '
           'answers', (tester) async {
         final mockFollowRepo = _createMockFollowRepository(

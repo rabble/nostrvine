@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -41,6 +42,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
   ValueChanged<UserProfile>? onUserToggled,
   int? maxCount,
   Set<String> excludePubkeys = const {},
+  String? excludeViewerPubkey,
   List<UserProfile> initialSelectedProfiles = const [],
 }) {
   return VineBottomSheet.show<List<UserProfile>?>(
@@ -58,6 +60,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
       searchText: searchText,
       maxCount: maxCount,
       excludePubkeys: excludePubkeys,
+      excludeViewerPubkey: excludeViewerPubkey,
       searchHint: searchHint,
       onUserToggled: onUserToggled,
       initialSelectedProfiles: initialSelectedProfiles,
@@ -76,6 +79,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     this.searchText,
     this.maxCount,
     this.excludePubkeys = const {},
+    this.excludeViewerPubkey,
     this.searchHint,
     this.onUserToggled,
     this.initialSelectedProfiles = const [],
@@ -102,6 +106,9 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Pubkeys to exclude from search results (already selected users).
   final Set<String> excludePubkeys;
+
+  /// Viewer pubkey to hide and prevent from being selected.
+  final String? excludeViewerPubkey;
 
   /// Optional override for the search field hint text.
   final String? searchHint;
@@ -180,6 +187,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
       followRepository: ref.read(followRepositoryProvider),
+      excludedPubkey: widget.excludeViewerPubkey,
     );
 
     if (_useLocalSearch) {
@@ -227,7 +235,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         cached
             .where(
               (profile) =>
-                  !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
+                  !blocklistRepository.shouldFilterFromFeeds(profile.pubkey) &&
+                  !_isExcludedViewer(profile.pubkey),
             )
             .toList(),
       );
@@ -393,6 +402,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   }
 
   void _onUserSelected(UserProfile profile) {
+    if (_isExcludedViewer(profile.pubkey)) return;
+
     if (widget.onUserToggled != null) {
       setState(() {
         if (_selectedPubkeys.remove(profile.pubkey)) {
@@ -416,6 +427,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     } else {
       Navigator.of(context).pop([profile]);
     }
+  }
+
+  bool _isExcludedViewer(String pubkey) {
+    final viewerPubkey = widget.excludeViewerPubkey;
+    return viewerPubkey != null && pubkeysEqual(pubkey, viewerPubkey);
   }
 
   void _handleDone() {

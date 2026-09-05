@@ -4,8 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
@@ -18,11 +20,19 @@ Set<String> computeEffectiveCollaboratorResultPubkeys({
   required Set<String> confirmedPubkeys,
   required Set<String> preselectedPubkeys,
   required Set<String> pickerResultPubkeys,
+  required String? viewerPubkey,
 }) {
   final unresolvedConfirmedPubkeys = confirmedPubkeys.difference(
     preselectedPubkeys,
   );
-  return {...pickerResultPubkeys, ...unresolvedConfirmedPubkeys};
+  final effectivePubkeys = {
+    ...pickerResultPubkeys,
+    ...unresolvedConfirmedPubkeys,
+  };
+  if (viewerPubkey == null) return effectivePubkeys;
+  return effectivePubkeys
+      .where((pubkey) => !pubkeysEqual(pubkey, viewerPubkey))
+      .toSet();
 }
 
 /// Input widget for adding and managing collaborators on a video.
@@ -60,6 +70,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
     final editorState = ref.read(videoEditorProvider);
+    final viewerPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 
     // Confirmed collaborators shown as pre-selected chips in the picker.
     final confirmedProfiles = editorState.collaboratorPubkeys
@@ -74,6 +85,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       searchText: context.l10n.videoMetadataMutualFollowersSearchText,
       maxCount: VideoEditorConstants.maxCollaborators,
       initialSelectedProfiles: confirmedProfiles,
+      excludeViewerPubkey: viewerPubkey,
     );
 
     if (result == null || !context.mounted) return;
@@ -86,6 +98,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       confirmedPubkeys: confirmedPubkeys,
       preselectedPubkeys: preselectedPubkeys,
       pickerResultPubkeys: resultPubkeys,
+      viewerPubkey: viewerPubkey,
     );
 
     // Remove confirmed collaborators that were deselected in the picker.
@@ -95,11 +108,11 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       }
     }
 
-    // Confirm newly selected profiles. Mutual-follow is already guaranteed
+    // Confirm newly selected pubkeys. Mutual-follow is already guaranteed
     // by the picker's mutualFollowsOnly filter (verified at sheet open time).
-    for (final profile in result) {
-      if (confirmedPubkeys.contains(profile.pubkey)) continue;
-      notifier.addCollaborator(profile.pubkey);
+    for (final pubkey in effectiveResultPubkeys) {
+      if (confirmedPubkeys.contains(pubkey)) continue;
+      notifier.addCollaborator(pubkey);
     }
   }
 }

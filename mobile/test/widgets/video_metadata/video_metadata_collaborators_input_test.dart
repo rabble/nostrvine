@@ -72,6 +72,7 @@ void main() {
         confirmedPubkeys: {'a', 'b'},
         preselectedPubkeys: {'a'},
         pickerResultPubkeys: {'a'},
+        viewerPubkey: null,
       );
 
       expect(effective, equals({'a', 'b'}));
@@ -82,9 +83,56 @@ void main() {
         confirmedPubkeys: {'a', 'b'},
         preselectedPubkeys: {'a', 'b'},
         pickerResultPubkeys: {'a'},
+        viewerPubkey: null,
       );
 
       expect(effective, equals({'a'}));
+    });
+
+    test('removes the viewer from picker results', () {
+      const viewerPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final effective = computeEffectiveCollaboratorResultPubkeys(
+        confirmedPubkeys: const {},
+        preselectedPubkeys: const {},
+        pickerResultPubkeys: const {
+          viewerPubkey,
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        },
+        viewerPubkey: viewerPubkey,
+      );
+
+      expect(effective, {
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      });
+    });
+
+    test('removes the viewer case-insensitively', () {
+      const viewerPubkey =
+          'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+      final effective = computeEffectiveCollaboratorResultPubkeys(
+        confirmedPubkeys: const {},
+        preselectedPubkeys: const {},
+        pickerResultPubkeys: {viewerPubkey.toUpperCase()},
+        viewerPubkey: viewerPubkey,
+      );
+
+      expect(effective, isEmpty);
+    });
+
+    test('preserves unresolved non-viewer collaborators', () {
+      const viewerPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const unresolvedPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final effective = computeEffectiveCollaboratorResultPubkeys(
+        confirmedPubkeys: const {viewerPubkey, unresolvedPubkey},
+        preselectedPubkeys: const {},
+        pickerResultPubkeys: const {},
+        viewerPubkey: viewerPubkey,
+      );
+
+      expect(effective, {unresolvedPubkey});
     });
   });
 
