@@ -90,14 +90,27 @@ authorized `git reset --hard` while another reasons from a pre-reset
 snapshot is enough to lose, or wrongly "restore", a changeset.
 
 `.claude/hooks/session-start-worktree-guard.sh` warns at session start
-when another live session appears to have been launched from the same
-git worktree root. It is opt-in (registration snippet is in the script
-header) and deliberately not registered in the team `settings.json`, so
-anyone already running it at user scope is not warned twice. It warns
-only — it never blocks a session. The signal comes from Claude's process
-cwd and `/tmp/cc-socks*/<pid>.sock`, so it cannot see later `cd` calls
-inside tool shells and can become a silent no-op if Claude changes that
-internal socket path.
+when another live session's launch root or active session root matches
+the current git worktree. It is opt-in (registration snippet is in the
+script header) and deliberately not registered in the team
+`settings.json`, so anyone already running it at user scope is not warned
+twice. It warns only — it never blocks a session.
+
+The preferred signal combines the Claude process cwd (the launch root)
+with `~/.claude/sessions/<pid>.json` (the active session root). The
+registry cwd follows harness-level worktree changes but not `cd` inside
+an ephemeral Bash tool call. Cwd is evidence of where a session usually
+writes, never a boundary on where absolute paths can write, so moving to
+a different worktree changes the warning's wording but never suppresses
+the launch-root warning.
+
+The session registry is undocumented Claude Code internal state and has
+only been verified on macOS. Its own version field may accompany future
+schema changes; Linux behavior remains unverified. If the registry is
+absent, unreadable, incompatible, or `jq` is unavailable, the hook falls
+back to the older `/tmp/cc-socks*/<pid>.sock` launch-directory signal.
+Anyone who installed an older copy of the hook at user scope must copy
+the updated repo version again to receive this detection.
 
 ### Build artifacts are purged from linked worktrees at session end
 
