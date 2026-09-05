@@ -12,7 +12,6 @@ class TestBackgroundService implements BackgroundAwareService {
   bool backgroundCalled = false;
   bool extendedBackgroundCalled = false;
   bool resumedCalled = false;
-  bool cleanupCalled = false;
 
   @override
   void onAppBackgrounded() {
@@ -27,11 +26,6 @@ class TestBackgroundService implements BackgroundAwareService {
   @override
   void onAppResumed() {
     resumedCalled = true;
-  }
-
-  @override
-  void onPeriodicCleanup() {
-    cleanupCalled = true;
   }
 }
 
@@ -54,9 +48,6 @@ class _ThrowingBackgroundService implements BackgroundAwareService {
 
   @override
   void onAppResumed() {}
-
-  @override
-  void onPeriodicCleanup() {}
 }
 
 void main() {
@@ -90,19 +81,6 @@ void main() {
         manager.resetForTesting();
 
         expect(manager.isAppInForeground, isTrue);
-      });
-
-      test('clears the initialized latch', () async {
-        await manager.initialize();
-        // Asserting the pre-state is what makes the post-state meaningful:
-        // without it the test passes whether or not reset clears the latch.
-        expect(manager.getStatus()['isInitialized'], isTrue);
-
-        manager.resetForTesting();
-
-        // dispose() leaves this set, so a later initialize() would no-op and
-        // never re-arm the periodic cleanup. reset must not.
-        expect(manager.getStatus()['isInitialized'], isFalse);
       });
     });
 

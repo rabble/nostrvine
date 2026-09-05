@@ -75,7 +75,4 @@ class _ProbeService implements BackgroundAwareService {
 
   @override
   void onAppResumed() {}
-
-  @override
-  void onPeriodicCleanup() {}
 }

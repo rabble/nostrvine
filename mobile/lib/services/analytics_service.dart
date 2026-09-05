@@ -153,8 +153,8 @@ class AnalyticsService implements BackgroundAwareService {
 
       // The guard above is not enough on its own: dispose() may have run while
       // the awaits above were in flight. Re-check before the two side effects
-      // it can no longer undo — the periodic timer, and joining the
-      // process-global registry that has no owner left to leave it (#8398).
+      // it can no longer undo — the periodic timer, and joining the manager's
+      // registry with no owner left to leave it (#8398).
       if (_isDisposed) return;
 
       // Set up periodic cleanup of tracked views
@@ -838,18 +838,11 @@ class AnalyticsService implements BackgroundAwareService {
     _isInBackground = false;
   }
 
-  @override
-  void onPeriodicCleanup() {
-    if (!_isInBackground) {
-      _recentlyTrackedViews.clear();
-    }
-  }
-
   void dispose() {
-    // Unregister before tearing down. The manager is a process-global
-    // singleton, so an instance left in its registry keeps receiving
-    // lifecycle callbacks forever — across provider rebuilds in the app, and
-    // across every later suite in the merged test isolate (#6880).
+    // Unregister before tearing down. The manager outlives this service, so
+    // an instance left in its registry keeps receiving lifecycle callbacks —
+    // across provider rebuilds in the app, and across every later suite in
+    // the merged test isolate (#6880).
     if (_isBackgroundRegistered) {
       _backgroundActivityManager.unregisterService(this);
       _isBackgroundRegistered = false;

@@ -4499,11 +4499,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
   }
 
-  @override
-  void onPeriodicCleanup() {
-    // No cleanup needed for auth service during periodic cleanup
-  }
-
   Future<void> dispose() async {
     Log.debug(
       '📱️ Disposing SecureAuthService',

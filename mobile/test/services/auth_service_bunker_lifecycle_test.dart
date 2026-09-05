@@ -100,10 +100,6 @@ void main() {
     test('onExtendedBackground should not throw when no bunker signer', () {
       expect(() => authService.onExtendedBackground(), returnsNormally);
     });
-
-    test('onPeriodicCleanup should not throw', () {
-      expect(() => authService.onPeriodicCleanup(), returnsNormally);
-    });
   });
 
   group('AuthService BackgroundActivityManager registration (#4743 B3)', () {
