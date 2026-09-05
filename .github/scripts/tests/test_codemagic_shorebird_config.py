@@ -106,6 +106,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn('maestro "$@" test', maestro)
 
         workflow = self._workflow_block("e2e-smoke-ios")
+        self.assertIn("BUNDLE_ID: co.openvine.app.staging", workflow)
         for step in (
             "- *boot_ios_simulator",
             "- *install_app_ios_simulator",
