@@ -1,6 +1,6 @@
 #!/bin/bash
-# ABOUTME: Pre-build script for iOS Xcode builds to ensure CocoaPods sync
-# ABOUTME: Can be added as a pre-action in Xcode scheme to fix pod install issues
+# ABOUTME: Pre-action of the shared Runner scheme: syncs CocoaPods before every Xcode iOS build.
+# ABOUTME: Runs no Flutter command; plugin injection would reset the generated Swift package floor to iOS 13.
 
 set -e
 
@@ -10,26 +10,12 @@ echo "🔧 Pre-build: Ensuring iOS CocoaPods dependencies are synced..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Find Flutter command
-FLUTTER_CMD=""
-if command -v flutter >/dev/null 2>&1; then
-    FLUTTER_CMD="flutter"
-elif [ -n "$FLUTTER_ROOT" ] && [ -f "$FLUTTER_ROOT/bin/flutter" ]; then
-    FLUTTER_CMD="$FLUTTER_ROOT/bin/flutter"
-elif [ -f "/opt/homebrew/Caskroom/flutter/3.27.4/flutter/bin/flutter" ]; then
-    FLUTTER_CMD="/opt/homebrew/Caskroom/flutter/3.27.4/flutter/bin/flutter"
-else
-    echo "⚠️  Flutter not found, skipping pub get..."
-    FLUTTER_CMD=""
-fi
-
-# Ensure Flutter pub get is run first (if Flutter is available)
-if [ -n "$FLUTTER_CMD" ]; then
-    echo "📦 Running flutter pub get..."
-    "$FLUTTER_CMD" pub get
-else
-    echo "⚠️  Skipping flutter pub get (Flutter not found)"
-fi
+# Never run a Flutter command here. Plugin injection rewrites
+# ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+# at Flutter's default .iOS("13.0"), and only `flutter build ios` / `flutter run`
+# raise it back to 16.0 -- an Xcode build never does, so every Xcode build would
+# fail on "requires minimum platform version 16.0 ... but this target supports 13".
+# See .claude/rules/ios_build_troubleshooting.md, Cause 3.
 
 # Navigate to iOS directory
 cd ios
