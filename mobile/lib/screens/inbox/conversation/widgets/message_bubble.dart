@@ -195,9 +195,10 @@ class MessageBubble extends StatefulWidget {
   /// bubble (e.g. failed own sends). It is also suppressed internally on
   /// bubbles whose dominant content is itself a tap target (shared-video card,
   /// quoted-video reply) so the ancestor double-tap recognizer can't delay
-  /// tap-to-open — see the wiring below. Screen readers never reach this —
-  /// double-tap is the AT activation gesture — so the long-press picker stays
-  /// the a11y path.
+  /// tap-to-open, and on truncated bubbles so their Show more / Show less
+  /// links open on the first tap — see the wiring below. Screen readers
+  /// never reach this — double-tap is the AT activation gesture — so the
+  /// long-press picker stays the a11y path.
   final VoidCallback? onDoubleTap;
 
   /// Called when the user taps the bubble. Wired only for failed own sends
@@ -375,7 +376,9 @@ class _MessageBubbleState extends State<MessageBubble> {
             // its DoubleTapGestureRecognizer hold the gesture arena for
             // ~kDoubleTapTimeout after the first tap, so the inner onTap only
             // fires once that window elapses (~300 ms delay to tap-to-open).
-            // Text bubbles keep double-tap-to-like.
+            // A truncated bubble gives it up for the same reason: its Show
+            // more / Show less links must open on the first tap. Plain text
+            // bubbles keep double-tap-to-like.
             onDoubleTap: hasVideo || hasQuotedVideo || hasExpansionControls
                 ? null
                 : onDoubleTap,

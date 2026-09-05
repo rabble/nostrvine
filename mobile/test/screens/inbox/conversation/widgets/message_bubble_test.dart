@@ -2201,6 +2201,40 @@ void main() {
 
         expect(find.text('No double tap'), findsOneWidget);
       });
+
+      testWidgets('suppresses double-tap-to-like on a truncated bubble', (
+        tester,
+      ) async {
+        // An ancestor onDoubleTap would hold the gesture arena for
+        // ~kDoubleTapTimeout, delaying the Show more link's first tap.
+        var doubleTapped = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MessageBubble(
+                  message: 'a' * (dmInitialDisplayCodeUnits + 1),
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                  onDoubleTap: () => doubleTapped = true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final target = tester.getCenter(find.text('2:30 PM'));
+        await tester.tapAt(target);
+        await tester.pump(kDoubleTapMinTime);
+        await tester.tapAt(target);
+        await tester.pumpAndSettle();
+
+        expect(doubleTapped, isFalse);
+        expect(find.text(strings.dmMessageShowMore), findsOneWidget);
+      });
     });
 
     group('markdown rendering', () {
