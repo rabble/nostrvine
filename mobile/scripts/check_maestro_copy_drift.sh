@@ -163,7 +163,9 @@ def flow_literals(path):
                         indent = len(block_raw) - len(block_raw.lstrip())
                         if indent <= parent_indent:
                             break
-                        add_literal(strip_comment(block_raw).strip())
+                        # Inside a block scalar, `#` is content rather than a
+                        # YAML comment marker.
+                        add_literal(block_raw.strip())
                     index += 1
             else:
                 add_literal(v)

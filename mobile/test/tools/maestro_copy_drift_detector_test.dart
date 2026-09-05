@@ -175,6 +175,24 @@ void main() {
       expect(manifest.readAsStringSync(), isNot(contains('privacyTitle')));
     });
 
+    test('preserves hash-prefixed copy inside a block scalar', () {
+      writeArb({'hashtagTitle': '#vine'});
+      writeFlow(
+        'asserts/hashtag.yaml',
+        '- assertVisible: |-\n'
+            '    #vine\n',
+      );
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('hashtagTitle\te2e/maestro/asserts/hashtag.yaml'),
+      );
+    });
+
     test('fails when ARB-backed flow copy is unregistered', () {
       writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
       writeFlow(
