@@ -2907,9 +2907,9 @@
   "@reportDetailsImageNotAttached": {
     "description": "Shown in the content report details field the moment the user tries to insert a photo or GIF from the keyboard. Reports carry no attachments, so the image is intentionally dropped; this confirms it was not attached and redirects the reporter to describing the issue in words."
   },
-  "bugReportImageInsertionRejected": "That image wasn’t added. Use Add images below to attach it.",
+  "bugReportImageInsertionRejected": "That image wasn’t added. Use \"Attach images\" below instead.",
   "@bugReportImageInsertionRejected": {
-    "description": "Shown when a keyboard image insertion is rejected from a bug report field. The screen has a separate image picker below."
+    "description": "Shown when a keyboard image insertion is rejected from a bug report field. Names the image picker button below the fields; keep the quoted name identical to the bugReportAttachImages translation in each locale."
   },
   "featureRequestImageInsertionRejected": "That image wasn’t attached. Describe it in words instead.",
   "@featureRequestImageInsertionRejected": {

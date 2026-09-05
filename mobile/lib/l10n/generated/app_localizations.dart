@@ -7963,10 +7963,10 @@ abstract class AppLocalizations {
   /// **'That wasn’t attached. Reports are text only, so describe it in words.'**
   String get reportDetailsImageNotAttached;
 
-  /// Shown when a keyboard image insertion is rejected from a bug report field. The screen has a separate image picker below.
+  /// Shown when a keyboard image insertion is rejected from a bug report field. Names the image picker button below the fields; keep the quoted name identical to the bugReportAttachImages translation in each locale.
   ///
   /// In en, this message translates to:
-  /// **'That image wasn’t added. Use Add images below to attach it.'**
+  /// **'That image wasn’t added. Use \"Attach images\" below instead.'**
   String get bugReportImageInsertionRejected;
 
   /// Shown when a keyboard image insertion is rejected from a text-only feature request field.
