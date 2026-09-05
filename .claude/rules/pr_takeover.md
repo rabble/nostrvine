@@ -76,6 +76,7 @@ every cited path, line range, identifier, and quoted snippet against that
 commit, not the current checkout or a reconstructed version of the code:
 
 ```bash
+git fetch origin pull/<number>/head
 gh pr view <number> --json state,mergedAt,headRefOid
 git cat-file -e '<commit>:<path>'
 git show '<commit>:<path>' | sed -n '<start>,<end>p'
