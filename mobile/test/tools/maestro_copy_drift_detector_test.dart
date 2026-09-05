@@ -151,6 +151,32 @@ void main() {
       );
     });
 
+    test('extracts block scalars with keep and indentation indicators', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: |+\n'
+            '    Settings\n'
+            '- assertVisible: >2-\n'
+            '  Choose your preferences\n',
+      );
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
+      );
+    });
+
     test('does not bind regex or interpolated block-scalar lines', () {
       writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
       writeFlow(

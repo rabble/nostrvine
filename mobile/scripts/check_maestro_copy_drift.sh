@@ -104,7 +104,14 @@ COMMAND_SCALAR = re.compile(
     r"^\s*-\s*(?:assertVisible|assertNotVisible|tapOn|longPressOn):\s*(?P<v>.+?)\s*$"
 )
 TEXT_PROP = re.compile(r"^\s*text:\s*(?P<v>.+?)\s*$")
-BLOCK_SCALAR_MARKERS = {"|", "|-", ">", ">-"}
+# A YAML block scalar header is `|` or `>` followed by optional chomping
+# (`-`/`+`) and indentation (1-9) indicators, in either order. A header
+# the extractor does not recognise skips the whole block silently, and
+# the header token itself gets counted as an asserted literal.
+BLOCK_SCALAR_HEADER = re.compile(r"^[|>](?:[-+]?[1-9]?|[1-9][-+]?)$")
+
+def is_block_scalar_header(v):
+    return BLOCK_SCALAR_HEADER.match(v) is not None
 
 def strip_comment(line):
     out = []
@@ -143,7 +150,7 @@ def searchable_flow_text(lines):
         searchable.append(line)
         for pat in (COMMAND_SCALAR, TEXT_PROP):
             match = pat.match(line)
-            if match and unquote(match.group("v")) in BLOCK_SCALAR_MARKERS:
+            if match and is_block_scalar_header(unquote(match.group("v"))):
                 block_parent_indent = indent
                 break
     return norm("\n".join(searchable))
@@ -178,7 +185,7 @@ def flow_literals(path):
             if not m:
                 continue
             v = unquote(m.group("v"))
-            if v in BLOCK_SCALAR_MARKERS:
+            if is_block_scalar_header(v):
                 parent_indent = len(raw) - len(raw.lstrip())
                 while index < len(lines):
                     block_raw = lines[index].rstrip("\n")
