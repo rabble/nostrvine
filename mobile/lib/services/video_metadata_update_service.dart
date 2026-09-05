@@ -18,6 +18,7 @@ import 'package:openvine/services/video_event_tag_source.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:openvine/utils/nostr_replacement_timestamp.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result returned by [VideoMetadataUpdateService.updateVideo].
@@ -179,8 +180,15 @@ sendPostPublishCollaboratorInvites({
   required Iterable<String> updatedCollaboratorPubkeys,
   String relayHint = collaboratorInviteRelayHint,
 }) async {
-  final previous = previousCollaboratorPubkeys.toSet();
-  final newCollaborators = updatedCollaboratorPubkeys
+  final previous = canonicalCollaboratorPubkeys(
+    identifiers: previousCollaboratorPubkeys,
+    creatorIdentifier: video.pubkey,
+  );
+  final updated = canonicalCollaboratorPubkeys(
+    identifiers: updatedCollaboratorPubkeys,
+    creatorIdentifier: video.pubkey,
+  );
+  final newCollaborators = updated
       .where((pubkey) => !previous.contains(pubkey))
       .toSet();
   if (newCollaborators.isEmpty) return const {};
@@ -276,14 +284,18 @@ class VideoMetadataUpdateService {
       // A pubkey promoted from a plain mention to a collaborator in this
       // edit changes role: drop its stale 'mention' p-tag so it is not
       // double-listed alongside the rebuilt 'collaborator' p-tag.
-      final collaboratorPubkeys = editorState.collaboratorPubkeys
-          .map((pubkey) => pubkey.toLowerCase())
-          .toSet();
-      bool isPromotedMentionPTag(List<String> tag) =>
-          tag.length >= 4 &&
-          tag.first == 'p' &&
-          tag[3].toLowerCase() == 'mention' &&
-          collaboratorPubkeys.contains(tag[1].toLowerCase());
+      final collaboratorPubkeys = canonicalCollaboratorPubkeys(
+        identifiers: editorState.collaboratorPubkeys,
+        creatorIdentifier: _authService.currentPublicKeyHex,
+      );
+      bool isPromotedMentionPTag(List<String> tag) {
+        if (tag.length < 4 ||
+            tag.first != 'p' ||
+            tag[3].toLowerCase() != 'mention') {
+          return false;
+        }
+        return collaboratorPubkeys.contains(normalizeToHex(tag[1].trim()));
+      }
 
       // Preserve every tag the edit flow does not own; the owned ones are
       // rebuilt from the editor state below.
@@ -387,9 +399,7 @@ class VideoMetadataUpdateService {
         tags.add(['alt', originalVideo.altText!]);
       }
 
-      for (final pubkey in editorState.collaboratorPubkeys) {
-        tags.add(buildCollaboratorPTag(pubkey));
-      }
+      tags.addAll(buildCollaboratorPTags(collaboratorPubkeys));
 
       // The parser exposes an unmarked lowercase reply-root a-tag through
       // inspiredByVideo too. Do not turn that parent reference into creator
@@ -475,7 +485,7 @@ class VideoMetadataUpdateService {
       final inviteFailureCount = await _sendCollaboratorInvites(
         video: updatedVideoEvent,
         initialCollaboratorPubkeys: initialCollaboratorPubkeys,
-        updatedCollaboratorPubkeys: editorState.collaboratorPubkeys,
+        updatedCollaboratorPubkeys: collaboratorPubkeys,
       );
 
       return VideoUpdateSuccess(

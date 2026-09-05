@@ -15,6 +15,7 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 class _MockUploadManager extends Mock implements UploadManager {}
 
@@ -262,5 +263,24 @@ void main() {
         );
       },
     );
+
+    test('emits only canonical collaborator p-tags', () async {
+      stubSignAndPublish();
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        collaboratorPubkeys: [
+          collaboratorPubkey.toUpperCase(),
+          NostrKeyUtils.encodePubKey(collaboratorPubkey),
+          'not-a-pubkey',
+        ],
+      );
+
+      expect(result, isTrue);
+      final collaboratorTags = capturedTags
+          .where((tag) => tag.length >= 4 && tag[3] == 'collaborator')
+          .toList();
+      expect(collaboratorTags, [buildCollaboratorPTag(collaboratorPubkey)]);
+    });
   });
 }

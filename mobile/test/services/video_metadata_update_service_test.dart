@@ -897,6 +897,90 @@ void main() {
         );
       });
 
+      test(
+        'canonicalizes collaborator tags and invite recipients',
+        () async {
+          const collaborator =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          when(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: 'rumor-id',
+              messageEventId: 'invite-id',
+              recipientPubkey: collaborator,
+            ),
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(
+              collaboratorPubkeys: {
+                collaborator.toUpperCase(),
+                NostrKeyUtils.encodePubKey(collaborator),
+                NostrKeyUtils.encodePubKey(_ownerPubkey),
+                'not-a-pubkey',
+              },
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          final collaboratorTags = capturedTags
+              .where((tag) => tag.length >= 4 && tag[3] == 'collaborator')
+              .toList();
+          expect(
+            collaboratorTags,
+            [
+              [
+                'p',
+                collaborator,
+                'wss://relay.divine.video',
+                'collaborator',
+              ],
+            ],
+          );
+          verify(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: collaborator,
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('compares existing collaborators in canonical form', () async {
+        const collaborator =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(),
+          editorState: VideoEditorProviderState(
+            collaboratorPubkeys: {collaborator.toUpperCase()},
+          ),
+          initialCollaboratorPubkeys: {
+            NostrKeyUtils.encodePubKey(collaborator),
+          },
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        verifyNever(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            additionalTags: any(named: 'additionalTags'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        );
+      });
+
       test('replaces the inspired-by a-tag without duplicating it', () async {
         final video = _testVideo(
           extraTags: const [
@@ -1111,25 +1195,36 @@ void main() {
           const promoted =
               '1111111111111111111111111111111111111111111111111111111111111111';
           final video = _testVideo(
-            extraTags: const [
-              ['p', promoted, 'wss://relay.divine.video', 'mention'],
+            extraTags: [
+              [
+                'p',
+                NostrKeyUtils.encodePubKey(promoted),
+                'wss://relay.divine.video',
+                'mention',
+              ],
             ],
           );
 
           final result = await service.updateVideo(
             originalVideo: video,
             editorState: VideoEditorProviderState(
-              collaboratorPubkeys: {promoted},
+              collaboratorPubkeys: {promoted.toUpperCase()},
             ),
             // Already known as a collaborator so no invite DM is attempted.
             initialCollaboratorPubkeys: const {promoted},
           );
 
           expect(result, isA<VideoUpdateSuccess>());
+          // The stale tag carries the npub, so a filter keyed on the hex
+          // cannot see it and a preserved 'mention' tag would go unnoticed.
+          // Match either representation so the count catches a double-listing.
+          final promotedNpub = NostrKeyUtils.encodePubKey(promoted);
           final pTagsForPromoted = capturedTags
               .where(
                 (tag) =>
-                    tag.length >= 2 && tag.first == 'p' && tag[1] == promoted,
+                    tag.length >= 2 &&
+                    tag.first == 'p' &&
+                    (tag[1] == promoted || tag[1] == promotedNpub),
               )
               .toList();
           expect(pTagsForPromoted, hasLength(1));
