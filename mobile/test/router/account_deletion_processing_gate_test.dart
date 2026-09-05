@@ -5,6 +5,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -41,6 +42,8 @@ class _MockAnalyticsService extends Mock implements AnalyticsService {}
 
 const _pubkey =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+const _otherPubkey =
+    'b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2';
 
 const _processing = AccountDeletionAttempt(
   id: 'attempt-id',
@@ -132,6 +135,63 @@ void main() {
       addTearDown(container.dispose);
       return container;
     }
+
+    testWidgets(
+      "resolving the active account does not clear another account's receipt",
+      (tester) async {
+        when(() => authService.currentPublicKeyHex).thenReturn(_otherPubkey);
+        when(deletionRepository.fetchCurrent).thenAnswer(
+          (_) async => const AccountDeletionAttempt(
+            id: 'other-attempt-id',
+            status: AccountDeletionAttemptStatus.cancelled,
+          ),
+        );
+        final container = buildContainer();
+        await container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: _pubkey,
+              attempt: _processing,
+              vanishEventId:
+                  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            );
+        final router = GoRouter(
+          initialLocation: AccountDeletionRecoveryScreen.path,
+          routes: [
+            GoRoute(
+              path: AccountDeletionRecoveryScreen.path,
+              builder: (_, _) => const AccountDeletionRecoveryScreen(),
+            ),
+            GoRoute(
+              path: '/home/0',
+              builder: (_, _) => const Scaffold(body: Text('Home')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(
+          container.read(submittedAccountDeletionAttemptProvider)?.pubkeyHex,
+          _pubkey,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      },
+    );
 
     testWidgets(
       'an in-process submission keeps the recovery screen passive',

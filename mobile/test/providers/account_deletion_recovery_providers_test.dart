@@ -667,13 +667,35 @@ void main() {
       keepAlive();
       await container.read(currentAccountDeletionAttemptProvider.future);
 
-      await notifier.clear();
+      await notifier.clear(expectedPubkeyHex: pubkey);
 
       expect(
         await container.read(currentAccountDeletionAttemptProvider.future),
         isNull,
       );
       verify(repository.fetchCurrent).called(1);
+    });
+
+    test('a different account cannot clear the durable receipt', () async {
+      final notifier = container.read(
+        submittedAccountDeletionAttemptProvider.notifier,
+      );
+      await notifier.record(
+        pubkeyHex: pubkey,
+        attempt: processing,
+        vanishEventId: _vanishEventId,
+      );
+
+      await notifier.clear(expectedPubkeyHex: 'b' * 64);
+
+      expect(
+        container.read(submittedAccountDeletionAttemptProvider)?.pubkeyHex,
+        pubkey,
+      );
+      expect(
+        preferences.getString('account_deletion_receipt_v1'),
+        isNotNull,
+      );
     });
   });
 }

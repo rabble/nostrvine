@@ -146,7 +146,9 @@ class SubmittedAccountDeletionAttemptNotifier
     state = receipt.copyWith(submissionOwnedLocally: false);
   }
 
-  Future<void> clear() async {
+  Future<void> clear({required String? expectedPubkeyHex}) async {
+    final receipt = state;
+    if (receipt == null || receipt.pubkeyHex != expectedPubkeyHex) return;
     final removed = await ref
         .read(sharedPreferencesProvider)
         .remove(_storageKey);
@@ -199,7 +201,7 @@ submittedAccountDeletionMonitorProvider =
         repository: ref.watch(accountDeletionRecoveryRepositoryProvider),
         authService: ref.watch(authServiceProvider),
         onAttemptResolved: () async {
-          await receiptNotifier.clear();
+          await receiptNotifier.clear(expectedPubkeyHex: receipt.pubkeyHex);
           if (disposed) return;
           ref.invalidate(currentAccountDeletionAttemptProvider);
         },

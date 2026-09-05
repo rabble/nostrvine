@@ -51,13 +51,14 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
         signerReadiness,
       )),
       create: (_) {
+        final expectedPubkeyHex = authService.currentPublicKeyHex;
         final cubit = AccountDeletionRecoveryCubit(
           repository: repository,
           authService: authService,
           onAttemptResolved: () async {
             await ref
                 .read(submittedAccountDeletionAttemptProvider.notifier)
-                .clear();
+                .clear(expectedPubkeyHex: expectedPubkeyHex);
             ref.invalidate(currentAccountDeletionAttemptProvider);
           },
           onAttemptUpdated: (attempt) => ref
