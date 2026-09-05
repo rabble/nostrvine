@@ -865,6 +865,7 @@ void main() {
       // the real path; tests that assert the unconfigured no-op pass null.
       String? dmInboxRelayUrl = 'wss://relay.divine.video',
       List<String> dmInboxDiscoveryRelays = const <String>[],
+      List<String> dmInboxLookupRelays = const <String>[],
       List<String> dmInboxTaggedRelays = const <String>[],
       Duration readMarkerDebounceDelay = const Duration(seconds: 3),
       String Function()? sendBatchIdGenerator,
@@ -894,6 +895,7 @@ void main() {
         dmInboxRelayUrl: dmInboxRelayUrl,
         dmInboxTaggedRelays: dmInboxTaggedRelays,
         dmInboxDiscoveryRelays: dmInboxDiscoveryRelays,
+        dmInboxLookupRelays: dmInboxLookupRelays,
         readMarkerDebounceDelay: readMarkerDebounceDelay,
         sendBatchIdGenerator: sendBatchIdGenerator,
         errorReporter: (error, stackTrace, {required site}) {
@@ -4986,6 +4988,8 @@ void main() {
           // recipient's kind-10050. The answer therefore depends on WHETHER the
           // lookup reached the discovery relay — which is exactly the widening
           // this test pins.
+          final queriedTempRelays = <List<String>?>[];
+          final fullSettlement = <bool>[];
           when(
             () => mockNostrClient.queryEventsDetailed(
               any(),
@@ -4998,6 +5002,10 @@ void main() {
           ).thenAnswer((invocation) async {
             final temp =
                 invocation.namedArguments[#tempRelays] as List<String>?;
+            queriedTempRelays.add(temp);
+            fullSettlement.add(
+              invocation.namedArguments[#requireAllRelaysSettled] as bool,
+            );
             final reachedDiscovery =
                 temp != null && temp.contains('wss://purplepag.es');
             return reachedDiscovery
@@ -5007,13 +5015,18 @@ void main() {
                 : answeredList(const <Event>[]);
           });
           final repository = createRepository(
-            dmInboxDiscoveryRelays: const ['wss://purplepag.es'],
+            dmInboxLookupRelays: const ['wss://purplepag.es'],
           );
           final resolved = await repository.resolveDmInboxRelaysDetailed(
             _validPubkeyB,
           );
           expect(resolved.state, DmInboxResolution.found);
           expect(resolved.relays, ['wss://inbox.example']);
+          expect(queriedTempRelays, [
+            null,
+            ['wss://purplepag.es'],
+          ]);
+          expect(fullSettlement, [isTrue, isTrue]);
         },
       );
 
@@ -5049,6 +5062,39 @@ void main() {
         expect(resolved.state, DmInboxResolution.unreadable);
         expect(resolved.relays, isNull);
       });
+
+      test(
+        'keeps an empty discovery answer unreadable when the pool lookup did '
+        'not settle',
+        () async {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((invocation) async {
+            final temp =
+                invocation.namedArguments[#tempRelays] as List<String>?;
+            return temp == null
+                ? unansweredList(timedOut: true)
+                : answeredList(const <Event>[]);
+          });
+          final repository = createRepository(
+            dmInboxLookupRelays: const ['wss://purplepag.es'],
+          );
+
+          final resolved = await repository.resolveDmInboxRelaysDetailed(
+            _validPubkeyB,
+          );
+
+          expect(resolved.state, DmInboxResolution.unreadable);
+          expect(resolved.relays, isNull);
+        },
+      );
 
       test(
         'a list returned alongside an unsettled relay is FOUND, not unreadable '
@@ -5095,6 +5141,47 @@ void main() {
         ],
         '',
         createdAt: 1700000000,
+      );
+
+      test(
+        'own-inbox reads stay pool-only when recipient lookup relays are '
+        'configured',
+        () async {
+          final queryTempRelays = <List<String>?>[];
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((invocation) async {
+            queryTempRelays.add(
+              invocation.namedArguments[#tempRelays] as List<String>?,
+            );
+            return answeredList(const <Event>[]);
+          });
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          final repository = createRepository(
+            dmInboxLookupRelays: const ['wss://purplepag.es'],
+          );
+
+          await repository.startListening();
+
+          expect(queryTempRelays, [null]);
+          await repository.stopListening();
+          await controller.close();
+        },
       );
 
       test(
@@ -6126,7 +6213,7 @@ void main() {
         );
 
         test(
-          'reads a recipient kind-10050 cheaply: cache on, first answer wins',
+          'reads a recipient kind-10050 conclusively before reporting absent',
           () async {
             stubOwnInbox(answeredList(const <Event>[]));
 
@@ -6157,7 +6244,7 @@ void main() {
               expect(captured[i + 1], isTrue, reason: 'useCache');
               expect(
                 captured[i + 2],
-                isFalse,
+                isTrue,
                 reason: 'requireAllRelaysSettled',
               );
             }

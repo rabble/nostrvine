@@ -49,6 +49,15 @@ class IndexerRelayConfig {
     'wss://purplepag.es',
   ];
 
+  /// Read-only indexers used to locate another user's kind-10050 DM inbox.
+  ///
+  /// This is intentionally not [dmInboxDiscoveryRelays]. That set is selected
+  /// for accepting writes of Divine's own list; this set is selected for broad
+  /// third-party read coverage. Purple Pages served the indexer-only inbox in
+  /// the #7317 reproduction. Keep the set small because every entry is a cold
+  /// connection on a DM send when it is not already pooled.
+  static const List<String> dmInboxLookupRelays = ['wss://purplepag.es'];
+
   /// Safe fallback relay set for users without a discoverable NIP-65 relay
   /// list (kind 10002).
   ///

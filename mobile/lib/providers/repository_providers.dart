@@ -730,6 +730,7 @@ DmRepository dmRepository(Ref ref) {
     dmInboxRelayUrl: dmInboxRelayUrl,
     dmInboxTaggedRelays: IndexerRelayConfig.dmInboxTaggedRelays,
     dmInboxDiscoveryRelays: IndexerRelayConfig.dmInboxDiscoveryRelays,
+    dmInboxLookupRelays: IndexerRelayConfig.dmInboxLookupRelays,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         ref

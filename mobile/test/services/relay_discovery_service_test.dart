@@ -394,6 +394,14 @@ void main() {
   });
 
   group(IndexerRelayConfig, () {
+    test('keeps DM inbox lookup policy separate from publication targets', () {
+      expect(IndexerRelayConfig.dmInboxLookupRelays, ['wss://purplepag.es']);
+      expect(
+        IndexerRelayConfig.dmInboxLookupRelays,
+        isNot(equals(IndexerRelayConfig.dmInboxDiscoveryRelays)),
+      );
+    });
+
     group('safeFallbackRelays (#2931)', () {
       test('is non-empty so DM reachability degrades gracefully', () {
         // Regression guard for #2931: when NIP-65 discovery fails or
