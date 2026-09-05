@@ -1670,17 +1670,7 @@ class LikesRepository {
 
     // Signed out: both queries below are author-scoped, and a null author
     // would widen them to every user's votes rather than narrowing to none.
-    String? pubkey;
-    try {
-      pubkey = await _currentUserPubkey();
-    } on Exception catch (error) {
-      Log.warning(
-        'Could not resolve the current account for startup reaction sync; '
-        'continuing with target checks: $error',
-        name: 'LikesRepository',
-        category: LogCategory.system,
-      );
-    }
+    final pubkey = await _currentUserPubkey();
     if (pubkey == null) {
       return (upvotedIds: <String>{}, downvotedIds: <String>{});
     }
