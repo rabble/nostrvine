@@ -437,6 +437,24 @@ class DmMessageDeletionRetryTarget {
 /// Amber, etc.) for NIP-17 gift-wrap decryption. The signer is held for
 /// the lifetime of this object; callers should ensure the repository is
 /// disposed when the user logs out.
+///
+/// ## Retention
+///
+/// Nothing here expires. No DM table is pruned by age or size: rows leave only
+/// when the user removes a conversation, when an account is switched or signed
+/// out, or when the account's data is deleted. `pending_gift_wraps` is the one
+/// exception, bounded by its decrypt-attempt cap.
+///
+/// That makes the **relay** the binding constraint on how long a message
+/// survives, not this repository. NIP-59 makes storing a `kind:1059` optional
+/// and tells relays to delete wraps addressed to a pubkey that requests a
+/// NIP-62 vanish, so a copy this device drops may be unrecoverable rather than
+/// merely re-fetched. [removeConversation]'s tombstone is written with that in
+/// mind, and is why it must never be recorded for a conversation this device
+/// does not actually have.
+///
+/// The full cross-store picture, including the server-side moderation DM log
+/// that behaves in the opposite direction, is in `mobile/docs/DM_RETENTION.md`.
 class DmRepository {
   /// Creates a [DmRepository] with the given dependencies.
   ///

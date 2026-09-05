@@ -227,7 +227,8 @@ void main() {
           // for an id this device never held suppressed that notice on every
           // future relay replay, permanently and silently.
           //
-          // Nothing local was removed, so there is no local history to suppress.
+          // Nothing local was removed, so there is no local history to
+          // suppress.
           final repository = buildRepository(
             removalPolicy: _protectsTheProtectedPeer,
           );
