@@ -47,6 +47,12 @@ const _processing = AccountDeletionAttempt(
   status: AccountDeletionAttemptStatus.processing,
 );
 
+const _recoverable = AccountDeletionAttempt(
+  id: 'recoverable-attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+  username: 'alice',
+);
+
 void main() {
   group('Account deletion gate after the coordinator accepts', () {
     late _MockAuthService authService;
@@ -126,6 +132,48 @@ void main() {
       addTearDown(container.dispose);
       return container;
     }
+
+    testWidgets(
+      'an in-process submission keeps the recovery screen passive',
+      (tester) async {
+        final container = buildContainer();
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await container.read(currentAccountDeletionAttemptProvider.future);
+        await container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: _pubkey,
+              attempt: _recoverable,
+              vanishEventId:
+                  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+              submissionOwnedLocally: true,
+            );
+        container.invalidate(currentAccountDeletionAttemptProvider);
+        await container.read(currentAccountDeletionAttemptProvider.future);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.byType(AccountDeletionRecoveryScreen), findsOneWidget);
+        expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+        expect(find.text(l10n.accountDeletionRestoreUsername), findsNothing);
+        expect(find.text(l10n.accountDeletionSignOut), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      },
+    );
 
     testWidgets(
       'a processing answer moves the user off Nostr settings onto the '

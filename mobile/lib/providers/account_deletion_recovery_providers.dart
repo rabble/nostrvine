@@ -54,6 +54,7 @@ final class SubmittedAccountDeletionAttempt {
 
   /// True only while this process's deletion dialog owns submission and cleanup.
   /// It is deliberately not persisted, so an app restart adopts the receipt.
+  /// Do not invalidate this notifier while that in-process owner is running.
   final bool submissionOwnedLocally;
 
   Map<String, dynamic> toJson() => {

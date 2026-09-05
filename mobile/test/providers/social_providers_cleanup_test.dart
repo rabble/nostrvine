@@ -53,6 +53,8 @@ const _pendingReactionId =
     '2222222222222222222222222222222222222222222222222222222222222222';
 const _pendingDeletionId =
     '3333333333333333333333333333333333333333333333333333333333333333';
+const _legacyNullConversationId =
+    '4444444444444444444444444444444444444444444444444444444444444444';
 
 void main() {
   group(userDataCleanupServiceProvider, () {
@@ -703,7 +705,7 @@ void main() {
       });
 
       test(
-        'named deletion preserves other owners and clears unattributed DM rows',
+        'named deletion preserves other owners and unattributed DM rows',
         () async {
           await seedDm(
             messageId: _dmTargetMessageId,
@@ -720,8 +722,14 @@ void main() {
             conversationId: _reactionIdA,
             ownerPubkey: '',
           );
-          expect(await dmCountFor(''), 1);
-          expect(await conversationCountFor(''), 1);
+          await seedDm(
+            messageId: _pendingReactionId,
+            conversationId: _legacyNullConversationId,
+          );
+          expect(await dmCountFor(''), 2);
+          expect(await conversationCountFor(''), 2);
+          expect(await dmCountFor(null), 0);
+          expect(await conversationCountFor(null), 0);
 
           await readService().deleteAccountData(
             _pubkeyA,
@@ -731,10 +739,12 @@ void main() {
 
           expect(await dmCountFor(_pubkeyA), 0);
           expect(await dmCountFor(_pubkeyB), 1);
-          expect(await dmCountFor(''), 0);
+          expect(await dmCountFor(''), 2);
+          expect(await dmCountFor(null), 0);
           expect(await conversationCountFor(_pubkeyA), 0);
           expect(await conversationCountFor(_pubkeyB), 1);
-          expect(await conversationCountFor(''), 0);
+          expect(await conversationCountFor(''), 2);
+          expect(await conversationCountFor(null), 0);
         },
       );
 

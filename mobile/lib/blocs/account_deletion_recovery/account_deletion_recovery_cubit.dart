@@ -599,7 +599,19 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
               pubkeyHex: receiptPubkeyHex,
             );
       if (!_isCurrent(generation)) return;
-      if (current == null || current.id != expectedAttemptId) {
+      if (current == null) {
+        emitIfOpen(
+          AccountDeletionRecoveryState(
+            status: state.status,
+            attempt: state.attempt,
+            failure: state.failure,
+            pollTickIndex: tickIndex,
+          ),
+        );
+        _schedulePoll(generation);
+        return;
+      }
+      if (current.id != expectedAttemptId) {
         emitIfOpen(
           const AccountDeletionRecoveryState(
             status: AccountDeletionRecoveryStatus.loadFailed,

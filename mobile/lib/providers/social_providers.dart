@@ -797,8 +797,8 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             );
           }
         }
-        // Never expose ambiguous legacy DM data across an account boundary.
-        // Exact-owner rows for every other saved account remain intact.
+        // An active account may still own unattributed legacy rows, so only
+        // device-wide teardown clears them.
         // See #7325.
         await requiredCleanup('DM tables', () async {
           await db.transaction(() async {
@@ -806,8 +806,6 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               if (preserveActiveSession) {
                 await db.directMessagesDao.deleteAllForOwner(userPubkey);
                 await db.conversationsDao.deleteAllForOwner(userPubkey);
-                await db.directMessagesDao.clearUnowned();
-                await db.conversationsDao.clearUnowned();
               } else {
                 await db.directMessagesDao.clearForAccountSwitch(userPubkey);
                 await db.conversationsDao.clearForAccountSwitch(userPubkey);
@@ -817,8 +815,6 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               if (preserveActiveSession) {
                 await db.pendingGiftWrapsDao.deleteAllForOwner(userPubkey);
                 await db.processedGiftWrapsDao.deleteAllForOwner(userPubkey);
-                await db.pendingGiftWrapsDao.clearUnowned();
-                await db.processedGiftWrapsDao.clearUnowned();
               } else {
                 await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
                 await db.processedGiftWrapsDao.clearForAccountSwitch(

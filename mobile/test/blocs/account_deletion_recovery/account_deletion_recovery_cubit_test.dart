@@ -683,6 +683,25 @@ void main() {
       await cubit.close();
     });
 
+    test(
+      'unknown authenticated status stays gated and pauses at the bound',
+      () async {
+        when(repository.fetchCurrent).thenAnswer((_) async => null);
+        final cubit = buildCubit(withReceipt: true);
+        await cubit.resume(_processing);
+
+        while (timers.timers.any((timer) => timer.isActive)) {
+          await timers.fireNext();
+        }
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+        expect(cubit.state.attempt, _processing);
+        expect(cubit.state.pollingPaused, isTrue);
+        expect(resolvedCalls, 0);
+        await cubit.close();
+      },
+    );
+
     test('durable cleanup keeps retrying after repeated failures', () async {
       var cleanupCalls = 0;
       when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
