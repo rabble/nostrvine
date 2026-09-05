@@ -121,12 +121,13 @@ class BunkerSignerImpl implements WebSigner {
 /// Unified web authentication service
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class WebAuthService {
-  factory WebAuthService() => _instance;
-  WebAuthService._internal();
-  static final WebAuthService _instance = WebAuthService._internal();
+  /// [nip07Service] is the app's shared extension bridge, injected so the
+  /// NIP-07 session this service observes is the one `AuthService` sees too;
+  /// a private default would strand each on its own connection (#8618).
+  WebAuthService({required Nip07Service nip07Service})
+    : _nip07Service = nip07Service;
 
-  // Service instances
-  final Nip07Service _nip07Service = Nip07Service();
+  final Nip07Service _nip07Service;
   NsecBunkerClient? _bunkerClient; // Injected or created as needed
 
   // Current authentication state

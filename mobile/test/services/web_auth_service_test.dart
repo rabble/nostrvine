@@ -1,15 +1,25 @@
-// ABOUTME: Unit tests for WebAuthService nsec bunker authentication integration
-// ABOUTME: Tests bunker authentication flow and signer functionality in WebAuthService
+// ABOUTME: Unit tests for WebAuthService: the injected NIP-07 extension bridge
+// ABOUTME: and the nsec bunker authentication flow and signer functionality
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/nip07_service.dart';
+import 'package:openvine/services/nip07_types.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+const _extensionPubkey =
+    'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
 
 class MockNsecBunkerClient extends Mock implements NsecBunkerClient {}
 
 class FakeUri extends Fake implements Uri {}
+
+class _FakeExtension extends NostrExtension {
+  @override
+  Future<String> getPublicKey() async => _extensionPubkey;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,16 +32,38 @@ void main() {
     late MockNsecBunkerClient mockBunkerClient;
 
     setUp(() {
-      authService = WebAuthService();
+      authService = WebAuthService(nip07Service: Nip07Service());
       mockBunkerClient = MockNsecBunkerClient();
-      // WebAuthService is a singleton — clear bunker client state that may
-      // have leaked from prior tests (random test ordering exposes this).
-      authService.setBunkerClient(null);
     });
 
     tearDown(() async {
       await authService.disconnect();
-      authService.setBunkerClient(null);
+    });
+
+    group('NIP-07 bridge', () {
+      test('reports the injected extension as an available method', () {
+        final service = WebAuthService(
+          nip07Service: Nip07Service.withExtension(_FakeExtension()),
+        );
+
+        expect(service.isNip07Available, isTrue);
+        expect(service.availableMethods, contains(WebAuthMethod.nip07));
+      });
+
+      test('authenticates through the injected extension', () async {
+        final service = WebAuthService(
+          nip07Service: Nip07Service.withExtension(_FakeExtension()),
+        );
+        addTearDown(service.disconnect);
+
+        final result = await service.authenticateWithNip07();
+
+        expect(result.success, isTrue);
+        expect(result.method, WebAuthMethod.nip07);
+        expect(service.isAuthenticated, isTrue);
+        expect(service.publicKey, _extensionPubkey);
+        expect(service.signer, isNotNull);
+      });
     });
 
     group('Bunker Authentication', () {

@@ -104,10 +104,15 @@ KeycastOAuth oauthClient(Ref ref) {
   return oauth;
 }
 
-/// Web authentication service (for web platform only)
-@riverpod
+/// Web authentication service (for web platform only).
+///
+/// Kept alive: the service holds the signed-in web session (method, pubkey,
+/// signer), and the screen that signs in and the iframe sandbox that later
+/// signs with it are different readers. Before #8618 the factory returned a
+/// process singleton, which hid that this provider was autoDispose.
+@Riverpod(keepAlive: true)
 WebAuthService webAuthService(Ref ref) {
-  return WebAuthService();
+  return WebAuthService(nip07Service: ref.watch(nip07ServiceProvider));
 }
 
 /// Authentication service

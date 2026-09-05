@@ -286,24 +286,39 @@ final class OauthClientProvider
 
 String _$oauthClientHash() => r'217c3c01dd4f147990ee0f189f5d4fe5bcd89d45';
 
-/// Web authentication service (for web platform only)
+/// Web authentication service (for web platform only).
+///
+/// Kept alive: the service holds the signed-in web session (method, pubkey,
+/// signer), and the screen that signs in and the iframe sandbox that later
+/// signs with it are different readers. Before #8618 the factory returned a
+/// process singleton, which hid that this provider was autoDispose.
 
 @ProviderFor(webAuthService)
 final webAuthServiceProvider = WebAuthServiceProvider._();
 
-/// Web authentication service (for web platform only)
+/// Web authentication service (for web platform only).
+///
+/// Kept alive: the service holds the signed-in web session (method, pubkey,
+/// signer), and the screen that signs in and the iframe sandbox that later
+/// signs with it are different readers. Before #8618 the factory returned a
+/// process singleton, which hid that this provider was autoDispose.
 
 final class WebAuthServiceProvider
     extends $FunctionalProvider<WebAuthService, WebAuthService, WebAuthService>
     with $Provider<WebAuthService> {
-  /// Web authentication service (for web platform only)
+  /// Web authentication service (for web platform only).
+  ///
+  /// Kept alive: the service holds the signed-in web session (method, pubkey,
+  /// signer), and the screen that signs in and the iframe sandbox that later
+  /// signs with it are different readers. Before #8618 the factory returned a
+  /// process singleton, which hid that this provider was autoDispose.
   WebAuthServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'webAuthServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -330,7 +345,7 @@ final class WebAuthServiceProvider
   }
 }
 
-String _$webAuthServiceHash() => r'53411c0f6a62bb9b59f90a0d7fc738a553a0b575';
+String _$webAuthServiceHash() => r'f366777957760610f4ecdb1bd8ffe115f0910066';
 
 /// Authentication service
 

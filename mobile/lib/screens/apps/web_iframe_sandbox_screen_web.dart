@@ -8,7 +8,9 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/web_iframe_nostr_bridge.dart';
 import 'package:web/web.dart' as web;
@@ -18,7 +20,7 @@ import 'package:web/web.dart' as web;
 /// against the host's [WebAuthService] signer, so the embedded app uses
 /// the user's existing Divine session over postMessage and skips its
 /// own login flow.
-class WebIframeSandboxScreen extends StatefulWidget {
+class WebIframeSandboxScreen extends ConsumerStatefulWidget {
   const WebIframeSandboxScreen({required this.app, super.key});
 
   static const String routeName = 'web-iframe-sandbox';
@@ -30,10 +32,12 @@ class WebIframeSandboxScreen extends StatefulWidget {
   final NostrAppDirectoryEntry app;
 
   @override
-  State<WebIframeSandboxScreen> createState() => _WebIframeSandboxScreenState();
+  ConsumerState<WebIframeSandboxScreen> createState() =>
+      _WebIframeSandboxScreenState();
 }
 
-class _WebIframeSandboxScreenState extends State<WebIframeSandboxScreen> {
+class _WebIframeSandboxScreenState
+    extends ConsumerState<WebIframeSandboxScreen> {
   static int _nextViewId = 0;
 
   late final String _viewType;
@@ -45,7 +49,7 @@ class _WebIframeSandboxScreenState extends State<WebIframeSandboxScreen> {
     _viewType = 'divine-iframe-sandbox-${widget.app.id}-${_nextViewId++}';
     _bridge = WebIframeNostrBridge(
       app: widget.app,
-      authService: WebAuthService(),
+      authService: ref.read(webAuthServiceProvider),
     );
     _registerViewFactory();
     _bridge.start();

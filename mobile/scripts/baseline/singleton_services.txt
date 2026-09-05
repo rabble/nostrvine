@@ -6,4 +6,3 @@
 mobile/lib/services/bandwidth_tracker_service.dart # defer: #4743 follow-up — read from VideoEvent extension getters (22 call sites)
 mobile/lib/services/notification_service.dart # defer: #4338 — outside the #4743 audited set
 mobile/lib/services/video_format_preference.dart # defer: #4743 follow-up — read from VideoEvent extension getters (22 call sites)
-mobile/lib/services/web_auth_service.dart # defer: #4338 — outside the #4743 audited set
