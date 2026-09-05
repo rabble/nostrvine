@@ -110,6 +110,7 @@ void main() {
       List<Event> reactions = const [],
       List<Event> deletions = const [],
       bool timedOut = false,
+      bool noRelays = false,
     }) {
       when(
         () => nostrClient.queryEventsDetailed(
@@ -122,7 +123,7 @@ void main() {
         return (
           events: kinds.contains(EventKind.reaction) ? reactions : deletions,
           timedOut: timedOut,
-          noRelays: false,
+          noRelays: noRelays,
         );
       });
     }
@@ -434,6 +435,24 @@ void main() {
         expect(resolved, equals(freshReactionId));
         expectPublishedOnce();
       });
+
+      test("ignores another account's downvote during adoption", () async {
+        stubRelay(
+          reactions: [
+            reaction(id: landedReactionId, content: '-', pubkey: otherUser),
+          ],
+        );
+        stubSendLike(() async => reaction(id: freshReactionId, content: '-'));
+
+        final resolved = await repository.downvoteEvent(
+          eventId: target,
+          authorPubkey: author,
+          addressableId: coordinate,
+        );
+
+        expect(resolved, equals(freshReactionId));
+        expectPublishedOnce();
+      });
     });
 
     group('likeEvent', () {
@@ -588,6 +607,83 @@ void main() {
 
           verify(() => nostrClient.queryEvents(any())).called(1);
           expectPublishedOnce();
+        },
+      );
+
+      test(
+        'retains the target lookup when startup sees no relays',
+        () async {
+          stubCompleteRelaySnapshot(noRelays: true);
+          await repository.initialize();
+          clearInteractions(nostrClient);
+          stubRelay();
+          stubSendLike(() async => reaction(id: freshReactionId));
+
+          expect(
+            await repository.likeEvent(eventId: target, authorPubkey: author),
+            equals(freshReactionId),
+          );
+
+          verify(() => nostrClient.queryEvents(any())).called(1);
+          expectPublishedOnce();
+        },
+      );
+
+      test(
+        'retains the target lookup when startup reaches the reaction cap',
+        () async {
+          final cappedReactions = List<Event>.generate(
+            500,
+            (index) => reaction(
+              id: 'capped_reaction_$index',
+              tags: [
+                ['e', 'capped_target_$index'],
+              ],
+            ),
+          );
+          stubCompleteRelaySnapshot(reactions: cappedReactions);
+          await repository.initialize();
+          clearInteractions(nostrClient);
+          stubRelay();
+          stubSendLike(() async => reaction(id: freshReactionId));
+
+          expect(
+            await repository.likeEvent(eventId: target, authorPubkey: author),
+            equals(freshReactionId),
+          );
+
+          verify(() => nostrClient.queryEvents(any())).called(1);
+          expectPublishedOnce();
+        },
+      );
+
+      test(
+        'retains the target lookup when startup cannot index an a-only like',
+        () async {
+          final coordinateOnlyReaction = reaction(
+            id: landedReactionId,
+            tags: [
+              ['a', coordinate],
+            ],
+          );
+          stubCompleteRelaySnapshot(reactions: [coordinateOnlyReaction]);
+          await repository.initialize();
+          clearInteractions(nostrClient);
+          stubRelay(reactions: [coordinateOnlyReaction]);
+
+          await expectLater(
+            repository.likeEvent(
+              eventId: target,
+              authorPubkey: author,
+              addressableId: coordinate,
+            ),
+            throwsA(isA<AlreadyLikedException>()),
+          );
+
+          // The target resolver queries by event id and coordinate, then
+          // checks candidate reaction ids for deletions.
+          verify(() => nostrClient.queryEvents(any())).called(3);
+          expectNoPublish();
         },
       );
 
@@ -753,7 +849,9 @@ void main() {
           // publishes the Kind 5 instead of discarding a placeholder.
           await repository.unlikeEvent(target, addressableId: coordinate);
           verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
+          expect(await repository.isLiked(editedTarget), isFalse);
           expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+          verify(() => storage.deleteLikeRecord(editedTarget)).called(1);
         },
       );
 
@@ -958,6 +1056,65 @@ void main() {
           verify(() => storage.deleteLikeRecord(target)).called(2);
         },
       );
+
+      test(
+        'upgrades a same-second downvote placeholder before removal',
+        () async {
+          final live = StreamController<Event>.broadcast();
+          addTearDown(live.close);
+          when(
+            () => nostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => live.stream);
+          stubCompleteRelaySnapshot();
+          final publishGate = Completer<Event?>();
+          stubSendLike(() => publishGate.future);
+          when(
+            () => nostrClient.deleteEvent(landedReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+          await repository.initialize();
+
+          final inFlight = repository.downvoteEvent(
+            eventId: target,
+            authorPubkey: author,
+          );
+          await Future<void>.delayed(Duration.zero);
+          final sameSecond = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          live.add(
+            reaction(
+              id: landedReactionId,
+              content: '-',
+              createdAt: sameSecond,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          await repository.removeDownvote(target);
+          verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
+
+          publishGate.completeError(Exception('publish acknowledgement lost'));
+          await expectLater(inFlight, throwsException);
+        },
+      );
+    });
+
+    test('a failed initialization can be retried', () async {
+      var attempts = 0;
+      when(() => nostrClient.resolvePublicKey()).thenAnswer((_) async {
+        attempts++;
+        if (attempts == 1) throw StateError('signer failed once');
+        return user;
+      });
+
+      await expectLater(repository.initialize(), throwsA(isA<StateError>()));
+
+      stubCompleteRelaySnapshot();
+      await repository.initialize();
+      // The retry resolves once for subscription setup and once for the
+      // author-scoped startup snapshot.
+      expect(attempts, equals(3));
     });
   });
 }

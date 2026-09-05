@@ -1960,6 +1960,7 @@ void main() {
             createMockReaction(
               id: testReactionEventId,
               targetEventId: supersededId,
+              authorPubkey: testUserPubkey,
               content: '-',
               tags: [
                 ['e', supersededId],
@@ -2247,6 +2248,7 @@ void main() {
               createMockReaction(
                 id: testReactionEventId,
                 targetEventId: testEventId,
+                authorPubkey: testUserPubkey,
                 content: '-',
               ),
             ],
@@ -2277,6 +2279,7 @@ void main() {
               createMockReaction(
                 id: 'downvote_$i',
                 targetEventId: testEventId,
+                authorPubkey: testUserPubkey,
                 content: '-',
               ),
           ];

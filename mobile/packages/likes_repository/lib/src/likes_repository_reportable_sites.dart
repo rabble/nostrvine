@@ -74,6 +74,11 @@ abstract class LikesRepositoryReportableSites {
   static const String executeLikeActionSaveAdopted =
       'executeLikeAction.saveAdopted';
 
+  /// `_adoptRemoteLikeRecord`: deleting a second local row that names the
+  /// same adopted relay reaction under a superseded target id threw.
+  static const String adoptRemoteLikeDeleteAlias =
+      'adoptRemoteLike.deleteAlias';
+
   /// `_retractLikeUnlikedMidPublish`: dropping a retracted reaction that the
   /// live subscription or the startup snapshot had re-indexed (#7001) threw.
   static const String retractLikeDeleteEchoedRecord =

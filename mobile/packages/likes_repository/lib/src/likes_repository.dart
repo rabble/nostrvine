@@ -2154,7 +2154,14 @@ class LikesRepository {
 
       for (final event in reactionEvents) {
         final targetId = _extractTargetEventId(event);
-        if (targetId == null) continue;
+        if (targetId == null) {
+          // The global snapshot has no current target-id context with which to
+          // index an `a`-only reaction. It may still match a later tap's known
+          // coordinate, so this snapshot cannot license skipping that tap's
+          // target-specific query.
+          _hasCompleteRelayReactionSnapshot = false;
+          continue;
+        }
 
         // Skip reactions that have been deleted
         if (deletedReactionIds.contains(event.id)) {
@@ -2635,9 +2642,22 @@ class LikesRepository {
     if (inFlight != null) return inFlight;
     if (_isInitialized) return Future.value();
 
-    final initialization = _initialize();
+    final initialization = _initializeWithFailureReset();
     _startupReconciliationFuture = initialization;
     return initialization;
+  }
+
+  Future<void> _initializeWithFailureReset() async {
+    try {
+      await _initialize();
+    } on Object {
+      // A failed attempt must not poison every later like with the same cached
+      // rejected future. A failure before initialization remains retryable;
+      // one after the local cache/subscription are ready leaves later likes on
+      // their target-specific relay safety check.
+      _startupReconciliationFuture = null;
+      rethrow;
+    }
   }
 
   Future<void> _initialize() async {
@@ -2755,9 +2775,15 @@ class LikesRepository {
       );
       _emitLikedIds();
     } else if (event.content == _downvoteContent) {
-      // Deduplicate downvotes (in-memory only — no local persistence in v1)
+      // Mirror the like placeholder exemption above. A relay echo has
+      // whole-second precision and otherwise loses to the optimistic record
+      // stamped later within that same second, leaving no real id for Kind 5.
       final existing = _downvoteRecords[targetId];
-      if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+      if (existing != null &&
+          !_isPlaceholderId(existing.reactionEventId) &&
+          !createdAt.isAfter(existing.createdAt)) {
+        return;
+      }
 
       _indexDownvoteRecord(
         LikeRecord(
@@ -3041,6 +3067,20 @@ class LikesRepository {
     LikeRecord record, {
     required String site,
   }) async {
+    final aliasedTargetIds = [
+      for (final indexed in _likeRecords.values)
+        if (indexed.reactionEventId == record.reactionEventId &&
+            indexed.targetEventId != record.targetEventId)
+          indexed.targetEventId,
+    ];
+    for (final targetId in aliasedTargetIds) {
+      _deindexLikeRecord(targetId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteLikeRecord(targetId),
+        description: 'dropping an alias of an adopted relay reaction',
+        site: LikesRepositoryReportableSites.adoptRemoteLikeDeleteAlias,
+      );
+    }
     _indexLikeRecord(record);
     await _bestEffortLocalStorage(
       () async => _localStorage?.saveLikeRecord(record),
@@ -3105,7 +3145,8 @@ class LikesRepository {
   }) => _resolveRemoteReactionRecord(
     eventId,
     addressableId: addressableId,
-    isMatch: (event, _) => event.content == _downvoteContent,
+    isMatch: (event, pubkey) =>
+        event.pubkey == pubkey && event.content == _downvoteContent,
   );
 
   /// Resolves the newest still-live kind-7 reaction the current user has
