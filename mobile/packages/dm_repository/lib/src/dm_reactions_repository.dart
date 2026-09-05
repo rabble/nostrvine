@@ -777,8 +777,10 @@ class DmReactionsRepository {
   }
 
   /// Retry a previously-failed/interrupted own reaction removal by replaying
-  /// the stored kind-5 rumor. Clears the pending-deletion marker on a
-  /// confirmed publish; leaves it pending otherwise so the sweep tries again.
+  /// the stored kind-5 rumor. Marks the row `deletion_sent` on a confirmed
+  /// publish and `deletion_refused` when send policy blocks it — off the
+  /// sweep's worklist, rumor retained for a user-driven retry; leaves it
+  /// pending otherwise so the sweep tries again.
   Future<DmReactionDeletionOutcome> retryDeletion({
     required String rumorId,
     required String targetMessageAuthor,

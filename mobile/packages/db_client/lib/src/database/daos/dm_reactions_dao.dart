@@ -600,7 +600,7 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Non-destructive account switches preserve retryable own rows because their
   /// stored `rumor_event_json` is the only durable payload for unpublished
-  /// reactions and pending kind-5 removals.
+  /// reactions and for pending or refused kind-5 removals.
   Future<int> deleteNonRetryableForOwner(String ownerPubkey) async {
     return (delete(dmMessageReactions)..where((t) {
           final retryableOwnReaction =
