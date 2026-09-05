@@ -250,6 +250,20 @@ class LikesRepository {
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
 
+  /// Completes after the startup relay reconciliation attempt finishes.
+  ///
+  /// The app starts [initialize] without awaiting it. Like publication can
+  /// therefore race the initial relay snapshot unless it joins this future.
+  Future<void>? _startupReconciliationFuture;
+
+  /// Whether the last relay reconciliation returned an uncapped snapshot.
+  ///
+  /// A result that fills either fetch limit may have omitted older reactions
+  /// or deletions. In that case individual targets still need a relay check
+  /// before publishing; a smaller result lets ordinary likes stay on the fast
+  /// path for the rest of the session.
+  bool _hasCompleteRelayReactionSnapshot = false;
+
   /// Whether [dispose] has been called.
   ///
   /// Once disposed, all stream emissions are no-ops.
@@ -701,17 +715,29 @@ class LikesRepository {
       }
 
       // Ask the relay first whether this account already holds a live `+` on
-      // the target that this device cannot see: a fresh install or wiped
-      // cache, a like made from another client, or an earlier publish that
-      // landed without its OK. Kind 7 is a regular event with no per-pubkey
-      // uniqueness (NIP-01, NIP-25), so nothing downstream collapses a
-      // second one (#7001). The placeholder is already indexed, so a second
-      // tap inside this round-trip still trips the check above.
+      // the target only while the startup snapshot is still resolving or was
+      // incomplete. A complete snapshot keeps ordinary likes off this relay
+      // read path; replay retains its own check below because a publish may
+      // have landed after the snapshot without its OK reaching the client.
+      // The placeholder is already indexed, so a second tap inside either
+      // round-trip still trips the check above.
       _inFlightLikePublishPlaceholders.add(placeholderId);
-      final remoteRecord = await _resolveRemoteLikeRecordOrNull(
-        eventId,
-        addressableId: addressableId,
-      );
+      await _startupReconciliationFuture;
+      final reconciledRecord =
+          _likeRecords[eventId] ??
+          (addressableId == null
+              ? null
+              : _likeRecordsByAddressableId[addressableId]);
+      final remoteRecord =
+          reconciledRecord != null &&
+              !_isPlaceholderId(reconciledRecord.reactionEventId)
+          ? reconciledRecord
+          : !_hasCompleteRelayReactionSnapshot
+          ? await _resolveRemoteLikeRecordOrNull(
+              eventId,
+              addressableId: addressableId,
+            )
+          : null;
       if (remoteRecord != null) {
         _inFlightLikePublishPlaceholders.remove(placeholderId);
         if (_unlikeRequestedWhilePending.remove(placeholderId)) {
@@ -927,6 +953,11 @@ class LikesRepository {
       return;
     }
 
+    // [restoredCount] already included this pre-existing relay reaction.
+    // unlikeEvent removed only the optimistic +1, so the successful Kind 5
+    // must remove the original reaction from the cached total as well.
+    _adjustCachedLikeCount(countEventId, -1, addressableId: countAddressableId);
+
     // The relay echoes a stored reaction on this account's own subscription
     // within milliseconds, so the echo can re-index the reaction between the
     // unlike and this retraction. It is retracted now; a record naming it
@@ -975,19 +1006,13 @@ class LikesRepository {
     // make them blind to a persisted reaction.
     await _ensureInitialized();
 
-    final indexedRecord = _likeRecords[eventId];
-    if (indexedRecord != null &&
-        !_isPlaceholderId(indexedRecord.reactionEventId)) {
-      return indexedRecord.reactionEventId;
-    }
-
     if (addressableId != null && addressableId.isNotEmpty) {
       final byCoordinate = _likeRecordsByAddressableId[addressableId];
       final ownReactionEventId = _likeRecords[eventId]?.reactionEventId;
       if (byCoordinate != null &&
           byCoordinate.reactionEventId != ownReactionEventId) {
         if (ownReactionEventId != null &&
-            ownReactionEventId.startsWith('pending_')) {
+            _isPlaceholderId(ownReactionEventId)) {
           // Drop the queued placeholder now that the coordinate reaction
           // is authoritative; leaving it would make a later unlike resolve
           // the placeholder by event id, skip the Kind 5 publish, and
@@ -1000,6 +1025,12 @@ class LikesRepository {
         }
         return byCoordinate.reactionEventId;
       }
+    }
+
+    final indexedRecord = _likeRecords[eventId];
+    if (indexedRecord != null &&
+        !_isPlaceholderId(indexedRecord.reactionEventId)) {
+      return indexedRecord.reactionEventId;
     }
 
     final remoteRecord = await _resolveRemoteLikeRecordOrNull(
@@ -1050,7 +1081,7 @@ class LikesRepository {
     // Update local record with real event ID if we have a placeholder
     final existingRecord = _likeRecords[eventId];
     if (existingRecord != null &&
-        existingRecord.reactionEventId.startsWith('pending_')) {
+        _isPlaceholderId(existingRecord.reactionEventId)) {
       final record = LikeRecord(
         targetEventId: eventId,
         reactionEventId: reactionEvent.id,
@@ -1156,7 +1187,7 @@ class LikesRepository {
       // optimistic unlike survives transient relay-pool problems (mirror of
       // [likeEvent]). Without a wired callback, fall back to rollback +
       // rethrow to preserve the original contract.
-      if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+      if (_isPlaceholderId(snapshotRecord.reactionEventId)) {
         // The real reaction id does not exist yet, so nothing can be referenced
         // in a Kind 5 here. If this placeholder belongs to a currently awaited
         // publish, record the intent for that exact attempt — [likeEvent]
@@ -1294,7 +1325,7 @@ class LikesRepository {
     final resolvedEventId = record.targetEventId;
 
     // Skip publishing if this was a pending like
-    if (record.reactionEventId.startsWith('pending_')) {
+    if (_isPlaceholderId(record.reactionEventId)) {
       // Just clean up local storage
       _deindexLikeRecord(resolvedEventId);
       await _localStorage?.deleteLikeRecord(resolvedEventId);
@@ -1622,7 +1653,17 @@ class LikesRepository {
 
     // Signed out: both queries below are author-scoped, and a null author
     // would widen them to every user's votes rather than narrowing to none.
-    final pubkey = await _currentUserPubkey();
+    String? pubkey;
+    try {
+      pubkey = await _currentUserPubkey();
+    } on Exception catch (error) {
+      Log.warning(
+        'Could not resolve the current account for startup reaction sync; '
+        'continuing with target checks: $error',
+        name: 'LikesRepository',
+        category: LogCategory.system,
+      );
+    }
     if (pubkey == null) {
       return (upvotedIds: <String>{}, downvotedIds: <String>{});
     }
@@ -1891,7 +1932,7 @@ class LikesRepository {
 
     // 2. Skip publishing deletion for placeholders that never reached the
     // relay (e.g. publish failed and the user retried before sync).
-    if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+    if (_isPlaceholderId(snapshotRecord.reactionEventId)) {
       return;
     }
 
@@ -2004,8 +2045,21 @@ class LikesRepository {
   ///
   /// Returns a [LikesSyncResult] containing all synced data needed by the UI.
   ///
+  /// When [requireCompleteRelaySnapshot] is true, waits for every configured
+  /// relay to settle and records whether the bounded result proves that the
+  /// in-memory reaction set is complete. Ordinary likes may skip their
+  /// target-specific relay lookup only after that proof succeeds.
+  ///
   /// Throws `SyncFailedException` if syncing fails.
-  Future<LikesSyncResult> syncUserReactions() async {
+  Future<LikesSyncResult> syncUserReactions({
+    bool requireCompleteRelaySnapshot = false,
+  }) async {
+    if (requireCompleteRelaySnapshot) {
+      // Completeness belongs to this attempt. A later timeout or exception
+      // must not inherit success from an earlier forced reconciliation.
+      _hasCompleteRelayReactionSnapshot = false;
+    }
+
     // First, load from local storage (fast). Best-effort and deliberately
     // outside the relay try/catch below: an unreadable cache must not skip
     // the authoritative relay fetch, which is the whole point of a sync.
@@ -2048,14 +2102,33 @@ class LikesRepository {
         limit: _defaultReactionFetchLimit,
       );
 
-      // Fetch reactions and deletions in parallel
-      final results = await Future.wait([
-        _nostrClient.queryEvents([reactionsFilter]),
-        _nostrClient.queryEvents([deletionsFilter]),
-      ]);
-
-      final reactionEvents = results[0];
-      final deletionEvents = results[1];
+      late final List<Event> reactionEvents;
+      late final List<Event> deletionEvents;
+      if (requireCompleteRelaySnapshot) {
+        final results = await Future.wait([
+          _nostrClient.queryEventsDetailed(
+            [reactionsFilter],
+            requireAllRelaysSettled: true,
+          ),
+          _nostrClient.queryEventsDetailed(
+            [deletionsFilter],
+            requireAllRelaysSettled: true,
+          ),
+        ]);
+        reactionEvents = results[0].events;
+        deletionEvents = results[1].events;
+        _hasCompleteRelayReactionSnapshot =
+            results.every((result) => !result.timedOut && !result.noRelays) &&
+            reactionEvents.length < _defaultReactionFetchLimit &&
+            deletionEvents.length < _defaultReactionFetchLimit;
+      } else {
+        final results = await Future.wait([
+          _nostrClient.queryEvents([reactionsFilter]),
+          _nostrClient.queryEvents([deletionsFilter]),
+        ]);
+        reactionEvents = results[0];
+        deletionEvents = results[1];
+      }
 
       // Build set of deleted reaction event IDs from Kind 5 events
       final deletedReactionIds = <String>{};
@@ -2087,7 +2160,7 @@ class LikesRepository {
           continue;
         }
 
-        if (event.content == _likeContent) {
+        if (_isLikeReaction(event)) {
           final record = LikeRecord(
             targetEventId: targetId,
             reactionEventId: event.id,
@@ -2115,6 +2188,7 @@ class LikesRepository {
               record.addressableId != null &&
               record.addressableId!.isNotEmpty;
           if (existing == null ||
+              _isPlaceholderId(existing.reactionEventId) ||
               record.createdAt.isAfter(existing.createdAt) ||
               canBackfillCoordinate) {
             _indexLikeRecord(record);
@@ -2215,7 +2289,7 @@ class LikesRepository {
 
       for (final event in events) {
         // Only process '+' reactions (likes)
-        if (event.content != _likeContent) continue;
+        if (!_isLikeReaction(event)) continue;
 
         final targetId = _extractTargetEventId(event);
         if (targetId != null && !seenIds.contains(targetId)) {
@@ -2543,19 +2617,26 @@ class LikesRepository {
   /// Follows the same pattern as `FollowRepository.initialize()`:
   /// 1. Load persisted records from local storage for immediate UI display.
   /// 2. Set up a persistent Kind 7 subscription for live updates.
-  /// 3. When any loaded record predates the addressable_id column (null
-  ///    coordinate), run [syncUserReactions] to backfill coordinates from
-  ///    the relay reactions' `a` tags — otherwise likes made before the
-  ///    column shipped never resolve by coordinate after an edit (#6123).
+  /// 3. Reconcile the account's recent reactions and deletions. This repairs
+  ///    cold or stale caches once per startup rather than making every normal
+  ///    like wait for target-specific relay reads (#7001), and also backfills
+  ///    coordinates for rows created before the addressable_id column (#6123).
   ///
   /// Safe to call multiple times (idempotent).
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize() {
+    final inFlight = _startupReconciliationFuture;
+    if (inFlight != null) return inFlight;
+    if (_isInitialized) return Future.value();
 
+    final initialization = _initialize();
+    _startupReconciliationFuture = initialization;
+    return initialization;
+  }
+
+  Future<void> _initialize() async {
     // Load from local storage first for immediate UI display. Best-effort:
     // throwing here would skip _subscribeToReactions below, so an unreadable
     // cache would also cost the session its cross-device sync.
-    var hasCoordinatelessRecords = false;
     final localStorage = _localStorage;
     if (localStorage != null) {
       final records = await _bestEffortLocalStorage(
@@ -2565,9 +2646,6 @@ class LikesRepository {
       );
       if (records != null) {
         records.forEach(_indexLikeRecord);
-        hasCoordinatelessRecords = records.any(
-          (r) => r.addressableId == null || r.addressableId!.isEmpty,
-        );
         _emitLikedIds();
       }
     }
@@ -2581,13 +2659,13 @@ class LikesRepository {
     // aren't blocked on a relay round-trip.
     _isInitialized = true;
 
-    if (hasCoordinatelessRecords && pubkey != null) {
+    if (pubkey != null) {
       try {
-        await syncUserReactions();
+        await syncUserReactions(requireCompleteRelaySnapshot: true);
       } on Exception catch (_) {
-        // Best-effort coordinate backfill; initialize() must not fail on
-        // relay errors. Records missing a coordinate on the wire (e.g.
-        // comment likes, which have no a tag) keep a null coordinate.
+        // Best-effort startup reconciliation; initialize() must not fail on
+        // relay errors. A later like retains its target-specific safety check
+        // because the snapshot remains marked incomplete.
       }
     }
   }
@@ -2635,7 +2713,7 @@ class LikesRepository {
       event.createdAt * 1000,
     );
 
-    if (event.content == _likeContent) {
+    if (_isLikeReaction(event)) {
       // Deduplicate upvotes. A placeholder is the absence of a real record,
       // not one to defend: the relay's echo of the reaction it stands for is
       // what upgrades it, and that echo's created_at (whole seconds) never
@@ -2754,6 +2832,8 @@ class LikesRepository {
     _emitLikedIds();
     _emitDownvotedIds();
     _isInitialized = false;
+    _startupReconciliationFuture = null;
+    _hasCompleteRelayReactionSnapshot = false;
   }
 
   /// Dispose of resources.
@@ -3043,7 +3123,7 @@ class LikesRepository {
       targetEventId: eventId,
       reactionEventId: newest.id,
       createdAt: DateTime.fromMillisecondsSinceEpoch(newest.createdAt * 1000),
-      addressableId: _extractAddressableId(newest),
+      addressableId: _extractAddressableId(newest) ?? addressableId,
     );
   }
 }

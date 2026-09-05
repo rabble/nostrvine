@@ -85,6 +85,27 @@ void main() {
       });
     }
 
+    void stubCompleteRelaySnapshot({
+      List<Event> reactions = const [],
+      List<Event> deletions = const [],
+      bool timedOut = false,
+    }) {
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer((invocation) async {
+        final filters = invocation.positionalArguments.first as List<Filter>;
+        final kinds = filters.first.kinds ?? const <int>[];
+        return (
+          events: kinds.contains(EventKind.reaction) ? reactions : deletions,
+          timedOut: timedOut,
+          noRelays: false,
+        );
+      });
+    }
+
     void stubSendLike(Future<Event?> Function() answer) {
       when(
         () => nostrClient.sendLike(
@@ -132,6 +153,9 @@ void main() {
     /// sit next to the tests that depend on them.
     void stubStorageWrites() {
       when(() => storage.saveLikeRecord(any())).thenAnswer((_) async {});
+      when(
+        () => storage.saveLikeRecordsBatch(any()),
+      ).thenAnswer((_) async {});
       when(
         () => storage.deleteLikeRecord(any()),
       ).thenAnswer((_) async => true);
@@ -432,6 +456,149 @@ void main() {
       );
 
       test(
+        'keeps an e-tag-only adopted reaction indexed by the known '
+        'coordinate through unlike and re-like',
+        () async {
+          stubRelay(reactions: [reaction(id: landedReactionId)]);
+
+          await expectLater(
+            repository.likeEvent(
+              eventId: target,
+              authorPubkey: author,
+              addressableId: coordinate,
+            ),
+            throwsA(isA<AlreadyLikedException>()),
+          );
+          expect(await repository.isLikedByCoordinate(coordinate), isTrue);
+
+          when(
+            () => nostrClient.deleteEvent(landedReactionId),
+          ).thenAnswer((_) async => _MockEvent());
+          await repository.unlikeEvent(target, addressableId: coordinate);
+          expect(await repository.isLikedByCoordinate(coordinate), isFalse);
+
+          stubRelay(
+            reactions: [reaction(id: landedReactionId)],
+            deletions: [
+              deletion([landedReactionId]),
+            ],
+          );
+          stubSendLike(() async => reaction(id: freshReactionId));
+
+          expect(
+            await repository.toggleLike(
+              eventId: target,
+              authorPubkey: author,
+              addressableId: coordinate,
+            ),
+            isTrue,
+          );
+          expectPublishedOnce();
+        },
+      );
+
+      test(
+        'adopts an empty-content reaction consistently with NIP-25',
+        () async {
+          stubRelay(
+            reactions: [reaction(id: landedReactionId, content: '')],
+          );
+
+          await expectLater(
+            repository.likeEvent(eventId: target, authorPubkey: author),
+            throwsA(isA<AlreadyLikedException>()),
+          );
+
+          expectNoPublish();
+          expect(await repository.isLiked(target), isTrue);
+        },
+      );
+
+      test(
+        'publishes without a target lookup after a complete startup snapshot',
+        () async {
+          stubCompleteRelaySnapshot();
+          await repository.initialize();
+          clearInteractions(nostrClient);
+          stubSendLike(() async => reaction(id: freshReactionId));
+
+          expect(
+            await repository.likeEvent(eventId: target, authorPubkey: author),
+            equals(freshReactionId),
+          );
+
+          verifyNever(() => nostrClient.queryEvents(any()));
+          expectPublishedOnce();
+        },
+      );
+
+      test(
+        'retains the target lookup when startup reconciliation times out',
+        () async {
+          stubCompleteRelaySnapshot(timedOut: true);
+          await repository.initialize();
+          clearInteractions(nostrClient);
+          stubRelay();
+          stubSendLike(() async => reaction(id: freshReactionId));
+
+          expect(
+            await repository.likeEvent(eventId: target, authorPubkey: author),
+            equals(freshReactionId),
+          );
+
+          verify(() => nostrClient.queryEvents(any())).called(1);
+          expectPublishedOnce();
+        },
+      );
+
+      test(
+        'joins startup reconciliation and adopts its reaction during a tap',
+        () async {
+          final reactionsGate =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          final deletionsGate =
+              Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+          when(
+            () => nostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((invocation) {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final kinds = filters.first.kinds ?? const <int>[];
+            return kinds.contains(EventKind.reaction)
+                ? reactionsGate.future
+                : deletionsGate.future;
+          });
+
+          final initialization = repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+          final like = repository.likeEvent(
+            eventId: target,
+            authorPubkey: author,
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          reactionsGate.complete((
+            events: [reaction(id: landedReactionId)],
+            timedOut: false,
+            noRelays: false,
+          ));
+          deletionsGate.complete((
+            events: <Event>[],
+            timedOut: false,
+            noRelays: false,
+          ));
+          await initialization;
+
+          await expectLater(like, throwsA(isA<AlreadyLikedException>()));
+          expectNoPublish();
+          verifyNever(() => nostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
         'publishes when the relay holds only a retracted reaction',
         () async {
           stubRelay(
@@ -501,6 +668,10 @@ void main() {
         'retracts the adopted reaction when the user unliked during the '
         'relay check',
         () async {
+          when(
+            () => nostrClient.countEvents(any()),
+          ).thenAnswer((_) async => const CountResult(count: 10));
+          expect(await repository.getLikeCount(target), equals(10));
           final relayGate = Completer<List<Event>>();
           when(
             () => nostrClient.queryEvents(any()),
@@ -522,6 +693,7 @@ void main() {
           verify(() => nostrClient.deleteEvent(landedReactionId)).called(1);
           expectNoPublish();
           expect(await repository.isLiked(target), isFalse);
+          expect(await repository.getLikeCount(target), equals(9));
         },
       );
     });

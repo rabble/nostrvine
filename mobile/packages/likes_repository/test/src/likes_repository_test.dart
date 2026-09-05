@@ -87,6 +87,22 @@ void main() {
       });
     }
 
+    void mockDetailedQueryEventsSequence(List<List<Event>> responses) {
+      var callCount = 0;
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer((_) async {
+        return (
+          events: responses[callCount++ % responses.length],
+          timedOut: false,
+          noRelays: false,
+        );
+      });
+    }
+
     // Helper to create repository with standard setup
     LikesRepository createRepository({
       bool withLocalStorage = true,
@@ -4697,7 +4713,7 @@ void main() {
               ['a', coordinate],
             ],
           );
-          mockQueryEventsSequence([
+          mockDetailedQueryEventsSequence([
             [relayReaction],
             <Event>[],
           ]);
@@ -4708,7 +4724,12 @@ void main() {
           repository = createRepository();
           await repository.initialize();
 
-          verify(() => mockNostrClient.queryEvents(any())).called(2);
+          verify(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).called(2);
           expect(
             await repository.isLikedResolvingCoordinate(
               eventId: newEventId,
@@ -4720,8 +4741,7 @@ void main() {
       );
 
       test(
-        'skips the backfill sync when every loaded record already has a '
-        'coordinate',
+        'reconciles relay state even when loaded records have coordinates',
         () async {
           when(() => mockNostrClient.hasKeys).thenReturn(true);
           when(
@@ -4737,11 +4757,20 @@ void main() {
               ),
             ],
           );
+          mockDetailedQueryEventsSequence([
+            <Event>[],
+            <Event>[],
+          ]);
 
           repository = createRepository();
           await repository.initialize();
 
-          verifyNever(() => mockNostrClient.queryEvents(any()));
+          verify(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).called(2);
         },
       );
 
@@ -4761,7 +4790,12 @@ void main() {
             (_) async => [createLikeRecord(targetEventId: oldEventId)],
           );
           when(
-            () => mockNostrClient.queryEvents(any()),
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(
+                named: 'requireAllRelaysSettled',
+              ),
+            ),
           ).thenThrow(Exception('offline'));
 
           repository = createRepository();
