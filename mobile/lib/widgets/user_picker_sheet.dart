@@ -31,7 +31,8 @@ enum UserPickerFilterMode {
 
 /// Shows a [UserPickerSheet] as a modal bottom sheet.
 ///
-/// Returns the selected [UserProfile] or null if dismissed.
+/// Returns the selected profiles (one entry for a single-select sheet, an
+/// empty list when the selection was cleared) or null if dismissed.
 Future<List<UserProfile>?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
@@ -104,10 +105,16 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   final bool autoFocus;
 
-  /// Pubkeys to exclude from search results (already selected users).
+  /// Pubkeys the caller already tracks as selected. Their rows render in
+  /// the checked state rather than being hidden.
   final Set<String> excludePubkeys;
 
-  /// Viewer pubkey to hide and prevent from being selected.
+  /// Hex pubkey of the signed-in viewer, compared case-insensitively.
+  ///
+  /// A matching row is hidden, a tap on one is ignored, and a matching entry
+  /// in [initialSelectedProfiles] is dropped before it can occupy a slot. A
+  /// contact list written by another client can follow itself, which would
+  /// otherwise make the viewer their own mutual.
   final String? excludeViewerPubkey;
 
   /// Optional override for the search field hint text.
@@ -152,8 +159,9 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   bool _profileRepoMissing = false;
 
   /// Tracks selected pubkeys locally so toggling is reflected immediately.
-  /// Initialised from [widget.excludePubkeys] so pre-selected users show
-  /// as checked from the start.
+  /// Initialised from [widget.excludePubkeys] and the viewer-filtered
+  /// [widget.initialSelectedProfiles] so pre-selected users show as checked
+  /// from the start.
   late Set<String> _selectedPubkeys;
 
   bool get _useLocalSearch =>

@@ -1,6 +1,6 @@
 // ABOUTME: Input widget for adding/managing video collaborators
-// ABOUTME: Shows collaborator chips with remove buttons, max 5 limit,
-// ABOUTME: and opens UserPickerSheet for inviting via mutual-follow search
+// ABOUTME: Shows the confirmed collaborators' names on a selection tile and
+// ABOUTME: opens UserPickerSheet for inviting via mutual-follow search
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +15,11 @@ import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.da
 
 /// Preserves confirmed collaborators whose profiles were unavailable when the
 /// picker opened, so they are not silently dropped on Done.
+///
+/// Removes [viewerPubkey] from the result, compared case-insensitively, so a
+/// self-collaborator confirmed before the picker excluded the viewer cannot
+/// survive a reconciliation — including one whose profile never resolved and
+/// so never reached the picker's own filter.
 @visibleForTesting
 Set<String> computeEffectiveCollaboratorResultPubkeys({
   required Set<String> confirmedPubkeys,
@@ -37,8 +42,8 @@ Set<String> computeEffectiveCollaboratorResultPubkeys({
 
 /// Input widget for adding and managing collaborators on a video.
 ///
-/// Displays collaborator chips (avatar + name + remove) and an
-/// invite button. Limited to [VideoEditorNotifier.maxCollaborators].
+/// Displays the confirmed collaborators' names on a selection tile that opens
+/// the picker. Limited to [VideoEditorConstants.maxCollaborators].
 class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   /// Creates a video metadata collaborators input widget.
   const VideoMetadataCollaboratorsInput({super.key});
@@ -108,8 +113,9 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       }
     }
 
-    // Confirm newly selected pubkeys. Mutual-follow is already guaranteed
-    // by the picker's mutualFollowsOnly filter (verified at sheet open time).
+    // Confirm newly selected pubkeys. The picker's mutualFollowsOnly mode
+    // narrows the rows to mutuals as each follower source answers, and only
+    // falls back to plain follows when every follower source failed.
     for (final pubkey in effectiveResultPubkeys) {
       if (confirmedPubkeys.contains(pubkey)) continue;
       notifier.addCollaborator(pubkey);
