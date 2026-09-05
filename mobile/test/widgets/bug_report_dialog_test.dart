@@ -271,6 +271,10 @@ void main() {
       await commitKeyboardImage(tester);
       await tester.pumpAndSettle();
 
+      expect(
+        l10n.bugReportImageInsertionRejected,
+        'That image wasn’t added. You can attach up to 3 images below.',
+      );
       expect(find.text(l10n.bugReportImageInsertionRejected), findsOneWidget);
       expect(
         tester.widget<TextField>(description).controller!.text,

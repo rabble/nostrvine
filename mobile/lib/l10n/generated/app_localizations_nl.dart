@@ -4665,7 +4665,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get bugReportImageInsertionRejected =>
-      'That image wasn’t added. Use \"Attach images\" below instead.';
+      'That image wasn’t added. You can attach up to 3 images below.';
 
   @override
   String get featureRequestImageInsertionRejected =>
