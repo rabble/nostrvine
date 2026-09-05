@@ -122,6 +122,13 @@ class PendingGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Deletes only pending wraps owned by [ownerPubkey].
+  Future<int> deleteAllForOwner(String ownerPubkey) {
+    return (delete(
+      pendingGiftWraps,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   /// Deletes only legacy empty-owner rows when the departing account is
   /// unknown, preserving every row with a valid owner.
   Future<int> clearUnowned() {

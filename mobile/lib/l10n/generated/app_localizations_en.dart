@@ -7085,7 +7085,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Delete All Content';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Deleting your account';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7101,7 +7101,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Your deletion request is still being processed. You can use another account while we finish.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Another account deletion is still being processed on this device. Wait for it to finish before deleting this account.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7189,7 +7193,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Deletion requests sent. You\'re signed out on this device.';
+      'Your Divine account was deleted. Deletion requests were sent for your Nostr posts, but some relays, clients, or caches may keep copies.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

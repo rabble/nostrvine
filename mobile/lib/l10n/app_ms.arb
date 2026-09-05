@@ -3697,10 +3697,11 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
-  "accountDeletionRecoveryTitle": "Selesaikan pemadaman akaun anda",
+  "accountDeletionRecoveryTitle": "Akaun anda sedang dipadamkan",
   "accountDeletionRecoveryBody": "Kami tidak dapat melengkapkan pemadaman akaun anda. Nama pengguna anda masih ditempah untuk anda dan masih boleh dipulihkan.",
   "accountDeletionRestoreUsername": "Pulihkan nama pengguna saya",
-  "accountDeletionFinishingBody": "Permintaan pemadaman anda masih diproses. Semak semula sebelum anda meninggalkan skrin ini.",
+  "accountDeletionFinishingBody": "Permintaan pemadaman anda masih diproses. Anda boleh menggunakan akaun lain sementara kami menyelesaikannya.",
+  "accountDeletionOtherAccountPending": "Pemadaman akaun lain masih diproses pada peranti ini. Tunggu sehingga selesai sebelum memadamkan akaun ini.",
   "accountDeletionCancellingBody": "Kami sedang membatalkan pemadaman anda. Semak semula sebelum anda meninggalkan skrin ini.",
   "accountDeletionRecoveryFailed": "Kami belum dapat memulihkan nama pengguna anda. Semak sambungan anda dan cuba lagi.",
   "accountDeletionUsernameRestored": "Nama pengguna anda telah dipulihkan. Akaun anda tidak dipadam.",
@@ -3728,7 +3729,7 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.",
-  "deleteAccountSuccess": "Permintaan pemadaman dihantar. Anda telah dilog keluar pada peranti ini.",
+  "deleteAccountSuccess": "Akaun Divine anda telah dipadamkan. Permintaan pemadaman telah dihantar untuk siaran Nostr anda, tetapi sesetengah geganti, klien atau cache mungkin menyimpan salinannya.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
   },

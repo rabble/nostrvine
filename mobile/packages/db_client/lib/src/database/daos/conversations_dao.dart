@@ -490,6 +490,13 @@ END
         .go();
   }
 
+  /// Deletes only conversations owned by [ownerPubkey].
+  Future<int> deleteAllForOwner(String ownerPubkey) {
+    return (delete(
+      conversations,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   /// Deletes only unattributed legacy rows when the departing account is
   /// unknown, preserving every row with a valid owner.
   Future<int> clearUnowned() {

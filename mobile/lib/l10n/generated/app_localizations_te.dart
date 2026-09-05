@@ -7210,7 +7210,7 @@ class AppLocalizationsTe extends AppLocalizations {
       'మొత్తం కంటెంట్‌ను తొలగించండి';
 
   @override
-  String get accountDeletionRecoveryTitle => 'మీ ఖాతాను తొలగించడం ముగించండి';
+  String get accountDeletionRecoveryTitle => 'మీ ఖాతా తొలగించబడుతోంది';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7227,7 +7227,11 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'మీ తొలగింపు అభ్యర్థన ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. ఈ స్క్రీన్ నుండి నిష్క్రమించే ముందు మళ్లీ తనిఖీ చేయండి.';
+      'మీ ఖాతా తొలగింపు అభ్యర్థన ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. మేము దీన్ని పూర్తి చేసే వరకు మీరు మరొక ఖాతాను ఉపయోగించవచ్చు.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'ఈ పరికరంలో మరొక ఖాతా తొలగింపు ఇప్పటికీ ప్రాసెస్ చేయబడుతోంది. ఈ ఖాతాను తొలగించే ముందు అది పూర్తయ్యే వరకు వేచి ఉండండి.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7315,7 +7319,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'తొలగింపు అభ్యర్థనలు పంపబడ్డాయి. మీరు ఈ పరికరంలో సైన్ అవుట్ చేసారు.';
+      'మీ Divine ఖాతా తొలగించబడింది. మీ Nostr పోస్ట్‌ల కోసం తొలగింపు అభ్యర్థనలు పంపబడ్డాయి, కానీ కొన్ని రిలేలు, క్లయింట్లు లేదా క్యాష్‌లు కాపీలను ఉంచవచ్చు.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

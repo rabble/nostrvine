@@ -7144,7 +7144,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Usuń wszystkie treści';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Dokończ usuwanie konta';
+  String get accountDeletionRecoveryTitle => 'Usuwanie konta';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7161,7 +7161,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Twoje żądanie usunięcia jest wciąż przetwarzane. Sprawdź ponownie, zanim opuścisz ten ekran.';
+      'Twoje żądanie usunięcia jest nadal przetwarzane. W tym czasie możesz korzystać z innego konta.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Usuwanie innego konta jest nadal przetwarzane na tym urządzeniu. Zaczekaj na zakończenie, zanim usuniesz to konto.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7250,7 +7254,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.';
+      'Twoje konto Divine zostało usunięte. Wysłano żądania usunięcia twoich postów w Nostr, ale niektóre przekaźniki, klienty lub pamięci podręczne mogą zachować kopie.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

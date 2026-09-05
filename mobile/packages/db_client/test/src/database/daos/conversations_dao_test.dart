@@ -1235,6 +1235,25 @@ void main() {
         },
       );
 
+      test('exact-owner deletion preserves ambiguous conversations', () async {
+        for (final entry in {
+          'conv_a': userA,
+          'conv_b': userB,
+          'conv_legacy': '',
+        }.entries) {
+          await dao.upsertConversation(
+            id: entry.key,
+            participantPubkeys: '[]',
+            isGroup: false,
+            createdAt: 1700000000,
+            ownerPubkey: entry.value,
+          );
+        }
+
+        expect(await dao.deleteAllForOwner(userA), 1);
+        expect(await dao.getAllConversations(), hasLength(2));
+      });
+
       test('unread count respects ownerPubkey', () async {
         await dao.upsertConversation(
           id: 'conv_a1',

@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSyncIndexClient extends Mock implements SyncIndexClient {}
@@ -505,7 +506,11 @@ void main() {
           String? receivedPubkey;
           var receivedDeleteUserData = false;
           service.onDatabaseCleanup =
-              ({String? userPubkey, bool deleteUserData = false}) async {
+              ({
+                String? userPubkey,
+                bool deleteUserData = false,
+                bool preserveActiveSession = false,
+              }) async {
                 receivedPubkey = userPubkey;
                 receivedDeleteUserData = deleteUserData;
               };
@@ -526,7 +531,11 @@ void main() {
         () async {
           var receivedDeleteUserData = true;
           service.onDatabaseCleanup =
-              ({String? userPubkey, bool deleteUserData = false}) async {
+              ({
+                String? userPubkey,
+                bool deleteUserData = false,
+                bool preserveActiveSession = false,
+              }) async {
                 receivedDeleteUserData = deleteUserData;
               };
 
@@ -540,7 +549,11 @@ void main() {
         'does not throw database cleanup failure on non-destructive cleanup',
         () async {
           service.onDatabaseCleanup =
-              ({String? userPubkey, bool deleteUserData = false}) async {
+              ({
+                String? userPubkey,
+                bool deleteUserData = false,
+                bool preserveActiveSession = false,
+              }) async {
                 throw StateError('cleanup failed');
               };
 
@@ -550,7 +563,11 @@ void main() {
 
       test('throws database cleanup failure on destructive cleanup', () async {
         service.onDatabaseCleanup =
-            ({String? userPubkey, bool deleteUserData = false}) async {
+            ({
+              String? userPubkey,
+              bool deleteUserData = false,
+              bool preserveActiveSession = false,
+            }) async {
               throw StateError('cleanup failed');
             };
 
@@ -562,7 +579,11 @@ void main() {
 
       test('throws database cleanup failure on identity change', () async {
         service.onDatabaseCleanup =
-            ({String? userPubkey, bool deleteUserData = false}) async {
+            ({
+              String? userPubkey,
+              bool deleteUserData = false,
+              bool preserveActiveSession = false,
+            }) async {
               throw StateError('cleanup failed');
             };
 
@@ -586,6 +607,116 @@ void main() {
       test('claimLegacyRows is safe when callback not set', () async {
         // Should not throw
         await service.claimLegacyRows('abc123');
+      });
+    });
+
+    group('deleteAccountData', () {
+      test(
+        'deletes owner-scoped data without clearing shared preferences',
+        () async {
+          final deletedPubkey = 'a' * 64;
+          final otherPubkey = 'b' * 64;
+          final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+          await prefs.setStringList('global_bookmarks', ['other-bookmark']);
+          await prefs.setString('vine_drafts', '{"drafts": []}');
+          await service.markOwnerScopedLegacyDataForUser(deletedPubkey);
+          await prefs.setString(
+            SavedSoundsService.accountStorageKey(deletedPubkey),
+            '[{"id":"deleted-sound"}]',
+          );
+          await prefs.setString(
+            SavedSoundsService.accountStorageKey(otherPubkey),
+            '[{"id":"other-sound"}]',
+          );
+          await prefs.setString('following_list_$deletedPubkey', '[]');
+          await prefs.setString('relay_discovery_$deletedNpub', '{}');
+
+          await service.deleteAccountData(
+            deletedPubkey,
+            userNpub: deletedNpub,
+            preserveActiveSession: true,
+          );
+
+          expect(prefs.getStringList('global_bookmarks'), ['other-bookmark']);
+          expect(prefs.containsKey('vine_drafts'), isFalse);
+          expect(
+            prefs.containsKey(
+              SavedSoundsService.accountStorageKey(deletedPubkey),
+            ),
+            isFalse,
+          );
+          expect(
+            prefs.containsKey(
+              SavedSoundsService.accountStorageKey(otherPubkey),
+            ),
+            isTrue,
+          );
+          expect(prefs.containsKey('following_list_$deletedPubkey'), isFalse);
+          expect(prefs.containsKey('relay_discovery_$deletedNpub'), isFalse);
+        },
+      );
+
+      test('deletes device-wide user data when no session is active', () async {
+        final deletedPubkey = 'a' * 64;
+        final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+        await prefs.setStringList('global_bookmarks', ['bookmark']);
+        await prefs.setString('content_reports_history', '[]');
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+
+        await service.deleteAccountData(
+          deletedPubkey,
+          userNpub: deletedNpub,
+          preserveActiveSession: false,
+        );
+
+        expect(prefs.containsKey('global_bookmarks'), isFalse);
+        expect(prefs.containsKey('content_reports_history'), isFalse);
+        expect(prefs.containsKey('vine_drafts'), isFalse);
+      });
+
+      test('preserves legacy drafts owned by another account', () async {
+        final deletedPubkey = 'a' * 64;
+        final otherPubkey = 'b' * 64;
+        final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+        await service.markOwnerScopedLegacyDataForUser(otherPubkey);
+
+        await service.deleteAccountData(
+          deletedPubkey,
+          userNpub: deletedNpub,
+          preserveActiveSession: false,
+        );
+
+        expect(prefs.containsKey('vine_drafts'), isTrue);
+        expect(
+          prefs.getString(UserDataCleanupService.legacyDraftOwnerKey),
+          otherPubkey,
+        );
+      });
+
+      test('propagates database cleanup failures', () async {
+        final deletedPubkey = 'a' * 64;
+        final deletedNpub = NostrKeyUtils.encodePubKey(deletedPubkey);
+        var preservedActiveSession = false;
+        service.onDatabaseCleanup =
+            ({
+              userPubkey,
+              deleteUserData = false,
+              preserveActiveSession = false,
+            }) async {
+              preservedActiveSession = preserveActiveSession;
+              throw StateError('database unavailable');
+            };
+
+        await expectLater(
+          service.deleteAccountData(
+            deletedPubkey,
+            userNpub: deletedNpub,
+            preserveActiveSession: true,
+          ),
+          throwsA(isA<StateError>()),
+        );
+        expect(preservedActiveSession, isTrue);
       });
     });
 

@@ -66,6 +66,97 @@ void main() {
   );
 
   group('AccountDeletionRecoveryRepository methods', () {
+    test('public status lookup needs only the receipt identity', () async {
+      http.Request? captured;
+      final result =
+          await repository(
+            MockClient((request) async {
+              captured = request;
+              return http.Response(
+                jsonEncode({
+                  'id': 'attempt-1',
+                  'status': 'completed',
+                  'failure_code': null,
+                }),
+                200,
+              );
+            }),
+          ).fetchStatus(
+            attemptId: 'attempt-1',
+            pubkeyHex:
+                '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+          );
+
+      expect(result.status, AccountDeletionAttemptStatus.completed);
+      expect(
+        captured?.url.toString(),
+        'https://api.divine.video/api/account-deletion/attempts/'
+        'attempt-1/status',
+      );
+      expect(
+        captured?.headers['x-account-deletion-pubkey'],
+        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+      );
+      verifyNever(
+        () => nip98.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      );
+    });
+
+    test('public status lookup preserves structured 404 evidence', () {
+      expect(
+        () =>
+            repository(
+              MockClient(
+                (_) async => http.Response(
+                  jsonEncode({'failure_code': 'attempt_not_found'}),
+                  404,
+                ),
+              ),
+            ).fetchStatus(
+              attemptId: 'attempt-1',
+              pubkeyHex:
+                  '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+            ),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having((error) => error.code, 'code', 'attempt_not_found'),
+        ),
+      );
+    });
+
+    test('public status lookup preserves server failures', () {
+      expect(
+        () =>
+            repository(
+              MockClient(
+                (_) async => http.Response(
+                  jsonEncode({'failure_code': 'coordinator_unavailable'}),
+                  503,
+                ),
+              ),
+              delay: (_) async {},
+            ).fetchStatus(
+              attemptId: 'attempt-1',
+              pubkeyHex:
+                  '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+            ),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.code,
+                'code',
+                'coordinator_unavailable',
+              ),
+        ),
+      );
+    });
+
     test(
       'prepare signs and posts the exact coordinator URL and body',
       () async {

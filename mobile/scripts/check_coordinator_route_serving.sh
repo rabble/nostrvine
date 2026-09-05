@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Fails unless the account-deletion coordinator route rejects a credential-free
-# GET with HTTP 401. Missing, unreachable, unavailable, and unexpected responses
-# mean the client would ship without its required backend contract.
+# Fails unless the account-deletion coordinator routes return their expected
+# credential-free response. Missing, unreachable, unavailable, and unexpected
+# responses mean the client would ship without its required backend contract.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

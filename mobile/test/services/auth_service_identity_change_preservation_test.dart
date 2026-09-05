@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -17,6 +18,8 @@ class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
+
+class _MockCacheDao extends Mock implements CacheDao {}
 
 /// Runs [body] while silencing unhandled async errors from `_performDiscovery`.
 ///
@@ -245,6 +248,9 @@ void main() {
     );
 
     test('account deletion opts in to deleting local user data', () async {
+      final cacheDao = _MockCacheDao();
+      when(() => cacheDao.deletePrefix(any())).thenAnswer((_) async {});
+      await CacheSync.init(dao: cacheDao);
       when(
         () => mockCleanupService.shouldClearDataForUser(any()),
       ).thenReturn(false);

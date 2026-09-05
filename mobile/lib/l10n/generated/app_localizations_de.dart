@@ -7070,7 +7070,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Alle Inhalte löschen';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Kontolöschung abschließen';
+  String get accountDeletionRecoveryTitle => 'Dein Konto wird gelöscht';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7086,7 +7086,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Deine Löschanfrage wird noch bearbeitet. Schau nochmal nach, bevor du diesen Bildschirm verlässt.';
+      'Deine Löschanfrage wird noch bearbeitet. Währenddessen kannst du ein anderes Konto verwenden.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Die Löschung eines anderen Kontos wird auf diesem Gerät noch bearbeitet. Warte, bis sie abgeschlossen ist, bevor du dieses Konto löschst.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7174,7 +7178,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.';
+      'Dein Divine-Konto wurde gelöscht. Für deine Nostr-Beiträge wurden Löschanfragen gesendet, aber einige Relays, Clients oder Caches behalten möglicherweise Kopien.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

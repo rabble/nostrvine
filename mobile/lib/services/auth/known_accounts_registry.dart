@@ -346,19 +346,7 @@ class KnownAccountsRegistry {
   /// Removes an account from the known accounts registry.
   Future<void> remove(String pubkeyHex) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final accounts = await getKnownAccounts();
-      accounts.removeWhere((a) => a.pubkeyHex == pubkeyHex);
-
-      final json = jsonEncode(accounts.map((a) => a.toJson()).toList());
-      await prefs.setString(kKnownAccountsKey, json);
-
-      Log.info(
-        'Removed ${pubkeyForLogs(pubkeyHex)} from known accounts '
-        '(remaining=${accounts.length})',
-        name: 'KnownAccountsRegistry',
-        category: LogCategory.auth,
-      );
+      await removeStrict(pubkeyHex);
     } catch (e) {
       Log.warning(
         'Failed to remove from known accounts: $e',
@@ -368,16 +356,70 @@ class KnownAccountsRegistry {
     }
   }
 
+  /// Removes an account and propagates [FormatException], [TypeError], and
+  /// [StateError] when the registry cannot be decoded or persisted.
+  Future<void> removeStrict(String pubkeyHex) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(kKnownAccountsKey);
+    final accounts = raw == null
+        ? await _migrateLegacyAccount(prefs)
+        : raw.isEmpty
+        ? <KnownAccount>[]
+        : (jsonDecode(raw) as List<dynamic>)
+              .cast<Map<String, dynamic>>()
+              .map(KnownAccount.fromJson)
+              .toList();
+    accounts.removeWhere((a) => a.pubkeyHex == pubkeyHex);
+
+    final json = jsonEncode(accounts.map((a) => a.toJson()).toList());
+    if (!await prefs.setString(kKnownAccountsKey, json)) {
+      throw StateError('Could not persist known accounts');
+    }
+
+    Log.info(
+      'Removed ${pubkeyForLogs(pubkeyHex)} from known accounts '
+      '(remaining=${accounts.length})',
+      name: 'KnownAccountsRegistry',
+      category: LogCategory.auth,
+    );
+  }
+
   /// Overwrites the persisted registry with [accounts] verbatim (in the order
   /// given — callers that need MRU order sort first).
   ///
   /// Used by sign-out recovery to prune the registry to the restorable set.
+  /// Throws [StateError] when the registry cannot be persisted.
   Future<void> persist(List<KnownAccount> accounts) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    if (!await prefs.setString(
       kKnownAccountsKey,
       jsonEncode(accounts.map((a) => a.toJson()).toList()),
-    );
+    )) {
+      throw StateError('Could not persist known accounts');
+    }
+  }
+
+  /// Resets recovery preferences and keeps restorable accounts in MRU order.
+  /// Throws when secure storage or preferences cannot be read or persisted.
+  Future<int> resetRecoveryPreferences({
+    required String lastUsedNpubKey,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accounts = await getKnownAccounts();
+    final restorable = (await restorableAccounts(accounts))
+      ..sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+    await persist(restorable);
+    if (!await prefs.setString(
+      kAuthenticationSourceKey,
+      AuthenticationSource.none.code,
+    )) {
+      throw StateError('Could not reset the authentication source');
+    }
+    if (prefs.containsKey(lastUsedNpubKey) &&
+        !await prefs.remove(lastUsedNpubKey)) {
+      throw StateError('Could not clear the last-used account');
+    }
+    return restorable.length;
   }
 
   /// Filters [accounts] to those that still have restorable local login

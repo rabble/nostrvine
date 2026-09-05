@@ -220,6 +220,30 @@ void main() {
       },
     );
 
+    test(
+      'passes the mounted status route that validates a sentinel id',
+      () async {
+        final result = await probeCoordinatorRoute(
+          target.forRoute(coordinatorStatusProbePath),
+          fetchStatus: (_, _) async => HttpStatus.badRequest,
+          waitBeforeRetry: noWait,
+        );
+
+        expect(result.state, ProbeState.serving);
+        expect(result.message, contains('returned 400'));
+      },
+    );
+
+    test('does not accept 400 from the current-attempt route', () async {
+      final result = await probeCoordinatorRoute(
+        target,
+        fetchStatus: (_, _) async => HttpStatus.badRequest,
+        waitBeforeRetry: noWait,
+      );
+
+      expect(result.state, ProbeState.unexpected);
+    });
+
     test('fails a 404 with the environment and exact URL', () async {
       var attempts = 0;
       final result = await probeCoordinatorRoute(
@@ -366,9 +390,32 @@ void main() {
       );
 
       expect(result, 0);
-      expect(requested, hasLength(1));
-      expect(requested.single.host, 'relay.staging.divine.video');
-      expect(stdout.single, contains('STAGING'));
+      expect(requested, hasLength(2));
+      expect(
+        requested.map((uri) => uri.host),
+        everyElement('relay.staging.divine.video'),
+      );
+      expect(requested.map((uri) => uri.path), coordinatorProbePaths);
+      expect(stdout, hasLength(2));
+      expect(stdout, everyElement(contains('STAGING')));
+    });
+
+    test('fails when the status route is missing', () async {
+      final stderr = <String>[];
+
+      final result = await runCoordinatorRouteProbe(
+        ['--environment=staging'],
+        readEnvironmentConfig: () => currentConfigFixture,
+        fetchStatus: (uri, _) async => uri.path == coordinatorStatusProbePath
+            ? HttpStatus.notFound
+            : HttpStatus.unauthorized,
+        waitBeforeRetry: noWait,
+        writeStdout: (_) {},
+        writeStderr: stderr.add,
+      );
+
+      expect(result, 1);
+      expect(stderr.single, contains(coordinatorStatusProbePath));
     });
 
     test(

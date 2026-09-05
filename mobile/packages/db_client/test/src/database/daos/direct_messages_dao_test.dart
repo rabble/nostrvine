@@ -1931,6 +1931,15 @@ void main() {
         );
       });
 
+      test('exact-owner deletion preserves ambiguous rows', () async {
+        await insert('msg_a', userA);
+        await insert('msg_b', userB);
+        await insert('msg_empty', '');
+
+        expect(await dao.deleteAllForOwner(userA), equals(1));
+        expect(await dao.countMessages(conversationId1), equals(2));
+      });
+
       test('unknown owner cleanup deletes only ambiguous rows', () async {
         await insert('msg_a', userA);
         await insert('msg_b', userB);

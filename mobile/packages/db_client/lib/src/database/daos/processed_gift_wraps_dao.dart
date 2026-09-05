@@ -115,6 +115,13 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Deletes only processed wraps owned by [ownerPubkey].
+  Future<int> deleteAllForOwner(String ownerPubkey) {
+    return (delete(
+      processedGiftWraps,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   /// Deletes only unattributed legacy rows when the departing account is
   /// unknown, preserving every row with a valid owner.
   Future<int> clearUnowned() {

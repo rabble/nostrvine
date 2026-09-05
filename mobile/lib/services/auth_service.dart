@@ -1451,25 +1451,77 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Known accounts registry
-  // ---------------------------------------------------------------------------
-
   /// Reads the list of known accounts from SharedPreferences.
-  ///
-  /// On the first call after upgrading from the old single-account system,
-  /// the `known_accounts` key will be absent (`null`). In that case we run a
-  /// one-time migration that checks for a legacy session and persists the
-  /// result so the migration never runs again.
   Future<List<KnownAccount>> getKnownAccounts() =>
       _knownAccounts.getKnownAccounts();
 
-  /// Removes an account from the known accounts list and cleans up its
-  /// archived signer info. Called from the welcome screen when the user
-  /// long-presses to remove an account.
+  /// Removes a known account and its archived signer info.
   Future<void> removeKnownAccount(String pubkeyHex) async {
     await _knownAccounts.remove(pubkeyHex);
     await _clearArchivedSignerInfo(pubkeyHex);
+  }
+
+  /// Deletes one local account without disturbing another active account.
+  Future<void> deleteLocalAccount(String pubkeyHex) async {
+    final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
+    final prefs = await SharedPreferences.getInstance();
+    Object? keyDeletionError;
+    Object? cleanupError;
+    try {
+      await _userDataCleanupService.deleteAccountData(
+        pubkeyHex,
+        userNpub: npub,
+        preserveActiveSession: _currentKeyContainer != null,
+      );
+    } catch (error) {
+      cleanupError = error;
+    }
+    try {
+      await CacheSync.invalidatePrefix(pubkeyHex);
+    } catch (error, stackTrace) {
+      cleanupError ??= error;
+      _reportStorageError(error, stackTrace, 'deleteLocalAccount invalidation');
+    }
+    try {
+      await _knownAccounts.removeStrict(pubkeyHex);
+    } catch (error) {
+      cleanupError ??= error;
+    }
+    try {
+      await _signerStore.clearAccount(pubkeyHex);
+    } catch (error) {
+      keyDeletionError = error;
+    }
+    try {
+      await _deleteStoredLoginForAccount(npub);
+    } catch (error) {
+      keyDeletionError ??= error;
+    }
+    if (keyDeletionError != null) {
+      throw SecureKeyStorageException(
+        'Local account deletion failed: $keyDeletionError',
+      );
+    }
+    if (cleanupError != null) {
+      throw UserDataCleanupException(
+        'Local account data cleanup failed',
+        cleanupError,
+      );
+    }
+    if (_currentKeyContainer == null) {
+      try {
+        if (prefs.getString(_kSessionRecoveryAnchorKey) == npub &&
+            !await prefs.remove(_kSessionRecoveryAnchorKey)) {
+          throw StateError('Could not clear the session recovery anchor');
+        }
+        await _resetRecoveryAfterLocalAccountRemoval(prefs, strict: true);
+      } catch (error) {
+        throw UserDataCleanupException(
+          'Local account recovery cleanup failed',
+          error,
+        );
+      }
+    }
   }
 
   /// Pubkey to pre-select on the welcome screen after the next sign-out.
@@ -1477,10 +1529,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Set this before calling [signOut] when the user picks a different account
   /// from the account-switcher. [WelcomeBloc] reads and clears this on start.
   String? pendingAccountSwitchPubkey;
-
-  // ---------------------------------------------------------------------------
-  // Per-account signer info archival
-  // ---------------------------------------------------------------------------
 
   /// Copies active-session signer keys to per-account archive keys.
   ///
@@ -1574,10 +1622,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Deletes all per-account archived signer keys for a given pubkey.
   Future<void> _clearArchivedSignerInfo(String pubkeyHex) =>
       _signerStore.clearArchive(pubkeyHex);
-
-  // ---------------------------------------------------------------------------
-  // Multi-account sign-in
-  // ---------------------------------------------------------------------------
 
   /// Signs in with a previously used account.
   ///
@@ -3065,27 +3109,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  /// Sign out the current user.
+  /// Signs out the current user.
   ///
-  /// When [deleteKeys] is true, the current account's local login material is
-  /// removed from the device.
-  ///
-  /// When [deleteLocalUserData] is true, owner-scoped local rows for the
-  /// current account are also deleted. Keep this false for "Remove this account
-  /// from this device" so device-local drafts/clips survive re-login. Use true
-  /// only for flows that explicitly delete the account and its local data.
-  ///
-  /// When [abortOnKeyDeletionFailure] is true (only meaningful with
-  /// [deleteKeys]), platform key deletion is attempted **before** any
-  /// session cleanup. If deletion fails the method throws immediately and
-  /// no cleanup happens — the user stays signed in and can retry.
-  /// Use this for the "Remove this account from this device" flow where
-  /// signing out without actually removing local login material is
-  /// counter-productive.
-  ///
-  /// When [abortOnKeyDeletionFailure] is false (default), key deletion
-  /// failure is captured and rethrown **after** all cleanup completes.
-  /// Use this for "Delete Account" where sign-out must finish regardless.
+  /// [abortOnKeyDeletionFailure] keeps the session active if key deletion
+  /// fails. Otherwise destructive cleanup finishes before throwing
+  /// [SecureKeyStorageException] or [UserDataCleanupException].
   Future<void> signOut({
     bool deleteKeys = false,
     bool abortOnKeyDeletionFailure = false,
@@ -3104,9 +3132,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
 
-    // Pre-flight: when the caller needs key deletion to succeed before
-    // sign-out proceeds, attempt it now. If this throws, no cleanup has
-    // happened and the user stays signed in.
     if (deleteKeys && abortOnKeyDeletionFailure) {
       await _deleteStoredLoginForAccount(npubAtSignOutStart);
     }
@@ -3122,19 +3147,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final prefs = await SharedPreferences.getInstance();
       final currentPubkey = _currentKeyContainer?.publicKeyHex;
 
-      // Capture the leaving account as the session recovery anchor BEFORE any
-      // teardown — but only for non-destructive sign-out (account switch).
-      //
-      // The welcome screen reads this after sign-out to detect when a cold-
-      // start restore would land on a different account, and surfaces a
-      // confirmation banner so the user can redirect the switch explicitly.
-      //
-      // On DESTRUCTIVE sign-out (deleteKeys=true), the user is intentionally
-      // removing the account. Clear any stale anchor so the next app start
-      // returns to the welcome/account-picker surface instead of treating the
-      // removal as an interrupted account switch.
-      //
-      // The anchor is cleared by _setupUserSession() after a successful sign-in.
       final leavingNpub = _currentKeyContainer?.npub;
       if (!deleteKeys && leavingNpub != null) {
         await prefs.setString(_kSessionRecoveryAnchorKey, leavingNpub);
@@ -3156,19 +3168,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       }
 
-      // On destructive sign-out, remove this device's local login for the
-      // current account and then return to the welcome/account-picker surface.
-      // Deferred: remaining-account cleanup runs after _knownAccounts.remove
-      // so the deleted account is excluded from the remaining list.
-      // Non-destructive sign-out (switch account) preserves these so that
-      // initialize() can reconnect to the same external signer.
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
 
-      // Clear user-specific cached data on explicit logout.
-      // Owner-scoped local rows (drafts, clips, uploads, etc.) are only
-      // deleted when the caller explicitly opts in. Removing local login
-      // material from the device is not enough reason to destroy local work.
       if (deleteKeys && !deleteLocalUserData && currentPubkey != null) {
         await _userDataCleanupService.markOwnerScopedLegacyDataForUser(
           currentPubkey,
@@ -3189,28 +3191,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       }
 
-      // Clear configured relays so next login re-discovers from NIP-65
       await prefs.remove(SharedPreferencesRelayStorage.defaultKey);
       await prefs.remove(SharedPreferencesRelayStorage.defaultRemovedRelaysKey);
 
-      // Clear relay discovery cache so next login re-queries indexers
-      // (even for same-user re-login, relays may have changed)
       await _relayDiscoveryService.clearCache(_currentKeyContainer?.npub ?? '');
 
-      // Clear the stored pubkey tracking so next login is treated as new
       await prefs.remove('current_user_pubkey_hex');
 
-      // Multi-account: archive or remove this account's signer info
-      // Account-scoped CacheSync invalidation. Cache keys follow
-      // `${pubkey}:${operation}` (RFC #4244), so this clears the
-      // leaving account only and leaves other accounts intact.
-      // Wrapped in try/catch so a cache-layer failure does not abort
-      // the rest of signOut; the failure is forwarded to Crashlytics
-      // so a silent disk-residency regression is visible.
       if (currentPubkey != null) {
         try {
           await CacheSync.invalidatePrefix(currentPubkey);
         } catch (e, stack) {
+          if (deleteLocalUserData) userDataCleanupError ??= e;
           Log.error(
             'CacheSync.invalidatePrefix failed during signOut: $e',
             name: 'AuthService',
@@ -3221,10 +3213,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       if (deleteKeys) {
-        // Destructive sign-out: remove from known accounts and clean up
         if (currentPubkey != null) {
-          await _knownAccounts.remove(currentPubkey);
-          await _clearArchivedSignerInfo(currentPubkey);
+          if (deleteLocalUserData) {
+            try {
+              await _knownAccounts.removeStrict(currentPubkey);
+            } catch (e) {
+              userDataCleanupError ??= e;
+            }
+          } else {
+            await _knownAccounts.remove(currentPubkey);
+          }
+          try {
+            if (deleteLocalUserData) {
+              await _signerStore.clearAccount(currentPubkey);
+            } else {
+              await _clearArchivedSignerInfo(currentPubkey);
+            }
+          } catch (e) {
+            keyDeletionError ??= e;
+          }
         }
 
         Log.debug(
@@ -3249,7 +3256,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           }
         }
       } else {
-        // Non-destructive sign-out: archive signer info for later restoration
         if (currentPubkey != null) {
           await _archiveSignerInfo(currentPubkey);
         }
@@ -3296,20 +3302,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         }
       }
 
-      // Clear session
       _currentIdentity = null;
       _currentKeyContainer?.dispose();
       _currentKeyContainer = null;
       _currentProfile = null;
       _lastError = null;
 
-      // Unregister relay-discovery callback so we don't hold a client
-      // reference
       _onUserRelaysDiscovered = null;
       _onBootstrapRelayListRequested = null;
       _userRelays = [];
 
-      // Clean up bunker signer if active
       if (_bunkerSigner != null) {
         _bunkerSigner!.close();
         _bunkerSigner = null;
@@ -3321,7 +3323,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         }
       }
 
-      // Clean up Amber signer if active
       if (_amberSigner != null) {
         _amberSigner!.close();
         _amberSigner = null;
@@ -3333,7 +3334,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         }
       }
 
-      // Clean up Keycast RPC signer if active
       _setKeycastSigner(null);
       _setRpcCapability(AuthRpcCapability.unavailable);
 
@@ -3347,13 +3347,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Reset recovery prefs AFTER all signer cleanup so removed accounts
       // cannot silently recover. Any remaining restorable accounts stay in the
       // known-account picker instead of being auto-restored.
-      if (deleteKeys) {
-        await _resetRecoveryAfterLocalAccountRemoval(prefs);
+      if (deleteKeys &&
+          (!deleteLocalUserData || userDataCleanupError == null)) {
+        try {
+          await _resetRecoveryAfterLocalAccountRemoval(
+            prefs,
+            strict: deleteLocalUserData,
+          );
+        } catch (e) {
+          userDataCleanupError ??= e;
+        }
       }
 
       _setAuthState(AuthState.unauthenticated);
 
-      // Post-signout verification: confirm key storage state
       try {
         final postSignOutHasKeys = await _keyStorage.hasKeys();
         Log.info(
@@ -3526,23 +3533,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// fresh-login when no accounts remain, or the returning-user picker when
   /// other local accounts are still available.
   Future<void> _resetRecoveryAfterLocalAccountRemoval(
-    SharedPreferences prefs,
-  ) async {
+    SharedPreferences prefs, {
+    bool strict = false,
+  }) async {
     try {
-      final remaining = await getKnownAccounts();
-      final restorableAccounts = await _knownAccounts.restorableAccounts(
-        remaining,
+      final restorableCount = await _knownAccounts.resetRecoveryPreferences(
+        lastUsedNpubKey: _kLastUsedNpubKey,
       );
-
       _authSource = AuthenticationSource.none;
-      await prefs.setString(
-        kAuthenticationSourceKey,
-        AuthenticationSource.none.code,
-      );
-      await prefs.remove(_kLastUsedNpubKey);
 
-      if (restorableAccounts.isEmpty) {
-        await _knownAccounts.persist(const <KnownAccount>[]);
+      if (restorableCount == 0) {
         Log.info(
           'signOut: no restorable local accounts — reset to fresh welcome',
           name: 'AuthService',
@@ -3551,16 +3551,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
-      restorableAccounts.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
-      await _knownAccounts.persist(restorableAccounts);
-
       Log.info(
-        'signOut: kept ${restorableAccounts.length} restorable local '
+        'signOut: kept $restorableCount restorable local '
         'account(s) for the welcome picker',
         name: 'AuthService',
         category: LogCategory.auth,
       );
     } catch (e) {
+      if (strict) rethrow;
       // Best-effort: if this fails, the fallback scan in
       // _restoreLastUsedAccountOrFallback will still find the account.
       Log.warning(
@@ -3574,7 +3572,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         AuthenticationSource.none.code,
       );
       await prefs.remove(_kLastUsedNpubKey);
-      await _knownAccounts.persist(const <KnownAccount>[]);
     }
   }
 

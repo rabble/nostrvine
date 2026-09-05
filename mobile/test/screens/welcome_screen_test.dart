@@ -19,9 +19,12 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -29,6 +32,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 import 'package:openvine/widgets/error_message.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/invite_availability_harness.dart';
 
@@ -72,13 +76,16 @@ void main() {
   late _MockAuthService mockAuthService;
   late _MockAppDatabase mockDb;
   late _MockUserProfilesDao mockUserProfilesDao;
+  late SharedPreferences sharedPreferences;
 
   setUpAll(() async {
     await loadAppFonts();
     registerFallbackValue(AuthenticationSource.none);
   });
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    sharedPreferences = await SharedPreferences.getInstance();
     mockAuthService = _MockAuthService();
     mockDb = _MockAppDatabase();
     mockUserProfilesDao = _MockUserProfilesDao();
@@ -144,6 +151,11 @@ void main() {
             builder: (context, state) =>
                 const Scaffold(body: Text('Family Guide Page')),
           ),
+          GoRoute(
+            path: RoutePaths.accountDeletionRecovery,
+            builder: (context, state) =>
+                const Scaffold(body: Text('Deletion Recovery')),
+          ),
         ],
       ),
     );
@@ -158,6 +170,7 @@ void main() {
         authServiceProvider.overrideWithValue(mockAuthService),
         currentAuthStateProvider.overrideWithValue(authState),
         databaseProvider.overrideWithValue(mockDb),
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
       ],
       child: app,
     );
@@ -730,6 +743,40 @@ void main() {
           ),
         ).called(1);
       });
+
+      testWidgets(
+        'continuing a pending deletion account opens recovery',
+        (tester) async {
+          final seedContainer = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            ],
+          );
+          await seedContainer
+              .read(submittedAccountDeletionAttemptProvider.notifier)
+              .record(
+                pubkeyHex: _testPubkeyHex,
+                attempt: const AccountDeletionAttempt(
+                  id: 'attempt-id',
+                  status: AccountDeletionAttemptStatus.processing,
+                ),
+                vanishEventId: 'vanish-event-id',
+              );
+          seedContainer.dispose();
+
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Continue as Test User'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Deletion Recovery'), findsOneWidget);
+          verifyNever(
+            () => mockAuthService.signInForAccount(any(), any()),
+          );
+        },
+      );
 
       testWidgets('navigates to login options when session is expired', (
         tester,

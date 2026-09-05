@@ -80,6 +80,19 @@ class AccountDeletionAttempt {
   final String? failureCode;
   final String? failureMessage;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'status': switch (status) {
+      AccountDeletionAttemptStatus.terminalFailure => 'terminal_failure',
+      _ => status.name,
+    },
+    'operation': operation.name,
+    if (username != null) 'username': username,
+    if (usernameExpiresAt != null) 'username_expires_at': usernameExpiresAt,
+    if (failureCode != null) 'failure_code': failureCode,
+    if (failureMessage != null) 'failure_message': failureMessage,
+  };
+
   bool get isCancellationInFlight =>
       status == AccountDeletionAttemptStatus.preparing &&
       operation == AccountDeletionAttemptOperation.cancelling;

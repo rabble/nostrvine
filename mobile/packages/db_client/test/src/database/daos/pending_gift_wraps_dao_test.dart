@@ -250,6 +250,24 @@ void main() {
       expect(await dao.countForOwner(ownerB), 1);
     });
 
+    test('exact-owner deletion preserves a legacy empty-owner row', () async {
+      await dao.recordFailedDecrypt(
+        giftWrapId: wrap1,
+        ownerPubkey: ownerA,
+        rawJson: 'r',
+        createdAt: 100,
+      );
+      await database.customStatement(
+        'INSERT INTO pending_gift_wraps '
+        '(gift_wrap_id, owner_pubkey, raw_json, created_at) '
+        "VALUES (?, '', '{}', 100)",
+        [wrap2],
+      );
+
+      expect(await dao.deleteAllForOwner(ownerA), 1);
+      expect(await dao.countForOwner(''), 1);
+    });
+
     test('unknown-owner cleanup removes a legacy empty-owner row', () async {
       await database.customStatement(
         'INSERT INTO pending_gift_wraps '

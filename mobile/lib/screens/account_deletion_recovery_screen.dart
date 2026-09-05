@@ -1,6 +1,8 @@
 // ABOUTME: Full-screen recovery gate for interrupted account deletion.
 // ABOUTME: Bridges app dependencies into the recovery Cubit and renders state.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,22 +28,59 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     ref.watch(currentAuthRpcCapabilityProvider);
     final signerReadiness = authService.signerReadiness;
+    final receipt = ref.watch(currentSubmittedAccountDeletionAttemptProvider);
+    final submittedMonitor = ref.watch(
+      submittedAccountDeletionMonitorProvider,
+    );
+
+    if (receipt?.submissionOwnedLocally ?? false) {
+      return const _SubmissionInFlightRecoveryView();
+    }
+
+    if (receipt != null && submittedMonitor != null) {
+      return BlocProvider<AccountDeletionRecoveryCubit>.value(
+        value: submittedMonitor,
+        child: const AccountDeletionRecoveryView(),
+      );
+    }
 
     return BlocProvider<AccountDeletionRecoveryCubit>(
-      key: ValueKey((repository, authService, signerReadiness)),
+      key: ValueKey((
+        repository,
+        authService,
+        signerReadiness,
+      )),
       create: (_) {
+        final expectedPubkeyHex = authService.currentPublicKeyHex;
         final cubit = AccountDeletionRecoveryCubit(
           repository: repository,
           authService: authService,
-          onAttemptResolved: () {
+          onAttemptResolved: () async {
+            await ref
+                .read(submittedAccountDeletionAttemptProvider.notifier)
+                .clear(expectedPubkeyHex: expectedPubkeyHex);
             ref.invalidate(currentAccountDeletionAttemptProvider);
           },
+          onAttemptUpdated: (attempt) => ref
+              .read(submittedAccountDeletionAttemptProvider.notifier)
+              .updateAttempt(attempt),
         );
+        // A seed, not a dependency: the attempt the router gated on, which is
+        // the one this process committed when the signer is already gone. The
+        // cubit owns the attempt from here, so a later emission must not
+        // re-create it.
+        final knownAttempt = ref
+            .read(currentAccountDeletionAttemptProvider)
+            .value;
         switch (signerReadiness) {
           case SignerReadiness.ready:
-            cubit.load();
+            if (knownAttempt != null) {
+              unawaited(cubit.resume(knownAttempt));
+            } else {
+              unawaited(cubit.load());
+            }
           case SignerReadiness.unavailable:
-            cubit.signerUnavailable();
+            unawaited(cubit.signerUnavailable(attempt: knownAttempt));
           case SignerReadiness.pending:
             break;
         }
@@ -50,6 +89,26 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
       child: const AccountDeletionRecoveryView(),
     );
   }
+}
+
+class _SubmissionInFlightRecoveryView extends StatelessWidget {
+  const _SubmissionInFlightRecoveryView();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      automaticallyImplyLeading: false,
+      title: Text(context.l10n.accountDeletionRecoveryTitle),
+    ),
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _PassiveRecoveryContent(
+          body: context.l10n.accountDeletionFinishingBody,
+        ),
+      ),
+    ),
+  );
 }
 
 class AccountDeletionRecoveryView extends StatelessWidget {
@@ -106,6 +165,18 @@ class _RecoveryStateContent extends StatelessWidget {
       AccountDeletionRecoveryStatus.resolved => const Center(
         child: CircularProgressIndicator(),
       ),
+      AccountDeletionRecoveryStatus.confirmingSubmission =>
+        state.pollingPaused
+            ? _RecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+                actionLabel: context.l10n.supportContactSupport,
+                onPressed: () => context.push(RoutePaths.supportCenter),
+                secondaryActionLabel: context.l10n.authUseAnotherAccount,
+                onSecondaryPressed: () => _switchAccount(context, cubit),
+              )
+            : _PassiveRecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+              ),
       AccountDeletionRecoveryStatus.loadFailed => _RecoveryContent(
         body: state.failure == AccountDeletionRecoveryFailure.signerUnavailable
             ? context.l10n.authSessionExpired
@@ -128,14 +199,30 @@ class _RecoveryStateContent extends StatelessWidget {
         actionLabel: context.l10n.commonRetry,
         onPressed: cubit.retry,
       ),
-      AccountDeletionRecoveryStatus.processing => _RecoveryContent(
-        body: context.l10n.accountDeletionFinishingBody,
-        actionLabel: context.l10n.commonRetry,
-        onPressed: cubit.retry,
+      AccountDeletionRecoveryStatus.processing =>
+        state.pollingPaused
+            ? _RecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+                actionLabel: context.l10n.supportContactSupport,
+                onPressed: () => context.push(RoutePaths.supportCenter),
+                secondaryActionLabel: context.l10n.authUseAnotherAccount,
+                onSecondaryPressed: () => _switchAccount(context, cubit),
+              )
+            : _RecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+                actionLabel: context.l10n.authUseAnotherAccount,
+                onPressed: () => _switchAccount(context, cubit),
+              ),
+      AccountDeletionRecoveryStatus.completed => _RecoveryContent(
+        body: context.l10n.deleteAccountSuccess,
+        actionLabel: context.l10n.commonClose,
+        onPressed: cubit.acknowledgeCompletion,
       ),
       AccountDeletionRecoveryStatus.cleanupFailed => _RecoveryContent(
         body: state.failure == AccountDeletionRecoveryFailure.keychainCleanup
             ? context.l10n.deleteAccountKeyDeletionWarning
+            : state.failure == AccountDeletionRecoveryFailure.receiptClear
+            ? context.l10n.authUnexpectedError
             : context.l10n.deleteAccountLocalDataDeletionFailed,
         actionLabel: context.l10n.commonRetry,
         onPressed: cubit.completeLocalCleanup,
@@ -149,6 +236,35 @@ class _RecoveryStateContent extends StatelessWidget {
       ),
     };
   }
+}
+
+Future<void> _switchAccount(
+  BuildContext context,
+  AccountDeletionRecoveryCubit cubit,
+) async {
+  final signedOut = await cubit.switchAccount();
+  if (signedOut && context.mounted) context.go(RoutePaths.welcome);
+}
+
+class _PassiveRecoveryContent extends StatelessWidget {
+  const _PassiveRecoveryContent({required this.body});
+
+  final String body;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: 24,
+    children: [
+      const Center(child: CircularProgressIndicator()),
+      Text(
+        body,
+        textAlign: TextAlign.center,
+        style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
+      ),
+    ],
+  );
 }
 
 class _LoadingRecoveryContent extends StatelessWidget {

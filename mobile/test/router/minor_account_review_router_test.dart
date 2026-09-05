@@ -105,6 +105,71 @@ void main() {
       );
     });
 
+    test('ignores another account retained by a failed refresh', () async {
+      final retained = await _retainedRecoveryError();
+      expect(
+        accountDeletionRecoveryGateActive(
+          retained,
+          submittedAttempt: SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: retained.value!,
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isFalse,
+      );
+    });
+
+    test('ignores another account receipt recreated by polling', () {
+      const lookup = AccountDeletionAttempt(
+        id: 'first-account-attempt',
+        status: AccountDeletionAttemptStatus.processing,
+      );
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(lookup),
+          submittedAttempt: const SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: AccountDeletionAttempt(
+              id: 'first-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+              failureCode: 'x',
+            ),
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isFalse,
+      );
+    });
+
+    test('uses a different account fresh recovery result', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(
+            AccountDeletionAttempt(
+              id: 'different-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+          ),
+          submittedAttempt: const SubmittedAccountDeletionAttempt(
+            pubkeyHex: 'first-account',
+            attempt: AccountDeletionAttempt(
+              id: 'first-account-attempt',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+            vanishEventId: 'vanish-event-id',
+          ),
+          authState: AuthState.authenticated,
+          currentPubkeyHex: 'second-account',
+        ),
+        isTrue,
+      );
+    });
+
     test('stays inactive when a ready lookup finds no attempt', () {
       expect(
         accountDeletionRecoveryGateActive(
@@ -346,8 +411,50 @@ void main() {
           router.routeInformationProvider.value.uri.toString(),
           AccountDeletionRecoveryScreen.path,
         );
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
       },
     );
+
+    testWidgets('keeps a signed-out user on the deletion recovery gate', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...routerOverrides(
+            deletionAttempt: const AccountDeletionAttempt(
+              id: 'attempt-id',
+              status: AccountDeletionAttemptStatus.processing,
+            ),
+          ),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (_) async => MinorAccountReviewStatus.active(),
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            _MockDeletionRepository(),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await container.read(currentAccountDeletionAttemptProvider.future);
+      await pumpRouter(tester, container, settle: false);
+      when(
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.unauthenticated);
+
+      final router = container.read(goRouterProvider);
+      router.go(AccountDeletionRecoveryScreen.path);
+      await tester.pump();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        AccountDeletionRecoveryScreen.path,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+    });
 
     testWidgets('terminal deletion failure still allows support', (
       tester,

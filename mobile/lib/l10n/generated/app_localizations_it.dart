@@ -7054,8 +7054,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Elimina tutti i contenuti';
 
   @override
-  String get accountDeletionRecoveryTitle =>
-      'Completa l\'eliminazione del tuo account';
+  String get accountDeletionRecoveryTitle => 'Eliminazione del tuo account';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -7071,7 +7070,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'La tua richiesta di eliminazione è ancora in corso. Controlla di nuovo prima di uscire da questa schermata.';
+      'La tua richiesta di eliminazione è ancora in fase di elaborazione. Puoi usare un altro account mentre terminiamo.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'L\'eliminazione di un altro account è ancora in corso su questo dispositivo. Attendi che termini prima di eliminare questo account.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7160,7 +7163,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Richieste di eliminazione inviate. Sei disconnesso su questo dispositivo.';
+      'Il tuo account Divine è stato eliminato. Sono state inviate richieste di eliminazione per i tuoi post su Nostr, ma alcuni relay, client o cache potrebbero conservarne delle copie.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

@@ -53,10 +53,11 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
       final authService = ref.read(authServiceProvider);
       if (!authService.isAuthenticated) {
-        await authService.authStateStream.firstWhere(
+        final authState = await authService.authStateStream.firstWhere(
           (state) => state == AuthState.authenticated,
+          orElse: () => AuthState.unauthenticated,
         );
-        if (!mounted) return;
+        if (!mounted || authState != AuthState.authenticated) return;
       }
 
       // Defer one more frame so the GoRouter auth-redirect can settle

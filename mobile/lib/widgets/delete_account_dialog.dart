@@ -387,6 +387,12 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 /// [confirmedPubkey] - When set, aborts before any step if the signed-in
 ///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
+/// [onDeletionSubmitted] - Persists the attempt and vanish event before the
+///   irreversible submit request, then updates it with the coordinator answer.
+///   A lost response is ambiguous, so the caller must keep the user gated from
+///   the receipt rather than returning to normal account use (#8583).
+/// [onDeletionFlowFinished] - Releases the in-process ownership of that receipt
+///   after this flow has finished submitting and cleaning up.
 Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
@@ -395,6 +401,9 @@ Future<void> executeAccountDeletion({
   required Future<DivineUsernameLookup> ownedUsernameLookup,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
+  Future<void> Function(AccountDeletionAttempt attempt, String vanishEventId)?
+  onDeletionSubmitted,
+  void Function()? onDeletionFlowFinished,
 }) async {
   if (!context.mounted) return;
 
@@ -791,18 +800,31 @@ Future<void> executeAccountDeletion({
         );
         return;
       }
+      AccountDeletionAttempt submitted;
       try {
-        final submitted = await deletionRecoveryRepository.submit(
+        await onDeletionSubmitted?.call(attempt, eventId);
+      } on Object catch (error) {
+        Log.error(
+          'Could not persist account deletion receipt',
+          name: screenName,
+          category: LogCategory.auth,
+          error: error,
+        );
+        dismissProgressSheet();
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
+        return;
+      }
+      try {
+        submitted = await deletionRecoveryRepository.submit(
           attemptId: attempt.id,
           vanishEventId: eventId,
         );
         deletionAttempt = submitted;
-        if (submitted.status == AccountDeletionAttemptStatus.processing) {
-          dismissProgressSheet();
-          showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
-          return;
-        }
-        if (submitted.status != AccountDeletionAttemptStatus.completed) {
+        await onDeletionSubmitted?.call(submitted, eventId);
+        if (submitted.status != AccountDeletionAttemptStatus.processing &&
+            submitted.status != AccountDeletionAttemptStatus.completed) {
           throw AccountDeletionRecoveryException(
             'Submit returned ${submitted.status.name}',
           );
@@ -816,6 +838,13 @@ Future<void> executeAccountDeletion({
         );
         dismissProgressSheet();
         showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+        return;
+      }
+
+      if (submitted.status == AccountDeletionAttemptStatus.processing) {
+        dismissProgressSheet();
+        showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
+        await authService.signOut();
         return;
       }
 
@@ -888,6 +917,7 @@ Future<void> executeAccountDeletion({
       }
     }
   } finally {
+    onDeletionFlowFinished?.call();
     await cubit.close();
 
     // Ensure the progress sheet is dismissed even if an exception occurred.

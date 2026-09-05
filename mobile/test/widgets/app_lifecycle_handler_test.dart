@@ -1,11 +1,14 @@
-// ABOUTME: Regression tests for app-level lifecycle autosave handling
-// ABOUTME: Verifies pending editor autosaves flush before background kills
+// ABOUTME: Regression tests for app-level startup and lifecycle transitions
+// ABOUTME: Verifies auth waiting, badge clearing, and pending autosave handling
+
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
@@ -65,6 +68,42 @@ class _FlushTrackingVideoEditorNotifier extends VideoEditorNotifier {
 void main() {
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  group('startup', () {
+    testWidgets('handles auth stream closing before authentication', (
+      tester,
+    ) async {
+      final authService = _MockAuthService();
+      final authStates = StreamController<AuthState>();
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => authStates.stream);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            appBadgeServiceProvider.overrideWithValue(
+              _CountingAppBadgeClearer(),
+            ),
+            notificationRefreshCoordinatorProvider.overrideWithValue(null),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AppLifecycleHandler(child: SizedBox.shrink()),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await authStates.close();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('lifecycle transitions', () {

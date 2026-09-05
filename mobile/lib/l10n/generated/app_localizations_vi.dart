@@ -6950,7 +6950,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Hoàn tất xóa tài khoản của bạn';
+  String get accountDeletionRecoveryTitle => 'Đang xóa tài khoản của bạn';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6967,7 +6967,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.';
+      'Yêu cầu xóa tài khoản của bạn vẫn đang được xử lý. Bạn có thể dùng một tài khoản khác trong lúc chúng tôi hoàn tất.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Việc xóa một tài khoản khác vẫn đang được xử lý trên thiết bị này. Hãy đợi quá trình đó hoàn tất trước khi xóa tài khoản này.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7055,7 +7059,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Đã gửi yêu cầu xóa. Bạn đã đăng xuất trên thiết bị này.';
+      'Tài khoản Divine của bạn đã bị xóa. Yêu cầu xóa các bài đăng Nostr của bạn đã được gửi, nhưng một số relay, ứng dụng khách hoặc bộ nhớ đệm có thể vẫn giữ bản sao.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

@@ -6619,7 +6619,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';
 
   @override
-  String get accountDeletionRecoveryTitle => 'アカウントの削除を完了する';
+  String get accountDeletionRecoveryTitle => 'アカウントを削除中';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6635,7 +6635,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      '削除リクエストはまだ処理中です。この画面を離れる前にもう一度確認してください。';
+      '削除リクエストはまだ処理中です。処理が完了するまで、別のアカウントを使用できます。';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'このデバイスでは、別のアカウントの削除がまだ処理中です。処理が完了してから、このアカウントを削除してください。';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -6720,7 +6724,8 @@ class AppLocalizationsJa extends AppLocalizations {
       '投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。少ししてからもう一回試してね。';
 
   @override
-  String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';
+  String get deleteAccountSuccess =>
+      'Divineアカウントは削除されました。Nostrの投稿についても削除リクエストを送信しましたが、一部のリレー、クライアント、キャッシュにはコピーが残る場合があります。';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

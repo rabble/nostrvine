@@ -108,6 +108,9 @@ class WelcomeScreen extends ConsumerWidget {
     final authState = ref.watch(currentAuthStateProvider);
     final authService = ref.watch(authServiceProvider);
     final db = ref.watch(databaseProvider);
+    final deletionPendingPubkeyHex = ref
+        .watch(submittedAccountDeletionAttemptProvider)
+        ?.pubkeyHex;
 
     final isAuthLoading =
         authState == AuthState.checking ||
@@ -118,6 +121,7 @@ class WelcomeScreen extends ConsumerWidget {
           WelcomeBloc(
             userProfilesDao: db.userProfilesDao,
             authService: authService,
+            deletionPendingPubkeyHex: deletionPendingPubkeyHex,
           )..add(
             WelcomeStarted(initialSelectedPubkeyHex: initialSelectedPubkeyHex),
           ),
@@ -145,6 +149,7 @@ class _WelcomeView extends ConsumerWidget {
       listenWhen: (prev, current) =>
           current.status == WelcomeStatus.navigatingToLoginOptions ||
           current.status == WelcomeStatus.navigatingToCreateAccount ||
+          current.status == WelcomeStatus.navigatingToAccountDeletionRecovery ||
           current.status == WelcomeStatus.error ||
           current.status == WelcomeStatus.sessionExpired ||
           current.status == WelcomeStatus.accountRestoreFailed,
@@ -161,6 +166,8 @@ class _WelcomeView extends ConsumerWidget {
             );
           case WelcomeStatus.navigatingToLoginOptions:
             context.push(WelcomeScreen.loginOptionsPath);
+          case WelcomeStatus.navigatingToAccountDeletionRecovery:
+            context.go(RoutePaths.accountDeletionRecovery);
           case WelcomeStatus.sessionExpired:
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

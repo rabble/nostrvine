@@ -6,8 +6,10 @@ enum AccountDeletionRecoveryStatus {
   loadFailed,
   restorable,
   cancelInFlight,
+  confirmingSubmission,
   processing,
   completingLocally,
+  completed,
   cleanupFailed,
   terminalFailure,
   signingOut,
@@ -21,6 +23,7 @@ enum AccountDeletionRecoveryFailure {
   usernameRestore,
   keychainCleanup,
   localDataCleanup,
+  receiptClear,
   signOut,
 }
 

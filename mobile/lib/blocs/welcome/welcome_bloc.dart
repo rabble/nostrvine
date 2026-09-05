@@ -27,6 +27,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
   WelcomeBloc({
     required UserProfilesDao userProfilesDao,
     required AuthService authService,
+    this.deletionPendingPubkeyHex,
   }) : _userProfilesDao = userProfilesDao,
        _authService = authService,
        super(const WelcomeState()) {
@@ -51,6 +52,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
 
   final UserProfilesDao _userProfilesDao;
   final AuthService _authService;
+  final String? deletionPendingPubkeyHex;
 
   Future<void> _onStarted(
     WelcomeStarted event,
@@ -208,6 +210,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       );
       return;
     }
+    if (_redirectPendingDeletion(account, emit)) return;
 
     Log.info(
       'WelcomeBloc: logging back in as '
@@ -304,6 +307,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
   ) async {
     final previous = state.previousAccounts.firstOrNull;
     if (previous == null) return;
+    if (_redirectPendingDeletion(previous, emit)) return;
 
     Log.info(
       'WelcomeBloc: cancel switch — restoring previous account '
@@ -351,6 +355,20 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       addError(e, stackTrace);
       emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }
+  }
+
+  bool _redirectPendingDeletion(
+    PreviousAccount account,
+    Emitter<WelcomeState> emit,
+  ) {
+    if (account.pubkeyHex != deletionPendingPubkeyHex) return false;
+    emit(
+      state.copyWith(
+        status: WelcomeStatus.navigatingToAccountDeletionRecovery,
+      ),
+    );
+    emit(state.copyWith(status: WelcomeStatus.loaded));
+    return true;
   }
 
   void _onAccountSelected(

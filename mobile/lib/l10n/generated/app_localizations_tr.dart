@@ -6904,7 +6904,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Hesap silme işlemini tamamla';
+  String get accountDeletionRecoveryTitle => 'Hesabın siliniyor';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6920,7 +6920,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Silme isteğin hâlâ işleniyor. Bu ekrandan çıkmadan önce tekrar kontrol et.';
+      'Silme isteğin hâlâ işleniyor. Biz işlemi tamamlarken başka bir hesap kullanabilirsin.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Bu cihazda başka bir hesabın silme işlemi hâlâ devam ediyor. Bu hesabı silmeden önce işlemin tamamlanmasını bekle.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7008,7 +7012,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Silme istekleri gönderildi. Bu cihazda oturumun kapatıldı.';
+      'Divine hesabın silindi. Nostr gönderilerin için silme istekleri gönderildi ancak bazı röleler, istemciler veya önbellekler kopyaları saklayabilir.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

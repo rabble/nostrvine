@@ -151,6 +151,18 @@ void main() {
       expect(await dao.count(), 1);
     });
 
+    test('exact-owner deletion preserves a legacy ownerless row', () async {
+      await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+      await database.customStatement(
+        'INSERT INTO processed_gift_wraps '
+        '(gift_wrap_id, processed_at, owner_pubkey) VALUES (?, 100, NULL)',
+        [wrap2],
+      );
+
+      expect(await dao.deleteAllForOwner(ownerA), 1);
+      expect(await dao.hasGiftWrap(wrap2), isTrue);
+    });
+
     test('unknown-owner cleanup removes NULL and empty legacy rows', () async {
       await database.customStatement(
         'INSERT INTO processed_gift_wraps '

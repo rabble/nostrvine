@@ -6975,7 +6975,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Slutför raderingen av ditt konto';
+  String get accountDeletionRecoveryTitle => 'Ditt konto tas bort';
 
   @override
   String get accountDeletionRecoveryBody =>
@@ -6991,7 +6991,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get accountDeletionFinishingBody =>
-      'Din raderingsbegäran behandlas fortfarande. Kolla igen innan du lämnar den här skärmen.';
+      'Din begäran om radering behandlas fortfarande. Du kan använda ett annat konto medan vi slutför processen.';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      'Raderingen av ett annat konto behandlas fortfarande på den här enheten. Vänta tills den är klar innan du raderar det här kontot.';
 
   @override
   String get accountDeletionCancellingBody =>
@@ -7079,7 +7083,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountSuccess =>
-      'Raderingsförfrågningar skickade. Du är utloggad på den här enheten.';
+      'Ditt Divine-konto har tagits bort. Begäranden om att radera dina Nostr-inlägg har skickats, men vissa reläer, klienter eller cacheminnen kan behålla kopior.';
 
   @override
   String get deleteAccountSuccessContentUnverified =>

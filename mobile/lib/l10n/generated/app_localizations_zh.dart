@@ -6575,7 +6575,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
 
   @override
-  String get accountDeletionRecoveryTitle => '完成账号删除';
+  String get accountDeletionRecoveryTitle => '正在删除你的账号';
 
   @override
   String get accountDeletionRecoveryBody => '我们没能完成账号删除。你的用户名仍为你保留，还可以找回。';
@@ -6589,7 +6589,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeletionRestoreUsername => '找回我的用户名';
 
   @override
-  String get accountDeletionFinishingBody => '你的删除请求仍在处理中。离开此页面前请再确认一次。';
+  String get accountDeletionFinishingBody => '你的账号删除请求仍在处理中。处理完成前，你可以使用其他账号。';
+
+  @override
+  String get accountDeletionOtherAccountPending =>
+      '此设备上另一个账号的删除仍在处理中。请等待处理完成后再删除此账号。';
 
   @override
   String get accountDeletionCancellingBody => '我们正在取消你的删除请求。离开此页面前请再确认一次。';
@@ -6668,7 +6672,8 @@ class AppLocalizationsZh extends AppLocalizations {
       '你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。';
 
   @override
-  String get deleteAccountSuccess => '删除请求已发送。你已在此设备上退出登录。';
+  String get deleteAccountSuccess =>
+      '你的 Divine 账号已删除。我们已为你的 Nostr 帖子发送删除请求，但部分中继、客户端或缓存可能仍会保留副本。';
 
   @override
   String get deleteAccountSuccessContentUnverified => '账号删除已请求。部分已有帖子无法逐一确认删除。';

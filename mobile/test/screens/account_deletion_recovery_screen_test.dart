@@ -42,6 +42,10 @@ Widget _app(
         path: '/home/0',
         builder: (_, _) => const Scaffold(body: Text('Home')),
       ),
+      GoRoute(
+        path: '/welcome',
+        builder: (_, _) => const Scaffold(body: Text('Welcome')),
+      ),
     ],
   );
   return MaterialApp.router(
@@ -59,7 +63,9 @@ void main() {
     when(cubit.cancel).thenAnswer((_) async {});
     when(cubit.retry).thenAnswer((_) async {});
     when(cubit.signOut).thenAnswer((_) async {});
+    when(cubit.switchAccount).thenAnswer((_) async => true);
     when(cubit.completeLocalCleanup).thenAnswer((_) async {});
+    when(cubit.acknowledgeCompletion).thenAnswer((_) async {});
   });
 
   group('renders and navigation', () {
@@ -132,6 +138,55 @@ void main() {
       );
     });
 
+    testWidgets('paused processing keeps support and account switch actions', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.processing,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+          ),
+          pollingPaused: true,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.widgetWithText(DivineButton, l10n.supportContactSupport),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('paused submission confirmation offers recovery actions', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.confirmingSubmission,
+          attempt: _recoverable,
+          pollingPaused: true,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.widgetWithText(DivineButton, l10n.supportContactSupport),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('processing remains non-cancellable', (tester) async {
       when(() => cubit.state).thenReturn(
         const AccountDeletionRecoveryState(
@@ -150,6 +205,13 @@ void main() {
         find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
         findsNothing,
       );
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+      );
+      await tester.pumpAndSettle();
+
+      verify(cubit.switchAccount).called(1);
+      expect(find.text('Welcome'), findsOneWidget);
     });
 
     testWidgets('cleanup failures distinguish keychain from local data', (
@@ -247,6 +309,10 @@ void main() {
       );
       await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
       verify(cubit.retry).called(1);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+      );
+      verify(cubit.signOut).called(1);
     });
 
     testWidgets('signer failure asks the user to sign in again', (
@@ -337,6 +403,40 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Home'), findsOneWidget);
+    });
+
+    testWidgets('completed deletion remains visible until acknowledged', (
+      tester,
+    ) async {
+      const processing = AccountDeletionAttempt(
+        id: 'attempt-id',
+        status: AccountDeletionAttemptStatus.processing,
+      );
+      const initial = AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.processing,
+        attempt: processing,
+      );
+      when(() => cubit.state).thenReturn(initial);
+      await tester.pumpWidget(
+        _app(
+          cubit,
+          states: Stream.value(
+            const AccountDeletionRecoveryState(
+              status: AccountDeletionRecoveryStatus.completed,
+              attempt: processing,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.commonClose),
+      );
+      verify(cubit.acknowledgeCompletion).called(1);
     });
   });
 }

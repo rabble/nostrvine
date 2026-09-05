@@ -9,9 +9,18 @@ bool _suppressNextAuthenticatedAuthRouteRedirect = false;
 
 @visibleForTesting
 bool accountDeletionRecoveryGateActive(
-  AsyncValue<AccountDeletionAttempt?>? attempt,
-) {
+  AsyncValue<AccountDeletionAttempt?>? attempt, {
+  SubmittedAccountDeletionAttempt? submittedAttempt,
+  AuthState? authState,
+  String? currentPubkeyHex,
+}) {
   if (attempt == null || !attempt.hasValue) return false;
+  if (authState == AuthState.authenticated &&
+      submittedAttempt != null &&
+      submittedAttempt.pubkeyHex != currentPubkeyHex &&
+      attempt.value?.id == submittedAttempt.attempt.id) {
+    return false;
+  }
   return attempt.value?.requiresRecoveryScreen ?? false;
 }
 
@@ -339,8 +348,16 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
 
   final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
   final deletionAttemptAsync = ref.read(currentAccountDeletionAttemptProvider);
+  final submittedDeletion =
+      authState == AuthState.authenticated &&
+          deletionAttemptAsync.value?.requiresRecoveryScreen == true
+      ? ref.read(submittedAccountDeletionAttemptProvider)
+      : null;
   final deletionRecoveryGateActive = accountDeletionRecoveryGateActive(
     deletionAttemptAsync,
+    submittedAttempt: submittedDeletion,
+    authState: authState,
+    currentPubkeyHex: authService.currentPublicKeyHex,
   );
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(
@@ -380,16 +397,16 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // process of logging in.
   final isAuthRoute = _isAuthEntryLocation(location);
 
-  if (authState == AuthState.authenticated &&
-      deletionRecoveryGateActive &&
+  if (deletionRecoveryGateActive &&
       !isDeletionRecoveryRoute &&
-      !isSupportRoute) {
+      !isSupportRoute &&
+      !(authState != AuthState.authenticated && isAuthRoute)) {
     return AccountDeletionRecoveryScreen.path;
   }
-  if (authState == AuthState.authenticated &&
-      !deletionRecoveryGateActive &&
-      isDeletionRecoveryRoute) {
-    return VideoFeedPage.pathForIndex(0);
+  if (!deletionRecoveryGateActive && isDeletionRecoveryRoute) {
+    return authState == AuthState.authenticated
+        ? VideoFeedPage.pathForIndex(0)
+        : WelcomeScreen.path;
   }
 
   // Only bounce to the loading screen on a true cold load (no value yet).
@@ -522,6 +539,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // awaitingTosAcceptance has no dedicated screen, so treat it like
   // unauthenticated.
   if (!isAuthRoute &&
+      !isDeletionRecoveryRoute &&
       !isPublicSupportRoute &&
       !_isPublicRecorderLocation(location) &&
       (authState == AuthState.unauthenticated ||

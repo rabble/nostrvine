@@ -28,6 +28,9 @@ enum WelcomeStatus {
 
   /// Transient: navigate to create account, then auto-resets to [loaded].
   navigatingToCreateAccount,
+
+  /// Transient: show the selected account's pending deletion attempt.
+  navigatingToAccountDeletionRecovery,
 }
 
 /// A previously used account with its cached profile data.

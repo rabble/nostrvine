@@ -3697,10 +3697,11 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
-  "accountDeletionRecoveryTitle": "اپنے اکاؤنٹ کا حذف مکمل کریں",
+  "accountDeletionRecoveryTitle": "آپ کا اکاؤنٹ حذف کیا جا رہا ہے",
   "accountDeletionRecoveryBody": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ آپ کا صارف نام آپ کے لیے محفوظ ہے اور اب بھی بحال کیا جا سکتا ہے۔",
   "accountDeletionRestoreUsername": "میرا صارف نام بحال کریں",
-  "accountDeletionFinishingBody": "آپ کی حذف کی درخواست پر ابھی کام ہو رہا ہے۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔",
+  "accountDeletionFinishingBody": "آپ کے اکاؤنٹ کو حذف کرنے کی درخواست پر ابھی کارروائی ہو رہی ہے۔ ہمارے مکمل کرنے تک آپ کوئی دوسرا اکاؤنٹ استعمال کر سکتے ہیں۔",
+  "accountDeletionOtherAccountPending": "اس ڈیوائس پر کسی دوسرے اکاؤنٹ کو حذف کرنے کی کارروائی ابھی جاری ہے۔ اس اکاؤنٹ کو حذف کرنے سے پہلے اس کے مکمل ہونے کا انتظار کریں۔",
   "accountDeletionCancellingBody": "ہم آپ کی حذف کی درخواست منسوخ کر رہے ہیں۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔",
   "accountDeletionRecoveryFailed": "ہم ابھی آپ کا صارف نام بحال نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "accountDeletionUsernameRestored": "آپ کا صارف نام بحال ہو گیا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔",
@@ -3728,7 +3729,7 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
-  "deleteAccountSuccess": "حذف کی درخواستیں بھیج دی گئیں۔ آپ اس ڈیوائس پر سائن آؤٹ ہو گئے۔",
+  "deleteAccountSuccess": "آپ کا Divine اکاؤنٹ حذف کر دیا گیا ہے۔ آپ کی Nostr پوسٹس کے لیے حذف کرنے کی درخواستیں بھیج دی گئی ہیں، لیکن کچھ ریلے، کلائنٹس یا کیشز ان کی نقول محفوظ رکھ سکتے ہیں۔",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
   },

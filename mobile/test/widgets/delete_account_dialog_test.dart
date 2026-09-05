@@ -80,6 +80,8 @@ Future<void> runDeletion({
   Future<DivineUsernameLookup>? lookupFuture,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
+  Future<void> Function(AccountDeletionAttempt attempt, String vanishEventId)?
+  onDeletionSubmitted,
 }) => dialog_api.executeAccountDeletion(
   context: context,
   deletionService: deletionService,
@@ -88,6 +90,7 @@ Future<void> runDeletion({
   ownedUsernameLookup: lookupFuture ?? Future.value(lookup),
   confirmedPubkey: confirmedPubkey,
   screenName: screenName,
+  onDeletionSubmitted: onDeletionSubmitted,
 );
 
 DeleteAccountConfirmation _deleteFallback() => DeleteAccountConfirmation(
@@ -1177,22 +1180,26 @@ void main() {
         when(
           authService.checkAccountDeletionReadiness,
         ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(authService.signOut).thenAnswer((_) async {});
         final recoveryRepository = _MockAccountDeletionRecoveryRepository();
         when(
           () => recoveryRepository.prepare(username: any(named: 'username')),
         ).thenAnswer((_) async => _recoverableAttempt);
+        const processingAttempt = AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.processing,
+          username: 'alice',
+        );
+        final accepted = <AccountDeletionAttempt>[];
         when(
           () => recoveryRepository.submit(
             attemptId: any(named: 'attemptId'),
             vanishEventId: any(named: 'vanishEventId'),
           ),
-        ).thenAnswer(
-          (_) async => const AccountDeletionAttempt(
-            id: 'attempt-id',
-            status: AccountDeletionAttemptStatus.processing,
-            username: 'alice',
-          ),
-        );
+        ).thenAnswer((_) async {
+          expect(accepted, [same(_recoverableAttempt)]);
+          return processingAttempt;
+        });
         when(
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
@@ -1219,6 +1226,7 @@ void main() {
           authService: authService,
           deletionRecoveryRepository: recoveryRepository,
           lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+          onDeletionSubmitted: (attempt, _) async => accepted.add(attempt),
         );
         await tester.pumpAndSettle();
 
@@ -1238,8 +1246,81 @@ void main() {
           ),
           findsNothing,
         );
+        // The caller gates the user from this attempt: a lookup can no longer
+        // be signed once the coordinator has the deletion (#8583).
+        expect(accepted, [same(_recoverableAttempt), same(processingAttempt)]);
+        verify(authService.signOut).called(1);
       },
     );
+
+    testWidgets('handles a failed durable receipt write before submission', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttempt);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer(
+        (_) async => DeleteAccountResult.createSuccess('event-id'),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+        onDeletionSubmitted: (_, _) async {
+          throw StateError('receipt write failed');
+        },
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).accountDeletionRecoveryBody,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).accountDeletionFinishingBody,
+        ),
+        findsNothing,
+      );
+      verifyNever(
+        () => recoveryRepository.submit(
+          attemptId: any(named: 'attemptId'),
+          vanishEventId: any(named: 'vanishEventId'),
+        ),
+      );
+      verifyNever(authService.signOut);
+    });
 
     testWidgets('username preparation failure keeps neutral guidance', (
       tester,

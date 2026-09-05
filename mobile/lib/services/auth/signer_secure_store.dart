@@ -406,6 +406,37 @@ class SignerSecureStore {
     }
   }
 
+  /// Removes signer credentials that can be proven to belong to [pubkeyHex].
+  /// Propagates secure-storage failures so incomplete cleanup can be retried.
+  Future<void> clearAccount(String pubkeyHex) async {
+    final storage = _storage;
+    if (storage == null) return;
+
+    final amberPubkey = await storage.read(key: _kAmberPubkeyKey);
+    if (amberPubkey == pubkeyHex) {
+      await storage.delete(key: _kAmberPackageKey);
+      await storage.delete(key: _kAmberPubkeyKey);
+    }
+
+    final bunkerUrl = await storage.read(key: _kBunkerInfoKey);
+    if (bunkerUrl != null &&
+        NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl).userPubkey ==
+            pubkeyHex) {
+      await storage.delete(key: _kBunkerInfoKey);
+    }
+
+    final session = await KeycastSession.load(storage);
+    if (session?.userPubkey == pubkeyHex) {
+      await storage.delete(key: _kKeycastRefreshTokenKey);
+      await storage.delete(key: _kKeycastAuthHandleKey);
+      await KeycastSession.clear(storage);
+    }
+    await storage.delete(key: '${_kAmberPackageKey}_$pubkeyHex');
+    await storage.delete(key: '${_kAmberPubkeyKey}_$pubkeyHex');
+    await storage.delete(key: '${_kBunkerInfoKey}_$pubkeyHex');
+    await storage.delete(key: _keycastSessionKey(pubkeyHex));
+  }
+
   /// Whether a restorable per-account signer archive exists for [pubkeyHex]
   /// under [source]. For divineOAuth, also validates the archived session's
   /// bound pubkey matches.
