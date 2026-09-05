@@ -232,14 +232,17 @@ bool _isDefinitelyTrue(Expression? expression) =>
 /// constructor is likewise a MethodInvocation targeted at `DivineIconButton`;
 /// only `const`/`new` forms become an InstanceCreationExpression. A variable or
 /// a conditional may still be null at runtime, so it does not count and the
-/// label stays required.
+/// label stays required; nor does a helper call such as `_buildAction()`,
+/// whose name survives `toUpperCase` unchanged but is not a class name.
 bool _isInlineWidget(Expression? expression) {
   if (expression is InstanceCreationExpression) return true;
   if (expression is! MethodInvocation) return false;
   final name = expression.methodName.name;
-  return (name.isNotEmpty && name[0] == name[0].toUpperCase()) ||
+  return _capitalised.hasMatch(name) ||
       _lastIdentifierName(expression.target) == 'DivineIconButton';
 }
+
+final _capitalised = RegExp('^[A-Z]');
 
 String? _lastIdentifierName(Expression? expression) {
   return switch (expression) {

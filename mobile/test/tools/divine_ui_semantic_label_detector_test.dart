@@ -214,6 +214,26 @@ void build() {
       ]);
     });
 
+    test('keeps labels required for a helper call that may return null', () {
+      // `_buildClose` survives `toUpperCase` unchanged, so a case-identity
+      // check would mistake it for a constructor and drop the label.
+      final omissions = scan('''
+void build() {
+  VineBottomSheet(
+    onComplete: save,
+    headerLeadingAction: _buildClose(),
+    headerTrailingAction: buildDone(),
+    body: body,
+  );
+}
+''');
+
+      expect(omissions.map((omission) => omission.argument), [
+        'closeSemanticLabel',
+        'completeSemanticLabel',
+      ]);
+    });
+
     test('counts custom-leading app bars only', () {
       final omissions = scan('''
 void build() {
