@@ -1466,7 +1466,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
     final prefs = await SharedPreferences.getInstance();
     Object? keyDeletionError;
-    Object? userDataCleanupError;
+    Object? cleanupError;
 
     try {
       await _userDataCleanupService.deleteAccountData(
@@ -1475,12 +1475,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         preserveActiveSession: _currentKeyContainer != null,
       );
     } catch (error) {
-      userDataCleanupError = error;
+      cleanupError = error;
     }
     try {
       await CacheSync.invalidatePrefix(pubkeyHex);
     } catch (error, stackTrace) {
-      userDataCleanupError ??= error;
+      cleanupError ??= error;
       _reportStorageError(
         error,
         stackTrace,
@@ -1491,7 +1491,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       await _knownAccounts.removeStrict(pubkeyHex);
     } catch (error) {
-      userDataCleanupError ??= error;
+      cleanupError ??= error;
     }
     try {
       await _signerStore.clearAccount(pubkeyHex);
@@ -1509,10 +1509,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         'Local account deletion failed: $keyDeletionError',
       );
     }
-    if (userDataCleanupError != null) {
+    if (cleanupError != null) {
       throw UserDataCleanupException(
         'Local account data cleanup failed',
-        userDataCleanupError,
+        cleanupError,
       );
     }
 
@@ -3119,9 +3119,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Signs out the current user.
   ///
-  /// [abortOnKeyDeletionFailure] keeps the session active if key deletion
-  /// fails. Otherwise destructive cleanup finishes before throwing
-  /// [SecureKeyStorageException] or [UserDataCleanupException].
+  /// [abortOnKeyDeletionFailure] keeps the session active on deletion failure.
   Future<void> signOut({
     bool deleteKeys = false,
     bool abortOnKeyDeletionFailure = false,
@@ -3140,7 +3138,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
 
-    // Delete keys before teardown when failure must leave the session intact.
     if (deleteKeys && abortOnKeyDeletionFailure) {
       await _deleteStoredLoginForAccount(npubAtSignOutStart);
     }
@@ -3207,7 +3204,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       await prefs.remove('current_user_pubkey_hex');
 
-      // Cache keys use `${pubkey}:${operation}`, so this is account-scoped.
       if (currentPubkey != null) {
         try {
           await CacheSync.invalidatePrefix(currentPubkey);
@@ -3354,8 +3350,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       await _clearOAuthSessionForSignOut();
 
-      // Reset recovery only after signer cleanup so removed accounts cannot
-      // silently recover; retain other restorable accounts in the picker.
       if (deleteKeys &&
           (!deleteLocalUserData || userDataCleanupError == null)) {
         try {

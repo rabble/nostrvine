@@ -1,5 +1,5 @@
 // ABOUTME: Probes the account-deletion coordinator route for configured environments.
-// ABOUTME: Blocks releases unless selected routes return HTTP 401 (#8125).
+// ABOUTME: Blocks releases unless selected routes reject credential-free requests (#8125).
 
 import 'dart:async';
 import 'dart:io';
@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 
 const coordinatorCurrentPath = '/api/account-deletion/attempts/current';
 const coordinatorStatusProbePath =
-    '/api/account-deletion/attempts/route-probe/status';
+    '/api/account-deletion/attempts/00000000-0000-4000-8000-000000000000/status';
 const List<String> coordinatorProbePaths = [
   coordinatorCurrentPath,
   coordinatorStatusProbePath,
