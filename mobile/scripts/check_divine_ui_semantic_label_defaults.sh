@@ -7,9 +7,9 @@
 # The detector is a real Dart AST because labels are conditional and supported
 # APIs include both constructors and static helpers. A password label matters
 # only when obscureText can be true; bottom-sheet labels matter only when
-# onComplete can be non-null; similar trigger rules apply to custom app-bar and
-# snackbar controls. Comments, strings, unrelated methods, and controls proven
-# absent are never counted.
+# onComplete can be non-null and the header can render; similar trigger and
+# precedence rules apply to custom app-bar and snackbar controls. Comments,
+# strings, unrelated methods, and controls proven absent are never counted.
 #
 # Regenerate after localizing existing call sites (never to raise):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_divine_ui_semantic_label_defaults.sh

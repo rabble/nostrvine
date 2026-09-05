@@ -44,11 +44,15 @@ class SemanticLabelRule {
     required this.api,
     required this.triggerArgument,
     required this.labelArguments,
+    this.visibilityArgument,
+    this.hiddenWhenTrueArguments = const [],
   });
 
   final String api;
   final String triggerArgument;
   final List<String> labelArguments;
+  final String? visibilityArgument;
+  final List<String> hiddenWhenTrueArguments;
 }
 
 const semanticLabelRules = <SemanticLabelRule>[
@@ -61,11 +65,13 @@ const semanticLabelRules = <SemanticLabelRule>[
     api: 'VineBottomSheet',
     triggerArgument: 'onComplete',
     labelArguments: ['closeSemanticLabel', 'completeSemanticLabel'],
+    visibilityArgument: 'showHeader',
   ),
   SemanticLabelRule(
     api: 'VineBottomSheet.show',
     triggerArgument: 'onComplete',
     labelArguments: ['closeSemanticLabel', 'completeSemanticLabel'],
+    visibilityArgument: 'showHeader',
   ),
   SemanticLabelRule(
     api: 'DiVineAppBar',
@@ -76,6 +82,7 @@ const semanticLabelRules = <SemanticLabelRule>[
     api: 'DiVineAppBarLeading',
     triggerArgument: 'leadingIcon',
     labelArguments: ['leadingActionSemanticLabel'],
+    hiddenWhenTrueArguments: ['showBackButton', 'showMenuButton'],
   ),
   SemanticLabelRule(
     api: 'DivineSnackbarContainer',
@@ -150,7 +157,17 @@ class _Visitor extends RecursiveAstVisitor<void> {
 
     for (final rule in matchingRules) {
       final trigger = named[rule.triggerArgument];
-      if (!_canRender(trigger)) continue;
+      if (!_canRender(trigger, defaultValue: false)) continue;
+      final visibilityArgument = rule.visibilityArgument;
+      if (visibilityArgument != null &&
+          !_canRender(named[visibilityArgument], defaultValue: true)) {
+        continue;
+      }
+      if (rule.hiddenWhenTrueArguments.any(
+        (argument) => _isDefinitelyTrue(named[argument]),
+      )) {
+        continue;
+      }
       for (final label in rule.labelArguments) {
         if (named.containsKey(label)) continue;
         omissions.add(
@@ -166,10 +183,14 @@ class _Visitor extends RecursiveAstVisitor<void> {
   }
 }
 
-bool _canRender(Expression? trigger) {
-  if (trigger == null || trigger is NullLiteral) return false;
+bool _canRender(Expression? trigger, {required bool defaultValue}) {
+  if (trigger == null) return defaultValue;
+  if (trigger is NullLiteral) return false;
   return trigger is! BooleanLiteral || trigger.value;
 }
+
+bool _isDefinitelyTrue(Expression? expression) =>
+    expression is BooleanLiteral && expression.value;
 
 String? _lastIdentifierName(Expression? expression) {
   return switch (expression) {

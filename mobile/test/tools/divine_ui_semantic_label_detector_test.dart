@@ -121,6 +121,22 @@ void build() {
       },
     );
 
+    test('does not count completion controls in a headerless sheet', () {
+      final omissions = scan('''
+void build() {
+  VineBottomSheet(showHeader: false, onComplete: save, body: body);
+  VineBottomSheet.show(
+    context: context,
+    showHeader: false,
+    onComplete: save,
+    body: body,
+  );
+}
+''');
+
+      expect(omissions, isEmpty);
+    });
+
     test('counts custom-leading app bars only', () {
       final omissions = scan('''
 void build() {
@@ -143,6 +159,33 @@ void build() {
         'DiVineAppBar',
         'DiVineAppBarLeading',
       ]);
+    });
+
+    test('ignores a custom leading icon shadowed by back or menu', () {
+      final omissions = scan('''
+void build() {
+  DiVineAppBarLeading(
+    showBackButton: true,
+    onBackPressed: back,
+    showMenuButton: false,
+    onMenuPressed: null,
+    leadingIcon: icon,
+    onLeadingPressed: callback,
+    style: style,
+  );
+  DiVineAppBarLeading(
+    showBackButton: false,
+    onBackPressed: null,
+    showMenuButton: true,
+    onMenuPressed: menu,
+    leadingIcon: icon,
+    onLeadingPressed: callback,
+    style: style,
+  );
+}
+''');
+
+      expect(omissions, isEmpty);
     });
 
     test('counts dismissible snackbar constructor and static helper', () {
