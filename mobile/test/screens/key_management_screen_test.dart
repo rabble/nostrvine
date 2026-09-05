@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
@@ -80,10 +79,6 @@ class _FakeKeyManagementAuthService extends Fake implements AuthService {
 
 void main() {
   group(KeyManagementScreen, () {
-    setUpAll(() async {
-      await loadAppFonts();
-    });
-
     const testNpub =
         'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -99,10 +94,7 @@ void main() {
 
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            SystemChannels.platform,
-            null,
-          );
+          .setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
     Future<void> pumpSubject(
@@ -463,12 +455,7 @@ void main() {
       await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(
-          l10n.keyManagementKeycastGenericFailure,
-        ),
-        findsOne,
-      );
+      expect(find.text(l10n.keyManagementKeycastGenericFailure), findsOne);
       expect(find.textContaining('ClientException'), findsNothing);
     });
 
@@ -543,41 +530,40 @@ void main() {
       expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
     });
 
-    testWidgets(
-      'hides nsec export and key import for a protected minor',
-      (tester) async {
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        // Local, exportable key: without the gate the copy-nsec action would
-        // show, so this proves the gate — not canExportLocalNsec — hides it.
-        authService = _FakeKeyManagementAuthService(
-          currentNpub: testNpub,
-          authenticationSource: AuthenticationSource.divineOAuth,
-          canExportLocalNsec: true,
-        );
+    testWidgets('hides nsec export and key import for a protected minor', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // Local, exportable key: without the gate the copy-nsec action would
+      // show, so this proves the gate — not canExportLocalNsec — hides it.
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: true,
+      );
 
-        await pumpSubject(tester, restricted: true);
+      await pumpSubject(tester, restricted: true);
 
-        expect(find.text(l10n.keyManagementRestrictedTitle), findsOneWidget);
-        expect(find.text(l10n.keyManagementRestrictedBody), findsOneWidget);
+      expect(find.text(l10n.keyManagementRestrictedTitle), findsOneWidget);
+      expect(find.text(l10n.keyManagementRestrictedBody), findsOneWidget);
 
-        expect(
-          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.text(l10n.keyManagementBackupTitle, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.text(l10n.keyManagementImportButton, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.text(l10n.keyManagementImportTitle, skipOffstage: false),
-          findsNothing,
-        );
-      },
-    );
+      expect(
+        find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
+        findsNothing,
+      );
+      expect(
+        find.text(l10n.keyManagementBackupTitle, skipOffstage: false),
+        findsNothing,
+      );
+      expect(
+        find.text(l10n.keyManagementImportButton, skipOffstage: false),
+        findsNothing,
+      );
+      expect(
+        find.text(l10n.keyManagementImportTitle, skipOffstage: false),
+        findsNothing,
+      );
+    });
 
     testWidgets(
       'hides the Keycast key export for a protected minor with an RPC-only '
@@ -612,29 +598,28 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows nsec export and key import for a normal account',
-      (tester) async {
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        authService = _FakeKeyManagementAuthService(
-          currentNpub: testNpub,
-          authenticationSource: AuthenticationSource.divineOAuth,
-          canExportLocalNsec: true,
-        );
+    testWidgets('shows nsec export and key import for a normal account', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: true,
+      );
 
-        await pumpSubject(tester);
+      await pumpSubject(tester);
 
-        expect(
-          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
-          findsOneWidget,
-        );
-        expect(
-          find.text(l10n.keyManagementImportButton, skipOffstage: false),
-          findsOneWidget,
-        );
-        expect(find.text(l10n.keyManagementRestrictedTitle), findsNothing);
-      },
-    );
+      expect(
+        find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.keyManagementImportButton, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.keyManagementRestrictedTitle), findsNothing);
+    });
 
     testWidgets(
       'does not import the key when the gate flips to restricted while the '
@@ -685,15 +670,10 @@ void main() {
 
         // Start the import: enter an nsec and open the confirmation dialog.
         await tester.enterText(find.byType(TextField), 'nsec1${'0' * 58}');
-        await tester.ensureVisible(
-          find.text(l10n.keyManagementImportButton),
-        );
+        await tester.ensureVisible(find.text(l10n.keyManagementImportButton));
         await tester.tap(find.text(l10n.keyManagementImportButton));
         await tester.pumpAndSettle();
-        expect(
-          find.text(l10n.keyManagementConfirmImportTitle),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.keyManagementConfirmImportTitle), findsOneWidget);
 
         // Gate flips to restricted while the dialog is still open.
         final container = ProviderScope.containerOf(
