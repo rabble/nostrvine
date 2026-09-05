@@ -139,18 +139,13 @@ class UploadManager implements BackgroundAwareService {
   /// in-process path. Requires the blossom service to have been built with a
   /// background transport.
   final bool useBackgroundUpload;
-
-  // Core services
   final PendingUploadStore _store;
   final BlossomUploadService _blossomService;
   final CrashReporter _crashReporting;
-
   @visibleForTesting
   CrashReporter get crashReporterForTesting => _crashReporting;
 
-  /// Pulls the thumbnail frame out of the local video. Injectable so the
-  /// thumbnail leg can be exercised without a decodable video and the native
-  /// plugin behind [VideoThumbnailService].
+  /// Injectable so tests do not need a decodable video or native plugin.
   final ThumbnailExtractor _extractThumbnail;
 
   static Future<ThumbnailFileResult?> _defaultThumbnailExtractor({

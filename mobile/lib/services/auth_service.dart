@@ -216,12 +216,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final PreFetchFollowingCallback? _preFetchFollowing;
   final AuthUrlLauncher? _launchAuthUrl;
   final BackgroundActivityManager _backgroundActivityManager;
-
   final CrashReporter _crashReporter;
-
   @visibleForTesting
   CrashReporter get crashReporterForTesting => _crashReporter;
-
   final String? _profileCheckIndexerUrl;
   final RemoteSignerFactory _remoteSignerFactory;
   final Duration _startupNetworkOperationTimeout;
