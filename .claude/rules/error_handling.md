@@ -121,6 +121,12 @@ void main() {
 
 ## Per-layer failure contract
 
+Undocumented statement-free catch bodies are blocked by
+`mobile/scripts/check_empty_catch_ceiling.sh` across app and package production
+libraries. If swallowing a cleanup or fallback error is genuinely intentional,
+leave a concise comment inside the catch body explaining why; otherwise follow
+the layer contract below and handle, log, or classify the failure.
+
 The same failure travels four layers before a user sees it. Each layer
 has one job; mixing jobs is how silent failures and misleading
 dashboards get born.
