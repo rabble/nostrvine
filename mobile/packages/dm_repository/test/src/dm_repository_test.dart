@@ -23429,6 +23429,164 @@ void main() {
       );
 
       test(
+        'a recovery that JOINS the group send in-flight attempt charges a '
+        'soft-unconfirmed sibling exactly once — the group owns that attempt',
+        () async {
+          // Group-first: B's publish is parked so the sweep's recoverFullSend
+          // finds the group's attempt already registered and joins it. The
+          // group ran the attempt, so the group is the one that finalizes
+          // it; recoverFullSend hands the joined outcome back untouched.
+          final bPublish = Completer<NIP17SendResult>();
+          var bSendRumorCalls = 0;
+          stubSendRumor((_, recipient) {
+            if (recipient == _validPubkeyB) {
+              bSendRumorCalls++;
+              return bPublish.future;
+            }
+            return NIP17SendResult.success(
+              rumorEventId: 'rumor-$recipient',
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) {
+            enqueued.add(inv.positionalArguments.first as OutgoingDm);
+            return Future.value();
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final sendFuture = repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'soft-unconfirmed, joined by the sweep',
+          );
+          await pumpEventQueue();
+          expect(enqueued, hasLength(2));
+
+          final recoveryFuture = repository.recoverFullSend(
+            rumorId: enqueued.first.id,
+          );
+
+          bPublish.complete(
+            const NIP17SendResult.failure(
+              'frame written, no OK',
+              retryablePending: true,
+            ),
+          );
+
+          final results = await sendFuture;
+          final recovered = await recoveryFuture;
+
+          expect(recovered.retryablePending, isTrue);
+          expect(results.first.retryablePending, isTrue);
+          expect(
+            results.first.queuedRumorId,
+            equals(enqueued.first.id),
+            reason: 'the caller keeps the durable handle to re-drive the row',
+          );
+          expect(bSendRumorCalls, equals(1));
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.first.id),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a sibling that JOINS a recovery the sweep already owns is charged '
+        'for that attempt exactly once — the owner finalized it (#8619)',
+        () async {
+          // Sweep-first: the sweep's recoverFullSend registers C's recovery
+          // and runs the attempt while the group loop is still parked on B.
+          // When the group reaches C it joins that attempt and receives an
+          // outcome _recoverFullSendLocked has ALREADY finalized, so the
+          // group's own non-success pass must not charge the row again.
+          final bPublish = Completer<NIP17SendResult>();
+          final cPublish = Completer<NIP17SendResult>();
+          var cSendRumorCalls = 0;
+          stubSendRumor((_, recipient) {
+            if (recipient == _validPubkeyB) return bPublish.future;
+            cSendRumorCalls++;
+            return cPublish.future;
+          });
+          final enqueued = <OutgoingDm>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) {
+            enqueued.add(inv.positionalArguments.first as OutgoingDm);
+            return Future.value();
+          });
+          // The locked recovery body re-reads the row and rebuilds the rumor
+          // from its stored JSON, so hand back the real enqueued row rather
+          // than the fixture's placeholder.
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final row in enqueued) {
+              if (row.id == id) return row;
+            }
+            return null;
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final sendFuture = repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'joined a recovery the sweep owns',
+          );
+          await pumpEventQueue();
+          expect(enqueued, hasLength(2));
+
+          // The sweep reaches C's row while the group is still on B: its
+          // recovery owns `full:<C>` and parks on C's publish.
+          final recoveryFuture = repository.recoverFullSend(
+            rumorId: enqueued.last.id,
+          );
+          await pumpEventQueue();
+          expect(cSendRumorCalls, equals(1), reason: 'the sweep published C');
+
+          // Release B so the group loop reaches C and joins.
+          bPublish.complete(
+            NIP17SendResult.success(
+              rumorEventId: 'rumor-$_validPubkeyB',
+              messageEventId: 'wrap-$_validPubkeyB',
+              recipientPubkey: _validPubkeyB,
+            ),
+          );
+          await pumpEventQueue();
+          expect(
+            cSendRumorCalls,
+            equals(1),
+            reason: 'the group joined the in-flight attempt, no second publish',
+          );
+
+          // The sweep's attempt ends soft-unconfirmed.
+          cPublish.complete(
+            const NIP17SendResult.failure(
+              'frame written, no OK',
+              retryablePending: true,
+            ),
+          );
+
+          final results = await sendFuture;
+          final recovered = await recoveryFuture;
+
+          expect(recovered.retryablePending, isTrue);
+          expect(results.last.retryablePending, isTrue);
+          expect(
+            results.last.queuedRumorId,
+            equals(enqueued.last.id),
+            reason:
+                'a joined sibling still hands the caller its durable handle',
+          );
+          verify(
+            () => mockOutgoingDmsDao.incrementRetry(enqueued.last.id),
+          ).called(1);
+        },
+      );
+
+      test(
         'a throwing per-recipient publish is converted to a plain failure '
         'and never aborts the rest of the batch',
         () async {
