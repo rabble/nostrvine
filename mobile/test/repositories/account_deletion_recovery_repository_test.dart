@@ -106,6 +106,57 @@ void main() {
       );
     });
 
+    test('public status lookup preserves structured 404 evidence', () {
+      expect(
+        () =>
+            repository(
+              MockClient(
+                (_) async => http.Response(
+                  jsonEncode({'failure_code': 'attempt_not_found'}),
+                  404,
+                ),
+              ),
+            ).fetchStatus(
+              attemptId: 'attempt-1',
+              pubkeyHex:
+                  '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+            ),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having((error) => error.code, 'code', 'attempt_not_found'),
+        ),
+      );
+    });
+
+    test('public status lookup preserves server failures', () {
+      expect(
+        () =>
+            repository(
+              MockClient(
+                (_) async => http.Response(
+                  jsonEncode({'failure_code': 'coordinator_unavailable'}),
+                  503,
+                ),
+              ),
+              delay: (_) async {},
+            ).fetchStatus(
+              attemptId: 'attempt-1',
+              pubkeyHex:
+                  '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+            ),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.code,
+                'code',
+                'coordinator_unavailable',
+              ),
+        ),
+      );
+    });
+
     test(
       'prepare signs and posts the exact coordinator URL and body',
       () async {

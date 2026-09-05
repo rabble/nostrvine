@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -26,6 +27,30 @@ class _MockUserDataCleanupService extends Mock
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _NoOpCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deletePrefix(String prefix) async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
 
 // Test nsec from a known keypair (same one used in other auth_service tests)
 const _testNsec =
@@ -72,12 +97,13 @@ void main() {
     registerFallbackValue(SecureKeyContainer.fromNsec(_testNsec));
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({kKnownAccountsKey: '[]'});
     mockKeyStorage = _MockSecureKeyStorage();
     mockCleanupService = _MockUserDataCleanupService();
     mockSecureStorage = _MockFlutterSecureStorage();
     mockOAuthClient = _MockKeycastOAuth();
+    await CacheSync.init(dao: _NoOpCacheDao());
     testKeyContainer = SecureKeyContainer.fromNsec(_testNsec);
 
     // Default stubs
@@ -2401,6 +2427,128 @@ void main() {
           remaining.single['pubkeyHex'],
           equals(localAccount.publicKeyHex),
         );
+      },
+    );
+
+    for (final (signer, archiveKeyPrefix) in [
+      ('Amber', 'amber_pubkey'),
+      ('Bunker', 'bunker_info'),
+      ('OAuth', 'keycast_session'),
+    ]) {
+      test(
+        'account deletion reports $signer archive cleanup failure after '
+        'teardown',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'authentication_source': AuthenticationSource.automatic.code,
+            kKnownAccountsKey: jsonEncode([
+              KnownAccount(
+                pubkeyHex: testKeyContainer.publicKeyHex,
+                authSource: AuthenticationSource.automatic,
+                addedAt: DateTime.now(),
+                lastUsedAt: DateTime.now(),
+              ).toJson(),
+            ]),
+          });
+          authService.debugSetCurrentKeyContainer(testKeyContainer);
+          final archiveKey =
+              '${archiveKeyPrefix}_${testKeyContainer.publicKeyHex}';
+          when(
+            () => mockSecureStorage.delete(key: archiveKey),
+          ).thenThrow(StateError('keychain unavailable'));
+
+          await expectLater(
+            authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+            throwsA(isA<SecureKeyStorageException>()),
+          );
+
+          verify(() => mockSecureStorage.delete(key: archiveKey)).called(1);
+          expect(authService.authState, AuthState.unauthenticated);
+        },
+      );
+    }
+
+    test('named local deletion works after sign-out and preserves another '
+        'account primary key', () async {
+      final deletedAccount = SecureKeyContainer.fromPublicKey('b' * 64);
+      final remainingAccount = SecureKeyContainer.fromNsec(_otherNsec);
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': AuthenticationSource.divineOAuth.code,
+        'last_used_npub': deletedAccount.npub,
+        kKnownAccountsKey: jsonEncode([
+          KnownAccount(
+            pubkeyHex: deletedAccount.publicKeyHex,
+            authSource: AuthenticationSource.divineOAuth,
+            addedAt: DateTime.now().subtract(const Duration(hours: 1)),
+            lastUsedAt: DateTime.now(),
+          ).toJson(),
+          KnownAccount(
+            pubkeyHex: remainingAccount.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          ).toJson(),
+        ]),
+      });
+      when(
+        () => mockKeyStorage.getKeyContainer(),
+      ).thenAnswer((_) async => remainingAccount);
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          remainingAccount.npub,
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => remainingAccount);
+      when(
+        () => mockCleanupService.deleteAccountData(
+          deletedAccount.publicKeyHex,
+          userNpub: deletedAccount.npub,
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await authService.deleteLocalAccount(deletedAccount.publicKeyHex);
+
+      verify(
+        () => mockKeyStorage.deleteIdentityKeyContainer(deletedAccount.npub),
+      ).called(1);
+      verifyNever(() => mockKeyStorage.deleteKeys());
+      verify(
+        () => mockCleanupService.deleteAccountData(
+          deletedAccount.publicKeyHex,
+          userNpub: deletedAccount.npub,
+        ),
+      ).called(1);
+      final prefs = await SharedPreferences.getInstance();
+      final remaining =
+          jsonDecode(prefs.getString(kKnownAccountsKey)!) as List<dynamic>;
+      expect(remaining, hasLength(1));
+      expect(
+        remaining.single['pubkeyHex'],
+        remainingAccount.publicKeyHex,
+      );
+    });
+
+    test(
+      'named local deletion preserves a malformed account registry',
+      () async {
+        final deletedAccount = SecureKeyContainer.fromPublicKey('b' * 64);
+        SharedPreferences.setMockInitialValues({
+          kKnownAccountsKey: '{malformed',
+        });
+        when(
+          () => mockCleanupService.deleteAccountData(
+            deletedAccount.publicKeyHex,
+            userNpub: deletedAccount.npub,
+          ),
+        ).thenAnswer((_) async => 0);
+
+        await expectLater(
+          authService.deleteLocalAccount(deletedAccount.publicKeyHex),
+          throwsA(isA<UserDataCleanupException>()),
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(kKnownAccountsKey), '{malformed');
       },
     );
 

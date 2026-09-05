@@ -800,6 +800,20 @@ Future<void> executeAccountDeletion({
       AccountDeletionAttempt submitted;
       try {
         await onDeletionSubmitted?.call(attempt, eventId);
+      } on Object catch (error) {
+        Log.error(
+          'Could not persist account deletion receipt',
+          name: screenName,
+          category: LogCategory.auth,
+          error: error,
+        );
+        dismissProgressSheet();
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
+        return;
+      }
+      try {
         submitted = await deletionRecoveryRepository.submit(
           attemptId: attempt.id,
           vanishEventId: eventId,

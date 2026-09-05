@@ -22,6 +22,7 @@ import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +37,7 @@ const _pubkeyA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _pubkeyB =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+final String _npubA = NostrKeyUtils.encodePubKey(_pubkeyA);
 const _reactionIdA =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 const _reactionIdB =
@@ -238,6 +240,50 @@ void main() {
         verify(() => dmRepository.stopListening()).called(1);
       },
     );
+
+    test('named account deletion preserves the active dm listener', () async {
+      final subscription = container.listen(
+        userDataCleanupServiceProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      await subscription.read().deleteAccountData(
+        _pubkeyA,
+        userNpub: _npubA,
+      );
+
+      verifyNever(() => dmRepository.stopListening());
+    });
+
+    test('named account deletion propagates database failures', () async {
+      final failureContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+          openVineImageCacheClearProvider.overrideWithValue(() async {}),
+          pendingUploadOwnerCleanupProvider.overrideWithValue(
+            (_) async => throw StateError('delete failed'),
+          ),
+        ],
+      );
+      addTearDown(failureContainer.dispose);
+      final subscription = failureContainer.listen(
+        userDataCleanupServiceProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final service = subscription.read();
+
+      await expectLater(
+        service.deleteAccountData(
+          _pubkeyA,
+          userNpub: _npubA,
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
 
     test(
       'database cleanup does not build dm repository just to stop it',
@@ -614,6 +660,41 @@ void main() {
           reason: "only B's processed-wrap row should survive",
         );
       });
+
+      test(
+        'named deletion leaves other and unattributed DM rows intact',
+        () async {
+          await seedDm(
+            messageId: _dmTargetMessageId,
+            conversationId: _dmConversationId,
+            ownerPubkey: _pubkeyA,
+          );
+          await seedDm(
+            messageId: _dmSecondTargetMessageId,
+            conversationId: _reactionIdB,
+            ownerPubkey: _pubkeyB,
+          );
+          await seedDm(
+            messageId: _pendingDeletionId,
+            conversationId: _reactionIdA,
+            ownerPubkey: '',
+          );
+          expect(await dmCountFor(''), 1);
+          expect(await conversationCountFor(''), 1);
+
+          await readService().deleteAccountData(
+            _pubkeyA,
+            userNpub: _npubA,
+          );
+
+          expect(await dmCountFor(_pubkeyA), 0);
+          expect(await dmCountFor(_pubkeyB), 1);
+          expect(await dmCountFor(''), 1);
+          expect(await conversationCountFor(_pubkeyA), 0);
+          expect(await conversationCountFor(_pubkeyB), 1);
+          expect(await conversationCountFor(''), 1);
+        },
+      );
 
       test(
         'a known-owner switch deletes NULL and empty-owner DM rows',

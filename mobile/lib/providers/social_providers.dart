@@ -742,7 +742,11 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // this account may still need (removal tombstones, retryable reactions) that
   // a plain switch deliberately preserves.
   service.onDatabaseCleanup =
-      ({String? userPubkey, bool deleteUserData = false}) async {
+      ({
+        String? userPubkey,
+        bool deleteUserData = false,
+        bool preserveActiveSession = false,
+      }) async {
         Future<void> safeCleanup(
           String name,
           Future<void> Function() fn,
@@ -775,21 +779,23 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           }
         }
 
-        await requiredCleanup(
-          'dmRepository',
-          () => ref.read(dmListeningStopProvider)(),
-        );
-        try {
-          await ref.read(openVineImageCacheClearProvider)();
-          ref
-              .read(adultMediaAccessRevocationVersionProvider.notifier)
-              .increment();
-        } catch (e) {
-          Log.warning(
-            'Failed to clear image cache during user data cleanup: $e',
-            name: 'UserDataCleanup',
-            category: LogCategory.auth,
+        if (!preserveActiveSession) {
+          await requiredCleanup(
+            'dmRepository',
+            () => ref.read(dmListeningStopProvider)(),
           );
+          try {
+            await ref.read(openVineImageCacheClearProvider)();
+            ref
+                .read(adultMediaAccessRevocationVersionProvider.notifier)
+                .increment();
+          } catch (e) {
+            Log.warning(
+              'Failed to clear image cache during user data cleanup: $e',
+              name: 'UserDataCleanup',
+              category: LogCategory.auth,
+            );
+          }
         }
         // A switch must leave no DM data attributable to the departing account
         // and must never expose ambiguous legacy data to the incoming account.
@@ -799,12 +805,24 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         await requiredCleanup('DM tables', () async {
           await db.transaction(() async {
             if (userPubkey != null) {
-              await db.directMessagesDao.clearForAccountSwitch(userPubkey);
-              await db.conversationsDao.clearForAccountSwitch(userPubkey);
+              if (preserveActiveSession) {
+                await db.directMessagesDao.deleteAllForOwner(userPubkey);
+                await db.conversationsDao.deleteAllForOwner(userPubkey);
+              } else {
+                await db.directMessagesDao.clearForAccountSwitch(userPubkey);
+                await db.conversationsDao.clearForAccountSwitch(userPubkey);
+              }
               // Raw failed-decrypt wraps and their terminal dedup ledger must
               // never outlive the decrypted DM data they accompany.
-              await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
-              await db.processedGiftWrapsDao.clearForAccountSwitch(userPubkey);
+              if (preserveActiveSession) {
+                await db.pendingGiftWrapsDao.deleteAllForOwner(userPubkey);
+                await db.processedGiftWrapsDao.deleteAllForOwner(userPubkey);
+              } else {
+                await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
+                await db.processedGiftWrapsDao.clearForAccountSwitch(
+                  userPubkey,
+                );
+              }
             } else {
               await db.directMessagesDao.clearUnowned();
               await db.conversationsDao.clearUnowned();
@@ -814,7 +832,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           });
         });
         if (deleteUserData && userPubkey != null) {
-          await safeCleanup(
+          await requiredCleanup(
             'removedConversations',
             () => db.removedConversationsDao.clearAllForUser(userPubkey),
           );
@@ -828,7 +846,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         // so unlike direct_messages there are no legacy NULL-owner rows a
         // scoped delete would strand. See #6984.
         if (userPubkey != null) {
-          await safeCleanup(
+          await (deleteUserData ? requiredCleanup : safeCleanup)(
             'dmReactions',
             () => deleteUserData
                 ? db.dmReactionsDao.deleteAllForOwner(userPubkey)
@@ -837,17 +855,19 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         }
         // Scoped to the leaving account so a switch does not wipe the other
         // account's cached inbox along with this one's.
-        await safeCleanup(
+        await (deleteUserData ? requiredCleanup : safeCleanup)(
           'notifications',
           () => db.notificationsDao.clearAll(ownerPubkey: userPubkey),
         );
         // Issue #3936 requires the NIP-39 identity caches to clear on logout
         // and account switches rather than persisting across identities.
-        await safeCleanup('identityEvents', db.identityEventsDao.clearAll);
-        await safeCleanup(
-          'identityVerifications',
-          db.identityVerificationsDao.clearAll,
-        );
+        if (!preserveActiveSession) {
+          await safeCleanup('identityEvents', db.identityEventsDao.clearAll);
+          await safeCleanup(
+            'identityVerifications',
+            db.identityVerificationsDao.clearAll,
+          );
+        }
         // Clear the leaving account's DM sync cursors so its next login
         // re-fetches from relays instead of resuming from a `since:` boundary
         // whose local rows have just been deleted.
@@ -863,7 +883,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         // database was recreated, so every account's cursors are genuinely
         // stale.
         if (userPubkey != null) {
-          await safeCleanup(
+          await (deleteUserData ? requiredCleanup : safeCleanup)(
             'dmSyncState',
             () => DmSyncState(prefs).clear(userPubkey),
           );
@@ -871,54 +891,55 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
 
         // Per-user data cleanup (#2999): only on destructive paths
         if (deleteUserData && userPubkey != null) {
-          Future<void> safeDelete(
+          Future<void> requiredDelete(
             String name,
             Future<int> Function() fn,
           ) async {
             try {
               await fn();
             } catch (e) {
-              Log.warning(
+              Log.error(
                 'Failed to clean $name for ${pubkeyForLogs(userPubkey)}: $e',
                 name: 'UserDataCleanup',
                 category: LogCategory.auth,
               );
+              rethrow;
             }
           }
 
-          await safeDelete(
+          await requiredDelete(
             'drafts',
             () => db.draftsDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'clips',
             () => db.clipsDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'clipCategories',
             () => db.clipCategoriesDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'pendingUploads',
             () => db.pendingUploadsDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'pendingUploadsHive',
             () => ref.read(pendingUploadOwnerCleanupProvider)(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'personalReactions',
             () => db.personalReactionsDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'personalReposts',
             () => db.personalRepostsDao.deleteAllForUser(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'pendingActions',
             () => db.pendingActionsDao.clearAll(userPubkey),
           );
-          await safeDelete(
+          await requiredDelete(
             'outgoingDms',
             () => db.outgoingDmsDao.clearAllForUser(userPubkey),
           );

@@ -387,6 +387,8 @@ void main() {
           router.routeInformationProvider.value.uri.toString(),
           AccountDeletionRecoveryScreen.path,
         );
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
       },
     );
 
@@ -426,6 +428,8 @@ void main() {
         router.routeInformationProvider.value.uri.toString(),
         AccountDeletionRecoveryScreen.path,
       );
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
     });
 
     testWidgets('terminal deletion failure still allows support', (

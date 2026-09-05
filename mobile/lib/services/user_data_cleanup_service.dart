@@ -29,7 +29,13 @@ class UserDataCleanupService {
   /// - [deleteUserData]: when true, per-user DAO rows (drafts, clips,
   ///   uploads, reactions, reposts, pending actions) are deleted.
   ///   False on non-destructive sign-out (account switch) to preserve data.
-  Future<void> Function({String? userPubkey, bool deleteUserData})?
+  /// - [preserveActiveSession]: skips device-wide teardown while deleting a
+  ///   different account from the device.
+  Future<void> Function({
+    String? userPubkey,
+    bool deleteUserData,
+    bool preserveActiveSession,
+  })?
   onDatabaseCleanup;
 
   /// Optional callback invoked during session setup to claim legacy
@@ -142,6 +148,49 @@ class UserDataCleanupService {
     }
   }
 
+  /// Deletes only data whose ownership can be attributed to [userPubkey].
+  ///
+  /// Throws [StateError] when a preference cannot be removed and propagates
+  /// database cleanup failures so callers can retry the incomplete deletion.
+  Future<int> deleteAccountData(
+    String userPubkey, {
+    required String userNpub,
+  }) async {
+    var clearedCount = 0;
+
+    Future<void> remove(String key) async {
+      if (!_prefs.containsKey(key)) return;
+      if (!await _prefs.remove(key)) {
+        throw StateError('Could not remove account data');
+      }
+      clearedCount++;
+    }
+
+    if (_prefs.getString(legacyDraftOwnerKey) == userPubkey) {
+      for (final key in ownerScopedLegacyKeys) {
+        await remove(key);
+      }
+      await remove(legacyDraftOwnerKey);
+    }
+
+    await remove(SavedSoundsService.accountStorageKey(userPubkey));
+    for (final kind in SyncItemKind.values) {
+      await remove(PrefsSyncStateStore.appliedStorageKey(kind, userPubkey));
+    }
+    for (final key in AgeVerificationService.accountKeys(userPubkey)) {
+      await remove(key);
+    }
+    await remove('following_list_$userPubkey');
+    await remove('relay_discovery_$userNpub');
+
+    await onDatabaseCleanup?.call(
+      userPubkey: userPubkey,
+      deleteUserData: true,
+      preserveActiveSession: true,
+    );
+    return clearedCount;
+  }
+
   /// Clears all user-specific data from SharedPreferences.
   ///
   /// This removes cached lists, bookmarks, mutes, viewing history,
@@ -247,6 +296,7 @@ class UserDataCleanupService {
         await onDatabaseCleanup!(
           userPubkey: userPubkey,
           deleteUserData: deleteUserData,
+          preserveActiveSession: false,
         );
         Log.info(
           'Database cleanup complete',

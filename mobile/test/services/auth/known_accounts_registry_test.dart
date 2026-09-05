@@ -369,6 +369,19 @@ void main() {
         final accounts = await registry.getKnownAccounts();
         expect(accounts.map((a) => a.pubkeyHex), ['a' * 64]);
       });
+
+      test('strict removal rejects malformed registry data', () async {
+        SharedPreferences.setMockInitialValues({
+          kKnownAccountsKey: 'not-json',
+        });
+
+        await expectLater(
+          build().removeStrict('a' * 64),
+          throwsA(isA<FormatException>()),
+        );
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(kKnownAccountsKey), 'not-json');
+      });
     });
 
     group('persist', () {

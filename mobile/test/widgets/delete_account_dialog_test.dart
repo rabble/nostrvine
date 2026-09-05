@@ -1301,9 +1301,17 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).accountDeletionFinishingBody,
+          ).accountDeletionRecoveryBody,
         ),
         findsOneWidget,
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).accountDeletionFinishingBody,
+        ),
+        findsNothing,
       );
       verifyNever(
         () => recoveryRepository.submit(

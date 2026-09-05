@@ -29,15 +29,22 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
     ref.watch(currentAuthRpcCapabilityProvider);
     final signerReadiness = authService.signerReadiness;
     final receipt = ref.watch(currentSubmittedAccountDeletionAttemptProvider);
+    final submittedMonitor = ref.watch(
+      submittedAccountDeletionMonitorProvider,
+    );
+
+    if (receipt != null && submittedMonitor != null) {
+      return BlocProvider<AccountDeletionRecoveryCubit>.value(
+        value: submittedMonitor,
+        child: const AccountDeletionRecoveryView(),
+      );
+    }
 
     return BlocProvider<AccountDeletionRecoveryCubit>(
       key: ValueKey((
         repository,
         authService,
         signerReadiness,
-        receipt?.pubkeyHex,
-        receipt?.attempt.id,
-        receipt?.vanishEventId,
       )),
       create: (_) {
         final cubit = AccountDeletionRecoveryCubit(
@@ -52,8 +59,6 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
           onAttemptUpdated: (attempt) => ref
               .read(submittedAccountDeletionAttemptProvider.notifier)
               .updateAttempt(attempt),
-          receiptPubkeyHex: receipt?.pubkeyHex,
-          receiptVanishEventId: receipt?.vanishEventId,
         );
         // A seed, not a dependency: the attempt the router gated on, which is
         // the one this process committed when the signer is already gone. The
@@ -62,10 +67,6 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
         final knownAttempt = ref
             .read(currentAccountDeletionAttemptProvider)
             .value;
-        if (knownAttempt != null && receipt != null) {
-          unawaited(cubit.resume(knownAttempt));
-          return cubit;
-        }
         switch (signerReadiness) {
           case SignerReadiness.ready:
             if (knownAttempt != null) {
@@ -140,9 +141,17 @@ class _RecoveryStateContent extends StatelessWidget {
         child: CircularProgressIndicator(),
       ),
       AccountDeletionRecoveryStatus.confirmingSubmission =>
-        _PassiveRecoveryContent(
-          body: context.l10n.accountDeletionFinishingBody,
-        ),
+        state.pollingPaused
+            ? _RecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+                actionLabel: context.l10n.supportContactSupport,
+                onPressed: () => context.push(RoutePaths.supportCenter),
+                secondaryActionLabel: context.l10n.authUseAnotherAccount,
+                onSecondaryPressed: () => _switchAccount(context, cubit),
+              )
+            : _PassiveRecoveryContent(
+                body: context.l10n.accountDeletionFinishingBody,
+              ),
       AccountDeletionRecoveryStatus.loadFailed => _RecoveryContent(
         body: state.failure == AccountDeletionRecoveryFailure.signerUnavailable
             ? context.l10n.authSessionExpired

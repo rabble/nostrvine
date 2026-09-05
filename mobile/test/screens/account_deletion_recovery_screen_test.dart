@@ -65,6 +65,7 @@ void main() {
     when(cubit.signOut).thenAnswer((_) async {});
     when(cubit.switchAccount).thenAnswer((_) async => true);
     when(cubit.completeLocalCleanup).thenAnswer((_) async {});
+    when(cubit.acknowledgeCompletion).thenAnswer((_) async {});
   });
 
   group('renders and navigation', () {
@@ -147,6 +148,29 @@ void main() {
             id: 'attempt-id',
             status: AccountDeletionAttemptStatus.processing,
           ),
+          pollingPaused: true,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.widgetWithText(DivineButton, l10n.supportContactSupport),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.authUseAnotherAccount),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('paused submission confirmation offers recovery actions', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.confirmingSubmission,
+          attempt: _recoverable,
           pollingPaused: true,
         ),
       );
@@ -285,6 +309,10 @@ void main() {
       );
       await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
       verify(cubit.retry).called(1);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+      );
+      verify(cubit.signOut).called(1);
     });
 
     testWidgets('signer failure asks the user to sign in again', (
@@ -405,6 +433,10 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
       expect(find.text('Home'), findsNothing);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.commonClose),
+      );
+      verify(cubit.acknowledgeCompletion).called(1);
     });
   });
 }

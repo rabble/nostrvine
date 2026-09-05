@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -146,6 +147,61 @@ final currentSubmittedAccountDeletionAttemptProvider =
       return authService.currentPublicKeyHex == submitted.pubkeyHex
           ? submitted
           : null;
+    });
+
+/// Keeps a submitted deletion alive independently of the recovery screen.
+///
+/// The selected identity is stable while polling updates the receipt, so the
+/// Cubit is replaced only when the receipt itself changes or is resolved.
+final Provider<AccountDeletionRecoveryCubit?>
+submittedAccountDeletionMonitorProvider =
+    Provider.autoDispose<AccountDeletionRecoveryCubit?>((ref) {
+      final receiptIdentity = ref.watch(
+        submittedAccountDeletionAttemptProvider.select(
+          (receipt) => receipt == null
+              ? null
+              : (
+                  pubkeyHex: receipt.pubkeyHex,
+                  attemptId: receipt.attempt.id,
+                  vanishEventId: receipt.vanishEventId,
+                ),
+        ),
+      );
+      if (receiptIdentity == null) return null;
+
+      final receipt = ref.read(submittedAccountDeletionAttemptProvider)!;
+      final cubit = AccountDeletionRecoveryCubit(
+        repository: ref.watch(accountDeletionRecoveryRepositoryProvider),
+        authService: ref.watch(authServiceProvider),
+        onAttemptResolved: () async {
+          await ref
+              .read(submittedAccountDeletionAttemptProvider.notifier)
+              .clear();
+          ref.invalidate(currentAccountDeletionAttemptProvider);
+        },
+        onAttemptUpdated: (attempt) => ref
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .updateAttempt(attempt),
+        receiptPubkeyHex: receipt.pubkeyHex,
+        receiptVanishEventId: receipt.vanishEventId,
+      );
+      ref.listen(currentAuthStateProvider, (_, next) {
+        if (next != AuthState.authenticated) return;
+        switch (cubit.state.status) {
+          case AccountDeletionRecoveryStatus.completed:
+            unawaited(cubit.acknowledgeCompletion());
+          case AccountDeletionRecoveryStatus.cleanupFailed:
+            unawaited(cubit.completeLocalCleanup());
+          default:
+            if (cubit.state.pollingPaused) {
+              final attempt = cubit.state.attempt;
+              if (attempt != null) unawaited(cubit.resume(attempt));
+            }
+        }
+      });
+      ref.onDispose(() => unawaited(cubit.close()));
+      unawaited(cubit.resume(receipt.attempt));
+      return cubit;
     });
 
 final currentAccountDeletionAttemptProvider =

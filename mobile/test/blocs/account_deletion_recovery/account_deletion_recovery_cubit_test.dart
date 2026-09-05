@@ -19,8 +19,9 @@ class _MockRepository extends Mock
 class _MockAuthService extends Mock implements AuthService {}
 
 class _ManualTimer implements Timer {
-  _ManualTimer(this._callback);
+  _ManualTimer(this.delay, this._callback);
 
+  final Duration delay;
   final void Function() _callback;
   var _active = true;
 
@@ -43,8 +44,8 @@ class _ManualTimer implements Timer {
 class _ManualTimers {
   final timers = <_ManualTimer>[];
 
-  Timer create(Duration _, void Function() callback) {
-    final timer = _ManualTimer(callback);
+  Timer create(Duration delay, void Function() callback) {
+    final timer = _ManualTimer(delay, callback);
     timers.add(timer);
     return timer;
   }
@@ -90,15 +91,19 @@ void main() {
   late _ManualTimers timers;
   late int resolvedCalls;
 
-  AccountDeletionRecoveryCubit buildCubit({bool withReceipt = false}) =>
-      AccountDeletionRecoveryCubit(
-        repository: repository,
-        authService: authService,
-        onAttemptResolved: () async => resolvedCalls++,
-        receiptPubkeyHex: withReceipt ? 'a' * 64 : null,
-        receiptVanishEventId: withReceipt ? 'b' * 64 : null,
-        timerFactory: timers.create,
-      );
+  AccountDeletionRecoveryCubit buildCubit({
+    bool withReceipt = false,
+    Future<void> Function()? onAttemptResolved,
+    Future<void> Function(AccountDeletionAttempt)? onAttemptUpdated,
+  }) => AccountDeletionRecoveryCubit(
+    repository: repository,
+    authService: authService,
+    onAttemptResolved: onAttemptResolved ?? () async => resolvedCalls++,
+    onAttemptUpdated: onAttemptUpdated,
+    receiptPubkeyHex: withReceipt ? 'a' * 64 : null,
+    receiptVanishEventId: withReceipt ? 'b' * 64 : null,
+    timerFactory: timers.create,
+  );
 
   setUpAll(() {
     registerFallbackValue(_preparing);
@@ -111,6 +116,9 @@ void main() {
     resolvedCalls = 0;
     when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
     when(() => authService.currentPublicKeyHex).thenReturn(null);
+    when(
+      () => authService.deleteLocalAccount(any()),
+    ).thenAnswer((_) async {});
   });
 
   group('signer readiness', () {
@@ -544,6 +552,170 @@ void main() {
 
       expect(cubit.state.status, AccountDeletionRecoveryStatus.loadFailed);
       expect(timers.timers.where((timer) => timer.isActive), isEmpty);
+
+      when(authService.signOut).thenAnswer((_) async {});
+      await cubit.signOut();
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+      expect(resolvedCalls, 1);
+      await cubit.close();
+    });
+
+    test('receipt completion deletes the named signed-out account', () async {
+      when(
+        () => repository.fetchStatus(
+          attemptId: _processing.id,
+          pubkeyHex: 'a' * 64,
+        ),
+      ).thenAnswer((_) async => _completed);
+      final cubit = buildCubit(withReceipt: true);
+      await cubit.resume(_processing);
+
+      await timers.fireNext();
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.completed);
+      verify(() => authService.deleteLocalAccount('a' * 64)).called(1);
+      verifyNever(
+        () => authService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
+      );
+      await cubit.close();
+    });
+
+    test(
+      'receipt completion resolves after deleting a different active account',
+      () async {
+        when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
+        final cubit = buildCubit(withReceipt: true);
+
+        await cubit.resume(_completed);
+
+        verify(() => authService.deleteLocalAccount('a' * 64)).called(1);
+        verifyNever(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        );
+        expect(resolvedCalls, 1);
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+        await cubit.close();
+      },
+    );
+
+    test('receipt update failure polls again before local cleanup', () async {
+      var updates = 0;
+      when(
+        () => repository.fetchStatus(
+          attemptId: _completed.id,
+          pubkeyHex: 'a' * 64,
+        ),
+      ).thenAnswer((_) async => _completed);
+      final cubit = buildCubit(
+        withReceipt: true,
+        onAttemptUpdated: (_) async {
+          updates++;
+          if (updates == 1) throw StateError('receipt write failed');
+        },
+      );
+
+      await cubit.resume(_completed);
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      verifyNever(() => authService.deleteLocalAccount(any()));
+      await timers.fireNext();
+
+      expect(updates, 2);
+      verify(() => authService.deleteLocalAccount('a' * 64)).called(1);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.completed);
+      await cubit.close();
+    });
+
+    test('different active account keeps durable polling alive', () async {
+      when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
+      when(
+        () => repository.fetchStatus(
+          attemptId: _processing.id,
+          pubkeyHex: 'a' * 64,
+        ),
+      ).thenAnswer((_) async => _processing);
+      final cubit = buildCubit(withReceipt: true);
+      await cubit.resume(_processing);
+
+      for (var poll = 0; poll < 40; poll++) {
+        await timers.fireNext();
+      }
+
+      expect(cubit.state.pollingPaused, isFalse);
+      expect(timers.timers.any((timer) => timer.isActive), isTrue);
+      await cubit.close();
+    });
+
+    test('durable cleanup keeps retrying after repeated failures', () async {
+      var cleanupCalls = 0;
+      when(() => authService.currentPublicKeyHex).thenReturn('c' * 64);
+      when(() => authService.deleteLocalAccount('a' * 64)).thenAnswer((
+        _,
+      ) async {
+        cleanupCalls++;
+        if (cleanupCalls < 3) {
+          throw const SecureKeyStorageException('locked');
+        }
+      });
+      when(
+        () => repository.fetchStatus(
+          attemptId: _completed.id,
+          pubkeyHex: 'a' * 64,
+        ),
+      ).thenAnswer((_) async => _completed);
+      final cubit = buildCubit(withReceipt: true);
+
+      await cubit.resume(_completed);
+      expect(
+        timers.timers.firstWhere((timer) => timer.isActive).delay,
+        const Duration(seconds: 2),
+      );
+      await timers.fireNext();
+      expect(
+        timers.timers.firstWhere((timer) => timer.isActive).delay,
+        const Duration(seconds: 3),
+      );
+      await timers.fireNext();
+
+      expect(cleanupCalls, 3);
+      expect(resolvedCalls, 1);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+      await cubit.close();
+    });
+
+    test('durable receipt clear failure retries through polling', () async {
+      String? activePubkey;
+      var clearCalls = 0;
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenAnswer((_) => activePubkey);
+      when(
+        () => repository.fetchStatus(
+          attemptId: _completed.id,
+          pubkeyHex: 'a' * 64,
+        ),
+      ).thenAnswer((_) async => _completed);
+      final cubit = buildCubit(
+        withReceipt: true,
+        onAttemptResolved: () async {
+          clearCalls++;
+          if (clearCalls == 1) throw StateError('receipt clear failed');
+        },
+      );
+      await cubit.resume(_completed);
+
+      await cubit.acknowledgeCompletion();
+      activePubkey = 'c' * 64;
+      await timers.fireNext();
+
+      expect(clearCalls, 2);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
       await cubit.close();
     });
 
@@ -564,6 +736,66 @@ void main() {
         await cubit.retry();
         verify(repository.fetchCurrent).called(fetchesBeforeRetry + 1);
         expect(cubit.state.pollingPaused, isFalse);
+        await cubit.close();
+      },
+    );
+
+    test(
+      'submission confirmation exposes actions at the session bound',
+      () async {
+        when(
+          () => repository.submit(
+            attemptId: _recoverable.id,
+            vanishEventId: 'b' * 64,
+          ),
+        ).thenThrow(const AccountDeletionRecoveryException('offline'));
+        when(
+          () => repository.fetchStatus(
+            attemptId: _recoverable.id,
+            pubkeyHex: 'a' * 64,
+          ),
+        ).thenAnswer((_) async => _recoverable);
+        final cubit = buildCubit(withReceipt: true);
+
+        await cubit.resume(_recoverable);
+        while (timers.timers.any((timer) => timer.isActive)) {
+          await timers.fireNext();
+        }
+
+        expect(
+          cubit.state.status,
+          AccountDeletionRecoveryStatus.confirmingSubmission,
+        );
+        expect(cubit.state.pollingPaused, isTrue);
+        await cubit.close();
+      },
+    );
+
+    test(
+      'completion acknowledgement can retry a receipt clear failure',
+      () async {
+        var attempts = 0;
+        when(repository.fetchCurrent).thenAnswer((_) async => _completed);
+        when(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        ).thenAnswer((_) async {});
+        final cubit = buildCubit(
+          onAttemptResolved: () async {
+            attempts++;
+            if (attempts == 1) throw StateError('receipt clear failed');
+          },
+        );
+        await cubit.load();
+
+        await expectLater(cubit.acknowledgeCompletion(), completes);
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.completed);
+        await cubit.acknowledgeCompletion();
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+        expect(attempts, 2);
         await cubit.close();
       },
     );

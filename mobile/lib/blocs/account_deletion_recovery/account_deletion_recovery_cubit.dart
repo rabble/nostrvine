@@ -207,25 +207,43 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     }
   }
 
-  Future<void> completeLocalCleanup() async {
+  Future<void> completeLocalCleanup({
+    bool preservePollingProgress = false,
+  }) async {
     final attempt = state.attempt;
     if (attempt?.status != AccountDeletionAttemptStatus.completed) return;
-    final generation = _beginOperation();
+    final generation = _beginOperation(
+      resetPollingProgress: !preservePollingProgress,
+    );
+    final pollTickIndex = state.pollTickIndex;
     emit(
       AccountDeletionRecoveryState(
         status: AccountDeletionRecoveryStatus.completingLocally,
         attempt: attempt,
+        pollTickIndex: pollTickIndex,
       ),
     );
     try {
-      await _authService.signOut(deleteKeys: true, deleteLocalUserData: true);
+      final receiptPubkeyHex = _receiptPubkeyHex;
+      final activePubkeyHex = _authService.currentPublicKeyHex;
+      final deletingInactiveAccount =
+          receiptPubkeyHex != null &&
+          activePubkeyHex != null &&
+          activePubkeyHex != receiptPubkeyHex;
+      if (receiptPubkeyHex != null && activePubkeyHex != receiptPubkeyHex) {
+        await _authService.deleteLocalAccount(receiptPubkeyHex);
+      } else {
+        await _authService.signOut(deleteKeys: true, deleteLocalUserData: true);
+      }
       if (!_isCurrent(generation)) return;
       emitIfOpen(
         AccountDeletionRecoveryState(
           status: AccountDeletionRecoveryStatus.completed,
           attempt: attempt,
+          pollTickIndex: pollTickIndex,
         ),
       );
+      if (deletingInactiveAccount) await _resolve();
     } on SecureKeyStorageException catch (error, stackTrace) {
       addError(error, stackTrace);
       _emitCleanupFailure(
@@ -279,7 +297,12 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
 
   Future<void> acknowledgeCompletion() async {
     if (state.status != AccountDeletionRecoveryStatus.completed) return;
-    await _resolve();
+    try {
+      await _resolve();
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      if (_receiptPubkeyHex != null) _schedulePoll(_generation);
+    }
   }
 
   Future<bool> switchAccount() async {
@@ -445,23 +468,22 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
           ),
         );
       case AccountDeletionAttemptStatus.processing:
-        await _onAttemptUpdated?.call(attempt);
-        if (!_isCurrent(generation)) return;
+        if (!await _updateAttemptOrRetry(attempt, generation)) return;
         _emitPollingState(
           AccountDeletionRecoveryStatus.processing,
           attempt,
           generation,
         );
       case AccountDeletionAttemptStatus.completed:
-        await _onAttemptUpdated?.call(attempt);
-        if (!_isCurrent(generation)) return;
+        if (!await _updateAttemptOrRetry(attempt, generation)) return;
         emitIfOpen(
           AccountDeletionRecoveryState(
             status: AccountDeletionRecoveryStatus.completingLocally,
             attempt: attempt,
+            pollTickIndex: state.pollTickIndex,
           ),
         );
-        await completeLocalCleanup();
+        await completeLocalCleanup(preservePollingProgress: true);
       case AccountDeletionAttemptStatus.terminalFailure:
         emitIfOpen(
           AccountDeletionRecoveryState(
@@ -471,6 +493,26 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
         );
       case AccountDeletionAttemptStatus.cancelled:
         await _resolve();
+    }
+  }
+
+  Future<bool> _updateAttemptOrRetry(
+    AccountDeletionAttempt attempt,
+    int generation,
+  ) async {
+    try {
+      await _onAttemptUpdated?.call(attempt);
+      return _isCurrent(generation);
+    } on Object catch (error, stackTrace) {
+      addError(error, stackTrace);
+      if (_isCurrent(generation)) {
+        _emitPollingState(
+          AccountDeletionRecoveryStatus.processing,
+          attempt,
+          generation,
+        );
+      }
+      return false;
     }
   }
 
@@ -494,15 +536,22 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     final tickIndex = state.pollTickIndex;
     final delay = AccountDeletionRecoveryPolling.delayForTick(tickIndex);
     if (_pollingElapsed + delay > AccountDeletionRecoveryPolling.sessionBound) {
-      emitIfOpen(
-        AccountDeletionRecoveryState(
-          status: state.status,
-          attempt: state.attempt,
-          pollTickIndex: tickIndex,
-          pollingPaused: true,
-        ),
-      );
-      return;
+      final activePubkeyHex = _authService.currentPublicKeyHex;
+      if (_receiptPubkeyHex != null &&
+          activePubkeyHex != null &&
+          activePubkeyHex != _receiptPubkeyHex) {
+        _pollingElapsed = Duration.zero;
+      } else {
+        emitIfOpen(
+          AccountDeletionRecoveryState(
+            status: state.status,
+            attempt: state.attempt,
+            pollTickIndex: tickIndex,
+            pollingPaused: true,
+          ),
+        );
+        return;
+      }
     }
     _pollingElapsed += delay;
     _pollTimer = _timerFactory(delay, () => _poll(generation));
@@ -561,10 +610,10 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     }
   }
 
-  int _beginOperation() {
+  int _beginOperation({bool resetPollingProgress = true}) {
     _pollTimer?.cancel();
     _pollTimer = null;
-    _pollingElapsed = Duration.zero;
+    if (resetPollingProgress) _pollingElapsed = Duration.zero;
     return ++_generation;
   }
 
@@ -581,8 +630,10 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
         status: AccountDeletionRecoveryStatus.cleanupFailed,
         attempt: attempt,
         failure: failure,
+        pollTickIndex: state.pollTickIndex,
       ),
     );
+    if (_receiptPubkeyHex != null) _schedulePoll(generation);
   }
 
   Future<void> _resolve() async {

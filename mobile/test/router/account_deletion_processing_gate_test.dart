@@ -220,9 +220,10 @@ void main() {
           '/welcome',
         );
 
-        // Unmount before the fake clock is checked so the recovery poll timer
-        // is cancelled with its cubit.
+        // UncontrolledProviderScope does not own its container, so dispose it
+        // explicitly to cancel the router-owned recovery poll timer.
         await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
       },
     );
   });

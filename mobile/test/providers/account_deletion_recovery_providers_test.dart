@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/signer_readiness.dart';
@@ -23,6 +24,13 @@ class _MockDeletionRepository extends Mock
 
 class _MockAuthService extends Mock implements AuthService {}
 
+const _pubkeyA =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _pubkeyB =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _vanishEventId =
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
 class _AuthStateProbe extends Notifier<AuthState> {
   @override
   AuthState build() => AuthState.authenticated;
@@ -37,7 +45,7 @@ final _authStateProbe = NotifierProvider<_AuthStateProbe, AuthState>(
 class _TestNostrSession extends NostrSession {
   @override
   NostrSessionReadiness build() =>
-      const NostrSessionReadiness.identityKnown(pubkey: 'user-pubkey');
+      const NostrSessionReadiness.identityKnown(pubkey: _pubkeyA);
 }
 
 void main() {
@@ -167,7 +175,7 @@ void main() {
   });
 
   group('submittedAccountDeletionAttemptProvider', () {
-    const pubkey = 'user-pubkey';
+    const pubkey = _pubkeyA;
     const processing = AccountDeletionAttempt(
       id: 'attempt-id',
       status: AccountDeletionAttemptStatus.processing,
@@ -226,7 +234,7 @@ void main() {
             .record(
               pubkeyHex: pubkey,
               attempt: processing,
-              vanishEventId: 'vanish-event-id',
+              vanishEventId: _vanishEventId,
             );
         keepAlive();
 
@@ -244,7 +252,7 @@ void main() {
           .record(
             pubkeyHex: pubkey,
             attempt: processing,
-            vanishEventId: 'vanish-event-id',
+            vanishEventId: _vanishEventId,
           );
       final restarted = ProviderContainer(
         overrides: [
@@ -265,13 +273,142 @@ void main() {
       expect(receipt?.pubkeyHex, pubkey);
       expect(receipt?.attempt.id, processing.id);
       expect(receipt?.attempt.status, processing.status);
-      expect(receipt?.vanishEventId, 'vanish-event-id');
+      expect(receipt?.vanishEventId, _vanishEventId);
       expect(
         await restarted.read(currentAccountDeletionAttemptProvider.future),
         isNotNull,
       );
       verifyNever(repository.fetchCurrent);
     });
+
+    test(
+      'submitted monitor finishes cleanup after another account signs in',
+      () async {
+        final otherPubkey = 'b' * 64;
+        when(() => authService.currentPublicKeyHex).thenReturn(otherPubkey);
+        when(
+          () => authService.deleteLocalAccount(pubkey),
+        ).thenAnswer((_) async {});
+        await container
+            .read(submittedAccountDeletionAttemptProvider.notifier)
+            .record(
+              pubkeyHex: pubkey,
+              attempt: processing,
+              vanishEventId: 'c' * 64,
+            );
+        final subscription = container.listen(
+          submittedAccountDeletionMonitorProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final cubit = subscription.read()!;
+
+        expect(
+          container.read(currentSubmittedAccountDeletionAttemptProvider),
+          isNull,
+        );
+        await cubit.resume(
+          const AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.completed,
+          ),
+        );
+
+        verify(() => authService.deleteLocalAccount(pubkey)).called(1);
+        expect(
+          container.read(submittedAccountDeletionAttemptProvider),
+          isNull,
+        );
+        expect(
+          cubit.state.status,
+          anyOf(
+            AccountDeletionRecoveryStatus.completed,
+            AccountDeletionRecoveryStatus.resolved,
+          ),
+        );
+      },
+    );
+
+    for (final cleanupFailsBeforeSignIn in [false, true]) {
+      test(
+        'submitted monitor ${cleanupFailsBeforeSignIn ? 'retries' : 'resolves'} '
+        'cleanup completed before another account signs in',
+        () async {
+          String? activePubkey;
+          var cleanupCalls = 0;
+          when(
+            () => authService.currentPublicKeyHex,
+          ).thenAnswer((_) => activePubkey);
+          when(() => authService.deleteLocalAccount(pubkey)).thenAnswer((
+            _,
+          ) async {
+            cleanupCalls++;
+            if (cleanupFailsBeforeSignIn && cleanupCalls == 1) {
+              throw StateError('keychain unavailable');
+            }
+          });
+          final probe = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              authServiceProvider.overrideWithValue(authService),
+              currentAuthStateProvider.overrideWith(
+                (ref) => ref.watch(_authStateProbe),
+              ),
+              accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+                repository,
+              ),
+            ],
+          );
+          addTearDown(probe.dispose);
+          probe.read(_authStateProbe.notifier).set(AuthState.unauthenticated);
+          await probe
+              .read(submittedAccountDeletionAttemptProvider.notifier)
+              .record(
+                pubkeyHex: pubkey,
+                attempt: processing,
+                vanishEventId: _vanishEventId,
+              );
+          final monitorSubscription = probe.listen(
+            submittedAccountDeletionMonitorProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+          addTearDown(monitorSubscription.close);
+          final cubit = monitorSubscription.read()!;
+          await cubit.resume(
+            const AccountDeletionAttempt(
+              id: 'attempt-id',
+              status: AccountDeletionAttemptStatus.completed,
+            ),
+          );
+          expect(
+            cubit.state.status,
+            cleanupFailsBeforeSignIn
+                ? AccountDeletionRecoveryStatus.cleanupFailed
+                : AccountDeletionRecoveryStatus.completed,
+          );
+          final resolved = Completer<void>();
+          final receiptSubscription = probe.listen(
+            submittedAccountDeletionAttemptProvider,
+            (_, next) {
+              if (next == null && !resolved.isCompleted) resolved.complete();
+            },
+          );
+          addTearDown(receiptSubscription.close);
+
+          activePubkey = _pubkeyB;
+          probe.read(_authStateProbe.notifier).set(AuthState.authenticated);
+          await resolved.future;
+
+          expect(cleanupCalls, cleanupFailsBeforeSignIn ? 2 : 1);
+          expect(
+            probe.read(submittedAccountDeletionAttemptProvider),
+            isNull,
+          );
+        },
+      );
+    }
 
     test('a durable record gates before authentication is restored', () async {
       final preAuth = ProviderContainer(
@@ -291,9 +428,9 @@ void main() {
       await preAuth
           .read(submittedAccountDeletionAttemptProvider.notifier)
           .record(
-            pubkeyHex: 'someone-else',
+            pubkeyHex: _pubkeyB,
             attempt: processing,
-            vanishEventId: 'vanish-event-id',
+            vanishEventId: _vanishEventId,
           );
 
       expect(
@@ -306,13 +443,13 @@ void main() {
     test('a different authenticated account ignores the receipt', () async {
       when(
         () => authService.currentPublicKeyHex,
-      ).thenReturn('different-account-pubkey');
+      ).thenReturn(_pubkeyB);
       await container
           .read(submittedAccountDeletionAttemptProvider.notifier)
           .record(
             pubkeyHex: pubkey,
             attempt: processing,
-            vanishEventId: 'vanish-event-id',
+            vanishEventId: _vanishEventId,
           );
       keepAlive();
 
@@ -353,7 +490,7 @@ void main() {
             .record(
               pubkeyHex: pubkey,
               attempt: processing,
-              vanishEventId: 'vanish-event-id',
+              vanishEventId: _vanishEventId,
             );
         final subscription = probe.listen(
           currentAccountDeletionAttemptProvider,
@@ -368,7 +505,7 @@ void main() {
 
         when(
           () => authService.currentPublicKeyHex,
-        ).thenReturn('different-account-pubkey');
+        ).thenReturn(_pubkeyB);
         when(repository.fetchCurrent).thenThrow(
           const AccountDeletionStatusUnavailable(),
         );
@@ -392,7 +529,7 @@ void main() {
               submittedAccountDeletionAttemptProvider,
             ),
             authState: AuthState.authenticated,
-            currentPubkeyHex: 'different-account-pubkey',
+            currentPubkeyHex: _pubkeyB,
           ),
           isFalse,
         );
@@ -406,12 +543,12 @@ void main() {
       await notifier.record(
         pubkeyHex: pubkey,
         attempt: processing,
-        vanishEventId: 'vanish-event-id',
+        vanishEventId: _vanishEventId,
       );
 
       await expectLater(
         notifier.record(
-          pubkeyHex: 'different-account-pubkey',
+          pubkeyHex: _pubkeyB,
           attempt: processing,
           vanishEventId: 'other-vanish-event-id',
         ),
@@ -448,7 +585,7 @@ void main() {
           .record(
             pubkeyHex: pubkey,
             attempt: processing,
-            vanishEventId: 'vanish-event-id',
+            vanishEventId: _vanishEventId,
           );
 
       probe.read(_authStateProbe.notifier).set(AuthState.unauthenticated);
@@ -467,7 +604,7 @@ void main() {
       await notifier.record(
         pubkeyHex: pubkey,
         attempt: processing,
-        vanishEventId: 'vanish-event-id',
+        vanishEventId: _vanishEventId,
       );
       keepAlive();
       await container.read(currentAccountDeletionAttemptProvider.future);
