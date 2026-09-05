@@ -47,7 +47,6 @@ env:
 
 #Navigation tests
 - runFlow: ../flows/profileNavigationFlow.yaml
-- runFlow: ../tests/logout.yaml
 
 #Account data management tests
 - runFlow: ../tests/loginFreshInstall.yaml

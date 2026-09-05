@@ -1,5 +1,5 @@
 // ABOUTME: Tests for the Maestro copy-drift guard.
-// ABOUTME: Verifies drift, regen refusal, base erosion, comments, and rendered bindings.
+// ABOUTME: Verifies extraction, drift, regen refusal, base erosion, and rendered bindings.
 
 import 'dart:convert';
 import 'dart:io';
@@ -101,21 +101,164 @@ void main() {
       );
     });
 
-    test('does not count YAML block scalar markers as copy', () {
-      writeArb({'settingsTitle': 'Settings'});
+    test('extracts each copy line from a literal block scalar', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
       writeFlow(
         'asserts/menu.yaml',
         '- assertVisible: |-\n'
-            '    Settings\n',
+            '    Settings\n'
+            '    Choose your preferences\n',
       );
-      writeManifest('# no extractable literal binding yet\n');
+      writeManifest('# generated below\n');
 
-      final res = run();
+      final res = run(update: true);
 
       expect(res.exitCode, 0, reason: res.stderr.toString());
       expect(
-        res.stdout,
-        contains('0 bindings verified (of 0 asserted literals extracted)'),
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
+      );
+    });
+
+    test('extracts each copy line from a folded block scalar', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
+      writeFlow(
+        'asserts/menu.yaml',
+        '- tapOn: >-\n'
+            '    Settings\n'
+            '    Choose your preferences\n',
+      );
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
+      );
+    });
+
+    test('extracts block scalars with keep and indentation indicators', () {
+      writeArb({
+        'settingsTitle': 'Settings',
+        'settingsSubtitle': 'Choose your preferences',
+      });
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: |+\n'
+            '    Settings\n'
+            '- assertVisible: >2-\n'
+            '  Choose your preferences\n',
+      );
+      writeManifest('# generated below\n');
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        allOf(
+          contains('settingsTitle\te2e/maestro/asserts/menu.yaml'),
+          contains('settingsSubtitle\te2e/maestro/asserts/menu.yaml'),
+        ),
+      );
+    });
+
+    test('binds a multi-line ARB value within a block scalar', () {
+      writeArb({
+        'keyExplanation': 'First paragraph.\n\nSecond paragraph. Third line.',
+      });
+      writeFlow(
+        'asserts/keys.yaml',
+        '- assertVisible: |-\n'
+            '    Heading\n'
+            '    First paragraph.\n'
+            '\n'
+            '    Second paragraph.\n'
+            '    Third line.\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+      final check = run();
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('keyExplanation\te2e/maestro/asserts/keys.yaml'),
+      );
+    });
+
+    test('does not bind multi-line copy embedded within a block line', () {
+      writeArb({'findPeople': 'Find\npeople'});
+      writeFlow(
+        'asserts/people.yaml',
+        '- assertVisible: |-\n'
+            '    Find people to follow now\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(manifest.readAsStringSync(), isNot(contains('findPeople')));
+    });
+
+    test('does not bind regex or interpolated block-scalar lines', () {
+      writeArb({'settingsTitle': 'Settings', 'privacyTitle': 'Privacy'});
+      writeFlow(
+        'asserts/menu.yaml',
+        '- assertVisible: |-\n'
+            '    Settings\n'
+            r'    ${ACCOUNT_NAME}'
+            '\n'
+            '    Privacy.*\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+      final check = run();
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
+      expect(
+        check.stdout,
+        contains('1 bindings verified (of 2 asserted literals extracted)'),
+      );
+      expect(manifest.readAsStringSync(), isNot(contains('privacyTitle')));
+    });
+
+    test('preserves hash-prefixed copy inside a block scalar', () {
+      writeArb({'hashtagTitle': '#vine'});
+      writeFlow(
+        'asserts/hashtag.yaml',
+        '- assertVisible: |-\n'
+            '    #vine\n',
+      );
+      writeManifest('# generated below\n');
+
+      final regen = run(update: true);
+      final check = run();
+
+      expect(regen.exitCode, 0, reason: regen.stderr.toString());
+      expect(check.exitCode, 0, reason: check.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('hashtagTitle\te2e/maestro/asserts/hashtag.yaml'),
       );
     });
 
@@ -158,6 +301,34 @@ void main() {
         manifest.readAsStringSync(),
         isNot(contains('libraryClipSelectionTitle')),
       );
+    });
+
+    test('regen preserves a reviewed duplicate-value binding', () {
+      writeArb({
+        'categoryGallerySortNew': 'New',
+        'exploreTabNew': 'New',
+      });
+      writeDart(
+        'screens/category_gallery.dart',
+        'final label = context.l10n.categoryGallerySortNew;\n',
+      );
+      writeDart(
+        'screens/explore.dart',
+        'final label = context.l10n.exploreTabNew;\n',
+      );
+      writeFlow('asserts/explore.yaml', '- assertVisible: New\n');
+      writeManifest(
+        'exploreTabNew\te2e/maestro/asserts/explore.yaml\tbound:New\n',
+      );
+
+      final res = run(update: true);
+
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        manifest.readAsStringSync(),
+        contains('exploreTabNew\te2e/maestro/asserts/explore.yaml'),
+      );
+      expect(manifest.readAsStringSync(), isNot(contains('categoryGallery')));
     });
 
     test('fails when ARB copy changes under a bound flow', () {

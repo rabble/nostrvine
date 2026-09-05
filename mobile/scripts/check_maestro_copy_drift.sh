@@ -89,13 +89,17 @@ with open(arb_path, encoding="utf-8") as fh:
 
 exact_values = {}      # value -> [keys] for non-parameterized strings
 param_values = {}      # key -> template (contains ICU {placeholder})
+multiline_values = set()
 for key, val in arb_raw.items():
     if key.startswith("@") or not isinstance(val, str):
         continue
     if "{" in val:
         param_values[key] = val
     else:
-        exact_values.setdefault(norm(val), []).append(key)
+        normalized = norm(val)
+        exact_values.setdefault(normalized, []).append(key)
+        if "\n" in val:
+            multiline_values.add(normalized)
 
 all_keys = {k for ks in exact_values.values() for k in ks} | set(param_values)
 
@@ -104,7 +108,14 @@ COMMAND_SCALAR = re.compile(
     r"^\s*-\s*(?:assertVisible|assertNotVisible|tapOn|longPressOn):\s*(?P<v>.+?)\s*$"
 )
 TEXT_PROP = re.compile(r"^\s*text:\s*(?P<v>.+?)\s*$")
-BLOCK_SCALAR_MARKERS = {"|", "|-", ">", ">-"}
+# A YAML block scalar header is `|` or `>` followed by optional chomping
+# (`-`/`+`) and indentation (1-9) indicators, in either order. A header
+# the extractor does not recognise skips the whole block silently, and
+# the header token itself gets counted as an asserted literal.
+BLOCK_SCALAR_HEADER = re.compile(r"^[|>](?:[-+]?[1-9]?|[1-9][-+]?)$")
+
+def is_block_scalar_header(v):
+    return BLOCK_SCALAR_HEADER.match(v) is not None
 
 def strip_comment(line):
     out = []
@@ -125,26 +136,83 @@ def unquote(v):
         return v[1:-1]
     return v
 
+def searchable_flow_text(lines):
+    """Flow text with YAML comments removed but block content preserved."""
+    searchable = []
+    block_parent_indent = None
+    for raw_line in lines:
+        raw = raw_line.rstrip("\n")
+        stripped = raw.strip()
+        indent = len(raw) - len(raw.lstrip())
+        if block_parent_indent is not None:
+            if not stripped or indent > block_parent_indent:
+                searchable.append(raw)
+                continue
+            block_parent_indent = None
+
+        line = strip_comment(raw)
+        searchable.append(line)
+        for pat in (COMMAND_SCALAR, TEXT_PROP):
+            match = pat.match(line)
+            if match and is_block_scalar_header(unquote(match.group("v"))):
+                block_parent_indent = indent
+                break
+    return norm("\n".join(searchable))
+
 def flow_literals(path):
     """Literal copy strings a flow asserts or taps. Skips ${...}
     interpolations (environment values, not copy), inline maps, and
-    selector properties other than text (ids are not copy)."""
+    selector properties other than text (ids are not copy). Block-scalar
+    accessibility labels emit each non-blank line plus any contained multi-line
+    ARB value so titles, subtitles, and paragraph copy receive bindings."""
     lits = []
+
+    def add_literal(value):
+        v = unquote(value)
+        if (not v or "${" in v or v.startswith("{") or
+                ":" in v and " " not in v):
+            return
+        lits.append(norm(v))
+
     with open(path, encoding="utf-8", errors="replace") as fh:
-        for raw in fh:
-            line = strip_comment(raw.rstrip("\n"))
-            if not line.strip():
+        lines = fh.readlines()
+
+    index = 0
+    while index < len(lines):
+        raw = lines[index].rstrip("\n")
+        line = strip_comment(raw)
+        index += 1
+        if not line.strip():
+            continue
+        for pat in (COMMAND_SCALAR, TEXT_PROP):
+            m = pat.match(line)
+            if not m:
                 continue
-            for pat in (COMMAND_SCALAR, TEXT_PROP):
-                m = pat.match(line)
-                if not m:
-                    continue
-                v = unquote(m.group("v"))
-                if (not v or v in BLOCK_SCALAR_MARKERS or "${" in v or
-                        v.startswith("{") or ":" in v and " " not in v):
-                    continue
-                lits.append(norm(v))
-                break
+            v = unquote(m.group("v"))
+            if is_block_scalar_header(v):
+                parent_indent = len(raw) - len(raw.lstrip())
+                block_lines = []
+                while index < len(lines):
+                    block_raw = lines[index].rstrip("\n")
+                    if block_raw.strip():
+                        indent = len(block_raw) - len(block_raw.lstrip())
+                        if indent <= parent_indent:
+                            break
+                        # Inside a block scalar, `#` is content rather than a
+                        # YAML comment marker.
+                        block_line = block_raw.strip()
+                        block_lines.append(block_line)
+                        add_literal(block_line)
+                    index += 1
+                normalized_lines = [norm(line) for line in block_lines]
+                for multiline_value in multiline_values:
+                    if any(" ".join(normalized_lines[start:end]) == multiline_value
+                           for start in range(len(normalized_lines))
+                           for end in range(start + 1, len(normalized_lines) + 1)):
+                        add_literal(multiline_value)
+            else:
+                add_literal(v)
+            break
     return lits
 
 mobile_dir = os.path.abspath(os.path.join(e2e_dir, "..", ".."))
@@ -174,9 +242,11 @@ for source_root in source_roots:
                 tokens = set(re.findall(r"\b[A-Za-z_]\w*\b", fh.read()))
             referenced_keys.update(tokens & all_keys)
 
-def binding_keys(keys):
+def binding_keys(keys, rel, previous):
     live = sorted(set(keys) & referenced_keys)
-    return [live[0] if live else sorted(keys)[0]]
+    candidates = live or sorted(keys)
+    preserved = [key for key in candidates if (key, rel) in previous]
+    return [preserved[0] if preserved else candidates[0]]
 
 flows = []
 for root, _dirs, names in os.walk(e2e_dir):
@@ -267,8 +337,7 @@ def _flow_text(rel, _cache={}):
             _cache[rel] = None
         else:
             with open(fpath, encoding="utf-8", errors="replace") as fh:
-                _cache[rel] = norm("\n".join(
-                    strip_comment(l.rstrip("\n")) for l in fh))
+                _cache[rel] = searchable_flow_text(fh.readlines())
     return _cache[rel]
 
 def _current_value(key):
@@ -314,6 +383,8 @@ HEADER = """# Binding baseline: each English literal the Maestro suite asserts o
 # and the guard verifies the ARB template still produces the rendered literal.
 # Regenerate after intentional copy changes with UPDATE_BASELINE=1 and review
 # the printed diff — regeneration re-blesses whatever app_en.arb says today.
+# Duplicate values retain the manifest's reviewed key choice. To correct a
+# wrong choice, edit that row to another valid key before regenerating.
 # Known v1 limits are tracked in #7213: already-drifted flow literals do not
 # bind, and substring checking can miss copy shortening until the inverse
 # exact-literal check lands.
@@ -337,7 +408,10 @@ if mode == "regen":
     old = load_manifest(manifest_path)
     new = {}
     for (lit, rel), keys in found.items():
-        for key in binding_keys(keys):
+        # Duplicate English values cannot be tied to a call site mechanically.
+        # Preserve a reviewed manifest choice instead of reverting it to the
+        # alphabetical fallback on every regeneration.
+        for key in binding_keys(keys, rel, old):
             new[(key, rel)] = (None, lit)  # record the literal the flow asserts
     # hand-maintained rendered bindings cannot be auto-derived: carry them
     carried = 0
