@@ -17,6 +17,8 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
 
+import '../helpers/keyboard_content_insertion.dart';
+
 class _MockBugReportService extends Mock implements BugReportService {}
 
 class _FakeBugReportData extends Fake implements BugReportData {}
@@ -246,6 +248,38 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(announcements, contains(l10n.supportFieldLimitReached));
+    });
+
+    testWidgets('gives all fields bug-report image insertion feedback', (
+      tester,
+    ) async {
+      await openFlow(tester);
+
+      final fields = tester.widgetList<TextField>(find.byType(TextField));
+      expect(fields, hasLength(4));
+      expect(
+        fields.every(
+          (field) => field.contentInsertionConfiguration != null,
+        ),
+        isTrue,
+      );
+
+      const reporterWords = 'The app freezes after opening settings.';
+      final description = find.byType(TextField).at(1);
+      await tester.tap(description);
+      await tester.enterText(description, reporterWords);
+      await commitKeyboardImage(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        l10n.bugReportImageInsertionRejected,
+        'That image wasn’t added. You can attach up to 3 images below.',
+      );
+      expect(find.text(l10n.bugReportImageInsertionRejected), findsOneWidget);
+      expect(
+        tester.widget<TextField>(description).controller!.text,
+        reporterWords,
+      );
     });
 
     BugReportData testReportData() {

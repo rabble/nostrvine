@@ -1,5 +1,5 @@
-// ABOUTME: Support form text field that caps its length and says when it did
-// ABOUTME: Keeps a silently truncated paste from looking like an accepted one
+// ABOUTME: Support form text field that reports rejected text and image input
+// ABOUTME: Keeps dropped keyboard content from looking like accepted evidence
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +42,7 @@ class SupportCappedTextField extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.onSubmitted,
+    this.imageInsertionNotice,
   });
 
   final TextEditingController controller;
@@ -57,12 +58,19 @@ class SupportCappedTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
 
+  /// Feedback shown when the keyboard tries to insert unsupported rich media.
+  ///
+  /// Null leaves rich-content insertion disabled without changing existing
+  /// callers.
+  final String? imageInsertionNotice;
+
   @override
   State<SupportCappedTextField> createState() => _SupportCappedTextFieldState();
 }
 
 class _SupportCappedTextFieldState extends State<SupportCappedTextField> {
   bool _truncated = false;
+  bool _imageInsertionRejected = false;
 
   void _onTruncated() {
     if (_truncated || !mounted) return;
@@ -78,19 +86,46 @@ class _SupportCappedTextFieldState extends State<SupportCappedTextField> {
   }
 
   void _onChanged(String value) {
-    // Once the user makes room again, the warning has nothing left to warn
-    // about.
-    if (_truncated && value.characters.length < widget.maxLength) {
-      setState(() => _truncated = false);
+    final clearsTruncation =
+        _truncated && value.characters.length < widget.maxLength;
+    if (!clearsTruncation && !_imageInsertionRejected) return;
+    setState(() {
+      if (clearsTruncation) _truncated = false;
+      _imageInsertionRejected = false;
+    });
+  }
+
+  void _onImageInserted() {
+    final notice = widget.imageInsertionNotice;
+    if (notice == null || !mounted) return;
+    if (!_imageInsertionRejected) {
+      setState(() => _imageInsertionRejected = true);
     }
+    // Each insertion is a separate action, so announce every attempt even
+    // while the visual notice is already present.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      notice,
+      Directionality.of(context),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final imageInsertionNotice = widget.imageInsertionNotice;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 4,
       children: [
+        if (_imageInsertionRejected && imageInsertionNotice != null)
+          // Keep this above the field: the keyboard's media panel covers the
+          // space below it at the exact moment insertion feedback appears.
+          Text(
+            imageInsertionNotice,
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
+          ),
         DivineTextField(
           controller: widget.controller,
           focusNode: widget.focusNode,
@@ -105,6 +140,11 @@ class _SupportCappedTextFieldState extends State<SupportCappedTextField> {
           textInputAction: widget.textInputAction,
           onSubmitted: widget.onSubmitted,
           onChanged: _onChanged,
+          contentInsertionConfiguration: imageInsertionNotice == null
+              ? null
+              : ContentInsertionConfiguration(
+                  onContentInserted: (_) => _onImageInserted(),
+                ),
           inputFormatters: [
             ReportingLengthLimiter(widget.maxLength, _onTruncated),
           ],

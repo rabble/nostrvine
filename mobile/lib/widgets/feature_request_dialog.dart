@@ -117,6 +117,8 @@ class _FeatureRequestView extends StatelessWidget {
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.featureRequestSubjectHint,
                         helperText: l10n.supportRequiredHelper,
+                        imageInsertionNotice:
+                            l10n.featureRequestImageInsertionRejected,
                         enabled: !isSubmitting,
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) =>
@@ -129,6 +131,8 @@ class _FeatureRequestView extends StatelessWidget {
                         labelText: l10n.featureRequestDescriptionRequiredLabel,
                         hintText: l10n.featureRequestDescriptionHint,
                         helperText: l10n.supportRequiredHelper,
+                        imageInsertionNotice:
+                            l10n.featureRequestImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 3,
                         maxLines: 5,
@@ -139,6 +143,8 @@ class _FeatureRequestView extends StatelessWidget {
                         controller: fields.usefulness,
                         labelText: l10n.featureRequestUsefulnessLabel,
                         hintText: l10n.featureRequestUsefulnessHint,
+                        imageInsertionNotice:
+                            l10n.featureRequestImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 3,
                         maxLines: 5,
@@ -149,6 +155,8 @@ class _FeatureRequestView extends StatelessWidget {
                         controller: fields.whenToUse,
                         labelText: l10n.featureRequestWhenLabel,
                         hintText: l10n.featureRequestWhenHint,
+                        imageInsertionNotice:
+                            l10n.featureRequestImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 2,
                         maxLines: 4,

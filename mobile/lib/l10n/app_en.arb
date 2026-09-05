@@ -2907,6 +2907,14 @@
   "@reportDetailsImageNotAttached": {
     "description": "Shown in the content report details field the moment the user tries to insert a photo or GIF from the keyboard. Reports carry no attachments, so the image is intentionally dropped; this confirms it was not attached and redirects the reporter to describing the issue in words."
   },
+  "bugReportImageInsertionRejected": "That image wasn’t added. You can attach up to 3 images below.",
+  "@bugReportImageInsertionRejected": {
+    "description": "Shown when a keyboard image insertion is rejected from a bug report field. Directs the reporter to the attachment area without naming its add button, which is hidden once the three-image limit is reached."
+  },
+  "featureRequestImageInsertionRejected": "That image wasn’t attached. Describe it in words instead.",
+  "@featureRequestImageInsertionRejected": {
+    "description": "Shown when a keyboard image insertion is rejected from a text-only feature request field."
+  },
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonSpamSubtitle": "Unwanted or repetitive content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",

@@ -13,6 +13,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:openvine/widgets/support_public_submission_notice.dart';
 
+import '../helpers/keyboard_content_insertion.dart';
+
 const _pubkeyHex =
     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
 
@@ -120,6 +122,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.supportFieldLimitReached), findsOneWidget);
+    });
+
+    testWidgets('gives all fields feature-request image insertion feedback', (
+      tester,
+    ) async {
+      await openFlow(tester);
+
+      final fields = tester.widgetList<TextField>(find.byType(TextField));
+      expect(fields, hasLength(4));
+      expect(
+        fields.every(
+          (field) => field.contentInsertionConfiguration != null,
+        ),
+        isTrue,
+      );
+
+      const requesterWords = 'Let people save favorite search filters.';
+      final description = find.byType(TextField).at(1);
+      await tester.tap(description);
+      await tester.enterText(description, requesterWords);
+      await commitKeyboardImage(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.featureRequestImageInsertionRejected),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TextField>(description).controller!.text,
+        requesterWords,
+      );
     });
 
     DivineButton buttonFor(WidgetTester tester, String label) {

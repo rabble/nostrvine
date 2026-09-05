@@ -4694,6 +4694,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'That wasn’t attached. Reports are text only, so describe it in words.';
 
   @override
+  String get bugReportImageInsertionRejected =>
+      'That image wasn’t added. You can attach up to 3 images below.';
+
+  @override
+  String get featureRequestImageInsertionRejected =>
+      'That image wasn’t attached. Describe it in words instead.';
+
+  @override
   String get reportReasonSpam => 'Spam o contenido no deseado';
 
   @override

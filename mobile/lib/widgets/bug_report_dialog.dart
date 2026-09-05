@@ -139,6 +139,8 @@ class _BugReportView extends StatelessWidget {
                         labelText: l10n.supportSubjectRequiredLabel,
                         hintText: l10n.bugReportSubjectHint,
                         helperText: l10n.supportRequiredHelper,
+                        imageInsertionNotice:
+                            l10n.bugReportImageInsertionRejected,
                         enabled: !isSubmitting,
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) =>
@@ -151,6 +153,8 @@ class _BugReportView extends StatelessWidget {
                         labelText: l10n.bugReportDescriptionRequiredLabel,
                         hintText: l10n.bugReportDescriptionHint,
                         helperText: l10n.supportRequiredHelper,
+                        imageInsertionNotice:
+                            l10n.bugReportImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 3,
                         maxLines: 5,
@@ -161,6 +165,8 @@ class _BugReportView extends StatelessWidget {
                         controller: fields.steps,
                         labelText: l10n.bugReportStepsLabel,
                         hintText: l10n.bugReportStepsHint,
+                        imageInsertionNotice:
+                            l10n.bugReportImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 3,
                         maxLines: 5,
@@ -171,6 +177,8 @@ class _BugReportView extends StatelessWidget {
                         controller: fields.expected,
                         labelText: l10n.bugReportExpectedBehaviorLabel,
                         hintText: l10n.bugReportExpectedBehaviorHint,
+                        imageInsertionNotice:
+                            l10n.bugReportImageInsertionRejected,
                         enabled: !isSubmitting,
                         minLines: 2,
                         maxLines: 4,
