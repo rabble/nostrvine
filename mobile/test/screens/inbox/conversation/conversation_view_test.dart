@@ -1040,6 +1040,44 @@ void main() {
         expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
       });
 
+      for (final status in [
+        ReactionRemovalRetryLocalStatus.retrying,
+        ReactionRemovalRetryLocalStatus.sent,
+      ]) {
+        testWidgets('$status removal retry does not show failure feedback', (
+          tester,
+        ) async {
+          final controller =
+              StreamController<ConversationReactionsState>.broadcast();
+          addTearDown(controller.close);
+          const initial = ConversationReactionsState();
+          whenListen(
+            mockReactionsCubit,
+            controller.stream,
+            initialState: initial,
+          );
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [ownMessage()],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          controller.add(
+            initial.copyWith(removalRetries: {'reaction-id': status}),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.dmReactionRemovalRefusedTitle),
+            findsNothing,
+          );
+        });
+      }
+
       testWidgets('a live thread still offers to remove an own reaction', (
         tester,
       ) async {

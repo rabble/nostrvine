@@ -324,6 +324,34 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('cancelling a refused removal prompt does not retry', (
+      tester,
+    ) async {
+      primeState([
+        makeReaction(
+          id: 'own1',
+          reactorPubkey: ownerPubkey,
+          emoji: '🔥',
+          publishStatus: DmReactionPublishStatus.removalRefused,
+        ),
+      ]);
+
+      await open(tester);
+      await tester.tap(find.text(l10n.dmReactionRetryAction));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => cubit.add(
+          const ConversationReactionRemovalRetryRequested(
+            rumorId: 'own1',
+            messageAuthorPubkey: otherPubkey,
+          ),
+        ),
+      );
+    });
+
     testWidgets('own pending and failed rows expose state semantics', (
       tester,
     ) async {

@@ -151,6 +151,17 @@ class ConversationReactionsCubit
       return;
     }
 
+    // Preserve the refused row's only retry path; a newer emoji would hide it
+    // in the repository's cap-at-one collapse.
+    final hasRefusedRemoval = state
+        .reactionsFor(event.messageId)
+        .any(
+          (reaction) =>
+              reaction.isOwn &&
+              reaction.publishStatus == DmReactionPublishStatus.removalRefused,
+        );
+    if (hasRefusedRemoval) return;
+
     await _publishReaction(
       conversationId: event.conversationId,
       messageId: event.messageId,

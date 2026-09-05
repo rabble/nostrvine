@@ -223,6 +223,50 @@ void main() {
     );
 
     test(
+      "watchForConversation exposes only the owner's refused removal",
+      () async {
+        await insertPending();
+        await dao.markOwnDeletionPending(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+        await dao.markDeletionRefused(id: _pendingId, ownerPubkey: _ownerA);
+
+        const incomingId =
+            'abababababababababababababababababababababababababababababababab';
+        await dao.upsertIncoming(
+          id: incomingId,
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _ownerA,
+          reactorPubkey: _reactorB,
+          emoji: '👍',
+          createdAt: 1_700_000_010,
+          giftWrapId: incomingId,
+          ownerPubkey: _ownerA,
+        );
+        await dao.softDelete(id: incomingId, ownerPubkey: _ownerA);
+        await (database.update(database.dmMessageReactions)..where(
+              (t) => t.id.equals(incomingId) & t.ownerPubkey.equals(_ownerA),
+            ))
+            .write(
+              const DmMessageReactionsCompanion(
+                publishStatus: Value(DmReactionsDao.deletionRefused),
+              ),
+            );
+
+        final visible = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(visible.map((row) => row.id), equals([_pendingId]));
+      },
+    );
+
+    test(
       'insertOwnReactionSuperseding leaves a still-live same-id row untouched '
       'so an idempotent double-tap keeps its publish status',
       () async {
@@ -1089,7 +1133,7 @@ void main() {
         const target4 =
             '9999999999999999999999999999999999999999999999999999999999999999';
         const target5 =
-            'acacacacacacacacacacacacacacacacacacacacacacacacacacacacacac';
+            'acacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac';
 
         await insertPending();
         await insertPending(id: failedId, targetMessageId: target2);

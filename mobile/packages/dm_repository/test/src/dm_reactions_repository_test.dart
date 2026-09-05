@@ -1208,6 +1208,76 @@ void main() {
     );
 
     test(
+      'concurrent retryDeletion calls share one stored-rumor publish',
+      () async {
+        final send = Completer<NIP17SendResult>();
+        final deletionRumor = reactionRumor(
+          id: _giftWrapId,
+          content: '',
+          kind: EventKind.eventDeletion,
+          tags: [
+            ['e', _reactionRumorId],
+            ['k', EventKind.reaction.toString()],
+          ],
+        );
+        when(
+          () => mockDao.getById(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer(
+          (_) async => makeRow(
+            isDeleted: true,
+            publishStatus: 'deletion_refused',
+            rumorEventJson: jsonEncode(deletionRumor.toJson()),
+          ),
+        );
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: true,
+          ),
+        ).thenAnswer((_) => send.future);
+        when(
+          () => mockDao.markDeletionSent(
+            id: _reactionRumorId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        final first = repository.retryDeletion(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+        final second = repository.retryDeletion(
+          rumorId: _reactionRumorId,
+          targetMessageAuthor: _otherPubkey,
+        );
+        send.complete(
+          NIP17SendResult.success(
+            rumorEventId: deletionRumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+
+        expect(
+          await Future.wait([first, second]),
+          everyElement(DmReactionDeletionOutcome.sent),
+        );
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: _otherPubkey,
+            awaitRecipientOk: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'retryDeletion replays the stored kind-5 and marks it sent on success',
       () async {
         final deletionRumor = reactionRumor(
@@ -1262,6 +1332,16 @@ void main() {
             ownerPubkey: _ownerPubkey,
           ),
         ).called(1);
+        final sentRumor =
+            verify(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
+                    recipientPubkey: _otherPubkey,
+                    awaitRecipientOk: true,
+                  ),
+                ).captured.single
+                as Event;
+        expect(sentRumor.toJson(), equals(deletionRumor.toJson()));
       },
     );
 
