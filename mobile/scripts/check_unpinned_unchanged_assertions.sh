@@ -25,7 +25,9 @@
 # `expect(rows, hasLength(2))`, an expect on a member of the read expression
 # (`expect(cubit.state.status, ready)` before `final last = cubit.state`), or
 # a `firstTime!` that would throw on null. The pin is one line and turns the
-# test into one that fails when the mechanism is dead.
+# test into one that fails when the mechanism is dead. A read that cannot come
+# back absent — a single-result `tester` query, `container.read(fooProvider)`,
+# `context.read<T>()` — is its own pin and is not reported.
 #
 # Only a pair that is the test's ONLY assertion counts. A pair sitting beside
 # a real assertion is out of scope here for the same reason a tautology beside

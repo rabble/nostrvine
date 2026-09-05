@@ -46,10 +46,16 @@
 // unchanged-assertion on the same pair is not a pin; two of them are as
 // vacuous as one.
 //
-// Assertions supplied by the framework or an assertion helper are outside this
-// single-file scan. Put `// unpinned-unchanged-ok: <reason>` immediately above
-// the unchanged assertion when one of those routes proves the baseline. The
-// reason is mandatory so an exemption cannot silently become a generic ignore.
+// A read that cannot come back absent is its own pin. The single-result
+// `tester.*` queries (`tester.state`, `tester.getSize`, ...) throw on an empty
+// finder, and a Riverpod `container.read(fooProvider)`, `ref.watch(fooProvider)`
+// or bloc `context.read<T>()` returns the provided value or throws. Two such
+// reads compared with `same()` cannot pass on null == null, so the pair is not
+// reported. A provider that is declared nullable is the known gap; that is the
+// recoverable direction, since under-reporting leaves a test in place while a
+// false positive invites a pin nobody needed. There is no inline escape hatch,
+// for the same reason check_placeholder_tests.sh has none: an assertion the
+// scan cannot see is one line away from being one it can.
 //
 // What does NOT count
 // -------------------
@@ -331,11 +337,16 @@ class _Baseline {
     required this.offset,
     required this.read,
     required this.receiver,
+    required this.cannotBeAbsent,
   });
 
   final String name;
   final int offset;
   final String read;
+
+  /// True for a lookup that throws, or returns the provided value, when
+  /// nothing is there — a pair built on it cannot pass on null == null.
+  final bool cannotBeAbsent;
 
   /// The collection a derived member was read from (`videos` for
   /// `videos.length`), or null when the member is ordinary state.
@@ -370,6 +381,7 @@ class _BodyScan extends RecursiveAstVisitor<void> {
             offset: node.offset,
             read: read.toSource(),
             receiver: _derivedReceiverOf(read),
+            cannotBeAbsent: _cannotBeAbsent(read),
           ),
         );
       }
@@ -439,7 +451,6 @@ class _BodyScan extends RecursiveAstVisitor<void> {
       }
       if (baseline == null || read == null) continue;
       if (_isPinned(baseline, read)) continue;
-      if (_hasDocumentedExemption(assertion.node)) continue;
       flagged.add((assertion, baseline, read));
     }
     final sole = _otherAssertionCount == 0 && flagged.length == _found.length;
@@ -476,6 +487,7 @@ class _BodyScan extends RecursiveAstVisitor<void> {
   /// Whether anything in the body asserts on the local or on the expression
   /// it was read from, other than comparing the two with each other.
   bool _isPinned(_Baseline baseline, String read) {
+    if (baseline.cannotBeAbsent) return true;
     if (_bangs.contains(baseline.name)) return true;
     final receiver = baseline.receiver;
     for (final other in _found) {
@@ -490,28 +502,6 @@ class _BodyScan extends RecursiveAstVisitor<void> {
     }
     return false;
   }
-}
-
-const _exemptionMarker = 'unpinned-unchanged-ok:';
-
-/// Whether the assertion has an immediately preceding exemption with a reason.
-bool _hasDocumentedExemption(MethodInvocation assertion) {
-  for (
-    Token? comment = assertion.beginToken.precedingComments;
-    comment is CommentToken;
-    comment = comment.next
-  ) {
-    final text = comment.lexeme
-        .replaceFirst(RegExp('^//+'), '')
-        .replaceFirst(RegExp(r'^/\*+'), '')
-        .replaceFirst(RegExp(r'\*/$'), '')
-        .trim();
-    if (text.startsWith(_exemptionMarker) &&
-        text.substring(_exemptionMarker.length).trim().isNotEmpty) {
-      return true;
-    }
-  }
-  return false;
 }
 
 /// Whether [source] is [target] itself or a member/index/null-check of it.
@@ -588,6 +578,49 @@ bool _isStateRead(Expression expression) {
 }
 
 final _capitalised = RegExp('^[A-Z]');
+
+/// `tester` queries that throw on an empty finder instead of returning null.
+/// `widgetList` and friends are deliberately absent: they return an iterable
+/// that can be empty.
+const _throwingTesterQueries = {
+  'state',
+  'widget',
+  'element',
+  'renderObject',
+  'getSemantics',
+  'getSize',
+  'getRect',
+  'getCenter',
+  'getTopLeft',
+  'getTopRight',
+  'getBottomLeft',
+  'getBottomRight',
+  'firstState',
+  'firstWidget',
+  'firstElement',
+  'firstRenderObject',
+};
+
+/// Whether [read] is a lookup that throws, or returns the provided value, when
+/// nothing is there: a single-result `tester` query, or a provider read such as
+/// `container.read(fooProvider)`, `ref.watch(fooProvider)` or
+/// `context.read<FooBloc>()`. `Type.of(...)` lookups never reach here because
+/// [_constructs] already treats a capitalised receiver as a construction.
+bool _cannotBeAbsent(Expression read) {
+  if (read is! MethodInvocation) return false;
+  final name = read.methodName.name;
+  final target = read.realTarget;
+  if (target is SimpleIdentifier && target.name == 'tester') {
+    return _throwingTesterQueries.contains(name);
+  }
+  if (name != 'read' && name != 'watch') return false;
+  final positional = read.argumentList.arguments
+      .where((argument) => argument is! NamedExpression)
+      .toList();
+  if (positional.isEmpty) return read.typeArguments != null;
+  return positional.length == 1 &&
+      positional.single.toSource().contains('Provider');
+}
 
 bool _constructs(MethodInvocation invocation) {
   final name = invocation.methodName.name;

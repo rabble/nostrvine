@@ -95,11 +95,13 @@ for: when acting wrongly would leave the observable unchanged anyway — a secon
 showing, or geometry measured on a parent-constrained row — no pin on the value
 helps, and the test has to observe calls or unconstrained child geometry instead.
 
-Assertions can also arrive through routes this single-file detector cannot
-follow, such as framework end-of-test verification or an assertion helper. Put
-`// unpinned-unchanged-ok: <reason>` immediately above the unchanged assertion
-when one of those routes proves the baseline. The reason is mandatory; the
-exemption is not a generic ignore for a baseline that could be pinned directly.
+A read that cannot come back absent is its own pin and is not reported: the
+single-result `tester` queries (`tester.state`, `tester.getSize`) throw on an
+empty finder, and a provider read (`container.read(fooProvider)`,
+`ref.watch(fooProvider)`, `context.read<FooBloc>()`) returns the provided value
+or throws, so `same()` on two of them cannot pass on null == null. There is no
+inline escape hatch, for the same reason the placeholder ratchet has none: an
+assertion the scan cannot see is one line away from being one it can.
 
 `check_unpinned_unchanged_assertions.sh` (#8617) freezes at **zero** every
 pair that is the test's ONLY assertion, in

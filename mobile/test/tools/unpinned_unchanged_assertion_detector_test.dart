@@ -119,9 +119,9 @@ void main() {
         final sites = scan(r'''
 void main() {
   testWidgets('w', (tester) async {
-    final size = tester.getSize(find.byType(Row));
+    final rows = tester.widgetList(find.byType(Row)).length;
     await tester.pump();
-    expect(tester.getSize(find.byType(Row)), size);
+    expect(tester.widgetList(find.byType(Row)).length, rows);
   });
   patrolTest('p', ($) async {
     final count = store.count;
@@ -153,15 +153,33 @@ void main() {
     });
 
     group('treats as pinned', () {
-      test('a documented exemption on the unchanged assertion', () {
+      test('a read that throws or returns the provided value when absent', () {
         final sites = scan('''
 void main() {
-  test('framework verified', () {
-    final before = ErrorWidget.builder;
-    installBuilder();
-    restoreBuilder();
-    // unpinned-unchanged-ok: flutter_test verifies this at end-of-body.
-    expect(ErrorWidget.builder, same(before));
+  testWidgets('geometry', (tester) async {
+    final idle = tester.getSize(find.byType(Row));
+    await tester.pump();
+    expect(tester.getSize(find.byType(Row)), idle);
+  });
+  testWidgets('state', (tester) async {
+    final state = tester.state(find.byType(InboxView));
+    flip();
+    expect(tester.state(find.byType(InboxView)), same(state));
+  });
+  test('container', () async {
+    final first = container.read(webAuthServiceProvider);
+    await container.pump();
+    expect(container.read(webAuthServiceProvider), same(first));
+  });
+  test('ref', () {
+    final first = ref.watch(fooProvider);
+    rebuild();
+    expect(ref.watch(fooProvider), same(first));
+  });
+  testWidgets('context', (tester) async {
+    final bloc = context.read<FooBloc>();
+    await tester.pump();
+    expect(context.read<FooBloc>(), same(bloc));
   });
 }
 ''');
@@ -169,35 +187,23 @@ void main() {
         expect(sites, isEmpty);
       });
 
-      test('a documented exemption for an assertion helper', () {
+      test('but not a query that can come back empty or null', () {
         final sites = scan('''
 void main() {
-  test('helper pinned', () {
-    final before = service.value;
-    pinBaseline(before);
-    act();
-    // unpinned-unchanged-ok: pinBaseline asserts this helper-owned value.
-    expect(service.value, before);
+  testWidgets('list', (tester) async {
+    final rows = tester.widgetList(find.byType(Row)).length;
+    await tester.pump();
+    expect(tester.widgetList(find.byType(Row)).length, rows);
+  });
+  test('dao', () async {
+    final row = await dao.read(key);
+    await service.collect();
+    expect(await dao.read(key), row);
   });
 }
 ''');
 
-        expect(sites, isEmpty);
-      });
-
-      test('an exemption without a reason does not clear the site', () {
-        final sites = scan('''
-void main() {
-  test('missing reason', () {
-    final before = service.value;
-    act();
-    // unpinned-unchanged-ok:
-    expect(service.value, before);
-  });
-}
-''');
-
-        expect(sites, hasLength(1));
+        expect(sites.map((site) => site.line), [5, 10]);
       });
 
       test('an expect on the local before the act', () {
