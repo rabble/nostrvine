@@ -112,6 +112,15 @@ class ConversationReactionsCubit
         );
         return;
       }
+      if (existing.publishStatus == DmReactionPublishStatus.removalRefused) {
+        add(
+          ConversationReactionRemovalRetryRequested(
+            rumorId: existing.id,
+            messageAuthorPubkey: event.messageAuthorPubkey,
+          ),
+        );
+        return;
+      }
       final key = ReactionPublishKey(
         messageId: event.messageId,
         emoji: event.emoji,
@@ -372,13 +381,43 @@ class ConversationReactionsCubit
     ConversationReactionRemovalRetryRequested event,
     Emitter<ConversationReactionsState> emit,
   ) async {
+    emit(
+      state.copyWith(
+        removalRetries: {
+          event.rumorId: ReactionRemovalRetryLocalStatus.retrying,
+        },
+      ),
+    );
     try {
-      await _reactionsRepository.retryDeletion(
+      final outcome = await _reactionsRepository.retryDeletion(
         rumorId: event.rumorId,
         targetMessageAuthor: event.messageAuthorPubkey,
       );
+      emit(
+        state.copyWith(
+          removalRetries: {
+            event.rumorId: switch (outcome) {
+              DmReactionDeletionOutcome.sent =>
+                ReactionRemovalRetryLocalStatus.sent,
+              DmReactionDeletionOutcome.refused =>
+                ReactionRemovalRetryLocalStatus.refused,
+              DmReactionDeletionOutcome.unconfirmed =>
+                ReactionRemovalRetryLocalStatus.unconfirmed,
+              DmReactionDeletionOutcome.unavailable =>
+                ReactionRemovalRetryLocalStatus.unavailable,
+            },
+          },
+        ),
+      );
     } on Object catch (error, stackTrace) {
       addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          removalRetries: {
+            event.rumorId: ReactionRemovalRetryLocalStatus.unavailable,
+          },
+        ),
+      );
     }
   }
 

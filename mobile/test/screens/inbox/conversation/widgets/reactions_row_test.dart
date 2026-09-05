@@ -67,6 +67,7 @@ void main() {
     _MockConversationReactionsCubit cubit, {
     Set<String> blockedPubkeys = const <String>{},
     List<dynamic> additionalOverrides = const <dynamic>[],
+    bool removalEnabled = true,
   }) {
     return testMaterialApp(
       additionalOverrides: additionalOverrides,
@@ -80,6 +81,7 @@ void main() {
             ownerPubkey: ownerPubkey,
             isSentByMe: false,
             blockedPubkeys: blockedPubkeys,
+            removalEnabled: removalEnabled,
           ),
         ),
       ),
@@ -150,6 +152,35 @@ void main() {
           (decoration) => decoration.border?.top.color == VineTheme.error,
         ),
         isTrue,
+      );
+    });
+
+    testWidgets('a refused removal on a closed thread is not warning-styled', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(
+            id: '1',
+            reactorPubkey: ownerPubkey,
+            emoji: '🔥',
+            publishStatus: DmReactionPublishStatus.removalRefused,
+          ),
+        ]),
+      );
+
+      await tester.pumpWidget(buildSubject(cubit, removalEnabled: false));
+      await tester.pump();
+
+      final decorations = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((widget) => widget.decoration)
+          .whereType<BoxDecoration>();
+      expect(
+        decorations.any(
+          (decoration) => decoration.border?.top.color == VineTheme.error,
+        ),
+        isFalse,
       );
     });
 

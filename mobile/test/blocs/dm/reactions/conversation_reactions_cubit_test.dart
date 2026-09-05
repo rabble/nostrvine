@@ -618,6 +618,59 @@ void main() {
       }
 
       blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        're-tapping a refused removal retries its stored deletion',
+        build: () {
+          when(
+            () => repo.retryDeletion(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async => DmReactionDeletionOutcome.sent);
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) async {
+          cubit.add(
+            const ConversationReactionsStarted(conversationId: _convo),
+          );
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([
+            ownReactionStatus(
+              '❤️',
+              DmReactionPublishStatus.removalRefused,
+            ),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (_) {
+          verify(
+            () => repo.retryDeletion(
+              rumorId: 'own-❤️',
+              targetMessageAuthor: _peer,
+            ),
+          ).called(1);
+          verifyNever(
+            () => repo.removeOwn(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
         'a removal retry replays the stored deletion, not the reaction',
         build: () {
           when(
@@ -652,6 +705,45 @@ void main() {
           );
         },
       );
+
+      for (final outcome in DmReactionDeletionOutcome.values) {
+        blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+          'surfaces the $outcome removal retry outcome',
+          build: () {
+            when(
+              () => repo.retryDeletion(
+                rumorId: any(named: 'rumorId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              ),
+            ).thenAnswer((_) async => outcome);
+            return ConversationReactionsCubit(
+              reactionsRepository: repo,
+              ownerPubkey: _owner,
+            );
+          },
+          act: (cubit) => cubit.add(
+            const ConversationReactionRemovalRetryRequested(
+              rumorId: 'own-❤️',
+              messageAuthorPubkey: _peer,
+            ),
+          ),
+          verify: (cubit) {
+            expect(
+              cubit.state.removalRetries['own-❤️'],
+              switch (outcome) {
+                DmReactionDeletionOutcome.sent =>
+                  ReactionRemovalRetryLocalStatus.sent,
+                DmReactionDeletionOutcome.refused =>
+                  ReactionRemovalRetryLocalStatus.refused,
+                DmReactionDeletionOutcome.unconfirmed =>
+                  ReactionRemovalRetryLocalStatus.unconfirmed,
+                DmReactionDeletionOutcome.unavailable =>
+                  ReactionRemovalRetryLocalStatus.unavailable,
+              },
+            );
+          },
+        );
+      }
 
       blocTest<ConversationReactionsCubit, ConversationReactionsState>(
         'a refused deletion row clears the optimistic removal overlay',

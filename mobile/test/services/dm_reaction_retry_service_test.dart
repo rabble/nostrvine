@@ -441,6 +441,33 @@ void main() {
       ).called(1);
     });
 
+    test('a refused removal does not consume the retry budget', () async {
+      when(repository.retryableDeletions).thenAnswer(
+        (_) async => [
+          _target(rumorId: 'd1', publishStatus: 'deletion_pending'),
+        ],
+      );
+      when(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).thenAnswer((_) async => DmReactionDeletionOutcome.refused);
+
+      final service = buildService(
+        retryConfig: const DmReactionRetryConfig(maxRetries: 1),
+      );
+      await service.sweep();
+      await service.sweep();
+
+      verify(
+        () => repository.retryDeletion(
+          rumorId: 'd1',
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).called(2);
+    });
+
     test(
       'a removal is re-driven regardless of the pending min-age guard',
       () async {

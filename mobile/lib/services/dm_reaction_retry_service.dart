@@ -72,6 +72,8 @@ class DmReactionRetryConfig {
   }
 }
 
+enum _RetryAttemptOutcome { recovered, refused, failed }
+
 /// Re-drives undelivered own DM reactions on every app-foreground transition,
 /// closing the reliability gap that leaves a reaction lost when its recipient
 /// gift wrap fails to land on a flaky relay.
@@ -244,30 +246,38 @@ class DmReactionRetryService {
         reactionTargets,
         phase: _addPhase,
         applyPendingMinAge: true,
-        driver: (t) async => (await _repository.retry(
-          rumorId: t.rumorId,
-          targetMessageAuthor: t.targetMessageAuthor,
-        )).success,
+        driver: (t) async =>
+            (await _repository.retry(
+              rumorId: t.rumorId,
+              targetMessageAuthor: t.targetMessageAuthor,
+            )).success
+            ? _RetryAttemptOutcome.recovered
+            : _RetryAttemptOutcome.failed,
       );
       final d = await _driveTargets(
         deletionTargets,
         phase: _deletionPhase,
         applyPendingMinAge: false,
-        driver: (t) async =>
-            await _repository.retryDeletion(
-              rumorId: t.rumorId,
-              targetMessageAuthor: t.targetMessageAuthor,
-            ) ==
-            DmReactionDeletionOutcome.sent,
+        driver: (t) async => switch (await _repository.retryDeletion(
+          rumorId: t.rumorId,
+          targetMessageAuthor: t.targetMessageAuthor,
+        )) {
+          DmReactionDeletionOutcome.sent => _RetryAttemptOutcome.recovered,
+          DmReactionDeletionOutcome.refused => _RetryAttemptOutcome.refused,
+          DmReactionDeletionOutcome.unconfirmed ||
+          DmReactionDeletionOutcome.unavailable => _RetryAttemptOutcome.failed,
+        },
       );
 
       Log.info(
         'sweep complete: '
         'reactions(recovered=${r.recovered} failed=${r.failed} '
+        'refused=${r.refused} '
         'skipped-backoff=${r.skippedBackoff} '
         'skipped-exhausted=${r.skippedExhausted} '
         'skipped-too-young=${r.skippedTooYoung}) '
         'deletions(recovered=${d.recovered} failed=${d.failed} '
+        'refused=${d.refused} '
         'skipped-backoff=${d.skippedBackoff} '
         'skipped-exhausted=${d.skippedExhausted})',
         name: 'DmReactionRetryService',
@@ -301,6 +311,7 @@ class DmReactionRetryService {
     ({
       int recovered,
       int failed,
+      int refused,
       int skippedBackoff,
       int skippedExhausted,
       int skippedTooYoung,
@@ -310,10 +321,12 @@ class DmReactionRetryService {
     List<DmReactionRetryTarget> targets, {
     required String phase,
     required bool applyPendingMinAge,
-    required Future<bool> Function(DmReactionRetryTarget) driver,
+    required Future<_RetryAttemptOutcome> Function(DmReactionRetryTarget)
+    driver,
   }) async {
     var recovered = 0;
     var failed = 0;
+    var refused = 0;
     var skippedBackoff = 0;
     var skippedExhausted = 0;
     var skippedTooYoung = 0;
@@ -350,15 +363,19 @@ class DmReactionRetryService {
       }
 
       try {
-        final success = await driver(target);
-        if (success) {
-          _attempts.remove(id);
-          _lastAttempt.remove(id);
-          recovered++;
-        } else {
-          _attempts[id] = attempts + 1;
-          _lastAttempt[id] = _now();
-          failed++;
+        switch (await driver(target)) {
+          case _RetryAttemptOutcome.recovered:
+            _attempts.remove(id);
+            _lastAttempt.remove(id);
+            recovered++;
+          case _RetryAttemptOutcome.refused:
+            _attempts.remove(id);
+            _lastAttempt.remove(id);
+            refused++;
+          case _RetryAttemptOutcome.failed:
+            _attempts[id] = attempts + 1;
+            _lastAttempt[id] = _now();
+            failed++;
         }
       } on Object catch (e, stackTrace) {
         _attempts[id] = attempts + 1;
@@ -385,6 +402,7 @@ class DmReactionRetryService {
     return (
       recovered: recovered,
       failed: failed,
+      refused: refused,
       skippedBackoff: skippedBackoff,
       skippedExhausted: skippedExhausted,
       skippedTooYoung: skippedTooYoung,

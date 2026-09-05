@@ -997,6 +997,49 @@ void main() {
         handle.dispose();
       });
 
+      testWidgets('a refused reaction removal retry shows failure feedback', (
+        tester,
+      ) async {
+        final controller =
+            StreamController<ConversationReactionsState>.broadcast();
+        addTearDown(controller.close);
+        const initial = ConversationReactionsState();
+        whenListen(
+          mockReactionsCubit,
+          controller.stream,
+          initialState: initial,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [ownMessage()],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        controller.add(
+          initial.copyWith(
+            removalRetries: const {
+              'reaction-id': ReactionRemovalRetryLocalStatus.retrying,
+            },
+          ),
+        );
+        await tester.pump();
+        controller.add(
+          initial.copyWith(
+            removalRetries: const {
+              'reaction-id': ReactionRemovalRetryLocalStatus.refused,
+            },
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
+      });
+
       testWidgets('a live thread still offers to remove an own reaction', (
         tester,
       ) async {
@@ -2154,10 +2197,13 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: BlocProvider<DmRestoreStatusCubit>.value(
-                    value: mockRestoreStatusCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -2291,10 +2337,13 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: BlocProvider<DmRestoreStatusCubit>.value(
-                    value: mockRestoreStatusCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -2702,10 +2751,13 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: BlocProvider<DmRestoreStatusCubit>.value(
-                    value: mockRestoreStatusCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -2760,10 +2812,13 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: BlocProvider<DmRestoreStatusCubit>.value(
-                    value: mockRestoreStatusCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                  child: BlocProvider<ConversationReactionsCubit>.value(
+                    value: mockReactionsCubit,
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
