@@ -4685,5 +4685,6 @@
     "analyticsWindowAll": "Alla",
     "followUserIndexedSemanticLabel": "Följ användare {index}",
     "unfollowUserIndexedSemanticLabel": "Sluta följa användare {index}",
-    "supporterTierMonthlyLabel": "{title} — {price} / månad"
+    "supporterTierMonthlyLabel": "{title} — {price} / månad",
+    "dmReactionAddBlockedByRemoval": "Slutför borttagningen av din tidigare reaktion innan du lägger till en ny."
 }

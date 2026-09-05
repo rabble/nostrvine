@@ -584,6 +584,69 @@ void main() {
     );
 
     test(
+      'hasOutstandingOwnDeletion finds pending and refused removals',
+      () async {
+        await insertPending();
+        await dao.markOwnDeletionPending(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+
+        expect(
+          await dao.hasOutstandingOwnDeletion(
+            targetMessageId: _targetMessageId,
+            ownerPubkey: _ownerA,
+          ),
+          isTrue,
+        );
+
+        await dao.markDeletionRefused(id: _pendingId, ownerPubkey: _ownerA);
+
+        expect(
+          await dao.hasOutstandingOwnDeletion(
+            targetMessageId: _targetMessageId,
+            ownerPubkey: _ownerA,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('hasOutstandingOwnDeletion is target- and owner-scoped', () async {
+      await insertPending();
+      await dao.markOwnDeletionPending(
+        id: _pendingId,
+        ownerPubkey: _ownerA,
+        deletionRumorJson: '{"kind":5}',
+      );
+
+      expect(
+        await dao.hasOutstandingOwnDeletion(
+          targetMessageId: _otherTargetMessageId,
+          ownerPubkey: _ownerA,
+        ),
+        isFalse,
+      );
+      expect(
+        await dao.hasOutstandingOwnDeletion(
+          targetMessageId: _targetMessageId,
+          ownerPubkey: _ownerB,
+        ),
+        isFalse,
+      );
+
+      await dao.markDeletionSent(id: _pendingId, ownerPubkey: _ownerA);
+      expect(
+        await dao.hasOutstandingOwnDeletion(
+          targetMessageId: _targetMessageId,
+          ownerPubkey: _ownerA,
+        ),
+        isFalse,
+      );
+    });
+
+    test(
       'markDeletionRefused retains the rumor and surfaces a warning row '
       'without returning it to the automatic retry set',
       () async {

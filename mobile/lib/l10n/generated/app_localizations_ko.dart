@@ -5609,6 +5609,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmReactionRemovalRefusedTitle => 'Couldn\'t remove your reaction.';
 
   @override
+  String get dmReactionAddBlockedByRemoval => '다른 반응을 추가하기 전에 이전 반응 삭제를 완료하세요.';
+
+  @override
   String get dmReactionRemovalRefusedDetails =>
       'Some people may still be able to see this reaction.';
 

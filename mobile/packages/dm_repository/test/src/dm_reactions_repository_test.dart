@@ -164,6 +164,43 @@ void main() {
       expect(repository.isInitialized, isFalse);
     });
 
+    test('hasOutstandingOwnDeletion is false when uninitialized', () async {
+      final repository = createRepository(initialized: false);
+
+      expect(
+        await repository.hasOutstandingOwnDeletion(
+          targetMessageId: _targetMessageId,
+        ),
+        isFalse,
+      );
+      verifyNever(
+        () => mockDao.hasOutstandingOwnDeletion(
+          targetMessageId: any(named: 'targetMessageId'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      );
+    });
+
+    test(
+      'hasOutstandingOwnDeletion delegates with the current owner',
+      () async {
+        when(
+          () => mockDao.hasOutstandingOwnDeletion(
+            targetMessageId: _targetMessageId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer((_) async => true);
+        final repository = createRepository();
+
+        expect(
+          await repository.hasOutstandingOwnDeletion(
+            targetMessageId: _targetMessageId,
+          ),
+          isTrue,
+        );
+      },
+    );
+
     test('watchForConversation maps dao rows to models', () async {
       when(
         () => mockDao.watchForConversation(

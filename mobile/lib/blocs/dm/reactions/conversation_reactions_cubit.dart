@@ -151,7 +151,7 @@ class ConversationReactionsCubit
       return;
     }
 
-    if (_blockWhileRemovalRefused(event.messageId, emit)) return;
+    if (await _blockWhileRemovalOutstanding(event.messageId, emit)) return;
 
     await _publishReaction(
       conversationId: event.conversationId,
@@ -166,7 +166,7 @@ class ConversationReactionsCubit
     ConversationReactionSet event,
     Emitter<ConversationReactionsState> emit,
   ) async {
-    if (_blockWhileRemovalRefused(event.messageId, emit)) return;
+    if (await _blockWhileRemovalOutstanding(event.messageId, emit)) return;
 
     // Set-not-toggle: re-selecting the active emoji is a no-op (keep it);
     // a different emoji supersedes the prior one in the repository. The
@@ -191,11 +191,12 @@ class ConversationReactionsCubit
     );
   }
 
-  /// Blocks new reactions while a refused removal must remain visible.
-  bool _blockWhileRemovalRefused(
+  /// Blocks new reactions while a pending or refused removal must remain
+  /// reachable for delivery or manual retry.
+  Future<bool> _blockWhileRemovalOutstanding(
     String messageId,
     Emitter<ConversationReactionsState> emit,
-  ) {
+  ) async {
     final hasRefusedRemoval = state
         .reactionsFor(messageId)
         .any(
@@ -203,7 +204,12 @@ class ConversationReactionsCubit
               reaction.isOwn &&
               reaction.publishStatus == DmReactionPublishStatus.removalRefused,
         );
-    if (!hasRefusedRemoval) return false;
+    final hasOutstandingRemoval =
+        hasRefusedRemoval ||
+        await _reactionsRepository.hasOutstandingOwnDeletion(
+          targetMessageId: messageId,
+        );
+    if (!hasOutstandingRemoval) return false;
     emit(
       state.copyWith(
         blockedReactionAttempts: state.blockedReactionAttempts + 1,

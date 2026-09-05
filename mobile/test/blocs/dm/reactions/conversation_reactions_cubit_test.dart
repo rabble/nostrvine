@@ -31,6 +31,11 @@ void main() {
       when(
         () => repo.watchForConversation(any()),
       ).thenAnswer((_) => streamController.stream);
+      when(
+        () => repo.hasOutstandingOwnDeletion(
+          targetMessageId: any(named: 'targetMessageId'),
+        ),
+      ).thenAnswer((_) async => false);
     });
 
     tearDown(() async {
@@ -787,6 +792,61 @@ void main() {
           expect(cubit.state.blockedReactionAttempts, 1);
         },
       );
+
+      for (final useSet in [false, true]) {
+        blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+          '${useSet ? 'set' : 'toggle'} cannot overtake a pending removal',
+          setUp: () {
+            when(
+              () => repo.hasOutstandingOwnDeletion(
+                targetMessageId: _msgId,
+              ),
+            ).thenAnswer((_) async => true);
+          },
+          build: () => ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          ),
+          act: (cubit) {
+            if (useSet) {
+              cubit.add(
+                const ConversationReactionSet(
+                  conversationId: _convo,
+                  messageId: _msgId,
+                  messageAuthorPubkey: _peer,
+                  emoji: '🔥',
+                ),
+              );
+            } else {
+              cubit.add(
+                const ConversationReactionToggled(
+                  conversationId: _convo,
+                  messageId: _msgId,
+                  messageAuthorPubkey: _peer,
+                  emoji: '🔥',
+                ),
+              );
+            }
+          },
+          expect: () => [
+            isA<ConversationReactionsState>().having(
+              (state) => state.blockedReactionAttempts,
+              'blocked attempts',
+              1,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => repo.publish(
+                conversationId: any(named: 'conversationId'),
+                targetMessageId: any(named: 'targetMessageId'),
+                targetMessageAuthor: any(named: 'targetMessageAuthor'),
+                emoji: any(named: 'emoji'),
+              ),
+            );
+          },
+        );
+      }
 
       for (final outcome in DmReactionDeletionOutcome.values) {
         blocTest<ConversationReactionsCubit, ConversationReactionsState>(

@@ -10171,6 +10171,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t remove your reaction.'**
   String get dmReactionRemovalRefusedTitle;
 
+  /// Snackbar shown when adding a DM reaction is blocked until an earlier removal finishes.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish removing your previous reaction before adding another.'**
+  String get dmReactionAddBlockedByRemoval;
+
   /// Detail text explaining that a refused DM reaction removal may remain visible to recipients.
   ///
   /// In en, this message translates to:

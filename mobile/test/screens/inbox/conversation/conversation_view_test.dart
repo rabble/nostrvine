@@ -1067,7 +1067,10 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsOneWidget);
+        expect(
+          find.text(l10n.dmReactionAddBlockedByRemoval),
+          findsOneWidget,
+        );
       });
 
       for (final status in [

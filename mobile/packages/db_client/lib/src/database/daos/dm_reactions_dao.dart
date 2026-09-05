@@ -454,6 +454,34 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Whether [ownerPubkey] has an own reaction removal for
+  /// [targetMessageId] that has not reached a relay.
+  ///
+  /// Pending removals are intentionally hidden from the conversation stream,
+  /// while refused removals remain available for manual retry. Querying the
+  /// durable queue prevents a newer reaction from making either row
+  /// unreachable in the UI.
+  Future<bool> hasOutstandingOwnDeletion({
+    required String targetMessageId,
+    required String ownerPubkey,
+  }) async {
+    final query = selectOnly(dmMessageReactions)
+      ..addColumns([dmMessageReactions.id])
+      ..where(
+        dmMessageReactions.targetMessageId.equals(targetMessageId) &
+            dmMessageReactions.ownerPubkey.equals(ownerPubkey) &
+            dmMessageReactions.reactorPubkey.equals(ownerPubkey) &
+            dmMessageReactions.isDeleted.equals(true) &
+            dmMessageReactions.rumorEventJson.isNotNull() &
+            dmMessageReactions.publishStatus.isIn(const [
+              _deletionPendingStatus,
+              deletionRefused,
+            ]),
+      )
+      ..limit(1);
+    return (await query.get()).isNotEmpty;
+  }
+
   /// Return the stored rumor JSON for a pending/failed outgoing row, or
   /// `null` if no row matches or the row has no stored rumor.
   Future<String?> getRumorJson({

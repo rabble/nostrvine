@@ -5986,6 +5986,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmReactionRemovalRefusedTitle => 'Couldn\'t remove your reaction.';
 
   @override
+  String get dmReactionAddBlockedByRemoval =>
+      'Entferne zuerst deine vorherige Reaktion, bevor du eine neue hinzufügst.';
+
+  @override
   String get dmReactionRemovalRefusedDetails =>
       'Some people may still be able to see this reaction.';
 

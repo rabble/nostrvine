@@ -6470,5 +6470,6 @@
   "analyticsWindowAll": "Tất cả",
   "followUserIndexedSemanticLabel": "Theo dõi người dùng {index}",
   "unfollowUserIndexedSemanticLabel": "Bỏ theo dõi người dùng {index}",
-  "supporterTierMonthlyLabel": "{title} — {price} / tháng"
+  "supporterTierMonthlyLabel": "{title} — {price} / tháng",
+  "dmReactionAddBlockedByRemoval": "Hãy hoàn tất việc xóa cảm xúc trước đó trước khi thêm cảm xúc khác."
 }

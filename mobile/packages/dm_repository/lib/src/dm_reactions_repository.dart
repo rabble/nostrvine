@@ -320,6 +320,19 @@ class DmReactionsRepository {
         .map((rows) => _collapsePerReactor(rows.map(_rowToModel).toList()));
   }
 
+  /// Whether the current account has a pending or refused removal for the
+  /// target message. This reads the durable queue because pending removals are
+  /// deliberately absent from [watchForConversation].
+  Future<bool> hasOutstandingOwnDeletion({
+    required String targetMessageId,
+  }) {
+    if (_userPubkey.isEmpty) return Future<bool>.value(false);
+    return _reactionsDao.hasOutstandingOwnDeletion(
+      targetMessageId: targetMessageId,
+      ownerPubkey: _userPubkey,
+    );
+  }
+
   /// Enforce the cap-at-one invariant at the read boundary: keep at most one
   /// live reaction per (targetMessageId, reactorPubkey), the most recent by
   /// `createdAt`.
