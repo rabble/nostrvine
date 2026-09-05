@@ -17,8 +17,11 @@ The full smoke suite is the manual target. The PR gate in Codemagic runs
 `tests/loginFreshInstall.yaml` and `tests/removeKeys.yaml` as individual files so the
 JUnit report keeps per-flow names and timings. `likeFlow` and `commentFlow` stay
 off the gate: after the reduced-motion fix they still fail on Codemagic with a
-blocked main thread ([#7619](https://github.com/divinevideo/divine-mobile/issues/7619),
-[#7620](https://github.com/divinevideo/divine-mobile/issues/7620)). The iOS
+blocked main thread, as documented in
+[#7204](https://github.com/divinevideo/divine-mobile/issues/7204). Restoring
+those flows is tracked by
+[#7619](https://github.com/divinevideo/divine-mobile/issues/7619) and
+[#7620](https://github.com/divinevideo/divine-mobile/issues/7620). The iOS
 simulator is still set to reduced motion so XCUITest can settle on the flows
 that do run.
 

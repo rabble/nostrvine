@@ -101,8 +101,25 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             'simctl get_app_container "$MAESTRO_DEVICE_UDID" "$BUNDLE_ID"',
             install,
         )
+        self.assertIn('if [ -n "${MAESTRO_DEVICE_UDID:-}" ]; then', maestro)
         self.assertIn('set -- --device "$MAESTRO_DEVICE_UDID"', maestro)
         self.assertIn('maestro "$@" test', maestro)
+
+        workflow = self._workflow_block("e2e-smoke-ios")
+        for step in (
+            "- *boot_ios_simulator",
+            "- *install_app_ios_simulator",
+            "- *run_maestro_smoke_tests",
+        ):
+            self.assertIn(step, workflow)
+        self.assertLess(
+            workflow.index("- *boot_ios_simulator"),
+            workflow.index("- *install_app_ios_simulator"),
+        )
+        self.assertLess(
+            workflow.index("- *install_app_ios_simulator"),
+            workflow.index("- *run_maestro_smoke_tests"),
+        )
 
     def test_android_e2e_excludes_unbounded_maestro_artifacts(self) -> None:
         workflow = self._workflow_block("e2e-smoke-android")
