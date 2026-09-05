@@ -268,6 +268,25 @@ enum _Nip04DedupHit {
   otherAccount,
 }
 
+/// What a removal request resolves to, before anything is written.
+///
+/// [absent] and [removable] both report `removed` to the caller — a stale id
+/// must never become an undeletable row — but they differ in what they leave
+/// behind. Only [removable] earns a `removed_conversations` tombstone, because
+/// that marker is permanent and suppresses every replayed message at or before
+/// its timestamp (#7850).
+enum _RemovalDisposition {
+  /// No row for this id under this owner. Nothing to delete, nothing to
+  /// suppress.
+  absent,
+
+  /// The injected policy protects this conversation.
+  protected,
+
+  /// On disk and not protected.
+  removable,
+}
+
 enum _OwnDmInboxState {
   /// The user advertises a kind-10050 with at least one allowed relay.
   found,
@@ -7965,12 +7984,28 @@ class DmRepository {
     );
   }
 
-  /// [isRemovalProtected] for an id the caller has not already resolved.
+  /// What a removal request resolves to before any row is touched.
   ///
-  /// A missing row is NOT protected: removal of a stale id must fail open.
-  Future<bool> _isRemovalProtectedById(String conversationId) async {
-    final conversation = await getConversation(conversationId);
-    return conversation != null && isRemovalProtected(conversation);
+  /// Three-valued because [_RemovalDisposition.absent] and
+  /// [_RemovalDisposition.removable] both report success to the caller but must
+  /// write different things: only a conversation that is actually on disk earns
+  /// a suppression tombstone. See [_resolveRemoval].
+  ///
+  /// Resolving once and reusing the answer is also what keeps the guard's read
+  /// and the delete on the same account by construction rather than by comment.
+  Future<_RemovalDisposition> _resolveRemoval(
+    String conversationId, {
+    required String ownerPubkey,
+  }) async {
+    await _awaitInitialConversationMaintenance();
+    final row = await _conversationsDao.getConversation(
+      conversationId,
+      ownerPubkey: ownerPubkey,
+    );
+    if (row == null) return _RemovalDisposition.absent;
+    return isRemovalProtected(_conversationFromRow(row))
+        ? _RemovalDisposition.protected
+        : _RemovalDisposition.removable;
   }
 
   /// Remove a conversation, its messages, its queued sends, and its queued
@@ -7980,6 +8015,11 @@ class DmRepository {
   /// history at or before the removal time. The marker is kept for the
   /// account's lifetime: a newer message recreates the conversation while
   /// earlier history stays suppressed.
+  ///
+  /// The tombstone is written **only for a conversation that is on disk**. It
+  /// is a record of what this device removed, not of what it was asked to
+  /// remove, and it is permanent — so writing one for an id with no local row
+  /// suppresses a conversation the user never had (#7850).
   ///
   /// The `dm_message_reactions` delete is not housekeeping. Those rows are
   /// the durable outgoing queue for unpublished reactions and pending kind-5
@@ -8006,8 +8046,24 @@ class DmRepository {
     if (owner == null) {
       throw StateError('Cannot remove a conversation without a known owner.');
     }
-    if (await _isRemovalProtectedById(conversationId)) {
-      return ConversationRemovalOutcome.refused;
+    final disposition = await _resolveRemoval(
+      conversationId,
+      ownerPubkey: owner,
+    );
+    switch (disposition) {
+      case _RemovalDisposition.protected:
+        return ConversationRemovalOutcome.refused;
+      case _RemovalDisposition.absent:
+        // Fails open, as before — a stale id must never become an undeletable
+        // row. What changed is that it no longer leaves a tombstone behind
+        // (#7850). Nothing local was removed, so there is no local history to
+        // suppress; a marker here would instead drop every future relay replay
+        // of a conversation this device never had, permanently and silently.
+        // A moderation enforcement notice is the case that matters: its
+        // created_at is always in the past, so it would never arrive again.
+        return ConversationRemovalOutcome.removed;
+      case _RemovalDisposition.removable:
+        break;
     }
     await _conversationsDao.runInTransaction<void>(() async {
       // Snapshot the owner for the whole transaction: an account switch
@@ -8064,10 +8120,19 @@ class DmRepository {
     final removable = <String>[];
     var refused = 0;
     for (final conversationId in conversationIds) {
-      if (await _isRemovalProtectedById(conversationId)) {
-        refused++;
-      } else {
-        removable.add(conversationId);
+      switch (await _resolveRemoval(conversationId, ownerPubkey: owner)) {
+        case _RemovalDisposition.protected:
+          refused++;
+        case _RemovalDisposition.absent:
+          // Dropped from the batch rather than tombstoned, for the reason on
+          // [removeConversation]. This is the reachable form of that bug: ids
+          // are collected when the list renders and acted on later, so a row
+          // that goes away in between arrives here absent. It stays out of
+          // `removed` too, which already counted DAO deletes rather than
+          // requests.
+          break;
+        case _RemovalDisposition.removable:
+          removable.add(conversationId);
       }
     }
     if (removable.isEmpty) return (removed: 0, refused: refused);
