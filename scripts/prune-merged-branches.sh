@@ -19,7 +19,13 @@
 # So the useful signal in a squash-merge repo is GitHub reporting a same-repo PR
 # to main with this head ref merged. Everything else is KEEP.
 #
-# 4. Vetoing on any ignored file makes the script report nothing, ever. Every
+# 4. A head-ref name match alone misses review worktrees. A worktree created to
+#    review someone else's PR sits on a scratch branch (`pr-8511`, `pr-8634`)
+#    whose name is the head ref of no PR at all, so the name lookup scores it
+#    KEEP forever. For those, ask GitHub which PRs contain the worktree's tip
+#    COMMIT — an exact SHA, so it needs no name inference. That is MERGED-TIP.
+#
+# 5. Vetoing on any ignored file makes the script report nothing, ever. Every
 #    Flutter worktree carries build/, .dart_tool/ and a pile of generated
 #    plugin registrants, so Veto 2 below used to fire on all of them and the
 #    run always ended "0 likely prunable". Ignored paths that a toolchain step
@@ -27,9 +33,9 @@
 #    (a .env, a scratch note, a patch) still are. Only the latter veto.
 #
 # The bias is deliberate. A false KEEP costs disk. A false DELETE costs work
-# that exists nowhere else — an unpushed branch has no backup. The rule above
-# keeps that asymmetry: an ignored path absent from the regenerable list still
-# vetoes.
+# that exists nowhere else — an unpushed branch has no backup. Both additions
+# above keep that asymmetry: MERGED-TIP still needs Veto 1 to pass, and an
+# ignored path that is not on the regenerable list still vetoes.
 #
 # Usage:
 #   bash scripts/prune-merged-branches.sh
@@ -95,6 +101,14 @@ commit_exists_on_github() {
   "$GH" api -X GET "repos/$REPO/commits/$1" >/dev/null 2>&1
 }
 
+# A merged-to-main PR containing this exact commit. Used only for branches
+# whose NAME matches no merged head ref, so review worktrees are still seen.
+merged_pr_contains_commit() {
+  "$GH" api -X GET "repos/$REPO/commits/$1/pulls" \
+    --jq '[.[] | select(.merged_at != null) | select(.base.ref == "main")] | length' \
+    2>/dev/null | grep -qxE '[1-9][0-9]*'
+}
+
 # Ignored paths any Flutter toolchain step recreates from tracked sources.
 # `flutter pub get` plus a build regenerates every one, so a worktree holding
 # only these holds no work. Anything absent from this list vetoes, which is
@@ -135,41 +149,51 @@ while IFS= read -r branch; do
 
   if grep -qxF -- "$branch" "$MERGED_REFS"; then
     verdict="MERGED-PR"
+  elif [ -n "$wt" ] && [ -d "$wt" ] && merged_pr_contains_commit "$tip"; then
+    # Only worktree branches get this lookup: it is one API call per branch,
+    # and a branch with no worktree costs a ref, not 4GB of build output.
+    verdict="MERGED-TIP"
   else
     verdict="KEEP"
   fi
 
-  # Vetoes are applied even to MERGED-PR branches.
+  # Vetoes are applied even to MERGED-PR and MERGED-TIP branches.
+  case "$verdict" in MERGED-*) prunable=yes ;; *) prunable=no ;; esac
 
   # Veto 1: the local tip must exist in GitHub's repository object database.
   # This catches unpushed work and branch-name reuse after an older PR merged.
-  if [ "$verdict" = "MERGED-PR" ]; then
+  if [ "$prunable" = yes ]; then
     if ! commit_exists_on_github "$tip"; then
       verdict="KEEP-LOCAL"
+      prunable=no
     fi
   fi
 
   # Veto 2: uncommitted, untracked, or non-regenerable ignored work in the
   # branch's worktree exists in no commit anywhere, merged PR or not.
-  if [ "$verdict" = "MERGED-PR" ] && [ -n "$wt" ] && [ -d "$wt" ]; then
+  if [ "$prunable" = yes ] && [ -n "$wt" ] && [ -d "$wt" ]; then
     if [ -n "$(worktree_blocking_paths "$wt")" ]; then
       verdict="KEEP-DIRTY"
+      prunable=no
     fi
   fi
 
   printf '%-14s %-50s %s\n' "$verdict" "$branch" "${wt:-—}"
-  if [ "$verdict" = "MERGED-PR" ]; then
+  if [ "$prunable" = yes ]; then
     merged=$((merged + 1))
   else
     keep=$((keep + 1))
   fi
 done < <(git for-each-ref --format='%(refname:short)' refs/heads/ | sort)
 
-printf '\n%s likely prunable (merged same-repo PR to main, local tip on GitHub, clean) / %s kept.\n' "$merged" "$keep"
+printf '\n%s likely prunable (merged PR to main, local tip on GitHub, clean) / %s kept.\n' "$merged" "$keep"
 echo
 echo "Report only. This script does not delete branches or worktrees."
-echo "KEEP includes branches with no matching merged same-repo PR to main,"
-echo "branches whose local tip is not on GitHub, and branches whose worktree"
-echo "holds uncommitted, untracked, or non-regenerable ignored files."
-echo "Toolchain output (build/, .dart_tool/, generated registrants) does not"
-echo "count. Review kept branches by hand."
+echo "  MERGED-PR   head ref of a merged same-repo PR to main."
+echo "  MERGED-TIP  no head-ref match, but a merged PR to main contains the"
+echo "              worktree tip. Only branches with a worktree get this check."
+echo "  KEEP        no merged PR signal at all."
+echo "  KEEP-LOCAL  local tip is not in GitHub's object database (unpushed)."
+echo "  KEEP-DIRTY  worktree holds uncommitted, untracked, or non-regenerable"
+echo "              ignored files. Toolchain output (build/, .dart_tool/,"
+echo "              generated registrants) does not count. Review these by hand."
