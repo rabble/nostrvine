@@ -969,9 +969,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     required InboxFilter filter,
     required String query,
   }) {
-    // The Blocked slice is a list of accounts the viewer blocked. Moderation
-    // is not one of them — a blocked moderation account produces no pin at all
-    // (`_extractPinnedSupport`) — so the row has no business sitting above it.
+    // The Blocked slice is the viewer's blocked peers. The pin is the support
+    // channel, not a blocked-account row, so it does not sit above that list
+    // even when the viewer has blocked the moderation account (#7850).
     if (filter == InboxFilter.blocked) return false;
     if (filter == InboxFilter.unread && pinned.isRead) return false;
     if (query.isEmpty) return true;
