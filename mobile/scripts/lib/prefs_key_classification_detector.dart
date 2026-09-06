@@ -72,11 +72,6 @@ class ConstantCollector extends RecursiveAstVisitor<void> {
       final initializer = variable.initializer;
       if (initializer is SimpleStringLiteral && _enclosing != null) {
         values['$_enclosing.${variable.name.lexeme}'] = initializer.value;
-        // Also under the bare member name, so a reference from inside the
-        // declaring class — `all = [ageVerified16Plus, ...]` — resolves.
-        // Qualified names are written last and win, so a collision between
-        // two classes' members cannot silently redirect a lookup.
-        values.putIfAbsent(variable.name.lexeme, () => initializer.value);
       }
     }
   }
@@ -101,9 +96,18 @@ class ConstantCollector extends RecursiveAstVisitor<void> {
 /// (`SavedSoundsService.accountStorageKey(pubkey)`) embeds the owner, so it
 /// cannot carry one account's value into another's session. Only a fixed
 /// string names a single device-wide slot, and only those are classifiable.
-String? resolveKey(Expression expression, Map<String, String> constants) {
+String? resolveKey(
+  Expression expression,
+  Map<String, String> constants, {
+  String? enclosingClass,
+}) {
   if (expression is SimpleStringLiteral) return expression.value;
-  if (expression is SimpleIdentifier) return constants[expression.name];
+  if (expression is SimpleIdentifier) {
+    return constants[enclosingClass == null
+            ? expression.name
+            : '$enclosingClass.${expression.name}'] ??
+        constants[expression.name];
+  }
   if (expression is PrefixedIdentifier) {
     return constants['${expression.prefix.name}.${expression.identifier.name}'];
   }
@@ -124,6 +128,15 @@ class KeyUsageCollector extends RecursiveAstVisitor<void> {
   final String file;
   final int Function(int offset) lineFor;
   final List<PrefsKey> keys = [];
+  String? _enclosing;
+
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    final previous = _enclosing;
+    _enclosing = node.namePart.typeName.lexeme;
+    super.visitClassDeclaration(node);
+    _enclosing = previous;
+  }
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
@@ -132,7 +145,11 @@ class KeyUsageCollector extends RecursiveAstVisitor<void> {
     if (!_looksLikePrefsReceiver(node.target)) return;
     final arguments = node.argumentList.arguments;
     if (arguments.isEmpty) return;
-    final value = resolveKey(arguments.first, constants);
+    final value = resolveKey(
+      arguments.first,
+      constants,
+      enclosingClass: _enclosing,
+    );
     if (value == null || value.isEmpty) return;
     keys.add(PrefsKey(value, file, lineFor(node.offset)));
   }
@@ -145,6 +162,7 @@ class ListEntryCollector extends RecursiveAstVisitor<void> {
   final Map<String, String> constants;
   final Set<String> listNames;
   final Set<String> entries = {};
+  String? _enclosing;
 
   void _collect(VariableDeclaration variable) {
     if (!listNames.contains(variable.name.lexeme)) return;
@@ -152,19 +170,40 @@ class ListEntryCollector extends RecursiveAstVisitor<void> {
     if (initializer is! ListLiteral) return;
     for (final element in initializer.elements) {
       if (element is Expression) {
-        final value = resolveKey(element, constants);
+        final value = resolveKey(
+          element,
+          constants,
+          enclosingClass: _enclosing,
+        );
         if (value != null) entries.add(value);
       } else if (element is SpreadElement) {
         // `...TermsAcceptanceKeys.all` — a spread of a list constant. Resolve
         // the referenced list by name so the spread is not silently dropped.
-        final name = element.expression.toString().split('.').last;
-        entries.addAll(spreadPlaceholders[name] ?? const {});
+        final expression = element.expression.toString();
+        final scopedName = expression.contains('.')
+            ? expression
+            : _enclosing == null
+            ? expression
+            : '$_enclosing.$expression';
+        entries.addAll(
+          spreadPlaceholders[scopedName] ??
+              spreadPlaceholders[expression] ??
+              const {},
+        );
       }
     }
   }
 
   /// Values contributed by list constants referenced through a spread.
   static final Map<String, Set<String>> spreadPlaceholders = {};
+
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    final previous = _enclosing;
+    _enclosing = node.namePart.typeName.lexeme;
+    super.visitClassDeclaration(node);
+    _enclosing = previous;
+  }
 
   @override
   void visitFieldDeclaration(FieldDeclaration node) {
@@ -186,6 +225,7 @@ class StringListCollector extends RecursiveAstVisitor<void> {
 
   final Map<String, String> constants;
   final Map<String, Set<String>> lists = {};
+  String? _enclosing;
 
   void _collect(VariableDeclaration variable) {
     final initializer = variable.initializer;
@@ -193,11 +233,30 @@ class StringListCollector extends RecursiveAstVisitor<void> {
     final values = <String>{};
     for (final element in initializer.elements) {
       if (element is Expression) {
-        final value = resolveKey(element, constants);
+        final value = resolveKey(
+          element,
+          constants,
+          enclosingClass: _enclosing,
+        );
         if (value != null) values.add(value);
       }
     }
-    if (values.isNotEmpty) lists[variable.name.lexeme] = values;
+    if (values.isEmpty) return;
+    final name = variable.name.lexeme;
+    lists[_enclosing == null ? name : '$_enclosing.$name'] = values;
+  }
+
+  Set<String> entriesNamed(String name) => {
+    for (final entry in lists.entries)
+      if (entry.key == name || entry.key.endsWith('.$name')) ...entry.value,
+  };
+
+  @override
+  void visitClassDeclaration(ClassDeclaration node) {
+    final previous = _enclosing;
+    _enclosing = node.namePart.typeName.lexeme;
+    super.visitClassDeclaration(node);
+    _enclosing = previous;
   }
 
   @override
@@ -299,12 +358,12 @@ void main(List<String> arguments) {
       });
       entry.value.accept(collector);
       swept.addAll(collector.entries);
-      prefixes.addAll(stringLists.lists['identityChangePrefixes'] ?? const {});
+      prefixes.addAll(stringLists.entriesNamed('identityChangePrefixes'));
       final legacy =
           constants.values['UserDataCleanupService.legacyDraftOwnerKey'];
       if (legacy != null) swept.add(legacy);
     }
-    deviceScoped.addAll(stringLists.lists['deviceScopedPrefsKeys'] ?? const {});
+    deviceScoped.addAll(stringLists.entriesNamed('deviceScopedPrefsKeys'));
   }
 
   // Pass 4 — every fixed-string key the app stores under.

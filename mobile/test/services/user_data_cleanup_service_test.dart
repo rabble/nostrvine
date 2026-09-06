@@ -211,6 +211,8 @@ void main() {
             ContentFilterService.filterPrefsStorageKey,
         'the content-filter migration flag guarding those choices':
             ContentFilterService.filterMigratedStorageKey,
+        'the legacy adult-content preference used by that migration':
+            ContentFilterService.legacyAdultContentPreferenceStorageKey,
         'muted DM conversations': mutedConversationsStorageKey,
         'the seen-videos migration flag guarding watch history':
             SeenVideosService.seenVideosMigratedStorageKey,

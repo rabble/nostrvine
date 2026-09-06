@@ -119,6 +119,40 @@ final personalEventCacheClearProvider = Provider<Future<void> Function()>((
   };
 });
 
+/// Clears the live watch-history service as well as its device-wide stores.
+///
+/// The service is initialized before authentication on a cold launch, so
+/// clearing Drift and preferences directly would leave the departing
+/// account's history in memory until it was persisted again.
+final seenVideosClearProvider = Provider<Future<void> Function()>((ref) {
+  final db = ref.read(databaseProvider);
+  return () {
+    if (ref.exists(seenVideosServiceProvider)) {
+      return ref.read(seenVideosServiceProvider).clearSeenVideos();
+    }
+    return db.seenVideosDao.clearAll();
+  };
+});
+
+/// Recreates preference-backed services after an account-boundary sweep.
+///
+/// These services cache account-specific values in memory. Invalidating them
+/// does not construct an unused provider, but any live consumer rebuilds from
+/// the now-cleared preferences instead of retaining the departing account's
+/// settings for the rest of the session.
+final accountScopedPreferenceServicesResetProvider = Provider<void Function()>(
+  (ref) {
+    return () {
+      ref
+        ..invalidate(divineHostFilterServiceProvider)
+        ..invalidate(videoProvenanceFilterServiceProvider)
+        ..invalidate(contentFilterServiceProvider)
+        ..invalidate(accountLabelServiceProvider)
+        ..invalidate(moderationLabelServiceProvider);
+    };
+  },
+);
+
 /// Stops the live DM gift-wrap subscription during account cleanup.
 ///
 /// The indirection is load-bearing: reading [dmRepositoryProvider] from
@@ -902,7 +936,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           //
           // Watch history is feed *dedup* state, so inheriting it also hides
           // videos the incoming account has never seen.
-          await safeCleanup('seenVideos', db.seenVideosDao.clearAll);
+          await safeCleanup(
+            'seenVideos',
+            ref.read(seenVideosClearProvider),
+          );
           await safeCleanup(
             'personalEvents',
             ref.read(personalEventCacheClearProvider),
@@ -911,6 +948,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'pushPreferences',
             ref.read(notificationPreferencesStoreProvider).clearPreferences,
           );
+          await safeCleanup('accountScopedPreferenceServices', () async {
+            ref.read(accountScopedPreferenceServicesResetProvider)();
+          });
         }
         // Clear the leaving account's DM sync cursors so its next login
         // re-fetches from relays instead of resuming from a `since:` boundary

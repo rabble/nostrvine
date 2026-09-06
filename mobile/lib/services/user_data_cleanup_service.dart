@@ -94,6 +94,7 @@ class UserDataCleanupService {
     // account with an empty map instead of the defaults.
     ContentFilterService.filterPrefsStorageKey,
     ContentFilterService.filterMigratedStorageKey,
+    ContentFilterService.legacyAdultContentPreferenceStorageKey,
     // Feed filters. showDivineHostedOnly defaults to ON, so inheriting a
     // relaxed value would leave the incoming account less protected than a
     // fresh one.

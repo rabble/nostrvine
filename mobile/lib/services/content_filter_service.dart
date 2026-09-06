@@ -47,6 +47,13 @@ class ContentFilterService extends ChangeNotifier {
   /// the next account gets an empty map instead of the defaults.
   static const String filterMigratedStorageKey = 'content_filter_migrated';
 
+  /// Legacy adult-content preference migrated into [filterPrefsStorageKey].
+  ///
+  /// This must be cleared with the migration flag at an account boundary so
+  /// one account cannot seed the next account's filter defaults.
+  static const String legacyAdultContentPreferenceStorageKey =
+      'adult_content_preference';
+
   final AgeVerificationService ageVerificationService;
   final Future<void> Function()? _onAdultMediaAccessRevoked;
 
@@ -383,7 +390,9 @@ class ContentFilterService extends ChangeNotifier {
     // Only migrate once
     if (prefs.getBool(filterMigratedStorageKey) == true) return;
 
-    final oldPreferenceIndex = prefs.getInt('adult_content_preference');
+    final oldPreferenceIndex = prefs.getInt(
+      legacyAdultContentPreferenceStorageKey,
+    );
     final newPref = switch (oldPreferenceIndex) {
       0 => ContentFilterPreference.show,
       1 => ContentFilterPreference.warn,

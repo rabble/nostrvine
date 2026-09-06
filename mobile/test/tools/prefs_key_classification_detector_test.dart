@@ -99,6 +99,44 @@ class DeviceService {
       expect(await runDetector(root), isNot(contains('device_key')));
     });
 
+    test('same-named constants resolve within their declaring class', () async {
+      writeCleanupService();
+      write('a_device_service.dart', '''
+class DeviceService {
+  static const String prefsKey = 'device_key';
+  Future<void> save(dynamic prefs) => prefs.setString(prefsKey, 'v');
+}
+''');
+      write('swept_service.dart', '''
+class SweptService {
+  static const String prefsKey = 'swept_key';
+  Future<void> save(dynamic prefs) => prefs.setString(prefsKey, 'v');
+}
+''');
+
+      expect(await runDetector(root), containsAll(['device_key', 'swept_key']));
+    });
+
+    test('multiple device-scoped declarations are additive', () async {
+      writeCleanupService();
+      write('a_device_service.dart', '''
+class FirstDeviceService {
+  static const String firstKey = 'first_device_key';
+  static const List<String> deviceScopedPrefsKeys = [firstKey];
+  Future<void> save(dynamic prefs) => prefs.setString(firstKey, 'v');
+}
+''');
+      write('b_device_service.dart', '''
+class SecondDeviceService {
+  static const String secondKey = 'second_device_key';
+  static const List<String> deviceScopedPrefsKeys = [secondKey];
+  Future<void> save(dynamic prefs) => prefs.setString(secondKey, 'v');
+}
+''');
+
+      expect(await runDetector(root), isEmpty);
+    });
+
     test(
       'an interpolated key is not reported, because it embeds its owner',
       () async {

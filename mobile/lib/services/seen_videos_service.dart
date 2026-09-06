@@ -484,6 +484,7 @@ class SeenVideosService {
   }
 
   Future<void> clearSeenVideos() async {
+    await _initializeFuture;
     Log.debug(
       '📱️ Clearing all seen videos',
       name: 'SeenVideosService',

@@ -1,6 +1,7 @@
 // ABOUTME: Regression tests for account cleanup provider wiring.
 // ABOUTME: Ensures destructive cleanup reaches the live Hive upload store.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -20,7 +21,10 @@ import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -221,68 +225,128 @@ void main() {
     );
 
     test(
-      "deleting an account drops only that account's queued work",
+      'an account switch clears live watch history before it can be saved',
       () async {
-        // These rows carry an owner and are filtered by it at flush, so they
-        // never leaked into another account. They were simply never deleted
-        // when their owner was removed (#8314). The assertion that matters is
-        // the second one: the surviving account keeps its queue.
-        Future<void> enqueueFor(String pubkey, String suffix) async {
-          await db.pendingViewEventsDao.enqueue(
-            PendingViewEvent(
-              id: 'view_$suffix',
-              videoId: _reactionIdA,
-              videoPubkey: _pubkeyB,
-              userPubkey: pubkey,
-              watchDurationMs: 1000,
-              trafficSource: 'feed',
-              status: PendingViewEventStatus.pending,
-              createdAt: DateTime.now(),
-            ),
-          );
-          await db.pendingProductEventsDao.enqueue(
-            PendingProductEvent(
-              id: 'product_$suffix',
-              eventName: 'video_view',
-              payloadJson: '{}',
-              status: PendingProductEventStatus.pending,
-              createdAt: DateTime.now(),
-              ownerPubkey: pubkey,
-            ),
-          );
-        }
-
-        await enqueueFor(_pubkeyA, 'a');
-        await enqueueFor(_pubkeyB, 'b');
+        final oldMetrics = SeenVideoMetrics(
+          videoId: _reactionIdA,
+          firstSeenAt: DateTime.now(),
+          lastSeenAt: DateTime.now(),
+        );
+        await prefs.setString(
+          SeenVideosService.seenVideosMetricsStorageKey,
+          jsonEncode([oldMetrics.toJson()]),
+        );
+        final seenVideos = container.read(seenVideosServiceProvider);
+        await seenVideos.initialize();
+        expect(seenVideos.hasSeenVideo(_reactionIdA), isTrue);
 
         final subscription = container.listen(
           userDataCleanupServiceProvider,
           (_, _) {},
         );
         addTearDown(subscription.close);
-        final service = subscription.read();
+        await subscription.read().onDatabaseCleanup!(userPubkey: _pubkeyA);
 
-        await service.onDatabaseCleanup!(
-          userPubkey: _pubkeyA,
-          deleteUserData: true,
-        );
-
-        expect(await db.pendingViewEventsDao.getById('view_a'), isNull);
-        expect(await db.pendingProductEventsDao.getById('product_a'), isNull);
+        expect(seenVideos.hasSeenVideo(_reactionIdA), isFalse);
+        await seenVideos.recordVideoView(_reactionIdB);
         expect(
-          await db.pendingViewEventsDao.getById('view_b'),
-          isNotNull,
-          reason: "the surviving account's queued views must be untouched",
-        );
-        expect(
-          await db.pendingProductEventsDao.getById('product_b'),
-          isNotNull,
-          reason:
-              "the surviving account's queued product events must be "
-              'untouched',
+          prefs.getString(SeenVideosService.seenVideosMetricsStorageKey),
+          isNot(contains(_reactionIdA)),
         );
       },
     );
+
+    test(
+      'an account switch rebuilds live preference services from defaults',
+      () async {
+        await prefs.setBool(
+          DivineHostFilterService.showDivineHostedOnlyStorageKey,
+          false,
+        );
+        final hostFilterSubscription = container.listen(
+          divineHostFilterServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(hostFilterSubscription.close);
+        final departingService = hostFilterSubscription.read();
+        expect(departingService.showDivineHostedOnly, isFalse);
+
+        final cleanupSubscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(cleanupSubscription.close);
+        await cleanupSubscription.read().clearUserSpecificData(
+          isIdentityChange: true,
+          userPubkey: _pubkeyA,
+        );
+
+        final incomingService = container.read(divineHostFilterServiceProvider);
+        expect(incomingService, isNot(same(departingService)));
+        expect(incomingService.showDivineHostedOnly, isTrue);
+      },
+    );
+
+    test("deleting an account drops only that account's queued work", () async {
+      // These rows carry an owner and are filtered by it at flush, so they
+      // never leaked into another account. They were simply never deleted
+      // when their owner was removed (#8314). The assertion that matters is
+      // the second one: the surviving account keeps its queue.
+      Future<void> enqueueFor(String pubkey, String suffix) async {
+        await db.pendingViewEventsDao.enqueue(
+          PendingViewEvent(
+            id: 'view_$suffix',
+            videoId: _reactionIdA,
+            videoPubkey: _pubkeyB,
+            userPubkey: pubkey,
+            watchDurationMs: 1000,
+            trafficSource: 'feed',
+            status: PendingViewEventStatus.pending,
+            createdAt: DateTime.now(),
+          ),
+        );
+        await db.pendingProductEventsDao.enqueue(
+          PendingProductEvent(
+            id: 'product_$suffix',
+            eventName: 'video_view',
+            payloadJson: '{}',
+            status: PendingProductEventStatus.pending,
+            createdAt: DateTime.now(),
+            ownerPubkey: pubkey,
+          ),
+        );
+      }
+
+      await enqueueFor(_pubkeyA, 'a');
+      await enqueueFor(_pubkeyB, 'b');
+
+      final subscription = container.listen(
+        userDataCleanupServiceProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final service = subscription.read();
+
+      await service.onDatabaseCleanup!(
+        userPubkey: _pubkeyA,
+        deleteUserData: true,
+      );
+
+      expect(await db.pendingViewEventsDao.getById('view_a'), isNull);
+      expect(await db.pendingProductEventsDao.getById('product_a'), isNull);
+      expect(
+        await db.pendingViewEventsDao.getById('view_b'),
+        isNotNull,
+        reason: "the surviving account's queued views must be untouched",
+      );
+      expect(
+        await db.pendingProductEventsDao.getById('product_b'),
+        isNotNull,
+        reason:
+            "the surviving account's queued product events must be "
+            'untouched',
+      );
+    });
 
     test('non-destructive cleanup preserves pending uploads', () async {
       final subscription = container.listen(
@@ -293,9 +357,7 @@ void main() {
       final service = subscription.read();
 
       expect(service.onDatabaseCleanup, isNotNull);
-      await service.onDatabaseCleanup!(
-        userPubkey: _pubkeyA,
-      );
+      await service.onDatabaseCleanup!(userPubkey: _pubkeyA);
 
       expect(
         Hive.box<hive_model.PendingUpload>('pending_uploads').values,
