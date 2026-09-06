@@ -17,8 +17,13 @@ The full smoke suite is the manual target. The PR gate in Codemagic runs
 `tests/loginFreshInstall.yaml` and `tests/removeKeys.yaml` as individual files so the
 JUnit report keeps per-flow names and timings. `likeFlow` and `commentFlow` stay
 off the gate: after the reduced-motion fix they still fail on Codemagic with a
-blocked main thread (#7204). The iOS simulator is still set to reduced motion
-so XCUITest can settle on the flows that do run.
+blocked main thread, as documented in
+[#7204](https://github.com/divinevideo/divine-mobile/issues/7204). Restoring
+those flows is tracked by
+[#7619](https://github.com/divinevideo/divine-mobile/issues/7619) and
+[#7620](https://github.com/divinevideo/divine-mobile/issues/7620). The iOS
+simulator is still set to reduced motion so XCUITest can settle on the flows
+that do run.
 
 Nothing is held back from `smoke.yaml`. The last two were restored by
 [#6952](https://github.com/divinevideo/divine-mobile/issues/6952) —
@@ -44,9 +49,11 @@ The lesson generalises: **before filing a Maestro failure as flaky data,
 check whether the screen is stuck in a state the app has no exit from.**
 A permanent loading placeholder looks exactly like slow live content.
 
-The `e2e-smoke-ios` Codemagic workflow runs on pull requests that touch
-`mobile/`. It is non-blocking until a flake baseline exists. The
-`e2e-smoke-android` workflow remains a manual dispatch.
+The `e2e-smoke-ios` Codemagic workflow is configured to run on pull requests
+that touch `mobile/`, but the webhook integration must be restored under
+[#7504](https://github.com/divinevideo/divine-mobile/issues/7504) before those
+builds can fire. It remains non-blocking until a flake baseline exists. The
+`e2e-smoke-android` workflow is a manual dispatch.
 
 ## The recorder flows
 
@@ -492,6 +499,11 @@ or Maestro may target a different one from the one you installed onto.
 Failure artifacts — a screenshot and the command log — land in
 `~/.maestro/tests/<timestamp>/`. Read the screenshot first; it is usually
 faster than reasoning about the selector.
+
+If CI reports a selector failure that does not match the screenshot, confirm
+that Maestro targeted the simulator containing the current app build before
+debugging the selector. A stale build on another booted simulator can produce
+the same symptom.
 
 ### Iterating
 

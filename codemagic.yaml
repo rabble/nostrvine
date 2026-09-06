@@ -1,5 +1,5 @@
 # ABOUTME: Codemagic CI/CD configuration for Divine mobile app builds.
-# ABOUTME: Store builds are manual. e2e-smoke-ios runs on PRs that touch mobile/.
+# ABOUTME: Store builds are manual. e2e-smoke-ios is configured for mobile PRs.
 
 # Steps to setup:
 # 1 - Create the Codemagic project with access to the repository.
@@ -151,7 +151,7 @@ definitions:
       script: flutter pub get
     - &pod_install
       name: Run pod install
-      script: find . -name "Podfile" -execdir pod install \;
+      script: cd ios && pod install
     - &precache_shorebird_android_artifacts
       name: Precache Shorebird Android engine artifacts
       script: |
@@ -787,7 +787,13 @@ definitions:
         # with no per-flow detail — so a failure says only "the suite failed"
         # and `test_report` cannot name the flow. Per-flow invocation yields one
         # <testcase> each, carrying name, file, timing and tags.
-        maestro test \
+        # The iOS boot step persists its selected simulator across Codemagic
+        # steps. Android leaves the variable unset and uses Maestro's default.
+        set --
+        if [ -n "${MAESTRO_DEVICE_UDID:-}" ]; then
+          set -- --device "$MAESTRO_DEVICE_UDID"
+        fi
+        maestro "$@" test \
           --format junit \
           --output report.xml \
           e2e/maestro/tests/loginFreshInstall.yaml \
@@ -837,6 +843,7 @@ definitions:
         xcrun simctl boot "$DEVICE_UDID" || true
         xcrun simctl bootstatus "$DEVICE_UDID" -b
         echo "Booted simulator: $DEVICE_UDID"
+        echo "MAESTRO_DEVICE_UDID=$DEVICE_UDID" >> "$CM_ENV"
 
         # Ask the simulator for reduced motion before the app is installed.
         #
@@ -855,21 +862,16 @@ definitions:
     - &install_app_ios_simulator
       name: Install app on iOS Simulator
       script: |
+        set -e
+        : "${MAESTRO_DEVICE_UDID:?The boot step did not export a simulator UDID}"
         APP_PATH="build/ios/iphonesimulator/Runner.app"
-        DEVICE_UDID=$(xcrun simctl list devices booted -j | \
-          python3 -c "
-        import json, sys
-        data = json.load(sys.stdin)
-        for runtime, devices in data['devices'].items():
-            for d in devices:
-                if d['state'] == 'Booted':
-                    print(d['udid'])
-                    sys.exit(0)
-        sys.exit(1)
-        ")
-        xcrun simctl uninstall "$DEVICE_UDID" "$BUNDLE_ID" 2>/dev/null || true
-        xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
-        echo "App installed on iOS simulator: $DEVICE_UDID"
+        xcrun simctl uninstall "$MAESTRO_DEVICE_UDID" "$BUNDLE_ID" 2>/dev/null || true
+        xcrun simctl install "$MAESTRO_DEVICE_UDID" "$APP_PATH"
+        if ! xcrun simctl get_app_container "$MAESTRO_DEVICE_UDID" "$BUNDLE_ID" >/dev/null 2>&1; then
+          echo "ERROR: $BUNDLE_ID was not installed on $MAESTRO_DEVICE_UDID" >&2
+          exit 1
+        fi
+        echo "App installed and verified on iOS simulator: $MAESTRO_DEVICE_UDID"
     - &launch_android_emulator
       name: Launch Android emulator
       script: |
@@ -1362,17 +1364,17 @@ workflows:
         - proofmode_credentials
       vars:
         DEFAULT_ENV: STAGING
-        BUNDLE_ID: co.openvine.app
+        BUNDLE_ID: co.openvine.app.staging
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
         - $HOME/.pub-cache
     triggering:
-      # Runs on every PR to main. NOT a required check: per team decision it
-      # stays non-blocking until a flake baseline exists (target ≥30 runs at
-      # ≥95%). Note #7204 — a fixed 3m31s hierarchy stall on the Explore screen
-      # makes flows a coin flip, so a baseline collected before that is fixed
-      # measures the stall rather than the app.
+      # Configured for PRs to main, but #7504 tracks the inactive webhook that
+      # currently prevents automatic builds. NOT a required check: per team
+      # decision it stays non-blocking until a flake baseline exists (target
+      # ≥30 runs at ≥95%). #7204 records the fixed 3m31s Explore hierarchy
+      # stall; restoring the affected flows is tracked by #7619 and #7620.
       #
       # If PR builds do not fire after merge, check the GitHub webhook for the
       # Codemagic app before touching this YAML — a misconfigured webhook
@@ -1426,7 +1428,7 @@ workflows:
         - proofmode_credentials
       vars:
         DEFAULT_ENV: STAGING
-        BUNDLE_ID: co.openvine.app
+        BUNDLE_ID: co.openvine.app.staging
     cache:
       cache_paths:
         - $HOME/.gradle/caches
@@ -1445,4 +1447,7 @@ workflows:
       - *run_maestro_smoke_tests
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk
-      - ~/.maestro/tests/**
+      - ~/.maestro/tests/**/screenshots/**
+      - ~/.maestro/tests/**/screen-hierarchy/**
+      - ~/.maestro/tests/**/logs/maestro.log
+      - ~/.maestro/tests/**/commands.json
