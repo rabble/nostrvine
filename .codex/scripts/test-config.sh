@@ -575,6 +575,84 @@ if ! printf '%s\n' "$PROBE_MISMATCH_GUARD_OUTPUT" | jq -e '
   exit 1
 fi
 
+# A confirmed live record that does not match this worktree must stay silent
+# and must not fall through to the socket scan (false positives on peers the
+# registry already classified as elsewhere).
+ELSEWHERE_SESSIONS_DIR="$SCRATCH_DIR/elsewhere-claude-sessions"
+mkdir -p "$ELSEWHERE_SESSIONS_DIR"
+cat > "$ELSEWHERE_SESSIONS_DIR/444.json" <<EOF
+{"pid":444,"cwd":"$OTHER_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"idle","name":"elsewhere"}
+EOF
+ELSEWHERE_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$ELSEWHERE_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if [ -n "$ELSEWHERE_GUARD_OUTPUT" ]; then
+  echo "Session worktree guard fell back after confirming a non-matching registry peer." >&2
+  echo "Output was: $ELSEWHERE_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Linux Claude stores procStart as /proc starttime jiffies, not ps lstart text.
+JIFFIES_SESSIONS_DIR="$SCRATCH_DIR/jiffies-claude-sessions"
+JIFFIES_PROC_DIR="$SCRATCH_DIR/fake-proc"
+mkdir -p "$JIFFIES_SESSIONS_DIR" "$JIFFIES_PROC_DIR/111"
+cat > "$JIFFIES_SESSIONS_DIR/111.json" <<EOF
+{"pid":111,"cwd":"$TEST_REPO","procStart":"174985782","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"linux-jiffies"}
+EOF
+printf '111 (claude) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 174985782\n' \
+  > "$JIFFIES_PROC_DIR/111/stat"
+JIFFIES_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$JIFFIES_SESSIONS_DIR" \
+    CLAUDE_PROC_STAT_DIR="$JIFFIES_PROC_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$JIFFIES_GUARD_OUTPUT" | jq -e '
+  .systemMessage
+  | contains("linux-jiffies, pid 111")
+    and (contains("legacy socket fallback") | not)
+' >/dev/null; then
+  echo "Session worktree guard did not accept Linux jiffies procStart." >&2
+  echo "Output was: $JIFFIES_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Linux socket fallback lives under $XDG_RUNTIME_DIR/cc-socks, not /tmp.
+XDG_RUNTIME="$SCRATCH_DIR/xdg-runtime"
+mkdir -p "$XDG_RUNTIME/cc-socks"
+python3 - "$XDG_RUNTIME/cc-socks" <<'PY'
+import os, socket, sys
+path = os.path.join(sys.argv[1], "111.sock")
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+try:
+    sock.bind(path)
+finally:
+    sock.close()
+PY
+XDG_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env -u CC_SOCK_DIR PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$SCRATCH_DIR/missing-sessions" \
+    XDG_RUNTIME_DIR="$XDG_RUNTIME" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$XDG_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback") and contains("pid 111")' \
+  >/dev/null; then
+  echo "Session worktree guard did not use XDG_RUNTIME_DIR/cc-socks." >&2
+  echo "Output was: $XDG_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
 # A present registry with no compatible records must also fall back instead of
 # silently disabling the guard after an upstream schema change.
 INCOMPATIBLE_SESSIONS_DIR="$SCRATCH_DIR/incompatible-claude-sessions"

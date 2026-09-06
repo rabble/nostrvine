@@ -105,13 +105,14 @@ covers lsof-unavailable sessions. Cwd is evidence of where a session
 usually writes, never a boundary on where absolute paths can write, so a
 launch-root match is never suppressed.
 
-The session registry is undocumented Claude Code internal state and has
-only been verified on macOS. Its own version field may accompany future
-schema changes; Linux behavior remains unverified. If the registry is
-absent, unreadable, incompatible, or `jq` is unavailable, the hook falls
-back to the older `/tmp/cc-socks*/<pid>.sock` launch-directory signal.
-Anyone who installed an older copy of the hook at user scope must copy
-the updated repo version again to receive this detection.
+The session registry is undocumented Claude Code internal state. macOS
+Claude records `procStart` as `ps -o lstart=` text; Linux Claude records
+`/proc/<pid>/stat` starttime jiffies — the hook accepts both. If the
+registry is absent, unreadable, incompatible, empty of live confirmed
+records, or `jq` is unavailable, the hook falls back to
+`$XDG_RUNTIME_DIR/cc-socks` and `/tmp/cc-socks*/<pid>.sock`. Anyone who
+installed an older copy of the hook at user scope must copy the updated
+repo version again to receive this detection.
 
 ### Build artifacts are purged from linked worktrees at session end
 

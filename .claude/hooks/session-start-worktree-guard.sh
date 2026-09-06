@@ -42,9 +42,9 @@
 # The registry is undocumented Claude Code internal state, macOS-verified only,
 # and includes a version field because its shape may change. If it is absent,
 # unreadable, incompatible, empty of live confirmed records, or jq is
-# unavailable, the hook falls back to the older /tmp/cc-socks*/<pid>.sock
-# launch-directory signal. Set CLAUDE_SESSIONS_DIR and CC_SOCK_DIR to test or
-# override those locations.
+# unavailable, the hook falls back to $XDG_RUNTIME_DIR/cc-socks (Linux) and
+# /tmp/cc-socks*/<pid>.sock. Set CLAUDE_SESSIONS_DIR, CC_SOCK_DIR, and
+# CLAUDE_PROC_STAT_DIR to test or override those locations.
 #
 # Always exits 0. This warns; it never blocks a session.
 
@@ -67,10 +67,29 @@ done
 
 # Claude records procStart in UTC and in the C locale, but `ps -o lstart=`
 # renders month and weekday names through LC_TIME, so an unpinned locale makes
-# every record mismatch and silently empties the registry path.
+# every record mismatch and silently empties the registry path. Linux Claude
+# stores /proc starttime jiffies instead; accept either shape.
 process_start_utc() {
   TZ=UTC LC_ALL=C ps -o lstart= -p "$1" 2>/dev/null \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
+}
+
+process_start_matches() {
+  local pid="$1" recorded="$2" actual stat_file rest
+  recorded=$(printf '%s\n' "$recorded" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+  case "$recorded" in
+    '' | *[!0-9]*)
+      actual=$(process_start_utc "$pid")
+      [ -n "$actual" ] && [ "$actual" = "$recorded" ]
+      ;;
+    *)
+      stat_file="${CLAUDE_PROC_STAT_DIR:-/proc}/${pid}/stat"
+      [ -r "$stat_file" ] || return 1
+      rest=$(sed 's/.*) //' "$stat_file")
+      actual=$(printf '%s\n' "$rest" | awk '{print $20}')
+      [ -n "$actual" ] && [ "$actual" = "$recorded" ]
+      ;;
+  esac
 }
 
 process_cwd() {
@@ -142,10 +161,7 @@ if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ] && [ -r "$sessions_di
 
     cm=$(ps -o comm= -p "$pid" 2>/dev/null)
     [ "${cm##*/}" = "claude" ] || continue
-    actual_start=$(process_start_utc "$pid")
-    recorded_start=$(printf '%s\n' "$recorded_start" \
-      | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-    [ -n "$actual_start" ] && [ "$actual_start" = "$recorded_start" ] || continue
+    process_start_matches "$pid" "$recorded_start" || continue
     registry_supported=true
 
     launch_cwd=$(process_cwd "$pid")
@@ -171,6 +187,9 @@ if [ "$registry_supported" = false ]; then
   if [ -n "${CC_SOCK_DIR:-}" ]; then
     sock_dirs=("$CC_SOCK_DIR")
   else
+    if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR/cc-socks" ]; then
+      sock_dirs+=("$XDG_RUNTIME_DIR/cc-socks")
+    fi
     for dir in /tmp/cc-socks*; do
       [ -d "$dir" ] || continue
       sock_dirs+=("$dir")
