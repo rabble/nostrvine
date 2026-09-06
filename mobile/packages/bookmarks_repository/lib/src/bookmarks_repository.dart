@@ -170,12 +170,14 @@ class BookmarksRepository {
   /// with no compile-time link back to it (#8314), so the value is frozen.
   static const String globalBookmarksStorageKey = 'global_bookmarks';
 
-  /// Storage key for [_revision].
+  /// Storage key for [_revision] and its complete publish source.
   ///
   /// Persisted next to the snapshot because the writing surface builds a new
   /// [BookmarksRepository] per sheet (#7596): an in-memory-only watermark is
   /// blank again by the next save, which is the ordinary save/close/save loss
-  /// in #7163. Cleared with the snapshot on identity change — see
+  /// in #7163. The source tag array and encrypted event content travel in the
+  /// same record so that watermark can never authorize a flattened publish.
+  /// Cleared with the snapshot on identity change — see
   /// `UserDataCleanupService.userSpecificKeys`.
   static const String globalBookmarksRevisionStorageKey =
       'global_bookmarks_revision';
@@ -228,9 +230,16 @@ class BookmarksRepository {
   /// the author pubkey at `e[3]` and NIP-10 a marker there with the pubkey at
   /// `e[4]` — positions this client has no reason to model and no right to
   /// delete. Refreshed from the relay before every publish, since every write
-  /// path reconciles first — [_syncGlobalBookmarks] with
-  /// `requireAuthoritative` — so a stale array can never reach a publish.
+  /// path reconciles first. Persisted with [_revision] because the writing
+  /// surface builds a new repository per sheet, and a relay may still answer
+  /// with the revision the previous sheet replaced.
   List<List<String>> _publicTags = const [];
+
+  /// Whether [_publicTags] and [_lastKnownRemoteContent] describe [_revision].
+  ///
+  /// Revision records written before the source payload was added still load,
+  /// but cannot safely drive a publish while the relay returns an older event.
+  bool _publishSourceHydrated = false;
 
   /// What became of the newest `content` we saw. Drives the write path's
   /// refusal to act on a list it cannot fully see.
@@ -242,7 +251,9 @@ class BookmarksRepository {
   /// Carried through untouched whenever the private items are not the thing
   /// being changed, so a public-item write can never disturb them — except for
   /// [_legacyProseContent], which is Divine's own malformed output and is
-  /// dropped rather than propagated.
+  /// dropped rather than propagated. The ciphertext (never its plaintext) is
+  /// persisted with [_revision] because it is already public relay data and is
+  /// required to preserve the complete replaceable event across sheet rebuilds.
   String _lastKnownRemoteContent = '';
 
   /// How long a full-settlement "this user has no list" answer is reused
@@ -543,6 +554,7 @@ class BookmarksRepository {
         _lastKnownRemoteContent = '';
         _revision = null;
         _localPublishRevision = null;
+        _publishSourceHydrated = true;
       } else {
         // Seeing the event disproves the absence, so the stamp cannot stand.
         // A list whose items are all private has no public tags, leaving
@@ -559,6 +571,21 @@ class BookmarksRepository {
         // stored, so that copy is what a read right after a save sees.
         // Adopting it would undo the publish (#7163).
         if (_isStaleRevision(newest)) {
+          if (!_publishSourceHydrated) {
+            Log.warning(
+              'Cannot publish from cached kind 10003 revision: its complete '
+              'tag and content source is unavailable',
+              name: 'BookmarksRepository',
+              category: LogCategory.system,
+            );
+            return BookmarkToggleFailure.unknown;
+          }
+          final private = await _readPrivateItems(_lastKnownRemoteContent);
+          _privateTags = private.tags;
+          _privateBookmarks
+            ..clear()
+            ..addAll(_itemsFromTags(private.tags));
+          _privateItemsState = private.state;
           Log.info(
             'Ignoring kind 10003 ${newest.id} - older than the revision this '
             'device holds, keeping ${globalBookmarks.length} bookmarks',
@@ -973,6 +1000,7 @@ class BookmarksRepository {
         acceptedAt: _now(),
       );
       _publicTags = publishedTags;
+      _publishSourceHydrated = true;
       _globalBookmarks
         ..clear()
         ..addAll(candidate);
@@ -1073,6 +1101,7 @@ class BookmarksRepository {
 
     _lastKnownRemoteContent = content;
     _publicTags = [for (final tag in event.tags) List<String>.of(tag)];
+    _publishSourceHydrated = true;
     _globalBookmarks
       ..clear()
       ..addAll(_itemsFromTags(event.tags));
@@ -1094,13 +1123,13 @@ class BookmarksRepository {
   /// being added here has no source tag, and it gets the two positions NIP-51
   /// requires.
   ///
-  /// An item written twice collapses to one tag. The remove path already uses
-  /// `removeWhere` rather than `remove` because another client may duplicate an
-  /// entry; emitting one tag per surviving item is the same decision on the
-  /// write side.
+  /// Every surviving source tag is kept, including duplicates whose later
+  /// positions differ. The remove path still uses `removeWhere`, so removing
+  /// an item removes every source tag for it rather than reporting success
+  /// while leaving another copy behind.
   List<List<String>> _buildPublishTags(List<BookmarkItem> candidate) {
     final wanted = candidate.toSet();
-    final emitted = <BookmarkItem>{};
+    final sourced = <BookmarkItem>{};
     final tags = <List<String>>[];
 
     for (final tag in _publicTags) {
@@ -1109,13 +1138,14 @@ class BookmarksRepository {
         continue;
       }
       final item = BookmarkItem(type: tag[0], id: tag[1]);
-      if (wanted.contains(item) && emitted.add(item)) {
+      if (wanted.contains(item)) {
         tags.add(List<String>.of(tag));
+        sourced.add(item);
       }
     }
 
     for (final item in candidate) {
-      if (emitted.add(item)) tags.add([item.type, item.id]);
+      if (sourced.add(item)) tags.add([item.type, item.id]);
     }
 
     return tags;
@@ -1252,10 +1282,25 @@ class BookmarksRepository {
     if (revisionJson != null) {
       try {
         final revision = jsonDecode(revisionJson) as Map<String, dynamic>;
-        _revision = (
+        final loadedRevision = (
           createdAt: revision['createdAt'] as int,
           id: revision['id'] as String,
         );
+        final publicTags = revision['publicTags'];
+        final content = revision['content'];
+        if (publicTags is List && content is String) {
+          final parsedTags = <List<String>>[];
+          for (final entry in publicTags) {
+            if (entry is! List || entry.any((value) => value is! String)) {
+              throw const FormatException('Invalid cached bookmark tags');
+            }
+            parsedTags.add([for (final value in entry) value as String]);
+          }
+          _publicTags = parsedTags;
+          _lastKnownRemoteContent = content;
+          _publishSourceHydrated = true;
+        }
+        _revision = loadedRevision;
       } on Object catch (e) {
         // A corrupt watermark only costs the staleness guard, so drop it and
         // let the next read establish one rather than failing the load.
@@ -1288,7 +1333,12 @@ class BookmarksRepository {
       } else {
         await _prefs.setString(
           globalBookmarksRevisionStorageKey,
-          jsonEncode({'createdAt': revision.createdAt, 'id': revision.id}),
+          jsonEncode({
+            'createdAt': revision.createdAt,
+            'id': revision.id,
+            'publicTags': _publicTags,
+            'content': _lastKnownRemoteContent,
+          }),
         );
       }
     } on Object catch (e) {

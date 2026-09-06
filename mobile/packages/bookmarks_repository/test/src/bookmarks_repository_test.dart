@@ -1136,18 +1136,25 @@ void main() {
       });
 
       test(
-        'a service built after the save still refuses the revision it '
-        'replaced',
+        'a service built after the save republishes the complete source '
+        'shape while the relay is stale',
         () async {
           // The writing surface builds a fresh BookmarksRepository per sheet
           // (#7596), so an in-memory-only watermark is blank again by the
           // next save. That makes the ordinary save / close / save loop
           // reproduce #7163 with no concurrency involved at all.
-          stubRelay(
-            events: [
-              supersededRevision(['video-a']),
+          final ciphertext = await encryptToSelf([
+            ['e', 'private-video'],
+          ]);
+          final staleRevision = bookmarkListEventWithTags(
+            [
+              ['title', 'Reading list'],
+              ['e', 'video-a', 'wss://relay.example', pubkey],
             ],
+            content: ciphertext,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60,
           );
+          stubRelay(events: [staleRevision]);
 
           final firstSheet = createService();
           expect(
@@ -1156,7 +1163,7 @@ void main() {
             )).succeeded,
             isTrue,
           );
-          expect(signedEventIds(), ['video-a', 'video-b']);
+          expect(signedContent, ciphertext);
 
           // The sheet closes and that instance is dropped. The relay still
           // answers with the revision the save replaced, because `OK` means
@@ -1170,9 +1177,57 @@ void main() {
           );
 
           expect(
-            signedEventIds(),
-            ['video-a', 'video-b', 'video-c'],
-            reason: 'the second sheet must not publish over video-b',
+            signedTags,
+            [
+              ['title', 'Reading list'],
+              ['e', 'video-a', 'wss://relay.example', pubkey],
+              ['e', 'video-b'],
+              ['e', 'video-c'],
+            ],
+            reason:
+                'the cached revision must carry the exact tags it published, '
+                'not only the parsed bookmark ids',
+          );
+          expect(
+            signedContent,
+            ciphertext,
+            reason:
+                'the cached revision must also carry the encrypted private '
+                'half of the replaceable event',
+          );
+        },
+      );
+
+      test(
+        'a legacy cached revision fails closed while the relay is stale',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            BookmarksRepository.globalBookmarksStorageKey: jsonEncode([
+              {'type': 'e', 'id': 'cached'},
+            ]),
+            BookmarksRepository.globalBookmarksRevisionStorageKey: jsonEncode({
+              'createdAt': 2000,
+              'id': 'cached-revision',
+            }),
+          });
+          prefs = await SharedPreferences.getInstance();
+          stubRelay(
+            events: [
+              bookmarkListEvent(['older'], createdAt: 1000),
+            ],
+          );
+          final service = createService();
+
+          final result = await service.toggleVideoInGlobalBookmarks('new-one');
+
+          expect(result.succeeded, isFalse);
+          expect(result.failure, BookmarkToggleFailure.unknown);
+          expect(
+            signedTags,
+            isNull,
+            reason:
+                'an old cache has bookmark ids but not the complete source '
+                'event, so publishing from it would be destructive',
           );
         },
       );
@@ -2100,15 +2155,15 @@ void main() {
         );
       });
 
-      test('collapses a duplicated item to a single tag', () async {
-        // Another client may write the same item twice; the remove path
-        // already uses `removeWhere` for that reason. Re-emitting one tag per
-        // surviving item makes the same decision on the write side.
+      test('keeps every source tag for a duplicated item', () async {
+        // Duplicate tags can carry different metadata. An unrelated addition
+        // must not choose one writer's shape and destroy the other; removing
+        // the bookmark still removes every source tag through `removeWhere`.
         stubRelay(
           events: [
             bookmarkListEventWithTags([
-              ['e', 'twice', 'wss://relay.example'],
-              ['e', 'twice', 'wss://relay.example'],
+              ['e', 'twice'],
+              ['e', 'twice', 'wss://relay.example', foreignPubkey],
             ]),
           ],
         );
@@ -2119,7 +2174,8 @@ void main() {
         expect(
           signedTags,
           equals([
-            ['e', 'twice', 'wss://relay.example'],
+            ['e', 'twice'],
+            ['e', 'twice', 'wss://relay.example', foreignPubkey],
             ['e', 'newly-saved'],
           ]),
         );
@@ -2498,6 +2554,28 @@ void main() {
           SharedPreferences.setMockInitialValues({
             BookmarksRepository.globalBookmarksRevisionStorageKey:
                 '{"createdAt":"not an int"}',
+          });
+          prefs = await SharedPreferences.getInstance();
+          stubRelay(events: []);
+
+          final service = createService();
+
+          expect(await service.syncGlobalBookmarks(), isTrue);
+        },
+      );
+
+      test(
+        'a cached revision with malformed source tags is dropped',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            BookmarksRepository.globalBookmarksRevisionStorageKey: jsonEncode({
+              'createdAt': 1000,
+              'id': 'cached-revision',
+              'publicTags': [
+                ['e', null],
+              ],
+              'content': '',
+            }),
           });
           prefs = await SharedPreferences.getInstance();
           stubRelay(events: []);
