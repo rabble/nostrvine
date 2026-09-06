@@ -17,7 +17,9 @@ Tag shape:
 ```
 
 The app injects this centrally in `nostr_client` and skips protocol-sensitive
-outer wrapper kinds such as `kind:1059` gift wraps.
+kinds. That includes every NIP-59 outer wrapper — both the `kind:1059` gift
+wrap and the ephemeral `kind:21059` — because those are broadcast in the clear
+and a public `client` tag on one would undercut NIP-17's metadata guarantee.
 
 ## Handler event
 

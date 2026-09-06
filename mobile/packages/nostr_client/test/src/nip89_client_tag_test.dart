@@ -68,6 +68,32 @@ void main() {
       expect(event.id, originalId);
     });
 
+    test('skips NIP-59 ephemeral gift wraps', () async {
+      final event = _event(
+        kind: EventKind.ephemeralGiftWrap,
+        tags: const [
+          ['p', _pubkey],
+        ],
+      );
+      final originalId = event.id;
+
+      final changed = await Nip89ClientTag.applyToEvent(event);
+
+      expect(changed, isFalse);
+      expect(event.tags, isNot(contains(Nip89ClientTag.tag)));
+      expect(event.id, originalId);
+    });
+
+    test('excludes both NIP-59 wrapper kinds at the shared guard', () async {
+      // Both injection sites gate on shouldSkipKind, so this covers the
+      // signing path as well as applyToEvent above.
+      expect(Nip89ClientTag.shouldSkipKind(EventKind.giftWrap), isTrue);
+      expect(
+        Nip89ClientTag.shouldSkipKind(EventKind.ephemeralGiftWrap),
+        isTrue,
+      );
+    });
+
     test('respects opt-out preference', () async {
       await Nip89ClientTag.setEnabled(enabled: false);
       final event = _event();
