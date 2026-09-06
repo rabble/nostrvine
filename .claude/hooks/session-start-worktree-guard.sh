@@ -39,8 +39,9 @@
 # whose cwd lsof cannot read, and any case where the roots differ. A launch-root
 # match is never suppressed: tools can still write absolute paths.
 #
-# The registry is undocumented Claude Code internal state, macOS-verified only,
-# and includes a version field because its shape may change. If it is absent,
+# The registry is undocumented Claude Code internal state. Detection accepts
+# macOS `ps -o lstart=` text and Linux /proc starttime jiffies. It includes a
+# version field because its shape may change. If it is absent,
 # unreadable, incompatible, empty of live confirmed records, or jq is
 # unavailable, the hook falls back to $XDG_RUNTIME_DIR/cc-socks (Linux) and
 # /tmp/cc-socks*/<pid>.sock. Set CLAUDE_SESSIONS_DIR, CC_SOCK_DIR, and
