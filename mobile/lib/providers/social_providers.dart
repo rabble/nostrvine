@@ -3,13 +3,14 @@
 // ABOUTME: userDataCleanup, social, contentReporting, contentDeletion, collaborator-3
 
 import 'dart:async';
-
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -88,6 +90,68 @@ final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
   return (ownerPubkey) =>
       ref.read(uploadManagerProvider).deleteAllForOwner(ownerPubkey);
 });
+
+/// Clears the device-wide personal-event cache during account cleanup.
+///
+/// The indirection is load-bearing twice over. Reading
+/// `personalEventCacheServiceProvider` from [userDataCleanupServiceProvider]'s
+/// own callback closes a provider cycle back through auth (#7389). And the
+/// service's own `clearCache()` returns early when it has not been
+/// initialised, which would leave the on-disk boxes holding the departing
+/// account's events — the boxes outlive the service, so cleanup clears them
+/// directly (#8314).
+final personalEventCacheClearProvider = Provider<Future<void> Function()>((
+  ref,
+) {
+  return () async {
+    // Both boxes are named inline rather than looped over: the Hive wipe
+    // policy is tied to literal `HiveBoxNames.` call sites, so a box opened
+    // through a loop variable would drop out of that guard's view.
+    final events = Hive.isBoxOpen(HiveBoxNames.personalEvents)
+        ? Hive.box<dynamic>(HiveBoxNames.personalEvents)
+        : await Hive.openBox<dynamic>(HiveBoxNames.personalEvents);
+    await events.clear();
+
+    final metadata = Hive.isBoxOpen(HiveBoxNames.personalEventsMetadata)
+        ? Hive.box<dynamic>(HiveBoxNames.personalEventsMetadata)
+        : await Hive.openBox<dynamic>(HiveBoxNames.personalEventsMetadata);
+    await metadata.clear();
+  };
+});
+
+/// Clears the live watch-history service as well as its device-wide stores.
+///
+/// The service is initialized before authentication on a cold launch, so
+/// clearing Drift and preferences directly would leave the departing
+/// account's history in memory until it was persisted again.
+final seenVideosClearProvider = Provider<Future<void> Function()>((ref) {
+  final db = ref.read(databaseProvider);
+  return () {
+    if (ref.exists(seenVideosServiceProvider)) {
+      return ref.read(seenVideosServiceProvider).clearSeenVideos();
+    }
+    return db.seenVideosDao.clearAll();
+  };
+});
+
+/// Recreates preference-backed services after an account-boundary sweep.
+///
+/// These services cache account-specific values in memory. Invalidating them
+/// does not construct an unused provider, but any live consumer rebuilds from
+/// the now-cleared preferences instead of retaining the departing account's
+/// settings for the rest of the session.
+final accountScopedPreferenceServicesResetProvider = Provider<void Function()>(
+  (ref) {
+    return () {
+      ref
+        ..invalidate(divineHostFilterServiceProvider)
+        ..invalidate(videoProvenanceFilterServiceProvider)
+        ..invalidate(contentFilterServiceProvider)
+        ..invalidate(accountLabelServiceProvider)
+        ..invalidate(moderationLabelServiceProvider);
+    };
+  },
+);
 
 /// Stops the live DM gift-wrap subscription during account cleanup.
 ///
@@ -865,6 +929,28 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'identityVerifications',
             db.identityVerificationsDao.clearAll,
           );
+          // Three stores below hold this account's data under a key with no
+          // pubkey in it, so the next account reads the previous account's
+          // rows. Each already had a clear method; none of them had a caller
+          // (#8314).
+          //
+          // Watch history is feed *dedup* state, so inheriting it also hides
+          // videos the incoming account has never seen.
+          await safeCleanup(
+            'seenVideos',
+            ref.read(seenVideosClearProvider),
+          );
+          await safeCleanup(
+            'personalEvents',
+            ref.read(personalEventCacheClearProvider),
+          );
+          await safeCleanup(
+            'pushPreferences',
+            ref.read(notificationPreferencesStoreProvider).clearPreferences,
+          );
+          await safeCleanup('accountScopedPreferenceServices', () async {
+            ref.read(accountScopedPreferenceServicesResetProvider)();
+          });
         }
         // Clear the leaving account's DM sync cursors so its next login
         // re-fetches from relays instead of resuming from a `since:` boundary
@@ -940,6 +1026,23 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           await requiredDelete(
             'outgoingDms',
             () => db.outgoingDmsDao.clearAllForUser(userPubkey),
+          );
+          // Queued work belonging to the account being removed. These rows
+          // carry an owner and are filtered by it at flush, so they never
+          // leaked into another account — they were simply never deleted
+          // when their owner was (#8314). Scoped by owner, so a still-active
+          // account's queue is untouched.
+          await requiredDelete(
+            'pendingProfileSaves',
+            () => db.pendingProfileSavesDao.clear(userPubkey),
+          );
+          await requiredDelete(
+            'pendingViewEvents',
+            () => db.pendingViewEventsDao.deleteForUser(userPubkey),
+          );
+          await requiredDelete(
+            'pendingProductEvents',
+            () => db.pendingProductEventsDao.deleteForOwner(userPubkey),
           );
         }
       };

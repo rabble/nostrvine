@@ -11,6 +11,13 @@ import 'package:unified_logger/unified_logger.dart';
 abstract interface class NotificationPreferencesStore {
   Future<NotificationPreferences> loadPreferences();
   Future<void> savePreferences(NotificationPreferences preferences);
+
+  /// Drops the cached preferences shared by every account on this device.
+  ///
+  /// Unlike the `_dirty_<pubkey>` and `_schema_<pubkey>` entries beside it,
+  /// this one carries no pubkey, so it is the departing account's choices
+  /// until something clears it (#8314).
+  Future<void> clearPreferences();
   Future<void> markDirty(
     String pubkey,
     NotificationPreferences preferences,
@@ -83,6 +90,20 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
     } on Object catch (error) {
       Log.warning(
         'Failed to persist push notification preferences: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  @override
+  Future<void> clearPreferences() async {
+    try {
+      final box = await _openBox();
+      await box.delete(_prefsKey);
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to clear push notification preferences: $error',
         name: 'NotificationPreferencesService',
         category: LogCategory.system,
       );

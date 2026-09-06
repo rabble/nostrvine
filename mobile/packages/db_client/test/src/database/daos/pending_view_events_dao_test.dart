@@ -274,5 +274,32 @@ void main() {
         expect(await dao.getById('view-a'), isNull);
       });
     });
+
+    group('deleteForUser', () {
+      test('removes only the named account rows', () async {
+        // makeEvent defaults userPubkey to userA.
+        await dao.enqueue(makeEvent(id: 'view-a'));
+        await dao.enqueue(makeEvent(id: 'view-a2'));
+        await dao.enqueue(makeEvent(id: 'view-b', userPubkey: userB));
+
+        final deleted = await dao.deleteForUser(userA);
+
+        expect(deleted, 2);
+        expect(await dao.getById('view-a'), isNull);
+        expect(await dao.getById('view-a2'), isNull);
+        expect(
+          await dao.getById('view-b'),
+          isNotNull,
+          reason: 'another account queue must survive',
+        );
+      });
+
+      test('deletes nothing when the account has no queued rows', () async {
+        await dao.enqueue(makeEvent(id: 'view-b', userPubkey: userB));
+
+        expect(await dao.deleteForUser(userA), 0);
+        expect(await dao.getById('view-b'), isNotNull);
+      });
+    });
   });
 }

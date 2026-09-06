@@ -187,6 +187,11 @@ class _MemoryNotificationPreferencesStore
   final publishedSchemaVersions = <String, int>{};
 
   @override
+  Future<void> clearPreferences() async {
+    preferences = null;
+  }
+
+  @override
   Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
       publishedSchemaVersions[pubkey];
 
