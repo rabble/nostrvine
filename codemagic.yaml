@@ -734,6 +734,25 @@ definitions:
     - &build_ios_e2e
       name: Build iOS Simulator app
       script: |
+        # firebase_crashlytics injects a dSYM upload phase during pod install.
+        # Hybrid SPM/CocoaPods builds can point that phase at a nonexistent
+        # Pods/FirebaseCrashlytics tool. Simulator smoke tests do not produce
+        # release symbols, so remove the generated phase for this build only.
+        ruby <<'RUBY'
+        require 'xcodeproj'
+
+        project = Xcodeproj::Project.open('ios/Runner.xcodeproj')
+        runner = project.targets.find { |target| target.name == 'Runner' }
+        abort('Runner target not found') unless runner
+
+        phases = runner.shell_script_build_phases.select do |phase|
+          phase.name == "[firebase_crashlytics] Crashlytics Upload Symbols"
+        end
+        phases.each { |phase| phase.remove_from_project }
+        project.save if phases.any?
+        puts "Removed #{phases.length} Crashlytics upload phase(s) from simulator build"
+        RUBY
+
         flutter build ios --simulator \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \

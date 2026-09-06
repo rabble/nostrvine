@@ -80,6 +80,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         boot = self._definition_block("boot_ios_simulator")
         install = self._definition_block("install_app_ios_simulator")
         maestro = self._definition_block("run_maestro_smoke_tests")
+        build = self._definition_block("build_ios_e2e")
 
         self.assertIn(
             'echo "MAESTRO_DEVICE_UDID=$DEVICE_UDID" >> "$CM_ENV"',
@@ -104,6 +105,15 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn('if [ -n "${MAESTRO_DEVICE_UDID:-}" ]; then', maestro)
         self.assertIn('set -- --device "$MAESTRO_DEVICE_UDID"', maestro)
         self.assertIn('maestro "$@" test', maestro)
+        self.assertIn(
+            'phase.name == "[firebase_crashlytics] Crashlytics Upload Symbols"',
+            build,
+        )
+        self.assertIn("phase.remove_from_project", build)
+        self.assertLess(
+            build.index("phase.remove_from_project"),
+            build.index("flutter build ios --simulator"),
+        )
 
         workflow = self._workflow_block("e2e-smoke-ios")
         self.assertIn("BUNDLE_ID: co.openvine.app.staging", workflow)
