@@ -640,7 +640,9 @@ void main() {
           fake.flushMicrotasks();
           fake.elapse(const Duration(milliseconds: 5));
           fake.flushMicrotasks();
+          expect(fake.pendingTimers, isNotEmpty);
           cubit.close();
+          expect(fake.pendingTimers, isEmpty);
 
           final countAfterClose = loadCount;
           // One initial load plus at least one 1ms poll; without this pin a
@@ -819,11 +821,13 @@ void main() {
           );
           fake.flushMicrotasks();
 
+          expect(fake.pendingTimers, isNotEmpty);
           fake.elapse(const Duration(milliseconds: 2));
           fake.flushMicrotasks();
 
           expect(cubit.state.provisioningPollAttempts, 2);
           expect(cubit.state.provisioningPollingTimedOut, isTrue);
+          expect(fake.pendingTimers, isEmpty);
           final cappedCount = loadCount;
 
           fake.elapse(const Duration(milliseconds: 5));
