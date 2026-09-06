@@ -151,7 +151,7 @@ definitions:
       script: flutter pub get
     - &pod_install
       name: Run pod install
-      script: find . -name "Podfile" -execdir pod install \;
+      script: pod install --project-directory=ios
     - &precache_shorebird_android_artifacts
       name: Precache Shorebird Android engine artifacts
       script: |

@@ -122,6 +122,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             workflow.index("- *run_maestro_smoke_tests"),
         )
 
+    def test_pod_install_only_targets_the_app_workspace(self) -> None:
+        pod_install = self._definition_block("pod_install")
+
+        self.assertIn("pod install --project-directory=ios", pod_install)
+        self.assertNotIn("find ", pod_install)
+
     def test_android_e2e_excludes_unbounded_maestro_artifacts(self) -> None:
         workflow = self._workflow_block("e2e-smoke-android")
 
