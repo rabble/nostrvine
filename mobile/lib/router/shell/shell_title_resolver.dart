@@ -108,8 +108,5 @@ bool shellSuppressesAppBar({
   if (isExploreGrid) return true;
 
   // Video mode uses the app bar even on the viewer's own profile.
-  return context != null &&
-      context.type == RouteType.profile &&
-      context.videoIndex == null &&
-      routeIdentifiesUser(context.npub, currentUserHex);
+  return isOwnProfileGridRoute(context, currentUserHex);
 }
