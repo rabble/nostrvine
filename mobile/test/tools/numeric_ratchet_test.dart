@@ -18,7 +18,10 @@ void main() {
 
     void writeCurrent(String body) => current.writeAsStringSync(body);
 
-    ProcessResult run({bool update = false}) {
+    ProcessResult run({
+      bool update = false,
+      bool requireBaselineUpdateOnDecrease = false,
+    }) {
       return Process.runSync(
         'bash',
         [probe.path],
@@ -27,6 +30,8 @@ void main() {
           'PROBE_BASELINE': baseline.path,
           'PROBE_CURRENT': current.path,
           'PROBE_LIB': libPath,
+          if (requireBaselineUpdateOnDecrease)
+            'PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE': '1',
           if (update) 'UPDATE_BASELINE': '1',
         },
       );
@@ -45,10 +50,11 @@ set -euo pipefail
 MOBILE_DIR="$PROBE_MOBILE"
 RATCHET_LABEL="probe"
 BASELINE_FILE="$PROBE_BASELINE"
-BASELINE_REPO_PATH="mobile/scripts/baseline/__probe_nonexistent__.txt"
-BASE_REF="origin/main"
+BASELINE_REPO_PATH="${PROBE_BASELINE_REPO_PATH:-mobile/scripts/baseline/__probe_nonexistent__.txt}"
+BASE_REF="${PROBE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE=1
 ALLOW_NO_BASE_VAR="PROBE_ALLOW_NO_BASE"
+REQUIRE_BASELINE_UPDATE_ON_DECREASE="${PROBE_REQUIRE_BASELINE_UPDATE_ON_DECREASE:-0}"
 NEW_HINT="new-hint"
 STALE_HINT="stale-hint"
 FOOTER="footer"
@@ -118,6 +124,18 @@ run_numeric_ratchet
       expect(res.stdout, contains('OK [probe]'));
     });
 
+    test('can require a baseline update when a count decreases', () {
+      writeCurrent('a\t5\n');
+      run(update: true);
+      writeCurrent('a\t4\n');
+
+      final res = run(requireBaselineUpdateOnDecrease: true);
+
+      expect(res.exitCode, 1);
+      expect(res.stdout, contains('DECREASED'));
+      expect(res.stdout, contains('a\t5 -> 4'));
+    });
+
     group('trailing "# reason" comments', () {
       test('survive UPDATE_BASELINE, matched by key not by count', () {
         writeCurrent('a\t5\nb\t3\n');
@@ -135,10 +153,7 @@ run_numeric_ratchet
             .readAsLinesSync()
             .where((line) => !line.startsWith('#'))
             .toList();
-        expect(lines, [
-          'a\t4 # rewrite: shell setup is stale (#4836)',
-          'b\t3',
-        ]);
+        expect(lines, ['a\t4 # rewrite: shell setup is stale (#4836)', 'b\t3']);
       });
 
       test('are ignored by every comparison', () {

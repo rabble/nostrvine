@@ -23,7 +23,7 @@
 // a torn-down owner after the delay elapses (#8457). It is exactly
 // `await Future.delayed(delay)` with the ratchet-visible name filed off, which
 // is why it needs its own guard — see check_future_delayed_production_ceiling.sh,
-// whose detector greps the literal `Future.delayed` and cannot see this shape.
+// whose detector matches `Future.delayed` call sites and cannot see this shape.
 //
 // The fix is AsyncScope in lib/utils/async_utils.dart, which owns every timer
 // it creates and cancels them on cancelAll()/dispose().

@@ -15,9 +15,9 @@
 #   the bypass check is skipped (bootstrap). If the base baseline cannot be
 #   loaded, the guard FAILS CLOSED unless ALLOW_NO_BASE=1 (local opt-out).
 #
-# A key may DECREASE freely without churning the baseline (low friction); only
-# growth/new/removal fails. Decreases can optionally be locked in via
-# UPDATE_BASELINE to tighten the ceiling.
+# By default, a key may DECREASE freely without churning the baseline (low
+# friction); only growth/new/removal fails. A sourcing guard can instead require
+# every decrease to be locked in via UPDATE_BASELINE.
 #
 # The sourcing script MUST define, before calling run_numeric_ratchet:
 #   RATCHET_LABEL        short id used in messages
@@ -30,6 +30,9 @@
 #   NEW_HINT             guidance printed under a NEW/GROWTH/BYPASS failure
 #   STALE_HINT           guidance printed under a STALE failure
 #   FOOTER               closing guidance printed on any failure
+#   REQUIRE_BASELINE_UPDATE_ON_DECREASE
+#                         optional "1" when every decrease must be committed to
+#                         the baseline immediately instead of remaining slack.
 #   emit_current()       prints the current "key<TAB>count" lines (one per key)
 #   print_baseline_header()  prints the baseline file header comment block
 #
@@ -119,7 +122,7 @@ run_numeric_ratchet() {
   printf '%s\n' "$CURRENT" | grep -v '^[[:space:]]*$' | LC_ALL=C sort -t "$TAB" -k1,1 > "$CUR_F" || true
   if [[ -f "$BASELINE_FILE" ]]; then _nr_strip < "$BASELINE_FILE" > "$BASE_F"; else : > "$BASE_F"; fi
 
-  local fail=0 new grown stale
+  local fail=0 new grown decreased stale
   new="$(join -t "$TAB" -v1 "$CUR_F" "$BASE_F" || true)"
   if [[ -n "$new" ]]; then
     echo "FAIL [$RATCHET_LABEL]: NEW key(s) not in the baseline:"
@@ -132,6 +135,17 @@ run_numeric_ratchet() {
     echo "FAIL [$RATCHET_LABEL]: count(s) GREW past the frozen ceiling (was -> now):"
     echo "$grown" | sed 's/^/  /'
     echo "  -> $NEW_HINT"
+    fail=1
+  fi
+  decreased=""
+  if [[ "${REQUIRE_BASELINE_UPDATE_ON_DECREASE:-0}" == "1" ]]; then
+    decreased="$(join -t "$TAB" "$CUR_F" "$BASE_F" | awk -F "$TAB" '$2 < $3 { printf "%s\t%s -> %s\n", $1, $3, $2 }' || true)"
+  fi
+  if [[ -n "$decreased" ]]; then
+    echo "FAIL [$RATCHET_LABEL]: count(s) DECREASED below the frozen ceiling (was -> now):"
+    echo "$decreased" | sed 's/^/  /'
+    echo "  -> $STALE_HINT Lock the win by regenerating the baseline:"
+    echo "     UPDATE_BASELINE=1 bash mobile/scripts/check_${RATCHET_LABEL}.sh"
     fail=1
   fi
   stale="$(join -t "$TAB" -v2 "$CUR_F" "$BASE_F" || true)"

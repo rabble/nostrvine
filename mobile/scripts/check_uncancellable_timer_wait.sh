@@ -17,7 +17,7 @@
 # the continuation then resurrected a sync timer dispose() had just cancelled.
 #
 # This is the PRODUCTION `Future.delayed` rule wearing a different spelling.
-# check_future_delayed_production_ceiling.sh greps the literal `Future.delayed`,
+# check_future_delayed_production_ceiling.sh detects `Future.delayed` call sites,
 # so it cannot see this shape at all — which is the whole complaint in #8457:
 # moving a call site into a Timer+Completer helper turned that ratchet green
 # while making lifecycle ownership strictly worse. This guard closes that hole,
