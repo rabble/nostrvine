@@ -34,6 +34,9 @@ class WatermarkImageGenerator {
     required String watermarkText,
   }) async {
     final wordmarkImage = await _loadWordmarkImage();
+    ui.Paragraph? textParagraph;
+    ui.Picture? picture;
+    ui.Image? image;
 
     try {
       final recorder = ui.PictureRecorder();
@@ -45,7 +48,7 @@ class WatermarkImageGenerator {
       // Build the single-line watermark text using the resolved identity.
       // Available width = from left margin to right margin
       final maxTextWidth = videoWidth - 2 * _margin;
-      final textParagraph = _buildParagraph(
+      textParagraph = _buildParagraph(
         watermarkText,
         fontSize,
         maxTextWidth,
@@ -98,8 +101,8 @@ class WatermarkImageGenerator {
       canvas.drawParagraph(textParagraph, ui.Offset(textLeft, textTop));
 
       // Convert to image
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(videoWidth, videoHeight);
+      picture = recorder.endRecording();
+      image = await picture.toImage(videoWidth, videoHeight);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) {
@@ -110,6 +113,11 @@ class WatermarkImageGenerator {
 
       return byteData.buffer.asUint8List();
     } finally {
+      // Every native drawing resource this call created; only the PNG bytes
+      // may outlive it.
+      image?.dispose();
+      picture?.dispose();
+      textParagraph?.dispose();
       wordmarkImage.dispose();
     }
   }
