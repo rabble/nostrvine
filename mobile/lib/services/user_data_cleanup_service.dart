@@ -5,6 +5,7 @@ import 'package:creator_sync/creator_sync.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -46,6 +47,11 @@ class UserDataCleanupService {
 
   /// Keys that store user-specific data and should be cleared on identity change.
   /// Device/app settings like relay URLs, analytics preferences are NOT included.
+  ///
+  /// Entries reference the constant owned by the writing service wherever one
+  /// exists, so renaming a key is a compile error here rather than a silent
+  /// no-op. A copied literal cannot detect that its owner moved: the moderation
+  /// pair below drifted exactly that way and stopped being cleared (#6985).
   static const List<String> userSpecificKeys = [
     // List services
     'curated_lists',
@@ -71,6 +77,8 @@ class UserDataCleanupService {
     // Labeler subscriptions
     'subscribed_labelers',
     'label_cache',
+    ModerationLabelService.subscribedLabelersStorageKey,
+    ModerationLabelService.followingModerationEnabledStorageKey,
     // Report aggregation
     'trusted_reporters',
     'report_cache',

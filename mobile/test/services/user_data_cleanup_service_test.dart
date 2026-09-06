@@ -5,6 +5,7 @@ import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -190,14 +191,45 @@ void main() {
         expect(prefs.containsKey('global_bookmarks'), isFalse);
       });
 
-      test('clears mute/moderation keys', () async {
-        await prefs.setStringList('muted_items', ['user1', 'user2']);
-        await prefs.setStringList('content_moderation_local_mutes', ['mute1']);
+      test(
+        'clears the labelers the departing account chose to trust',
+        () async {
+          await prefs.setStringList(
+            ModerationLabelService.subscribedLabelersStorageKey,
+            ['labeler_chosen_by_departing_account'],
+          );
 
-        await service.clearUserSpecificData();
+          await service.clearUserSpecificData(isIdentityChange: true);
 
-        expect(prefs.containsKey('muted_items'), isFalse);
-        expect(prefs.containsKey('content_moderation_local_mutes'), isFalse);
+          expect(
+            prefs.getStringList(
+              ModerationLabelService.subscribedLabelersStorageKey,
+            ),
+            isNull,
+            reason:
+                'the incoming account must not inherit moderation '
+                'subscriptions chosen by the previous account (#6985)',
+          );
+        },
+      );
+
+      test('clears the departing account follow-as-labeler choice', () async {
+        await prefs.setBool(
+          ModerationLabelService.followingModerationEnabledStorageKey,
+          true,
+        );
+
+        await service.clearUserSpecificData(isIdentityChange: true);
+
+        expect(
+          prefs.getBool(
+            ModerationLabelService.followingModerationEnabledStorageKey,
+          ),
+          isNull,
+          reason:
+              'the incoming account must not inherit the choice to '
+              'trust followed accounts as labelers (#6985)',
+        );
       });
 
       test(
