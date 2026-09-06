@@ -16679,6 +16679,28 @@ void main() {
         expect(result.followed, isEmpty);
         expect(result.requests, hasLength(1));
       });
+
+      // `validatePubkey` accepts upper-case hex, so the viewer can appear
+      // in a stored participant list under a different casing than
+      // `userPubkey`. An exact `!=` would leave them in `otherPubkeys` and
+      // strand a followed 1:1 peer under Message requests — the #5374
+      // failure mode. Matches `_isSelf`, which compares case-insensitively
+      // for this reason.
+      test('viewer is filtered out regardless of pubkey casing', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA.toUpperCase(), _validPubkeyB],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (pk) => pk == _validPubkeyB,
+        );
+
+        expect(result.followed, hasLength(1));
+        expect(result.requests, isEmpty);
+      });
     });
 
     group('mergeAndSort', () {

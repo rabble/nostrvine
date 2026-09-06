@@ -7649,8 +7649,12 @@ class DmRepository {
     final requests = <DmConversation>[];
 
     for (final conversation in potentialRequests) {
+      // Case-insensitive, matching [_isSelf]: `validatePubkey` accepts
+      // upper-case hex, so an exact `!=` would keep the viewer in
+      // `otherPubkeys` under a different casing and strand a followed 1:1
+      // peer under Message requests — the #5374 failure mode.
       final otherPubkeys = conversation.participantPubkeys
-          .where((pk) => pk != userPubkey)
+          .where((pk) => !pubkeysEqual(pk, userPubkey))
           .toSet();
 
       // A conversation whose every (deduplicated) non-self participant is
