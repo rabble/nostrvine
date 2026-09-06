@@ -7889,6 +7889,72 @@ void main() {
       // awaits it before wiping the DM tables and DmSyncState. A drain
       // suspended mid-page must stop with it; otherwise it resumes after the
       // wipe and re-seeds the state that was just cleared.
+      test('stopListening waits for post-auth maintenance', () async {
+        final maintenanceRelease = Completer<int>();
+
+        when(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => maintenanceRelease.future);
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockConversationsDao.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(const <ConversationRow>[]));
+
+        // An owner-scoped read can start maintenance before a signer exists.
+        final repository = createRepository();
+        final conversations = repository.watchAcceptedConversations().first;
+        await untilCalled(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        var stopCompleted = false;
+        final stop = repository.stopListening().whenComplete(() {
+          stopCompleted = true;
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          stopCompleted,
+          isFalse,
+          reason: 'stopListening returned while maintenance was still writing',
+        );
+
+        maintenanceRelease.complete(0);
+        await stop;
+        await conversations;
+      });
+
+      test('a maintenance pass cannot start after listening stops', () async {
+        when(
+          () => mockConversationsDao.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(const <ConversationRow>[]));
+        final repository = createRepository();
+
+        await repository.stopListening();
+        await repository.watchAcceptedConversations().first;
+
+        verifyNever(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('stops a suspended history drain when listening stops', () async {
         var pageCalls = 0;
         final secondPageStarted = Completer<void>();
@@ -17012,6 +17078,85 @@ void main() {
                 signer: LocalNostrSigner(_validPrivateKey),
                 messageService: mockMessageService,
               );
+
+          final conversationsFuture = repository
+              .watchAcceptedConversations()
+              .first;
+
+          verifyNever(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          maintenanceCompleter.complete(0);
+
+          await untilCalled(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          final conversations = await conversationsFuture;
+          expect(conversations, hasLength(1));
+          expect(conversations.first.id, equals(convId));
+        },
+      );
+
+      // The same contract when only an identity is known and no signer has
+      // arrived yet. The repository deliberately serves owner-scoped reads
+      // in that state, and post-auth maintenance is local database work that
+      // needs no signer — so the gate must hold here too. Before #8703 the
+      // maintenance future was scheduled only by `setCredentials`, so this
+      // path skipped the gate entirely and served un-repaired rows. A signer
+      // that never becomes ready made that permanent.
+      test(
+        'waits for post-auth maintenance when only an identity is known',
+        () async {
+          final maintenanceCompleter = Completer<int>();
+          final participants = [_validPubkeyA, _validPubkeyB]..sort();
+          final convId = DmRepository.computeConversationId(participants);
+
+          when(
+            () => mockConversationsDao.backfillLatestMessagePreviews(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) => maintenanceCompleter.future);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value([
+              ConversationRow(
+                ownerPubkey: '',
+                id: convId,
+                participantPubkeys: jsonEncode(participants),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: true,
+                createdAt: 1700000000,
+              ),
+            ]),
+          );
+
+          // Identity only: no signer, no setCredentials.
+          final repository = DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+            userPubkey: _validPubkeyA,
+          );
+          expect(repository.isInitialized, isFalse);
 
           final conversationsFuture = repository
               .watchAcceptedConversations()
