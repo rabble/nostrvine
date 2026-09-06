@@ -800,6 +800,11 @@ class DmRepository {
   /// emitting stale denormalized previews before repairs land.
   Future<void>? _postAuthMaintenance;
 
+  /// The owner [_postAuthMaintenance] was started for, so a run is not
+  /// repeated for the same identity and is not reused across an account
+  /// switch that left the credentials untouched.
+  String? _maintenanceOwner;
+
   /// The in-flight one-time history drain, shared by concurrent callers so
   /// repeated [backfillHistoryIfNeeded] calls (e.g. every inbox open) never
   /// launch overlapping drains. Cleared when the drain settles.
@@ -970,10 +975,7 @@ class DmRepository {
       _userPubkeyController.add(userPubkey);
     }
 
-    // Run post-auth maintenance sequentially so each step operates on the
-    // final state of the previous one.
-    _postAuthMaintenance = _runPostAuthMaintenance();
-    unawaited(_postAuthMaintenance);
+    unawaited(_ensurePostAuthMaintenance());
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -1036,6 +1038,7 @@ class DmRepository {
       // Ignore if subscription doesn't exist
     }
     _postAuthMaintenance = null;
+    _maintenanceOwner = null;
     _userPubkey = '';
     _signer = null;
     _batchUnwrapUnsupported = false;
@@ -8279,18 +8282,45 @@ class DmRepository {
     return rows.map(_messageFromRow).toList();
   }
 
+  /// Starts post-auth maintenance for the current owner unless it has
+  /// already run for them, and returns the future the owner-scoped reads
+  /// gate on.
+  ///
+  /// Keyed on the OWNER, not on credentials. Every step is local database
+  /// work scoped by `ownerPubkey` and none of it needs a signer, while the
+  /// reads it repairs are deliberately served for a signer-less identity
+  /// (see [isInitialized]). Scheduling it only from [setCredentials] left
+  /// those reads ungated between `identityKnown` and `nostrReady` — and
+  /// permanently un-repaired for an identity whose signer never became
+  /// ready, so replied-to conversations stayed under Message requests
+  /// (#8703, the state #2834's backfill exists to correct).
+  ///
+  /// Returns a completed future when no owner is known; the callers below
+  /// already return early in that case, so nothing is gated on nothing.
+  Future<void> _ensurePostAuthMaintenance() {
+    final owner = _ownerPubkey;
+    if (owner == null) return Future<void>.value();
+    final existing = _postAuthMaintenance;
+    if (existing != null && _maintenanceOwner == owner) return existing;
+    // Sequential inside, so each step operates on the previous one's result.
+    final started = _runPostAuthMaintenance();
+    _maintenanceOwner = owner;
+    _postAuthMaintenance = started;
+    unawaited(started);
+    return started;
+  }
+
   Future<void> _awaitInitialConversationMaintenance() async {
-    await _postAuthMaintenance;
+    await _ensurePostAuthMaintenance();
   }
 
   Stream<List<DmConversation>> _watchConversationRows(
     Stream<List<ConversationRow>> Function() watchRows,
   ) {
-    final maintenance = _postAuthMaintenance;
-    final gatedRows = maintenance == null
-        ? watchRows()
-        : Stream.fromFuture(maintenance).asyncExpand((_) => watchRows());
-    return gatedRows.map((streamRows) {
+    final maintenance = _ensurePostAuthMaintenance();
+    return Stream.fromFuture(
+      maintenance,
+    ).asyncExpand((_) => watchRows()).map((streamRows) {
       return streamRows.map(_conversationFromRow).toList();
     });
   }
