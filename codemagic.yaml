@@ -1428,7 +1428,7 @@ workflows:
         - proofmode_credentials
       vars:
         DEFAULT_ENV: STAGING
-        BUNDLE_ID: co.openvine.app
+        BUNDLE_ID: co.openvine.app.staging
     cache:
       cache_paths:
         - $HOME/.gradle/caches

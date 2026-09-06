@@ -131,6 +131,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
     def test_android_e2e_excludes_unbounded_maestro_artifacts(self) -> None:
         workflow = self._workflow_block("e2e-smoke-android")
 
+        self.assertIn("BUNDLE_ID: co.openvine.app.staging", workflow)
         self.assertNotIn("- ~/.maestro/tests/**\n", workflow)
         for artifact in (
             "screenshots/**",
