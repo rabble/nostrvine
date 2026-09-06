@@ -3889,8 +3889,23 @@ void main() {
     );
 
     test(
-      'is null when the user has blocked the moderation account',
+      'survives blocking the moderation account, unlike every other row',
       () async {
+        // Reverses #6388's behaviour on purpose (#7850).
+        //
+        // #6388 suppressed the pin for a blocked peer on the stated grounds
+        // that "ConversationPage's route guard bounces straight back to the
+        // inbox". That is true of the #176 minor gate — which this test's
+        // sibling above still covers — but NOT of the blocklist:
+        // `ConversationPage`'s guard consults `isDmRestricted` and the
+        // official-accounts predicate only, never the blocklist. So a blocked
+        // pin opens normally; suppressing it removed the route to the
+        // enforcement notice for nothing.
+        //
+        // The cost of getting this wrong was real: blocking is one tap in the
+        // conversation sheet, the adopted pin never survives the list filter,
+        // and #7025's recovery slice is reachable only through a chip that
+        // renders conditionally on having blocked someone.
         final blocklist = _MockContentBlocklistRepository();
         when(
           () => blocklist.runtimeBlockedUsers,
@@ -3915,7 +3930,11 @@ void main() {
 
         final state = await loadedState(bloc);
 
-        expect(state.pinnedSupport, isNull);
+        expect(state.pinnedSupport, isNotNull);
+        expect(
+          state.pinnedSupport!.conversation.participantPubkeys,
+          contains(moderationPubkey),
+        );
       },
     );
 

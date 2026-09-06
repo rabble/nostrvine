@@ -139,7 +139,15 @@ The client half is small and belongs in one PR:
    — it reads the list, so it does, but the test should say so.
 5. Record the outgoing key's [custody status](#key-custody). Unrecovered means
    the closed composer is permanent for it; archived means the reader could in
-   principle be pointed at it, and the decision is then a real one.
+   principle be pointed at it, and the decision is then a real one. Custody is
+   also what lets a DM-restricted minor read a retired-key thread
+   (`OfficialAccountsService.isReadableByProtectedMinor`): that widening rests
+   on nobody being able to sign as the key, so an **archived** key has to be
+   reconsidered there before it is added.
+6. Note that a rotation forks `conversation_id` on the service side, so the
+   outgoing key's rows become a disjoint set that the admin UI's pubkey lookup
+   can no longer reach. What happens to them is a retention question, open at
+   `divinevideo/divine-mobile#7850`; see `mobile/docs/DM_RETENTION.md`.
 
 The service and infrastructure half — rotating the signing key, updating
 Funnelcake's `RELAY_PUBKEY` and its `ADMIN_PUBKEYS` allowlist (replacing only

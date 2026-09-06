@@ -69,7 +69,7 @@ class ProtectedMinorInboxGateImpl implements ProtectedMinorInboxGate {
         // flip fires onVerdictChanged -> the list re-filters and this
         // counterparty drops.
         unawaited(_officials.isApprovedMinorDmRecipient(p));
-        if (!_officials.isApprovedMinorDmRecipientSync(p)) {
+        if (!_officials.isReadableByProtectedMinor(p)) {
           allApproved = false;
         }
       }

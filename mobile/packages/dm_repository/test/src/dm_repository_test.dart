@@ -10706,16 +10706,31 @@ void main() {
     // -----------------------------------------------------------------
 
     group('removeConversation', () {
-      // The removal policy resolves each conversation before deleting it
-      // (#8391). These pure-mock tests care about the delete ordering, so the
-      // lookup returns null — absent rows fail open and removal proceeds.
+      // The removal path resolves each conversation before deleting it
+      // (#8391), and since #7850 an absent row is skipped entirely rather than
+      // deleted-and-tombstoned. These pure-mock tests care about the delete
+      // ordering, which only happens for a row that exists — so the lookup
+      // echoes back a plain unprotected conversation for whatever id it is
+      // asked about. `dm_removal_policy_test.dart` owns the absent-row case.
       setUp(() {
         when(
           () => mockConversationsDao.getConversation(
             any(),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer(
+          (invocation) async => ConversationRow(
+            id: invocation.positionalArguments.first as String,
+            participantPubkeys: jsonEncode(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            isGroup: false,
+            createdAt: 1699999000,
+            isRead: true,
+            currentUserHasSent: true,
+            ownerPubkey: _validPubkeyA,
+          ),
+        );
       });
 
       test(
@@ -10826,16 +10841,31 @@ void main() {
     });
 
     group('removeConversations', () {
-      // The removal policy resolves each conversation before deleting it
-      // (#8391). These pure-mock tests care about the delete ordering, so the
-      // lookup returns null — absent rows fail open and removal proceeds.
+      // The removal path resolves each conversation before deleting it
+      // (#8391), and since #7850 an absent row is skipped entirely rather than
+      // deleted-and-tombstoned. These pure-mock tests care about the delete
+      // ordering, which only happens for a row that exists — so the lookup
+      // echoes back a plain unprotected conversation for whatever id it is
+      // asked about. `dm_removal_policy_test.dart` owns the absent-row case.
       setUp(() {
         when(
           () => mockConversationsDao.getConversation(
             any(),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer(
+          (invocation) async => ConversationRow(
+            id: invocation.positionalArguments.first as String,
+            participantPubkeys: jsonEncode(
+              [_validPubkeyA, _validPubkeyB]..sort(),
+            ),
+            isGroup: false,
+            createdAt: 1699999000,
+            isRead: true,
+            currentUserHasSent: true,
+            ownerPubkey: _validPubkeyA,
+          ),
+        );
       });
 
       const convIdA =

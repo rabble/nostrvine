@@ -513,10 +513,9 @@ class _RestorePausedBannerGate extends StatelessWidget {
 /// no timestamp and would sink out of reach.
 ///
 /// The caller only builds this when [ConversationListState.pinnedSupport] is
-/// non-null: the bloc composes that inside the same pipeline that applies the
-/// blocklist filter and the protected-minor gate, so a user who blocked the
-/// moderation account, or a restricted minor whose approval was revoked, gets
-/// no row rather than one the conversation route guard would bounce.
+/// non-null. The bloc withholds that for a restricted minor whose approval was
+/// revoked, so this tile is never the row the conversation route guard would
+/// bounce (#176). Blocking the moderation account does not withhold it (#7850).
 class _PinnedSupportRow extends StatelessWidget {
   const _PinnedSupportRow({
     required this.pinned,
@@ -969,9 +968,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     required InboxFilter filter,
     required String query,
   }) {
-    // The Blocked slice is a list of accounts the viewer blocked. Moderation
-    // is not one of them — a blocked moderation account produces no pin at all
-    // (`_extractPinnedSupport`) — so the row has no business sitting above it.
+    // The Blocked slice is the viewer's blocked peers. The pin is the support
+    // channel, not a blocked-account row, so it does not sit above that list
+    // even when the viewer has blocked the moderation account (#7850).
     if (filter == InboxFilter.blocked) return false;
     if (filter == InboxFilter.unread && pinned.isRead) return false;
     if (query.isEmpty) return true;
@@ -1186,6 +1185,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             // the sheet drops it for a protected peer (#8391).
             final refusedText =
                 context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+            // Captured before the await for the same reason as the two above:
+            // this context can retire while the removal is in flight.
+            final errorText = context.l10n.commonSomethingWentWrong;
             final outcome = await actionsCubit.removeConversation(
               conversation.id,
             );
@@ -1199,7 +1201,14 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
                   SnackBar(content: Text(refusedText)),
                 );
               case RemoveConversationOutcome.failed:
-                break;
+                // Silence here reads as a mistap: the dialog closes and the
+                // row is still there. Both sibling surfaces already say so
+                // (`request_preview_view`, `message_requests_view`), and a
+                // failure must not be mistaken for the refusal above — that
+                // one is the guard working, this one is Drift throwing.
+                messenger.showSnackBar(
+                  DivineSnackbarContainer.snackBar(errorText, error: true),
+                );
             }
           }
       }

@@ -198,6 +198,83 @@ void main() {
       });
     });
 
+    group('removal tombstones', () {
+      Future<int?> tombstoneFor(String conversationId) =>
+          db.removedConversationsDao.removedAtFor(
+            conversationId: conversationId,
+            ownerPubkey: _owner,
+          );
+
+      test('records a tombstone for a conversation that IS on disk', () async {
+        // The control. Suppression of replayed history is the whole point of
+        // the marker, so the absent-row tests below only mean something if
+        // this one proves the present-row path still writes it.
+        final repository = buildRepository();
+        final conversationId = await seedConversation([_owner, _ordinaryPeer]);
+
+        await repository.removeConversation(conversationId);
+
+        expect(await tombstoneFor(conversationId), isNotNull);
+      });
+
+      test(
+        'writes NO tombstone for a conversation that is not on disk',
+        () async {
+          // #7850. The guard fails open on a missing row so a stale id never
+          // becomes undeletable — but the tombstone used to be written anyway,
+          // and ingest drops every message at or before `removedAt`. A
+          // moderation notice's created_at is always in the past, so one marker
+          // for an id this device never held suppressed that notice on every
+          // future relay replay, permanently and silently.
+          //
+          // Nothing local was removed, so there is no local history to
+          // suppress.
+          final repository = buildRepository(
+            removalPolicy: _protectsTheProtectedPeer,
+          );
+          const absentId = 'conversation-this-device-never-had';
+
+          final outcome = await repository.removeConversation(absentId);
+
+          expect(outcome, equals(ConversationRemovalOutcome.removed));
+          expect(await tombstoneFor(absentId), isNull);
+        },
+      );
+
+      test('writes no tombstone for the absent members of a batch', () async {
+        // `removeConversations` collects ids when the list renders and acts on
+        // them later, so a row that disappears in between reaches the batch
+        // absent. That is the reachable form of the single-path bug above.
+        final repository = buildRepository(
+          removalPolicy: _protectsTheProtectedPeer,
+        );
+        final ordinaryId = await seedConversation([_owner, _ordinaryPeer]);
+        const absentId = 'vanished-between-render-and-tap';
+
+        final outcome = await repository.removeConversations([
+          ordinaryId,
+          absentId,
+        ]);
+
+        expect(outcome.removed, equals(1));
+        expect(outcome.refused, equals(0));
+        expect(await tombstoneFor(ordinaryId), isNotNull);
+        expect(await tombstoneFor(absentId), isNull);
+      });
+
+      test('writes no tombstone for a refused conversation', () async {
+        // A refusal deletes nothing, so it must also suppress nothing.
+        final repository = buildRepository(
+          removalPolicy: _protectsTheProtectedPeer,
+        );
+        final protectedId = await seedConversation([_owner, _protectedPeer]);
+
+        await repository.removeConversation(protectedId);
+
+        expect(await tombstoneFor(protectedId), isNull);
+      });
+    });
+
     group('isRemovalProtected', () {
       test('answers for a peer the policy protects', () async {
         final repository = buildRepository(

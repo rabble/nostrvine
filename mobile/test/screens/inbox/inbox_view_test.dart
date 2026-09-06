@@ -1895,10 +1895,10 @@ void main() {
         );
       });
 
-      // The bloc withholds the pin for a user who blocked moderation, for a
-      // restricted minor whose approval was revoked, and wherever no
-      // moderation pubkey is configured. The view must render nothing at all
-      // in that case, not an empty tile.
+      // The bloc withholds the pin for a restricted minor whose approval was
+      // revoked, and wherever no moderation pubkey is configured. Blocking
+      // moderation no longer withholds it (#7850). The view must render
+      // nothing at all when the bloc emits no pin, not an empty tile.
       testWidgets('is absent when the bloc emits no pin', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         await tester.pumpWidget(
@@ -2761,6 +2761,49 @@ void main() {
           findsOneWidget,
         );
         expect(find.text(l10n.inboxRemovedConversation), findsNothing);
+      });
+
+      testWidgets('reports a failed removal instead of staying silent', (
+        tester,
+      ) async {
+        // #7850. `failed` used to `break`, so a Drift throw closed the dialog,
+        // showed nothing, and left the row in place — indistinguishable from a
+        // mistap. It must also not borrow the refusal copy: a refusal is the
+        // guard working, a failure is not.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final actionsCubit = _MockConversationActionsCubit();
+
+        await tester.pumpWidget(
+          buildSubject(
+            actionsCubit: actionsCubit,
+            wrapInScaffold: true,
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(
+                isPersisted: true,
+                lastMessageContent: 'We looked into your report',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => actionsCubit.removeConversation(any()),
+        ).thenAnswer((_) async => RemoveConversationOutcome.failed);
+        await openMessages(tester);
+
+        await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxActionRemove));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxRemoveConfirmConfirm));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+        expect(find.text(l10n.inboxRemovedConversation), findsNothing);
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsNothing,
+        );
       });
 
       testWidgets(

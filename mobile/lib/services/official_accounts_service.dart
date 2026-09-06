@@ -104,6 +104,33 @@ class OfficialAccountsService {
     return _load(hex)?.approved ?? true;
   }
 
+  /// Whether a DM-restricted minor may READ an existing thread with [hex].
+  ///
+  /// Deliberately wider than [isApprovedMinorDmRecipientSync], which answers
+  /// whether they may *reach* an identity and stays the gate on every send
+  /// affordance. This one answers whether an existing thread may be rendered.
+  ///
+  /// The two differ on exactly one case: a **retired** Divine moderation key.
+  /// A minor who was sent an enforcement notice before a rotation holds a
+  /// thread the pin no longer covers, and the strict predicate hid it from the
+  /// inbox, from Message Requests, and from the blocked slice — while
+  /// `DmRepository`'s removal policy protects it, because that policy counts
+  /// retired keys as moderation. The thread was therefore undeletable *and*
+  /// unreadable, which is the one combination that helps nobody (#7850).
+  ///
+  /// Widening the read path adds no contact surface. The rotation register
+  /// (`mobile/docs/RETIRED_MODERATION_KEYS.md`) records the current entry's
+  /// private key as unrecovered with no known holder, so nobody can sign a new
+  /// event as it — the key cannot deliver anything to a minor. The composer
+  /// stays closed for it independently, via `isRetiredModerationAccount`.
+  ///
+  /// That argument rests on custody, which the register records per entry. A
+  /// future retired key whose private half is *archived* rather than
+  /// unrecovered has to be reconsidered here before it is added.
+  bool isReadableByProtectedMinor(String hex) =>
+      isApprovedMinorDmRecipientSync(hex) ||
+      isRetiredModerationAccount(_normHex(hex));
+
   /// Pin ∩ live NIP-05, graded. Awaits a fresh resolution when the cached
   /// verdict is stale (send-time freshness); returns the cached verdict while
   /// fresh. Grading:

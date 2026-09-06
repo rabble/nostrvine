@@ -284,7 +284,8 @@ class ConversationListBloc
 
         // Lift the moderation thread out of the list into the pinned row, so
         // the inbox never renders it twice (#6283). Runs after both filters so
-        // the pin inherits them rather than bypassing them.
+        // an adopted pin still inherits them; the synthetic fallback in
+        // `_extractPinnedSupport` deliberately bypasses the blocklist (#7850).
         final pin = _extractPinnedSupport(
           userPubkey: userPubkey,
           inbox: visibleInbox,
@@ -631,12 +632,14 @@ class ConversationListBloc
   /// gives it an archived read-only presentation.
   ///
   /// Called with lists that have ALREADY passed the blocklist filter and the
-  /// protected-minor gate, so an existing moderation thread that those filters
-  /// removed simply is not found here. The synthetic fallback is pushed back
-  /// through both filters for the same reason: without that, a user who blocked
-  /// the moderation account — or a restricted minor whose approval was revoked
-  /// — would get a row that `ConversationPage`'s route guard bounces straight
-  /// back to the inbox.
+  /// protected-minor gate, so an existing moderation thread those filters
+  /// removed is not adopted here. The synthetic fallback is pushed through the
+  /// **minor gate only**. Blocking the moderation account used to suppress that
+  /// fallback too, on the grounds that `ConversationPage` would bounce — but
+  /// that guard never consults the blocklist, so the pin staying reachable is
+  /// the point of #7850. The minor gate still applies: that is a safety rule,
+  /// not a user preference, and it is the one filter the pin has never been
+  /// allowed to bypass (#176).
   ({
     PinnedSupport? pinned,
     List<DmConversation> inbox,
@@ -678,14 +681,25 @@ class ConversationListBloc
       createdAt: _pinnedSupportEpoch,
     );
 
-    final allowed =
-        _blocklistRepository?.filterBlockedConversations([
+    // Deliberately NOT blocklist-filtered, unlike every other row.
+    //
+    // The pinned row is Divine's support channel, not a peer thread. Blocking
+    // the moderation account used to remove it outright — the adopted pin
+    // never survives the list filter, and this synthetic fallback was filtered
+    // too — leaving the enforcement notice reachable only through a Blocked
+    // chip that itself renders conditionally. One tap on Block silently took
+    // away the route to the only document saying why the account was actioned
+    // (#7850). Blocking a peer means "stop delivering me their messages"; it
+    // must not mean "you can never reach support again".
+    //
+    // The minor gate below still applies: that is a safety rule, not a user
+    // preference, and it is the one filter the pin has never been allowed to
+    // bypass (#176).
+    final visible =
+        _protectedMinorInboxGate?.filter([
           synthetic,
         ], userPubkey: userPubkey) ??
         [synthetic];
-    final visible =
-        _protectedMinorInboxGate?.filter(allowed, userPubkey: userPubkey) ??
-        allowed;
 
     return (
       pinned: visible.isEmpty

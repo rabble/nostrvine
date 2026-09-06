@@ -71,7 +71,7 @@ class RequestPreviewPage extends ConsumerWidget {
             isDmRestricted: () => ref.read(isDmRestrictedProvider),
             isApprovedRecipient: ref
                 .read(officialAccountsServiceProvider)
-                .isApprovedMinorDmRecipientSync,
+                .isReadableByProtectedMinor,
           )..load(),
         ),
         BlocProvider(

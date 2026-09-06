@@ -41,10 +41,11 @@ class ConversationNavigationTarget extends Equatable {
 
 /// The pinned Divine Moderation support row (#6283).
 ///
-/// Composed inside the same pipeline that applies the blocklist filter and the
-/// protected-minor inbound gate, so a user who blocked the moderation account —
-/// or a restricted minor whose approval was revoked — gets no pin at all rather
-/// than a row the conversation route guard would bounce.
+/// The protected-minor inbound gate still withholds this: a restricted minor
+/// whose approval was revoked gets no pin rather than a row the conversation
+/// route guard would bounce (#176). Blocking the moderation account does not —
+/// that is a user preference, the guard never consults the blocklist, and the
+/// pin staying reachable is the point of #7850.
 class PinnedSupport extends Equatable {
   const PinnedSupport({required this.conversation, required this.isPersisted});
 

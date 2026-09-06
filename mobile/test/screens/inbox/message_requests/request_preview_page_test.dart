@@ -103,7 +103,7 @@ void main() {
         'to the inbox before any request data renders',
         (tester) async {
           when(
-            () => mockOfficials.isApprovedMinorDmRecipientSync(any()),
+            () => mockOfficials.isReadableByProtectedMinor(any()),
           ).thenReturn(false);
 
           await tester.pumpWidget(
@@ -141,7 +141,7 @@ void main() {
         'bounced to the inbox without the conversation being read',
         (tester) async {
           when(
-            () => mockOfficials.isApprovedMinorDmRecipientSync(any()),
+            () => mockOfficials.isReadableByProtectedMinor(any()),
           ).thenReturn(true);
 
           await tester.pumpWidget(
@@ -185,7 +185,7 @@ void main() {
         'a DM-restricted user with an approved counterparty sees the preview',
         (tester) async {
           when(
-            () => mockOfficials.isApprovedMinorDmRecipientSync(otherPubkey),
+            () => mockOfficials.isReadableByProtectedMinor(otherPubkey),
           ).thenReturn(true);
 
           await tester.pumpWidget(

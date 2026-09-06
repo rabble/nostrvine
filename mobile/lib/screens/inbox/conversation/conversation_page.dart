@@ -86,7 +86,7 @@ class ConversationPage extends ConsumerWidget {
         conversationId: conversationId,
         initialParticipantPubkeys: participantPubkeys,
         isDmRestricted: () => isDmRestricted,
-        isApprovedRecipient: officialAccounts.isApprovedMinorDmRecipientSync,
+        isApprovedRecipient: officialAccounts.isReadableByProtectedMinor,
       )..load(),
       child: _ConversationPageContent(
         conversationId: conversationId,

@@ -39,6 +39,47 @@ void main() {
 
   const modNip05 = 'moderation@divine.video';
 
+  group('isReadableByProtectedMinor', () {
+    // #7850. `DmRepository`'s removal policy protects a retired-key moderation
+    // thread, because `isModerationAccount` counts retired keys. The minor
+    // gate approved pinned accounts only, so that same thread was stripped
+    // from the inbox, from Message Requests and from the blocked slice —
+    // undeletable and unreadable at once.
+    final retiredModHex = kLegacyModerationPubkeys.first;
+
+    test('reads a retired moderation thread the send gate still refuses', () {
+      final svc = build();
+
+      expect(svc.isReadableByProtectedMinor(retiredModHex), isTrue);
+      // The send gate is deliberately untouched: a retired key is readable but
+      // never reachable, and the composer stays closed for it independently.
+      expect(svc.isApprovedMinorDmRecipientSync(retiredModHex), isFalse);
+      expect(svc.isPinnedMinorContactable(retiredModHex), isFalse);
+    });
+
+    test('still refuses a stranger', () {
+      final svc = build();
+
+      expect(svc.isReadableByProtectedMinor(strangerHex), isFalse);
+      expect(svc.isReadableByProtectedMinor(attackerHex), isFalse);
+    });
+
+    test('still reads the current moderation account', () {
+      final svc = build();
+
+      expect(svc.isReadableByProtectedMinor(modHex), isTrue);
+    });
+
+    test('normalizes hex the same way the pin does', () {
+      final svc = build();
+
+      expect(
+        svc.isReadableByProtectedMinor('  ${retiredModHex.toUpperCase()}  '),
+        isTrue,
+      );
+    });
+  });
+
   group('isApprovedMinorDmRecipient', () {
     test('unpinned pubkey is never an approved recipient', () async {
       final svc = build();
