@@ -1,20 +1,15 @@
 // ABOUTME: Static guards for iOS video stabilization recorder constraints.
 
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/native_source.dart';
 
 void main() {
   group('iOS stabilization recorder contract', () {
     late final String controllerSource;
 
     setUpAll(() {
-      final controllerFile = [
-        File('ios/Classes/CameraController.swift'),
-        File('packages/divine_camera/ios/Classes/CameraController.swift'),
-      ].firstWhere((file) => file.existsSync());
-
-      controllerSource = controllerFile.readAsStringSync();
+      controllerSource = readNativeSource('CameraController.swift');
     });
 
     test('does not advertise previewOptimized for full-resolution output', () {
