@@ -3,10 +3,18 @@
 
 import 'package:creator_sync/creator_sync.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/services/sound_library_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -79,6 +87,25 @@ class UserDataCleanupService {
     'label_cache',
     ModerationLabelService.subscribedLabelersStorageKey,
     ModerationLabelService.followingModerationEnabledStorageKey,
+    // Content labels this account applies to its own uploads
+    AccountLabelService.accountLabelStorageKey,
+    LanguagePreferenceService.prefsKey,
+    AudioSharingPreferenceService.prefsKey,
+    // Per-category filter choices. The migration flag travels with the
+    // preferences it guards: clearing one without the other leaves the next
+    // account with an empty map instead of the defaults.
+    ContentFilterService.filterPrefsStorageKey,
+    ContentFilterService.filterMigratedStorageKey,
+    // Feed filters. showDivineHostedOnly defaults to ON, so inheriting a
+    // relaxed value would leave the incoming account less protected than a
+    // fresh one.
+    DivineHostFilterService.showDivineHostedOnlyStorageKey,
+    VideoProvenanceFilterService.showVerifiedOnlyStorageKey,
+    // Direct messages
+    mutedConversationsStorageKey,
+    // Sound library. SavedSoundsService is pubkey-scoped and swept
+    // separately; this second store is not scoped and was missed.
+    SoundLibraryService.customSoundsStorageKey,
     // Report aggregation
     'trusted_reporters',
     'report_cache',

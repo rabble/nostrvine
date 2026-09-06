@@ -4,10 +4,18 @@
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/services/account_label_service.dart';
+import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -190,6 +198,46 @@ void main() {
         expect(prefs.containsKey('bookmark_sets'), isFalse);
         expect(prefs.containsKey('global_bookmarks'), isFalse);
       });
+
+      // Each entry is a key a live service writes that the account-switch
+      // sweep did not name. They are grouped because the failure is one
+      // defect, not eight: the sweep list was never linked to the code that
+      // writes these keys, so a key added later was never added here.
+      final unsweptUserKeys = <String, String>{
+        'account self-labels applied to new uploads':
+            AccountLabelService.accountLabelStorageKey,
+        'per-category content filter choices':
+            ContentFilterService.filterPrefsStorageKey,
+        'the content-filter migration flag guarding those choices':
+            ContentFilterService.filterMigratedStorageKey,
+        'muted DM conversations': mutedConversationsStorageKey,
+        'declared content language published on videos':
+            LanguagePreferenceService.prefsKey,
+        'the unscoped custom sound library':
+            SoundLibraryService.customSoundsStorageKey,
+        'whether this account audio is reusable by others':
+            AudioSharingPreferenceService.prefsKey,
+        'the Divine-hosted-only feed filter':
+            DivineHostFilterService.showDivineHostedOnlyStorageKey,
+        'the verified-only feed filter':
+            VideoProvenanceFilterService.showVerifiedOnlyStorageKey,
+      };
+
+      for (final entry in unsweptUserKeys.entries) {
+        test('identity change clears ${entry.key}', () async {
+          await prefs.setString(entry.value, 'value_from_departing_account');
+
+          await service.clearUserSpecificData(isIdentityChange: true);
+
+          expect(
+            prefs.containsKey(entry.value),
+            isFalse,
+            reason:
+                'the incoming account must not inherit "${entry.value}" '
+                'from the account that just signed out',
+          );
+        });
+      }
 
       test(
         'clears the labelers the departing account chose to trust',
