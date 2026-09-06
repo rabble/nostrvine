@@ -1338,6 +1338,37 @@ void main() {
       },
     );
 
+    testWidgets(
+      'ImageWithDimensionsListener leaves the framework its own image handle',
+      (tester) async {
+        final image = _syncImage(640, 360);
+        addTearDown(image.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImageWithDimensionsListener(
+              imageProvider: _syncImageProvider(image),
+              onImageDimensionsResolved: (_, _) {},
+              child: const SizedBox.shrink(),
+            ),
+          ),
+        );
+
+        // More than one open handle means the framework got a clone of its
+        // own, so the `image.dispose` above is not the last one. Drop the
+        // clone from [_SyncImageProvider] and this reads exactly one: the
+        // cache's deferred disposal then trips `ImageInfo.dispose`'s
+        // open-handle assertion inside whichever unrelated test pumps the
+        // next frame.
+        expect(
+          image.debugGetOpenHandleStackTraces(),
+          hasLength(greaterThan(1)),
+        );
+      },
+    );
+
     testWidgets('displays flat placeholder when only blurhash is available', (
       tester,
     ) async {
