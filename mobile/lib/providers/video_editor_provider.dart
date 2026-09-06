@@ -41,6 +41,8 @@ import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
@@ -469,9 +471,24 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
-  /// Set the "Inspired By" reference to a person (NIP-27 npub in content).
-  void setInspiredByPerson(String npub) {
-    state = state.copyWith(inspiredByNpub: npub, clearInspiredByVideo: true);
+  /// Set the "Inspired By" creators, in the order the author picked them.
+  ///
+  /// The first is the one the caption's NIP-27 content line names; the rest
+  /// are credited by `inspired-by` p-tags. Passing an empty list clears the
+  /// attribution.
+  void setInspiredByPeople(List<String> npubs) {
+    final deduped = <String>[];
+    for (final npub in npubs) {
+      final trimmed = npub.trim();
+      if (trimmed.isNotEmpty && !deduped.contains(trimmed)) {
+        deduped.add(trimmed);
+      }
+    }
+    state = state.copyWith(
+      inspiredByNpubs: deduped,
+      clearInspiredByNpub: deduped.isEmpty,
+      clearInspiredByVideo: true,
+    );
     triggerAutosave();
   }
 
@@ -594,7 +611,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       editorEditingParameters: state.editorEditingParameters?.toMap(),
       collaboratorPubkeys: state.collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
-      inspiredByNpub: state.inspiredByNpub,
+      inspiredByNpubs: state.inspiredByNpubs,
       // Always the timeline's own credits, never a remembered set: a credit is
       // a factual claim about footage that is *in* this video, and drafts
       // persist each clip's credits on the clip itself. Falling back to the
@@ -737,8 +754,35 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
           .toSet(),
       collaboratorPubkeys: video.collaboratorPubkeys.toSet(),
       inspiredByVideo: video.inspiredByVideo,
-      inspiredByNpub: video.inspiredByNpub,
+      inspiredByNpubs: _inspiredByNpubsFor(video),
     );
+  }
+
+  /// Every creator a published video credits, as npubs, primary first.
+  ///
+  /// The content line names one and the `inspired-by` p-tags carry the whole
+  /// set, so editing a video has to merge both or the extra creators would be
+  /// silently dropped on the next publish.
+  static List<String> _inspiredByNpubsFor(VideoEvent video) {
+    final npubs = <String>[];
+    final seenHex = <String>{};
+
+    void add(String? hex, String? npub) {
+      final normalizedHex = hex?.trim().toLowerCase();
+      if (normalizedHex == null || normalizedHex.isEmpty) return;
+      if (!seenHex.add(normalizedHex)) return;
+      npubs.add(npub ?? NostrKeyUtils.encodePubKey(normalizedHex));
+    }
+
+    final contentNpub = video.inspiredByNpub;
+    if (contentNpub != null) {
+      add(npubToHexOrNull(contentNpub), contentNpub);
+    }
+    for (final hex in video.inspiredByPubkeys) {
+      add(hex, null);
+    }
+
+    return npubs;
   }
 
   void triggerAutosave() {
@@ -1090,7 +1134,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         ref.read(authServiceProvider).currentPublicKeyHex ?? '',
       ),
       inspiredByVideo: draft.inspiredByVideo,
-      inspiredByNpub: draft.inspiredByNpub,
+      inspiredByNpubs: draft.inspiredByNpubs,
       selectedSound: draft.selectedSound,
       seedSelectedSoundAsAudioTrack: false,
       contentWarnings: draft.contentWarnings,

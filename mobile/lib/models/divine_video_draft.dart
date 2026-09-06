@@ -47,7 +47,7 @@ class DivineVideoDraft {
     this.finalRenderedClip,
     this.collaboratorPubkeys = const {},
     this.inspiredByVideo,
-    this.inspiredByNpub,
+    this.inspiredByNpubs = const [],
     this.clipSourceCredits = const [],
     this.selectedSound,
     this.audioShareAttribution,
@@ -73,7 +73,7 @@ class DivineVideoDraft {
     DivineVideoClip? finalRenderedClip,
     Set<String> collaboratorPubkeys = const {},
     InspiredByInfo? inspiredByVideo,
-    String? inspiredByNpub,
+    List<String> inspiredByNpubs = const [],
     List<ClipSourceCredit> clipSourceCredits = const [],
     AudioEvent? selectedSound,
     AudioShareAttribution? audioShareAttribution,
@@ -103,7 +103,7 @@ class DivineVideoDraft {
       finalRenderedClip: finalRenderedClip,
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
-      inspiredByNpub: inspiredByNpub,
+      inspiredByNpubs: inspiredByNpubs,
       clipSourceCredits: clipSourceCredits,
       selectedSound: selectedSound,
       audioShareAttribution: audioShareAttribution,
@@ -204,7 +204,7 @@ class DivineVideoDraft {
               json['inspiredByVideo'] as Map<String, dynamic>,
             )
           : null,
-      inspiredByNpub: json['inspiredByNpub'] as String?,
+      inspiredByNpubs: _inspiredByNpubsFromJson(json),
       clipSourceCredits: ClipSourceCredit.listFromJson(
         json['clipSourceCredits'],
       ),
@@ -300,8 +300,15 @@ class DivineVideoDraft {
   /// Reference to a specific video that inspired this one (a-tag).
   final InspiredByInfo? inspiredByVideo;
 
-  /// NIP-27 npub reference for general "Inspired By" a creator.
-  final String? inspiredByNpub;
+  /// NIP-27 npub references for the creators this video credits.
+  ///
+  /// Only the first reaches the caption's NIP-27 content line; the rest are
+  /// carried by `inspired-by` p-tags.
+  final List<String> inspiredByNpubs;
+
+  /// The creator named by the NIP-27 content line, or null when none is set.
+  String? get inspiredByNpub =>
+      inspiredByNpubs.isEmpty ? null : inspiredByNpubs.first;
 
   /// Factual credits for clips reused from published videos.
   final List<ClipSourceCredit> clipSourceCredits;
@@ -379,7 +386,7 @@ class DivineVideoDraft {
     bool clearFinalRenderedClip = false,
     Set<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
-    String? inspiredByNpub,
+    List<String>? inspiredByNpubs,
     List<ClipSourceCredit>? clipSourceCredits,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
@@ -422,7 +429,7 @@ class DivineVideoDraft {
         : (finalRenderedClip ?? this.finalRenderedClip),
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
-    inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+    inspiredByNpubs: inspiredByNpubs ?? this.inspiredByNpubs,
     clipSourceCredits: clipSourceCredits ?? this.clipSourceCredits,
     selectedSound: clearSelectedSound
         ? null
@@ -481,7 +488,7 @@ class DivineVideoDraft {
       finalRenderedClip: finalRenderedClip,
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
-      inspiredByNpub: inspiredByNpub,
+      inspiredByNpubs: inspiredByNpubs,
       clipSourceCredits: clipSourceCredits,
       selectedSound: selectedSound,
       audioShareAttribution: audioShareAttribution,
@@ -491,6 +498,18 @@ class DivineVideoDraft {
       thumbnailTimestamp: thumbnailTimestamp,
       customThumbnailPath: customThumbnailPath,
     );
+  }
+
+  /// Reads the credited-creator list, accepting the pre-list `inspiredByNpub`
+  /// key so a draft saved before this became a list still restores.
+  static List<String> _inspiredByNpubsFromJson(Map<String, dynamic> json) {
+    final raw = json['inspiredByNpubs'];
+    if (raw is List) {
+      return raw.whereType<String>().where((n) => n.isNotEmpty).toList();
+    }
+    final legacy = json['inspiredByNpub'];
+    if (legacy is String && legacy.isNotEmpty) return [legacy];
+    return const [];
   }
 
   Map<String, dynamic> toJson() => {
@@ -518,7 +537,7 @@ class DivineVideoDraft {
     if (collaboratorPubkeys.isNotEmpty)
       'collaboratorPubkeys': collaboratorPubkeys.toList(),
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
-    if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
+    if (inspiredByNpubs.isNotEmpty) 'inspiredByNpubs': inspiredByNpubs,
     if (clipSourceCredits.isNotEmpty)
       'clipSourceCredits': clipSourceCredits
           .map((credit) => credit.toJson())
@@ -614,7 +633,7 @@ class DivineVideoDraft {
           videoReplyContext != null ||
           collaboratorPubkeys.isNotEmpty ||
           inspiredByVideo != null ||
-          inspiredByNpub != null ||
+          inspiredByNpubs.isNotEmpty ||
           clipSourceCredits.isNotEmpty ||
           expireTime != null);
 }
