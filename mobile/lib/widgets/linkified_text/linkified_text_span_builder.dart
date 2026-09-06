@@ -44,8 +44,15 @@ class LinkifiedTextSpanBuilder {
     this.initialHeartBudget = kDivineHeartMaxPainted,
   });
 
+  /// Token precedence: URL/email, hashtag, bech32, bare hex, then `@mention`.
+  ///
+  /// The mention alternative admits a dot or hyphen only when a word
+  /// character follows it, because Divine handles carry both — a NIP-05 local
+  /// part allows `.`, `-` and `_` — while a trailing one is sentence
+  /// punctuation. That keeps `@st.allison.` a mention of `st.allison` and a
+  /// period, and leaves the 31-character cap intact.
   static final _combinedRegex = RegExp(
-    r'((?:(?<![a-zA-Z0-9._%+-])[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w.-])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
+    r'((?:(?<![a-zA-Z0-9._%+-])[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w.-])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])|@([a-zA-Z](?:[a-zA-Z0-9_]|[.-](?=[a-zA-Z0-9_])){0,30})',
     caseSensitive: false,
   );
 

@@ -12,7 +12,7 @@ const _typedRemoteLookupLimit = 5;
 const _profileSearchLimit = 10;
 
 final _linkifiedTokenRegex = RegExp(
-  r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
+  r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])|@([a-zA-Z](?:[a-zA-Z0-9_]|[.-](?=[a-zA-Z0-9_])){0,30})',
   caseSensitive: false,
 );
 
@@ -188,33 +188,35 @@ class MentionResolutionService {
     List<_TypedMention> mentions, {
     required String? currentUserPubkey,
   }) async {
-    final uniqueTokens = <String>[];
+    // Deduplicate by the normalized token, which is also the key the caller
+    // maps replacements back through, but search on the token as typed:
+    // profile search is a substring match, so the separator-stripped `ogab`
+    // cannot find the handle `OG-AB` that produced it.
+    final queryByToken = <String, String>{};
     for (final mention in mentions) {
-      if (!uniqueTokens.contains(mention.normalizedToken)) {
-        uniqueTokens.add(mention.normalizedToken);
-      }
+      queryByToken.putIfAbsent(mention.normalizedToken, () => mention.token);
     }
 
     final pubkeyByToken = <String, String>{};
     final unresolvedTokens = <String>[];
     var remoteLookups = 0;
 
-    for (final token in uniqueTokens) {
+    for (final MapEntry(key: token, value: query) in queryByToken.entries) {
       String? resolved;
       try {
         final localCandidates = await _profileRepository.searchUsersLocally(
-          query: token,
+          query: query,
           limit: _profileSearchLimit,
         );
-        resolved = _exactSingleMatch(token, localCandidates);
+        resolved = _exactSingleMatch(query, localCandidates);
 
         if (resolved == null && remoteLookups < _typedRemoteLookupLimit) {
           remoteLookups += 1;
           final apiCandidates = await _profileRepository.searchUsersFromApi(
-            query: token,
+            query: query,
             limit: _profileSearchLimit,
           );
-          resolved = _exactSingleMatch(token, apiCandidates);
+          resolved = _exactSingleMatch(query, apiCandidates);
         }
       } on Exception {
         resolved = null;
