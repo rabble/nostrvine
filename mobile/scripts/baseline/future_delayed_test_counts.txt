@@ -17,7 +17,7 @@ test/blocs/dm/conversation/conversation_bloc_test.dart	25
 test/blocs/dm/conversation_list/conversation_list_bloc_test.dart	9
 test/blocs/dm/conversation_list/protected_minor_inbox_gate_impl_test.dart	3
 test/blocs/dm/inline_reel_reply/inline_reel_reply_cubit_test.dart	1
-test/blocs/dm/reactions/conversation_reactions_cubit_test.dart	22
+test/blocs/dm/reactions/conversation_reactions_cubit_test.dart	35
 test/blocs/dm/restore_status/dm_restore_status_cubit_test.dart	1
 test/blocs/email_verification/email_verification_cubit_test.dart	10
 test/blocs/follow_list_search/follow_list_search_bloc_test.dart	9
@@ -74,7 +74,7 @@ test/notifications/badge_converges_after_tap_read_back_test.dart	8
 test/notifications/bloc/notification_feed_bloc_test.dart	23
 test/observability/divine_bloc_observer_test.dart	8
 test/performance/camera_initialization_benchmark_test.dart	6
-test/providers/account_deletion_recovery_providers_test.dart	1
+test/providers/account_deletion_recovery_providers_test.dart	4
 test/providers/account_enforcement_providers_test.dart	2
 test/providers/auth_providers_test.dart	3
 test/providers/auth_rpc_capability_provider_test.dart	1
@@ -131,7 +131,7 @@ test/services/event_api_client_test.dart	1
 test/services/event_router_test.dart	1
 test/services/foreground_idle_warmup_coordinator_test.dart	3
 test/services/moderation_label_service_test.dart	2
-test/services/notification_service_test.dart	11
+test/services/notification_service_test.dart	12
 test/services/official_accounts_service_test.dart	2
 test/services/outgoing_dm_retry_service_test.dart	4
 test/services/pending_action_service_test.dart	3
