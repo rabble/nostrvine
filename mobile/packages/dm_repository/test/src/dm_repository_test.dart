@@ -16639,6 +16639,46 @@ void main() {
         expect(result.followed, isEmpty);
         expect(result.requests, isEmpty);
       });
+
+      // A participant set that collapses to the viewer alone is a
+      // self-conversation, which Divine does not support (#8261). Before
+      // #7683 these fell through `Set.every()`'s vacuous truth on an empty
+      // set and landed in the inbox — the loudest surface — even with
+      // nothing followed. They belong in requests, where the existing
+      // diagnostics branch also logs them.
+      test('self-only participants go to requests, not the inbox', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, hasLength(1));
+      });
+
+      // `[self, self]` is the shape `_cleanupSelfConversations` targets and
+      // the one a pre-#2824 self-wrap persisted.
+      test('duplicated self participants go to requests', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyA],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, hasLength(1));
+      });
     });
 
     group('mergeAndSort', () {

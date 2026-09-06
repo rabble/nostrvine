@@ -7619,6 +7619,26 @@ class DmRepository {
   /// from `participants.length > 2` and overwritten on every upsert, so
   /// it can drift from a row's real participants — which was stranding
   /// followed 1:1 peers under "Message requests" (#5374).
+  ///
+  /// A participant set that collapses to the viewer alone is a
+  /// self-conversation, which Divine does not support (#8261). It is
+  /// classified as a **request**, deliberately: `Set.every` is vacuously
+  /// true on an empty set, so without the `isNotEmpty` guard such a row
+  /// would land in the inbox — the most visible surface — and render as a
+  /// conversation with yourself, since every caller resolves the
+  /// counterparty via `orElse: () => participantPubkeys.first`. #2219
+  /// routed the empty case to the followed list through an explicit
+  /// `otherPubkeys.isEmpty ||` disjunct; #6294 folded that into `every`,
+  /// leaving the behaviour resting on vacuous truth with nothing naming
+  /// it. Routing to requests also puts the row through the diagnostics
+  /// branch below, which is the only signal that one exists at all.
+  ///
+  /// No live writer can persist such a row: the NIP-17 ingest rejects a
+  /// collapsed participant list twice (#2824), and every send path sets
+  /// `currentUserHasSent`, which excludes the row from this method's only
+  /// input. It is reachable only for a legacy row read during the
+  /// `identityKnown` -> `nostrReady` window, before `setCredentials`
+  /// installs the post-auth maintenance that both cleans and backfills it.
   static ({List<DmConversation> followed, List<DmConversation> requests})
   classifyPotentialRequests(
     List<DmConversation> potentialRequests, {
@@ -7638,7 +7658,12 @@ class DmRepository {
       // 1:1 or group alike. Derived from actual participants rather than
       // the stored `isGroup` flag, which can drift from the row's real
       // participants and mis-route followed 1:1 peers to requests (#5374).
-      final allFollowed = otherPubkeys.every(isFollowing);
+      //
+      // `isNotEmpty` first: an empty set passes `every` vacuously, which
+      // would route a self-collapsed row to the inbox. Same guard, and the
+      // same reason, as `allParticipantsApprovedForMinor` (#7683).
+      final allFollowed =
+          otherPubkeys.isNotEmpty && otherPubkeys.every(isFollowing);
 
       if (allFollowed) {
         followed.add(conversation);
