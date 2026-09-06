@@ -165,10 +165,9 @@ on the same file, so the connection is not lost.
 
 Why A over B, specifically:
 
-1. **#7651 is assigned to someone else**, and my standing rule is that
-   reassignment is the assignee's call, not mine. Silently absorbing her
-   workstream item into my PR is the same failure mode Liz asked us to stop —
-   a PR quietly superseding an issue still sitting on someone's plate.
+1. **#7651 is already assigned.** Absorbing its scope here would quietly
+   supersede an issue that remains open on another contributor's workstream.
+   Keeping the scopes separate preserves clear ownership and issue state.
 2. The two issues are adjacent, not interdependent. §3's "combine" rule is
    about work that *cannot* land separately; these can, in either order.
 3. A keeps the review to a single claim — "this symbol is dead, here is the
