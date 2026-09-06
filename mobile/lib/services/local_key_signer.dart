@@ -63,7 +63,7 @@ class LocalKeySigner implements IsolateDecryptSigner {
       return _keyContainer.withPrivateKey<String>((privateKeyHex) {
         return schnorr.sign(privateKeyHex, digest, _canonicalPayloadAux);
       });
-    } on Exception catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to sign canonical payload: $e',
         name: 'LocalKeySigner',
@@ -80,7 +80,7 @@ class LocalKeySigner implements IsolateDecryptSigner {
         event.sign(privateKeyHex);
         return event;
       });
-    } on Exception catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to sign event: $e',
         name: 'LocalKeySigner',
@@ -100,7 +100,7 @@ class LocalKeySigner implements IsolateDecryptSigner {
         final agreement = NIP04.getAgreement(privateKeyHex);
         return NIP04.encrypt(plaintext, agreement, pubkey);
       });
-    } on Exception catch (e) {
+    } on Object catch (e) {
       Log.error(
         'NIP-04 encryption failed: $e',
         name: 'LocalKeySigner',
@@ -117,7 +117,7 @@ class LocalKeySigner implements IsolateDecryptSigner {
         final agreement = NIP04.getAgreement(privateKeyHex);
         return NIP04.decrypt(ciphertext, agreement, pubkey);
       });
-    } on Exception catch (e) {
+    } on Object catch (e) {
       Log.error(
         'NIP-04 decryption failed: $e',
         name: 'LocalKeySigner',

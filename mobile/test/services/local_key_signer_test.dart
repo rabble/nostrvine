@@ -123,6 +123,48 @@ void main() {
         expect(ciphertext, isNot(equals(plaintext)));
       });
 
+      // #7332: NIP-04 has no un-awaited-future bug — its callback is
+      // synchronous — but `on Exception` still let an `Error` through.
+      // `NIP04.getPubkey` catches the off-curve `Error` from `liftX`, leaves
+      // `y` null, then dereferences `y!`, so an off-curve pubkey raised a
+      // `TypeError` out of a method declared `Future<String?>`.
+      test('encrypt returns null for an off-curve pubkey', () async {
+        when(() => mockKeyContainer.withPrivateKey<String?>(any())).thenAnswer((
+          invocation,
+        ) {
+          final callback =
+              invocation.positionalArguments[0] as String? Function(String);
+          return callback(testPrivateKey);
+        });
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        expect(await signer.encrypt(offCurvePubkey, 'Hello!'), isNull);
+      });
+
+      test('decrypt returns null for an off-curve pubkey', () async {
+        when(() => mockKeyContainer.withPrivateKey<String?>(any())).thenAnswer((
+          invocation,
+        ) {
+          final callback =
+              invocation.positionalArguments[0] as String? Function(String);
+          return callback(testPrivateKey);
+        });
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        // The IV must be real base64, or `base64.decode` throws a
+        // FormatException — an Exception, which the old handler already
+        // caught — and we never reach the off-curve `Error` path.
+        expect(
+          await signer.decrypt(
+            offCurvePubkey,
+            'AA==?iv=AAAAAAAAAAAAAAAAAAAAAA==',
+          ),
+          isNull,
+        );
+      });
+
       test('decrypt decrypts ciphertext', () async {
         when(() => mockKeyContainer.withPrivateKey<String?>(any())).thenAnswer((
           invocation,
