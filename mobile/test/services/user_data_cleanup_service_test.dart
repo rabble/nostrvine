@@ -190,13 +190,13 @@ void main() {
       });
 
       test('clears bookmark-related keys', () async {
-        await prefs.setStringList('bookmark_sets', ['set1']);
         await prefs.setString('global_bookmarks', 'bookmark_data');
+        await prefs.setInt('global_bookmarks_revision', 3);
 
         await service.clearUserSpecificData();
 
-        expect(prefs.containsKey('bookmark_sets'), isFalse);
         expect(prefs.containsKey('global_bookmarks'), isFalse);
+        expect(prefs.containsKey('global_bookmarks_revision'), isFalse);
       });
 
       // Each entry is a key a live service writes that the account-switch
@@ -801,29 +801,59 @@ void main() {
     });
 
     group('userSpecificKeys', () {
-      test('contains expected key categories', () {
+      // Asserting membership by literal is what let this list rot: the
+      // previous version of this test pinned three keys no code had written
+      // for months, so deleting them turned the suite red. Assert instead
+      // that the list is composed from the constants the writing services
+      // own, which is a property a renamed key cannot satisfy silently.
+      test('is composed from the constants the writing services own', () {
         const keys = UserDataCleanupService.userSpecificKeys;
 
-        // List-related
-        expect(keys, contains('curated_lists'));
-        expect(keys, contains('curated_lists_default_deleted'));
-        expect(keys, contains('subscribed_list_ids'));
-        expect(keys, contains('user_lists'));
+        expect(
+          keys,
+          containsAll(<String>[
+            ModerationLabelService.subscribedLabelersStorageKey,
+            ModerationLabelService.followingModerationEnabledStorageKey,
+            AccountLabelService.accountLabelStorageKey,
+            ContentFilterService.filterPrefsStorageKey,
+            ContentFilterService.filterMigratedStorageKey,
+            LanguagePreferenceService.prefsKey,
+            AudioSharingPreferenceService.prefsKey,
+            DivineHostFilterService.showDivineHostedOnlyStorageKey,
+            VideoProvenanceFilterService.showVerifiedOnlyStorageKey,
+            SoundLibraryService.customSoundsStorageKey,
+            mutedConversationsStorageKey,
+          ]),
+        );
+      });
 
-        // Bookmark-related
-        expect(keys, contains('bookmark_sets'));
-        expect(keys, contains('global_bookmarks'));
-
-        // Mute-related
-        expect(keys, contains('muted_items'));
-
-        // History
-        expect(keys, contains('seen_video_ids'));
-        expect(keys, contains('content_reports_history'));
-
-        // TOS
-        expect(keys, contains('age_verified_16_plus'));
-        expect(keys, contains('terms_accepted_at'));
+      test('contains no key that nothing in the app writes', () {
+        // Every entry below is a literal whose owning service has no
+        // constant to reference yet. They are the remaining conversion work;
+        // a key that reaches this list without a writer is the #8314 defect.
+        expect(
+          UserDataCleanupService.userSpecificKeys,
+          isNot(
+            anyElement(
+              isIn(<String>[
+                'user_lists',
+                'bookmark_sets',
+                'bookmark_published_hashes',
+                'bookmark_pending_changes',
+                'muted_items',
+                'content_moderation_local_mutes',
+                'content_moderation_subscribed_lists',
+                'subscribed_labelers',
+                'label_cache',
+                'trusted_reporters',
+                'report_cache',
+              ]),
+            ),
+          ),
+          reason:
+              'these keys had no writer when they were removed; '
+              'reintroducing one would be a silent no-op again',
+        );
       });
 
       test('does NOT contain device/app settings', () {

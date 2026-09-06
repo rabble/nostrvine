@@ -65,17 +65,9 @@ class UserDataCleanupService {
     'curated_lists',
     'curated_lists_default_deleted',
     'subscribed_list_ids',
-    'user_lists',
     // Bookmark services
-    'bookmark_sets',
     'global_bookmarks',
     'global_bookmarks_revision',
-    'bookmark_published_hashes',
-    'bookmark_pending_changes',
-    // Mute/moderation services
-    'muted_items',
-    'content_moderation_local_mutes',
-    'content_moderation_subscribed_lists',
     // Content history
     'content_reports_history',
     'content_deletions_history',
@@ -83,8 +75,6 @@ class UserDataCleanupService {
     'seen_video_ids',
     'seen_video_metrics',
     // Labeler subscriptions
-    'subscribed_labelers',
-    'label_cache',
     ModerationLabelService.subscribedLabelersStorageKey,
     ModerationLabelService.followingModerationEnabledStorageKey,
     // Content labels this account applies to its own uploads
@@ -106,9 +96,6 @@ class UserDataCleanupService {
     // Sound library. SavedSoundsService is pubkey-scoped and swept
     // separately; this second store is not scoped and was missed.
     SoundLibraryService.customSoundsStorageKey,
-    // Report aggregation
-    'trusted_reporters',
-    'report_cache',
     // TOS acceptance (user must re-accept on new account)
     'age_verified_16_plus',
     'terms_accepted_at',
