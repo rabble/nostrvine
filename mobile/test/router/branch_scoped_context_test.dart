@@ -5,22 +5,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/router/routes/shell.dart' show branchPage;
 
-/// Mirrors `_branchPage` in app_router.dart: scopes [pageContextProvider] to
-/// this branch's own route so it doesn't read the globally-active route.
-Page<void> _scopedPage(GoRouterState st, Widget child) =>
-    NoTransitionPage<void>(
-      key: st.pageKey,
-      child: ProviderScope(
-        overrides: [
-          pageContextProvider.overrideWith(
-            (ref) => Stream<RouteContext>.value(parseRoute(st.uri.path)),
-          ),
-        ],
-        child: child,
-      ),
-    );
+/// Counts how many times it is built from scratch, so a test can tell a
+/// re-scope (new element, new State) from a plain rebuild.
+class _MountCounter extends StatefulWidget {
+  const _MountCounter();
+
+  static int mounts = 0;
+
+  @override
+  State<_MountCounter> createState() => _MountCounterState();
+}
+
+class _MountCounterState extends State<_MountCounter> {
+  @override
+  void initState() {
+    super.initState();
+    _MountCounter.mounts++;
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
+}
 
 class _Probe extends ConsumerWidget {
   const _Probe(this.label);
@@ -54,7 +63,7 @@ GoRouter _buildRouter() => GoRouter(
             GoRoute(
               path: '/home/:index',
               pageBuilder: (context, state) =>
-                  _scopedPage(state, const _Probe('home')),
+                  branchPage(state, const _Probe('home')),
             ),
           ],
         ),
@@ -64,7 +73,7 @@ GoRouter _buildRouter() => GoRouter(
             GoRoute(
               path: '/explore',
               pageBuilder: (context, state) =>
-                  _scopedPage(state, const _Probe('explore')),
+                  branchPage(state, const _Probe('explore')),
             ),
           ],
         ),
@@ -82,7 +91,13 @@ void main() {
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -97,6 +112,152 @@ void main() {
       // NOT blank to the active 'explore' route) — that is what gives the
       // cross-fade two live tabs to dissolve between.
       expect(find.text('home scoped=home'), findsOneWidget);
+    });
+
+    // go_router keys a branch page on the route PATTERN, so `/profile/<a>`
+    // and `/profile/<b>` arrive with the identical `state.pageKey`. Before
+    // #7851's patrol the scope was therefore never re-created for a changed
+    // path parameter, and the single-value override replayed the first npub
+    // for the life of the element: the shell app bar named the account the
+    // user tapped while the body below it still showed the previous one —
+    // wrong name, wrong npub, wrong counts, and a Follow button pointed at
+    // an account the user never opened.
+    testWidgets('a changed path parameter re-scopes the branch', (
+      tester,
+    ) async {
+      const npubA =
+          'npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt';
+      const npubB =
+          'npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp6yfjr';
+
+      final router = GoRouter(
+        initialLocation: '/profile/$npubA',
+        routes: [
+          StatefulShellRoute(
+            builder: (context, state, shell) => shell,
+            navigatorContainerBuilder: (context, shell, children) =>
+                AppShellBranchContainer(
+                  currentIndex: shell.currentIndex,
+                  children: children,
+                ),
+            branches: [
+              StatefulShellBranch(
+                initialLocation: '/profile/$npubA',
+                routes: [
+                  GoRoute(
+                    path: '/profile/:npub',
+                    pageBuilder: (context, state) => branchPage(
+                      state,
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final ctx = ref
+                              .watch(pageContextProvider)
+                              .asData
+                              ?.value;
+                          return Text(
+                            'scoped=${ctx?.npub ?? 'none'}',
+                            textDirection: TextDirection.ltr,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('scoped=$npubA'), findsOneWidget);
+
+      router.go('/profile/$npubB');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('scoped=$npubB'),
+        findsOneWidget,
+        reason:
+            'the branch must re-scope to the npub actually navigated to; '
+            "replaying the first one renders another account's profile",
+      );
+      expect(find.text('scoped=$npubA'), findsNothing);
+    });
+
+    // ExploreFeedContent and ProfileVideoFeedView both write their own URL
+    // from `onPageChanged`, so a feed rewrites its path on EVERY swipe.
+    // Keying the branch scope on the whole path would therefore dispose the
+    // video players and the scroll position mid-swipe — which is why
+    // `RouteContext.subjectKey` leaves `videoIndex` out.
+    testWidgets('paging within the same subject does not re-scope', (
+      tester,
+    ) async {
+      _MountCounter.mounts = 0;
+
+      final router = GoRouter(
+        initialLocation: '/explore/0',
+        routes: [
+          StatefulShellRoute(
+            builder: (context, state, shell) => shell,
+            navigatorContainerBuilder: (context, shell, children) =>
+                AppShellBranchContainer(
+                  currentIndex: shell.currentIndex,
+                  children: children,
+                ),
+            branches: [
+              StatefulShellBranch(
+                initialLocation: '/explore/0',
+                routes: [
+                  GoRoute(
+                    path: '/explore/:index',
+                    pageBuilder: (context, state) =>
+                        branchPage(state, const _MountCounter()),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(_MountCounter.mounts, 1);
+
+      // Three swipes.
+      for (final index in [1, 2, 3]) {
+        router.go('/explore/$index');
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        _MountCounter.mounts,
+        1,
+        reason:
+            'paging a feed must not tear down its subtree; a feed rewrites '
+            'its own URL on every swipe',
+      );
     });
 
     testWidgets('branch-scoped pageContext ignores query parameters', (
@@ -120,7 +281,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: '/profile/:npub',
-                    pageBuilder: (context, state) => _scopedPage(
+                    pageBuilder: (context, state) => branchPage(
                       state,
                       Consumer(
                         builder: (context, ref, _) {
@@ -143,7 +304,13 @@ void main() {
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 

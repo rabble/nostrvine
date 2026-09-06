@@ -757,8 +757,15 @@ class _ClosedThreadNotice extends StatelessWidget {
                 color: context.vineColors.onSurfaceVariant,
               ),
             ),
+            // `semanticLabel` is what makes this announce as a button:
+            // `DivineButton` only wires `Semantics(button: true)` when it is
+            // given one. The composer is gone here, so this is the screen's
+            // only control and the only route to a moderation account that
+            // reads — without the flag a screen reader gets a third line of
+            // prose after the title and body, naming no way out.
             DivineButton(
               label: l10n.dmRetiredThreadOpenSupport,
+              semanticLabel: l10n.dmRetiredThreadOpenSupport,
               type: DivineButtonType.secondary,
               expanded: true,
               onPressed: currentPubkey.isEmpty
