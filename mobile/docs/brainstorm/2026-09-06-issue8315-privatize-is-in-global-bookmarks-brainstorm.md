@@ -195,7 +195,7 @@ scope creep into #7135's territory.
       and `BookmarksRepository`.
 - [x] Does codegen need re-running? No — mocktail only, zero `.mocks.dart`.
 - [x] Does the 100 % coverage gate move? No — lcov byte-identical.
-- [ ] Commit/PR wording: note that the existing four `_private` twins are
+- [x] Commit/PR wording: note that the existing four `_private` twins are
       `_serialized` wrappers whereas this one narrows the type — same shape,
       different motive. One sentence in the PR body.
 
@@ -208,7 +208,7 @@ None. No design input, no protocol decision, no new package, no dependency.
 | Observation | Where it belongs |
 |---|---|
 | `profile_saved_videos_bloc.dart:173` filters `type == 'e'` and will drop `a`-tagged bookmarks | Already named in **#7135** |
-| `.claude/rules/testing.md` lists only `divine_ui` as strict-coverage, but **30 of 58** package workflows effectively gate at 100 | Separate `docs:` issue |
+| `.claude/rules/testing.md` lists only `divine_ui` as strict-coverage, but **30 of 58** package workflows effectively gate at 100 | Already tracked by **#6269** |
 | `addToGlobalBookmarks` / `removeFromGlobalBookmarks` have no *app* caller | Not comparable — both are directly exercised by package tests; only `isInGlobalBookmarks` is at 0/0/0 |
 
 ## Next Step

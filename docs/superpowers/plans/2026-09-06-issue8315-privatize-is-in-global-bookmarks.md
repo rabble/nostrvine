@@ -117,7 +117,8 @@ private-items path the #7136 dartdoc describes. They are the regression net.
 - **Worktree**: `.worktrees/8315-privatize-isinglobalbookmarks`
   **Branch**: `refactor/8315-privatize-is-in-global-bookmarks`, off `origin/main`
   (`d061eccaf`). Already created and clean; verification was run there and reverted.
-- **One commit**, one finding.
+- **Separate commits** for the repository change, its supporting documentation,
+  and any review cleanup; one finding overall.
 - **PR title** (Conventional Commit, effect in plain language rather than the
   symbol — per `AGENTS.md`):
   `refactor(bookmarks): stop exporting a bookmark-lookup helper nothing outside the package calls`
@@ -126,7 +127,8 @@ private-items path the #7136 dartdoc describes. They are the regression net.
   deleting (it is the implementation of the method that *is* used, and the
   general form #7135 needs), then what it deliberately leaves alone
   (the saved-videos `type == 'e'` filter → #7135; the stale strict-coverage
-  list in `.claude/rules/testing.md` → separate docs issue), then verification.
+  list in `.claude/rules/testing.md` → already tracked by #6269), then
+  verification.
   Include `Closes #8315` outside backticks.
   Add one sentence noting the four existing `_private` twins are `_serialized`
   wrappers whereas this one narrows the type — same shape, different motive.
@@ -138,4 +140,4 @@ private-items path the #7136 dartdoc describes. They are the regression net.
 | Observation | Home |
 |---|---|
 | `profile_saved_videos_bloc.dart:173` filters `type == 'e'`, so `a`-tagged bookmarks would silently drop from Saved | Already named in **#7135** |
-| `.claude/rules/testing.md` names only `divine_ui` as strict-coverage, but **30 of 58** package workflows effectively gate at 100 (3 explicit, 27 relying on the VeryGood default) | Separate `docs:` issue |
+| `.claude/rules/testing.md` names only `divine_ui` as strict-coverage, but **30 of 58** package workflows effectively gate at 100 (3 explicit, 27 relying on the VeryGood default) | Already tracked by **#6269** |
