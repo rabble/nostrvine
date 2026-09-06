@@ -66,6 +66,42 @@ Working as the author is not the relaxed path — it is the stricter one:
   decide it yourself because you happen to hold the author's
   credentials.
 
+### Ground the review before choosing a review state
+
+These checks apply to every review, including report-only reviews and reviews
+where no branch modification is planned.
+
+After establishing authorship, pin the exact commit being reviewed. Verify
+every cited path, line range, identifier, and quoted snippet against that
+commit, not the current checkout or a reconstructed version of the code:
+
+```bash
+gh pr view <number> --json mergedAt,headRefOid
+git fetch origin pull/<number>/head
+git cat-file -e '<commit>^{commit}'
+git cat-file -e '<commit>:<path>'
+git show '<commit>:<path>' | sed -n '<start>,<end>p'
+git grep -n -F -- '<snippet>' '<commit>' -- '<path>'
+git log --all -S'<snippet>' -- '<path>'
+```
+
+The commit-object check must succeed before any path or snippet check. Treat a
+`fatal:` result or exit status 128 as a broken lookup and stop; it is not
+evidence that the cited content is absent. For `git grep`, exit status 1 means
+the lookup succeeded and the snippet was not found.
+
+The last command is supporting history only; the reviewed commit is the
+authority. A nearby comment that describes a rejected pattern is not evidence
+that the implementation contains that pattern. If a citation or claim cannot
+be grounded in the reviewed commit, remove the finding rather than softening
+or qualifying it.
+
+Check `mergedAt` before choosing a GitHub review state. Never submit
+`CHANGES_REQUESTED` after a pull request has merged: it cannot block the merge
+and reads as an outstanding author action. Use a plain `COMMENT` for useful
+retrospective feedback, or file a separately authorized issue when verified
+follow-up work is required.
+
 ---
 
 ## 2. Answer every review item, or say why not

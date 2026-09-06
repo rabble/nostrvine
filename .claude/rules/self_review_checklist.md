@@ -26,6 +26,11 @@ a fix. See [`pr_takeover.md`](pr_takeover.md).
   issue comment, clearly labelled.
 - [ ] If it's **someone else's**: every gate in `PR_REVIEW.md` clears
   before you push. Draft or feedback-only ⇒ read-only.
+- [ ] Pin `headRefOid`, fetch the PR head, and verify every cited path, line,
+  identifier, and snippet against that exact commit. A `fatal:` lookup or exit
+  status 128 stops the review; it does not disprove the finding. Check
+  `mergedAt` before choosing a review state, and never submit
+  `CHANGES_REQUESTED` after merge.
 - [ ] Every review item sorted into fixed / escalated / declined —
   including inline threads fetched via GraphQL, and outdated ones.
 - [ ] Unrequested changes called out separately from review fixes.
