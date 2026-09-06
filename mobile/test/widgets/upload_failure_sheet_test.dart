@@ -88,6 +88,14 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.uploadFailureSheetTitle), findsOneWidget);
+        expect(
+          tester
+              .widget<VineBottomSheetHeader>(
+                find.byType(VineBottomSheetHeader),
+              )
+              .showDragHandle,
+          isFalse,
+        );
       });
 
       testWidgets('localized error message from $PublishError kind', (

@@ -1321,6 +1321,145 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'enableDrag: false hides the drag handle in fixed mode by default',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      enableDrag: false,
+                      children: const [Text('Body')],
+                    ),
+                    child: const Text('Open Fixed Without Handle'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed Without Handle'));
+          await tester.pumpAndSettle();
+
+          expect(
+            tester
+                .widget<VineBottomSheetHeader>(
+                  find.byType(VineBottomSheetHeader),
+                )
+                .showDragHandle,
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets(
+        'enableDrag: false hides the drag handle in scrollable mode by default',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      enableDrag: false,
+                      children: const [Text('Body')],
+                    ),
+                    child: const Text('Open Scrollable Without Handle'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Scrollable Without Handle'));
+          await tester.pumpAndSettle();
+
+          expect(
+            tester
+                .widget<VineBottomSheetHeader>(
+                  find.byType(VineBottomSheetHeader),
+                )
+                .showDragHandle,
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets(
+        'an explicit drag handle overrides enableDrag: false',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      enableDrag: false,
+                      showDragHandle: true,
+                      children: const [Text('Body')],
+                    ),
+                    child: const Text('Open With Handle'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open With Handle'));
+          await tester.pumpAndSettle();
+
+          expect(
+            tester
+                .widget<VineBottomSheetHeader>(
+                  find.byType(VineBottomSheetHeader),
+                )
+                .showDragHandle,
+            isTrue,
+          );
+        },
+      );
+
+      testWidgets(
+        'a draggable sheet shows the drag handle by default',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      children: const [Text('Body')],
+                    ),
+                    child: const Text('Open Draggable'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Draggable'));
+          await tester.pumpAndSettle();
+
+          expect(
+            tester
+                .widget<VineBottomSheetHeader>(
+                  find.byType(VineBottomSheetHeader),
+                )
+                .showDragHandle,
+            isTrue,
+          );
+        },
+      );
     });
     group('onComplete', () {
       testWidgets(

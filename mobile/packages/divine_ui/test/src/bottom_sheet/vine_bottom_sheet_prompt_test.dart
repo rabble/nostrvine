@@ -489,6 +489,14 @@ void main() {
           // a simulated fling inside the scroll body is gesture-arena-flaky.
           final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
           expect(sheet.enableDrag, isFalse);
+          expect(
+            tester
+                .widget<VineBottomSheetHeader>(
+                  find.byType(VineBottomSheetHeader),
+                )
+                .showDragHandle,
+            isFalse,
+          );
         },
       );
     });
