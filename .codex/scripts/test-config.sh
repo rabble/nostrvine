@@ -330,9 +330,10 @@ if ! git -C "$TEST_REPO" diff --cached --name-only \
 fi
 
 GUARD_SOCKET_DIR="$SCRATCH_DIR/cc-socks-test"
+GUARD_SESSIONS_DIR="$SCRATCH_DIR/claude-sessions-test"
 GUARD_BIN_DIR="$SCRATCH_DIR/guard-bin"
 OTHER_REPO="$SCRATCH_DIR/other-repo"
-mkdir -p "$GUARD_SOCKET_DIR" "$GUARD_BIN_DIR" "$OTHER_REPO"
+mkdir -p "$GUARD_SOCKET_DIR" "$GUARD_SESSIONS_DIR" "$GUARD_BIN_DIR" "$OTHER_REPO"
 git -C "$OTHER_REPO" init -q
 python3 - "$GUARD_SOCKET_DIR" <<'PY'
 import os
@@ -340,7 +341,7 @@ import socket
 import sys
 
 socket_dir = sys.argv[1]
-for pid in ("111", "222", "333", "444", "777"):
+for pid in ("111", "222", "333", "444", "555", "666", "777"):
     path = os.path.join(socket_dir, f"{pid}.sock")
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
@@ -359,7 +360,12 @@ case "$*" in
 333 claude
 444 claude
 555 claude
+666 claude
 777 claude
+999 claude
+1010 claude
+1011 claude
+1012 node
 PSOUT
     exit 0
     ;;
@@ -372,9 +378,29 @@ if [ "$1" = "-o" ] && [ "$2" = "comm=" ] && [ "$3" = "-p" ]; then
     333) echo "claude"; exit 0 ;;
     444) echo "claude"; exit 0 ;;
     555) echo "claude"; exit 0 ;;
+    666) echo "claude"; exit 0 ;;
     777) echo "claude"; exit 0 ;;
+    999) echo "claude"; exit 0 ;;
+    1010) echo "claude"; exit 0 ;;
+    1011) echo "claude"; exit 0 ;;
+    1012) echo "node"; exit 0 ;;
     *) echo "bash"; exit 0 ;;
   esac
+fi
+
+if [ "$1" = "-o" ] && [ "$2" = "lstart=" ] && [ "$3" = "-p" ]; then
+  # Real `ps -o lstart=` renders through LC_TIME and TZ, while Claude records
+  # procStart with LC_ALL=C and TZ=UTC. Match that rendering only when the guard
+  # pinned both, so an unpinned locale or timezone fails the suite instead of
+  # silently emptying the registry path.
+  if [ "${LC_ALL:-}" != "C" ]; then
+    printf ' Sa.  5 Sep. 21:24:30 2026 \n'
+  elif [ "${TZ:-}" != "UTC" ]; then
+    printf ' Sun Sep  6 02:24:30 2026 \n'
+  else
+    printf ' Sat Sep  5 21:24:30 2026 \n'
+  fi
+  exit 0
 fi
 
 if [ "$1" = "-o" ] && [ "$2" = "ppid=" ] && [ "$3" = "-p" ]; then
@@ -404,32 +430,288 @@ case "$pid" in
   333) printf 'n%s\n' "$TEST_REPO/mobile" ;;
   444) printf 'n%s\n' "$OTHER_REPO" ;;
   555) printf 'n%s\n' "$TEST_REPO" ;;
+  666) printf 'n%s\n' "$TEST_REPO" ;;
   777) printf 'n%s\n' "$TEST_REPO" ;;
+  1010) printf 'n%s\n' "$TEST_REPO" ;;
+  1012) printf 'n%s\n' "$TEST_REPO" ;;
   *) exit 1 ;;
 esac
 EOF
 chmod +x "$GUARD_BIN_DIR/ps" "$GUARD_BIN_DIR/lsof"
 
-GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+cat > "$GUARD_SESSIONS_DIR/111.json" <<EOF
+{"pid":111,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"same\\nroot"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/333.json" <<EOF
+{"pid":333,"cwd":"$OTHER_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"idle","name":"moved-session"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/444.json" <<EOF
+{"pid":444,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/555.json" <<EOF
+{"pid":555,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"sdk-cli","status":"busy","name":"sdk-agent"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/666.json" <<EOF
+{"pid":666,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 20:00:00 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"reused-pid"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/777.json" <<EOF
+{"pid":777,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"self"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/999.json" <<EOF
+{"pid":999,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"idle","name":"active-only"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/1010.json" <<EOF
+{"pid":1010,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"headless","entrypoint":"cli","status":"busy","name":"non-interactive"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/1011.json" <<EOF
+{"pid":1011,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":1,"kind":"interactive","entrypoint":"cli","status":"busy","name":"bad-version"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/1012.json" <<EOF
+{"pid":1012,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"not-claude"}
+EOF
+printf '{not valid json\n' > "$GUARD_SESSIONS_DIR/888.json"
+
+REGISTRY_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env -u LC_ALL -u TZ PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$GUARD_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+
+if ! printf '%s\n' "$REGISTRY_GUARD_OUTPUT" | jq -e '
+  .systemMessage
+  | contains("4 other Claude sessions have a launch or active session root associated with this worktree")
+    and contains("same root, pid 111 (busy): launch and session roots both match this worktree")
+    and contains("moved-session, pid 333 (idle): launched here, now working in")
+    and contains("likely not a conflict, but it can still write here by absolute path")
+    and contains("pid 444: now working here after launching from")
+    and contains("active worktree match")
+    and contains("active-only, pid 999 (idle): active session root matches this worktree; launch root is unavailable")
+    and (contains("pid 222") | not)
+    and (contains("pid 555") | not)
+    and (contains("pid 666") | not)
+    and (contains("pid 777") | not)
+    and (contains("pid 1010") | not)
+    and (contains("pid 1011") | not)
+    and (contains("pid 1012") | not)
+' >/dev/null; then
+  echo "Session worktree guard did not classify registry launch and active roots correctly." >&2
+  echo "Output was: $REGISTRY_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# An absent registry preserves the older socket-and-launch-cwd behavior.
+LEGACY_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
   env PATH="$GUARD_BIN_DIR:$PATH" \
     TEST_REPO="$TEST_REPO" \
     OTHER_REPO="$OTHER_REPO" \
     CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$SCRATCH_DIR/missing-sessions" \
     CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
     "$WORKTREE_GUARD_HOOK")
 
-if ! printf '%s\n' "$GUARD_OUTPUT" | jq -e '
+if ! printf '%s\n' "$LEGACY_GUARD_OUTPUT" | jq -e '
   .systemMessage
-  | contains("2 other Claude sessions already have a matching launch-directory worktree")
+  | contains("a launch root matching this worktree according to the legacy socket fallback")
     and contains("pid 111")
     and contains("pid 333")
+    and contains("pid 555")
+    and contains("pid 666")
     and (contains("pid 222") | not)
     and (contains("pid 444") | not)
-    and (contains("pid 555") | not)
     and (contains("pid 777") | not)
 ' >/dev/null; then
-  echo "Session worktree guard did not report only live Claude sessions in the same canonical worktree." >&2
-  echo "Output was: $GUARD_OUTPUT" >&2
+  echo "Session worktree guard did not retain its legacy socket fallback." >&2
+  echo "Output was: $LEGACY_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Claude may leave the registry directory present but empty after all other
+# sessions exit. Bash 3.2 must treat that exactly like an absent registry.
+EMPTY_SESSIONS_DIR="$SCRATCH_DIR/empty-claude-sessions"
+mkdir -p "$EMPTY_SESSIONS_DIR"
+EMPTY_REGISTRY_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$EMPTY_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$EMPTY_REGISTRY_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback")' >/dev/null; then
+  echo "Session worktree guard did not fall back for an empty registry." >&2
+  echo "Output was: $EMPTY_REGISTRY_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Parseable registry records that fail host probes are not "supported": a
+# single unpinned locale used to take this path, and an older peer with only a
+# socket would stay invisible. Fall back instead of going silent.
+PROBE_MISMATCH_SESSIONS_DIR="$SCRATCH_DIR/probe-mismatch-claude-sessions"
+mkdir -p "$PROBE_MISMATCH_SESSIONS_DIR"
+cat > "$PROBE_MISMATCH_SESSIONS_DIR/111.json" <<EOF
+{"pid":111,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 20:00:00 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"stale-start"}
+EOF
+PROBE_MISMATCH_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$PROBE_MISMATCH_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$PROBE_MISMATCH_GUARD_OUTPUT" | jq -e '
+  .systemMessage
+  | contains("legacy socket fallback")
+    and contains("pid 111")
+    and contains("pid 333")
+    and (contains("stale-start") | not)
+' >/dev/null; then
+  echo "Session worktree guard did not fall back when registry probes failed." >&2
+  echo "Output was: $PROBE_MISMATCH_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# A confirmed live record that does not match this worktree must stay silent
+# and must not fall through to the socket scan (false positives on peers the
+# registry already classified as elsewhere).
+ELSEWHERE_SESSIONS_DIR="$SCRATCH_DIR/elsewhere-claude-sessions"
+mkdir -p "$ELSEWHERE_SESSIONS_DIR"
+cat > "$ELSEWHERE_SESSIONS_DIR/444.json" <<EOF
+{"pid":444,"cwd":"$OTHER_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"idle","name":"elsewhere"}
+EOF
+ELSEWHERE_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$ELSEWHERE_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if [ -n "$ELSEWHERE_GUARD_OUTPUT" ]; then
+  echo "Session worktree guard fell back after confirming a non-matching registry peer." >&2
+  echo "Output was: $ELSEWHERE_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Linux Claude stores procStart as /proc starttime jiffies, not ps lstart text.
+JIFFIES_SESSIONS_DIR="$SCRATCH_DIR/jiffies-claude-sessions"
+JIFFIES_PROC_DIR="$SCRATCH_DIR/fake-proc"
+mkdir -p "$JIFFIES_SESSIONS_DIR" "$JIFFIES_PROC_DIR/111"
+cat > "$JIFFIES_SESSIONS_DIR/111.json" <<EOF
+{"pid":111,"cwd":"$TEST_REPO","procStart":"174985782","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"linux-jiffies"}
+EOF
+printf '111 (claude) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 174985782\n' \
+  > "$JIFFIES_PROC_DIR/111/stat"
+JIFFIES_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$JIFFIES_SESSIONS_DIR" \
+    CLAUDE_PROC_STAT_DIR="$JIFFIES_PROC_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$JIFFIES_GUARD_OUTPUT" | jq -e '
+  .systemMessage
+  | contains("linux-jiffies, pid 111")
+    and (contains("legacy socket fallback") | not)
+' >/dev/null; then
+  echo "Session worktree guard did not accept Linux jiffies procStart." >&2
+  echo "Output was: $JIFFIES_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Linux socket fallback lives under $XDG_RUNTIME_DIR/cc-socks, not /tmp.
+XDG_RUNTIME="$SCRATCH_DIR/xdg-runtime"
+mkdir -p "$XDG_RUNTIME/cc-socks"
+python3 - "$XDG_RUNTIME/cc-socks" <<'PY'
+import os, socket, sys
+path = os.path.join(sys.argv[1], "111.sock")
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+try:
+    sock.bind(path)
+finally:
+    sock.close()
+PY
+XDG_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env -u CC_SOCK_DIR PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$SCRATCH_DIR/missing-sessions" \
+    XDG_RUNTIME_DIR="$XDG_RUNTIME" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$XDG_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback") and contains("pid 111")' \
+  >/dev/null; then
+  echo "Session worktree guard did not use XDG_RUNTIME_DIR/cc-socks." >&2
+  echo "Output was: $XDG_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# A present registry with no compatible records must also fall back instead of
+# silently disabling the guard after an upstream schema change.
+INCOMPATIBLE_SESSIONS_DIR="$SCRATCH_DIR/incompatible-claude-sessions"
+mkdir -p "$INCOMPATIBLE_SESSIONS_DIR"
+printf '{"newSchema":true}\n' > "$INCOMPATIBLE_SESSIONS_DIR/111.json"
+INCOMPATIBLE_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$INCOMPATIBLE_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$INCOMPATIBLE_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback")' >/dev/null; then
+  echo "Session worktree guard did not fall back for an incompatible registry." >&2
+  echo "Output was: $INCOMPATIBLE_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# jq is optional: without it, legacy detection still runs and explains why it
+# cannot emit the structured SessionStart warning.
+GUARD_NO_JQ_BIN="$SCRATCH_DIR/guard-bin-no-jq"
+mkdir -p "$GUARD_NO_JQ_BIN"
+for tool in bash cat git sed head tr; do
+  ln -s "$(command -v "$tool")" "$GUARD_NO_JQ_BIN/$tool"
+done
+ln -s "$GUARD_BIN_DIR/ps" "$GUARD_NO_JQ_BIN/ps"
+ln -s "$GUARD_BIN_DIR/lsof" "$GUARD_NO_JQ_BIN/lsof"
+NO_JQ_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_NO_JQ_BIN" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$GUARD_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK" 2>&1)
+if ! printf '%s\n' "$NO_JQ_GUARD_OUTPUT" \
+  | grep -Fq 'but jq is unavailable; skipping JSON warning'; then
+  echo "Session worktree guard did not retain detection when jq was unavailable." >&2
+  echo "Output was: $NO_JQ_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# The header promises the hook always exits 0. `set -u` plus a bare $HOME broke
+# that wherever HOME is not exported, taking the socket fallback down with it.
+NO_HOME_STATUS=0
+NO_HOME_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env -u HOME -u CLAUDE_SESSIONS_DIR PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK") || NO_HOME_STATUS=$?
+if [ "$NO_HOME_STATUS" -ne 0 ] || ! printf '%s\n' "$NO_HOME_GUARD_OUTPUT" | jq -e \
+  '.systemMessage | contains("legacy socket fallback")' >/dev/null; then
+  echo "Session worktree guard did not survive an unset HOME." >&2
+  echo "Exit status was: $NO_HOME_STATUS" >&2
+  echo "Output was: $NO_HOME_GUARD_OUTPUT" >&2
   exit 1
 fi
 

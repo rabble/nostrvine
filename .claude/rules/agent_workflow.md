@@ -90,14 +90,29 @@ authorized `git reset --hard` while another reasons from a pre-reset
 snapshot is enough to lose, or wrongly "restore", a changeset.
 
 `.claude/hooks/session-start-worktree-guard.sh` warns at session start
-when another live session appears to have been launched from the same
-git worktree root. It is opt-in (registration snippet is in the script
-header) and deliberately not registered in the team `settings.json`, so
-anyone already running it at user scope is not warned twice. It warns
-only — it never blocks a session. The signal comes from Claude's process
-cwd and `/tmp/cc-socks*/<pid>.sock`, so it cannot see later `cd` calls
-inside tool shells and can become a silent no-op if Claude changes that
-internal socket path.
+when another live session's launch root or active session root matches
+the current git worktree. It is opt-in (registration snippet is in the
+script header) and deliberately not registered in the team
+`settings.json`, so anyone already running it at user scope is not warned
+twice. It warns only — it never blocks a session.
+
+The preferred signal combines the Claude process cwd with
+`~/.claude/sessions/<pid>.json` (the active session root). The registry
+cwd follows harness-level worktree changes but not `cd` inside an
+ephemeral Bash tool call. On current macOS Claude the process cwd tracks
+harness `chdir`, so the two roots usually match; the comparison still
+covers lsof-unavailable sessions. Cwd is evidence of where a session
+usually writes, never a boundary on where absolute paths can write, so a
+launch-root match is never suppressed.
+
+The session registry is undocumented Claude Code internal state. macOS
+Claude records `procStart` as `ps -o lstart=` text; Linux Claude records
+`/proc/<pid>/stat` starttime jiffies — the hook accepts both. If the
+registry is absent, unreadable, incompatible, empty of live confirmed
+records, or `jq` is unavailable, the hook falls back to
+`$XDG_RUNTIME_DIR/cc-socks` and `/tmp/cc-socks*/<pid>.sock`. Anyone who
+installed an older copy of the hook at user scope must copy the updated
+repo version again to receive this detection.
 
 ### Build artifacts are purged from linked worktrees at session end
 
