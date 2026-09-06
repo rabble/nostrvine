@@ -292,6 +292,26 @@ exit 2
 
       expect(result.exitCode, 0, reason: result.stderr.toString());
       expect(result.stdout, contains('MERGED-TIP     pr-8511'));
+      final args = ghArgs.readAsStringSync();
+      expect(args, contains('merged_at != null'));
+      expect(args, contains('base.ref == "main"'));
+    });
+
+    test('keeps a fresh worktree whose tip is already on main', () {
+      git(['branch', 'fresh-worktree', 'main']);
+      final tip = branchTip('fresh-worktree');
+      final worktree = Directory(p.join(sandbox.path, 'fresh-worktree'));
+      git(['worktree', 'add', worktree.path, 'fresh-worktree']);
+
+      final result = runScript(
+        mergedHeadRefs: const [],
+        githubCommitShas: [tip],
+        mergedTipShas: [tip],
+      );
+
+      expect(result.exitCode, 0, reason: result.stderr.toString());
+      expect(result.stdout, contains('KEEP           fresh-worktree'));
+      expect(result.stdout, contains('0 likely prunable'));
     });
 
     test('a tip-matched branch still fails when the tip is not on GitHub', () {

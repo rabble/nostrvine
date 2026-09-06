@@ -149,9 +149,12 @@ while IFS= read -r branch; do
 
   if grep -qxF -- "$branch" "$MERGED_REFS"; then
     verdict="MERGED-PR"
-  elif [ -n "$wt" ] && [ -d "$wt" ] && merged_pr_contains_commit "$tip"; then
+  elif [ -n "$wt" ] && [ -d "$wt" ] \
+    && ! git merge-base --is-ancestor "$tip" "$BASE" \
+    && merged_pr_contains_commit "$tip"; then
     # Only worktree branches get this lookup: it is one API call per branch,
-    # and a branch with no worktree costs a ref, not 4GB of build output.
+    # and a branch with no worktree costs a ref, not 4GB of build output. Tips
+    # already on main belong to fresh worktrees, not squashed-away PR heads.
     verdict="MERGED-TIP"
   else
     verdict="KEEP"
