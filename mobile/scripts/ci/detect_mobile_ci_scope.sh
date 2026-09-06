@@ -90,7 +90,7 @@ while IFS= read -r path; do
   # scripts. Match at directory level so this gate cannot silently drift when
   # the guard gains another native input.
   case "$path" in
-    mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh|mobile/scripts/ci/detect_mobile_ci_scope.sh)
+    mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh|mobile/scripts/check_ios_shipping_versions.sh|mobile/scripts/check_gradle_wrapper_checksum.sh|mobile/scripts/ci/detect_mobile_ci_scope.sh)
       native=true
       ;;
   esac
