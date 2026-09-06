@@ -2845,14 +2845,24 @@ class LikesRepository {
     );
   }
 
-  /// Clear all local like data.
+  /// Clear all local like data. Does not affect data on relays.
   ///
-  /// Used when logging out or clearing user data.
-  /// Does not affect data on relays.
+  /// Clears the durable store first, so the clear is all-or-nothing: if
+  /// [LikesLocalStorage.clearAll] throws, the in-memory caches are left
+  /// intact, nothing is emitted, and the failure reaches the caller. A clear
+  /// that did not happen is therefore never reported as one.
+  ///
+  /// This is deliberately not routed through `_bestEffortLocalStorage`. That
+  /// helper exists so a dead cache cannot block a relay publish; clearing
+  /// publishes nothing, and the thing at risk here is the deletion itself.
+  /// Erasing a signed-out account's rows is handled by the cleanup in
+  /// `social_providers.dart`, which is likewise required to surface failures
+  /// rather than swallow them.
   ///
   /// Safe to call after [dispose] -- the cache is still cleared but no
   /// stream emission is attempted.
   Future<void> clearCache() async {
+    await _localStorage?.clearAll();
     _likeRecords.clear();
     _likeRecordsByAddressableId.clear();
     _inFlightLikePublishPlaceholders.clear();
@@ -2861,7 +2871,6 @@ class LikesRepository {
     _downvoteRecordsByAddressableId.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
-    await _localStorage?.clearAll();
     _emitLikedIds();
     _emitDownvotedIds();
     _isInitialized = false;
