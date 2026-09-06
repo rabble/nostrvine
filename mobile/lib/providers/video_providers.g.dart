@@ -238,8 +238,8 @@ String _$subscriptionManagerHash() =>
 /// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
 /// through a `ref.listen` rather than capturing one at build time.
 ///
-/// `keepAlive` is load-bearing, not an optimisation: every NostrService client
-/// swap would otherwise orphan a service whose periodic timers keep running.
+/// `keepAlive` is load-bearing, not an optimisation: it keeps the service and
+/// its relay subscriptions alive while no consumer is listening.
 
 @ProviderFor(videoEventService)
 final videoEventServiceProvider = VideoEventServiceProvider._();
@@ -251,8 +251,8 @@ final videoEventServiceProvider = VideoEventServiceProvider._();
 /// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
 /// through a `ref.listen` rather than capturing one at build time.
 ///
-/// `keepAlive` is load-bearing, not an optimisation: every NostrService client
-/// swap would otherwise orphan a service whose periodic timers keep running.
+/// `keepAlive` is load-bearing, not an optimisation: it keeps the service and
+/// its relay subscriptions alive while no consumer is listening.
 
 final class VideoEventServiceProvider
     extends
@@ -269,8 +269,8 @@ final class VideoEventServiceProvider
   /// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
   /// through a `ref.listen` rather than capturing one at build time.
   ///
-  /// `keepAlive` is load-bearing, not an optimisation: every NostrService client
-  /// swap would otherwise orphan a service whose periodic timers keep running.
+  /// `keepAlive` is load-bearing, not an optimisation: it keeps the service and
+  /// its relay subscriptions alive while no consumer is listening.
   VideoEventServiceProvider._()
     : super(
         from: null,
@@ -1010,11 +1010,14 @@ String _$videosRepositoryHash() => r'ed76873b99e97dac7980173e4b0cefdc79a03aae';
 ///
 /// Always returns an instance, signed in or out. "Authenticated" is three
 /// different questions here, and this provider answers them with three
-/// different signals — see [NostrSessionPhase] for the vocabulary.
+/// different signals — compare [NostrSessionPhase] for the app-wide readiness
+/// vocabulary.
 ///
-/// - **Identity known** — `AuthService.currentPublicKeyHex`. Decides *only*
-///   whether `DbLikesLocalStorage` is attached. Without it likes still publish
-///   and still stream, but nothing persists across a restart.
+/// - **Auth identity cached** — `AuthService.currentPublicKeyHex`. This is wider
+///   than `NostrSessionPhase.identityKnown` because it can fall back to the key
+///   container or profile. It decides *only* whether `DbLikesLocalStorage` is
+///   attached. Without it likes still publish and stream, but nothing persists
+///   across a restart.
 /// - **Key resolved** — `NostrClient.resolvePublicKey()`, a *different* cache
 ///   that retries the signer at call time. Decides whether an author-scoped
 ///   relay query runs at all. When it yields null the repository logs and
@@ -1050,11 +1053,14 @@ final likesRepositoryProvider = LikesRepositoryProvider._();
 ///
 /// Always returns an instance, signed in or out. "Authenticated" is three
 /// different questions here, and this provider answers them with three
-/// different signals — see [NostrSessionPhase] for the vocabulary.
+/// different signals — compare [NostrSessionPhase] for the app-wide readiness
+/// vocabulary.
 ///
-/// - **Identity known** — `AuthService.currentPublicKeyHex`. Decides *only*
-///   whether `DbLikesLocalStorage` is attached. Without it likes still publish
-///   and still stream, but nothing persists across a restart.
+/// - **Auth identity cached** — `AuthService.currentPublicKeyHex`. This is wider
+///   than `NostrSessionPhase.identityKnown` because it can fall back to the key
+///   container or profile. It decides *only* whether `DbLikesLocalStorage` is
+///   attached. Without it likes still publish and stream, but nothing persists
+///   across a restart.
 /// - **Key resolved** — `NostrClient.resolvePublicKey()`, a *different* cache
 ///   that retries the signer at call time. Decides whether an author-scoped
 ///   relay query runs at all. When it yields null the repository logs and
@@ -1091,11 +1097,14 @@ final class LikesRepositoryProvider
   ///
   /// Always returns an instance, signed in or out. "Authenticated" is three
   /// different questions here, and this provider answers them with three
-  /// different signals — see [NostrSessionPhase] for the vocabulary.
+  /// different signals — compare [NostrSessionPhase] for the app-wide readiness
+  /// vocabulary.
   ///
-  /// - **Identity known** — `AuthService.currentPublicKeyHex`. Decides *only*
-  ///   whether `DbLikesLocalStorage` is attached. Without it likes still publish
-  ///   and still stream, but nothing persists across a restart.
+  /// - **Auth identity cached** — `AuthService.currentPublicKeyHex`. This is wider
+  ///   than `NostrSessionPhase.identityKnown` because it can fall back to the key
+  ///   container or profile. It decides *only* whether `DbLikesLocalStorage` is
+  ///   attached. Without it likes still publish and stream, but nothing persists
+  ///   across a restart.
   /// - **Key resolved** — `NostrClient.resolvePublicKey()`, a *different* cache
   ///   that retries the signer at call time. Decides whether an author-scoped
   ///   relay query runs at all. When it yields null the repository logs and
