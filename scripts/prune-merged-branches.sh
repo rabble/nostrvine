@@ -19,8 +19,17 @@
 # So the useful signal in a squash-merge repo is GitHub reporting a same-repo PR
 # to main with this head ref merged. Everything else is KEEP.
 #
+# 4. Vetoing on any ignored file makes the script report nothing, ever. Every
+#    Flutter worktree carries build/, .dart_tool/ and a pile of generated
+#    plugin registrants, so Veto 2 below used to fire on all of them and the
+#    run always ended "0 likely prunable". Ignored paths that a toolchain step
+#    recreates from tracked sources are not work; ignored paths it does not
+#    (a .env, a scratch note, a patch) still are. Only the latter veto.
+#
 # The bias is deliberate. A false KEEP costs disk. A false DELETE costs work
-# that exists nowhere else — an unpushed branch has no backup.
+# that exists nowhere else — an unpushed branch has no backup. The rule above
+# keeps that asymmetry: an ignored path absent from the regenerable list still
+# vetoes.
 #
 # Usage:
 #   bash scripts/prune-merged-branches.sh
@@ -86,6 +95,31 @@ commit_exists_on_github() {
   "$GH" api -X GET "repos/$REPO/commits/$1" >/dev/null 2>&1
 }
 
+# Ignored paths any Flutter toolchain step recreates from tracked sources.
+# `flutter pub get` plus a build regenerates every one, so a worktree holding
+# only these holds no work. Anything absent from this list vetoes, which is
+# also how a git-quoted or unusual path fails: safely, toward KEEP.
+REGENERABLE_DIR='build|\.dart_tool|\.gradle|\.symlinks|ephemeral|Pods|DerivedData|xcuserdata|\.swiftpm|coverage'
+REGENERABLE_FILE='\.DS_Store|\.flutter-plugins|\.flutter-plugins-dependencies|\.packages|local\.properties|Generated\.xcconfig|flutter_export_environment\.sh|Flutter\.podspec|gradlew|gradlew\.bat|gradle-wrapper\.jar|generated_plugins\.cmake|GeneratedPluginRegistrant\.(java|h|m|swift)|generated_plugin_registrant\.(cc|h|dart)'
+REGENERABLE_RE="(^|/)(${REGENERABLE_DIR})/|(^|/)(${REGENERABLE_FILE})\$"
+
+# Paths in a worktree that exist in no commit anywhere: every uncommitted or
+# untracked entry, plus ignored entries that are not toolchain output.
+worktree_blocking_paths() {
+  git -C "$1" status --porcelain --ignored=matching 2>/dev/null \
+    | while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        path=${line#??}
+        path=${path# }
+        case "$line" in
+          '!!'*)
+            printf '%s\n' "$path" | grep -qE "$REGENERABLE_RE" || printf '%s\n' "$path"
+            ;;
+          *) printf '%s\n' "$path" ;;
+        esac
+      done
+}
+
 CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 
 printf '\n%-14s %-50s %s\n' "VERDICT" "BRANCH" "WORKTREE"
@@ -115,10 +149,10 @@ while IFS= read -r branch; do
     fi
   fi
 
-  # Veto 2: uncommitted or ignored work in the branch's worktree exists in no
-  # commit anywhere, merged PR or not.
+  # Veto 2: uncommitted, untracked, or non-regenerable ignored work in the
+  # branch's worktree exists in no commit anywhere, merged PR or not.
   if [ "$verdict" = "MERGED-PR" ] && [ -n "$wt" ] && [ -d "$wt" ]; then
-    if [ -n "$(git -C "$wt" status --porcelain --ignored=matching 2>/dev/null)" ]; then
+    if [ -n "$(worktree_blocking_paths "$wt")" ]; then
       verdict="KEEP-DIRTY"
     fi
   fi
@@ -135,5 +169,7 @@ printf '\n%s likely prunable (merged same-repo PR to main, local tip on GitHub, 
 echo
 echo "Report only. This script does not delete branches or worktrees."
 echo "KEEP includes branches with no matching merged same-repo PR to main,"
-echo "branches whose local tip is not on GitHub, and branches with dirty or"
-echo "ignored worktree files. Review kept branches by hand."
+echo "branches whose local tip is not on GitHub, and branches whose worktree"
+echo "holds uncommitted, untracked, or non-regenerable ignored files."
+echo "Toolchain output (build/, .dart_tool/, generated registrants) does not"
+echo "count. Review kept branches by hand."

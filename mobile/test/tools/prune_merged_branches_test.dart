@@ -131,7 +131,14 @@ exit 2
       git(['init']);
       git(['config', 'user.email', 'test@example.com']);
       git(['config', 'user.name', 'Test User']);
-      write('.gitignore', '.env\nbuild/\n');
+      write(
+        '.gitignore',
+        '.env\n'
+            'build/\n'
+            '.dart_tool/\n'
+            'local.properties\n'
+            '**/GeneratedPluginRegistrant.java\n',
+      );
       write('README.md', 'fixture\n');
       commit('initial');
       git(['branch', '-M', 'main']);
@@ -171,9 +178,56 @@ exit 2
       );
 
       expect(result.exitCode, 0, reason: result.stderr.toString());
-      expect(result.stdout, contains('KEEP-DIRTY'));
-      expect(result.stdout, contains('dirty-worktree'));
+      expect(result.stdout, contains('KEEP-DIRTY     dirty-worktree'));
+      expect(result.stdout, contains('0 likely prunable'));
       expect(File(p.join(worktree.path, '.env')).existsSync(), isTrue);
+    });
+
+    test('toolchain output in a worktree does not block a merged branch', () {
+      makeBranch('regenerable-worktree', 'merged');
+      final tip = branchTip('regenerable-worktree');
+      final worktree = Directory(p.join(sandbox.path, 'regenerable-worktree'));
+      git(['worktree', 'add', worktree.path, 'regenerable-worktree']);
+      write('build/app.apk', 'binary\n', root: worktree.path);
+      write('.dart_tool/package_config.json', '{}\n', root: worktree.path);
+      write(
+        'android/app/src/main/java/io/flutter/plugins/'
+            'GeneratedPluginRegistrant.java',
+        'generated\n',
+        root: worktree.path,
+      );
+      write('local.properties', 'sdk.dir=/tmp\n', root: worktree.path);
+
+      final result = runScript(
+        mergedHeadRefs: ['regenerable-worktree'],
+        githubCommitShas: [tip],
+      );
+
+      expect(result.exitCode, 0, reason: result.stderr.toString());
+      expect(result.stdout, contains('MERGED-PR      regenerable-worktree'));
+      expect(
+        result.stdout,
+        isNot(contains('KEEP-DIRTY     regenerable-worktree')),
+      );
+      expect(result.stdout, contains('1 likely prunable'));
+    });
+
+    test('an untracked non-ignored file still blocks a merged branch', () {
+      makeBranch('untracked-worktree', 'merged');
+      final tip = branchTip('untracked-worktree');
+      final worktree = Directory(p.join(sandbox.path, 'untracked-worktree'));
+      git(['worktree', 'add', worktree.path, 'untracked-worktree']);
+      write('build/app.apk', 'binary\n', root: worktree.path);
+      write('scratch-notes.md', 'unsaved thinking\n', root: worktree.path);
+
+      final result = runScript(
+        mergedHeadRefs: ['untracked-worktree'],
+        githubCommitShas: [tip],
+      );
+
+      expect(result.exitCode, 0, reason: result.stderr.toString());
+      expect(result.stdout, contains('KEEP-DIRTY     untracked-worktree'));
+      expect(result.stdout, contains('0 likely prunable'));
     });
 
     test('asks GitHub for a broad filtered merged PR set', () {
