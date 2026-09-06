@@ -508,13 +508,58 @@ void main() {
       });
     });
 
-    test('oauthRevokeUrl matches the URL revokeOAuth posts to', () {
-      final client = VerifierClient(baseUrl: 'https://verifier.example/');
+    group('oauthRevokeUrl', () {
+      const revokePath = '/auth/oauth/revoke';
+      const canonical = 'https://verifier.example$revokePath';
 
-      expect(
-        client.oauthRevokeUrl,
-        equals('https://verifier.example/auth/oauth/revoke'),
-      );
+      // NIP-98 binds the signed `u` tag to the absolute request URL, and the
+      // verifier compares the two with a strict `!==` against
+      // `new URL(req.url).toString()`. The request URI goes through
+      // `Uri.parse`, which lowercases the scheme and host, drops a default
+      // port, resolves dot segments and decodes unreserved escapes. So the
+      // signed string has to come from that same builder: composing it from
+      // the raw base instead makes the two disagree for every base below, and
+      // the revoke 401s while all the unauthenticated calls keep working.
+      const bases = <(String, String)>[
+        ('https://verifier.example', canonical),
+        ('https://verifier.example/', canonical),
+        ('https://VERIFIER.example', canonical),
+        ('HTTPS://verifier.example', canonical),
+        ('https://verifier.example:443', canonical),
+        ('https://verifier.example/.', canonical),
+        (
+          'https://verifier.example/%7Ea',
+          'https://verifier.example/~a$revokePath',
+        ),
+        (
+          'https://verifier.example:8443',
+          'https://verifier.example:8443$revokePath',
+        ),
+      ];
+
+      for (final (base, expected) in bases) {
+        test('signs the URL it posts to, for a base of $base', () async {
+          late Uri posted;
+          final mock = MockClient((req) async {
+            posted = req.url;
+            return http.Response(jsonEncode({'revoked': true}), 200);
+          });
+          final client = VerifierClient(baseUrl: base, httpClient: mock);
+
+          await client.revokeOAuth(
+            platform: 'twitter',
+            identity: 'jack',
+            pubkey: _hex,
+            nip98Event: const {'kind': 27235},
+          );
+
+          expect(client.oauthRevokeUrl, equals(posted.toString()));
+          // Pins the value as well as the coupling: both operands above come
+          // from the object under test, so on their own they would still
+          // match if the getter and the request both went wrong together.
+          expect(client.oauthRevokeUrl, equals(expected));
+        });
+      }
     });
   });
 }

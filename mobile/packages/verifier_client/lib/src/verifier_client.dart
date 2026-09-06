@@ -38,6 +38,11 @@ class VerifierClient {
   /// Keep this in sync if the service raises it.
   static const int maxBatchSize = 10;
 
+  /// Path of the OAuth revoke endpoint, shared by [revokeOAuth] and
+  /// [oauthRevokeUrl] so the request and the string it is signed against
+  /// cannot drift apart.
+  static const String _oauthRevokePath = '/auth/oauth/revoke';
+
   final String _baseUrl;
   final http.Client _httpClient;
   final Duration _timeout;
@@ -135,7 +140,7 @@ class VerifierClient {
         'is required to start the bluesky OAuth flow',
       );
     }
-    return Uri.parse('$_baseUrl/auth/$platform/start').replace(
+    return _uriFor('/auth/$platform/start').replace(
       queryParameters: <String, String>{
         'pubkey': pubkey,
         'return_url': returnUrl,
@@ -228,20 +233,32 @@ class VerifierClient {
       'pubkey': pubkey,
       'event': nip98Event,
     });
-    await _post('/auth/oauth/revoke', body);
+    await _post(_oauthRevokePath, body);
   }
 
   /// Absolute URL of the OAuth revoke endpoint.
   ///
   /// The NIP-98 event passed to [revokeOAuth] must carry this exact string in
   /// its `u` tag, so it is exposed rather than rebuilt at the call site.
-  String get oauthRevokeUrl => '$_baseUrl/auth/oauth/revoke';
+  ///
+  /// Built through [_uriFor], the same builder the request goes through, so
+  /// what is signed is what reaches the wire. Composing it from [_baseUrl]
+  /// directly would skip the normalization `Uri.parse` applies, and the
+  /// verifier compares the `u` tag to the request URL exactly.
+  String get oauthRevokeUrl => _uriFor(_oauthRevokePath).toString();
+
+  /// The one place a request URL is built.
+  ///
+  /// Every caller — including [oauthRevokeUrl] — goes through here, which is
+  /// what keeps a signed URL and the URL it is sent to identical by
+  /// construction rather than by convention.
+  Uri _uriFor(String path) => Uri.parse('$_baseUrl$path');
 
   Future<Map<String, dynamic>> _get(
     String path, {
     Map<String, String>? query,
   }) async {
-    var uri = Uri.parse('$_baseUrl$path');
+    var uri = _uriFor(path);
     if (query != null && query.isNotEmpty) {
       uri = uri.replace(queryParameters: query);
     }
@@ -249,7 +266,7 @@ class VerifierClient {
   }
 
   Future<Map<String, dynamic>> _post(String path, String body) {
-    final uri = Uri.parse('$_baseUrl$path');
+    final uri = _uriFor(path);
     return _send(
       () => _httpClient.post(
         uri,
