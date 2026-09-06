@@ -1163,28 +1163,21 @@ class RepostsRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
+    // Degrade to an in-memory-only cache rather than failing the caller.
+    // Callers are publish paths: an unreadable cache costs a stale
+    // already-reposted check, while throwing here costs the Kind 16.
     final localStorage = _localStorage;
     if (localStorage != null) {
-      try {
-        final records = await localStorage.getAllRepostRecords();
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllRepostRecords,
+        description: 'loading persisted reposts',
+        site: RepostsRepositoryReportableSites.ensureInitializedLoadRecords,
+      );
+      if (records != null) {
         for (final record in records) {
           _repostRecords[record.addressableId] = record;
         }
         _emitRepostedIds();
-      } on Object catch (e, stackTrace) {
-        // Degrade to an in-memory-only cache rather than failing the caller.
-        // Callers are publish paths: an unreadable cache costs a stale
-        // already-reposted check, while throwing here costs the Kind 16.
-        _markStorageDegraded(
-          e,
-          stackTrace,
-          site: RepostsRepositoryReportableSites.ensureInitializedLoadRecords,
-        );
-        Log.warning(
-          'Repost cache unavailable; continuing without persisted records: $e',
-          name: 'RepostsRepository',
-          category: LogCategory.system,
-        );
       }
     }
     // Latched on both paths: an unreadable database stays unreadable for the

@@ -2897,26 +2897,19 @@ class LikesRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
 
+    // Degrade to an in-memory-only cache rather than failing the caller.
+    // Callers are publish paths: an unreadable cache costs a stale
+    // already-liked check, while throwing here costs the Kind 7.
     final localStorage = _localStorage;
     if (localStorage != null) {
-      try {
-        final records = await localStorage.getAllLikeRecords();
+      final records = await _bestEffortLocalStorage(
+        localStorage.getAllLikeRecords,
+        description: 'loading persisted reactions',
+        site: LikesRepositoryReportableSites.ensureInitializedLoadRecords,
+      );
+      if (records != null) {
         records.forEach(_indexLikeRecord);
         _emitLikedIds();
-      } on Object catch (e, stackTrace) {
-        // Degrade to an in-memory-only cache rather than failing the caller.
-        // Callers are publish paths: an unreadable cache costs a stale
-        // already-liked check, while throwing here costs the Kind 7.
-        _reportIfInvariantViolation(
-          e,
-          stackTrace,
-          site: LikesRepositoryReportableSites.ensureInitializedLoadRecords,
-        );
-        Log.warning(
-          'Like cache unavailable; continuing without persisted records: $e',
-          name: 'LikesRepository',
-          category: LogCategory.system,
-        );
       }
     }
     // Latched on both paths: an unreadable database stays unreadable for the

@@ -4506,6 +4506,20 @@ void main() {
       });
     });
 
+    group('_ensureInitialized', () {
+      test('an unreadable store degrades instead of throwing', () async {
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenThrow(StateError('database is dead'));
+        repository = createRepository();
+
+        // Callers are publish paths: the read is swallowed so a dead cache
+        // costs a stale already-liked check rather than the Kind 7.
+        await expectLater(repository.getLikedEventIds(), completion(isEmpty));
+        await expectLater(repository.isLiked(testEventId), completion(isFalse));
+      });
+    });
+
     group('watchLikedEventIds', () {
       test('seeds from local storage, then streams repository cache', () async {
         final mockEvent = MockEvent();

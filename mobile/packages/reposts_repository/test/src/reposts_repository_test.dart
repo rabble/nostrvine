@@ -2359,6 +2359,41 @@ void main() {
       });
     });
 
+    group('_ensureInitialized', () {
+      test(
+        'an unreadable store degrades to the in-memory stream instead of '
+        'throwing',
+        () async {
+          when(
+            () => mockLocalStorage.getAllRepostRecords(),
+          ).thenThrow(StateError('database is dead'));
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          // The read is swallowed rather than propagated to the caller...
+          await expectLater(
+            repository.getRepostedAddressableIds(),
+            completion(isEmpty),
+          );
+
+          // ...and the failure latched _storageDegraded, so the watch falls
+          // back to the in-memory controller rather than storage's own query
+          // stream, which on a dead database would never emit.
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+          await expectLater(
+            repository.watchRepostedAddressableIds().first,
+            completion(contains(testAddressableId)),
+          );
+          verifyNever(() => mockLocalStorage.watchRepostedAddressableIds());
+        },
+      );
+    });
+
     group('watchRepostedAddressableIds', () {
       test('returns internal stream when no local storage', () async {
         final repository = RepostsRepository(nostrClient: mockNostrClient);
