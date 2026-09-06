@@ -1,5 +1,6 @@
 // ABOUTME: Follow button widget for video overlay using BLoC pattern.
-// ABOUTME: Circular 20x20 button positioned near the author avatar.
+// ABOUTME: Circular 20x20 badge inside a 48x48 tap target, positioned near
+// ABOUTME: the author avatar.
 // ABOUTME: Only rendered when the viewer is NOT following the author; once
 // ABOUTME: following, the button disappears entirely (no "following" state).
 
@@ -13,6 +14,18 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Diameter of the painted follow badge.
+const double followButtonVisualSize = 20;
+
+/// Side of the badge's tap target.
+///
+/// The painted badge is [followButtonVisualSize]; it sits at the top-start
+/// corner of a target this size, which is the Android minimum and clears the
+/// iOS one. Growing away from the avatar rather than centring on the badge is
+/// deliberate: a target centred on a 20dp badge 31dp inside a 48dp avatar
+/// would cover 63% of it.
+const double followButtonTapTargetSize = kMinInteractiveDimension;
 
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 ///
@@ -79,16 +92,29 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       return const SizedBox.shrink();
     }
 
-    // If the author doesn't accept interactions from us (their published
-    // block/mute list names us), render nothing — absence, never an
-    // explanation (disclosure invariant).
-    if (!ref.watch(canTargetUserProvider(widget.pubkey))) {
-      return const SizedBox.shrink();
-    }
-
-    return BlocProvider.value(
-      value: _bloc!,
-      child: VideoFollowButtonView(pubkey: widget.pubkey),
+    // Reserve the tap target as soon as the button *might* render, not when
+    // it does. The guard above resolves in initState, so the author cluster is
+    // laid out at its final size before first paint and never resizes later.
+    // Own-video and already-following authors return above and pay nothing.
+    return SizedBox(
+      width: followButtonTapTargetSize,
+      height: followButtonTapTargetSize,
+      // If the author doesn't accept interactions from us (their published
+      // block/mute list names us), render nothing — absence, never an
+      // explanation (disclosure invariant).
+      //
+      // This sits inside the reservation rather than replacing it, because
+      // canTargetUser watches blocklistVersion and so can flip while the item
+      // is on screen. Collapsing the cluster 79 -> 58 at that moment would
+      // shift the author name 21dp in front of the viewer, which is itself a
+      // tell that correlates with the block. Holding the box keeps the
+      // affordance's disappearance silent.
+      child: ref.watch(canTargetUserProvider(widget.pubkey))
+          ? BlocProvider.value(
+              value: _bloc!,
+              child: VideoFollowButtonView(pubkey: widget.pubkey),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
@@ -131,6 +157,9 @@ class VideoFollowButtonView extends StatelessWidget {
           label: context.l10n.videoFollowButtonFollow,
           button: true,
           child: GestureDetector(
+            // Opaque, so the whole target is tappable rather than only the
+            // badge painted in its corner.
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               Log.info(
                 'Follow button tapped for ${pubkeyForLogs(pubkey)}',
@@ -141,19 +170,28 @@ class VideoFollowButtonView extends StatelessWidget {
                 MyFollowingToggleRequested(pubkey),
               );
             },
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: VineTheme.cameraButtonGreen,
-                shape: BoxShape.circle,
-                boxShadow: VineTheme.buttonBoxShadows,
-              ),
-              child: const Center(
-                child: DivineIcon(
-                  icon: DivineIconName.follow,
-                  size: 13,
-                  color: VineTheme.whiteText,
+            child: SizedBox(
+              width: followButtonTapTargetSize,
+              height: followButtonTapTargetSize,
+              child: Align(
+                // The badge keeps the corner it has always painted in; the
+                // target grows away from the avatar behind it.
+                alignment: AlignmentDirectional.topStart,
+                child: Container(
+                  width: followButtonVisualSize,
+                  height: followButtonVisualSize,
+                  decoration: const BoxDecoration(
+                    color: VineTheme.cameraButtonGreen,
+                    shape: BoxShape.circle,
+                    boxShadow: VineTheme.buttonBoxShadows,
+                  ),
+                  child: const Center(
+                    child: DivineIcon(
+                      icon: DivineIconName.follow,
+                      size: 13,
+                      color: VineTheme.whiteText,
+                    ),
+                  ),
                 ),
               ),
             ),
