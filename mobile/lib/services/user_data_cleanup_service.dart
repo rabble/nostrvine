@@ -1,20 +1,25 @@
 // ABOUTME: Service to clear user-specific cached data when identity changes
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:creator_sync/creator_sync.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
+import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
+import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
+import 'package:openvine/services/terms_acceptance_keys.dart';
 import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -63,15 +68,15 @@ class UserDataCleanupService {
   /// pair below drifted exactly that way and stopped being cleared (#6985).
   static const List<String> userSpecificKeys = [
     // List services
-    'curated_lists',
-    'curated_lists_default_deleted',
-    'subscribed_list_ids',
+    CuratedListService.listsStorageKey,
+    CuratedListService.defaultListDeletedStorageKey,
+    CuratedListService.subscribedListsStorageKey,
     // Bookmark services
-    'global_bookmarks',
-    'global_bookmarks_revision',
+    BookmarksRepository.globalBookmarksStorageKey,
+    BookmarksRepository.globalBookmarksRevisionStorageKey,
     // Content history
-    'content_reports_history',
-    'content_deletions_history',
+    ContentReportingService.reportsStorageKey,
+    ContentDeletionService.deletionsStorageKey,
     // Viewing history. The migration flag travels with the metrics it gates,
     // for the same reason the content-filter pair does.
     SeenVideosService.legacySeenVideosStorageKey,
@@ -100,8 +105,7 @@ class UserDataCleanupService {
     // separately; this second store is not scoped and was missed.
     SoundLibraryService.customSoundsStorageKey,
     // TOS acceptance (user must re-accept on new account)
-    'age_verified_16_plus',
-    'terms_accepted_at',
+    ...TermsAcceptanceKeys.all,
   ];
 
   /// Legacy owner-scoped preference keys that contain user data but may still
