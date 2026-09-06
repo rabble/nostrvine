@@ -104,15 +104,18 @@ final personalEventCacheClearProvider = Provider<Future<void> Function()>((
   ref,
 ) {
   return () async {
-    for (final name in const [
-      HiveBoxNames.personalEvents,
-      HiveBoxNames.personalEventsMetadata,
-    ]) {
-      final box = Hive.isBoxOpen(name)
-          ? Hive.box<dynamic>(name)
-          : await Hive.openBox<dynamic>(name);
-      await box.clear();
-    }
+    // Both boxes are named inline rather than looped over: the Hive wipe
+    // policy is tied to literal `HiveBoxNames.` call sites, so a box opened
+    // through a loop variable would drop out of that guard's view.
+    final events = Hive.isBoxOpen(HiveBoxNames.personalEvents)
+        ? Hive.box<dynamic>(HiveBoxNames.personalEvents)
+        : await Hive.openBox<dynamic>(HiveBoxNames.personalEvents);
+    await events.clear();
+
+    final metadata = Hive.isBoxOpen(HiveBoxNames.personalEventsMetadata)
+        ? Hive.box<dynamic>(HiveBoxNames.personalEventsMetadata)
+        : await Hive.openBox<dynamic>(HiveBoxNames.personalEventsMetadata);
+    await metadata.clear();
   };
 });
 
