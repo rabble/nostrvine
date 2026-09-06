@@ -130,13 +130,16 @@ class LocalKeySigner implements IsolateDecryptSigner {
   @override
   Future<String?> nip44Encrypt(String pubkey, String plaintext) async {
     try {
-      return _keyContainer.withPrivateKey<Future<String?>>((
-        privateKeyHex,
-      ) async {
-        final conversationKey = NIP44V2.shareSecret(privateKeyHex, pubkey);
-        return NIP44V2.encrypt(plaintext, conversationKey);
-      });
-    } on Exception catch (e) {
+      // ECDH is synchronous, so the raw key hex is exposed only for this
+      // step; the cipher below runs on the derived conversation key. Keeping
+      // the await outside `withPrivateKey` is also what makes the handler
+      // reachable: `return`ing a future out of a `try` leaves the block
+      // before the future can reject.
+      final conversationKey = _keyContainer.withPrivateKey<Uint8List>(
+        (privateKeyHex) => NIP44V2.shareSecret(privateKeyHex, pubkey),
+      );
+      return await NIP44V2.encrypt(plaintext, conversationKey);
+    } on Object catch (e) {
       Log.error(
         'NIP-44 encryption failed: $e',
         name: 'LocalKeySigner',
@@ -149,13 +152,11 @@ class LocalKeySigner implements IsolateDecryptSigner {
   @override
   Future<String?> nip44Decrypt(String pubkey, String ciphertext) async {
     try {
-      return _keyContainer.withPrivateKey<Future<String?>>((
-        privateKeyHex,
-      ) async {
-        final sealKey = NIP44V2.shareSecret(privateKeyHex, pubkey);
-        return NIP44V2.decrypt(ciphertext, sealKey);
-      });
-    } on Exception catch (e) {
+      final sealKey = _keyContainer.withPrivateKey<Uint8List>(
+        (privateKeyHex) => NIP44V2.shareSecret(privateKeyHex, pubkey),
+      );
+      return await NIP44V2.decrypt(ciphertext, sealKey);
+    } on Object catch (e) {
       Log.error(
         'NIP-44 decryption failed: $e',
         name: 'LocalKeySigner',

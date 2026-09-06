@@ -1,6 +1,9 @@
 // ABOUTME: Tests for LocalKeySigner backed by a local SecureKeyContainer
 // ABOUTME: Validates event signing, encryption, and key access through secure container
 
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -16,6 +19,9 @@ void main() {
       '6b911fd37cdf5c81d4c0adb1ab7fa822ed253ab0ad9aa18d77257c88b29b718e';
   const testPublicKey =
       '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+  // Well-formed 32-byte hex that is not a point on secp256k1.
+  const offCurvePubkey =
+      '0000000000000000000000000000000000000000000000000000000000000000';
 
   setUpAll(() {
     registerFallbackValue(_MockSecureKeyContainer());
@@ -141,15 +147,22 @@ void main() {
     });
 
     group('nip44Encrypt/nip44Decrypt', () {
-      test('nip44Encrypt encrypts plaintext', () async {
+      // The conversation key is derived inside the synchronous
+      // `withPrivateKey` scope; the cipher call happens outside it.
+      void stubConversationKeyDerivation() {
         when(
-          () => mockKeyContainer.withPrivateKey<Future<String?>>(any()),
-        ).thenAnswer((invocation) {
-          final callback =
-              invocation.positionalArguments[0]
-                  as Future<String?> Function(String);
-          return callback(testPrivateKey);
-        });
+          () => mockKeyContainer.withPrivateKey<Uint8List>(any()),
+        ).thenAnswer(
+          (invocation) {
+            final callback =
+                invocation.positionalArguments[0] as Uint8List Function(String);
+            return callback(testPrivateKey);
+          },
+        );
+      }
+
+      test('nip44Encrypt encrypts plaintext', () async {
+        stubConversationKeyDerivation();
 
         final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
@@ -161,14 +174,7 @@ void main() {
       });
 
       test('nip44Decrypt decrypts ciphertext', () async {
-        when(
-          () => mockKeyContainer.withPrivateKey<Future<String?>>(any()),
-        ).thenAnswer((invocation) {
-          final callback =
-              invocation.positionalArguments[0]
-                  as Future<String?> Function(String);
-          return callback(testPrivateKey);
-        });
+        stubConversationKeyDerivation();
 
         final signer = LocalKeySigner(mockKeyContainer);
         const plaintext = 'Hello, NIP-44!';
@@ -181,6 +187,76 @@ void main() {
         final decrypted = await signer.nip44Decrypt(testPublicKey, ciphertext!);
 
         expect(decrypted, equals(plaintext));
+      });
+
+      // #7332: these four methods returned a future out of the `try`, so the
+      // `on Exception` handler was unreachable and the declared
+      // `Future<String?>` null-on-failure contract was never honoured. Each
+      // case below threw before the fix.
+      test('nip44Decrypt returns null when the MAC does not verify', () async {
+        stubConversationKeyDerivation();
+
+        final signer = LocalKeySigner(mockKeyContainer);
+        final ciphertext = await signer.nip44Encrypt(testPublicKey, 'hello');
+        expect(ciphertext, isNotNull);
+
+        // Flip the last byte of the payload so the HMAC check fails.
+        final bytes = List<int>.from(base64Decode(ciphertext!));
+        bytes[bytes.length - 1] ^= 0xFF;
+
+        final decrypted = await signer.nip44Decrypt(
+          testPublicKey,
+          base64Encode(bytes),
+        );
+
+        expect(decrypted, isNull);
+      });
+
+      test('nip44Decrypt returns null for a payload it cannot parse', () async {
+        stubConversationKeyDerivation();
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        final decrypted = await signer.nip44Decrypt(
+          testPublicKey,
+          'not-base64-!!!',
+        );
+
+        expect(decrypted, isNull);
+      });
+
+      test('nip44Encrypt returns null for an off-curve pubkey', () async {
+        stubConversationKeyDerivation();
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        // A Nostr pubkey is a secp256k1 x-coordinate and only about half of
+        // all 32-byte values have a matching y, so a well-formed hex string
+        // can still name nobody. ECDH raises ArgumentError — an Error, not an
+        // Exception, so `on Exception` would not have caught it either.
+        final ciphertext = await signer.nip44Encrypt(offCurvePubkey, 'hello');
+
+        expect(ciphertext, isNull);
+      });
+
+      test('nip44Decrypt returns null for an off-curve pubkey', () async {
+        stubConversationKeyDerivation();
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        final plaintext = await signer.nip44Decrypt(offCurvePubkey, 'AgAB');
+
+        expect(plaintext, isNull);
+      });
+
+      test('nip44Encrypt returns null when the container refuses', () async {
+        when(
+          () => mockKeyContainer.withPrivateKey<Uint8List>(any()),
+        ).thenThrow(const SecureKeyException('Container has been disposed'));
+
+        final signer = LocalKeySigner(mockKeyContainer);
+
+        expect(await signer.nip44Encrypt(testPublicKey, 'hello'), isNull);
       });
     });
 
