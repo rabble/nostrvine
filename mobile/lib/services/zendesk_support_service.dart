@@ -378,8 +378,13 @@ class ZendeskSupportService {
   static Future<String> fetchPreAuthToken({
     required Nip98AuthService nip98Service,
     required String relayManagerUrl,
+    http.Client? httpClient,
   }) async {
-    final url = '$relayManagerUrl/api/zendesk/pre-auth';
+    // Signed and requested must be the same string: relay-manager compares
+    // the NIP-98 `u` tag to the request URL exactly, and `Uri.parse`
+    // normalizes host case, a default port and dot segments.
+    final uri = Uri.parse('$relayManagerUrl/api/zendesk/pre-auth');
+    final url = uri.toString();
 
     // Clear NIP-98 cache to avoid reusing a token with a stale timestamp.
     // The server requires created_at within 60s, but tokens are cached 10min.
@@ -394,8 +399,12 @@ class ZendeskSupportService {
       throw Exception('Failed to create NIP-98 auth token');
     }
 
-    final response = await http.post(
-      Uri.parse(url),
+    // Tear-off rather than `httpClient ?? http.Client()`: the top-level
+    // `http.post` owns and closes a client per call, so constructing one here
+    // to satisfy the fallback would leak it.
+    final post = httpClient?.post ?? http.post;
+    final response = await post(
+      uri,
       headers: {
         'Authorization': authToken.authorizationHeader,
         'Content-Type': 'application/json',
