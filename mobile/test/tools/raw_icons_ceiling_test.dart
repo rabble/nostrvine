@@ -138,11 +138,31 @@ void main() {
       expect(res.stdout, contains('no longer emitted'));
     });
 
-    test('passes when a file drops some icons but stays above zero', () {
+    // Before #8323 this shape PASSED: a drop that stayed above zero was slack
+    // the guard tolerated, so a migration's win was left unlocked and the file
+    // could silently regrow to its stale ceiling. The guard now requires the
+    // lower ceiling to be committed in the same change.
+    test(
+      'fails when a file drops some icons without relocking the ceiling',
+      () {
+        writeIcons('uses.dart', 5);
+        run(update: true);
+
+        writeIcons('uses.dart', 2);
+        final res = run();
+        expect(res.exitCode, 1);
+        expect(res.stdout, contains('DECREASED below the frozen ceiling'));
+        expect(res.stdout, contains('lib/uses.dart\t5 -> 2'));
+        expect(res.stdout, contains('UPDATE_BASELINE=1'));
+      },
+    );
+
+    test('passes once the lower ceiling is committed', () {
       writeIcons('uses.dart', 5);
       run(update: true);
 
       writeIcons('uses.dart', 2);
+      run(update: true);
       final res = run();
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [raw_icons_ceiling]'));
