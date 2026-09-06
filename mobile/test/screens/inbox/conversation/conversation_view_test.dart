@@ -931,7 +931,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text('\u{2764}\u{FE0F}'));
+        await tester.tap(find.text(ownReactionEmoji));
         // Avoid pumpAndSettle: the view's async profile providers can schedule
         // continuous micro-tasks. Pump the bottom-sheet enter animation.
         await tester.pump();
@@ -1046,6 +1046,18 @@ void main() {
           ),
           findsWidgets,
         );
+
+        // `showAction` and `onTap` are separate expressions sharing only
+        // `canRetract`, so the trailing's absence does not prove the row is
+        // inert. Tap it. The refused-removal arm opens a confirm prompt and
+        // only publishes the kind-5 once it is accepted, so the prompt — not
+        // the dispatch — is what a still-wired onTap surfaces here.
+        expect(find.byType(ListTile), findsOneWidget);
+        await tester.tap(find.byType(ListTile));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text(l10n.dmReactionRemovalRefusedTitle), findsNothing);
+        verifyNever(() => mockReactionsCubit.add(any()));
         handle.dispose();
       });
 
