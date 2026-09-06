@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/features.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
@@ -212,12 +213,17 @@ class StringListCollector extends RecursiveAstVisitor<void> {
   }
 }
 
-CompilationUnit? _parse(String path) {
+/// Parses [path] once, keeping the line info with the unit.
+///
+/// Both are taken from a single parse deliberately: re-parsing a file just to
+/// resolve an offset to a line doubled this detector's wall clock, which is
+/// most of a CI job's timing budget across ~3,500 files.
+ParseStringResult? _parse(String path) {
   try {
     return parseFile(
       path: path,
       featureSet: FeatureSet.latestLanguageVersion(),
-    ).unit;
+    );
   } on Object {
     // A file the parser rejects is already failing `flutter analyze`; treating
     // it as empty keeps this guard from double-reporting that.
@@ -262,13 +268,16 @@ void main(List<String> arguments) {
   // Pass 1 — every fixed-string constant, so the cleanup list's references
   // and the services' declarations can be joined.
   final constants = ConstantCollector();
-  final units = <String, CompilationUnit>{};
+  final parsed = <String, ParseStringResult>{};
   for (final file in files) {
-    final unit = _parse(file.absolute.path);
-    if (unit == null) continue;
-    units[file.path] = unit;
-    unit.accept(constants);
+    final result = _parse(file.absolute.path);
+    if (result == null) continue;
+    parsed[file.path] = result;
+    result.unit.accept(constants);
   }
+  final units = {
+    for (final entry in parsed.entries) entry.key: entry.value.unit,
+  };
 
   // Pass 2 — expand list constants, so `...TermsAcceptanceKeys.all` and any
   // `deviceScopedPrefsKeys` declaration resolve.
@@ -302,10 +311,7 @@ void main(List<String> arguments) {
   final used = <String, PrefsKey>{};
   for (final entry in units.entries) {
     if (entry.key.endsWith('user_data_cleanup_service.dart')) continue;
-    final lineInfo = parseFile(
-      path: File(entry.key).absolute.path,
-      featureSet: FeatureSet.latestLanguageVersion(),
-    ).lineInfo;
+    final lineInfo = parsed[entry.key]!.lineInfo;
     final collector = KeyUsageCollector(
       constants.values,
       entry.key,
