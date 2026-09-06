@@ -916,6 +916,60 @@ void main() {
         },
       );
 
+      for (final scenario in <({String description, String? nextOwner})>[
+        (description: 'authenticated owner changes', nextOwner: _otherPubkey),
+        (description: 'authenticated pubkey is lost', nextOwner: null),
+      ]) {
+        test('stops backfill when the ${scenario.description}', () async {
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'first-stranded',
+                name: 'First Stranded',
+                videoEventIds: const ['first_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+              ).toJson(),
+              CuratedList(
+                id: 'second-stranded',
+                name: 'Second Stranded',
+                videoEventIds: const ['second_video'],
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+              ).toJson(),
+            ]),
+          });
+          var publishCount = 0;
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            publishCount++;
+            if (publishCount == 1) {
+              when(
+                () => mockAuth.currentPublicKeyHex,
+              ).thenReturn(scenario.nextOwner);
+            }
+            return _accepted(invocation.positionalArguments[0] as Event);
+          });
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          verify(() => mockNostr.publishEventAwaitOk(any())).called(1);
+          expect(
+            upgraded.getListById('first-stranded')!.nostrEventId,
+            isNotNull,
+          );
+          final second = upgraded.getListById('second-stranded')!;
+          expect(second.nostrEventId, isNull);
+          expect(second.pubkey, isNull);
+        });
+      }
+
       test('does not republish a list the relay already has', () async {
         final list = await service.createList(name: 'Already Published');
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
