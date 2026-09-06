@@ -2241,6 +2241,7 @@ class DmRepository {
     // flag as its first statement, precisely so a stop can be followed by a
     // restart, and nothing user-facing reads it.
     _disposed = true;
+    final postAuthMaintenance = _postAuthMaintenance;
     // Bump the session token too: an intentional stop must invalidate any
     // startListening()/ensureDmRelayListPublished() resolve already in flight,
     // so its post-await continuation bails instead of re-opening the
@@ -2289,6 +2290,7 @@ class DmRepository {
     // have cursor/read-state writes after it. Preserve the handles captured
     // above and wait for every writer to observe the teardown before declaring
     // the repository quiescent. See #7318.
+    await postAuthMaintenance;
     await historyDrain;
     await pendingDecryptRetry;
     while (_eventLock != null) {
@@ -8299,7 +8301,7 @@ class DmRepository {
   /// already return early in that case, so nothing is gated on nothing.
   Future<void> _ensurePostAuthMaintenance() {
     final owner = _ownerPubkey;
-    if (owner == null) return Future<void>.value();
+    if (owner == null || _disposed) return Future<void>.value();
     final existing = _postAuthMaintenance;
     if (existing != null && _maintenanceOwner == owner) return existing;
     // Sequential inside, so each step operates on the previous one's result.

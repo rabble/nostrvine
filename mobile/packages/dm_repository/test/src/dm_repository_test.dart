@@ -7889,6 +7889,72 @@ void main() {
       // awaits it before wiping the DM tables and DmSyncState. A drain
       // suspended mid-page must stop with it; otherwise it resumes after the
       // wipe and re-seeds the state that was just cleared.
+      test('stopListening waits for post-auth maintenance', () async {
+        final maintenanceRelease = Completer<int>();
+
+        when(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => maintenanceRelease.future);
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockConversationsDao.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(const <ConversationRow>[]));
+
+        // An owner-scoped read can start maintenance before a signer exists.
+        final repository = createRepository();
+        final conversations = repository.watchAcceptedConversations().first;
+        await untilCalled(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+
+        var stopCompleted = false;
+        final stop = repository.stopListening().whenComplete(() {
+          stopCompleted = true;
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          stopCompleted,
+          isFalse,
+          reason: 'stopListening returned while maintenance was still writing',
+        );
+
+        maintenanceRelease.complete(0);
+        await stop;
+        await conversations;
+      });
+
+      test('a maintenance pass cannot start after listening stops', () async {
+        when(
+          () => mockConversationsDao.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => Stream.value(const <ConversationRow>[]));
+        final repository = createRepository();
+
+        await repository.stopListening();
+        await repository.watchAcceptedConversations().first;
+
+        verifyNever(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('stops a suspended history drain when listening stops', () async {
         var pageCalls = 0;
         final secondPageStarted = Completer<void>();
