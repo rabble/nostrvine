@@ -50,6 +50,13 @@ class _FakeNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
 
+  int clearPreferencesCalls = 0;
+
+  @override
+  Future<void> clearPreferences() async {
+    clearPreferencesCalls++;
+  }
+
   @override
   Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
       publishedSchemaVersions[pubkey];

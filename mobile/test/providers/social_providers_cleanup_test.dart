@@ -186,6 +186,40 @@ void main() {
       },
     );
 
+    test(
+      'an account switch clears the departing account watch history',
+      () async {
+        // seen_videos has no owner column, so whatever is in it belongs to
+        // whoever was last signed in. It also drives feed dedup, so inheriting
+        // it hides videos the incoming account has never seen (#8314).
+        await db.seenVideosDao.markSeenBatch([
+          SeenVideoRow(
+            videoId: _reactionIdA,
+            firstSeenAt: DateTime.now().millisecondsSinceEpoch,
+            lastSeenAt: DateTime.now().millisecondsSinceEpoch,
+          ),
+        ]);
+        expect(
+          await db.seenVideosDao.getAll(),
+          hasLength(1),
+          reason:
+              'the departing account must actually have watch history, '
+              'otherwise this test passes on an empty table',
+        );
+
+        final subscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final service = subscription.read();
+
+        await service.onDatabaseCleanup!(userPubkey: _pubkeyA);
+
+        expect(await db.seenVideosDao.getAll(), isEmpty);
+      },
+    );
+
     test('non-destructive cleanup preserves pending uploads', () async {
       final subscription = container.listen(
         userDataCleanupServiceProvider,

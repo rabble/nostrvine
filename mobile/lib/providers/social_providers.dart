@@ -3,13 +3,14 @@
 // ABOUTME: userDataCleanup, social, contentReporting, contentDeletion, collaborator-3
 
 import 'dart:async';
-
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
+import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -87,6 +89,31 @@ final pendingUploadOwnerCleanupProvider = Provider<PendingUploadOwnerCleanup>((
 ) {
   return (ownerPubkey) =>
       ref.read(uploadManagerProvider).deleteAllForOwner(ownerPubkey);
+});
+
+/// Clears the device-wide personal-event cache during account cleanup.
+///
+/// The indirection is load-bearing twice over. Reading
+/// `personalEventCacheServiceProvider` from [userDataCleanupServiceProvider]'s
+/// own callback closes a provider cycle back through auth (#7389). And the
+/// service's own `clearCache()` returns early when it has not been
+/// initialised, which would leave the on-disk boxes holding the departing
+/// account's events — the boxes outlive the service, so cleanup clears them
+/// directly (#8314).
+final personalEventCacheClearProvider = Provider<Future<void> Function()>((
+  ref,
+) {
+  return () async {
+    for (final name in const [
+      HiveBoxNames.personalEvents,
+      HiveBoxNames.personalEventsMetadata,
+    ]) {
+      final box = Hive.isBoxOpen(name)
+          ? Hive.box<dynamic>(name)
+          : await Hive.openBox<dynamic>(name);
+      await box.clear();
+    }
+  };
 });
 
 /// Stops the live DM gift-wrap subscription during account cleanup.
@@ -864,6 +891,22 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           await safeCleanup(
             'identityVerifications',
             db.identityVerificationsDao.clearAll,
+          );
+          // Three stores below hold this account's data under a key with no
+          // pubkey in it, so the next account reads the previous account's
+          // rows. Each already had a clear method; none of them had a caller
+          // (#8314).
+          //
+          // Watch history is feed *dedup* state, so inheriting it also hides
+          // videos the incoming account has never seen.
+          await safeCleanup('seenVideos', db.seenVideosDao.clearAll);
+          await safeCleanup(
+            'personalEvents',
+            ref.read(personalEventCacheClearProvider),
+          );
+          await safeCleanup(
+            'pushPreferences',
+            ref.read(notificationPreferencesStoreProvider).clearPreferences,
           );
         }
         // Clear the leaving account's DM sync cursors so its next login
