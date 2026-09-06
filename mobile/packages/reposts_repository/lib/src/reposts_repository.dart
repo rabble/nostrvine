@@ -1136,8 +1136,8 @@ class RepostsRepository {
   /// `social_providers.dart`, which is likewise required to surface failures
   /// rather than swallow them.
   ///
-  /// Safe to call after [dispose] -- the cache is still cleared but no
-  /// stream emission is attempted.
+  /// Safe to call after [dispose] -- a successful clear still clears the
+  /// cache, but no stream emission is attempted.
   Future<void> clearCache() async {
     await _localStorage?.clearAll();
     _repostRecords.clear();
