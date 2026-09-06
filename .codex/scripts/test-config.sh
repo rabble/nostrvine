@@ -363,6 +363,9 @@ case "$*" in
 666 claude
 777 claude
 999 claude
+1010 claude
+1011 claude
+1012 node
 PSOUT
     exit 0
     ;;
@@ -378,6 +381,9 @@ if [ "$1" = "-o" ] && [ "$2" = "comm=" ] && [ "$3" = "-p" ]; then
     666) echo "claude"; exit 0 ;;
     777) echo "claude"; exit 0 ;;
     999) echo "claude"; exit 0 ;;
+    1010) echo "claude"; exit 0 ;;
+    1011) echo "claude"; exit 0 ;;
+    1012) echo "node"; exit 0 ;;
     *) echo "bash"; exit 0 ;;
   esac
 fi
@@ -426,6 +432,8 @@ case "$pid" in
   555) printf 'n%s\n' "$TEST_REPO" ;;
   666) printf 'n%s\n' "$TEST_REPO" ;;
   777) printf 'n%s\n' "$TEST_REPO" ;;
+  1010) printf 'n%s\n' "$TEST_REPO" ;;
+  1012) printf 'n%s\n' "$TEST_REPO" ;;
   *) exit 1 ;;
 esac
 EOF
@@ -452,6 +460,15 @@ EOF
 cat > "$GUARD_SESSIONS_DIR/999.json" <<EOF
 {"pid":999,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"idle","name":"active-only"}
 EOF
+cat > "$GUARD_SESSIONS_DIR/1010.json" <<EOF
+{"pid":1010,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"headless","entrypoint":"cli","status":"busy","name":"non-interactive"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/1011.json" <<EOF
+{"pid":1011,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":1,"kind":"interactive","entrypoint":"cli","status":"busy","name":"bad-version"}
+EOF
+cat > "$GUARD_SESSIONS_DIR/1012.json" <<EOF
+{"pid":1012,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 21:24:30 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"not-claude"}
+EOF
 printf '{not valid json\n' > "$GUARD_SESSIONS_DIR/888.json"
 
 REGISTRY_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
@@ -476,6 +493,9 @@ if ! printf '%s\n' "$REGISTRY_GUARD_OUTPUT" | jq -e '
     and (contains("pid 555") | not)
     and (contains("pid 666") | not)
     and (contains("pid 777") | not)
+    and (contains("pid 1010") | not)
+    and (contains("pid 1011") | not)
+    and (contains("pid 1012") | not)
 ' >/dev/null; then
   echo "Session worktree guard did not classify registry launch and active roots correctly." >&2
   echo "Output was: $REGISTRY_GUARD_OUTPUT" >&2
@@ -524,6 +544,34 @@ if ! printf '%s\n' "$EMPTY_REGISTRY_GUARD_OUTPUT" | jq -e \
   '.systemMessage | contains("legacy socket fallback")' >/dev/null; then
   echo "Session worktree guard did not fall back for an empty registry." >&2
   echo "Output was: $EMPTY_REGISTRY_GUARD_OUTPUT" >&2
+  exit 1
+fi
+
+# Parseable registry records that fail host probes are not "supported": a
+# single unpinned locale used to take this path, and an older peer with only a
+# socket would stay invisible. Fall back instead of going silent.
+PROBE_MISMATCH_SESSIONS_DIR="$SCRATCH_DIR/probe-mismatch-claude-sessions"
+mkdir -p "$PROBE_MISMATCH_SESSIONS_DIR"
+cat > "$PROBE_MISMATCH_SESSIONS_DIR/111.json" <<EOF
+{"pid":111,"cwd":"$TEST_REPO","procStart":"Sat Sep  5 20:00:00 2026","version":"2.1.261","kind":"interactive","entrypoint":"cli","status":"busy","name":"stale-start"}
+EOF
+PROBE_MISMATCH_GUARD_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$GUARD_BIN_DIR:$PATH" \
+    TEST_REPO="$TEST_REPO" \
+    OTHER_REPO="$OTHER_REPO" \
+    CLAUDE_PROJECT_DIR="$TEST_REPO" \
+    CLAUDE_SESSIONS_DIR="$PROBE_MISMATCH_SESSIONS_DIR" \
+    CC_SOCK_DIR="$GUARD_SOCKET_DIR" \
+    "$WORKTREE_GUARD_HOOK")
+if ! printf '%s\n' "$PROBE_MISMATCH_GUARD_OUTPUT" | jq -e '
+  .systemMessage
+  | contains("legacy socket fallback")
+    and contains("pid 111")
+    and contains("pid 333")
+    and (contains("stale-start") | not)
+' >/dev/null; then
+  echo "Session worktree guard did not fall back when registry probes failed." >&2
+  echo "Output was: $PROBE_MISMATCH_GUARD_OUTPUT" >&2
   exit 1
 fi
 

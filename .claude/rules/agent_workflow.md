@@ -96,13 +96,14 @@ script header) and deliberately not registered in the team
 `settings.json`, so anyone already running it at user scope is not warned
 twice. It warns only — it never blocks a session.
 
-The preferred signal combines the Claude process cwd (the launch root)
-with `~/.claude/sessions/<pid>.json` (the active session root). The
-registry cwd follows harness-level worktree changes but not `cd` inside
-an ephemeral Bash tool call. Cwd is evidence of where a session usually
-writes, never a boundary on where absolute paths can write, so moving to
-a different worktree changes the warning's wording but never suppresses
-the launch-root warning.
+The preferred signal combines the Claude process cwd with
+`~/.claude/sessions/<pid>.json` (the active session root). The registry
+cwd follows harness-level worktree changes but not `cd` inside an
+ephemeral Bash tool call. On current macOS Claude the process cwd tracks
+harness `chdir`, so the two roots usually match; the comparison still
+covers lsof-unavailable sessions. Cwd is evidence of where a session
+usually writes, never a boundary on where absolute paths can write, so a
+launch-root match is never suppressed.
 
 The session registry is undocumented Claude Code internal state and has
 only been verified on macOS. Its own version field may accompany future

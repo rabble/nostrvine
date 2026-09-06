@@ -34,15 +34,17 @@
 # Detection prefers Claude Code's pid-keyed session registry. The registry cwd
 # is the session's working root; it changes when the harness enters a worktree,
 # but not for a `cd` inside an ephemeral Bash tool call. The Claude process cwd
-# from lsof remains the launch root. Comparing both signals distinguishes an
-# active same-worktree session from one that merely launched here, without
-# suppressing a warning based on cwd alone: tools can still write absolute paths.
+# from lsof is the process cwd. On current macOS Claude that tracks harness
+# chdir, so the two roots usually match; comparing both still covers sessions
+# whose cwd lsof cannot read, and any case where the roots differ. A launch-root
+# match is never suppressed: tools can still write absolute paths.
 #
 # The registry is undocumented Claude Code internal state, macOS-verified only,
 # and includes a version field because its shape may change. If it is absent,
-# unreadable, incompatible, or jq is unavailable, the hook falls back to the
-# older /tmp/cc-socks*/<pid>.sock launch-directory signal. Set
-# CLAUDE_SESSIONS_DIR and CC_SOCK_DIR to test or override those locations.
+# unreadable, incompatible, empty of live confirmed records, or jq is
+# unavailable, the hook falls back to the older /tmp/cc-socks*/<pid>.sock
+# launch-directory signal. Set CLAUDE_SESSIONS_DIR and CC_SOCK_DIR to test or
+# override those locations.
 #
 # Always exits 0. This warns; it never blocks a session.
 
@@ -130,7 +132,6 @@ if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ] && [ -r "$sessions_di
     ' "$session_file" 2>/dev/null); then
       continue
     fi
-    registry_supported=true
 
     IFS=$'\x1f' read -r pid recorded_start session_cwd kind entrypoint name status \
       <<< "$registry_record"
@@ -145,6 +146,7 @@ if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ] && [ -r "$sessions_di
     recorded_start=$(printf '%s\n' "$recorded_start" \
       | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     [ -n "$actual_start" ] && [ "$actual_start" = "$recorded_start" ] || continue
+    registry_supported=true
 
     launch_cwd=$(process_cwd "$pid")
     launch_root=""
