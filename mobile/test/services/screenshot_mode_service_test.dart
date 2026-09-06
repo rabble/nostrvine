@@ -1,14 +1,18 @@
 // ABOUTME: Tests for ScreenshotModeService startup orchestration.
-// ABOUTME: Covers throwaway auth and creator-follow seeding behavior.
+// ABOUTME: Covers throwaway auth, creator follows, and bundled fixtures.
+
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/providers/classic_vines_provider.dart'
     show ClassicViner;
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
+import 'package:yaml/yaml.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -101,6 +105,14 @@ void main() {
     });
 
     group('fixtures', () {
+      Set<String> screenshotMediaAssets() => {
+        ScreenshotMode.viewfinderFixture,
+        for (final fixture in screenshotEditorFixtures) ...[
+          fixture.video,
+          fixture.thumbnail,
+        ],
+      };
+
       test('OG Viner fixtures have avatars and unique pubkeys', () {
         final fixtures = screenshotOgVinersFixtures();
 
@@ -158,6 +170,44 @@ void main() {
         ]);
 
         expect(container.read(discoveredListsProvider), initial);
+      });
+
+      group('editor fixtures', () {
+        test('every referenced media asset exists on disk', () {
+          for (final asset in screenshotMediaAssets()) {
+            expect(
+              File(asset).existsSync(),
+              isTrue,
+              reason: '$asset must exist for screenshot capture runs',
+            );
+          }
+        });
+
+        test('every seed-media file is bundled explicitly', () {
+          final pubspec =
+              loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
+          final flutterAssets =
+              (pubspec['flutter'] as YamlMap)['assets'] as YamlList;
+          final declaredSeedMedia = flutterAssets
+              .cast<String>()
+              .where((asset) => asset.startsWith('assets/seed_media/'))
+              .toSet();
+          final seedMediaOnDisk = Directory('assets/seed_media')
+              .listSync(recursive: true)
+              .whereType<File>()
+              .map(
+                (file) => file.path.replaceAll(Platform.pathSeparator, '/'),
+              )
+              .toSet();
+
+          expect(
+            declaredSeedMedia,
+            equals(seedMediaOnDisk),
+            reason:
+                'seed media must be declared file-by-file so additions and '
+                'removals cannot silently change the app bundle',
+          );
+        });
       });
     });
   });
