@@ -513,10 +513,9 @@ class _RestorePausedBannerGate extends StatelessWidget {
 /// no timestamp and would sink out of reach.
 ///
 /// The caller only builds this when [ConversationListState.pinnedSupport] is
-/// non-null: the bloc composes that inside the same pipeline that applies the
-/// blocklist filter and the protected-minor gate, so a user who blocked the
-/// moderation account, or a restricted minor whose approval was revoked, gets
-/// no row rather than one the conversation route guard would bounce.
+/// non-null. The bloc withholds that for a restricted minor whose approval was
+/// revoked, so this tile is never the row the conversation route guard would
+/// bounce (#176). Blocking the moderation account does not withhold it (#7850).
 class _PinnedSupportRow extends StatelessWidget {
   const _PinnedSupportRow({
     required this.pinned,
