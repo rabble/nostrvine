@@ -126,10 +126,9 @@ void main() {
 
 /// Resolves the image the widget's [FutureBuilder] is waiting on.
 ///
-/// The decode hops between the engine, which needs real time, and `then`
-/// callbacks queued in the test's fake-async zone, which only run on a pump.
-/// Awaiting the future inside a single `runAsync` therefore never completes;
-/// alternating the two does, the same way `clip_thumbnail_image_test` polls.
+/// The decode hops between the engine and `then` callbacks queued in the test's
+/// fake-async zone. Awaiting the future inside a single `runAsync` therefore
+/// never completes; alternating real event-queue turns with pumps does.
 Future<ui.Image> _decodedImage(WidgetTester tester) async {
   final future = tester
       .widget<FutureBuilder<ui.Image?>>(find.byType(FutureBuilder<ui.Image?>))
@@ -143,9 +142,7 @@ Future<ui.Image> _decodedImage(WidgetTester tester) async {
     }),
   );
   for (var attempt = 0; attempt < 50 && !completed; attempt++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 20)),
-    );
+    await tester.runAsync(pumpEventQueue);
     await tester.pump();
   }
   expect(completed, isTrue, reason: 'blurhash decode never completed');
