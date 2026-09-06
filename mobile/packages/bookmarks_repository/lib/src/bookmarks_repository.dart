@@ -11,36 +11,31 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Represents a bookmarked item
+/// An item on the user's NIP-51 bookmark list.
+///
+/// Models only what this client acts on — which tag name, and which id. The
+/// positions after those belong to whoever wrote the tag: NIP-51 puts a relay
+/// hint at index 2, NIP-01 the author pubkey at `e[3]`, NIP-10 a marker there
+/// with the pubkey at `e[4]`. None of them are read anywhere in the app, and
+/// parsing them into fields is what let a republish truncate them (#7137), so
+/// they are carried on the source tag array instead — see
+/// [BookmarksRepository._publicTags].
 @immutable
 class BookmarkItem {
   /// Creates a bookmark item.
-  const BookmarkItem({
-    required this.type,
-    required this.id,
-    this.relay,
-    this.petname,
-  });
+  const BookmarkItem({required this.type, required this.id});
 
-  /// Rebuilds an item from a NIP-51 tag.
-  ///
-  /// Positions past [petname] are dropped, which is #7137.
-  factory BookmarkItem.fromTag(List<String> tag) {
-    return BookmarkItem(
-      type: tag[0],
-      id: tag[1],
-      relay: tag.length > 2 ? tag[2] : null,
-      petname: tag.length > 3 ? tag[3] : null,
-    );
-  }
+  /// Reads the tag name and id from a NIP-51 tag, ignoring every later
+  /// position. Nothing is lost: the tag itself is what gets republished.
+  factory BookmarkItem.fromTag(List<String> tag) =>
+      BookmarkItem(type: tag[0], id: tag[1]);
 
   /// Rebuilds an item from its [toJson] form.
-  factory BookmarkItem.fromJson(Map<String, dynamic> json) => BookmarkItem(
-    type: json['type'] as String,
-    id: json['id'] as String,
-    relay: json['relay'] as String?,
-    petname: json['petname'] as String?,
-  );
+  ///
+  /// Snapshots written before #7137 also carry `relay` and `petname` keys;
+  /// they are ignored rather than rejected, so an existing cache still loads.
+  factory BookmarkItem.fromJson(Map<String, dynamic> json) =>
+      BookmarkItem(type: json['type'] as String, id: json['id'] as String);
 
   /// NIP-51 tag name: `e` (event), `a` (parameterized replaceable),
   /// `t` (hashtag) or `r` (URL).
@@ -49,27 +44,8 @@ class BookmarkItem {
   /// Event id, article coordinate, hashtag, or URL, depending on [type].
   final String id;
 
-  /// Optional relay hint.
-  final String? relay;
-
-  /// Optional petname/label.
-  final String? petname;
-
-  /// Renders this item as a NIP-51 tag.
-  List<String> toTag() {
-    final tag = [type, id];
-    if (relay != null) tag.add(relay!);
-    if (petname != null) tag.add(petname!);
-    return tag;
-  }
-
   /// Serializes this item for the SharedPreferences snapshot.
-  Map<String, dynamic> toJson() => {
-    'type': type,
-    'id': id,
-    'relay': relay,
-    'petname': petname,
-  };
+  Map<String, dynamic> toJson() => {'type': type, 'id': id};
 
   @override
   bool operator ==(Object other) =>
@@ -243,6 +219,18 @@ class BookmarksRepository {
   /// rewrites only the entry being removed. Never persisted, for the same
   /// reason [_privateBookmarks] is not.
   List<List<String>> _privateTags = const [];
+
+  /// [_globalBookmarks]' source array, kept verbatim for the same reason
+  /// [_privateTags] is: rebuilding `tags` from parsed items would silently drop
+  /// another client's non-item tags and any tag position past the second.
+  ///
+  /// NIP-51 defines a bookmark item as at most three positions, but NIP-01 puts
+  /// the author pubkey at `e[3]` and NIP-10 a marker there with the pubkey at
+  /// `e[4]` — positions this client has no reason to model and no right to
+  /// delete. Refreshed from the relay before every publish, since every write
+  /// path reconciles first — [_syncGlobalBookmarks] with
+  /// `requireAuthoritative` — so a stale array can never reach a publish.
+  List<List<String>> _publicTags = const [];
 
   /// What became of the newest `content` we saw. Drives the write path's
   /// refusal to act on a list it cannot fully see.
@@ -430,7 +418,7 @@ class BookmarksRepository {
   /// out, no reachable relay, or a timed-out query. **Callers that are about
   /// to publish must not write on `false`**: kind 10003 is replaceable, so
   /// republishing a list this device never reconciled deletes every bookmark
-  /// it has not seen (see `replaceable-event-preservation`).
+  /// it has not seen.
   ///
   /// A zero-event answer is only trusted when the relay actually answered,
   /// which is why this uses [NostrClient.queryEventsDetailed] rather than
@@ -548,6 +536,7 @@ class BookmarksRepository {
         // session that opens Saved often enough would never re-confirm.
         if (answeredAuthoritatively) _absenceConfirmedAt = _now();
         _globalBookmarks.clear();
+        _publicTags = const [];
         _privateBookmarks.clear();
         _privateTags = const [];
         _privateItemsState = _PrivateItemsState.none;
@@ -662,22 +651,12 @@ class BookmarksRepository {
   /// no other read can land between the direction being decided and the new
   /// list being published.
   Future<BookmarkToggleResult> toggleVideoInGlobalBookmarks(
-    String videoEventId, {
-    String? relay,
-    String? petname,
-  }) => _serialized(
-    () => _toggleVideoInGlobalBookmarks(
-      videoEventId,
-      relay: relay,
-      petname: petname,
-    ),
-  );
+    String videoEventId,
+  ) => _serialized(() => _toggleVideoInGlobalBookmarks(videoEventId));
 
   Future<BookmarkToggleResult> _toggleVideoInGlobalBookmarks(
-    String videoEventId, {
-    String? relay,
-    String? petname,
-  }) async {
+    String videoEventId,
+  ) async {
     final failure = await _syncGlobalBookmarks(requireAuthoritative: true);
     final wasBookmarked = isVideoBookmarkedGlobally(videoEventId);
 
@@ -708,12 +687,7 @@ class BookmarksRepository {
             alreadyReconciled: true,
           )
         : await _addToGlobalBookmarks(
-            BookmarkItem(
-              type: 'e',
-              id: videoEventId,
-              relay: relay,
-              petname: petname,
-            ),
+            BookmarkItem(type: 'e', id: videoEventId),
             alreadyReconciled: true,
           );
 
@@ -969,10 +943,11 @@ class BookmarksRepository {
         content = encrypted;
       }
 
+      final publishedTags = _buildPublishTags(candidate);
       final event = await _signer.createAndSignEvent(
         kind: globalBookmarksKind,
         content: content,
-        tags: [for (final item in candidate) item.toTag()],
+        tags: publishedTags,
         createdAt: _nextPublishCreatedAt(),
       );
 
@@ -997,6 +972,7 @@ class BookmarksRepository {
         id: event.id,
         acceptedAt: _now(),
       );
+      _publicTags = publishedTags;
       _globalBookmarks
         ..clear()
         ..addAll(candidate);
@@ -1096,6 +1072,7 @@ class BookmarksRepository {
     final private = await _readPrivateItems(content);
 
     _lastKnownRemoteContent = content;
+    _publicTags = [for (final tag in event.tags) List<String>.of(tag)];
     _globalBookmarks
       ..clear()
       ..addAll(_itemsFromTags(event.tags));
@@ -1107,12 +1084,54 @@ class BookmarksRepository {
     _revision = (createdAt: event.createdAt, id: event.id);
   }
 
+  /// The `tags` array to publish for [candidate], built from the relay's own
+  /// array rather than rebuilt from parsed items.
+  ///
+  /// Walks [_publicTags] once and keeps everything this client did not author:
+  /// a tag it does not model passes through untouched, and a modelled tag that
+  /// survives the edit is re-emitted whole, so relay hints, NIP-10 markers and
+  /// author pubkeys reach the relay as their writer left them. Only a bookmark
+  /// being added here has no source tag, and it gets the two positions NIP-51
+  /// requires.
+  ///
+  /// An item written twice collapses to one tag. The remove path already uses
+  /// `removeWhere` rather than `remove` because another client may duplicate an
+  /// entry; emitting one tag per surviving item is the same decision on the
+  /// write side.
+  List<List<String>> _buildPublishTags(List<BookmarkItem> candidate) {
+    final wanted = candidate.toSet();
+    final emitted = <BookmarkItem>{};
+    final tags = <List<String>>[];
+
+    for (final tag in _publicTags) {
+      if (tag.length < 2 || !_itemTagNames.contains(tag[0])) {
+        tags.add(List<String>.of(tag));
+        continue;
+      }
+      final item = BookmarkItem(type: tag[0], id: tag[1]);
+      if (wanted.contains(item) && emitted.add(item)) {
+        tags.add(List<String>.of(tag));
+      }
+    }
+
+    for (final item in candidate) {
+      if (emitted.add(item)) tags.add([item.type, item.id]);
+    }
+
+    return tags;
+  }
+
   /// The bookmark items among [tags], in order.
   static List<BookmarkItem> _itemsFromTags(List<List<String>> tags) => [
     for (final tag in tags)
-      if (tag.length >= 2 && ['e', 'a', 't', 'r'].contains(tag[0]))
+      if (tag.length >= 2 && _itemTagNames.contains(tag[0]))
         BookmarkItem.fromTag(tag),
   ];
+
+  /// The NIP-51 tag names this client models as bookmark items: `e` (event),
+  /// `a` (addressable coordinate), `t` (hashtag) and `r` (URL). Every other tag
+  /// name belongs to whoever wrote it and is carried through untouched.
+  static const Set<String> _itemTagNames = {'e', 'a', 't', 'r'};
 
   /// Decrypts [content] into private items, and reports what happened.
   ///
@@ -1186,8 +1205,8 @@ class BookmarksRepository {
       for (final entry in decoded) {
         if (entry is! List) return null;
         // Rejected rather than filtered. Dropping a non-string would shift
-        // every position after it — `['e', id, null, petname]` re-encrypts as
-        // `['e', id, petname]`, promoting the label to the relay hint — and
+        // every position after it — `['e', id, null, pubkey]` re-encrypts as
+        // `['e', id, pubkey]`, promoting the author to the relay hint — and
         // silently rewriting an entry is exactly what carrying the array
         // verbatim exists to prevent.
         if (entry.any((value) => value is! String)) return null;
