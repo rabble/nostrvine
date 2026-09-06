@@ -151,7 +151,7 @@ definitions:
       script: flutter pub get
     - &pod_install
       name: Run pod install
-      script: pod install --project-directory=ios
+      script: cd ios && pod install
     - &precache_shorebird_android_artifacts
       name: Precache Shorebird Android engine artifacts
       script: |
@@ -734,25 +734,6 @@ definitions:
     - &build_ios_e2e
       name: Build iOS Simulator app
       script: |
-        # firebase_crashlytics injects a dSYM upload phase during pod install.
-        # Hybrid SPM/CocoaPods builds can point that phase at a nonexistent
-        # Pods/FirebaseCrashlytics tool. Simulator smoke tests do not produce
-        # release symbols, so remove the generated phase for this build only.
-        ruby <<'RUBY'
-        require 'xcodeproj'
-
-        project = Xcodeproj::Project.open('ios/Runner.xcodeproj')
-        runner = project.targets.find { |target| target.name == 'Runner' }
-        abort('Runner target not found') unless runner
-
-        phases = runner.shell_script_build_phases.select do |phase|
-          phase.name == "[firebase_crashlytics] Crashlytics Upload Symbols"
-        end
-        phases.each { |phase| phase.remove_from_project }
-        project.save if phases.any?
-        puts "Removed #{phases.length} Crashlytics upload phase(s) from simulator build"
-        RUBY
-
         flutter build ios --simulator \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
@@ -1389,11 +1370,11 @@ workflows:
         - $HOME/Library/Caches/CocoaPods
         - $HOME/.pub-cache
     triggering:
-      # Runs on every PR to main. NOT a required check: per team decision it
-      # stays non-blocking until a flake baseline exists (target ≥30 runs at
-      # ≥95%). Note #7204 — a fixed 3m31s hierarchy stall on the Explore screen
-      # makes flows a coin flip, so a baseline collected before that is fixed
-      # measures the stall rather than the app.
+      # Configured for PRs to main, but #7504 tracks the inactive webhook that
+      # currently prevents automatic builds. NOT a required check: per team
+      # decision it stays non-blocking until a flake baseline exists (target
+      # ≥30 runs at ≥95%). #7204 records the fixed 3m31s Explore hierarchy
+      # stall; restoring the affected flows is tracked by #7619 and #7620.
       #
       # If PR builds do not fire after merge, check the GitHub webhook for the
       # Codemagic app before touching this YAML — a misconfigured webhook

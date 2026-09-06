@@ -80,7 +80,6 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         boot = self._definition_block("boot_ios_simulator")
         install = self._definition_block("install_app_ios_simulator")
         maestro = self._definition_block("run_maestro_smoke_tests")
-        build = self._definition_block("build_ios_e2e")
 
         self.assertIn(
             'echo "MAESTRO_DEVICE_UDID=$DEVICE_UDID" >> "$CM_ENV"',
@@ -105,51 +104,46 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn('if [ -n "${MAESTRO_DEVICE_UDID:-}" ]; then', maestro)
         self.assertIn('set -- --device "$MAESTRO_DEVICE_UDID"', maestro)
         self.assertIn('maestro "$@" test', maestro)
-        self.assertIn(
-            'phase.name == "[firebase_crashlytics] Crashlytics Upload Symbols"',
-            build,
-        )
-        self.assertIn("phase.remove_from_project", build)
-        self.assertLess(
-            build.index("phase.remove_from_project"),
-            build.index("flutter build ios --simulator"),
-        )
 
-        workflow = self._workflow_block("e2e-smoke-ios")
-        self.assertIn("BUNDLE_ID: co.openvine.app.staging", workflow)
-        for step in (
-            "- *boot_ios_simulator",
-            "- *install_app_ios_simulator",
-            "- *run_maestro_smoke_tests",
-        ):
-            self.assertIn(step, workflow)
+        workflow = self._resolved_config()["workflows"]["e2e-smoke-ios"]
+        self.assertEqual(
+            "co.openvine.app.staging",
+            workflow["environment"]["vars"]["BUNDLE_ID"],
+        )
+        step_names = [step["name"] for step in workflow["scripts"]]
         self.assertLess(
-            workflow.index("- *boot_ios_simulator"),
-            workflow.index("- *install_app_ios_simulator"),
+            step_names.index("Boot iOS Simulator"),
+            step_names.index("Install app on iOS Simulator"),
         )
         self.assertLess(
-            workflow.index("- *install_app_ios_simulator"),
-            workflow.index("- *run_maestro_smoke_tests"),
+            step_names.index("Install app on iOS Simulator"),
+            step_names.index("Run Maestro Smoke Tests"),
         )
 
     def test_pod_install_only_targets_the_app_workspace(self) -> None:
         pod_install = self._definition_block("pod_install")
 
-        self.assertIn("pod install --project-directory=ios", pod_install)
+        self.assertIn("cd ios && pod install", pod_install)
+        self.assertNotIn("--project-directory", pod_install)
         self.assertNotIn("find ", pod_install)
 
     def test_android_e2e_excludes_unbounded_maestro_artifacts(self) -> None:
-        workflow = self._workflow_block("e2e-smoke-android")
+        workflow = self._resolved_config()["workflows"]["e2e-smoke-android"]
 
-        self.assertIn("BUNDLE_ID: co.openvine.app.staging", workflow)
-        self.assertNotIn("- ~/.maestro/tests/**\n", workflow)
-        for artifact in (
-            "screenshots/**",
-            "screen-hierarchy/**",
-            "logs/maestro.log",
-            "commands.json",
-        ):
-            self.assertIn(f"- ~/.maestro/tests/**/{artifact}", workflow)
+        self.assertEqual(
+            "co.openvine.app.staging",
+            workflow["environment"]["vars"]["BUNDLE_ID"],
+        )
+        self.assertEqual(
+            [
+                "build/app/outputs/flutter-apk/app-debug.apk",
+                "~/.maestro/tests/**/screenshots/**",
+                "~/.maestro/tests/**/screen-hierarchy/**",
+                "~/.maestro/tests/**/logs/maestro.log",
+                "~/.maestro/tests/**/commands.json",
+            ],
+            workflow["artifacts"],
+        )
 
     def test_android_aab_build_uses_google_play_floor(self) -> None:
         self.assertIn(
@@ -367,21 +361,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn('"refs/heads/main:refs/remotes/origin/main"', step)
 
     def test_shorebird_workflows_define_every_variable_their_scripts_read(self) -> None:
-        resolved = json.loads(
-            subprocess.run(
-                [
-                    "ruby",
-                    "-ryaml",
-                    "-rjson",
-                    "-e",
-                    "print JSON.generate(YAML.safe_load(File.read(ARGV[0]), aliases: true))",
-                    str(CODEMAGIC_PATH),
-                ],
-                check=True,
-                text=True,
-                capture_output=True,
-            ).stdout
-        )
+        resolved = self._resolved_config()
 
         for name in ("ios-build", "android-build", "ios-patch", "android-patch"):
             workflow = resolved["workflows"][name]
@@ -600,6 +580,23 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         if next_definition is None:
             return self.contents[start:]
         return self.contents[start : start + 1 + next_definition.start()]
+
+    def _resolved_config(self) -> dict[str, object]:
+        return json.loads(
+            subprocess.run(
+                [
+                    "ruby",
+                    "-ryaml",
+                    "-rjson",
+                    "-e",
+                    "print JSON.generate(YAML.safe_load(File.read(ARGV[0]), aliases: true))",
+                    str(CODEMAGIC_PATH),
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout
+        )
 
     def _workflow_block(self, workflow_name: str) -> str:
         start = self.contents.index(f"  {workflow_name}:")
