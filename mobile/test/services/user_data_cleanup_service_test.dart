@@ -13,6 +13,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/video_provenance_filter_service.dart';
@@ -211,6 +212,8 @@ void main() {
         'the content-filter migration flag guarding those choices':
             ContentFilterService.filterMigratedStorageKey,
         'muted DM conversations': mutedConversationsStorageKey,
+        'the seen-videos migration flag guarding watch history':
+            SeenVideosService.seenVideosMigratedStorageKey,
         'declared content language published on videos':
             LanguagePreferenceService.prefsKey,
         'the unscoped custom sound library':

@@ -13,6 +13,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,9 +72,11 @@ class UserDataCleanupService {
     // Content history
     'content_reports_history',
     'content_deletions_history',
-    // Viewing history
-    'seen_video_ids',
-    'seen_video_metrics',
+    // Viewing history. The migration flag travels with the metrics it gates,
+    // for the same reason the content-filter pair does.
+    SeenVideosService.legacySeenVideosStorageKey,
+    SeenVideosService.seenVideosMetricsStorageKey,
+    SeenVideosService.seenVideosMigratedStorageKey,
     // Labeler subscriptions
     ModerationLabelService.subscribedLabelersStorageKey,
     ModerationLabelService.followingModerationEnabledStorageKey,
