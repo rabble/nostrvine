@@ -233,6 +233,9 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final callsBefore = subscribeCallCount;
+      // A counter that never moved would make the final assertion compare
+      // 0 with 0, so pin that the live subscription happened (#8617).
+      expect(callsBefore, greaterThan(0));
 
       // Dispose and close stream first (to avoid double-dispose in tearDown)
       eventStreamController.close();
@@ -260,6 +263,7 @@ void main() {
 
     test('handles case with no active subscriptions', () async {
       final callsBefore = subscribeCallCount;
+      expect(callsBefore, 0, reason: 'nothing subscribed yet');
 
       // Call without any prior subscriptions - should not throw
       await videoEventService.resetAndResubscribeAll();
@@ -281,6 +285,11 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final callsBefore = subscribeCallCount;
+      expect(
+        callsBefore,
+        greaterThan(0),
+        reason: 'the hashtag feed subscribed',
+      );
 
       await videoEventService.resetAndResubscribeAll();
       await Future<void>.delayed(const Duration(milliseconds: 50));

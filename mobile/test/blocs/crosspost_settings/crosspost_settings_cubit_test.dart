@@ -643,6 +643,9 @@ void main() {
           cubit.close();
 
           final countAfterClose = loadCount;
+          // One initial load plus at least one 1ms poll; without this pin a
+          // cubit that never polled would pass on 1 == 1 (#8617).
+          expect(countAfterClose, greaterThan(1));
           fake.elapse(const Duration(milliseconds: 5));
           fake.flushMicrotasks();
           expect(loadCount, countAfterClose);

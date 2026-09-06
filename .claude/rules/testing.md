@@ -61,6 +61,61 @@ trustworthy:
 cd mobile && dart run scripts/lib/placeholder_test_detector.dart test integration_test packages --path-prefix . --detail
 ```
 
+### An unchanged-assertion needs a pinned baseline
+
+The third frozen shape is not literal, which is why the placeholder guard cannot
+see it. Read a value into a local, act, and assert the same read still equals
+the local:
+
+```dart
+service.markAuthShellReady();
+final firstTime = service.authShellReadyTime;
+service.markAuthShellReady();
+expect(service.authShellReadyTime, equals(firstTime));   // null == null passes
+```
+
+Both operands come from the state under test. Replace `markAuthShellReady` with
+a no-op and `authShellReadyTime` is null both times, so the test stays green
+while claiming the value "did not change" without ever proving it existed. The
+same holds for a counter that stays 0, a list that stays empty, or a notifier
+whose value never landed. #8617 proved the first instance by mutation and the
+sweep that closed it found sixteen more.
+
+Pin the baseline before the act — `expect(firstTime, isNotNull)`,
+`expect(count, greaterThan(0))`, `expect(rows, hasLength(2))` — or give the
+test an in-body positive control that proves the mechanism ran. An expect on a
+member of either side (`expect(cubit.state.status, ready)` before
+`final last = cubit.state`), on the collection a `.length` came from, or a
+`firstTime!` that would throw on null all count. A pin *after* the re-read is
+fine too; the test fails either way.
+
+Three of the swept tests needed more than a pin, and they are the shape to watch
+for: when acting wrongly would leave the observable unchanged anyway — a second
+`setRate(1.0)` on a player already at 1.0, a `jumpToPage(3)` while page 3 is
+showing, or geometry measured on a parent-constrained row — no pin on the value
+helps, and the test has to observe calls or unconstrained child geometry instead.
+
+A read that cannot come back absent is its own pin and is not reported: the
+single-result `tester` queries (`tester.state`, `tester.getSize`) throw on an
+empty finder, and a provider read (`container.read(fooProvider)`,
+`ref.watch(fooProvider)`, `context.read<FooBloc>()`) returns the provided value
+or throws, so `same()` on two of them cannot pass on null == null. There is no
+inline escape hatch, for the same reason the placeholder ratchet has none: an
+assertion the scan cannot see is one line away from being one it can.
+
+`check_unpinned_unchanged_assertions.sh` (#8617) freezes at **zero** every
+pair that is the test's ONLY assertion, in
+`mobile/scripts/baseline/unpinned_unchanged_assertions.txt`; a pair beside a
+real assertion is listed by `--all` but not frozen, for the same reason a
+tautology beside a real assertion is not a placeholder. Detector:
+`scripts/lib/unpinned_unchanged_assertion_detector.dart`, a Dart AST because
+`dart format` wraps the three parts onto different lines and pinning is a
+property of the whole body.
+
+```bash
+cd mobile && dart run scripts/lib/unpinned_unchanged_assertion_detector.dart test integration_test packages --path-prefix . --detail
+```
+
 ---
 
 ## New and Extracted Packages Must Ship with Tests

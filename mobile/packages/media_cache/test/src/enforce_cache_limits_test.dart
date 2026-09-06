@@ -778,6 +778,7 @@ void main() {
         });
         await manager.enforceCacheLimits(force: true);
         final readsAfterForcedSweep = reads;
+        expect(readsAfterForcedSweep, 1, reason: 'the forced sweep read once');
         final target = await completeDownload(manager, downloader, bytes: 10);
         expect(target.existsSync(), isTrue, reason: 'inside the window');
         await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -856,17 +857,21 @@ void main() {
       test('a trailing sweep armed before close() never runs after '
           'it', () async {
         var reads = 0;
-        when(repo.getAllObjects).thenAnswer((_) async {
-          reads++;
-          return <CacheObject>[];
-        });
         final (manager, _, downloader) = buildWithBudget(
           'closed',
           maxCacheSizeBytes: 4,
           sweepThrottle: const Duration(milliseconds: 300),
         );
+        // Stub after buildWithBudget, which installs its own non-counting
+        // getAllObjects stub. With the order reversed the counter never moved
+        // and the final assertion compared 0 with 0 (#8617).
+        when(repo.getAllObjects).thenAnswer((_) async {
+          reads++;
+          return <CacheObject>[];
+        });
         await manager.enforceCacheLimits(force: true);
         final readsAfterForcedSweep = reads;
+        expect(readsAfterForcedSweep, 1, reason: 'the forced sweep read once');
 
         final target = await completeDownload(manager, downloader, bytes: 10);
         expect(target.existsSync(), isTrue, reason: 'inside the window');

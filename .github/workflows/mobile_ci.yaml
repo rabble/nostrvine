@@ -201,6 +201,16 @@ jobs:
           # no assertion is deliberately not counted -- imported helpers and
           # third-party verifiers assert in ways one file cannot see. #3340.
           bash scripts/check_placeholder_tests.sh
+      - name: 🧪 Verify no 'unchanged' assertion goes unpinned (state-tautology ratchet)
+        run: |
+          # Frozen at ZERO: a test whose only assertion compares a re-read of
+          # state with an earlier read of it that was never pinned. Both operands
+          # come from the state under test, so with the method inert the test
+          # compares null with null (or 0 with 0) and stays green -- #8617 proved
+          # one by mutation. The placeholder ratchet above cannot see it: nothing
+          # here is a literal. Pin the baseline (expect(first, isNotNull)) before
+          # the act. #8617.
+          bash scripts/check_unpinned_unchanged_assertions.sh
       - name: ⏳ Verify Future.delayed-in-tests count does not increase (ratchet)
         run: bash scripts/check_future_delayed_ceiling.sh
       - name: ⏳ Verify Future.delayed-in-production count does not increase (ratchet)

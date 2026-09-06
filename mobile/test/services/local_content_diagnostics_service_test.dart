@@ -127,11 +127,19 @@ void main() {
     });
 
     test('collecting diagnostics does not change stored rows', () async {
-      await saveDraft(id: 'zero-clip-draft', owner: _ownerA);
+      await saveDraft(
+        id: 'stored-draft',
+        owner: _ownerA,
+        clipId: 'stored-clip',
+      );
       final beforeDrafts = await database.draftsDao.getAllDrafts();
       final beforeClips = await database.clipsDao.getAllClips(
         includeTrashed: true,
       );
+      // Rows that never existed cannot be changed, so the read-only claim
+      // needs one of each in the table before collect() runs (#8617).
+      expect(beforeDrafts, hasLength(1));
+      expect(beforeClips, hasLength(1));
 
       await LocalContentDiagnosticsService(
         clipsDao: database.clipsDao,

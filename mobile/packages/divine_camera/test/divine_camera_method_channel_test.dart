@@ -769,14 +769,30 @@ void main() {
     });
 
     test('ignores an entry with an empty message', () async {
-      final before = LogCaptureService().bufferSize;
+      const name = 'DivineCamera-empty-message-unique';
+      // Positive control first: a dead dispatcher would also leave the buffer
+      // untouched, and the buffer is a ring that stops growing once full, so
+      // the guard is asserted on content rather than on bufferSize (#8617).
+      const control = 'onNativeLog-empty-message-control-unique';
+      await dispatchNativeLog({
+        'level': 'warning',
+        'message': control,
+        'name': name,
+      });
+      expect(latestEntryWithMessage(control)?.name, name);
+
       await dispatchNativeLog({
         'level': 'warning',
         'message': '',
-        'name': 'DivineCamera',
+        'name': name,
       });
 
-      expect(LogCaptureService().bufferSize, before);
+      expect(
+        LogCaptureService().getRecentLogs().where(
+          (entry) => entry.name == name && entry.message.isEmpty,
+        ),
+        isEmpty,
+      );
     });
 
     test('ignores a call with null arguments without throwing', () async {

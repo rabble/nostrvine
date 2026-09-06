@@ -50,7 +50,7 @@ void main() {
       tester,
     ) async {
       final mixin = TestPageControllerSyncMixin();
-      final controller = PageController(initialPage: 3);
+      final controller = _SpyPageController(initialPage: 3);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -67,6 +67,7 @@ void main() {
       );
 
       final initialPage = controller.page?.round();
+      expect(initialPage, 3);
 
       // Try to sync to same index
       mixin.syncPageController(
@@ -77,8 +78,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should still be at same index
+      // Should still be at same index, and without a jump: jumping to the
+      // page already shown moves nothing, so only the call count can see a
+      // sync that should not have happened (#8617).
       expect(controller.page?.round(), initialPage);
+      expect(controller.jumps, 0);
 
       controller.dispose();
     });
@@ -287,7 +291,21 @@ void main() {
   });
 }
 
-/// Test helper class that mixes in PageControllerSyncMixin
+/// Counts jumps, because a jump to the page already shown is invisible in
+/// [PageController.page].
+class _SpyPageController extends PageController {
+  _SpyPageController({super.initialPage});
+
+  int jumps = 0;
+
+  @override
+  void jumpToPage(int page) {
+    jumps++;
+    super.jumpToPage(page);
+  }
+}
+
+/// Test helper class that mixes in [PageControllerSyncMixin].
 class TestPageControllerSyncMixin with PageControllerSyncMixin {
   @override
   bool get mounted => true; // Always mounted for testing

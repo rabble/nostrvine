@@ -467,14 +467,16 @@ void main() {
           VideoClip(uri: 'file:///clip-2.mp4', end: 6.seconds),
         ]);
 
-        // Record rate after setClips (firstOrNull → 1.0) to establish
-        // baseline, then simulate index advance.
-        final rateBeforeIndexChange = fakePlayer.lastRate;
+        // setClips applies the first clip's speed exactly once. The count is
+        // the observable, not lastRate: a second setRate(1.0) leaves lastRate
+        // at 1.0, so the value alone could never fail (#8617).
+        expect(fakePlayer.setRateCalls, 1);
+        expect(fakePlayer.lastRate, 1.0);
+
         fakePlayer.emitPlaylistIndex(1);
         await Future<void>.delayed(Duration.zero);
 
-        // Rate should be unchanged (no authored speed → branch not entered).
-        expect(fakePlayer.lastRate, rateBeforeIndexChange);
+        expect(fakePlayer.setRateCalls, 1);
       },
     );
 
@@ -554,6 +556,7 @@ class _FakePlatformPlayer extends PlatformPlayer {
   int pauseCalls = 0;
   int stopCalls = 0;
   int disposeCalls = 0;
+  int setRateCalls = 0;
 
   @override
   Future<void> dispose() async {
@@ -652,6 +655,7 @@ class _FakePlatformPlayer extends PlatformPlayer {
 
   @override
   Future<void> setRate(double rate) async {
+    setRateCalls++;
     lastRate = rate;
     state = state.copyWith(rate: rate);
     rateController.add(rate);

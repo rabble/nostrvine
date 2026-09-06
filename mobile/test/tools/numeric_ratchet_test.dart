@@ -196,6 +196,8 @@ run_numeric_ratchet
         writeCurrent('a\t5\nb\t3\n');
         run(update: true);
         final before = baseline.readAsStringSync();
+        expect(before, contains('a\t5'));
+        expect(before, contains('b\t3'));
 
         final res = run(update: true);
 
