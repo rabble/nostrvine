@@ -1,7 +1,7 @@
 # Brainstorm: #7683 — degenerate participant sets in `classifyPotentialRequests`
 
 Date: 2026-09-06
-Seeded by: `tasks/findings_7683.md` (7 investigation rounds)
+Seeded by: investigation of #7683 and the surrounding DM history
 Issue: https://github.com/divinevideo/divine-mobile/issues/7683 · Epic: #8229
 
 ## Problem Statement
@@ -18,7 +18,8 @@ documented in-repo convention that it should not be.
 
 ## Constraints
 
-- Layered architecture; this is a pure static method in the Repository layer — no UI/BLoC change.
+- Layered architecture; classification stays in the Repository layer, while the UI/BLoC consumers
+  share one pure peer-resolution helper.
 - `.claude/rules/testing.md`: a test must be able to fail for a real reason.
 - Epic #8229 success criterion: *"a DM docstring is evidence of what the code does."*
 - `dm_repository_test.dart` sits at **14** in `mobile/scripts/baseline/shared_setup_stubs.txt` — a
@@ -28,10 +29,8 @@ documented in-repo convention that it should not be.
 
 ## Prior Art
 
-- `mobile/lib/blocs/dm/minor_dm_approval.dart` — `allParticipantsApprovedForMinor`: the exact
-  structural twin, which **guards `isNotEmpty` and documents why**, naming `[].every(...)`.
-- `conversation_bloc.dart:405,410` and `inline_reel_reply_cubit.dart:77,79` — the same
-  `isNotEmpty && every(...)` idiom, four more times.
+- `mobile/lib/blocs/dm/minor_dm_approval.dart` — `allParticipantsApprovedForMinor` documents why an
+  empty counterparty list must fail closed.
 - `_isSelf` (`dm_repository.dart:8961`) + `pubkeysEqual` — the case-insensitive self-compare and the
   dartdoc explaining why exact `==` is wrong.
 - #8261 (closed) — Divine does **not** support self-addressed conversations. #8351 shipped the
@@ -40,17 +39,15 @@ documented in-repo convention that it should not be.
 
 ## Approaches Explored
 
-### Approach A: Inline `isNotEmpty` guard + case-insensitive self-filter  ← RECOMMENDED
-**Description:** At L7632 compare self case-insensitively; at L7641 guard the vacuous `every()`.
+### Approach A: Hide self-only rows + case-insensitive self-filter  ← RECOMMENDED
+**Description:** Compare self case-insensitively and omit a conversation from both lists when no peer remains.
 Document both in the dartdoc, citing #8261 and #6294. Add regression tests.
-**Layers affected:** Repository only.
-**Pros:** Matches the idiom already used at four DM sites. ~2 lines. Correct whether or not the
-state is reachable, so it does not rest on the 0.97 H3 claim. A degenerate row now routes to
-`requests`, which passes through the existing `_classifyDiagnostics` branch and **logs itself for
-free** — the diagnostic `lessons.md` recommends, at zero cost.
-**Cons:** Changes behaviour for a state believed unreachable. `isNotEmpty &&` is terser than prose.
-**Risks:** If a degenerate row *is* reachable, its thread moves inbox → requests. Under #8261 that
-is the more correct destination, and quieter.
+**Layers affected:** Repository classification and the UI/BLoC peer resolvers that consume it.
+**Pros:** Correct whether or not the state is reachable. A degenerate row is logged explicitly but
+never exposed through actions that would target the viewer.
+**Cons:** Changes behaviour for a malformed state.
+**Risks:** If a degenerate row is reachable, its thread disappears from both lists. Under #8261 that
+is the correct destination because every available action would target the viewer.
 **Complexity:** Low.
 
 ### Approach B: Extract a shared `allParticipantsFollowed` predicate
@@ -61,11 +58,10 @@ conversations.
 **Cons:** **Only one call site exists.** Speculative reuse; YAGNI.
 **Complexity:** Low–Medium.
 
-### Approach C: Explicit `if (otherPubkeys.isEmpty)` branch
-**Description:** Restore #2219's explicit shape with the opposite destination and an #8261 comment.
+### Approach C: Route self-only rows to Message requests
+**Description:** Keep the row visible but move it out of the main inbox.
 **Pros:** Most self-documenting.
-**Cons:** A dedicated branch implies the case is expected; a guard reads more honestly for a state
-that should not occur. More lines for identical behaviour.
+**Cons:** The row remains unusable, and Report, Block, and Mute still target the viewer.
 **Complexity:** Low.
 
 ### Approach D: Normalize pubkey case at ingest/storage
@@ -80,23 +76,10 @@ unobservable premise.
 ## Recommendation
 
 **Approach A**, adopting C's comment discipline in the dartdoc. Rationale: smallest change that is
-correct independent of the reachability question, matches an idiom used four times in this
-subsystem, satisfies epic #8229's docstring criterion, and yields the device-side diagnostic for
-free. B is deferred until a second caller exists. D is rejected on blast radius vs. evidence.
-
-## Open Questions for /plan
-
-- [ ] Exact dartdoc wording — must state the empty case, its destination, and cite #8261/#6294.
-- [ ] Test placement inside the existing `group('classifyPotentialRequests', …)` without adding a
-      shared-setup stub (baseline ceiling 14).
-- [ ] Whether to assert the diagnostics log line, or only the routing.
-- [ ] Whether the case-insensitive fix reuses `pubkeysEqual` — note `classifyPotentialRequests` is
-      `static` and `_isSelf` is an instance method, so `pubkeysEqual` must be imported directly.
+correct independent of the reachability question, satisfies epic #8229's docstring criterion, and
+keeps a device-side diagnostic without exposing the malformed row. B is deferred until a second
+classification caller exists. D is rejected on blast radius vs. evidence.
 
 ## Prerequisites
 
 None. No design, protocol, or product decision is blocked — #8261 already ruled.
-
-## Next Step
-
-`/plan 7683`.

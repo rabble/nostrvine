@@ -16641,12 +16641,10 @@ void main() {
       });
 
       // A participant set that collapses to the viewer alone is a
-      // self-conversation, which Divine does not support (#8261). Before
-      // #7683 these fell through `Set.every()`'s vacuous truth on an empty
-      // set and landed in the inbox — the loudest surface — even with
-      // nothing followed. They belong in requests, where the existing
-      // diagnostics branch also logs them.
-      test('self-only participants go to requests, not the inbox', () {
+      // self-conversation, which Divine does not support (#8261). It belongs
+      // in neither user-facing list: moving the unusable row from Messages to
+      // Message requests would only relocate the same broken experience.
+      test('self-only participants are hidden from both lists', () {
         final conv = makeConversation(
           id: 'conv1',
           participantPubkeys: [_validPubkeyA],
@@ -16659,12 +16657,12 @@ void main() {
         );
 
         expect(result.followed, isEmpty);
-        expect(result.requests, hasLength(1));
+        expect(result.requests, isEmpty);
       });
 
       // `[self, self]` is the shape `_cleanupSelfConversations` targets and
       // the one a pre-#2824 self-wrap persisted.
-      test('duplicated self participants go to requests', () {
+      test('duplicated self participants are hidden from both lists', () {
         final conv = makeConversation(
           id: 'conv1',
           participantPubkeys: [_validPubkeyA, _validPubkeyA],
@@ -16677,7 +16675,26 @@ void main() {
         );
 
         expect(result.followed, isEmpty);
-        expect(result.requests, hasLength(1));
+        expect(result.requests, isEmpty);
+      });
+
+      test('mixed-case duplicated self participants are hidden', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [
+            _validPubkeyA,
+            _validPubkeyA.toUpperCase(),
+          ],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (_) => false,
+        );
+
+        expect(result.followed, isEmpty);
+        expect(result.requests, isEmpty);
       });
 
       // `validatePubkey` accepts upper-case hex, so the viewer can appear

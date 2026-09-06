@@ -2854,7 +2854,7 @@ class DmRepository {
         // Reject self-conversations (all participants are the same pubkey).
         // Defense-in-depth: should not happen after the self-wrap fix above,
         // but guards against any future code path producing degenerate lists.
-        if (participants.toSet().length < 2) {
+        if (!containsDistinctPubkeys(participants)) {
           await _recordProcessedWrap(
             giftWrapEvent.id,
             ownerPubkey: ownerPubkey,
@@ -7621,24 +7621,17 @@ class DmRepository {
   /// followed 1:1 peers under "Message requests" (#5374).
   ///
   /// A participant set that collapses to the viewer alone is a
-  /// self-conversation, which Divine does not support (#8261). It is
-  /// classified as a **request**, deliberately: `Set.every` is vacuously
-  /// true on an empty set, so without the `isNotEmpty` guard such a row
-  /// would land in the inbox — the most visible surface — and render as a
-  /// conversation with yourself, since every caller resolves the
-  /// counterparty via `orElse: () => participantPubkeys.first`. #2219
-  /// routed the empty case to the followed list through an explicit
-  /// `otherPubkeys.isEmpty ||` disjunct; #6294 folded that into `every`,
-  /// leaving the behaviour resting on vacuous truth with nothing naming
-  /// it. Routing to requests also puts the row through the diagnostics
-  /// branch below, which is the only signal that one exists at all.
+  /// self-conversation, which Divine does not support (#8261). It is omitted
+  /// from both user-facing lists: moving an unusable row from Messages to
+  /// Message requests would only relocate the same broken experience. #2219
+  /// routed the empty case to the followed list explicitly; #6294 folded that
+  /// branch into `Set.every`'s vacuous truth, leaving the behaviour implicit.
+  /// The diagnostics branch below still records the malformed row.
   ///
-  /// No live writer can persist such a row: the NIP-17 ingest rejects a
-  /// collapsed participant list twice (#2824), and every send path sets
-  /// `currentUserHasSent`, which excludes the row from this method's only
-  /// input. It is reachable only for a legacy row read during the
-  /// `identityKnown` -> `nostrReady` window, before `setCredentials`
-  /// installs the post-auth maintenance that both cleans and backfills it.
+  /// NIP-17 ingest rejects case-insensitively collapsed participant lists,
+  /// while post-auth maintenance cleans the known legacy `[self, self]`
+  /// shape. Classification remains defensive because older or otherwise
+  /// malformed rows can use a different participant shape.
   static ({List<DmConversation> followed, List<DmConversation> requests})
   classifyPotentialRequests(
     List<DmConversation> potentialRequests, {
@@ -7657,17 +7650,24 @@ class DmRepository {
           .where((pk) => !pubkeysEqual(pk, userPubkey))
           .toSet();
 
+      if (otherPubkeys.isEmpty) {
+        if (_classifyDiagnostics) {
+          Log.debug(
+            'classifyPotentialRequests → hidden self-only conversation: '
+            '${conversation.id}',
+            category: LogCategory.system,
+          );
+        }
+        continue;
+      }
+
       // A conversation whose every (deduplicated) non-self participant is
       // followed is not a request even if the user hasn't replied yet —
       // 1:1 or group alike. Derived from actual participants rather than
       // the stored `isGroup` flag, which can drift from the row's real
       // participants and mis-route followed 1:1 peers to requests (#5374).
       //
-      // `isNotEmpty` first: an empty set passes `every` vacuously, which
-      // would route a self-collapsed row to the inbox. Same guard, and the
-      // same reason, as `allParticipantsApprovedForMinor` (#7683).
-      final allFollowed =
-          otherPubkeys.isNotEmpty && otherPubkeys.every(isFollowing);
+      final allFollowed = otherPubkeys.every(isFollowing);
 
       if (allFollowed) {
         followed.add(conversation);
