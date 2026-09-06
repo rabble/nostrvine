@@ -72,16 +72,11 @@ bool shellShowsBackButton({
       context.type == RouteType.notifications &&
       context.videoIndex != null &&
       context.videoIndex != 0;
-  final isOtherUserProfile =
+  final isProfileWithShellAppBar =
       context.type == RouteType.profile &&
-      !routeIdentifiesUser(context.npub, currentUserHex);
-  final isProfileVideo =
-      context.type == RouteType.profile && context.videoIndex != null;
+      !isOwnProfileGridRoute(context, currentUserHex);
 
-  return isExploreVideo ||
-      isNotificationVideo ||
-      isOtherUserProfile ||
-      isProfileVideo;
+  return isExploreVideo || isNotificationVideo || isProfileWithShellAppBar;
 }
 
 /// Whether the shell suppresses its own app bar for [context].
