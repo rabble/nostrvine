@@ -10,6 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/app/divine_app.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
 
+/// The [ImageCache] key this suite installs, so teardown can evict exactly it.
+const _cacheKey = 'memory-telemetry-test';
+
 void main() {
   group(MemoryTelemetryService, () {
     late List<MemorySnapshot> emitted;
@@ -160,17 +163,17 @@ void main() {
       tester,
     ) async {
       final cache = PaintingBinding.instance.imageCache;
-      addTearDown(() {
-        cache
-          ..clear()
-          ..clearLiveImages();
-      });
+      // Evict only this test's key. Clearing the whole cache would also
+      // dispose what every other suite in the merged-isolate run put there,
+      // and `ImageCache` defers that disposal to a post-frame callback that
+      // lands in the next test's first frame.
+      addTearDown(() => cache.evict(_cacheKey));
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
       canvas.drawPaint(ui.Paint()..color = const ui.Color(0xFFFFFFFF));
       final image = await recorder.endRecording().toImage(4, 4);
       cache.putIfAbsent(
-        'memory-telemetry-test',
+        _cacheKey,
         () => OneFrameImageStreamCompleter(
           Future<ImageInfo>.value(ImageInfo(image: image)),
         ),

@@ -38,6 +38,14 @@ double _thumbnailAspectRatio(WidgetTester tester) =>
 
 /// An [ImageProvider] that synchronously yields a pre-built [ui.Image] so a
 /// widget test can drive the image stream without an async decode.
+///
+/// The framework takes ownership of whatever [ImageInfo] receives and disposes
+/// it, so this hands over a clone and leaves the caller's [image] to the
+/// caller. Passing the original instead lets the test's own `dispose` close
+/// the last handle while the process-global [ImageCache] still holds the
+/// completer; the cache's deferred eviction then trips
+/// `ImageInfo.dispose`'s open-handle assertion inside whichever unrelated test
+/// pumps the next frame.
 class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
   _SyncImageProvider(this.image);
 
@@ -52,7 +60,7 @@ class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
     _SyncImageProvider key,
     ImageDecoderCallback decode,
   ) => OneFrameImageStreamCompleter(
-    SynchronousFuture<ImageInfo>(ImageInfo(image: image)),
+    SynchronousFuture<ImageInfo>(ImageInfo(image: image.clone())),
   );
 }
 
@@ -90,6 +98,14 @@ ui.Image _syncImage(int width, int height) {
   final recorder = ui.PictureRecorder();
   ui.Canvas(recorder);
   return recorder.endRecording().toImageSync(width, height);
+}
+
+/// Builds a [_SyncImageProvider] for [image] and drops its [ImageCache] entry
+/// when the test ends, so the resolved completer does not outlive the suite.
+_SyncImageProvider _syncImageProvider(ui.Image image) {
+  final provider = _SyncImageProvider(image);
+  addTearDown(provider.evict);
+  return provider;
 }
 
 void main() {
@@ -1287,7 +1303,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: ImageWithDimensionsListener(
-              imageProvider: _SyncImageProvider(image),
+              imageProvider: _syncImageProvider(image),
               onImageDimensionsResolved: (w, h) {
                 width = w;
                 height = h;
@@ -1311,7 +1327,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: _DimensionCallbackParent(
-              imageProvider: _SyncImageProvider(image),
+              imageProvider: _syncImageProvider(image),
             ),
           ),
         );
@@ -1319,6 +1335,64 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.text('640x360'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ImageWithDimensionsListener leaves the framework its own image handle',
+      (tester) async {
+        final image = _syncImage(640, 360);
+        addTearDown(image.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImageWithDimensionsListener(
+              imageProvider: _syncImageProvider(image),
+              onImageDimensionsResolved: (_, _) {},
+              child: const SizedBox.shrink(),
+            ),
+          ),
+        );
+
+        // More than one open handle means the framework got a clone of its
+        // own, so the `image.dispose` above is not the last one. Drop the
+        // clone from [_SyncImageProvider] and this reads exactly one: the
+        // cache's deferred disposal then trips `ImageInfo.dispose`'s
+        // open-handle assertion inside whichever unrelated test pumps the
+        // next frame.
+        expect(
+          image.debugGetOpenHandleStackTraces(),
+          hasLength(greaterThan(1)),
+        );
+      },
+    );
+
+    testWidgets(
+      'a cached sync image outlives the test disposing its original handle',
+      (tester) async {
+        // Regression for #8652: ImageInfo owns the handle it is given, so the
+        // completer must hold its own clone. Sharing the test's handle put the
+        // cache's deferred disposal onto an already-disposed image and failed
+        // whichever later test pumped that frame.
+        final image = _syncImage(8, 8);
+        final provider = _SyncImageProvider(image);
+        await tester.pumpWidget(
+          ImageWithDimensionsListener(
+            imageProvider: provider,
+            child: const SizedBox.shrink(),
+          ),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+        final cache = PaintingBinding.instance.imageCache;
+        expect(cache.containsKey(provider), isTrue);
+
+        image.dispose();
+        expect(cache.evict(provider), isTrue);
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
       },
     );
 
