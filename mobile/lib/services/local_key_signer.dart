@@ -25,6 +25,12 @@ class LocalKeySigner implements IsolateDecryptSigner {
   /// than returning null. Keeping the container non-nullable is what lets
   /// a `null` return from the methods below mean exactly one thing: a real
   /// signing attempt failed.
+  ///
+  /// "Failed" covers `Error` as well as `Exception` — an off-curve peer
+  /// pubkey reaches ECDH as an `ArgumentError`, and NIP-04 surfaces one as a
+  /// `TypeError`. Both are failures of a real attempt, so both return `null`
+  /// rather than escaping to a caller that has no way to tell them apart from
+  /// the documented contract (#7332).
   LocalKeySigner(this._keyContainer);
 
   final SecureKeyContainer _keyContainer;

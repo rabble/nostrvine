@@ -104,6 +104,111 @@ void main() {
       mockRpc = _MockNostrSigner();
     });
 
+    // #7332: these four fallbacks were unreachable. The local signer threw
+    // instead of returning null, so `if (result != null)` never got a chance
+    // to fall through and the RPC signer was never consulted at all. A mocked
+    // local signer returning null cannot pin that — the identity always
+    // handled null correctly — so these drive a REAL LocalKeySigner into a
+    // genuine crypto failure with an off-curve peer pubkey.
+    group('crypto fallback to RPC when the local signer fails', () {
+      // Well-formed 32-byte hex that is not a point on secp256k1.
+      const offCurvePubkey =
+          '0000000000000000000000000000000000000000000000000000000000000000';
+
+      late KeycastNostrIdentity identity;
+      late _MockSecureKeyContainer container;
+
+      setUp(() {
+        container = _MockSecureKeyContainer();
+        when(() => container.publicKeyHex).thenReturn(testPublicKey);
+        when(() => container.isDisposed).thenReturn(false);
+        when(() => container.hasPrivateKey).thenReturn(true);
+        when(() => container.withPrivateKey<Uint8List>(any())).thenAnswer((
+          invocation,
+        ) {
+          final callback =
+              invocation.positionalArguments[0] as Uint8List Function(String);
+          return callback(testPrivateKey);
+        });
+        when(() => container.withPrivateKey<String?>(any())).thenAnswer((
+          invocation,
+        ) {
+          final callback =
+              invocation.positionalArguments[0] as String? Function(String);
+          return callback(testPrivateKey);
+        });
+
+        identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockRpc,
+          localSigner: LocalKeySigner(container),
+        );
+      });
+
+      test('nip44Encrypt falls back to RPC', () async {
+        when(
+          () => mockRpc.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => 'rpc-ciphertext');
+
+        expect(
+          await identity.nip44Encrypt(offCurvePubkey, 'hello'),
+          equals('rpc-ciphertext'),
+        );
+        verify(() => mockRpc.nip44Encrypt(any(), any())).called(1);
+        // Pins that the local signer really attempted the operation and
+        // returned null, rather than an unstubbed mock handing back null.
+        verify(() => container.withPrivateKey<Uint8List>(any())).called(1);
+      });
+
+      test('nip44Decrypt falls back to RPC', () async {
+        when(
+          () => mockRpc.nip44Decrypt(any(), any()),
+        ).thenAnswer((_) async => 'rpc-plaintext');
+
+        expect(
+          await identity.nip44Decrypt(offCurvePubkey, 'AgAB'),
+          equals('rpc-plaintext'),
+        );
+        verify(() => mockRpc.nip44Decrypt(any(), any())).called(1);
+        // Pins that the local signer really attempted the operation and
+        // returned null, rather than an unstubbed mock handing back null.
+        verify(() => container.withPrivateKey<Uint8List>(any())).called(1);
+      });
+
+      test('encrypt falls back to RPC', () async {
+        when(
+          () => mockRpc.encrypt(any(), any()),
+        ).thenAnswer((_) async => 'rpc-nip04-ciphertext');
+
+        expect(
+          await identity.encrypt(offCurvePubkey, 'hello'),
+          equals('rpc-nip04-ciphertext'),
+        );
+        verify(() => mockRpc.encrypt(any(), any())).called(1);
+        // Pins that the local signer really attempted the operation and
+        // returned null, rather than an unstubbed mock handing back null.
+        verify(() => container.withPrivateKey<String?>(any())).called(1);
+      });
+
+      test('decrypt falls back to RPC', () async {
+        when(
+          () => mockRpc.decrypt(any(), any()),
+        ).thenAnswer((_) async => 'rpc-nip04-plaintext');
+
+        expect(
+          await identity.decrypt(
+            offCurvePubkey,
+            'AA==?iv=AAAAAAAAAAAAAAAAAAAAAA==',
+          ),
+          equals('rpc-nip04-plaintext'),
+        );
+        verify(() => mockRpc.decrypt(any(), any())).called(1);
+        // Pins that the local signer really attempted the operation and
+        // returned null, rather than an unstubbed mock handing back null.
+        verify(() => container.withPrivateKey<String?>(any())).called(1);
+      });
+    });
+
     test('pubkey is set at construction', () {
       final identity = KeycastNostrIdentity(
         pubkey: testPublicKey,
