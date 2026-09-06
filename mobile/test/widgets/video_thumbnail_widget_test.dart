@@ -1369,6 +1369,33 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a cached sync image outlives the test disposing its original handle',
+      (tester) async {
+        // Regression for #8652: ImageInfo owns the handle it is given, so the
+        // completer must hold its own clone. Sharing the test's handle put the
+        // cache's deferred disposal onto an already-disposed image and failed
+        // whichever later test pumped that frame.
+        final image = _syncImage(8, 8);
+        final provider = _SyncImageProvider(image);
+        await tester.pumpWidget(
+          ImageWithDimensionsListener(
+            imageProvider: provider,
+            child: const SizedBox.shrink(),
+          ),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+        final cache = PaintingBinding.instance.imageCache;
+        expect(cache.containsKey(provider), isTrue);
+
+        image.dispose();
+        expect(cache.evict(provider), isTrue);
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('displays flat placeholder when only blurhash is available', (
       tester,
     ) async {
