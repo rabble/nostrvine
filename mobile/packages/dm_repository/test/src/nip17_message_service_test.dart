@@ -2297,6 +2297,37 @@ void main() {
       );
 
       test(
+        'single-receiver slot failure does not rebuild on the main isolate',
+        () async {
+          var mainBuilderCalls = 0;
+          final service = NIP17MessageService(
+            signer: _LocalIsolateSigner(localPrivateKey),
+            senderPublicKey: localPubkey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (nostr, rumor, recipient) async {
+              mainBuilderCalls++;
+              return Event(localPubkey, EventKind.giftWrap, [
+                ['p', recipient],
+              ], 'ciphertext');
+            },
+            isolateGiftWrapBatchBuilder: (_) async => const [
+              BuiltGiftWrapResult.failure('deterministic local crypto'),
+            ],
+          );
+
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'single-slot-failure',
+          );
+          final result = await service.publishSelfWrap(rumorEvent: rumor);
+
+          expect(result.success, isFalse);
+          expect(mainBuilderCalls, equals(0));
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
         'batch builder reports recipient slot failure causes sendRumor to '
         'return failure without rebuilding on the main isolate',
         () async {

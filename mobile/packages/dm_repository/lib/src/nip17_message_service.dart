@@ -133,9 +133,9 @@ class NIP17MessageService {
   /// NIP-46) cannot cross a `SendPort`, so they fall back to the
   /// on-main-isolate [_giftWrapBuilder] — already async RPC/IPC, not a block.
   ///
-  /// Any failure of the isolate path (thrown error, null/failed result) falls
-  /// back to the main-isolate builder, mirroring the receive-side decrypt
-  /// offload in DmRepository. See #5391.
+  /// A thrown isolate error falls back to the main-isolate builder, mirroring
+  /// the receive-side decrypt offload in DmRepository. A returned failed slot
+  /// is deterministic local crypto and is not rebuilt. See #5391 and #8534.
   Future<Event?> _buildWrap({
     required Nostr nostr,
     required Event rumorEvent,
@@ -156,11 +156,13 @@ class NIP17MessageService {
         if (result.isSuccess) {
           return Event.fromJson(result.giftWrap!);
         }
-        Log.debug(
+        Log.warning(
           'Isolate gift-wrap build returned failure for rumor '
-          '${rumorEvent.id}: ${result.error}; falling back to main isolate',
+          '${rumorEvent.id}: ${result.error}; not rebuilding on the main '
+          'isolate because it would repeat the same local crypto',
           category: LogCategory.system,
         );
+        return null;
       } on Object catch (e, stackTrace) {
         Log.error(
           'Isolate gift-wrap build threw for rumor ${rumorEvent.id}: $e',
@@ -236,19 +238,9 @@ class NIP17MessageService {
           final r = results[0];
           final s = results[1];
           if (!r.isSuccess) {
-            // Terminal, and deliberately not a fallback. The main-isolate
-            // builder derives the same NIP-44 conversation key from the same
-            // recipient pubkey (`LocalNostrSigner.nip44Encrypt` and
-            // `buildGiftWrapFromHex` both call `NIP44V2.shareSecret`), so a
-            // rebuild re-runs the identical ECDH and fails identically —
-            // verified by probe on #8534. The sibling server path DOES fall
-            // back because ITS slot failures are transient (5xx, expired
-            // token, policy refusal); these are local deterministic crypto.
-            // Warning, not debug: this ends the send, and `buildLogsSummary`
-            // keeps 200 error/warning entries against a 50-entry any-level
-            // tail, so debug almost never reaches a bug report. Not error:
-            // #7288 established that expected degradation on this path does
-            // not carry a stack trace.
+            // Local slot failures are deterministic: both builders derive the
+            // same NIP-44 key from the same recipient pubkey, so rebuilding
+            // repeats the failure. Server slot failures may be transient.
             Log.warning(
               'Batch gift-wrap: recipient slot failed (${r.error}); '
               'the send fails — rebuilding on the main isolate would run the '
