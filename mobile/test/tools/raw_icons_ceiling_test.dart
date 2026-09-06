@@ -10,6 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// without touching the real baseline. The bash script is the source of truth;
 /// this test pins its exit-code contract.
 void main() {
+  // Failure wording below comes from the shared engine in
+  // scripts/lib/numeric_ratchet.sh, which this guard sources (#8323). It is
+  // key-oriented ("NEW key(s)", "no longer emitted") rather than the
+  // file-oriented phrasing the pre-port inline copy used.
   group('raw_icons_ceiling ratchet', () {
     late Directory tmp;
     late String scriptPath;
@@ -111,7 +115,7 @@ void main() {
       writeIcons('uses.dart', 5);
       final res = run();
       expect(res.exitCode, 1);
-      expect(res.stdout, contains('GAINED'));
+      expect(res.stdout, contains('GREW past the frozen ceiling'));
     });
 
     test('fails when a new file introduces raw Icons.*', () {
@@ -121,7 +125,7 @@ void main() {
       writeIcons('newbie.dart', 1);
       final res = run();
       expect(res.exitCode, 1);
-      expect(res.stdout, contains('NEW file'));
+      expect(res.stdout, contains('NEW key(s)'));
     });
 
     test('fails (stale) when a baselined file drops all raw Icons.*', () {
@@ -131,7 +135,7 @@ void main() {
       writeIcons('uses.dart', 0);
       final res = run();
       expect(res.exitCode, 1);
-      expect(res.stdout, contains('no longer use raw Icons'));
+      expect(res.stdout, contains('no longer emitted'));
     });
 
     test('passes when a file drops some icons but stays above zero', () {
@@ -157,7 +161,7 @@ void main() {
         baseRepoPath: 'mobile/test/tools/fixtures/raw_icons_base_sizes.txt',
       );
       expect(res.exitCode, 1);
-      expect(res.stdout, contains('ADDED a file or RAISED a ceiling'));
+      expect(res.stdout, contains('ADDED a key or RAISED a ceiling'));
       expect(res.stdout, contains('+added lib/uses.dart'));
     });
   });
