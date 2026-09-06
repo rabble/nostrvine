@@ -15,6 +15,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/constants/terms_acceptance_keys.dart';
 import 'package:openvine/models/account_restore_failed_exception.dart';
 import 'package:openvine/models/auth_result.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
@@ -35,7 +36,6 @@ import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/nip07_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
-import 'package:openvine/services/terms_acceptance_keys.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';

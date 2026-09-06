@@ -4,8 +4,8 @@
 /// Preference keys recording that this account accepted the terms and
 /// attested to its age.
 ///
-/// These live here rather than on `AuthService` for two reasons. They are
-/// acceptance state rather than authentication state, and `AuthService` is a
+/// These live here rather than on `AuthService` because they are acceptance
+/// state rather than authentication state — and because `AuthService` is a
 /// frozen god-file whose line ceiling leaves no room for new declarations.
 ///
 /// Both were previously written as bare literals at five call sites across two

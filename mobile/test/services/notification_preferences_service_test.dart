@@ -186,11 +186,8 @@ class _MemoryNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
 
-  int clearPreferencesCalls = 0;
-
   @override
   Future<void> clearPreferences() async {
-    clearPreferencesCalls++;
     preferences = null;
   }
 

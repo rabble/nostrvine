@@ -23,15 +23,17 @@ const Set<String> keyedAccessors = {
   'put', 'get', 'delete',
 };
 
-/// Receivers whose keyed access is a preferences access.
+/// Whether a keyed access on this receiver is a storage access.
 ///
 /// Matching on the member name alone would sweep in every `Map.remove` and
-/// `List.get` in the codebase. Requiring a prefs-shaped receiver keeps the
-/// scan to real storage while staying syntactic.
+/// `List.get` in the codebase. Requiring a receiver that names a preferences
+/// object or a Hive box keeps the scan to real storage while staying
+/// syntactic — at the cost of missing a receiver named neither, which is why
+/// the guard is a ratchet on a reviewed baseline rather than a proof.
 bool _looksLikePrefsReceiver(Expression? target) {
   if (target == null) return false;
   final text = target.toString().toLowerCase();
-  return text.contains('pref') || text.contains('box') || text.contains('_db');
+  return text.contains('pref') || text.contains('box');
 }
 
 /// A key the app stores under, with where it was declared.
