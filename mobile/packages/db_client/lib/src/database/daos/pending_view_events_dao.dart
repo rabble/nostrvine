@@ -233,6 +233,18 @@ class PendingViewEventsDao extends DatabaseAccessor<AppDatabase>
     return (delete(pendingViewEvents)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Deletes every queued view event belonging to [userPubkey].
+  ///
+  /// Called when that account is removed from the device. The rows carry an
+  /// owner, so they never reach another account's flush — but nothing deleted
+  /// them either, and a removed account's queued events should not outlive it
+  /// (#8314).
+  Future<int> deleteForUser(String userPubkey) {
+    return (delete(
+      pendingViewEvents,
+    )..where((t) => t.userPubkey.equals(userPubkey))).go();
+  }
+
   Future<PendingViewEvent?> getById(String id) async {
     final row = await (select(
       pendingViewEvents,

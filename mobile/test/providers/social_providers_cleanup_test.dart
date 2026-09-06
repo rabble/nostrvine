@@ -220,6 +220,70 @@ void main() {
       },
     );
 
+    test(
+      "deleting an account drops only that account's queued work",
+      () async {
+        // These rows carry an owner and are filtered by it at flush, so they
+        // never leaked into another account. They were simply never deleted
+        // when their owner was removed (#8314). The assertion that matters is
+        // the second one: the surviving account keeps its queue.
+        Future<void> enqueueFor(String pubkey, String suffix) async {
+          await db.pendingViewEventsDao.enqueue(
+            PendingViewEvent(
+              id: 'view_$suffix',
+              videoId: _reactionIdA,
+              videoPubkey: _pubkeyB,
+              userPubkey: pubkey,
+              watchDurationMs: 1000,
+              trafficSource: 'feed',
+              status: PendingViewEventStatus.pending,
+              createdAt: DateTime.now(),
+            ),
+          );
+          await db.pendingProductEventsDao.enqueue(
+            PendingProductEvent(
+              id: 'product_$suffix',
+              eventName: 'video_view',
+              payloadJson: '{}',
+              status: PendingProductEventStatus.pending,
+              createdAt: DateTime.now(),
+              ownerPubkey: pubkey,
+            ),
+          );
+        }
+
+        await enqueueFor(_pubkeyA, 'a');
+        await enqueueFor(_pubkeyB, 'b');
+
+        final subscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final service = subscription.read();
+
+        await service.onDatabaseCleanup!(
+          userPubkey: _pubkeyA,
+          deleteUserData: true,
+        );
+
+        expect(await db.pendingViewEventsDao.getById('view_a'), isNull);
+        expect(await db.pendingProductEventsDao.getById('product_a'), isNull);
+        expect(
+          await db.pendingViewEventsDao.getById('view_b'),
+          isNotNull,
+          reason: "the surviving account's queued views must be untouched",
+        );
+        expect(
+          await db.pendingProductEventsDao.getById('product_b'),
+          isNotNull,
+          reason:
+              "the surviving account's queued product events must be "
+              'untouched',
+        );
+      },
+    );
+
     test('non-destructive cleanup preserves pending uploads', () async {
       final subscription = container.listen(
         userDataCleanupServiceProvider,

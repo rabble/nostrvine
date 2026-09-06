@@ -984,6 +984,23 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'outgoingDms',
             () => db.outgoingDmsDao.clearAllForUser(userPubkey),
           );
+          // Queued work belonging to the account being removed. These rows
+          // carry an owner and are filtered by it at flush, so they never
+          // leaked into another account — they were simply never deleted
+          // when their owner was (#8314). Scoped by owner, so a still-active
+          // account's queue is untouched.
+          await requiredDelete(
+            'pendingProfileSaves',
+            () => db.pendingProfileSavesDao.clear(userPubkey),
+          );
+          await requiredDelete(
+            'pendingViewEvents',
+            () => db.pendingViewEventsDao.deleteForUser(userPubkey),
+          );
+          await requiredDelete(
+            'pendingProductEvents',
+            () => db.pendingProductEventsDao.deleteForOwner(userPubkey),
+          );
         }
       };
 
