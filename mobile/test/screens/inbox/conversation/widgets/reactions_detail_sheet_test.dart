@@ -395,6 +395,43 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('own refused-removal row announces the retry, not the plain '
+        'own-reaction label', (tester) async {
+      final semantics = tester.ensureSemantics();
+      primeState([
+        makeReaction(
+          id: 'own-removal-refused',
+          reactorPubkey: ownerPubkey,
+          emoji: '🔥',
+          publishStatus: DmReactionPublishStatus.removalRefused,
+        ),
+      ]);
+
+      await open(tester);
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label ==
+                  l10n.dmReactionRemovalRefusedA11yLabel('🔥'),
+        ),
+        findsOneWidget,
+      );
+      // Deleting the refused arm falls through to the own-reaction label, which
+      // is grammatical and localized — so only its absence proves which arm ran.
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == l10n.dmReactionChipOwnA11yLabel('🔥'),
+        ),
+        findsNothing,
+      );
+
+      semantics.dispose();
+    });
+
     group('deleted accounts', () {
       const picture = 'https://example.com/alice.jpg';
 
