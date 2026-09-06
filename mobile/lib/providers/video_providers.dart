@@ -145,7 +145,15 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
+/// Video event service: the keystone that owns relay subscriptions and the
+/// in-memory video-event set every feed reads from.
+///
+/// Composes the blocklist, moderation labels, the content/NSFW filter, and
+/// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
+/// through a `ref.listen` rather than capturing one at build time.
+///
+/// `keepAlive` is load-bearing, not an optimisation: every NostrService client
+/// swap would otherwise orphan a service whose periodic timers keep running.
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);

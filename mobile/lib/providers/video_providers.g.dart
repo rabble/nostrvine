@@ -231,12 +231,28 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
+/// Video event service: the keystone that owns relay subscriptions and the
+/// in-memory video-event set every feed reads from.
+///
+/// Composes the blocklist, moderation labels, the content/NSFW filter, and
+/// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
+/// through a `ref.listen` rather than capturing one at build time.
+///
+/// `keepAlive` is load-bearing, not an optimisation: every NostrService client
+/// swap would otherwise orphan a service whose periodic timers keep running.
 
 @ProviderFor(videoEventService)
 final videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
+/// Video event service: the keystone that owns relay subscriptions and the
+/// in-memory video-event set every feed reads from.
+///
+/// Composes the blocklist, moderation labels, the content/NSFW filter, and
+/// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
+/// through a `ref.listen` rather than capturing one at build time.
+///
+/// `keepAlive` is load-bearing, not an optimisation: every NostrService client
+/// swap would otherwise orphan a service whose periodic timers keep running.
 
 final class VideoEventServiceProvider
     extends
@@ -246,7 +262,15 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
+  /// Video event service: the keystone that owns relay subscriptions and the
+  /// in-memory video-event set every feed reads from.
+  ///
+  /// Composes the blocklist, moderation labels, the content/NSFW filter, and
+  /// the hosting and provenance filters; reattaches [brokenVideoTrackerProvider]
+  /// through a `ref.listen` rather than capturing one at build time.
+  ///
+  /// `keepAlive` is load-bearing, not an optimisation: every NostrService client
+  /// swap would otherwise orphan a service whose periodic timers keep running.
   VideoEventServiceProvider._()
     : super(
         from: null,
