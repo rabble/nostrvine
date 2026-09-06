@@ -77,7 +77,7 @@ void main() {
           description: '',
           hashtags: const {},
           selectedApproach: 'native',
-          inspiredByNpub: 'npub1testvalue123',
+          inspiredByNpubs: const ['npub1testvalue123'],
         );
 
         expect(draft.inspiredByNpub, equals('npub1testvalue123'));
@@ -190,21 +190,21 @@ void main() {
         expect(json.containsKey('inspiredByVideo'), isFalse);
       });
 
-      test('includes inspiredByNpub when set', () {
+      test('includes inspiredByNpubs when set', () {
         final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
           hashtags: const {},
           selectedApproach: 'native',
-          inspiredByNpub: 'npub1abc',
+          inspiredByNpubs: const ['npub1abc'],
         );
 
         final json = draft.toJson();
-        expect(json['inspiredByNpub'], equals('npub1abc'));
+        expect(json['inspiredByNpubs'], equals(['npub1abc']));
       });
 
-      test('omits inspiredByNpub when null', () {
+      test('omits inspiredByNpubs when empty', () {
         final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
@@ -214,7 +214,7 @@ void main() {
         );
 
         final json = draft.toJson();
-        expect(json.containsKey('inspiredByNpub'), isFalse);
+        expect(json.containsKey('inspiredByNpubs'), isFalse);
       });
 
       test('includes contentWarning when set', () {
@@ -294,13 +294,56 @@ void main() {
           description: 'Inspired by person',
           hashtags: const {},
           selectedApproach: 'native',
-          inspiredByNpub: 'npub1testvalue',
+          inspiredByNpubs: const ['npub1testvalue'],
         );
 
         final json = original.toJson();
         final restored = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(restored.inspiredByNpub, equals('npub1testvalue'));
+      });
+
+      test('preserves every credited creator through serialization', () {
+        final original = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'IB Video',
+          description: 'Inspired by several people',
+          hashtags: const {},
+          selectedApproach: 'native',
+          inspiredByNpubs: const ['npub1first', 'npub1second', 'npub1third'],
+        );
+
+        final restored = DivineVideoDraft.fromJson(
+          original.toJson(),
+          '/path/to',
+        );
+
+        expect(
+          restored.inspiredByNpubs,
+          equals(const ['npub1first', 'npub1second', 'npub1third']),
+        );
+        // Order is the author's: the first is the one the content line names.
+        expect(restored.inspiredByNpub, equals('npub1first'));
+      });
+
+      test('restores a draft saved before this field became a list', () {
+        // Drafts autosaved by an older build carry the scalar key; dropping it
+        // would silently lose the attribution on the next open.
+        final legacyJson = {
+          ...DivineVideoDraft.create(
+            clips: [_testClip()],
+            title: 'Legacy',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'native',
+          ).toJson(),
+          'inspiredByNpub': 'npub1legacy',
+        };
+
+        final restored = DivineVideoDraft.fromJson(legacyJson, '/path/to');
+
+        expect(restored.inspiredByNpubs, equals(const ['npub1legacy']));
+        expect(restored.inspiredByNpub, equals('npub1legacy'));
       });
 
       test('preserves contentWarning through serialization', () {
@@ -336,7 +379,7 @@ void main() {
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           },
           inspiredByVideo: ib,
-          inspiredByNpub: 'npub1both',
+          inspiredByNpubs: const ['npub1both'],
         );
 
         final json = original.toJson();
@@ -383,7 +426,7 @@ void main() {
           collaboratorPubkeys: {
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           },
-          inspiredByNpub: 'npub1keep',
+          inspiredByNpubs: const ['npub1keep'],
         );
 
         final updated = draft.copyWith(title: 'Updated Title');

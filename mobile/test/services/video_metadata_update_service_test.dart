@@ -1677,7 +1677,7 @@ void main() {
 
         final result = await service.updateVideo(
           originalVideo: _testVideo(),
-          editorState: VideoEditorProviderState(inspiredByNpub: npub),
+          editorState: VideoEditorProviderState(inspiredByNpubs: [npub]),
           initialCollaboratorPubkeys: const {},
         );
 

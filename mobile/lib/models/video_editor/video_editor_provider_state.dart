@@ -38,7 +38,7 @@ class VideoEditorProviderState {
     this.editorEditingParameters,
     this.collaboratorPubkeys = const {},
     this.inspiredByVideo,
-    this.inspiredByNpub,
+    this.inspiredByNpubs = const [],
     this.selectedSound,
     this.seedSelectedSoundAsAudioTrack = false,
     this.contentWarnings = const {},
@@ -132,8 +132,16 @@ class VideoEditorProviderState {
   /// Reference to a specific video that inspired this one (a-tag).
   final InspiredByInfo? inspiredByVideo;
 
-  /// NIP-27 npub reference for general "Inspired By" a creator.
-  final String? inspiredByNpub;
+  /// NIP-27 npub references for the creators this video credits.
+  ///
+  /// Ordered as the author picked them. Only the first reaches the caption's
+  /// NIP-27 content line — the rest are carried by `inspired-by` p-tags — so
+  /// the order is the author's statement of who is credited most prominently.
+  final List<String> inspiredByNpubs;
+
+  /// The creator named by the NIP-27 content line, or null when none is set.
+  String? get inspiredByNpub =>
+      inspiredByNpubs.isEmpty ? null : inspiredByNpubs.first;
 
   /// Currently selected sound for the video.
   /// Contains the full AudioEvent data including URL, title, and start offset.
@@ -227,8 +235,8 @@ class VideoEditorProviderState {
   /// [finalRenderedClip] to null.
   /// Use [clearInspiredByVideo] = true to explicitly set
   /// [inspiredByVideo] to null.
-  /// Use [clearInspiredByNpub] = true to explicitly set
-  /// [inspiredByNpub] to null.
+  /// Use [clearInspiredByNpub] = true to explicitly clear
+  /// [inspiredByNpubs].
   /// Use [clearSelectedSound] = true to explicitly set
   /// [selectedSound] to null.
   VideoEditorProviderState copyWith({
@@ -257,7 +265,7 @@ class VideoEditorProviderState {
     Set<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     bool clearInspiredByVideo = false,
-    String? inspiredByNpub,
+    List<String>? inspiredByNpubs,
     bool clearInspiredByNpub = false,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
@@ -310,9 +318,9 @@ class VideoEditorProviderState {
       inspiredByVideo: clearInspiredByVideo
           ? null
           : (inspiredByVideo ?? this.inspiredByVideo),
-      inspiredByNpub: clearInspiredByNpub
-          ? null
-          : (inspiredByNpub ?? this.inspiredByNpub),
+      inspiredByNpubs: clearInspiredByNpub
+          ? const []
+          : (inspiredByNpubs ?? this.inspiredByNpubs),
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),
