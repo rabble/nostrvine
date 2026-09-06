@@ -256,6 +256,20 @@ esac
       );
     });
 
+    test('gitattributes changes run wrapper checks', () {
+      // The tracked wrapper launchers depend on their root-level line-ending
+      // attributes, so changing that file must run the app and native gates.
+      expectScope(
+        runDetector(
+          event: 'pull_request',
+          changedFiles: ['.gitattributes'],
+          changedTotal: 1,
+        ),
+        app: true,
+        native: true,
+      );
+    });
+
     test('push falls open to preserve the full main-branch matrix', () {
       expectScope(runDetector(event: 'push'), app: true, native: true);
     });

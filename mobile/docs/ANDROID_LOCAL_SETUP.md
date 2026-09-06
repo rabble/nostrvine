@@ -31,10 +31,10 @@ directly, or open `mobile/android` in Android Studio.
 
    > **First run downloads a JDK.** If you skip `mise install`, the next
    > `mise exec` or `mise run` in `mobile/` installs it for you — a ~200 MB
-   > download that takes a minute. The pre-push hook runs
-   > `mise exec -- flutter analyze` with stderr suppressed, so when that install
-   > happens inside the hook it looks like `Analysis failed!` with no
-   > explanation. Run `mise install` once and it will not recur.
+   > download that takes a minute. Run `mise install` once so that download does
+   > not delay the first formatting or analysis hook. If this change was pulled
+   > into an existing checkout, reinstall the hooks with `mise run setup_hooks`
+   > so their diagnostics stay current.
 
 2. **Android SDK** — install via Android Studio (*SDK Manager*), or standalone
    `cmdline-tools`. Then export, from your shell profile:
