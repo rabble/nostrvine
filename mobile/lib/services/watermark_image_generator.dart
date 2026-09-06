@@ -48,11 +48,7 @@ class WatermarkImageGenerator {
       // Build the single-line watermark text using the resolved identity.
       // Available width = from left margin to right margin
       final maxTextWidth = videoWidth - 2 * _margin;
-      textParagraph = _buildParagraph(
-        watermarkText,
-        fontSize,
-        maxTextWidth,
-      );
+      textParagraph = _buildParagraph(watermarkText, fontSize, maxTextWidth);
       textParagraph.layout(ui.ParagraphConstraints(width: maxTextWidth));
 
       // Calculate wordmark draw size preserving aspect ratio
@@ -127,9 +123,12 @@ class WatermarkImageGenerator {
     try {
       final data = await rootBundle.load(_wordmarkAssetPath);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      final frame = await codec.getNextFrame();
-      codec.dispose();
-      return frame.image;
+      try {
+        final frame = await codec.getNextFrame();
+        return frame.image;
+      } finally {
+        codec.dispose();
+      }
     } catch (e) {
       throw WatermarkGenerationException('Failed to load wordmark asset: $e');
     }
