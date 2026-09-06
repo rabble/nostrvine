@@ -98,7 +98,7 @@ class MentionResolutionService {
 
     final replacements = <_TextReplacement>[];
     for (final mention in typedMentions) {
-      final pubkey = typedResult.pubkeyByToken[mention.normalizedToken];
+      final pubkey = typedResult.pubkeyByToken[mention.lookupKey];
       if (pubkey == null) continue;
       replacements.add(
         _TextReplacement(
@@ -188,13 +188,12 @@ class MentionResolutionService {
     List<_TypedMention> mentions, {
     required String? currentUserPubkey,
   }) async {
-    // Deduplicate by the normalized token, which is also the key the caller
-    // maps replacements back through, but search on the token as typed:
-    // profile search is a substring match, so the separator-stripped `ogab`
-    // cannot find the handle `OG-AB` that produced it.
+    // Deduplicate case-insensitively while preserving separators in the key.
+    // Profiles may legitimately own both `og-ab` and `ogab`, so collapsing
+    // both to the separator-stripped comparison form would tag the wrong one.
     final queryByToken = <String, String>{};
     for (final mention in mentions) {
-      queryByToken.putIfAbsent(mention.normalizedToken, () => mention.token);
+      queryByToken.putIfAbsent(mention.lookupKey, () => mention.token);
     }
 
     final pubkeyByToken = <String, String>{};
@@ -281,6 +280,7 @@ List<_TypedMention> _extractTypedMentions(String text) {
         token: token,
         start: match.start,
         end: match.end,
+        lookupKey: token.toLowerCase(),
         normalizedToken: _normalizeMentionValue(token),
       ),
     );
@@ -407,8 +407,8 @@ class _TypedResolutionResult {
   factory _TypedResolutionResult.empty(List<_TypedMention> mentions) {
     final unresolved = <String>[];
     for (final mention in mentions) {
-      if (!unresolved.contains(mention.normalizedToken)) {
-        unresolved.add(mention.normalizedToken);
+      if (!unresolved.contains(mention.lookupKey)) {
+        unresolved.add(mention.lookupKey);
       }
     }
     return _TypedResolutionResult(
@@ -426,12 +426,14 @@ class _TypedMention {
     required this.token,
     required this.start,
     required this.end,
+    required this.lookupKey,
     required this.normalizedToken,
   });
 
   final String token;
   final int start;
   final int end;
+  final String lookupKey;
   final String normalizedToken;
 }
 

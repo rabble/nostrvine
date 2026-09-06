@@ -447,6 +447,37 @@ void main() {
         expect(result.canonicalText, equals('inspired by nostr:$carolNpub'));
         expect(result.resolvedPubkeys, equals([_carolPubkey]));
       });
+
+      test(
+        'resolves handles that differ only by separators independently',
+        () async {
+          final aliceNpub = NostrKeyUtils.encodePubKey(_alicePubkey);
+          final bobNpub = NostrKeyUtils.encodePubKey(_bobPubkey);
+          when(
+            () => profileRepository.searchUsersLocally(
+              query: 'og-ab',
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [_profile(_bobPubkey, name: 'og-ab')]);
+          when(
+            () => profileRepository.searchUsersLocally(
+              query: 'ogab',
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [_profile(_alicePubkey, name: 'ogab')]);
+
+          final result = await service.resolveTextMentions(
+            rawText: 'shoutout @og-ab and @ogab',
+          );
+
+          expect(
+            result.canonicalText,
+            equals('shoutout nostr:$bobNpub and nostr:$aliceNpub'),
+          );
+          expect(result.resolvedPubkeys, equals([_bobPubkey, _alicePubkey]));
+          expect(result.unresolvedTokens, isEmpty);
+        },
+      );
     });
   });
 
